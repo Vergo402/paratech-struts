@@ -528,6 +528,24 @@ select { padding-right: 40px; }
 }
 .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
 
+/* --- Quantity Buttons --- */
+.qty-btn {
+  flex: 1;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  border: 2px solid #E0E0E0;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.qty-btn.active {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  color: var(--blue);
+}
+
 /* --- Login Screen --- */
 .login-screen {
   position: fixed;
@@ -827,15 +845,15 @@ select { padding-right: 40px; }
   <nav class="nav">
     <button class="nav-btn active" onclick="showTab('select')" data-tab="select">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-      Select
-    </button>
-    <button class="nav-btn" onclick="showTab('inventory')" data-tab="inventory">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
-      Inventory
+      Quick Find
     </button>
     <button class="nav-btn" onclick="showTab('ops')" data-tab="ops">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Operations
+    </button>
+    <button class="nav-btn" onclick="showTab('inventory')" data-tab="inventory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
+      Inventory
     </button>
     <button class="nav-btn" onclick="showTab('settings')" data-tab="settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -887,6 +905,15 @@ select { padding-right: 40px; }
       <div class="form-group">
         <label>Estimated Load (lbs) — optional</label>
         <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm qty-btn active" onclick="setSpQty(1)" data-qty="1">1x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(2)" data-qty="2">2x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(3)" data-qty="3">3x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(4)" data-qty="4">4x</button>
+        </div>
       </div>
       <button class="btn btn-primary" onclick="findForShorePoint()">Find Available Struts</button>
       <div id="spResults" class="results-container"></div>
@@ -1179,7 +1206,8 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       if (strutInv && strutInv.apparatus) {
         html += `<div style="margin-top:4px"><span class="apparatus-source">From: ${getApparatusName(strutInv.apparatus)}</span></div>`;
       }
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')})">Deploy This</button></div>`;
+      const qtyLabel = spQuantity > 1 ? ` (${spQuantity}x)` : '';
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${spQuantity})">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
@@ -1200,6 +1228,7 @@ let localInventory = [];
 let activeOperation = null;
 let localApparatus = [];
 let selectedApparatus = null;
+let spQuantity = 1;
 
 function initFirebase() {
   const firebaseConfig = {
@@ -1646,7 +1675,18 @@ function showAddShorePoint() {
   document.getElementById('spLabel').value = '';
   document.getElementById('spLength').value = '';
   document.getElementById('spLoad').value = '';
+  spQuantity = 1;
+  document.querySelectorAll('.qty-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.qty) === 1);
+  });
   document.getElementById('shorePointModal').classList.add('active');
+}
+
+function setSpQty(qty) {
+  spQuantity = qty;
+  document.querySelectorAll('.qty-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.qty) === qty);
+  });
 }
 
 function findForShorePoint() {
@@ -1665,72 +1705,84 @@ function findForShorePoint() {
   renderResults(results, 'spResults', length, load, sfIndex, true);
 }
 
-function deployShorePoint(result) {
+function deployShorePoint(result, qty) {
   if (typeof result === 'string') result = JSON.parse(result);
+  qty = qty || 1;
 
-  const label = document.getElementById('spLabel').value.trim() || 'Shore Point';
+  const baseLabel = document.getElementById('spLabel').value.trim() || 'Shore Point';
   const length = parseFloat(document.getElementById('spLength').value);
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const sfIndex = 2;
 
-  const strutInvItem = localInventory.find(i => i.type === 'strut' && i.model === result.strut.model && i.available > 0 && i.apparatus);
-  if (!strutInvItem) {
-    alert('This strut is not available in any apparatus inventory.');
-    return;
-  }
-  const extInvItems = [];
+  const deployed = [];
 
-  for (const extSize of result.extensions) {
-    const ext = localInventory.find(i =>
-      i.type === 'extension' &&
-      i.length === extSize &&
-      i.apparatus &&
-      (i.system === result.strut.system || (result.strut.system === 'LockStroke' && i.system === 'AcmeThread') || (result.strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
-      i.available > 0 &&
-      !extInvItems.some(e => e.id === i.id && i.available <= extInvItems.filter(x => x.id === i.id).length)
-    );
-    if (ext) extInvItems.push(ext);
-  }
+  for (let n = 0; n < qty; n++) {
+    const strutInvItem = localInventory.find(i => i.type === 'strut' && i.model === result.strut.model && i.available > 0 && i.apparatus);
+    if (!strutInvItem) {
+      if (n === 0) {
+        alert('This strut is not available in any apparatus inventory.');
+        return;
+      }
+      alert(`Only ${n} of ${qty} struts available. Deployed ${n}.`);
+      break;
+    }
 
-  const sp = {
-    label,
-    requiredLength: length,
-    estimatedLoad: load,
-    safetyFactor: ['2:1', '3:1', '4:1'][sfIndex],
-    deployedStrut: {
-      inventoryId: strutInvItem ? strutInvItem.id : null,
-      model: result.strut.model,
-      system: result.strut.system,
-      apparatus: strutInvItem ? strutInvItem.apparatus : null,
-    },
-    deployedExtensions: extInvItems.map(e => ({
-      inventoryId: e.id,
-      length: e.length,
-      system: e.system,
-      apparatus: e.apparatus,
-    })),
-    status: 'deployed',
-    deployedAt: new Date().toISOString(),
-    returnedAt: null,
-  };
+    const extInvItems = [];
+    for (const extSize of result.extensions) {
+      const ext = localInventory.find(i =>
+        i.type === 'extension' &&
+        i.length === extSize &&
+        i.apparatus &&
+        (i.system === result.strut.system || (result.strut.system === 'LockStroke' && i.system === 'AcmeThread') || (result.strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
+        i.available > 0 &&
+        !extInvItems.some(e => e.id === i.id && i.available <= extInvItems.filter(x => x.id === i.id).length)
+      );
+      if (ext) extInvItems.push(ext);
+    }
 
-  if (db && deptId && activeOperation) {
-    const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
-    spRef.set(sp);
+    const label = qty > 1 ? `${baseLabel} (${n + 1}/${qty})` : baseLabel;
 
-    if (strutInvItem) {
+    const sp = {
+      label,
+      requiredLength: length,
+      estimatedLoad: load,
+      safetyFactor: ['2:1', '3:1', '4:1'][sfIndex],
+      deployedStrut: {
+        inventoryId: strutInvItem.id,
+        model: result.strut.model,
+        system: result.strut.system,
+        apparatus: strutInvItem.apparatus,
+      },
+      deployedExtensions: extInvItems.map(e => ({
+        inventoryId: e.id,
+        length: e.length,
+        system: e.system,
+        apparatus: e.apparatus,
+      })),
+      status: 'deployed',
+      deployedAt: new Date().toISOString(),
+      returnedAt: null,
+    };
+
+    if (db && deptId && activeOperation) {
+      const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
+      spRef.set(sp);
       inventoryRef.child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+      for (const ext of extInvItems) {
+        inventoryRef.child(ext.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+      }
+    } else {
+      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+      for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+      sp.id = 'sp-' + Date.now() + '-' + n;
+      if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
+      activeOperation.shorePoints.push(sp);
     }
-    for (const ext of extInvItems) {
-      inventoryRef.child(ext.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
-    }
-  } else {
-    if (strutInvItem) strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-    for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
 
-    sp.id = 'sp-' + Date.now();
-    if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
-    activeOperation.shorePoints.push(sp);
+    deployed.push(sp);
+  }
+
+  if (deployed.length > 0 && !(db && deptId && activeOperation)) {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
     renderOperations();
