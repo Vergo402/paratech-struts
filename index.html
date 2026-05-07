@@ -1074,13 +1074,21 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
       }
 
       const capacity = getLoadCapacity(strut.system, requiredLength, sfIndex);
-      if (estimatedLoad > 0 && capacity < estimatedLoad) continue;
+      if (capacity <= 0) continue;
+
+      let recommendedQty = 1;
+      if (estimatedLoad > 0 && capacity < estimatedLoad) {
+        recommendedQty = Math.ceil(estimatedLoad / capacity);
+        if (recommendedQty > 4) continue;
+      }
 
       const capacityAll = [
         getLoadCapacity(strut.system, requiredLength, 0),
         getLoadCapacity(strut.system, requiredLength, 1),
         getLoadCapacity(strut.system, requiredLength, 2),
       ];
+
+      const totalCapacity = capacity * recommendedQty;
 
       results.push({
         strut,
@@ -1090,13 +1098,16 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
         adjExtended,
         capacity,
         capacityAll,
-        margin: estimatedLoad > 0 ? capacity - estimatedLoad : capacity,
+        margin: estimatedLoad > 0 ? totalCapacity - estimatedLoad : capacity,
         componentCount: 1 + extCount,
+        recommendedQty,
+        totalCapacity,
       });
     }
   }
 
   results.sort((a, b) => {
+    if (a.recommendedQty !== b.recommendedQty) return a.recommendedQty - b.recommendedQty;
     if (a.componentCount !== b.componentCount) return a.componentCount - b.componentCount;
     if (b.margin !== a.margin) return b.margin - a.margin;
     const aGold = a.strut.system === 'LongShore' ? 1 : 0;
@@ -1195,21 +1206,29 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
     html += `</div>
       <div class="card-secondary">`;
 
-    html += `<div class="detail"><span>Capacity (4:1)</span><span class="detail-val">${r.capacity.toLocaleString()} lbs</span></div>`;
-
-    if (load > 0) {
-      html += `<div class="detail"><span>Margin</span><span class="detail-val ${marginClass}">${r.margin > 0 ? '+' : ''}${r.margin.toLocaleString()} lbs</span></div>`;
+    if (r.recommendedQty > 1) {
+      html += `<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:14px">
+        <strong style="color:var(--red)">⚠ ${r.recommendedQty}x struts recommended</strong>
+        <div style="color:var(--text-secondary);font-size:13px;margin-top:2px">Single strut: ${r.capacity.toLocaleString()} lbs · ${r.recommendedQty}x total: ${r.totalCapacity.toLocaleString()} lbs</div>
+      </div>`;
     }
 
-    html += `<div class="detail"><span>All factors</span><span class="detail-val">2:1: ${r.capacityAll[0].toLocaleString()} · 3:1: ${r.capacityAll[1].toLocaleString()} · 4:1: ${r.capacityAll[2].toLocaleString()}</span></div>`;
+    html += `<div class="detail"><span>Capacity (4:1)${r.recommendedQty > 1 ? ' each' : ''}</span><span class="detail-val">${r.capacity.toLocaleString()} lbs</span></div>`;
+
+    if (load > 0) {
+      html += `<div class="detail"><span>Margin${r.recommendedQty > 1 ? ` (${r.recommendedQty}x)` : ''}</span><span class="detail-val ${marginClass}">${r.margin > 0 ? '+' : ''}${r.margin.toLocaleString()} lbs</span></div>`;
+    }
+
+    html += `<div class="detail"><span>All factors${r.recommendedQty > 1 ? ' (each)' : ''}</span><span class="detail-val">2:1: ${r.capacityAll[0].toLocaleString()} · 3:1: ${r.capacityAll[1].toLocaleString()} · 4:1: ${r.capacityAll[2].toLocaleString()}</span></div>`;
 
     if (isOperation) {
       const strutInv = localInventory.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
       if (strutInv && strutInv.apparatus) {
         html += `<div style="margin-top:4px"><span class="apparatus-source">From: ${getApparatusName(strutInv.apparatus)}</span></div>`;
       }
-      const qtyLabel = spQuantity > 1 ? ` (${spQuantity}x)` : '';
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${spQuantity})">Deploy${qtyLabel}</button></div>`;
+      const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
+      const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
