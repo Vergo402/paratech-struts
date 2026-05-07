@@ -817,6 +817,8 @@ select { padding-right: 40px; }
         </div>
         <div id="shorePointsList"></div>
       </div>
+      <div class="section-title mt-16">Archived Operations</div>
+      <div id="archivedOpsList"></div>
     </div>
 
     <!-- Screen 4: Settings -->
@@ -837,7 +839,7 @@ select { padding-right: 40px; }
       <div class="section-title">Data Management</div>
       <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (JSON)</button>
       <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (JSON)</button>
-      <button class="btn btn-sm btn-danger" onclick="resetApp()" style="width:100%">Reset All Local Data</button>
+      <button class="btn btn-sm btn-danger" onclick="logOut()" style="width:100%">Log Out</button>
     </div>
   </div>
 
@@ -1224,11 +1226,13 @@ let deptId = null;
 let inventoryRef = null;
 let operationsRef = null;
 let settingsRef = null;
+let apparatusRef = null;
 let localInventory = [];
 let activeOperation = null;
 let localApparatus = [];
 let selectedApparatus = null;
 let spQuantity = 1;
+let archivedOperations = [];
 
 function initFirebase() {
   const firebaseConfig = {
@@ -1303,6 +1307,30 @@ function setupListeners() {
       activeOperation.shorePoints = Object.entries(activeOperation.shorePoints).map(([id, sp]) => ({ id, ...sp }));
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
+  });
+
+  operationsRef.orderByChild('status').equalTo('archived').on('value', (snap) => {
+    const data = snap.val() || {};
+    archivedOperations = Object.entries(data).map(([id, op]) => {
+      if (op.shorePoints) {
+        op.shorePoints = Object.entries(op.shorePoints).map(([spId, sp]) => ({ id: spId, ...sp }));
+      }
+      return { id, ...op };
+    });
+    archivedOperations.sort((a, b) => new Date(b.endTime || b.startTime) - new Date(a.endTime || a.startTime));
+    if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
+  });
+
+  apparatusRef = db.ref(`departments/${deptId}/apparatus`);
+
+  apparatusRef.on('value', (snap) => {
+    const data = snap.val() || {};
+    localApparatus = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    localStorage.setItem('paratech_apparatus', JSON.stringify(localApparatus));
+    if (localApparatus.length > 0 && !localApparatus.find(a => a.id === selectedApparatus)) {
+      selectedApparatus = localApparatus[0].id;
+    }
+    if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
   });
 
   settingsRef.on('value', (snap) => {
@@ -1384,15 +1412,21 @@ function confirmAddApparatus() {
   const name = document.getElementById('newApparatusName').value.trim();
   if (!name) return;
 
-  const app = {
-    id: 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-    name,
-  };
-  localApparatus.push(app);
-  if (!selectedApparatus) selectedApparatus = app.id;
-  saveLocalApparatus();
-  renderApparatusTabs();
-  renderApparatusManageList();
+  if (db && deptId && apparatusRef) {
+    const newRef = apparatusRef.push();
+    newRef.set({ name });
+    if (!selectedApparatus) selectedApparatus = newRef.key;
+  } else {
+    const app = {
+      id: 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+      name,
+    };
+    localApparatus.push(app);
+    if (!selectedApparatus) selectedApparatus = app.id;
+    saveLocalApparatus();
+    renderApparatusTabs();
+    renderApparatusManageList();
+  }
   document.getElementById('newApparatusName').value = '';
 }
 
@@ -1401,13 +1435,22 @@ function removeApparatus(id) {
   const count = localInventory.filter(i => i.apparatus === id).reduce((sum, i) => sum + i.quantity, 0);
   if (count > 0 && !confirm(`"${app.name}" has ${count} equipment items. Remove apparatus and all its equipment?`)) return;
 
-  localInventory = localInventory.filter(i => i.apparatus !== id);
-  localApparatus = localApparatus.filter(a => a.id !== id);
+  if (db && deptId && apparatusRef) {
+    apparatusRef.child(id).remove();
+    const itemsToRemove = localInventory.filter(i => i.apparatus === id);
+    for (const item of itemsToRemove) {
+      inventoryRef.child(item.id).remove();
+    }
+  } else {
+    localInventory = localInventory.filter(i => i.apparatus !== id);
+    localApparatus = localApparatus.filter(a => a.id !== id);
+    saveLocalApparatus();
+    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+  }
+
   if (selectedApparatus === id) {
     selectedApparatus = localApparatus.length > 0 ? localApparatus[0].id : null;
   }
-  saveLocalApparatus();
-  localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
   renderApparatusTabs();
   renderInventory();
   renderApparatusManageList();
@@ -1591,6 +1634,7 @@ function renderOperations() {
     noOp.style.display = 'block';
     active.style.display = 'none';
     updateQuickViewFab();
+    renderArchivedOps();
     return;
   }
 
@@ -1638,6 +1682,80 @@ function renderOperations() {
   }
   spList.innerHTML = html;
   updateQuickViewFab();
+  renderArchivedOps();
+}
+
+function renderArchivedOps() {
+  const container = document.getElementById('archivedOpsList');
+  if (!container) return;
+
+  if (archivedOperations.length === 0) {
+    container.innerHTML = '<div style="padding:12px;text-align:center;color:var(--text-secondary);font-size:14px">No archived operations</div>';
+    return;
+  }
+
+  let html = '';
+  for (const op of archivedOperations) {
+    const points = op.shorePoints || [];
+    const pointCount = Array.isArray(points) ? points.length : Object.keys(points).length;
+    const startDate = new Date(op.startTime).toLocaleDateString();
+    const endDate = op.endTime ? new Date(op.endTime).toLocaleDateString() : '';
+
+    html += `<div class="op-card" style="margin-bottom:8px">
+      <div class="flex-between mb-8">
+        <div>
+          <div style="font-weight:700">${op.name || 'Unnamed'}</div>
+          <div style="font-size:12px;color:var(--text-secondary)">${startDate}${endDate ? ' – ' + endDate : ''} · ${pointCount} shore point${pointCount !== 1 ? 's' : ''}</div>
+        </div>
+        <span class="status-badge returned" style="font-size:11px">archived</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm btn-outline" onclick="viewArchivedOp('${op.id}')" style="flex:1">View</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteArchivedOp('${op.id}')" style="padding:6px 12px">Delete</button>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function viewArchivedOp(opId) {
+  const op = archivedOperations.find(o => o.id === opId);
+  if (!op) return;
+
+  const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints || {});
+  let detail = `<div class="op-card"><div class="flex-between mb-8"><div><div style="font-size:18px;font-weight:700">${op.name || 'Unnamed'}</div>`;
+  detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${new Date(op.startTime).toLocaleString()}</div>`;
+  if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${new Date(op.endTime).toLocaleString()}</div>`;
+  detail += `</div></div></div>`;
+
+  for (const sp of points) {
+    const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
+      ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+      : '';
+    detail += `<div class="shore-point returned" style="margin-bottom:8px">
+      <strong>${sp.label || 'Shore Point'}</strong>
+      <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
+      <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
+      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}
+    </div>`;
+  }
+
+  detail += `<button class="btn btn-outline mt-16" onclick="renderOperations()" style="width:100%">Back</button>`;
+
+  document.getElementById('noActiveOp').style.display = 'none';
+  document.getElementById('activeOp').style.display = 'none';
+  document.getElementById('archivedOpsList').innerHTML = detail;
+}
+
+function deleteArchivedOp(opId) {
+  if (!confirm('Delete this archived operation? This cannot be undone.')) return;
+
+  if (db && deptId) {
+    operationsRef.child(opId).remove();
+  } else {
+    archivedOperations = archivedOperations.filter(o => o.id !== opId);
+    renderArchivedOps();
+  }
 }
 
 function startOperation() {
@@ -1921,8 +2039,8 @@ function handleImport(event) {
   event.target.value = '';
 }
 
-function resetApp() {
-  if (!confirm('This will clear all local data. Are you sure?')) return;
+function logOut() {
+  if (!confirm('Log out? Local data will be cleared.')) return;
   localStorage.clear();
   localInventory = [];
   localApparatus = [];
