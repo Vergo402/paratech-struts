@@ -475,8 +475,10 @@ select { padding-right: 40px; }
   padding: 12px 16px;
   margin-bottom: 10px;
 }
-.shore-point.deployed { border-color: var(--red); }
-.shore-point.returned { border-color: var(--green); }
+.shore-point.placed { border-color: var(--red); }
+.shore-point.cutting { border-color: #F9A825; }
+.shore-point.finalized { border-color: var(--green); }
+.shore-point.returned { border-color: #9E9E9E; }
 .status-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -485,8 +487,12 @@ select { padding-right: 40px; }
   font-weight: 700;
   text-transform: uppercase;
 }
-.status-badge.deployed { background: var(--red-bg); color: var(--red); }
-.status-badge.returned { background: var(--green-bg); color: var(--green); }
+.status-badge.placed { background: var(--red-bg); color: var(--red); }
+.status-badge.cutting { background: #FFF8E1; color: #F57F17; }
+.status-badge.finalized { background: var(--green-bg); color: var(--green); }
+.status-badge.returned { background: #F5F5F5; color: #757575; }
+.sp-number { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
+.sp-group-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px; margin-top: 8px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
 
 /* --- Setup / Settings --- */
 .setup-container {
@@ -979,7 +985,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.5.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.5.1</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1215,7 +1221,21 @@ select { padding-right: 40px; }
       </div>
       <div class="form-group">
         <label>Label</label>
-        <input type="text" id="spLabel" placeholder="e.g. Floor 2 - West Wall">
+        <input type="text" id="spLabel" placeholder="e.g. West Wall Window">
+      </div>
+      <div style="display:flex;gap:8px">
+        <div class="form-group" style="flex:1">
+          <label>Floor</label>
+          <input type="text" id="spFloor" placeholder="e.g. 2">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Division</label>
+          <input type="text" id="spDivision" placeholder="e.g. A">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Team</label>
+          <input type="text" id="spTeam" placeholder="e.g. Team 1">
+        </div>
       </div>
       <div class="form-group">
         <label>Opening Measurement (inches)</label>
@@ -1591,7 +1611,11 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
     return a.strut.extended - b.strut.extended;
   });
 
-  return results;
+  // Only show extension combos for a strut model if that strut can't reach on its own
+  const strutOnlyModels = new Set(results.filter(r => r.extensions.length === 0).map(r => r.strut.model));
+  const filtered = results.filter(r => r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model));
+
+  return filtered;
 }
 
 // ============================================================
@@ -2177,7 +2201,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.5.0'
+    appVersion: '1.5.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2399,49 +2423,88 @@ function renderOperations() {
   }
 
   const spList = document.getElementById('shorePointsList');
-  const points = activeOperation.shorePoints || [];
+  const rawPoints = activeOperation.shorePoints || [];
 
-  if (points.length === 0) {
+  if ((Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints)).length === 0) {
     spList.innerHTML = '<div class="empty-state"><p>No shore points yet.<br>Tap "+ Shore Point" to add one.</p></div>';
+    updateQuickViewFab();
+    renderArchivedOps();
     return;
   }
 
+  // Convert to array, assign sequential numbers (oldest=1), then reverse for display (newest on top)
+  const points = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints));
+  const numbered = points.map((sp, i) => ({ ...sp, num: i + 1 }));
+  const displayPoints = [...numbered].reverse();
+
+  // Group by floor/division/team
+  const groups = {};
+  for (const sp of displayPoints) {
+    const parts = [];
+    if (sp.floor) parts.push(`Floor ${sp.floor}`);
+    if (sp.division) parts.push(`Div ${sp.division}`);
+    if (sp.team) parts.push(sp.team);
+    const key = parts.length > 0 ? parts.join(' · ') : '__ungrouped__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(sp);
+  }
+
+  const statusLabels = { placed: 'Placed', cutting: 'Cutting', finalized: 'Finalized', returned: 'Returned', deployed: 'Placed' };
+
   let html = '';
-  for (const sp of (Array.isArray(points) ? points : Object.values(points))) {
-    const statusClass = sp.status || 'deployed';
-    const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-      ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
-      : '';
-
-    const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
-    const dedInfo = sp.deductions ? (() => {
-      const d = sp.deductions;
-      const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
-      const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
-      return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
-    })() : '';
-
-    html += `<div class="shore-point ${statusClass}">
-      <div class="flex-between mb-8">
-        <strong>${sp.label || 'Shore Point'}</strong>
-        <span class="status-badge ${statusClass}">${statusClass}</span>
-      </div>
-      ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
-      <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-        ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
-      </div>
-      <div style="font-size:15px;font-weight:600">
-        ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
-      </div>
-      ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
-
-    if (statusClass === 'deployed') {
-      html += `<button class="btn btn-sm btn-success mt-16" onclick="returnEquipment('${sp.id}')" style="width:100%">Return Equipment</button>`;
+  for (const [groupName, groupPoints] of Object.entries(groups)) {
+    if (groupName !== '__ungrouped__') {
+      html += `<div class="sp-group-header">${groupName}</div>`;
     }
-    if (statusClass === 'returned') {
-      html += `<div style="font-size:12px;color:var(--green);margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+    for (const sp of groupPoints) {
+      const statusClass = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      const statusLabel = statusLabels[sp.status] || statusLabels[statusClass] || statusClass;
+      const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
+        ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+        : '';
+
+      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+      const dedInfo = sp.deductions ? (() => {
+        const d = sp.deductions;
+        const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
+        const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
+        return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
+      })() : '';
+
+      html += `<div class="shore-point ${statusClass}">
+        <div class="flex-between mb-8">
+          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong></div>
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+        </div>
+        ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
+          ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+        </div>
+        <div style="font-size:15px;font-weight:600">
+          ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
+        </div>
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+
+      if (statusClass === 'placed') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+        </div>`;
+      }
+      if (statusClass === 'cutting') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">→ Placed</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+        </div>`;
+      }
+      if (statusClass === 'finalized') {
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
+      }
+      if (statusClass === 'returned') {
+        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+      }
+      html += `</div>`;
     }
-    html += `</div>`;
   }
   spList.innerHTML = html;
   updateQuickViewFab();
@@ -2558,6 +2621,9 @@ function confirmStartOp() {
 function showAddShorePoint() {
   document.getElementById('spResults').innerHTML = '';
   document.getElementById('spLabel').value = '';
+  document.getElementById('spFloor').value = '';
+  document.getElementById('spDivision').value = '';
+  document.getElementById('spTeam').value = '';
   document.getElementById('spLength').value = '';
   document.getElementById('spLoad').value = '';
   document.getElementById('spShoreType').value = 't-shore';
@@ -2643,11 +2709,17 @@ function deployShorePoint(result, qty) {
     const label = qty > 1 ? `${baseLabel} (${n + 1}/${qty})` : baseLabel;
 
     const shoreType = document.getElementById('spShoreType').value;
+    const floor = document.getElementById('spFloor').value.trim() || null;
+    const division = document.getElementById('spDivision').value.trim() || null;
+    const team = document.getElementById('spTeam').value.trim() || null;
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
 
     const sp = {
       label,
+      floor,
+      division,
+      team,
       shoreType,
       requiredLength: length,
       effectiveLength,
@@ -2668,7 +2740,7 @@ function deployShorePoint(result, qty) {
         system: e.system,
         apparatus: e.apparatus,
       })),
-      status: 'deployed',
+      status: 'placed',
       deployedAt: new Date().toISOString(),
       returnedAt: null,
     };
@@ -2709,6 +2781,19 @@ function deployShorePoint(result, qty) {
   }
 
   closeModal('shorePointModal');
+}
+
+function updateShoreStatus(spId, newStatus) {
+  if (!activeOperation) return;
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update({ status: newStatus });
+  } else {
+    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const sp = points.find(p => p.id === spId);
+    if (sp) sp.status = newStatus;
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    renderOperations();
+  }
 }
 
 function returnEquipment(spId) {
