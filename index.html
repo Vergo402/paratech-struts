@@ -963,7 +963,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.2.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -2099,7 +2099,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.2.0'
+    appVersion: '1.3.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
