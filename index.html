@@ -981,7 +981,7 @@ select { padding-right: 40px; }
           <input type="checkbox" id="qfDeductionToggle" onchange="toggleDeductions('qf')">
           <span class="toggle-slider"></span>
         </label>
-        <label for="qfDeductionToggle">Include Deductions (header, sole, plates)</label>
+        <label for="qfDeductionToggle">Include Deductions (header, footer, plates)</label>
       </div>
       <div class="deduction-panel hidden" id="qfDeductionPanel">
         <div class="deduction-row">
@@ -993,7 +993,7 @@ select { padding-right: 40px; }
           </select>
         </div>
         <div class="deduction-row">
-          <label>Sole</label>
+          <label>Footer</label>
           <select id="qfSole" onchange="updateDeductionSummary('qf')">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
@@ -1010,7 +1010,7 @@ select { padding-right: 40px; }
           </div>
         </div>
         <div class="deduction-row">
-          <label>Bottom</label>
+          <label>Sole Plate</label>
           <div class="plate-picker" id="qfBottomPlatePicker">
             <button type="button" class="plate-picker-btn" onclick="openPlatePicker('qfBottomPlate')">
               <span class="picker-text" id="qfBottomPlateText">None (0")</span>
@@ -1175,8 +1175,7 @@ select { padding-right: 40px; }
       <div class="form-group">
         <label>Shore Type</label>
         <select id="spShoreType" onchange="onShoreTypeChange()">
-          <option value="vertical">Vertical Shore</option>
-          <option value="t-shore">T-Shore</option>
+          <option value="t-shore">T-Shore / Vertical Shore</option>
           <option value="double-t">Double-T Shore</option>
           <option value="window-door">Window/Door Shore</option>
           <option value="flying">Flying Shore</option>
@@ -1208,7 +1207,7 @@ select { padding-right: 40px; }
           </select>
         </div>
         <div class="deduction-row">
-          <label>Sole</label>
+          <label>Footer</label>
           <select id="spSole" onchange="updateDeductionSummary('sp')">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
@@ -1225,7 +1224,7 @@ select { padding-right: 40px; }
           </div>
         </div>
         <div class="deduction-row">
-          <label>Bottom</label>
+          <label>Sole Plate</label>
           <div class="plate-picker" id="spBottomPlatePicker">
             <button type="button" class="plate-picker-btn" onclick="openPlatePicker('spBottomPlate')">
               <span class="picker-text" id="spBottomPlateText">None (0")</span>
@@ -1365,9 +1364,8 @@ const WOOD_SIZES = [
 ];
 
 const SHORE_TYPES = [
-  { id:'vertical', name:'Vertical Shore', desc:'Single strut, floor to ceiling' },
-  { id:'t-shore', name:'T-Shore', desc:'Header across top with single vertical post', defaultHeader:'3.5' },
-  { id:'double-t', name:'Double-T Shore', desc:'Two T-shores side by side', defaultHeader:'3.5' },
+  { id:'t-shore', name:'T-Shore / Vertical Shore', desc:'Single strut, floor to ceiling' },
+  { id:'double-t', name:'Double-T Shore', desc:'Two T-shores side by side' },
   { id:'window-door', name:'Window/Door Shore', desc:'Shores on each side of opening' },
   { id:'flying', name:'Flying Shore', desc:'Horizontal strut between two walls' },
   { id:'custom', name:'Custom / Other', desc:'No preset defaults' },
@@ -1606,9 +1604,9 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       const effLen = Math.round(r.effectiveLength * 10) / 10;
       const parts = [];
       if (d.header) parts.push(`Header ${d.header}"`);
-      if (d.sole) parts.push(`Sole ${d.sole}"`);
+      if (d.sole) parts.push(`Footer ${d.sole}"`);
       if (d.topPlate) { const p = BASE_PLATES.find(b => b.height === d.topPlate && b.id !== 'none'); parts.push(`Top: ${p ? p.name : d.topPlate + '"'}`); }
-      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Bottom: ${p ? p.name : d.bottomPlate + '"'}`); }
+      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : d.bottomPlate + '"'}`); }
       html += `<div class="card-deductions">
         <strong>Opening:</strong> ${r.openingLength}" → <strong>Effective:</strong> ${effLen}" <span style="color:var(--blue)">(−${totalDed}")</span><br>
         <span style="font-size:11px">${parts.join(' · ')}</span>
@@ -2232,7 +2230,7 @@ function showAddShorePoint() {
   document.getElementById('spLabel').value = '';
   document.getElementById('spLength').value = '';
   document.getElementById('spLoad').value = '';
-  document.getElementById('spShoreType').value = 'vertical';
+  document.getElementById('spShoreType').value = 't-shore';
   // Restore deduction toggle from preference
   const dedPref = localStorage.getItem('paratech_deductionToggle') === 'true';
   document.getElementById('spDeductionToggle').checked = dedPref;
@@ -2841,11 +2839,10 @@ function updatePlatePickerDisplay(pickerId) {
 function onShoreTypeChange() {
   const type = document.getElementById('spShoreType').value;
 
-  // T-Shore and Double-T: auto-enable deductions and set header to 4x4
+  // T-Shore and Double-T: auto-enable deductions
   if (type === 't-shore' || type === 'double-t') {
     document.getElementById('spDeductionToggle').checked = true;
     toggleDeductions('sp');
-    document.getElementById('spHeader').value = '3.5';
     updateDeductionSummary('sp');
   }
 
