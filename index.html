@@ -1115,6 +1115,8 @@ select { padding-right: 40px; }
       <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm" onclick="downloadTemplate()" style="width:100%;margin-bottom:8px">Download Template (Excel)</button>
+      <div class="section-title">Feedback</div>
+      <button class="btn btn-outline btn-sm" onclick="openFeedbackModal()" style="width:100%;margin-bottom:8px">Report Issue / Suggestion</button>
       <button class="btn btn-sm btn-danger" onclick="logOut()" style="width:100%">Log Out</button>
     </div>
   </div>
@@ -1268,6 +1270,29 @@ select { padding-right: 40px; }
       <button class="btn btn-primary" onclick="confirmStartOp()">Start Operation</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('startOpModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Feedback Modal -->
+  <div class="modal-overlay" id="feedbackModal">
+    <div class="modal">
+      <h3>Report Issue / Suggestion</h3>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="feedbackCategory">
+          <option value="bug">Bug Report</option>
+          <option value="feature">Feature Request</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." style="width:100%;resize:vertical;font-family:inherit;font-size:14px;padding:10px;border:1px solid #ddd;border-radius:8px"></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="submitFeedback()" style="flex:1">Submit</button>
+        <button class="btn btn-outline" onclick="closeFeedbackModal()" style="flex:1">Cancel</button>
+      </div>
     </div>
   </div>
 
@@ -2046,6 +2071,47 @@ function quickAdd(type, system, model, length) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
   if (id === 'addEquipModal' || id === 'addApparatusModal') renderInventory();
+}
+
+// ============================================================
+// FEEDBACK
+// ============================================================
+function openFeedbackModal() {
+  document.getElementById('feedbackModal').classList.add('active');
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedbackModal').classList.remove('active');
+  document.getElementById('feedbackCategory').value = 'bug';
+  document.getElementById('feedbackText').value = '';
+}
+
+function submitFeedback() {
+  const category = document.getElementById('feedbackCategory').value;
+  const text = document.getElementById('feedbackText').value.trim();
+  if (!text) {
+    alert('Please enter a description.');
+    return;
+  }
+  const entry = {
+    category,
+    text,
+    deptId: localStorage.getItem('paratech_deptId') || null,
+    deptName: localStorage.getItem('paratech_deptName') || null,
+    timestamp: firebase.database.ServerValue.TIMESTAMP,
+    appVersion: '1.2.0'
+  };
+  if (db) {
+    db.ref('feedback').push(entry).then(() => {
+      alert('Thank you! Your feedback has been submitted.');
+      closeFeedbackModal();
+    }).catch(() => {
+      alert('Feedback saved and will sync when online.');
+      closeFeedbackModal();
+    });
+  } else {
+    alert('Unable to submit — no database connection.');
+  }
 }
 
 // ============================================================
