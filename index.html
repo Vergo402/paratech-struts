@@ -799,18 +799,28 @@ select { padding-right: 40px; }
   position: fixed;
   left: 16px;
   right: 16px;
+  bottom: 0;
   max-width: 568px;
   margin: 0 auto;
   background: var(--surface);
   border: 2px solid #E0E0E0;
-  border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
   z-index: 200;
-  max-height: 300px;
+  max-height: 60vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .plate-option-grid.open { display: block; }
+.plate-grid-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  z-index: 199;
+}
+.plate-grid-scrim.open { display: block; }
 .plate-option {
   display: flex;
   align-items: center;
@@ -2627,37 +2637,47 @@ function initPlatePickers() {
   }
 }
 
+function closePlatePickers() {
+  document.querySelectorAll('.plate-option-grid').forEach(g => g.classList.remove('open'));
+  let scrim = document.getElementById('plateScrim');
+  if (scrim) scrim.classList.remove('open');
+}
+
 function openPlatePicker(pickerId) {
   const grid = document.getElementById(pickerId + 'Grid');
   const isOpen = grid.classList.contains('open');
 
   // Close all pickers first
-  document.querySelectorAll('.plate-option-grid').forEach(g => g.classList.remove('open'));
+  closePlatePickers();
 
   if (!isOpen) {
     // Highlight current selection
     grid.querySelectorAll('.plate-option').forEach(opt => {
       opt.classList.toggle('selected', opt.dataset.id === plateSelections[pickerId]);
     });
+
+    // Show scrim behind grid
+    let scrim = document.getElementById('plateScrim');
+    if (!scrim) {
+      scrim = document.createElement('div');
+      scrim.id = 'plateScrim';
+      scrim.className = 'plate-grid-scrim';
+      scrim.addEventListener('click', closePlatePickers);
+      document.body.appendChild(scrim);
+    }
+    scrim.classList.add('open');
     grid.classList.add('open');
 
-    // Close on outside click
-    setTimeout(() => {
-      const closeHandler = (e) => {
-        if (!grid.contains(e.target) && !e.target.closest('.plate-picker-btn')) {
-          grid.classList.remove('open');
-          document.removeEventListener('click', closeHandler);
-        }
-      };
-      document.addEventListener('click', closeHandler);
-    }, 10);
+    // Scroll selected option into view
+    const selected = grid.querySelector('.plate-option.selected');
+    if (selected) selected.scrollIntoView({ block: 'center' });
   }
 }
 
 function selectPlate(pickerId, plateId) {
   plateSelections[pickerId] = plateId;
   updatePlatePickerDisplay(pickerId);
-  document.getElementById(pickerId + 'Grid').classList.remove('open');
+  closePlatePickers();
 
   // Update deduction summary
   const prefix = pickerId.startsWith('qf') ? 'qf' : 'sp';
@@ -2701,8 +2721,8 @@ function onShoreTypeChange() {
 
 // Close plate pickers when clicking outside
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.plate-picker')) {
-    document.querySelectorAll('.plate-option-grid').forEach(g => g.classList.remove('open'));
+  if (!e.target.closest('.plate-picker') && !e.target.closest('.plate-option-grid')) {
+    closePlatePickers();
   }
 });
 
