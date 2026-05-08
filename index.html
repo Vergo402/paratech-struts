@@ -369,6 +369,19 @@ select { padding-right: 40px; }
   border-radius: 10px;
   margin-top: 4px;
 }
+.apparatus-checklist { display: flex; flex-wrap: wrap; gap: 8px; }
+.apparatus-checklist label { display: flex; align-items: center; gap: 6px; font-size: 14px; padding: 6px 12px; border: 1px solid #ddd; border-radius: var(--radius); cursor: pointer; }
+.apparatus-checklist label:has(input:checked) { border-color: var(--blue); background: var(--blue-light); }
+.apparatus-checklist input[type="checkbox"] { width: 16px; height: 16px; }
+.assigned-apparatus-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 28px; }
+.app-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 14px; background: var(--blue-light); color: var(--blue); }
+.app-chip .chip-x { cursor: pointer; font-size: 15px; line-height: 1; opacity: 0.6; margin-left: 2px; }
+.app-chip .chip-x:hover { opacity: 1; }
+.app-chip.external { background: #FFF3E0; color: #E65100; }
+.ext-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 1px solid #eee; border-radius: var(--radius); margin-bottom: 6px; font-size: 13px; }
+.ext-item .ext-info { font-weight: 600; }
+.ext-item .ext-dept { font-size: 12px; color: var(--text-secondary); }
+.ext-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: #FFF3E0; color: #E65100; margin-left: 4px; }
 
 /* --- Inventory --- */
 .inv-section { margin-bottom: 24px; }
@@ -966,7 +979,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.4.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.5.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1089,6 +1102,16 @@ select { padding-right: 40px; }
             <button class="btn btn-sm btn-danger" onclick="endOperation()">End</button>
           </div>
         </div>
+        <div class="flex-between mb-8">
+          <span class="section-title" style="margin:0">Assigned Apparatus</span>
+          <button class="btn btn-sm btn-outline" onclick="showAssignApparatus()">+ Add</button>
+        </div>
+        <div id="assignedApparatusList" class="assigned-apparatus-chips"></div>
+        <div class="flex-between mb-8">
+          <span class="section-title" style="margin:0">External Equipment</span>
+          <button class="btn btn-sm btn-outline" onclick="showAddExternal()">+ Add</button>
+        </div>
+        <div id="externalEquipmentList"></div>
         <div class="flex-between mb-8">
           <span class="section-title" style="margin:0">Shore Points</span>
           <button class="btn btn-sm btn-primary" onclick="showAddShorePoint()">+ Shore Point</button>
@@ -1273,9 +1296,39 @@ select { padding-right: 40px; }
         <label>Operation Name / Location</label>
         <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St">
       </div>
+      <div class="form-group">
+        <label>Assign Apparatus</label>
+        <div id="startOpApparatusList" class="apparatus-checklist"></div>
+      </div>
       <button class="btn btn-primary" onclick="confirmStartOp()">Start Operation</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('startOpModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Add External Equipment Modal -->
+  <div class="modal-overlay" id="addExternalModal">
+    <div class="modal">
+      <h3>Add External Equipment</h3>
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD">
+      </div>
+      <div class="form-group">
+        <label>Apparatus</label>
+        <input type="text" id="extApparatus" placeholder="e.g. Engine 99">
+      </div>
+      <div class="form-group">
+        <label>Strut Model</label>
+        <select id="extStrutModel"></select>
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary" onclick="confirmAddExternal()">Add</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-outline" onclick="closeModal('addExternalModal')">Cancel</button>
     </div>
   </div>
 
@@ -1659,8 +1712,11 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
     }
 
     if (isOperation) {
-      const strutInv = localInventory.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
-      if (strutInv && strutInv.apparatus) {
+      const opInv = getOperationInventory();
+      const strutInv = opInv.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
+      if (strutInv && strutInv.external) {
+        html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${strutInv.deptName}</span></div>`;
+      } else if (strutInv && strutInv.apparatus) {
         html += `<div style="margin-top:4px"><span class="apparatus-source">From: ${getApparatusName(strutInv.apparatus)}</span></div>`;
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
@@ -2121,7 +2177,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.4.0'
+    appVersion: '1.5.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2134,6 +2190,167 @@ function submitFeedback() {
   } else {
     alert('Unable to submit — no database connection.');
   }
+}
+
+// ============================================================
+// APPARATUS ASSIGNMENT & EXTERNAL EQUIPMENT
+// ============================================================
+function populateStartOpApparatus() {
+  const container = document.getElementById('startOpApparatusList');
+  if (!container) return;
+  if (localApparatus.length === 0) {
+    container.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">No apparatus in inventory</span>';
+    return;
+  }
+  let html = '';
+  for (const app of localApparatus) {
+    html += `<label><input type="checkbox" value="${app.id}" checked> ${app.name}</label>`;
+  }
+  container.innerHTML = html;
+}
+
+function getStartOpSelectedApparatus() {
+  const checkboxes = document.querySelectorAll('#startOpApparatusList input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function showAssignApparatus() {
+  if (!activeOperation) return;
+  const assigned = activeOperation.assignedApparatus || [];
+  let html = '<div style="padding:8px 0">';
+  for (const app of localApparatus) {
+    const checked = assigned.includes(app.id) ? 'checked' : '';
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${app.name}</label>`;
+  }
+  html += '</div>';
+  const container = document.getElementById('assignedApparatusList');
+  container.innerHTML = html;
+}
+
+function toggleApparatusAssignment(appId, assign) {
+  if (!activeOperation) return;
+  let assigned = activeOperation.assignedApparatus || [];
+  if (assign && !assigned.includes(appId)) {
+    assigned.push(appId);
+  } else if (!assign) {
+    assigned = assigned.filter(id => id !== appId);
+  }
+  activeOperation.assignedApparatus = assigned;
+
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('assignedApparatus').set(assigned);
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+  renderOperations();
+}
+
+function removeApparatusFromOp(appId) {
+  toggleApparatusAssignment(appId, false);
+}
+
+function showAddExternal() {
+  if (!activeOperation) return;
+  const select = document.getElementById('extStrutModel');
+  if (select.options.length <= 1) {
+    let html = '';
+    for (const s of STRUTS) {
+      html += `<option value="${s.model}" data-system="${s.system}">${s.model} (${s.system}) — ${s.collapsed}–${s.extended}"</option>`;
+    }
+    select.innerHTML = html;
+  }
+  document.getElementById('extDeptName').value = '';
+  document.getElementById('extApparatus').value = '';
+  document.getElementById('extQuantity').value = '1';
+  document.getElementById('addExternalModal').classList.add('active');
+}
+
+function confirmAddExternal() {
+  const deptName = document.getElementById('extDeptName').value.trim();
+  const apparatus = document.getElementById('extApparatus').value.trim();
+  const select = document.getElementById('extStrutModel');
+  const model = select.value;
+  const system = select.options[select.selectedIndex].dataset.system;
+  const qty = parseInt(document.getElementById('extQuantity').value) || 1;
+
+  if (!deptName) { alert('Please enter a department name.'); return; }
+  if (!model) { alert('Please select a strut model.'); return; }
+
+  const strut = STRUTS.find(s => s.model === model);
+  if (!strut) return;
+
+  const item = {
+    deptName,
+    apparatus: apparatus || 'Unknown',
+    model,
+    system: strut.system,
+    type: 'strut',
+    quantity: qty,
+    available: qty,
+    external: true,
+  };
+
+  if (!activeOperation.externalEquipment) activeOperation.externalEquipment = {};
+
+  if (db && deptId && activeOperation.id) {
+    const newRef = operationsRef.child(activeOperation.id).child('externalEquipment').push();
+    item.id = newRef.key;
+    newRef.set(item);
+    activeOperation.externalEquipment[item.id] = item;
+  } else {
+    item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    activeOperation.externalEquipment[item.id] = item;
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+
+  closeModal('addExternalModal');
+  renderOperations();
+}
+
+function removeExternal(extId) {
+  if (!activeOperation || !activeOperation.externalEquipment) return;
+  if (!confirm('Remove this external equipment?')) return;
+
+  delete activeOperation.externalEquipment[extId];
+
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('externalEquipment').child(extId).remove();
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+  renderOperations();
+}
+
+function getOperationInventory() {
+  const assigned = activeOperation && activeOperation.assignedApparatus;
+  let inv;
+  if (assigned && assigned.length > 0) {
+    inv = localInventory.filter(i => i.apparatus && assigned.includes(i.apparatus));
+  } else {
+    inv = localInventory.filter(i => i.apparatus);
+  }
+
+  // Merge external equipment
+  if (activeOperation && activeOperation.externalEquipment) {
+    const extItems = Object.values(activeOperation.externalEquipment);
+    for (const ext of extItems) {
+      if (ext.available > 0) {
+        inv.push({
+          id: ext.id,
+          type: 'strut',
+          model: ext.model,
+          system: ext.system,
+          quantity: ext.quantity,
+          available: ext.available,
+          apparatus: 'external-' + ext.id,
+          external: true,
+          deptName: ext.deptName,
+          extApparatus: ext.apparatus,
+        });
+      }
+    }
+  }
+  return inv;
 }
 
 // ============================================================
@@ -2156,6 +2373,30 @@ function renderOperations() {
 
   document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
   document.getElementById('opTime').textContent = 'Started: ' + new Date(activeOperation.startTime).toLocaleString();
+
+  // Render assigned apparatus chips
+  const assignedList = document.getElementById('assignedApparatusList');
+  const assigned = activeOperation.assignedApparatus || [];
+  if (assigned.length > 0) {
+    assignedList.innerHTML = assigned.map(appId => {
+      const name = getApparatusName(appId);
+      return `<span class="app-chip">${name}<span class="chip-x" onclick="removeApparatusFromOp('${appId}')">&times;</span></span>`;
+    }).join('');
+  } else {
+    assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
+  }
+
+  // Render external equipment
+  const extList = document.getElementById('externalEquipmentList');
+  const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
+  if (extEquip.length > 0) {
+    extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
+      <div><span class="ext-info">${ext.model}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${ext.deptName} — ${ext.apparatus} (${ext.available}/${ext.quantity} avail)</span></div>
+      <span class="chip-x" onclick="removeExternal('${ext.id}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+    </div>`).join('');
+  } else {
+    extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
+  }
 
   const spList = document.getElementById('shorePointsList');
   const points = activeOperation.shorePoints || [];
@@ -2192,7 +2433,7 @@ function renderOperations() {
       <div style="font-size:15px;font-weight:600">
         ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
       </div>
-      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+      ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
 
     if (statusClass === 'deployed') {
       html += `<button class="btn btn-sm btn-success mt-16" onclick="returnEquipment('${sp.id}')" style="width:100%">Return Equipment</button>`;
@@ -2281,6 +2522,7 @@ function deleteArchivedOp(opId) {
 }
 
 function startOperation() {
+  populateStartOpApparatus();
   document.getElementById('startOpModal').classList.add('active');
 }
 
@@ -2288,11 +2530,14 @@ function confirmStartOp() {
   const name = document.getElementById('newOpName').value.trim();
   if (!name) return;
 
+  const assignedApparatus = getStartOpSelectedApparatus();
+
   const op = {
     name,
     status: 'active',
     startTime: new Date().toISOString(),
     endTime: null,
+    assignedApparatus,
   };
 
   if (db && deptId) {
@@ -2349,9 +2594,9 @@ function findForShorePoint() {
 
   if (!length || length <= 0) return;
 
-  const apparatusInventory = localInventory.filter(i => i.apparatus);
+  const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment in inventory. Add equipment to an apparatus first.</div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available. Assign apparatus or add external equipment first.</div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -2371,7 +2616,8 @@ function deployShorePoint(result, qty) {
   const deployed = [];
 
   for (let n = 0; n < qty; n++) {
-    const strutInvItem = localInventory.find(i => i.type === 'strut' && i.model === result.strut.model && i.available > 0 && i.apparatus);
+    const opInv = getOperationInventory();
+    const strutInvItem = opInv.find(i => i.type === 'strut' && i.model === result.strut.model && i.available > 0);
     if (!strutInvItem) {
       if (n === 0) {
         alert('This strut is not available in any apparatus inventory.');
@@ -2413,6 +2659,8 @@ function deployShorePoint(result, qty) {
         model: result.strut.model,
         system: result.strut.system,
         apparatus: strutInvItem.apparatus,
+        external: strutInvItem.external || false,
+        deptName: strutInvItem.deptName || null,
       },
       deployedExtensions: extInvItems.map(e => ({
         inventoryId: e.id,
@@ -2428,12 +2676,23 @@ function deployShorePoint(result, qty) {
     if (db && deptId && activeOperation) {
       const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
       spRef.set(sp);
-      inventoryRef.child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+      if (strutInvItem.external) {
+        operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+        if (activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
+          activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
+        }
+      } else {
+        inventoryRef.child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+      }
       for (const ext of extInvItems) {
         inventoryRef.child(ext.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
       }
     } else {
-      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+      if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
+        activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
+      } else {
+        strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+      }
       for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
       sp.id = 'sp-' + Date.now() + '-' + n;
       if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
@@ -2466,7 +2725,14 @@ function returnEquipment(spId) {
     });
 
     if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
-      inventoryRef.child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+      if (sp.deployedStrut.external) {
+        operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        if (activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
+          activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
+        }
+      } else {
+        inventoryRef.child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+      }
     }
     if (sp.deployedExtensions) {
       for (const ext of sp.deployedExtensions) {
@@ -2480,8 +2746,12 @@ function returnEquipment(spId) {
     sp.returnedAt = new Date().toISOString();
 
     if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
-      const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
-      if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+      if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
+        activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
+      } else {
+        const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
+        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+      }
     }
     if (sp.deployedExtensions) {
       for (const ext of sp.deployedExtensions) {
