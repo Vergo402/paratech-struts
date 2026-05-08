@@ -1112,8 +1112,9 @@ select { padding-right: 40px; }
       </div>
       <button class="btn btn-primary mt-16" onclick="saveSettings()">Save Settings</button>
       <div class="section-title">Data Management</div>
-      <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (JSON)</button>
-      <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (JSON)</button>
+      <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (Excel)</button>
+      <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (Excel)</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadTemplate()" style="width:100%;margin-bottom:8px">Download Template (Excel)</button>
       <button class="btn btn-sm btn-danger" onclick="logOut()" style="width:100%">Log Out</button>
     </div>
   </div>
@@ -1272,11 +1273,12 @@ select { padding-right: 40px; }
   </div>
 
   <!-- Hidden file input for import -->
-  <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" style="display:none" onchange="handleImport(event)">
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
 <script>
 // ============================================================
@@ -2452,14 +2454,75 @@ function saveSettings() {
 }
 
 function exportInventory() {
-  const data = JSON.stringify(localInventory, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `paratech-inventory-${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const rows = localInventory.map(item => {
+    const strutData = item.type === 'strut' ? STRUTS.find(s => s.model === item.model) : null;
+    return {
+      Type: item.type === 'strut' ? 'Strut' : 'Extension',
+      Model: item.type === 'strut' ? item.model : '',
+      System: item.system || '',
+      'Extension Length': item.type === 'extension' ? item.length : '',
+      Apparatus: item.apparatus || '',
+      Quantity: item.quantity,
+      Available: item.available,
+      'Collapsed (in)': strutData ? strutData.collapsed : '',
+      'Extended (in)': strutData ? strutData.extended : ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
+    { wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+  XLSX.writeFile(wb, `paratech-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function downloadTemplate() {
+  // Build template with all available strut models and extensions
+  const rows = [];
+  const systems = ['LongShore', 'AcmeThread', 'LockStroke'];
+  for (const sys of systems) {
+    const struts = STRUTS.filter(s => s.system === sys);
+    for (const s of struts) {
+      rows.push({
+        Type: 'Strut',
+        Model: s.model,
+        System: sys,
+        'Extension Length': '',
+        Apparatus: '',
+        Quantity: 0,
+        Available: 0,
+        'Collapsed (in)': s.collapsed,
+        'Extended (in)': s.extended
+      });
+    }
+  }
+  // Add common extension lengths
+  for (const len of [12, 18, 24, 36, 48]) {
+    rows.push({
+      Type: 'Extension',
+      Model: '',
+      System: 'LongShore',
+      'Extension Length': len,
+      Apparatus: '',
+      Quantity: 0,
+      Available: 0,
+      'Collapsed (in)': '',
+      'Extended (in)': ''
+    });
+  }
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
+    { wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventory Template');
+  XLSX.writeFile(wb, 'paratech-inventory-template.xlsx');
 }
 
 function importInventory() {
@@ -2469,32 +2532,88 @@ function importInventory() {
 function handleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  // Handle legacy JSON imports
+  if (file.name.endsWith('.json')) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!Array.isArray(data)) throw new Error('Invalid format');
+        applyImportData(data);
+      } catch (err) {
+        alert('Error importing: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+    return;
+  }
+
+  // Excel/CSV import
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const data = JSON.parse(e.target.result);
-      if (!Array.isArray(data)) throw new Error('Invalid format');
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
 
-      if (db && deptId) {
-        const updates = {};
-        for (const item of data) {
-          const id = item.id || inventoryRef.push().key;
-          const { id: _, ...rest } = item;
-          updates[id] = rest;
+      const items = [];
+      for (const row of rows) {
+        const qty = parseInt(row.Quantity) || 0;
+        if (qty <= 0) continue;
+
+        const type = (row.Type || '').toLowerCase();
+        const avail = parseInt(row.Available) || qty;
+
+        if (type === 'strut' && row.Model) {
+          const strut = STRUTS.find(s => s.model === row.Model);
+          if (!strut) continue;
+          items.push({
+            type: 'strut',
+            model: row.Model,
+            system: strut.system,
+            apparatus: row.Apparatus || '',
+            quantity: qty,
+            available: Math.min(avail, qty)
+          });
+        } else if (type === 'extension' && row['Extension Length']) {
+          items.push({
+            type: 'extension',
+            length: parseInt(row['Extension Length']),
+            system: row.System || 'LongShore',
+            apparatus: row.Apparatus || '',
+            quantity: qty,
+            available: Math.min(avail, qty)
+          });
         }
-        inventoryRef.set(updates);
-      } else {
-        localInventory = data;
-        localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
-        renderInventory();
       }
-      alert('Inventory imported successfully');
+
+      if (items.length === 0) throw new Error('No valid inventory rows found');
+      applyImportData(items);
     } catch (err) {
       alert('Error importing: ' + err.message);
     }
   };
-  reader.readAsText(file);
+  reader.readAsArrayBuffer(file);
   event.target.value = '';
+}
+
+function applyImportData(data) {
+  if (db && deptId) {
+    const updates = {};
+    for (const item of data) {
+      const id = item.id || inventoryRef.push().key;
+      const { id: _, ...rest } = item;
+      updates[id] = rest;
+    }
+    inventoryRef.set(updates);
+  } else {
+    localInventory = data;
+    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    renderInventory();
+  }
+  alert('Inventory imported successfully');
 }
 
 function logOut() {
@@ -2638,7 +2757,13 @@ function initPlatePickers() {
 }
 
 function closePlatePickers() {
-  document.querySelectorAll('.plate-option-grid').forEach(g => g.classList.remove('open'));
+  document.querySelectorAll('.plate-option-grid.open').forEach(g => {
+    g.classList.remove('open');
+    // Move grid back to its original parent if it was moved to body
+    if (g._originalParent && g.parentElement === document.body) {
+      g._originalParent.appendChild(g);
+    }
+  });
   let scrim = document.getElementById('plateScrim');
   if (scrim) scrim.classList.remove('open');
 }
@@ -2666,11 +2791,17 @@ function openPlatePicker(pickerId) {
       document.body.appendChild(scrim);
     }
     scrim.classList.add('open');
+
+    // Move grid to body so it escapes the modal's stacking context
+    if (grid.closest('.modal-overlay')) {
+      grid._originalParent = grid.parentElement;
+      document.body.appendChild(grid);
+    }
     grid.classList.add('open');
 
     // Scroll selected option into view
     const selected = grid.querySelector('.plate-option.selected');
-    if (selected) selected.scrollIntoView({ block: 'center' });
+    if (selected) setTimeout(() => selected.scrollIntoView({ block: 'center' }), 50);
   }
 }
 
@@ -2716,6 +2847,11 @@ function onShoreTypeChange() {
     toggleDeductions('sp');
     document.getElementById('spHeader').value = '3.5';
     updateDeductionSummary('sp');
+  }
+
+  // Double-T: auto-set quantity to 2 (two vertical posts)
+  if (type === 'double-t') {
+    setSpQty(2);
   }
 }
 
