@@ -1622,13 +1622,10 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       </div>`;
     }
 
-    html += `<div class="detail"><span>Capacity (4:1)${r.recommendedQty > 1 ? ' each' : ''}</span><span class="detail-val">${r.capacity.toLocaleString()} lbs</span></div>`;
-
-    if (load > 0) {
+    if (load > 0 && r.margin < 0) {
+      html += `<div class="detail"><span>Capacity (4:1)${r.recommendedQty > 1 ? ' each' : ''}</span><span class="detail-val">${r.capacity.toLocaleString()} lbs</span></div>`;
       html += `<div class="detail"><span>Margin${r.recommendedQty > 1 ? ` (${r.recommendedQty}x)` : ''}</span><span class="detail-val ${marginClass}">${r.margin > 0 ? '+' : ''}${r.margin.toLocaleString()} lbs</span></div>`;
     }
-
-    html += `<div class="detail"><span>All factors${r.recommendedQty > 1 ? ' (each)' : ''}</span><span class="detail-val">2:1: ${r.capacityAll[0].toLocaleString()} · 3:1: ${r.capacityAll[1].toLocaleString()} · 4:1: ${r.capacityAll[2].toLocaleString()}</span></div>`;
 
     if (isOperation) {
       const strutInv = localInventory.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
