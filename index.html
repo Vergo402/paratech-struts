@@ -443,6 +443,9 @@ select { padding-right: 40px; }
 }
 .quick-add-btn:active { background: var(--blue-light); }
 .quick-add-btn.added { border-color: var(--green); background: var(--green-bg); }
+.quick-add-btn { position: relative; }
+.quick-add-qty { position: absolute; top: -6px; right: -6px; background: var(--blue); color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; line-height: 20px; border-radius: 10px; text-align: center; padding: 0 5px; }
+.quick-add-summary { background: var(--blue-light); border-radius: var(--radius); padding: 8px 12px; margin-bottom: 12px; font-size: 13px; font-weight: 600; color: var(--blue); text-align: center; }
 
 /* --- Operations --- */
 .op-card {
@@ -963,7 +966,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.2</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.4.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1115,6 +1118,8 @@ select { padding-right: 40px; }
       <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm" onclick="downloadTemplate()" style="width:100%;margin-bottom:8px">Download Template (Excel)</button>
+      <div class="section-title">Reference Materials</div>
+      <a href="https://www.usace.army.mil/Portals/2/docs/Emergency%20Ops/US%26R/Shoring_Operations_Guide_2009.pdf" target="_blank" rel="noopener" class="btn btn-outline btn-sm" style="width:100%;margin-bottom:8px;text-align:center;text-decoration:none;display:block">USAR Field Operations Guide (PDF)</a>
       <button class="btn btn-sm btn-danger" onclick="logOut()" style="width:100%">Log Out</button>
     </div>
   </div>
@@ -1161,6 +1166,7 @@ select { padding-right: 40px; }
   <div class="modal-overlay" id="addEquipModal">
     <div class="modal">
       <h3 id="addEquipTitle">Add Equipment</h3>
+      <div class="quick-add-summary" id="quickAddSummary" style="display:none"></div>
       <div class="section-title">Quick Add — Struts</div>
       <div class="quick-add-grid" id="quickAddStruts"></div>
       <div class="section-title">Quick Add — Extensions</div>
@@ -2012,9 +2018,12 @@ function showAddEquipment() {
   const extsGrid = document.getElementById('quickAddExts');
 
   let sh = '';
+  let strutCount = 0, extCount = 0;
   for (const s of STRUTS) {
-    const exists = localInventory.some(i => i.type === 'strut' && i.model === s.model && i.apparatus === selectedApparatus);
-    sh += `<button class="quick-add-btn ${exists ? 'added' : ''}" onclick="quickAdd('strut','${s.system}','${s.model}',0)">${s.model}<br><span style="font-size:11px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
+    const item = localInventory.find(i => i.type === 'strut' && i.model === s.model && i.apparatus === selectedApparatus);
+    const qty = item ? item.quantity : 0;
+    if (qty > 0) strutCount += qty;
+    sh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('strut','${s.system}','${s.model}',0)">${s.model}<br><span style="font-size:11px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
   }
   strutsGrid.innerHTML = sh;
 
@@ -2025,11 +2034,24 @@ function showAddEquipment() {
   ];
   for (const es of extSets) {
     for (const size of es.sizes) {
-      const exists = localInventory.some(i => i.type === 'extension' && i.system === es.system && i.length === size && i.apparatus === selectedApparatus);
-      eh += `<button class="quick-add-btn ${exists ? 'added' : ''}" onclick="quickAdd('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:11px;color:var(--text-secondary)">${es.label}</span></button>`;
+      const item = localInventory.find(i => i.type === 'extension' && i.system === es.system && i.length === size && i.apparatus === selectedApparatus);
+      const qty = item ? item.quantity : 0;
+      if (qty > 0) extCount += qty;
+      eh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:11px;color:var(--text-secondary)">${es.label}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
     }
   }
   extsGrid.innerHTML = eh;
+
+  const summary = document.getElementById('quickAddSummary');
+  if (strutCount > 0 || extCount > 0) {
+    const parts = [];
+    if (strutCount > 0) parts.push(`${strutCount} strut${strutCount !== 1 ? 's' : ''}`);
+    if (extCount > 0) parts.push(`${extCount} extension${extCount !== 1 ? 's' : ''}`);
+    summary.textContent = parts.join(', ');
+    summary.style.display = '';
+  } else {
+    summary.style.display = 'none';
+  }
 
   document.getElementById('addEquipModal').classList.add('active');
 }
@@ -2099,7 +2121,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.3.2'
+    appVersion: '1.4.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
