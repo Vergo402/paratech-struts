@@ -963,7 +963,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.1</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.3.2</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1119,7 +1119,7 @@ select { padding-right: 40px; }
     </div>
   </div>
 
-  <div style="text-align:center;padding:8px 0 4px;"><a href="#" onclick="event.preventDefault();openFeedbackModal()" style="font-size:11px;color:var(--text-secondary);text-decoration:none;opacity:0.6">Report Issue / Suggestion</a></div>
+  <div style="text-align:center;padding:8px 16px 4px;"><a href="#" onclick="event.preventDefault();openFeedbackModal()" style="font-size:11px;color:var(--blue);text-decoration:none;border:1px solid var(--blue);border-radius:12px;padding:4px 12px;display:inline-block">Report Issue / Suggestion</a></div>
 
   <!-- Bottom Nav -->
   <nav class="nav">
@@ -2099,7 +2099,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.3.1'
+    appVersion: '1.3.2'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
