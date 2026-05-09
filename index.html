@@ -475,10 +475,10 @@ select { padding-right: 40px; }
   padding: 12px 16px;
   margin-bottom: 10px;
 }
-.shore-point.placed { border-color: var(--red); }
-.shore-point.cutting { border-color: #F9A825; }
-.shore-point.finalized { border-color: var(--green); }
-.shore-point.returned { border-color: #9E9E9E; }
+.shore-point.placed { border-color: var(--red); background: #FFEBEE; }
+.shore-point.cutting { border-color: #F9A825; background: #FFFDE7; }
+.shore-point.finalized { border-color: var(--green); background: #E8F5E9; }
+.shore-point.returned { border-color: #9E9E9E; background: #FAFAFA; }
 .status-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -514,6 +514,12 @@ select { padding-right: 40px; }
 .cut-length-display { font-size: 15px; font-weight: 700; color: #F57F17; margin-top: 4px; }
 .sp-edit-btn { background: none; border: 1px solid #E0E0E0; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
 .sp-edit-btn:hover { background: #F5F5F5; }
+.sp-delete-btn { background: none; border: 1px solid #FFCDD2; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: var(--red); }
+.sp-delete-btn:hover { background: #FFEBEE; }
+.shore-point.grouped { border-left: 4px solid var(--blue); margin-bottom: 0; border-bottom: 1px dashed #ccc; border-radius: var(--radius) 8px 0 0; }
+.shore-point.grouped.group-mid { border-radius: 0; }
+.shore-point.grouped.group-last { border-radius: 0 0 8px var(--radius); margin-bottom: 10px; border-bottom: 2px solid #E0E0E0; }
+.group-label { display: inline-block; font-size: 10px; font-weight: 700; color: var(--blue); background: var(--blue-light); padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
 
 /* --- Setup / Settings --- */
 .setup-container {
@@ -1006,7 +1012,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.6.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.6.1</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1221,6 +1227,8 @@ select { padding-right: 40px; }
       <div class="quick-add-grid" id="quickAddStruts"></div>
       <div class="section-title">Quick Add — Extensions</div>
       <div class="quick-add-grid" id="quickAddExts"></div>
+      <div class="section-title">Quick Add — Connector Plates</div>
+      <div class="quick-add-grid" id="quickAddPlates"></div>
       <div class="divider"></div>
       <button class="btn btn-primary" onclick="closeModal('addEquipModal')">Done</button>
     </div>
@@ -1311,7 +1319,7 @@ select { padding-right: 40px; }
         <label>Estimated Load (lbs) — optional</label>
         <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
       </div>
-      <div class="form-group">
+      <div class="form-group" id="spQtyGroup">
         <label>Quantity</label>
         <div style="display:flex;gap:8px">
           <button class="btn btn-sm qty-btn active" onclick="setSpQty(1)" data-qty="1">1x</button>
@@ -2074,6 +2082,28 @@ function renderInventory() {
     html += `</div>`;
   }
 
+  // Connector plates section (system-independent)
+  const plates = filtered.filter(i => i.type === 'plate');
+  if (plates.length > 0) {
+    html += `<div class="inv-section"><div class="inv-section-header"><span class="dot" style="background:var(--blue)"></span>Connector Plates</div>`;
+    for (const item of plates) {
+      const name = item.model || item.plateId;
+      const deployed = item.quantity - item.available;
+      const statusText = deployed > 0 ? `${deployed} deployed` : '';
+
+      html += `<div class="inv-item">
+        <span class="inv-item-name">${name}</span>
+        <span class="inv-item-status">${statusText}</span>
+        <div class="qty-controls">
+          <button class="qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+          <span class="qty-val">${item.quantity}</span>
+          <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
   container.innerHTML = html;
 }
 
@@ -2143,11 +2173,25 @@ function showAddEquipment() {
   }
   extsGrid.innerHTML = eh;
 
+  // Connector plates
+  const platesGrid = document.getElementById('quickAddPlates');
+  let ph = '';
+  let plateCount = 0;
+  for (const plate of BASE_PLATES) {
+    if (plate.id === 'none') continue;
+    const item = localInventory.find(i => i.type === 'plate' && i.plateId === plate.id && i.apparatus === selectedApparatus);
+    const qty = item ? item.quantity : 0;
+    if (qty > 0) plateCount += qty;
+    ph += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('plate','','${plate.id}',0)" style="font-size:12px">${plate.name}<br><span style="font-size:11px;color:var(--text-secondary)">${plate.height}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+  }
+  platesGrid.innerHTML = ph;
+
   const summary = document.getElementById('quickAddSummary');
-  if (strutCount > 0 || extCount > 0) {
+  if (strutCount > 0 || extCount > 0 || plateCount > 0) {
     const parts = [];
     if (strutCount > 0) parts.push(`${strutCount} strut${strutCount !== 1 ? 's' : ''}`);
     if (extCount > 0) parts.push(`${extCount} extension${extCount !== 1 ? 's' : ''}`);
+    if (plateCount > 0) parts.push(`${plateCount} plate${plateCount !== 1 ? 's' : ''}`);
     summary.textContent = parts.join(', ');
     summary.style.display = '';
   } else {
@@ -2162,16 +2206,19 @@ function quickAdd(type, system, model, length) {
 
   const existing = localInventory.find(i => {
     if (type === 'strut') return i.type === 'strut' && i.model === model && i.apparatus === selectedApparatus;
+    if (type === 'plate') return i.type === 'plate' && i.plateId === model && i.apparatus === selectedApparatus;
     return i.type === 'extension' && i.system === system && i.length === length && i.apparatus === selectedApparatus;
   });
 
   if (existing) {
     updateQty(existing.id, 1);
   } else {
+    const plateInfo = type === 'plate' ? BASE_PLATES.find(p => p.id === model) : null;
     const item = {
       type,
-      system,
-      model: type === 'strut' ? model : '',
+      system: type === 'plate' ? '' : system,
+      model: type === 'strut' ? model : (type === 'plate' ? (plateInfo ? plateInfo.name : model) : ''),
+      plateId: type === 'plate' ? model : undefined,
       length: type === 'extension' ? length : 0,
       quantity: 1,
       available: 1,
@@ -2222,7 +2269,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.6.0'
+    appVersion: '1.6.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2501,9 +2548,10 @@ function renderOperations() {
         </div>
         <div class="lane-body ${isCollapsed ? 'collapsed' : ''}">`;
 
-      // Sort: newest on top within each lane
+      // Sort: newest on top within each lane, but keep grouped cards together
       const sorted = [...laneSPs].reverse();
-      for (const sp of sorted) {
+      for (let si = 0; si < sorted.length; si++) {
+        const sp = sorted[si];
         const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
           ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
           : '';
@@ -2516,11 +2564,24 @@ function renderOperations() {
           return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
         })() : '';
 
-        html += `<div class="shore-point ${status}">
+        // Grouped card styling
+        let groupClass = '';
+        let groupBadge = '';
+        if (sp.groupId && sp.groupTotal > 1) {
+          const sameGroup = sorted.filter(s => s.groupId === sp.groupId);
+          const posInGroup = sameGroup.indexOf(sp);
+          if (posInGroup === 0) groupClass = ' grouped';
+          else if (posInGroup === sameGroup.length - 1) groupClass = ' grouped group-last';
+          else groupClass = ' grouped group-mid';
+          groupBadge = `<span class="group-label">${sp.groupIndex + 1}/${sp.groupTotal}</span>`;
+        }
+
+        html += `<div class="shore-point ${status}${groupClass}">
           <div class="flex-between mb-8">
-            <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong></div>
-            <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}</div>
+            <div style="display:flex;align-items:center;gap:4px">
               <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
+              <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete">✕</button>
               <span class="status-badge ${status}">${statusLabels[status]}</span>
             </div>
           </div>
@@ -2678,6 +2739,7 @@ function showAddShorePoint() {
   document.querySelector('#shorePointModal .modal h3').textContent = 'Add Shore Point';
   document.getElementById('spFindBtn').classList.remove('hidden');
   document.getElementById('spSaveEditBtn').classList.add('hidden');
+  document.getElementById('spQtyGroup').style.display = '';
   document.getElementById('spResults').innerHTML = '';
   document.getElementById('spLabel').value = '';
   document.getElementById('spFloor').value = '';
@@ -2739,6 +2801,7 @@ function deployShorePoint(result, qty) {
   const sfIndex = 2;
 
   const deployed = [];
+  const groupId = qty > 1 ? 'grp-' + Date.now() : null;
 
   for (let n = 0; n < qty; n++) {
     const opInv = getOperationInventory();
@@ -2774,6 +2837,20 @@ function deployShorePoint(result, qty) {
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
 
+    // Find plate inventory items to deploy
+    const deployedPlates = [];
+    if (deductions) {
+      const platesToDeploy = [];
+      if (deductions.topPlateName && deductions.topPlateName !== 'none') platesToDeploy.push(deductions.topPlateName);
+      if (deductions.bottomPlateName && deductions.bottomPlateName !== 'none') platesToDeploy.push(deductions.bottomPlateName);
+      for (const plateId of platesToDeploy) {
+        const plateInv = opInv.find(i => i.type === 'plate' && i.plateId === plateId && i.available > 0);
+        if (plateInv) {
+          deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
+        }
+      }
+    }
+
     const sp = {
       label,
       floor,
@@ -2799,9 +2876,13 @@ function deployShorePoint(result, qty) {
         system: e.system,
         apparatus: e.apparatus,
       })),
+      deployedPlates: deployedPlates,
       status: 'placed',
       deployedAt: new Date().toISOString(),
       returnedAt: null,
+      groupId: groupId,
+      groupIndex: qty > 1 ? n : null,
+      groupTotal: qty > 1 ? qty : null,
     };
 
     if (db && deptId && activeOperation) {
@@ -2818,6 +2899,9 @@ function deployShorePoint(result, qty) {
       for (const ext of extInvItems) {
         inventoryRef.child(ext.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
       }
+      for (const pl of deployedPlates) {
+        inventoryRef.child(pl.inventoryId).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+      }
     } else {
       if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
         activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
@@ -2825,6 +2909,10 @@ function deployShorePoint(result, qty) {
         strutInvItem.available = Math.max(0, strutInvItem.available - 1);
       }
       for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+      for (const pl of deployedPlates) {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+      }
       sp.id = 'sp-' + Date.now() + '-' + n;
       if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
       activeOperation.shorePoints.push(sp);
@@ -2913,9 +3001,10 @@ function editShorePoint(spId) {
     toggleDeductions('sp');
   }
 
-  // Toggle buttons: hide Find, show Save
+  // Toggle buttons: hide Find + Qty, show Save
   document.getElementById('spFindBtn').classList.add('hidden');
   document.getElementById('spSaveEditBtn').classList.remove('hidden');
+  document.getElementById('spQtyGroup').style.display = 'none';
 
   // Show edit info
   document.getElementById('spResults').innerHTML = '<div style="padding:12px;background:#E3F2FD;border-radius:8px;text-align:center;font-size:14px;color:var(--blue)"><strong>Editing shore point</strong> — update fields above and tap Save.</div>';
@@ -2962,6 +3051,73 @@ function confirmEditShorePoint() {
   closeModal('shorePointModal');
 }
 
+function deleteShorePoint(spId) {
+  if (!activeOperation) return;
+  if (!confirm('Delete this shore point? Equipment will be returned to inventory.')) return;
+
+  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const sp = points.find(p => p.id === spId);
+  if (!sp) return;
+
+  // Return equipment to inventory first if not already returned
+  if (sp.status !== 'returned') {
+    returnEquipmentSilent(sp);
+  }
+
+  // Remove from operation
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).remove();
+  } else {
+    activeOperation.shorePoints = activeOperation.shorePoints.filter(p => p.id !== spId);
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    renderOperations();
+  }
+}
+
+function returnEquipmentSilent(sp) {
+  // Return equipment without changing status or re-rendering — used by delete
+  if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
+    if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
+      activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
+      if (db && deptId) {
+        operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+      }
+    } else {
+      if (db && deptId) {
+        inventoryRef.child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+      } else {
+        const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
+        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+      }
+    }
+  }
+  if (sp.deployedExtensions) {
+    for (const ext of sp.deployedExtensions) {
+      if (ext.inventoryId) {
+        if (db && deptId) {
+          inventoryRef.child(ext.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        } else {
+          const inv = localInventory.find(i => i.id === ext.inventoryId);
+          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+        }
+      }
+    }
+  }
+  if (sp.deployedPlates) {
+    for (const pl of sp.deployedPlates) {
+      if (pl.inventoryId) {
+        if (db && deptId) {
+          inventoryRef.child(pl.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        } else {
+          const inv = localInventory.find(i => i.id === pl.inventoryId);
+          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+        }
+      }
+    }
+  }
+}
+
 function returnEquipment(spId) {
   if (!activeOperation) return;
 
@@ -2992,6 +3148,13 @@ function returnEquipment(spId) {
         }
       }
     }
+    if (sp.deployedPlates) {
+      for (const pl of sp.deployedPlates) {
+        if (pl.inventoryId) {
+          inventoryRef.child(pl.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        }
+      }
+    }
   } else {
     sp.status = 'returned';
     sp.returnedAt = new Date().toISOString();
@@ -3012,6 +3175,14 @@ function returnEquipment(spId) {
         }
       }
     }
+    if (sp.deployedPlates) {
+      for (const pl of sp.deployedPlates) {
+        if (pl.inventoryId) {
+          const inv = localInventory.find(i => i.id === pl.inventoryId);
+          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+        }
+      }
+    }
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
     renderOperations();
@@ -3019,12 +3190,12 @@ function returnEquipment(spId) {
 }
 
 function endOperation() {
-  if (!confirm('End this operation? All deployed equipment will be marked as returned.')) return;
+  if (!confirm('End this operation? All equipment will be marked as returned.')) return;
 
   if (db && deptId && activeOperation) {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     for (const sp of points) {
-      if (sp.status === 'deployed') {
+      if (sp.status !== 'returned') {
         returnEquipment(sp.id);
       }
     }
@@ -3035,7 +3206,7 @@ function endOperation() {
   } else {
     const points = activeOperation?.shorePoints || [];
     for (const sp of points) {
-      if (sp.status === 'deployed') returnEquipment(sp.id);
+      if (sp.status !== 'returned') returnEquipment(sp.id);
     }
     activeOperation = null;
     localStorage.removeItem('paratech_operation');
