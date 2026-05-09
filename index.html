@@ -1051,7 +1051,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.6.2</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.6.3</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -2260,18 +2260,19 @@ function quickAdd(type, system, model, length) {
       type,
       system: type === 'plate' ? '' : system,
       model: type === 'strut' ? model : (type === 'plate' ? (plateInfo ? plateInfo.name : model) : ''),
-      plateId: type === 'plate' ? model : undefined,
       length: type === 'extension' ? length : 0,
       quantity: 1,
       available: 1,
       apparatus: selectedApparatus,
     };
+    if (type === 'plate') item.plateId = model;
 
     if (db && deptId) {
       const newRef = inventoryRef.push();
       item.id = newRef.key;
       localInventory.push(item);
-      newRef.set(item);
+      const {id, ...firebaseItem} = item;
+      newRef.set(firebaseItem);
     } else {
       item.id = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       localInventory.push(item);
@@ -2313,7 +2314,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.6.2'
+    appVersion: '1.6.3'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
