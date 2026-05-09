@@ -493,6 +493,27 @@ select { padding-right: 40px; }
 .status-badge.returned { background: #F5F5F5; color: #757575; }
 .sp-number { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
 .sp-group-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px; margin-top: 8px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
+.floor-group { margin-bottom: 16px; }
+.floor-group-header { font-size: 14px; font-weight: 700; color: var(--text-primary); padding: 10px 12px; background: #F5F5F5; border-radius: var(--radius); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.floor-group-header .floor-icon { font-size: 16px; }
+.lane { margin-bottom: 8px; margin-left: 4px; }
+.lane-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--radius); cursor: pointer; user-select: none; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; border-left: 4px solid #ccc; background: var(--surface); }
+.lane-header .lane-arrow { font-size: 10px; transition: transform 0.2s; color: var(--text-secondary); }
+.lane-header .lane-arrow.collapsed { transform: rotate(-90deg); }
+.lane-header .lane-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+.lane-header.placed { border-left-color: var(--red); color: var(--red); }
+.lane-header.placed .lane-count { background: var(--red-bg); color: var(--red); }
+.lane-header.cutting { border-left-color: #F9A825; color: #F57F17; }
+.lane-header.cutting .lane-count { background: #FFF8E1; color: #F57F17; }
+.lane-header.finalized { border-left-color: var(--green); color: var(--green); }
+.lane-header.finalized .lane-count { background: var(--green-bg); color: var(--green); }
+.lane-header.returned { border-left-color: #9E9E9E; color: #757575; }
+.lane-header.returned .lane-count { background: #F5F5F5; color: #757575; }
+.lane-body { padding: 4px 0 4px 8px; }
+.lane-body.collapsed { display: none; }
+.cut-length-display { font-size: 15px; font-weight: 700; color: #F57F17; margin-top: 4px; }
+.sp-edit-btn { background: none; border: 1px solid #E0E0E0; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
+.sp-edit-btn:hover { background: #F5F5F5; }
 
 /* --- Setup / Settings --- */
 .setup-container {
@@ -985,7 +1006,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.5.1</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.6.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1212,11 +1233,9 @@ select { padding-right: 40px; }
       <div class="form-group">
         <label>Shore Type</label>
         <select id="spShoreType" onchange="onShoreTypeChange()">
-          <option value="t-shore">T-Shore / Vertical Shore</option>
-          <option value="double-t">Double-T Shore</option>
-          <option value="window-door">Window/Door Shore</option>
-          <option value="flying">Flying Shore</option>
-          <option value="custom">Custom / Other</option>
+          <option value="t-shore">Vertical T-Shore</option>
+          <option value="double-t">Double-T Vertical Shore</option>
+          <option value="3-post">3-Post Vertical Shore</option>
         </select>
       </div>
       <div class="form-group">
@@ -1301,7 +1320,8 @@ select { padding-right: 40px; }
           <button class="btn btn-sm qty-btn" onclick="setSpQty(4)" data-qty="4">4x</button>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="findForShorePoint()">Find Available Struts</button>
+      <button class="btn btn-primary" id="spFindBtn" onclick="findForShorePoint()">Find Available Struts</button>
+      <button class="btn btn-primary hidden" id="spSaveEditBtn" onclick="confirmEditShorePoint()" style="background:var(--green)">Save Changes</button>
       <div id="spResults" class="results-container"></div>
       <div class="divider"></div>
       <button class="btn btn-outline" onclick="closeModal('shorePointModal')">Cancel</button>
@@ -1468,12 +1488,11 @@ const WOOD_SIZES = [
 ];
 
 const SHORE_TYPES = [
-  { id:'t-shore', name:'T-Shore / Vertical Shore', desc:'Single strut, floor to ceiling' },
-  { id:'double-t', name:'Double-T Shore', desc:'Two T-shores side by side' },
-  { id:'window-door', name:'Window/Door Shore', desc:'Shores on each side of opening' },
-  { id:'flying', name:'Flying Shore', desc:'Horizontal strut between two walls' },
-  { id:'custom', name:'Custom / Other', desc:'No preset defaults' },
+  { id:'t-shore', name:'Vertical T-Shore', desc:'Single strut with header and footer', defaultHeader:'4x4', defaultFooter:'4x4' },
+  { id:'double-t', name:'Double-T Vertical Shore', desc:'Two struts with shared header', defaultHeader:'4x4', defaultFooter:'4x4' },
+  { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
+const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -1769,6 +1788,8 @@ let localApparatus = [];
 let selectedApparatus = null;
 let spQuantity = 1;
 let archivedOperations = [];
+let laneCollapsedState = {};
+let editingShorePointId = null;
 
 function initFirebase() {
   const firebaseConfig = {
@@ -2201,7 +2222,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.5.1'
+    appVersion: '1.6.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2432,79 +2453,113 @@ function renderOperations() {
     return;
   }
 
-  // Convert to array, assign sequential numbers (oldest=1), then reverse for display (newest on top)
+  // Convert to array, assign sequential numbers (oldest=1)
   const points = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints));
   const numbered = points.map((sp, i) => ({ ...sp, num: i + 1 }));
-  const displayPoints = [...numbered].reverse();
 
-  // Group by floor/division/team
-  const groups = {};
-  for (const sp of displayPoints) {
-    const parts = [];
-    if (sp.floor) parts.push(`Floor ${sp.floor}`);
-    if (sp.division) parts.push(`Div ${sp.division}`);
-    if (sp.team) parts.push(sp.team);
-    const key = parts.length > 0 ? parts.join(' · ') : '__ungrouped__';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sp);
+  // Group by floor
+  const floorGroups = {};
+  for (const sp of numbered) {
+    const floorKey = sp.floor ? `Floor ${sp.floor}` : '__ungrouped__';
+    if (!floorGroups[floorKey]) floorGroups[floorKey] = [];
+    floorGroups[floorKey].push(sp);
   }
 
+  const statusOrder = ['placed', 'cutting', 'finalized', 'returned'];
   const statusLabels = { placed: 'Placed', cutting: 'Cutting', finalized: 'Finalized', returned: 'Returned', deployed: 'Placed' };
 
   let html = '';
-  for (const [groupName, groupPoints] of Object.entries(groups)) {
-    if (groupName !== '__ungrouped__') {
-      html += `<div class="sp-group-header">${groupName}</div>`;
+  for (const [floorName, floorPoints] of Object.entries(floorGroups)) {
+    // Floor group wrapper
+    if (floorName !== '__ungrouped__') {
+      html += `<div class="floor-group"><div class="floor-group-header"><span class="floor-icon">🏢</span> ${floorName}</div>`;
+    } else {
+      html += `<div class="floor-group">`;
     }
-    for (const sp of groupPoints) {
-      const statusClass = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
-      const statusLabel = statusLabels[sp.status] || statusLabels[statusClass] || statusClass;
-      const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-        ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
-        : '';
 
-      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
-      const dedInfo = sp.deductions ? (() => {
-        const d = sp.deductions;
-        const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
-        const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
-        return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
-      })() : '';
-
-      html += `<div class="shore-point ${statusClass}">
-        <div class="flex-between mb-8">
-          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong></div>
-          <span class="status-badge ${statusClass}">${statusLabel}</span>
-        </div>
-        ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
-        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-          ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
-        </div>
-        <div style="font-size:15px;font-weight:600">
-          ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
-        </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
-
-      if (statusClass === 'placed') {
-        html += `<div style="display:flex;gap:6px;margin-top:8px">
-          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
-        </div>`;
-      }
-      if (statusClass === 'cutting') {
-        html += `<div style="display:flex;gap:6px;margin-top:8px">
-          <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">→ Placed</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
-        </div>`;
-      }
-      if (statusClass === 'finalized') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
-      }
-      if (statusClass === 'returned') {
-        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
-      }
-      html += `</div>`;
+    // Group shore points by status within this floor
+    const byStatus = {};
+    for (const sp of floorPoints) {
+      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      if (!byStatus[st]) byStatus[st] = [];
+      byStatus[st].push(sp);
     }
+
+    // Render status lanes
+    for (const status of statusOrder) {
+      const laneSPs = byStatus[status];
+      if (!laneSPs || laneSPs.length === 0) continue;
+
+      const laneId = `${floorName}-${status}`;
+      const isCollapsed = laneCollapsedState[laneId] || false;
+
+      html += `<div class="lane">
+        <div class="lane-header ${status}" onclick="toggleLane('${laneId}')">
+          <span class="lane-arrow ${isCollapsed ? 'collapsed' : ''}">▼</span>
+          ${statusLabels[status]}
+          <span class="lane-count">${laneSPs.length}</span>
+        </div>
+        <div class="lane-body ${isCollapsed ? 'collapsed' : ''}">`;
+
+      // Sort: newest on top within each lane
+      const sorted = [...laneSPs].reverse();
+      for (const sp of sorted) {
+        const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
+          ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+          : '';
+
+        const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+        const dedInfo = sp.deductions ? (() => {
+          const d = sp.deductions;
+          const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
+          const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
+          return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
+        })() : '';
+
+        html += `<div class="shore-point ${status}">
+          <div class="flex-between mb-8">
+            <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong></div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
+              <span class="status-badge ${status}">${statusLabels[status]}</span>
+            </div>
+          </div>
+          ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
+          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
+            ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+          </div>
+          <div style="font-size:15px;font-weight:600">
+            ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
+          </div>
+          ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+
+        if (status === 'cutting' && sp.cutLength != null) {
+          html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
+        }
+
+        if (status === 'placed') {
+          html += `<div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
+            <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+          </div>`;
+        }
+        if (status === 'cutting') {
+          html += `<div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">← Placed</button>
+            <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+          </div>`;
+        }
+        if (status === 'finalized') {
+          html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
+        }
+        if (status === 'returned') {
+          html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div></div>`; // close lane-body and lane
+    }
+    html += `</div>`; // close floor-group
   }
   spList.innerHTML = html;
   updateQuickViewFab();
@@ -2619,6 +2674,10 @@ function confirmStartOp() {
 }
 
 function showAddShorePoint() {
+  editingShorePointId = null;
+  document.querySelector('#shorePointModal .modal h3').textContent = 'Add Shore Point';
+  document.getElementById('spFindBtn').classList.remove('hidden');
+  document.getElementById('spSaveEditBtn').classList.add('hidden');
   document.getElementById('spResults').innerHTML = '';
   document.getElementById('spLabel').value = '';
   document.getElementById('spFloor').value = '';
@@ -2785,15 +2844,122 @@ function deployShorePoint(result, qty) {
 
 function updateShoreStatus(spId, newStatus) {
   if (!activeOperation) return;
+
+  // Calculate cut length when moving to cutting
+  let cutLength = null;
+  if (newStatus === 'cutting') {
+    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const sp = points.find(p => p.id === spId);
+    if (sp) {
+      const headerH = sp.deductions?.header || 0;
+      const footerH = sp.deductions?.sole || 0;
+      cutLength = Math.round((sp.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
+    }
+  }
+
+  const updateData = { status: newStatus };
+  if (cutLength !== null) updateData.cutLength = cutLength;
+
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update({ status: newStatus });
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
   } else {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     const sp = points.find(p => p.id === spId);
-    if (sp) sp.status = newStatus;
+    if (sp) {
+      sp.status = newStatus;
+      if (cutLength !== null) sp.cutLength = cutLength;
+    }
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
+}
+
+function toggleLane(laneId) {
+  laneCollapsedState[laneId] = !laneCollapsedState[laneId];
+  renderOperations();
+}
+
+function editShorePoint(spId) {
+  if (!activeOperation) return;
+  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const sp = points.find(p => p.id === spId);
+  if (!sp) return;
+
+  editingShorePointId = spId;
+
+  // Populate modal with existing data
+  document.getElementById('spLabel').value = sp.label || '';
+  document.getElementById('spFloor').value = sp.floor || '';
+  document.getElementById('spDivision').value = sp.division || '';
+  document.getElementById('spTeam').value = sp.team || '';
+  document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
+  document.getElementById('spLength').value = sp.requiredLength || '';
+  document.getElementById('spLoad').value = sp.estimatedLoad || '';
+
+  // Restore deductions
+  if (sp.deductions) {
+    document.getElementById('spDeductionToggle').checked = true;
+    toggleDeductions('sp');
+    document.getElementById('spHeader').value = sp.deductions.header || '0';
+    document.getElementById('spSole').value = sp.deductions.sole || '0';
+    // Restore plate selections if saved
+    plateSelections.spTopPlate = sp.deductions.topPlateName || 'none';
+    plateSelections.spBottomPlate = sp.deductions.bottomPlateName || 'none';
+    updatePlatePickerDisplay('spTopPlate');
+    updatePlatePickerDisplay('spBottomPlate');
+    updateDeductionSummary('sp');
+  } else {
+    document.getElementById('spDeductionToggle').checked = false;
+    toggleDeductions('sp');
+  }
+
+  // Toggle buttons: hide Find, show Save
+  document.getElementById('spFindBtn').classList.add('hidden');
+  document.getElementById('spSaveEditBtn').classList.remove('hidden');
+
+  // Show edit info
+  document.getElementById('spResults').innerHTML = '<div style="padding:12px;background:#E3F2FD;border-radius:8px;text-align:center;font-size:14px;color:var(--blue)"><strong>Editing shore point</strong> — update fields above and tap Save.</div>';
+
+  // Change modal title
+  document.querySelector('#shorePointModal .modal h3').textContent = 'Edit Shore Point';
+
+  document.getElementById('shorePointModal').classList.add('active');
+}
+
+function confirmEditShorePoint() {
+  if (!activeOperation || !editingShorePointId) return;
+
+  const updateData = {
+    label: document.getElementById('spLabel').value.trim() || 'Shore Point',
+    floor: document.getElementById('spFloor').value.trim() || null,
+    division: document.getElementById('spDivision').value.trim() || null,
+    team: document.getElementById('spTeam').value.trim() || null,
+    shoreType: document.getElementById('spShoreType').value,
+    requiredLength: parseFloat(document.getElementById('spLength').value) || 0,
+    estimatedLoad: parseFloat(document.getElementById('spLoad').value) || 0,
+    deductions: getDeductions('sp') || null,
+  };
+
+  // Recalculate effective length
+  if (updateData.deductions) {
+    const d = updateData.deductions;
+    const totalDed = (d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0);
+    updateData.effectiveLength = Math.round((updateData.requiredLength - totalDed) * 10) / 10;
+  }
+
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId).update(updateData);
+  } else {
+    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const sp = points.find(p => p.id === editingShorePointId);
+    if (sp) Object.assign(sp, updateData);
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    renderOperations();
+  }
+
+  editingShorePointId = null;
+  document.querySelector('#shorePointModal .modal h3').textContent = 'Add Shore Point';
+  closeModal('shorePointModal');
 }
 
 function returnEquipment(spId) {
@@ -3151,7 +3317,7 @@ function getDeductions(prefix) {
 
   if (header === 0 && sole === 0 && topH === 0 && bottomH === 0) return null;
 
-  return { header, sole, topPlate: topH, bottomPlate: bottomH };
+  return { header, sole, topPlate: topH, bottomPlate: bottomH, topPlateName: topPlateId, bottomPlateName: bottomPlateId };
 }
 
 function updateDeductionSummary(prefix) {
@@ -3279,17 +3445,20 @@ function updatePlatePickerDisplay(pickerId) {
 function onShoreTypeChange() {
   const type = document.getElementById('spShoreType').value;
 
-  // T-Shore and Double-T: auto-enable deductions
-  if (type === 't-shore' || type === 'double-t') {
-    document.getElementById('spDeductionToggle').checked = true;
-    toggleDeductions('sp');
-    updateDeductionSummary('sp');
-  }
+  // All shore types: auto-enable deductions
+  document.getElementById('spDeductionToggle').checked = true;
+  toggleDeductions('sp');
 
-  // Double-T: auto-set quantity to 2 (two vertical posts)
-  if (type === 'double-t') {
+  if (type === '3-post') {
+    setSpQty(3);
+    document.getElementById('spHeader').value = '5.5';
+    document.getElementById('spSole').value = '5.5';
+  } else if (type === 'double-t') {
     setSpQty(2);
+  } else {
+    setSpQty(1);
   }
+  updateDeductionSummary('sp');
 }
 
 // Close plate pickers when clicking outside
