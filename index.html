@@ -1113,7 +1113,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.8.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.8.1</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1782,6 +1782,12 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
       const extCount = (e1 > 0 ? 1 : 0) + (e2 > 0 ? 1 : 0);
       if (extTotal > strut.extended) continue;
 
+      // System-specific extension rules:
+      // Gold/LongShore: max 1 extension of any length
+      if (strut.system === 'LongShore' && extCount > 1) continue;
+      // Grey/AcmeThread & LockStroke: max 2 extensions, total not exceeding 36"
+      if ((strut.system === 'AcmeThread' || strut.system === 'LockStroke') && extTotal > 36) continue;
+
       const adjCollapsed = strut.collapsed + extTotal;
       const adjExtended = strut.extended + extTotal;
       if (searchLength < adjCollapsed || searchLength > adjExtended) continue;
@@ -2361,8 +2367,12 @@ function renderInventory() {
     html += `</div>`;
   }
 
-  // Connector plates section (system-independent)
-  const plates = filtered.filter(i => i.type === 'plate');
+  // Connector plates section (system-independent, sorted alphabetically)
+  const plates = filtered.filter(i => i.type === 'plate').sort((a, b) => {
+    const na = (BASE_PLATES.find(p => p.id === a.plateId) || {}).name || '';
+    const nb = (BASE_PLATES.find(p => p.id === b.plateId) || {}).name || '';
+    return na.localeCompare(nb);
+  });
   if (plates.length > 0) {
     html += `<div class="inv-section"><div class="inv-section-header"><span class="dot" style="background:var(--blue)"></span>Connector Plates</div>`;
     for (const item of plates) {
@@ -2454,12 +2464,12 @@ function showAddEquipment() {
   }
   extsGrid.innerHTML = eh;
 
-  // Connector plates
+  // Connector plates (sorted alphabetically)
   const platesGrid = document.getElementById('quickAddPlates');
   let ph = '';
   let plateCount = 0;
-  for (const plate of BASE_PLATES) {
-    if (plate.id === 'none') continue;
+  const sortedPlates = [...BASE_PLATES].filter(p => p.id !== 'none').sort((a, b) => a.name.localeCompare(b.name));
+  for (const plate of sortedPlates) {
     const item = localInventory.find(i => i.type === 'plate' && i.plateId === plate.id && i.apparatus === selectedApparatus);
     const qty = item ? item.quantity : 0;
     if (qty > 0) plateCount += qty;
@@ -2553,7 +2563,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.8.0'
+    appVersion: '1.8.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2692,6 +2702,7 @@ function selectRole(roleId) {
   }
   closeModal('roleModal');
   renderOperations();
+  renderCommandView();
 }
 
 function clearRole() {
@@ -2711,6 +2722,7 @@ function clearRole() {
   }
   closeModal('roleModal');
   renderOperations();
+  renderCommandView();
 }
 
 function getRoleName(roleId) {
@@ -2796,15 +2808,15 @@ function confirmAddExternal() {
   const system = select.options[select.selectedIndex].dataset.system;
   const qty = parseInt(document.getElementById('extQuantity').value) || 1;
 
-  if (!deptName) { alert('Please enter a department name.'); return; }
+  if (!deptName && !apparatus) { alert('Please enter a department name or apparatus.'); return; }
   if (!model) { alert('Please select a strut model.'); return; }
 
   const strut = STRUTS.find(s => s.model === model);
   if (!strut) return;
 
   const item = {
-    deptName,
-    apparatus: apparatus || 'Unknown',
+    deptName: deptName || apparatus,
+    apparatus: apparatus || deptName,
     model,
     system: strut.system,
     type: 'strut',
@@ -3769,7 +3781,8 @@ function renderCommandView() {
       .join('');
 
     const levelLabel = { building: 'Building', division: 'Div', floor: 'Area', team: 'Team' }[topLevel] || '';
-    html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+    const escapedName = name.replace(/'/g, "\\'");
+    html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
       <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
@@ -3884,11 +3897,13 @@ function renderCutTableCard(sp, mode) {
 
   const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
   const actionBtn = mode === 'active'
-    ? `<button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>`
-    : `<div style="display:flex;gap:6px">
-        <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid #E0E0E0;border-radius:6px;font-size:13px">
-        <button class="btn btn-sm" style="flex:1;background:#FFF3E0;color:#E65100;border:1px solid #E65100;font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Runner</button>
-      </div>`;
+    ? `<div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid #E0E0E0;border-radius:6px;font-size:13px">
+        </div>
+        <button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
+      </div>`
+    : `<button class="btn btn-sm" style="width:100%;background:#FFF3E0;color:#E65100;border:1px solid #E65100;font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Send to Runner</button>`;
 
   return `<div style="background:var(--surface);border:2px solid ${borderColor};border-radius:var(--radius);padding:16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
@@ -3944,12 +3959,19 @@ function sendToRunner(spId) {
 
 function markCutDone(spId) {
   if (!activeOperation) return;
+
+  // Capture optional actual cut measurement entered before marking done
+  const actualInput = document.getElementById('actual-' + spId);
+  const actualVal = actualInput ? parseFloat(actualInput.value) : null;
+  const updateData = { cutMarkedDone: true };
+  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
+
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update({ cutMarkedDone: true });
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
   } else {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     const sp = points.find(p => p.id === spId);
-    if (sp) sp.cutMarkedDone = true;
+    if (sp) Object.assign(sp, updateData);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -4243,7 +4265,8 @@ function exportInventory() {
       Model: item.type === 'strut' ? item.model : '',
       System: item.system || '',
       'Extension Length': item.type === 'extension' ? item.length : '',
-      Apparatus: item.apparatus || '',
+      Apparatus: item.apparatus ? getApparatusName(item.apparatus) : '',
+      'Apparatus ID': item.apparatus || '',
       Quantity: item.quantity,
       Available: item.available,
       'Collapsed (in)': strutData ? strutData.collapsed : '',
@@ -4255,7 +4278,7 @@ function exportInventory() {
   // Set column widths
   ws['!cols'] = [
     { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
-    { wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }
+    { wch: 18 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
@@ -4526,7 +4549,11 @@ function initPlatePickers() {
     if (!grid) continue;
 
     let html = '';
-    for (const plate of BASE_PLATES) {
+    const pickerPlates = [...BASE_PLATES].sort((a, b) => {
+      if (a.id === 'none') return -1; if (b.id === 'none') return 1;
+      return a.name.localeCompare(b.name);
+    });
+    for (const plate of pickerPlates) {
       const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}">` : '<div style="width:40px;height:40px;background:#F0F0F0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
       html += `<div class="plate-option" data-id="${plate.id}" onclick="selectPlate('${pickerId}','${plate.id}')">
         ${imgHtml}
