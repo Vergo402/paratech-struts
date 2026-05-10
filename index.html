@@ -514,9 +514,11 @@ select { padding-right: 40px; }
   padding: 12px 16px;
   margin-bottom: 10px;
 }
-.shore-point.placed { border-color: var(--red); background: #FFEBEE; }
+.shore-point.process { border-color: var(--red); background: #FFEBEE; }
+.shore-point.strutplaced { border-color: var(--blue); background: #E3F2FD; }
 .shore-point.cutting { border-color: #F9A825; background: #FFFDE7; }
-.shore-point.finalized { border-color: var(--green); background: #E8F5E9; }
+.shore-point.runner { border-color: #E65100; background: #FFF3E0; }
+.shore-point.secured { border-color: var(--green); background: #E8F5E9; }
 .shore-point.returned { border-color: #9E9E9E; background: #FAFAFA; }
 .status-badge {
   display: inline-block;
@@ -526,9 +528,11 @@ select { padding-right: 40px; }
   font-weight: 700;
   text-transform: uppercase;
 }
-.status-badge.placed { background: var(--red-bg); color: var(--red); }
+.status-badge.process { background: var(--red-bg); color: var(--red); }
+.status-badge.strutplaced { background: #E3F2FD; color: #1565C0; }
 .status-badge.cutting { background: #FFF8E1; color: #F57F17; }
-.status-badge.finalized { background: var(--green-bg); color: var(--green); }
+.status-badge.runner { background: #FFF3E0; color: #E65100; }
+.status-badge.secured { background: var(--green-bg); color: var(--green); }
 .status-badge.returned { background: #F5F5F5; color: #757575; }
 .sp-number { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; background: var(--blue); color: #fff; font-size: 12px; font-weight: 700; margin-right: 6px; flex-shrink: 0; }
 .sp-group-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px; margin-top: 8px; border-bottom: 1px solid #eee; margin-bottom: 8px; }
@@ -540,12 +544,16 @@ select { padding-right: 40px; }
 .lane-header .lane-arrow { font-size: 10px; transition: transform 0.2s; color: var(--text-secondary); }
 .lane-header .lane-arrow.collapsed { transform: rotate(-90deg); }
 .lane-header .lane-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
-.lane-header.placed { border-left-color: var(--red); color: var(--red); }
-.lane-header.placed .lane-count { background: var(--red-bg); color: var(--red); }
+.lane-header.process { border-left-color: var(--red); color: var(--red); }
+.lane-header.process .lane-count { background: var(--red-bg); color: var(--red); }
+.lane-header.strutplaced { border-left-color: var(--blue); color: #1565C0; }
+.lane-header.strutplaced .lane-count { background: #E3F2FD; color: #1565C0; }
 .lane-header.cutting { border-left-color: #F9A825; color: #F57F17; }
 .lane-header.cutting .lane-count { background: #FFF8E1; color: #F57F17; }
-.lane-header.finalized { border-left-color: var(--green); color: var(--green); }
-.lane-header.finalized .lane-count { background: var(--green-bg); color: var(--green); }
+.lane-header.runner { border-left-color: #E65100; color: #E65100; }
+.lane-header.runner .lane-count { background: #FFF3E0; color: #E65100; }
+.lane-header.secured { border-left-color: var(--green); color: var(--green); }
+.lane-header.secured .lane-count { background: var(--green-bg); color: var(--green); }
 .lane-header.returned { border-left-color: #9E9E9E; color: #757575; }
 .lane-header.returned .lane-count { background: #F5F5F5; color: #757575; }
 .lane-body { padding: 4px 0 4px 8px; }
@@ -555,6 +563,8 @@ select { padding-right: 40px; }
 .sp-edit-btn:hover { background: #F5F5F5; }
 .sp-delete-btn { background: none; border: 1px solid #FFCDD2; border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer; color: var(--red); min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; }
 .sp-delete-btn:hover { background: #FFEBEE; }
+.shore-point.locked .sp-edit-btn, .shore-point.locked .sp-delete-btn { opacity: 0.3; pointer-events: none; }
+.sp-lock-icon { font-size: 12px; color: #1565C0; margin-left: 4px; }
 .shore-point.grouped { border-left: 4px solid var(--blue); margin-bottom: 0; border-bottom: 1px dashed #ccc; border-radius: var(--radius) 8px 0 0; }
 .shore-point.grouped.group-mid { border-radius: 0; }
 .shore-point.grouped.group-last { border-radius: 0 0 8px var(--radius); margin-bottom: 10px; border-bottom: 2px solid #E0E0E0; }
@@ -576,15 +586,19 @@ select { padding-right: 40px; }
 .drilldown-item .di-arrow { color: var(--text-secondary); font-size: 14px; }
 .drilldown-item .di-status-dots { display: flex; gap: 3px; }
 .drilldown-item .di-dot { width: 8px; height: 8px; border-radius: 50%; }
-.drilldown-item .di-dot.placed { background: var(--red); }
+.drilldown-item .di-dot.process { background: var(--red); }
+.drilldown-item .di-dot.strutplaced { background: var(--blue); }
 .drilldown-item .di-dot.cutting { background: #F9A825; }
-.drilldown-item .di-dot.finalized { background: var(--green); }
+.drilldown-item .di-dot.runner { background: #E65100; }
+.drilldown-item .di-dot.secured { background: var(--green); }
 .drilldown-item .di-dot.returned { background: #9E9E9E; }
 .di-status-pills { display: flex; gap: 4px; flex-wrap: wrap; }
 .di-status-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
-.di-status-pill.placed { background: var(--red-bg); color: var(--red); }
+.di-status-pill.process { background: var(--red-bg); color: var(--red); }
+.di-status-pill.strutplaced { background: #E3F2FD; color: #1565C0; }
 .di-status-pill.cutting { background: #FFF8E1; color: #F57F17; }
-.di-status-pill.finalized { background: var(--green-bg); color: var(--green); }
+.di-status-pill.runner { background: #FFF3E0; color: #E65100; }
+.di-status-pill.secured { background: var(--green-bg); color: var(--green); }
 .di-status-pill.returned { background: #F5F5F5; color: #757575; }
 
 /* View switcher */
@@ -1099,7 +1113,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.7.1</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.8.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1109,8 +1123,39 @@ select { padding-right: 40px; }
     <!-- Screen 1: Quick Select -->
     <div class="screen active" id="screenSelect">
       <div class="form-group">
-        <label>Opening Measurement (inches)</label>
-        <input type="number" id="inputLength" inputmode="decimal" placeholder="e.g. 96" min="1" oninput="updateDeductionSummary('qf')">
+        <label>Opening Measurement</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="flex:1">
+            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" style="width:100%" oninput="updateDeductionSummary('qf')">
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">feet</div>
+          </div>
+          <div style="flex:1">
+            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" style="width:100%" oninput="updateDeductionSummary('qf')">
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">inches</div>
+          </div>
+          <div style="flex:1.2">
+            <select id="qfFraction" style="width:100%;padding:10px 4px" onchange="updateDeductionSummary('qf')">
+              <option value="0">0</option>
+              <option value="0.0625">1/16</option>
+              <option value="0.125">1/8</option>
+              <option value="0.1875">3/16</option>
+              <option value="0.25">1/4</option>
+              <option value="0.3125">5/16</option>
+              <option value="0.375">3/8</option>
+              <option value="0.4375">7/16</option>
+              <option value="0.5">1/2</option>
+              <option value="0.5625">9/16</option>
+              <option value="0.625">5/8</option>
+              <option value="0.6875">11/16</option>
+              <option value="0.75">3/4</option>
+              <option value="0.8125">13/16</option>
+              <option value="0.875">7/8</option>
+              <option value="0.9375">15/16</option>
+            </select>
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">fraction</div>
+          </div>
+        </div>
+        <input type="hidden" id="inputLength">
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
@@ -1365,7 +1410,7 @@ select { padding-right: 40px; }
           <input type="text" id="spDivision" placeholder="e.g. A">
         </div>
         <div class="form-group" style="flex:1">
-          <label>Floor</label>
+          <label>Area / Room</label>
           <input type="text" id="spFloor" placeholder="e.g. 2">
         </div>
         <div class="form-group" style="flex:1">
@@ -1374,8 +1419,39 @@ select { padding-right: 40px; }
         </div>
       </div>
       <div class="form-group">
-        <label>Opening Measurement (inches)</label>
-        <input type="number" id="spLength" inputmode="decimal" placeholder="e.g. 96" min="1" oninput="updateDeductionSummary('sp')">
+        <label>Opening Measurement</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="flex:1">
+            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" style="width:100%" oninput="updateDeductionSummary('sp')">
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">feet</div>
+          </div>
+          <div style="flex:1">
+            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" style="width:100%" oninput="updateDeductionSummary('sp')">
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">inches</div>
+          </div>
+          <div style="flex:1.2">
+            <select id="spFraction" style="width:100%;padding:10px 4px" onchange="updateDeductionSummary('sp')">
+              <option value="0">0</option>
+              <option value="0.0625">1/16</option>
+              <option value="0.125">1/8</option>
+              <option value="0.1875">3/16</option>
+              <option value="0.25">1/4</option>
+              <option value="0.3125">5/16</option>
+              <option value="0.375">3/8</option>
+              <option value="0.4375">7/16</option>
+              <option value="0.5">1/2</option>
+              <option value="0.5625">9/16</option>
+              <option value="0.625">5/8</option>
+              <option value="0.6875">11/16</option>
+              <option value="0.75">3/4</option>
+              <option value="0.8125">13/16</option>
+              <option value="0.875">7/8</option>
+              <option value="0.9375">15/16</option>
+            </select>
+            <div style="font-size:10px;color:var(--text-secondary);text-align:center">fraction</div>
+          </div>
+        </div>
+        <input type="hidden" id="spLength">
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
@@ -1505,6 +1581,10 @@ select { padding-right: 40px; }
     <div class="modal">
       <h3 id="roleModalTitle">Assign Role</h3>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px" id="roleModalSubtitle">Select an ICS role</p>
+      <div id="roleNameGroup" style="display:none;margin-bottom:12px">
+        <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Assigned To</label>
+        <input type="text" id="rolePersonName" placeholder="e.g. FF Jones" style="margin-top:4px">
+      </div>
       <div class="role-grid" id="roleGrid"></div>
       <button class="btn btn-outline" onclick="clearRole()" style="width:100%;margin-bottom:8px">Clear Role</button>
       <button class="btn btn-outline" onclick="closeModal('roleModal')">Cancel</button>
@@ -1807,7 +1887,7 @@ function getActiveSystemFilter() {
 }
 
 function runQuickSelect() {
-  const length = parseFloat(document.getElementById('inputLength').value);
+  const length = getMeasurementInches('qf');
   const load = parseFloat(document.getElementById('inputLoad').value) || 0;
   const sfIndex = 2;
 
@@ -1941,6 +2021,7 @@ const ICS_ROLES = [
   { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops' },
   { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops' },
   { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops' },
+  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops' },
   { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable' },
   { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops' },
 ];
@@ -2171,6 +2252,57 @@ function removeApparatus(id) {
 function getApparatusName(id) {
   const app = localApparatus.find(a => a.id === id);
   return app ? app.name : 'Unknown';
+}
+
+// Measurement helpers — convert between compound (feet/inches/fraction) and total inches
+function getMeasurementInches(prefix) {
+  const feet = parseFloat(document.getElementById(prefix + 'Feet').value) || 0;
+  const inches = parseFloat(document.getElementById(prefix + 'Inches').value) || 0;
+  const fraction = parseFloat(document.getElementById(prefix + 'Fraction').value) || 0;
+  const total = (feet * 12) + inches + fraction;
+  // Also update the hidden field for backward compat
+  const hiddenId = prefix === 'qf' ? 'inputLength' : 'spLength';
+  const hidden = document.getElementById(hiddenId);
+  if (hidden) hidden.value = total > 0 ? total : '';
+  return total;
+}
+
+function setMeasurementFromInches(prefix, totalInches) {
+  if (!totalInches || totalInches <= 0) {
+    document.getElementById(prefix + 'Feet').value = '';
+    document.getElementById(prefix + 'Inches').value = '';
+    document.getElementById(prefix + 'Fraction').value = '0';
+    return;
+  }
+  const feet = Math.floor(totalInches / 12);
+  const remaining = totalInches - (feet * 12);
+  const wholeInches = Math.floor(remaining);
+  const frac = Math.round((remaining - wholeInches) * 10000) / 10000;
+  // Find closest fraction option
+  const fractions = [0, 0.0625, 0.125, 0.1875, 0.25, 0.3125, 0.375, 0.4375, 0.5, 0.5625, 0.625, 0.6875, 0.75, 0.8125, 0.875, 0.9375];
+  let closest = 0;
+  let minDiff = 999;
+  for (const f of fractions) {
+    if (Math.abs(f - frac) < minDiff) { minDiff = Math.abs(f - frac); closest = f; }
+  }
+  document.getElementById(prefix + 'Feet').value = feet > 0 ? feet : '';
+  document.getElementById(prefix + 'Inches').value = wholeInches > 0 ? wholeInches : (feet > 0 ? '0' : '');
+  document.getElementById(prefix + 'Fraction').value = String(closest);
+}
+
+function formatInchesDisplay(totalInches) {
+  if (!totalInches || totalInches <= 0) return '0"';
+  const feet = Math.floor(totalInches / 12);
+  const remaining = totalInches - (feet * 12);
+  const wholeInches = Math.floor(remaining);
+  const frac = Math.round((remaining - wholeInches) * 16) / 16;
+  const fracLabels = { 0: '', 0.0625: '1/16', 0.125: '1/8', 0.1875: '3/16', 0.25: '1/4', 0.3125: '5/16', 0.375: '3/8', 0.4375: '7/16', 0.5: '1/2', 0.5625: '9/16', 0.625: '5/8', 0.6875: '11/16', 0.75: '3/4', 0.8125: '13/16', 0.875: '7/8', 0.9375: '15/16' };
+  const fracStr = fracLabels[frac] || '';
+  if (feet > 0) {
+    const inchPart = fracStr ? `${wholeInches}-${fracStr}` : (wholeInches > 0 ? String(wholeInches) : '');
+    return inchPart ? `${feet}' ${inchPart}"` : `${feet}' 0"`;
+  }
+  return fracStr ? `${wholeInches}-${fracStr}"` : `${wholeInches}"`;
 }
 
 // ============================================================
@@ -2421,7 +2553,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.7.1'
+    appVersion: '1.8.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2502,6 +2634,8 @@ function openMyRoleModal() {
   roleTarget = 'self';
   document.getElementById('roleModalTitle').textContent = 'My Role';
   document.getElementById('roleModalSubtitle').textContent = 'Pick your ICS role on this device';
+  document.getElementById('roleNameGroup').style.display = 'block';
+  document.getElementById('rolePersonName').value = localStorage.getItem('paratech_myRoleName') || '';
   renderRoleGrid(myRole);
   document.getElementById('roleModal').classList.add('active');
 }
@@ -2510,7 +2644,10 @@ function openApparatusRoleModal(appId) {
   roleTarget = appId;
   const name = getApparatusName(appId);
   document.getElementById('roleModalTitle').textContent = `Role: ${name}`;
-  document.getElementById('roleModalSubtitle').textContent = 'Assign an ICS role to this apparatus';
+  document.getElementById('roleModalSubtitle').textContent = 'Assign an ICS role to this apparatus or individual';
+  document.getElementById('roleNameGroup').style.display = 'block';
+  const roleNames = activeOperation.roleNames || {};
+  document.getElementById('rolePersonName').value = roleNames[appId] || '';
   const roles = activeOperation.roles || {};
   const currentRole = roles[appId] || null;
   renderRoleGrid(currentRole);
@@ -2528,16 +2665,27 @@ function renderRoleGrid(selectedRoleId) {
 }
 
 function selectRole(roleId) {
+  const personName = (document.getElementById('rolePersonName').value || '').trim();
   if (roleTarget === 'self') {
     myRole = roleId;
     localStorage.setItem('paratech_myRole', roleId);
+    if (personName) localStorage.setItem('paratech_myRoleName', personName);
+    else localStorage.removeItem('paratech_myRoleName');
     roleViewDismissed = false;
   } else {
-    // Assign role to apparatus
+    // Assign role to apparatus/individual
     if (!activeOperation.roles) activeOperation.roles = {};
+    if (!activeOperation.roleNames) activeOperation.roleNames = {};
     activeOperation.roles[roleTarget] = roleId;
+    if (personName) activeOperation.roleNames[roleTarget] = personName;
+    else delete activeOperation.roleNames[roleTarget];
     if (db && deptId && activeOperation.id) {
       operationsRef.child(activeOperation.id).child('roles').child(roleTarget).set(roleId);
+      if (personName) {
+        operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget).set(personName);
+      } else {
+        operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget).remove();
+      }
     } else {
       localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     }
@@ -2588,7 +2736,9 @@ function renderMyRoleDisplay() {
 
   if (myRole) {
     const roleDef = ICS_ROLES.find(r => r.id === myRole);
-    el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}</span>`;
+    const personName = localStorage.getItem('paratech_myRoleName');
+    const nameStr = personName ? ` — ${personName}` : '';
+    el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}${nameStr}</span>`;
   } else {
     el.innerHTML = 'Not assigned — tap Change to pick a role';
   }
@@ -2772,8 +2922,11 @@ function renderOperations() {
     assignedList.innerHTML = assigned.map(appId => {
       const name = getApparatusName(appId);
       const roleId = roles[appId];
+      const roleNames = activeOperation.roleNames || {};
+      const personName = roleNames[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-      return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+      const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${personName}</span>` : '';
+      return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
     }).join('');
   } else {
     assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
@@ -2828,13 +2981,20 @@ function renderOperations() {
   renderArchivedOps();
 }
 
+function normalizeStatus(status) {
+  // Backward compat: map old statuses to new ones
+  if (status === 'deployed' || status === 'placed') return 'process'; // old v1.7 "placed"/"deployed" = new "in process"
+  if (status === 'finalized') return 'secured';
+  return status || 'process';
+}
+
 function renderShorePointCards(numbered) {
-  const statusOrder = ['placed', 'cutting', 'finalized', 'returned'];
-  const statusLabels = { placed: 'Placed', cutting: 'Cutting', finalized: 'Finalized', returned: 'Returned', deployed: 'Placed' };
+  const statusOrder = ['process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
+  const statusLabels = { process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed' };
 
   const byStatus = {};
   for (const sp of numbered) {
-    const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+    const st = normalizeStatus(sp.status);
     if (!byStatus[st]) byStatus[st] = [];
     byStatus[st].push(sp);
   }
@@ -2880,15 +3040,29 @@ function renderShorePointCards(numbered) {
         groupBadge = `<span class="group-label">${sp.groupIndex + 1}/${sp.groupTotal}</span>`;
       }
 
-      html += `<div class="shore-point ${status}${groupClass}">
+      // Card locks at "placed" (strut placed) and beyond — only IC/Safety can unlock
+      const isLocked = status === 'strutplaced' || status === 'cutting' || status === 'runner';
+      const lockClass = isLocked ? ' locked' : '';
+      const lockIcon = isLocked ? '<span class="sp-lock-icon">🔒</span>' : '';
+
+      // Location breadcrumb
+      const locParts = [];
+      if (sp.building) locParts.push(sp.building);
+      if (sp.division) locParts.push(sp.division);
+      if (sp.floor) locParts.push(sp.floor);
+      if (sp.team) locParts.push(sp.team);
+      const locText = locParts.length > 0 ? locParts.join(' › ') : '';
+
+      html += `<div class="shore-point ${status}${groupClass}${lockClass}">
         <div class="flex-between mb-8">
-          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}</div>
+          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}${lockIcon}</div>
           <div style="display:flex;align-items:center;gap:4px">
             <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
             <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete">✕</button>
             <span class="status-badge ${status}">${statusLabels[status]}</span>
           </div>
         </div>
+        ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
           ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
@@ -2902,23 +3076,34 @@ function renderShorePointCards(numbered) {
         html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
       }
 
-      if (status === 'placed') {
+      // Status transition buttons
+      if (status === 'process') {
         html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9" onclick="updateShoreStatus('${sp.id}','strutplaced')">→ Strut Placed</button>
+        </div>`;
+      }
+      if (status === 'strutplaced') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','process')">← Send Back</button>
           <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
         </div>`;
       }
       if (status === 'cutting') {
         html += `<div style="display:flex;gap:6px;margin-top:8px">
-          <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">← Placed</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+          <button class="btn btn-sm" style="flex:1;background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9" onclick="updateShoreStatus('${sp.id}','strutplaced')">← Send Back</button>
         </div>`;
       }
-      if (status === 'finalized') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
+      if (status === 'runner') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','secured')">→ Secured</button>
+          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">← Send Back</button>
+        </div>`;
+      }
+      if (status === 'secured') {
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
       }
       if (status === 'returned') {
-        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
       }
       html += `</div>`;
     }
@@ -3068,6 +3253,7 @@ function showAddShorePoint() {
     if (seg.level === 'floor') document.getElementById('spFloor').value = seg.value;
     if (seg.level === 'team') document.getElementById('spTeam').value = seg.value;
   }
+  setMeasurementFromInches('sp', 0);
   document.getElementById('spLength').value = '';
   document.getElementById('spLoad').value = '';
   document.getElementById('spShoreType').value = 't-shore';
@@ -3098,7 +3284,7 @@ function setSpQty(qty) {
 }
 
 function findForShorePoint() {
-  const length = parseFloat(document.getElementById('spLength').value);
+  const length = getMeasurementInches('sp');
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const sfIndex = 2;
 
@@ -3119,7 +3305,7 @@ function deployShorePoint(result, qty) {
   qty = qty || 1;
 
   const baseLabel = document.getElementById('spLabel').value.trim() || 'Shore Point';
-  const length = parseFloat(document.getElementById('spLength').value);
+  const length = getMeasurementInches('sp');
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const sfIndex = 2;
 
@@ -3202,7 +3388,7 @@ function deployShorePoint(result, qty) {
         apparatus: e.apparatus,
       })),
       deployedPlates: deployedPlates,
-      status: 'placed',
+      status: 'process',
       deployedAt: new Date().toISOString(),
       returnedAt: null,
       groupId: groupId,
@@ -3271,30 +3457,29 @@ function deployShorePoint(result, qty) {
 function updateShoreStatus(spId, newStatus) {
   if (!activeOperation) return;
 
-  // Calculate cut length when moving to cutting
-  let cutLength = null;
-  if (newStatus === 'cutting') {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
-    const sp = points.find(p => p.id === spId);
-    if (sp) {
-      const headerH = sp.deductions?.header || 0;
-      const footerH = sp.deductions?.sole || 0;
-      cutLength = Math.round((sp.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
-    }
-  }
+  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const sp = points.find(p => p.id === spId);
+  if (!sp) return;
 
   const updateData = { status: newStatus };
-  if (cutLength !== null) updateData.cutLength = cutLength;
+
+  // Calculate cut length when moving to cutting
+  if (newStatus === 'cutting') {
+    const headerH = sp.deductions?.header || 0;
+    const footerH = sp.deductions?.sole || 0;
+    updateData.cutLength = Math.round((sp.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
+    updateData.cuttingStartedAt = new Date().toISOString();
+  }
+
+  // Clear cutMarkedDone if sending back from runner to cutting
+  if (newStatus === 'cutting' && sp.cutMarkedDone) {
+    updateData.cutMarkedDone = false;
+  }
 
   if (db && deptId && activeOperation.id) {
     operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
   } else {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
-    const sp = points.find(p => p.id === spId);
-    if (sp) {
-      sp.status = newStatus;
-      if (cutLength !== null) sp.cutLength = cutLength;
-    }
+    Object.assign(sp, updateData);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -3378,7 +3563,7 @@ function renderBreadcrumb() {
     return;
   }
   bc.style.display = 'flex';
-  const levelLabels = { building: 'Building', division: 'Division', floor: 'Floor', team: 'Team' };
+  const levelLabels = { building: 'Building', division: 'Division', floor: 'Area', team: 'Team' };
   let html = `<button onclick="drillTo(-1)">All</button>`;
   drilldownPath.forEach((seg, i) => {
     const isLast = i === drilldownPath.length - 1;
@@ -3438,8 +3623,8 @@ function renderDrilldownForLevel(points, level) {
     groups[key].push(sp);
   }
 
-  const levelLabels = { building: 'Building', division: 'Div', floor: 'Floor', team: 'Team' };
-  const statusOrder = ['placed', 'cutting', 'finalized', 'returned'];
+  const levelLabels = { building: 'Building', division: 'Div', floor: 'Area', team: 'Team' };
+  const statusOrder = ['process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
   let html = '';
 
   // Sort: named groups first (alphabetical), ungrouped last
@@ -3457,7 +3642,7 @@ function renderDrilldownForLevel(points, level) {
     // Count by status
     const statusCounts = {};
     for (const sp of groupPts) {
-      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      const st = normalizeStatus(sp.status);
       statusCounts[st] = (statusCounts[st] || 0) + 1;
     }
 
@@ -3498,13 +3683,13 @@ function renderCommandView() {
   }
 
   // Count by status
-  const counts = { placed: 0, cutting: 0, finalized: 0, returned: 0 };
+  const counts = { process: 0, strutplaced: 0, cutting: 0, runner: 0, secured: 0, returned: 0 };
   for (const sp of points) {
-    const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+    const st = normalizeStatus(sp.status);
     counts[st] = (counts[st] || 0) + 1;
   }
   const total = points.length;
-  const done = counts.finalized + counts.returned;
+  const done = counts.secured + counts.returned;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
   // Time elapsed
@@ -3520,22 +3705,30 @@ function renderCommandView() {
   let html = `
     <div style="margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Dashboard</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <div style="background:var(--red-bg);padding:12px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:24px;font-weight:800;color:var(--red)">${counts.placed}</div>
-          <div style="font-size:11px;font-weight:600;color:var(--red)">Placed</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--red-bg);padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--red)">${counts.process}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--red)">In Process</div>
         </div>
-        <div style="background:#FFF8E1;padding:12px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:24px;font-weight:800;color:#F57F17">${counts.cutting}</div>
-          <div style="font-size:11px;font-weight:600;color:#F57F17">Cutting</div>
+        <div style="background:#E3F2FD;padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#1565C0">${counts.strutplaced}</div>
+          <div style="font-size:10px;font-weight:600;color:#1565C0">Strut Placed</div>
         </div>
-        <div style="background:var(--green-bg);padding:12px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:24px;font-weight:800;color:var(--green)">${counts.finalized}</div>
-          <div style="font-size:11px;font-weight:600;color:var(--green)">Finalized</div>
+        <div style="background:#FFF8E1;padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#F57F17">${counts.cutting}</div>
+          <div style="font-size:10px;font-weight:600;color:#F57F17">Cutting</div>
         </div>
-        <div style="background:#F5F5F5;padding:12px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:24px;font-weight:800;color:#757575">${counts.returned}</div>
-          <div style="font-size:11px;font-weight:600;color:#757575">Returned</div>
+        <div style="background:#FFF3E0;padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#E65100">${counts.runner}</div>
+          <div style="font-size:10px;font-weight:600;color:#E65100">Runner</div>
+        </div>
+        <div style="background:var(--green-bg);padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:var(--green)">${counts.secured}</div>
+          <div style="font-size:10px;font-weight:600;color:var(--green)">Secured</div>
+        </div>
+        <div style="background:#F5F5F5;padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#757575">${counts.returned}</div>
+          <div style="font-size:10px;font-weight:600;color:#757575">Removed</div>
         </div>
       </div>
       <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -3567,15 +3760,15 @@ function renderCommandView() {
   for (const [name, pts] of Object.entries(groups)) {
     const statusCounts = {};
     for (const sp of pts) {
-      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      const st = normalizeStatus(sp.status);
       statusCounts[st] = (statusCounts[st] || 0) + 1;
     }
-    const pills = ['placed','cutting','finalized','returned']
+    const pills = ['process','strutplaced','cutting','runner','secured','returned']
       .filter(s => statusCounts[s])
       .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
       .join('');
 
-    const levelLabel = { building: 'Building', division: 'Div', floor: 'Floor', team: 'Team' }[topLevel] || '';
+    const levelLabel = { building: 'Building', division: 'Div', floor: 'Area', team: 'Team' }[topLevel] || '';
     html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
@@ -3587,12 +3780,15 @@ function renderCommandView() {
   const roles = activeOperation.roles || {};
   if (assigned.length > 0) {
     html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Apparatus Roles</div>`;
+    const roleNames = activeOperation.roleNames || {};
     for (const appId of assigned) {
       const appName = getApparatusName(appId);
       const roleId = roles[appId];
+      const personName = roleNames[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
+      const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${personName}</span>` : '';
       html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
-        <span style="font-weight:600;font-size:14px">${appName}</span>
+        <span style="font-weight:600;font-size:14px">${appName}${personStr}</span>
         ${roleBadge}
       </div>`;
     }
@@ -3609,21 +3805,25 @@ function renderCutTableView() {
   if (!activeOperation) { container.innerHTML = ''; return; }
 
   const rawPoints = activeOperation.shorePoints || [];
-  const points = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints))
-    .filter(sp => (sp.status === 'deployed' ? 'placed' : sp.status) === 'cutting' && !sp.cutMarkedDone)
+  const allPts = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+
+  // "Ready to Cut" = cutting status, not yet marked done
+  const points = allPts
+    .filter(sp => normalizeStatus(sp.status) === 'cutting' && !sp.cutMarkedDone)
     .sort((a, b) => {
-      // Sort by when they entered cutting (or creation time as fallback)
-      const ta = a.cuttingStartedAt || a.createdAt || 0;
-      const tb = b.cuttingStartedAt || b.createdAt || 0;
-      return ta - tb;
+      const ta = a.cuttingStartedAt || a.deployedAt || 0;
+      const tb = b.cuttingStartedAt || b.deployedAt || 0;
+      return ta < tb ? -1 : ta > tb ? 1 : 0;
     });
 
-  // Also get completed cuts
-  const donePts = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints))
-    .filter(sp => sp.cutMarkedDone);
+  // "Sent to Runner" = runner status (lumber cut, being delivered) — stays visible until Operations confirms
+  const runnerPts = allPts.filter(sp => normalizeStatus(sp.status) === 'runner');
 
-  if (points.length === 0 && donePts.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No shore points in cutting status.<br>Move shore points to "Cutting" from Operations view.</p></div>';
+  // "Cuts Done" = cutting with cutMarkedDone but not yet sent to runner
+  const donePts = allPts.filter(sp => normalizeStatus(sp.status) === 'cutting' && sp.cutMarkedDone);
+
+  if (points.length === 0 && donePts.length === 0 && runnerPts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No shore points at the cutting table.<br>Move shore points to "Cutting" from Operations view.</p></div>';
     return;
   }
 
@@ -3631,45 +3831,115 @@ function renderCutTableView() {
   if (points.length > 0) {
     html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Ready to Cut (${points.length})</div>`;
     for (const sp of points) {
-      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
-      const headerSize = sp.deductions?.header ? (sp.deductions.header === 3.5 ? '4×4' : '6×6') : 'None';
-      const footerSize = sp.deductions?.sole ? (sp.deductions.sole === 3.5 ? '4×4' : '6×6') : 'None';
-
-      html += `<div style="background:var(--surface);border:2px solid #F9A825;border-radius:var(--radius);padding:16px;margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-          <div>
-            <strong>${sp.label || 'Shore Point'}</strong>
-            ${sp.floor ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:6px">Floor ${sp.floor}</span>` : ''}
-          </div>
-        </div>
-        <div style="font-size:36px;font-weight:800;color:#F57F17;margin:8px 0;line-height:1">
-          ${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Cut Length</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px">
-          <div>Header: <strong>${headerSize}</strong></div>
-          <div>Footer: <strong>${footerSize}</strong></div>
-          <div>Strut: <strong>${sp.deployedStrut ? sp.deployedStrut.model : '?'}</strong></div>
-          ${shoreTypeLabel ? `<div>Type: <strong>${shoreTypeLabel}</strong></div>` : ''}
-        </div>
-        <button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
-      </div>`;
+      html += renderCutTableCard(sp, 'active');
     }
   }
 
   if (donePts.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#757575;margin:16px 0 8px">Cuts Done (${donePts.length})</div>`;
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#E65100;margin:16px 0 8px">Cut Complete — Send Runner (${donePts.length})</div>`;
     for (const sp of donePts) {
+      html += renderCutTableCard(sp, 'done');
+    }
+  }
+
+  if (runnerPts.length > 0) {
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#757575;margin:16px 0 8px">Sent to Runner (${runnerPts.length})</div>`;
+    for (const sp of runnerPts) {
       html += `<div style="background:#F5F5F5;border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>${sp.label || 'Shore Point'}</strong>
           <span style="font-size:15px;font-weight:700;color:#757575">${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}</span>
         </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
       </div>`;
     }
   }
 
   container.innerHTML = html;
+}
+
+function getLocationBreadcrumb(sp) {
+  const parts = [];
+  if (sp.building) parts.push(sp.building);
+  if (sp.division) parts.push(sp.division);
+  if (sp.floor) parts.push(sp.floor);
+  if (sp.team) parts.push(sp.team);
+  return parts.length > 0 ? parts.join(' › ') : '';
+}
+
+function renderCutTableCard(sp, mode) {
+  const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+  const headerSize = sp.deductions?.header ? (sp.deductions.header === 3.5 ? '4×4' : '6×6') : 'None';
+  const footerSize = sp.deductions?.sole ? (sp.deductions.sole === 3.5 ? '4×4' : '6×6') : 'None';
+  const locText = getLocationBreadcrumb(sp);
+
+  const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
+    ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+    : '';
+
+  // Actual measurement field (optional override if cut differs from expected)
+  const actualField = sp.actualCutLength != null
+    ? `<div style="font-size:13px;color:#E65100;font-weight:600;margin-top:4px">Actual: ${sp.actualCutLength}"</div>`
+    : '';
+
+  const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
+  const actionBtn = mode === 'active'
+    ? `<button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>`
+    : `<div style="display:flex;gap:6px">
+        <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid #E0E0E0;border-radius:6px;font-size:13px">
+        <button class="btn btn-sm" style="flex:1;background:#FFF3E0;color:#E65100;border:1px solid #E65100;font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Runner</button>
+      </div>`;
+
+  return `<div style="background:var(--surface);border:2px solid ${borderColor};border-radius:var(--radius);padding:16px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+      <div>
+        <strong style="font-size:15px">${sp.label || 'Shore Point'}</strong>
+      </div>
+      <span class="status-badge ${mode === 'done' ? 'runner' : 'cutting'}">${mode === 'done' ? 'Cut Done' : 'Cutting'}</span>
+    </div>
+    ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">${locText}</div>` : ''}
+    <div style="display:flex;gap:12px;align-items:baseline;margin:8px 0">
+      <div>
+        <div style="font-size:11px;color:var(--text-secondary)">Opening</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${sp.requiredLength}"</div>
+      </div>
+      <div style="font-size:18px;color:var(--text-secondary)">→</div>
+      <div>
+        <div style="font-size:11px;color:var(--text-secondary)">Expected Cut</div>
+        <div style="font-size:36px;font-weight:800;color:#F57F17;line-height:1">${sp.cutLength != null ? sp.cutLength + '"' : '?'}</div>
+      </div>
+    </div>
+    ${actualField}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin:10px 0">
+      <div>Header: <strong>${headerSize}</strong></div>
+      <div>Footer: <strong>${footerSize}</strong></div>
+      <div>Strut: <strong>${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</strong></div>
+      ${shoreTypeLabel ? `<div>Type: <strong>${shoreTypeLabel}</strong></div>` : ''}
+    </div>
+    ${actionBtn}
+  </div>`;
+}
+
+function sendToRunner(spId) {
+  if (!activeOperation) return;
+
+  // Capture optional actual cut measurement
+  const actualInput = document.getElementById('actual-' + spId);
+  const actualVal = actualInput ? parseFloat(actualInput.value) : null;
+
+  const updateData = { status: 'runner', cutMarkedDone: false };
+  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
+
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
+  } else {
+    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const sp = points.find(p => p.id === spId);
+    if (sp) Object.assign(sp, updateData);
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    renderOperations();
+  }
+  if (currentView === 'cuttable') renderCutTableView();
 }
 
 function markCutDone(spId) {
@@ -3705,6 +3975,7 @@ function editShorePoint(spId) {
   document.getElementById('spDivision').value = sp.division || '';
   document.getElementById('spTeam').value = sp.team || '';
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
+  setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
   document.getElementById('spLoad').value = sp.estimatedLoad || '';
 
@@ -3749,7 +4020,7 @@ function confirmEditShorePoint() {
     division: document.getElementById('spDivision').value.trim() || null,
     team: document.getElementById('spTeam').value.trim() || null,
     shoreType: document.getElementById('spShoreType').value,
-    requiredLength: parseFloat(document.getElementById('spLength').value) || 0,
+    requiredLength: getMeasurementInches('sp'),
     estimatedLoad: parseFloat(document.getElementById('spLoad').value) || 0,
     deductions: getDeductions('sp') || null,
   };
@@ -4234,7 +4505,7 @@ function updateDeductionSummary(prefix) {
   if (!summaryEl) return;
 
   const deductions = getDeductions(prefix);
-  const length = parseFloat(document.getElementById(prefix === 'qf' ? 'inputLength' : 'spLength').value) || 0;
+  const length = getMeasurementInches(prefix === 'qf' ? 'qf' : 'sp');
 
   if (!deductions) {
     summaryEl.innerHTML = `<span>Total deductions: <strong>0"</strong></span><span>Effective: <span class="eff-length">${length ? length + '"' : '—'}</span></span>`;
