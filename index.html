@@ -1113,7 +1113,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.8.1</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.9.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1564,7 +1564,8 @@ select { padding-right: 40px; }
       </div>
       <div class="form-group">
         <label>Strut Model</label>
-        <select id="extStrutModel"></select>
+        <select id="extStrutModel" style="display:none"></select>
+        <div id="extStrutGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:40vh;overflow-y:auto"></div>
       </div>
       <div class="form-group">
         <label>Quantity</label>
@@ -2563,7 +2564,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.8.1'
+    appVersion: '1.9.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2786,18 +2787,40 @@ function dismissRoleSuggestion() {
 
 function showAddExternal() {
   if (!activeOperation) return;
-  const select = document.getElementById('extStrutModel');
-  if (select.options.length <= 1) {
-    let html = '';
-    for (const s of STRUTS) {
-      html += `<option value="${s.model}" data-system="${s.system}">${s.model} (${s.system}) — ${s.collapsed}–${s.extended}"</option>`;
-    }
-    select.innerHTML = html;
-  }
+  editingExternalId = null; // Clear edit state — this is a new add
+  populateExtStrutGrid();
   document.getElementById('extDeptName').value = '';
   document.getElementById('extApparatus').value = '';
   document.getElementById('extQuantity').value = '1';
   document.getElementById('addExternalModal').classList.add('active');
+}
+
+function populateExtStrutGrid(selectedModel) {
+  const grid = document.getElementById('extStrutGrid');
+  const select = document.getElementById('extStrutModel');
+  let gh = '';
+  let sh = '';
+  for (const s of STRUTS) {
+    const isSelected = s.model === selectedModel;
+    const color = s.system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
+    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}')" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : '#E0E0E0'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
+    sh += `<option value="${s.model}" data-system="${s.system}">${s.model}</option>`;
+  }
+  grid.innerHTML = gh;
+  select.innerHTML = sh;
+  if (selectedModel) select.value = selectedModel;
+}
+
+function selectExtStrut(model, system) {
+  document.getElementById('extStrutModel').value = model;
+  // Update visual selection
+  document.querySelectorAll('#extStrutGrid .quick-add-btn').forEach(btn => {
+    btn.classList.remove('added');
+    btn.style.borderColor = '#E0E0E0';
+  });
+  event.currentTarget.classList.add('added');
+  const color = system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
+  event.currentTarget.style.borderColor = color;
 }
 
 function confirmAddExternal() {
@@ -2814,28 +2837,52 @@ function confirmAddExternal() {
   const strut = STRUTS.find(s => s.model === model);
   if (!strut) return;
 
-  const item = {
-    deptName: deptName || apparatus,
-    apparatus: apparatus || deptName,
-    model,
-    system: strut.system,
-    type: 'strut',
-    quantity: qty,
-    available: qty,
-    external: true,
-  };
-
   if (!activeOperation.externalEquipment) activeOperation.externalEquipment = {};
 
-  if (db && deptId && activeOperation.id) {
-    const newRef = operationsRef.child(activeOperation.id).child('externalEquipment').push();
-    item.id = newRef.key;
-    newRef.set(item);
-    activeOperation.externalEquipment[item.id] = item;
+  if (editingExternalId) {
+    // Editing existing — preserve deployed count
+    const existing = activeOperation.externalEquipment[editingExternalId];
+    const deployed = existing ? Math.max(0, existing.quantity - existing.available) : 0;
+    const item = {
+      id: editingExternalId,
+      deptName: deptName || apparatus,
+      apparatus: apparatus || deptName,
+      model,
+      system: strut.system,
+      type: 'strut',
+      quantity: qty,
+      available: Math.max(0, qty - deployed),
+      external: true,
+    };
+    activeOperation.externalEquipment[editingExternalId] = item;
+    if (db && deptId && activeOperation.id) {
+      operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId).set(item);
+    } else {
+      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    }
+    editingExternalId = null;
   } else {
-    item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-    activeOperation.externalEquipment[item.id] = item;
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    // Adding new
+    const item = {
+      deptName: deptName || apparatus,
+      apparatus: apparatus || deptName,
+      model,
+      system: strut.system,
+      type: 'strut',
+      quantity: qty,
+      available: qty,
+      external: true,
+    };
+    if (db && deptId && activeOperation.id) {
+      const newRef = operationsRef.child(activeOperation.id).child('externalEquipment').push();
+      item.id = newRef.key;
+      newRef.set(item);
+      activeOperation.externalEquipment[item.id] = item;
+    } else {
+      item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+      activeOperation.externalEquipment[item.id] = item;
+      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    }
   }
 
   closeModal('addExternalModal');
@@ -2854,6 +2901,21 @@ function removeExternal(extId) {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
+}
+
+let editingExternalId = null;
+
+function editExternal(extId) {
+  if (!activeOperation || !activeOperation.externalEquipment) return;
+  const ext = activeOperation.externalEquipment[extId];
+  if (!ext) return;
+
+  editingExternalId = extId;
+  populateExtStrutGrid(ext.model);
+  document.getElementById('extDeptName').value = ext.deptName || '';
+  document.getElementById('extApparatus').value = ext.apparatus || '';
+  document.getElementById('extQuantity').value = ext.quantity || 1;
+  document.getElementById('addExternalModal').classList.add('active');
 }
 
 function getOperationInventory() {
@@ -2954,7 +3016,10 @@ function renderOperations() {
   if (extEquip.length > 0) {
     extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
       <div><span class="ext-info">${ext.model}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${ext.deptName} — ${ext.apparatus} (${ext.available}/${ext.quantity} avail)</span></div>
-      <span class="chip-x" onclick="removeExternal('${ext.id}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span onclick="editExternal('${ext.id}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
+        <span class="chip-x" onclick="removeExternal('${ext.id}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+      </div>
     </div>`).join('');
   } else {
     extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
@@ -3002,7 +3067,7 @@ function normalizeStatus(status) {
 
 function renderShorePointCards(numbered) {
   const statusOrder = ['process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
-  const statusLabels = { process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed' };
+  const statusLabels = { process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed & Returned' };
 
   const byStatus = {};
   for (const sp of numbered) {
@@ -3074,6 +3139,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${statusLabels[status]}</span>
           </div>
         </div>
+        ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${sp.team}</div>` : ''}
         ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -3523,9 +3589,10 @@ function switchView(view) {
 // ============================================================
 function getHierarchyLevels() {
   // ICS hierarchy order — building only if multi-building op
+  // Drill-down stops at Area (floor). Team is shown on each card instead.
   const levels = [];
   if (activeOperation && activeOperation.multiBuilding) levels.push('building');
-  levels.push('division', 'floor', 'team');
+  levels.push('division', 'floor');
   return levels;
 }
 
@@ -3740,7 +3807,7 @@ function renderCommandView() {
         </div>
         <div style="background:#F5F5F5;padding:10px;border-radius:var(--radius);text-align:center">
           <div style="font-size:22px;font-weight:800;color:#757575">${counts.returned}</div>
-          <div style="font-size:10px;font-weight:600;color:#757575">Removed</div>
+          <div style="font-size:10px;font-weight:600;color:#757575">Removed & Returned</div>
         </div>
       </div>
       <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
