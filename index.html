@@ -1099,7 +1099,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.7.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.7.1</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -2213,7 +2213,7 @@ function renderInventory() {
 
     for (const item of [...struts, ...exts]) {
       const name = item.type === 'strut' ? item.model : `${item.length}" Extension`;
-      const deployed = item.quantity - item.available;
+      const deployed = activeOperation ? Math.max(0, item.quantity - item.available) : 0;
       const statusText = deployed > 0 ? `${deployed} deployed` : '';
 
       html += `<div class="inv-item">
@@ -2234,8 +2234,8 @@ function renderInventory() {
   if (plates.length > 0) {
     html += `<div class="inv-section"><div class="inv-section-header"><span class="dot" style="background:var(--blue)"></span>Connector Plates</div>`;
     for (const item of plates) {
-      const name = item.model || item.plateId;
-      const deployed = item.quantity - item.available;
+      const name = item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId;
+      const deployed = activeOperation ? Math.max(0, item.quantity - item.available) : 0;
       const statusText = deployed > 0 ? `${deployed} deployed` : '';
 
       html += `<div class="inv-item">
@@ -2421,7 +2421,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.7.0'
+    appVersion: '1.7.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -3246,10 +3246,23 @@ function deployShorePoint(result, qty) {
     deployed.push(sp);
   }
 
-  if (deployed.length > 0 && !(db && deptId && activeOperation)) {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
-    renderOperations();
+  if (deployed.length > 0) {
+    // Auto-drill to the new shore point's location so the card is visible
+    const ref = deployed[0];
+    const levels = getHierarchyLevels();
+    const newPath = [];
+    for (const lvl of levels) {
+      if (ref[lvl]) {
+        newPath.push({ level: lvl, value: ref[lvl] });
+      }
+    }
+    drilldownPath = newPath;
+
+    if (!(db && deptId && activeOperation)) {
+      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+      renderOperations();
+    }
   }
 
   closeModal('shorePointModal');
@@ -3911,6 +3924,12 @@ function endOperation() {
         returnEquipment(sp.id);
       }
     }
+    // Reset all inventory available = quantity as safety net
+    for (const item of localInventory) {
+      if (item.available < item.quantity) {
+        inventoryRef.child(item.id).child('available').set(item.quantity);
+      }
+    }
     operationsRef.child(activeOperation.id).update({
       status: 'archived',
       endTime: new Date().toISOString(),
@@ -3920,8 +3939,13 @@ function endOperation() {
     for (const sp of points) {
       if (sp.status !== 'returned') returnEquipment(sp.id);
     }
+    // Reset all inventory available = quantity as safety net
+    for (const item of localInventory) {
+      item.available = item.quantity;
+    }
     activeOperation = null;
     localStorage.removeItem('paratech_operation');
+    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
     renderOperations();
   }
 }
@@ -4151,11 +4175,13 @@ function renderQuickViewInventory() {
   Object.keys(grouped).sort().forEach(appName => {
     html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">${appName}</div>`;
     grouped[appName].sort((a, b) => (a.model || '').localeCompare(b.model || '')).forEach(item => {
-      const name = item.type === 'strut' ? item.model : `${item.length}" Extension`;
+      const name = item.type === 'strut' ? item.model
+        : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId)
+        : `${item.length}" Extension`;
       const avail = item.available != null ? item.available : item.quantity;
       const total = item.quantity;
       const countClass = avail === 0 ? 'zero' : avail <= 1 ? 'low' : '';
-      const sys = item.system === 'LongShore' ? 'Gold' : 'Grey';
+      const sys = item.type === 'plate' ? 'Plate' : (item.system === 'LongShore' ? 'Gold' : 'Grey');
       html += `<div class="inv-qv-item"><div><span class="qv-name">${name}</span><div class="qv-app">${sys}</div></div><span class="qv-count ${countClass}">${avail}/${total}</span></div>`;
     });
     html += '</div>';
