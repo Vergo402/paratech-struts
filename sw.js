@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paratech-struts-v1.9.0';
+const CACHE_NAME = 'paratech-struts-v1.10.0';
 const ASSETS = [
   './',
   './index.html',

@@ -1113,7 +1113,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.9.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.10.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1277,6 +1277,11 @@ select { padding-right: 40px; }
           <button class="btn btn-sm btn-outline" onclick="showAddExternal()">+ Add</button>
         </div>
         <div id="externalEquipmentList"></div>
+        <div class="flex-between mb-8">
+          <span class="section-title" style="margin:0">Individuals</span>
+          <button class="btn btn-sm btn-outline" onclick="showAddIndividual()">+ Add</button>
+        </div>
+        <div id="individualsList"></div>
         <div id="myRoleSection" style="margin-bottom:12px">
           <div class="flex-between mb-8">
             <span class="section-title" style="margin:0">My Role</span>
@@ -1589,6 +1594,20 @@ select { padding-right: 40px; }
       <div class="role-grid" id="roleGrid"></div>
       <button class="btn btn-outline" onclick="clearRole()" style="width:100%;margin-bottom:8px">Clear Role</button>
       <button class="btn btn-outline" onclick="closeModal('roleModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Add Individual Modal -->
+  <div class="modal-overlay" id="addIndividualModal">
+    <div class="modal">
+      <h3 id="addIndividualTitle">Add Individual</h3>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith">
+      </div>
+      <button class="btn btn-primary" onclick="confirmAddIndividual()">Add</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-outline" onclick="closeModal('addIndividualModal')">Cancel</button>
     </div>
   </div>
 
@@ -2564,7 +2583,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.9.0'
+    appVersion: '1.10.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2918,6 +2937,92 @@ function editExternal(extId) {
   document.getElementById('addExternalModal').classList.add('active');
 }
 
+// ============================================================
+// INDIVIDUALS
+// ============================================================
+let editingIndividualId = null;
+
+function showAddIndividual() {
+  editingIndividualId = null;
+  document.getElementById('addIndividualTitle').textContent = 'Add Individual';
+  document.getElementById('individualName').value = '';
+  document.getElementById('addIndividualModal').classList.add('active');
+}
+
+function confirmAddIndividual() {
+  const name = (document.getElementById('individualName').value || '').trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  if (!activeOperation) return;
+  if (!activeOperation.individuals) activeOperation.individuals = {};
+
+  if (editingIndividualId) {
+    // Edit existing
+    activeOperation.individuals[editingIndividualId].name = name;
+    // Update roleNames if it was using the old name
+    if (activeOperation.roleNames && activeOperation.roleNames['ind-' + editingIndividualId]) {
+      activeOperation.roleNames['ind-' + editingIndividualId] = name;
+    }
+    if (db && deptId && activeOperation.id) {
+      operationsRef.child(activeOperation.id).child('individuals').child(editingIndividualId).set(activeOperation.individuals[editingIndividualId]);
+    }
+  } else {
+    // Add new
+    const id = 'i' + Date.now();
+    activeOperation.individuals[id] = { id, name };
+    if (db && deptId && activeOperation.id) {
+      operationsRef.child(activeOperation.id).child('individuals').child(id).set({ id, name });
+    }
+  }
+
+  if (!db || !deptId) {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+  closeModal('addIndividualModal');
+  renderOperations();
+  renderCommandView();
+}
+
+function removeIndividual(indId) {
+  if (!activeOperation || !activeOperation.individuals) return;
+  delete activeOperation.individuals[indId];
+  // Also clean up role assignment
+  const roleKey = 'ind-' + indId;
+  if (activeOperation.roles) delete activeOperation.roles[roleKey];
+  if (activeOperation.roleNames) delete activeOperation.roleNames[roleKey];
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('individuals').child(indId).remove();
+    operationsRef.child(activeOperation.id).child('roles').child(roleKey).remove();
+    operationsRef.child(activeOperation.id).child('roleNames').child(roleKey).remove();
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+  renderOperations();
+  renderCommandView();
+}
+
+function editIndividual(indId) {
+  if (!activeOperation || !activeOperation.individuals) return;
+  const ind = activeOperation.individuals[indId];
+  if (!ind) return;
+  editingIndividualId = indId;
+  document.getElementById('addIndividualTitle').textContent = 'Edit Individual';
+  document.getElementById('individualName').value = ind.name || '';
+  document.getElementById('addIndividualModal').classList.add('active');
+}
+
+function openIndividualRoleModal(indId) {
+  const ind = activeOperation.individuals[indId];
+  if (!ind) return;
+  roleTarget = 'ind-' + indId;
+  document.getElementById('roleModalTitle').textContent = `Role: ${ind.name}`;
+  document.getElementById('roleModalSubtitle').textContent = 'Assign an ICS role to this individual';
+  document.getElementById('roleNameGroup').style.display = 'none';
+  const roles = activeOperation.roles || {};
+  const currentRole = roles[roleTarget] || null;
+  renderRoleGrid(currentRole);
+  document.getElementById('roleModal').classList.add('active');
+}
+
 function getOperationInventory() {
   const assigned = activeOperation && activeOperation.assignedApparatus;
   let inv;
@@ -3023,6 +3128,20 @@ function renderOperations() {
     </div>`).join('');
   } else {
     extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
+  }
+
+  // Render individuals
+  const indList = document.getElementById('individualsList');
+  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
+  if (individuals.length > 0) {
+    indList.innerHTML = individuals.map(ind => {
+      const roleKey = 'ind-' + ind.id;
+      const roleId = roles[roleKey];
+      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+      return `<span class="app-chip" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${ind.name}${roleBadge}<span onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
+    }).join('');
+  } else {
+    indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
   }
 
   const spList = document.getElementById('shorePointsList');
@@ -3869,6 +3988,21 @@ function renderCommandView() {
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${personName}</span>` : '';
       html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
         <span style="font-weight:600;font-size:14px">${appName}${personStr}</span>
+        ${roleBadge}
+      </div>`;
+    }
+  }
+
+  // Individual Roles section
+  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
+  if (individuals.length > 0) {
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Individual Roles</div>`;
+    for (const ind of individuals) {
+      const roleKey = 'ind-' + ind.id;
+      const roleId = roles[roleKey];
+      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
+      html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
+        <span style="font-weight:600;font-size:14px">${ind.name}</span>
         ${roleBadge}
       </div>`;
     }
