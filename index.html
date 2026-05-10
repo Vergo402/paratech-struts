@@ -560,6 +560,38 @@ select { padding-right: 40px; }
 .shore-point.grouped.group-last { border-radius: 0 0 8px var(--radius); margin-bottom: 10px; border-bottom: 2px solid #E0E0E0; }
 .group-label { display: inline-block; font-size: 10px; font-weight: 700; color: var(--blue); background: var(--blue-light); padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
 
+/* Drill-down navigation */
+.drilldown-breadcrumb { display: flex; align-items: center; gap: 4px; padding: 8px 0; margin-bottom: 8px; flex-wrap: wrap; }
+.drilldown-breadcrumb button { background: none; border: none; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.drilldown-breadcrumb button:hover { background: var(--blue-light); }
+.drilldown-breadcrumb button.current { color: var(--text-primary); cursor: default; }
+.drilldown-breadcrumb button.current:hover { background: none; }
+.drilldown-breadcrumb .bc-sep { color: var(--text-secondary); font-size: 11px; }
+.drilldown-list { }
+.drilldown-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border: 1px solid #E0E0E0; border-radius: var(--radius); margin-bottom: 8px; cursor: pointer; transition: background 0.15s; }
+.drilldown-item:active { background: var(--blue-light); }
+.drilldown-item .di-label { font-size: 15px; font-weight: 600; }
+.drilldown-item .di-meta { display: flex; align-items: center; gap: 8px; }
+.drilldown-item .di-count { font-size: 12px; color: var(--text-secondary); }
+.drilldown-item .di-arrow { color: var(--text-secondary); font-size: 14px; }
+.drilldown-item .di-status-dots { display: flex; gap: 3px; }
+.drilldown-item .di-dot { width: 8px; height: 8px; border-radius: 50%; }
+.drilldown-item .di-dot.placed { background: var(--red); }
+.drilldown-item .di-dot.cutting { background: #F9A825; }
+.drilldown-item .di-dot.finalized { background: var(--green); }
+.drilldown-item .di-dot.returned { background: #9E9E9E; }
+.di-status-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.di-status-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
+.di-status-pill.placed { background: var(--red-bg); color: var(--red); }
+.di-status-pill.cutting { background: #FFF8E1; color: #F57F17; }
+.di-status-pill.finalized { background: var(--green-bg); color: var(--green); }
+.di-status-pill.returned { background: #F5F5F5; color: #757575; }
+
+/* View switcher */
+.view-switcher { display: flex; background: #F5F5F5; border-radius: var(--radius); padding: 3px; margin-bottom: 12px; }
+.view-switcher button { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+.view-switcher button.active { background: white; color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
 /* --- Setup / Settings --- */
 .setup-container {
   display: flex;
@@ -1184,11 +1216,21 @@ select { padding-right: 40px; }
           <button class="btn btn-sm btn-outline" onclick="showAddExternal()">+ Add</button>
         </div>
         <div id="externalEquipmentList"></div>
-        <div class="flex-between mb-8">
-          <span class="section-title" style="margin:0">Shore Points</span>
-          <button class="btn btn-sm btn-primary" onclick="showAddShorePoint()">+ Shore Point</button>
+        <div class="view-switcher" id="viewSwitcher">
+          <button class="active" onclick="switchView('ops')">Operations</button>
+          <button onclick="switchView('command')">Command</button>
+          <button onclick="switchView('cuttable')">Cut Table</button>
         </div>
-        <div id="shorePointsList"></div>
+        <div id="opsView">
+          <div class="flex-between mb-8">
+            <span class="section-title" style="margin:0">Shore Points</span>
+            <button class="btn btn-sm btn-primary" onclick="showAddShorePoint()">+ Shore Point</button>
+          </div>
+          <div id="drilldownBreadcrumb" class="drilldown-breadcrumb" style="display:none"></div>
+          <div id="shorePointsList"></div>
+        </div>
+        <div id="commandView" style="display:none"></div>
+        <div id="cutTableView" style="display:none"></div>
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>
@@ -1289,14 +1331,18 @@ select { padding-right: 40px; }
         <label>Label</label>
         <input type="text" id="spLabel" placeholder="e.g. West Wall Window">
       </div>
+      <div class="form-group" id="spBuildingGroup" style="display:none">
+        <label>Building</label>
+        <input type="text" id="spBuilding" placeholder="e.g. Building A">
+      </div>
       <div style="display:flex;gap:8px">
-        <div class="form-group" style="flex:1">
-          <label>Floor</label>
-          <input type="text" id="spFloor" placeholder="e.g. 2">
-        </div>
         <div class="form-group" style="flex:1">
           <label>Division</label>
           <input type="text" id="spDivision" placeholder="e.g. A">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>Floor</label>
+          <input type="text" id="spFloor" placeholder="e.g. 2">
         </div>
         <div class="form-group" style="flex:1">
           <label>Team</label>
@@ -1382,6 +1428,13 @@ select { padding-right: 40px; }
       <div class="form-group">
         <label>Operation Name / Location</label>
         <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St">
+      </div>
+      <div class="deduction-toggle" style="margin:12px 0">
+        <label class="toggle-switch">
+          <input type="checkbox" id="opMultiBuilding">
+          <span class="toggle-slider"></span>
+        </label>
+        <label for="opMultiBuilding">Multi-building operation</label>
       </div>
       <div class="form-group">
         <label>Assign Apparatus</label>
@@ -1837,6 +1890,8 @@ let spQuantity = 1;
 let archivedOperations = [];
 let laneCollapsedState = {};
 let editingShorePointId = null;
+let currentView = 'ops';
+let drilldownPath = []; // [{level:'building',value:'A'}, {level:'division',value:'C'}, ...]
 
 function initFirebase() {
   const firebaseConfig = {
@@ -2537,139 +2592,134 @@ function renderOperations() {
 
   const spList = document.getElementById('shorePointsList');
   const rawPoints = activeOperation.shorePoints || [];
+  const allPoints = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
 
-  if ((Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints)).length === 0) {
+  if (allPoints.length === 0) {
     spList.innerHTML = '<div class="empty-state"><p>No shore points yet.<br>Tap "+ Shore Point" to add one.</p></div>';
+    document.getElementById('drilldownBreadcrumb').style.display = 'none';
     updateQuickViewFab();
     renderArchivedOps();
     return;
   }
 
-  // Convert to array, assign sequential numbers (oldest=1)
-  const points = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints));
-  const numbered = points.map((sp, i) => ({ ...sp, num: i + 1 }));
+  // Assign sequential numbers globally (oldest=1)
+  allPoints.forEach((sp, i) => sp.num = i + 1);
 
-  // Group by floor
-  const floorGroups = {};
-  for (const sp of numbered) {
-    const floorKey = sp.floor ? `Floor ${sp.floor}` : '__ungrouped__';
-    if (!floorGroups[floorKey]) floorGroups[floorKey] = [];
-    floorGroups[floorKey].push(sp);
+  // Filter by drilldown path
+  const filtered = getFilteredPoints().map(sp => ({ ...sp, num: allPoints.indexOf(sp) + 1 }));
+
+  // Render breadcrumb
+  renderBreadcrumb();
+
+  // Try drill-down list first
+  const drillHtml = renderDrilldownList(filtered);
+  if (drillHtml) {
+    spList.innerHTML = drillHtml;
+  } else {
+    // At the bottom level — render shore point cards with status lanes
+    spList.innerHTML = renderShorePointCards(filtered);
   }
+  updateQuickViewFab();
+  renderArchivedOps();
+}
 
+function renderShorePointCards(numbered) {
   const statusOrder = ['placed', 'cutting', 'finalized', 'returned'];
   const statusLabels = { placed: 'Placed', cutting: 'Cutting', finalized: 'Finalized', returned: 'Returned', deployed: 'Placed' };
 
-  let html = '';
-  for (const [floorName, floorPoints] of Object.entries(floorGroups)) {
-    // Floor group wrapper
-    if (floorName !== '__ungrouped__') {
-      html += `<div class="floor-group"><div class="floor-group-header"><span class="floor-icon">🏢</span> ${floorName}</div>`;
-    } else {
-      html += `<div class="floor-group">`;
-    }
-
-    // Group shore points by status within this floor
-    const byStatus = {};
-    for (const sp of floorPoints) {
-      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
-      if (!byStatus[st]) byStatus[st] = [];
-      byStatus[st].push(sp);
-    }
-
-    // Render status lanes
-    for (const status of statusOrder) {
-      const laneSPs = byStatus[status];
-      if (!laneSPs || laneSPs.length === 0) continue;
-
-      const laneId = `${floorName}-${status}`;
-      const isCollapsed = laneCollapsedState[laneId] || false;
-
-      html += `<div class="lane">
-        <div class="lane-header ${status}" onclick="toggleLane('${laneId}')">
-          <span class="lane-arrow ${isCollapsed ? 'collapsed' : ''}">▼</span>
-          ${statusLabels[status]}
-          <span class="lane-count">${laneSPs.length}</span>
-        </div>
-        <div class="lane-body ${isCollapsed ? 'collapsed' : ''}">`;
-
-      // Sort: newest on top within each lane, but keep grouped cards together
-      const sorted = [...laneSPs].reverse();
-      for (let si = 0; si < sorted.length; si++) {
-        const sp = sorted[si];
-        const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-          ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
-          : '';
-
-        const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
-        const dedInfo = sp.deductions ? (() => {
-          const d = sp.deductions;
-          const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
-          const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
-          return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
-        })() : '';
-
-        // Grouped card styling
-        let groupClass = '';
-        let groupBadge = '';
-        if (sp.groupId && sp.groupTotal > 1) {
-          const sameGroup = sorted.filter(s => s.groupId === sp.groupId);
-          const posInGroup = sameGroup.indexOf(sp);
-          if (posInGroup === 0) groupClass = ' grouped';
-          else if (posInGroup === sameGroup.length - 1) groupClass = ' grouped group-last';
-          else groupClass = ' grouped group-mid';
-          groupBadge = `<span class="group-label">${sp.groupIndex + 1}/${sp.groupTotal}</span>`;
-        }
-
-        html += `<div class="shore-point ${status}${groupClass}">
-          <div class="flex-between mb-8">
-            <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}</div>
-            <div style="display:flex;align-items:center;gap:4px">
-              <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
-              <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete">✕</button>
-              <span class="status-badge ${status}">${statusLabels[status]}</span>
-            </div>
-          </div>
-          ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
-          <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-            ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
-          </div>
-          <div style="font-size:15px;font-weight:600">
-            ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
-          </div>
-          ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
-
-        if (status === 'cutting' && sp.cutLength != null) {
-          html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
-        }
-
-        if (status === 'placed') {
-          html += `<div style="display:flex;gap:6px;margin-top:8px">
-            <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
-            <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
-          </div>`;
-        }
-        if (status === 'cutting') {
-          html += `<div style="display:flex;gap:6px;margin-top:8px">
-            <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">← Placed</button>
-            <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
-          </div>`;
-        }
-        if (status === 'finalized') {
-          html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
-        }
-        if (status === 'returned') {
-          html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
-        }
-        html += `</div>`;
-      }
-      html += `</div></div>`; // close lane-body and lane
-    }
-    html += `</div>`; // close floor-group
+  const byStatus = {};
+  for (const sp of numbered) {
+    const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+    if (!byStatus[st]) byStatus[st] = [];
+    byStatus[st].push(sp);
   }
-  spList.innerHTML = html;
-  updateQuickViewFab();
-  renderArchivedOps();
+
+  let html = '';
+  for (const status of statusOrder) {
+    const laneSPs = byStatus[status];
+    if (!laneSPs || laneSPs.length === 0) continue;
+
+    const laneId = `drill-${status}`;
+    const isCollapsed = laneCollapsedState[laneId] || false;
+
+    html += `<div class="lane">
+      <div class="lane-header ${status}" onclick="toggleLane('${laneId}')">
+        <span class="lane-arrow ${isCollapsed ? 'collapsed' : ''}">▼</span>
+        ${statusLabels[status]}
+        <span class="lane-count">${laneSPs.length}</span>
+      </div>
+      <div class="lane-body ${isCollapsed ? 'collapsed' : ''}">`;
+
+    const sorted = [...laneSPs].reverse();
+    for (const sp of sorted) {
+      const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
+        ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+        : '';
+
+      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+      const dedInfo = sp.deductions ? (() => {
+        const d = sp.deductions;
+        const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
+        const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
+        return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
+      })() : '';
+
+      let groupClass = '';
+      let groupBadge = '';
+      if (sp.groupId && sp.groupTotal > 1) {
+        const sameGroup = sorted.filter(s => s.groupId === sp.groupId);
+        const posInGroup = sameGroup.indexOf(sp);
+        if (posInGroup === 0) groupClass = ' grouped';
+        else if (posInGroup === sameGroup.length - 1) groupClass = ' grouped group-last';
+        else groupClass = ' grouped group-mid';
+        groupBadge = `<span class="group-label">${sp.groupIndex + 1}/${sp.groupTotal}</span>`;
+      }
+
+      html += `<div class="shore-point ${status}${groupClass}">
+        <div class="flex-between mb-8">
+          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
+            <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete">✕</button>
+            <span class="status-badge ${status}">${statusLabels[status]}</span>
+          </div>
+        </div>
+        ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
+          ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+        </div>
+        <div style="font-size:15px;font-weight:600">
+          ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
+        </div>
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+
+      if (status === 'cutting' && sp.cutLength != null) {
+        html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
+      }
+
+      if (status === 'placed') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+        </div>`;
+      }
+      if (status === 'cutting') {
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','placed')">← Placed</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','finalized')">→ Finalized</button>
+        </div>`;
+      }
+      if (status === 'finalized') {
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Return Equipment</button>`;
+      }
+      if (status === 'returned') {
+        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Returned ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div></div>`; // close lane-body and lane
+  }
+  return html;
 }
 
 function renderArchivedOps() {
@@ -2756,12 +2806,15 @@ function confirmStartOp() {
 
   const assignedApparatus = getStartOpSelectedApparatus();
 
+  const multiBuilding = document.getElementById('opMultiBuilding').checked;
+
   const op = {
     name,
     status: 'active',
     startTime: new Date().toISOString(),
     endTime: null,
     assignedApparatus,
+    multiBuilding,
   };
 
   if (db && deptId) {
@@ -2787,9 +2840,22 @@ function showAddShorePoint() {
   document.getElementById('spQtyGroup').style.display = '';
   document.getElementById('spResults').innerHTML = '';
   document.getElementById('spLabel').value = '';
+  document.getElementById('spBuilding').value = '';
   document.getElementById('spFloor').value = '';
   document.getElementById('spDivision').value = '';
   document.getElementById('spTeam').value = '';
+
+  // Show/hide building field based on operation setting
+  const isMulti = activeOperation && activeOperation.multiBuilding;
+  document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
+
+  // Pre-fill from drilldown position
+  for (const seg of drilldownPath) {
+    if (seg.level === 'building') document.getElementById('spBuilding').value = seg.value;
+    if (seg.level === 'division') document.getElementById('spDivision').value = seg.value;
+    if (seg.level === 'floor') document.getElementById('spFloor').value = seg.value;
+    if (seg.level === 'team') document.getElementById('spTeam').value = seg.value;
+  }
   document.getElementById('spLength').value = '';
   document.getElementById('spLoad').value = '';
   document.getElementById('spShoreType').value = 't-shore';
@@ -2876,6 +2942,7 @@ function deployShorePoint(result, qty) {
     const label = qty > 1 ? `${baseLabel} (${n + 1}/${qty})` : baseLabel;
 
     const shoreType = document.getElementById('spShoreType').value;
+    const building = document.getElementById('spBuilding').value.trim() || null;
     const floor = document.getElementById('spFloor').value.trim() || null;
     const division = document.getElementById('spDivision').value.trim() || null;
     const team = document.getElementById('spTeam').value.trim() || null;
@@ -2898,6 +2965,7 @@ function deployShorePoint(result, qty) {
 
     const sp = {
       label,
+      building,
       floor,
       division,
       team,
@@ -3012,6 +3080,366 @@ function toggleLane(laneId) {
   renderOperations();
 }
 
+// ============================================================
+// VIEW SWITCHER
+// ============================================================
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('#viewSwitcher button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`).classList.add('active');
+  document.getElementById('opsView').style.display = view === 'ops' ? '' : 'none';
+  document.getElementById('commandView').style.display = view === 'command' ? '' : 'none';
+  document.getElementById('cutTableView').style.display = view === 'cuttable' ? '' : 'none';
+  if (view === 'command') renderCommandView();
+  if (view === 'cuttable') renderCutTableView();
+}
+
+// ============================================================
+// DRILL-DOWN NAVIGATION
+// ============================================================
+function getHierarchyLevels() {
+  // ICS hierarchy order — building only if multi-building op
+  const levels = [];
+  if (activeOperation && activeOperation.multiBuilding) levels.push('building');
+  levels.push('division', 'floor', 'team');
+  return levels;
+}
+
+function drillInto(level, value) {
+  drilldownPath.push({ level, value });
+  renderOperations();
+}
+
+function drillTo(index) {
+  // Go to a specific breadcrumb level (-1 = top)
+  if (index < 0) {
+    drilldownPath = [];
+  } else {
+    drilldownPath = drilldownPath.slice(0, index + 1);
+  }
+  renderOperations();
+}
+
+function getFilteredPoints() {
+  if (!activeOperation) return [];
+  const rawPoints = activeOperation.shorePoints || [];
+  const points = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  // Filter by current drilldown path
+  return points.filter(sp => {
+    for (const seg of drilldownPath) {
+      const val = sp[seg.level] || null;
+      if (seg.value === '__none__') {
+        if (val !== null) return false;
+      } else {
+        if (val !== seg.value) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function getNextDrillLevel() {
+  const levels = getHierarchyLevels();
+  const usedLevels = drilldownPath.map(s => s.level);
+  return levels.find(l => !usedLevels.includes(l)) || null;
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('drilldownBreadcrumb');
+  if (drilldownPath.length === 0) {
+    bc.style.display = 'none';
+    return;
+  }
+  bc.style.display = 'flex';
+  const levelLabels = { building: 'Building', division: 'Division', floor: 'Floor', team: 'Team' };
+  let html = `<button onclick="drillTo(-1)">All</button>`;
+  drilldownPath.forEach((seg, i) => {
+    const isLast = i === drilldownPath.length - 1;
+    html += `<span class="bc-sep">›</span>`;
+    html += `<button class="${isLast ? 'current' : ''}" onclick="drillTo(${i})">${levelLabels[seg.level]} ${seg.value}</button>`;
+  });
+  bc.innerHTML = html;
+}
+
+function renderDrilldownList(points) {
+  const nextLevel = getNextDrillLevel();
+
+  // If no more levels to drill into, render the shore point cards directly
+  if (!nextLevel) return null;
+
+  // Group points by the next level
+  const groups = {};
+  let hasAnyValue = false;
+  for (const sp of points) {
+    const val = sp[nextLevel] || null;
+    if (val) hasAnyValue = true;
+    const key = val || '__ungrouped__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(sp);
+  }
+
+  // If no points have values for this level, skip it entirely
+  if (!hasAnyValue) {
+    // Auto-skip this level — try the next one
+    const levels = getHierarchyLevels();
+    const usedLevels = drilldownPath.map(s => s.level);
+    const remaining = levels.filter(l => !usedLevels.includes(l) && l !== nextLevel);
+    if (remaining.length === 0) return null; // No more levels, render cards
+
+    // Check if any points have data for remaining levels
+    for (const rl of remaining) {
+      const hasData = points.some(sp => sp[rl]);
+      if (hasData) {
+        // Temporarily skip this empty level by showing the next
+        return renderDrilldownForLevel(points, rl);
+      }
+    }
+    return null;
+  }
+
+  return renderDrilldownForLevel(points, nextLevel);
+}
+
+function renderDrilldownForLevel(points, level) {
+  const groups = {};
+  for (const sp of points) {
+    const val = sp[level] || null;
+    const key = val || '__ungrouped__';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(sp);
+  }
+
+  const levelLabels = { building: 'Building', division: 'Div', floor: 'Floor', team: 'Team' };
+  const statusOrder = ['placed', 'cutting', 'finalized', 'returned'];
+  let html = '';
+
+  // Sort: named groups first (alphabetical), ungrouped last
+  const keys = Object.keys(groups).sort((a, b) => {
+    if (a === '__ungrouped__') return 1;
+    if (b === '__ungrouped__') return -1;
+    return a.localeCompare(b);
+  });
+
+  for (const key of keys) {
+    const groupPts = groups[key];
+    const displayName = key === '__ungrouped__' ? 'Unassigned' : `${levelLabels[level]} ${key}`;
+
+    // Count by status
+    const statusCounts = {};
+    for (const sp of groupPts) {
+      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      statusCounts[st] = (statusCounts[st] || 0) + 1;
+    }
+
+    const pills = statusOrder
+      .filter(s => statusCounts[s] > 0)
+      .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
+      .join('');
+
+    if (key === '__ungrouped__') {
+      html += `<div class="drilldown-item" onclick="drillInto('${level}','__none__')" style="opacity:0.7">
+        <span class="di-label">${displayName}</span>
+        <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
+      </div>`;
+    } else {
+      html += `<div class="drilldown-item" onclick="drillInto('${level}','${key.replace(/'/g, "\\'")}')">
+        <span class="di-label">${displayName}</span>
+        <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
+      </div>`;
+    }
+  }
+
+  return html;
+}
+
+// ============================================================
+// COMMAND VIEW
+// ============================================================
+function renderCommandView() {
+  const container = document.getElementById('commandView');
+  if (!activeOperation) { container.innerHTML = ''; return; }
+
+  const rawPoints = activeOperation.shorePoints || [];
+  const points = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+
+  if (points.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No shore points to display.</p></div>';
+    return;
+  }
+
+  // Count by status
+  const counts = { placed: 0, cutting: 0, finalized: 0, returned: 0 };
+  for (const sp of points) {
+    const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+    counts[st] = (counts[st] || 0) + 1;
+  }
+  const total = points.length;
+  const done = counts.finalized + counts.returned;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  // Time elapsed
+  const started = activeOperation.startTime ? new Date(activeOperation.startTime) : new Date();
+  const elapsed = Math.floor((Date.now() - started.getTime()) / 60000);
+  const hrs = Math.floor(elapsed / 60);
+  const mins = elapsed % 60;
+  const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+
+  // Assigned apparatus
+  const appCount = (activeOperation.assignedApparatus || []).length;
+
+  let html = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Dashboard</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="background:var(--red-bg);padding:12px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--red)">${counts.placed}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--red)">Placed</div>
+        </div>
+        <div style="background:#FFF8E1;padding:12px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:24px;font-weight:800;color:#F57F17">${counts.cutting}</div>
+          <div style="font-size:11px;font-weight:600;color:#F57F17">Cutting</div>
+        </div>
+        <div style="background:var(--green-bg);padding:12px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--green)">${counts.finalized}</div>
+          <div style="font-size:11px;font-weight:600;color:var(--green)">Finalized</div>
+        </div>
+        <div style="background:#F5F5F5;padding:12px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:24px;font-weight:800;color:#757575">${counts.returned}</div>
+          <div style="font-size:11px;font-weight:600;color:#757575">Returned</div>
+        </div>
+      </div>
+      <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div><span style="font-size:13px;font-weight:600">Progress</span></div>
+        <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
+      </div>
+      <div style="background:#E3F2FD;border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
+        <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
+        <span>⏱ ${timeStr}</span>
+        <span>🚒 ${appCount} apparatus</span>
+        <span>📍 ${total} shore points</span>
+      </div>
+    </div>
+  `;
+
+  // Layout — group by hierarchy
+  const levels = getHierarchyLevels();
+  const topLevel = levels[0] || 'floor';
+  const groups = {};
+  for (const sp of points) {
+    const key = sp[topLevel] || 'Unassigned';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(sp);
+  }
+
+  html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Layout</div>`;
+  for (const [name, pts] of Object.entries(groups)) {
+    const statusCounts = {};
+    for (const sp of pts) {
+      const st = sp.status === 'deployed' ? 'placed' : (sp.status || 'placed');
+      statusCounts[st] = (statusCounts[st] || 0) + 1;
+    }
+    const pills = ['placed','cutting','finalized','returned']
+      .filter(s => statusCounts[s])
+      .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
+      .join('');
+
+    const levelLabel = { building: 'Building', division: 'Div', floor: 'Floor', team: 'Team' }[topLevel] || '';
+    html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600">${name === 'Unassigned' ? name : levelLabel + ' ' + name}</span>
+      <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ============================================================
+// CUT TABLE VIEW
+// ============================================================
+function renderCutTableView() {
+  const container = document.getElementById('cutTableView');
+  if (!activeOperation) { container.innerHTML = ''; return; }
+
+  const rawPoints = activeOperation.shorePoints || [];
+  const points = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints))
+    .filter(sp => (sp.status === 'deployed' ? 'placed' : sp.status) === 'cutting')
+    .sort((a, b) => {
+      // Sort by when they entered cutting (or creation time as fallback)
+      const ta = a.cuttingStartedAt || a.createdAt || 0;
+      const tb = b.cuttingStartedAt || b.createdAt || 0;
+      return ta - tb;
+    });
+
+  // Also get completed cuts
+  const donePts = (Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints))
+    .filter(sp => sp.cutMarkedDone);
+
+  if (points.length === 0 && donePts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No shore points in cutting status.<br>Move shore points to "Cutting" from Operations view.</p></div>';
+    return;
+  }
+
+  let html = '';
+  if (points.length > 0) {
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Ready to Cut (${points.length})</div>`;
+    for (const sp of points) {
+      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+      const headerSize = sp.deductions?.header ? (sp.deductions.header === 3.5 ? '4×4' : '6×6') : 'None';
+      const footerSize = sp.deductions?.sole ? (sp.deductions.sole === 3.5 ? '4×4' : '6×6') : 'None';
+
+      html += `<div style="background:var(--surface);border:2px solid #F9A825;border-radius:var(--radius);padding:16px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <strong>${sp.label || 'Shore Point'}</strong>
+            ${sp.floor ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:6px">Floor ${sp.floor}</span>` : ''}
+          </div>
+        </div>
+        <div style="font-size:36px;font-weight:800;color:#F57F17;margin:8px 0;line-height:1">
+          ${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">Cut Length</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin-bottom:10px">
+          <div>Header: <strong>${headerSize}</strong></div>
+          <div>Footer: <strong>${footerSize}</strong></div>
+          <div>Strut: <strong>${sp.deployedStrut ? sp.deployedStrut.model : '?'}</strong></div>
+          ${shoreTypeLabel ? `<div>Type: <strong>${shoreTypeLabel}</strong></div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
+      </div>`;
+    }
+  }
+
+  if (donePts.length > 0) {
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#757575;margin:16px 0 8px">Cuts Done (${donePts.length})</div>`;
+    for (const sp of donePts) {
+      html += `<div style="background:#F5F5F5;border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>${sp.label || 'Shore Point'}</strong>
+          <span style="font-size:15px;font-weight:700;color:#757575">${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}</span>
+        </div>
+      </div>`;
+    }
+  }
+
+  container.innerHTML = html;
+}
+
+function markCutDone(spId) {
+  if (!activeOperation) return;
+  if (db && deptId && activeOperation.id) {
+    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update({ cutMarkedDone: true });
+  } else {
+    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const sp = points.find(p => p.id === spId);
+    if (sp) sp.cutMarkedDone = true;
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    renderOperations();
+  }
+  if (currentView === 'cuttable') renderCutTableView();
+}
+
 function editShorePoint(spId) {
   if (!activeOperation) return;
   const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
@@ -3020,8 +3448,13 @@ function editShorePoint(spId) {
 
   editingShorePointId = spId;
 
+  // Show/hide building field
+  const isMulti = activeOperation && activeOperation.multiBuilding;
+  document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
+
   // Populate modal with existing data
   document.getElementById('spLabel').value = sp.label || '';
+  document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spFloor').value = sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
   document.getElementById('spTeam').value = sp.team || '';
@@ -3065,6 +3498,7 @@ function confirmEditShorePoint() {
 
   const updateData = {
     label: document.getElementById('spLabel').value.trim() || 'Shore Point',
+    building: document.getElementById('spBuilding').value.trim() || null,
     floor: document.getElementById('spFloor').value.trim() || null,
     division: document.getElementById('spDivision').value.trim() || null,
     team: document.getElementById('spTeam').value.trim() || null,
