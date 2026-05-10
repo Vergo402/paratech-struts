@@ -592,6 +592,22 @@ select { padding-right: 40px; }
 .view-switcher button { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
 .view-switcher button.active { background: white; color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
+/* --- Role Badges & Assignment --- */
+.role-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #E8EAF6; color: #283593; margin-left: 4px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.3px; }
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.role-card { padding: 12px; border: 2px solid #E0E0E0; border-radius: var(--radius); text-align: center; cursor: pointer; transition: all 0.15s; }
+.role-card:active { transform: scale(0.97); }
+.role-card.selected { border-color: var(--blue); background: #E3F2FD; }
+.role-card .role-name { font-size: 13px; font-weight: 600; }
+.role-card .role-abbr { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.role-suggest-banner { background: #E3F2FD; border: 1px solid #90CAF9; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.role-suggest-banner .suggest-text { font-size: 13px; color: #1565C0; flex: 1; }
+.role-suggest-banner .suggest-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.role-suggest-banner button { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.role-suggest-banner .btn-suggest-switch { background: var(--blue); color: white; }
+.role-suggest-banner .btn-suggest-dismiss { background: transparent; color: #1565C0; }
+.task-force-label { font-size: 12px; font-weight: 700; color: #283593; background: #E8EAF6; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
+
 /* --- Setup / Settings --- */
 .setup-container {
   display: flex;
@@ -1216,6 +1232,14 @@ select { padding-right: 40px; }
           <button class="btn btn-sm btn-outline" onclick="showAddExternal()">+ Add</button>
         </div>
         <div id="externalEquipmentList"></div>
+        <div id="myRoleSection" style="margin-bottom:12px">
+          <div class="flex-between mb-8">
+            <span class="section-title" style="margin:0">My Role</span>
+            <button class="btn btn-sm btn-outline" onclick="openMyRoleModal()">Change</button>
+          </div>
+          <div id="myRoleDisplay" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">Not assigned — tap Change to pick a role</div>
+        </div>
+        <div id="roleSuggestBanner" style="display:none"></div>
         <div class="view-switcher" id="viewSwitcher">
           <button class="active" onclick="switchView('ops')">Operations</button>
           <button onclick="switchView('command')">Command</button>
@@ -1429,6 +1453,10 @@ select { padding-right: 40px; }
         <label>Operation Name / Location</label>
         <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St">
       </div>
+      <div class="form-group">
+        <label>Task Force Name <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(optional)</span></label>
+        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1">
+      </div>
       <div class="deduction-toggle" style="margin:12px 0">
         <label class="toggle-switch">
           <input type="checkbox" id="opMultiBuilding">
@@ -1469,6 +1497,17 @@ select { padding-right: 40px; }
       <button class="btn btn-primary" onclick="confirmAddExternal()">Add</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('addExternalModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Role Assignment Modal -->
+  <div class="modal-overlay" id="roleModal">
+    <div class="modal">
+      <h3 id="roleModalTitle">Assign Role</h3>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px" id="roleModalSubtitle">Select an ICS role</p>
+      <div class="role-grid" id="roleGrid"></div>
+      <button class="btn btn-outline" onclick="clearRole()" style="width:100%;margin-bottom:8px">Clear Role</button>
+      <button class="btn btn-outline" onclick="closeModal('roleModal')">Cancel</button>
     </div>
   </div>
 
@@ -1892,6 +1931,19 @@ let laneCollapsedState = {};
 let editingShorePointId = null;
 let currentView = 'ops';
 let drilldownPath = []; // [{level:'building',value:'A'}, {level:'division',value:'C'}, ...]
+let myRole = null; // This device's self-assigned role
+let roleViewDismissed = false; // Whether user dismissed the view suggestion banner
+
+const ICS_ROLES = [
+  { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command' },
+  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command' },
+  { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops' },
+  { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops' },
+  { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops' },
+  { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops' },
+  { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable' },
+  { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops' },
+];
 
 function initFirebase() {
   const firebaseConfig = {
@@ -2441,6 +2493,135 @@ function removeApparatusFromOp(appId) {
   toggleApparatusAssignment(appId, false);
 }
 
+// ============================================================
+// ROLES & TASK FORCE
+// ============================================================
+let roleTarget = null; // 'self' or apparatus id
+
+function openMyRoleModal() {
+  roleTarget = 'self';
+  document.getElementById('roleModalTitle').textContent = 'My Role';
+  document.getElementById('roleModalSubtitle').textContent = 'Pick your ICS role on this device';
+  renderRoleGrid(myRole);
+  document.getElementById('roleModal').classList.add('active');
+}
+
+function openApparatusRoleModal(appId) {
+  roleTarget = appId;
+  const name = getApparatusName(appId);
+  document.getElementById('roleModalTitle').textContent = `Role: ${name}`;
+  document.getElementById('roleModalSubtitle').textContent = 'Assign an ICS role to this apparatus';
+  const roles = activeOperation.roles || {};
+  const currentRole = roles[appId] || null;
+  renderRoleGrid(currentRole);
+  document.getElementById('roleModal').classList.add('active');
+}
+
+function renderRoleGrid(selectedRoleId) {
+  const grid = document.getElementById('roleGrid');
+  grid.innerHTML = ICS_ROLES.map(r => `
+    <div class="role-card ${r.id === selectedRoleId ? 'selected' : ''}" onclick="selectRole('${r.id}')">
+      <div class="role-name">${r.name}</div>
+      <div class="role-abbr">${r.abbr}</div>
+    </div>
+  `).join('');
+}
+
+function selectRole(roleId) {
+  if (roleTarget === 'self') {
+    myRole = roleId;
+    localStorage.setItem('paratech_myRole', roleId);
+    roleViewDismissed = false;
+  } else {
+    // Assign role to apparatus
+    if (!activeOperation.roles) activeOperation.roles = {};
+    activeOperation.roles[roleTarget] = roleId;
+    if (db && deptId && activeOperation.id) {
+      operationsRef.child(activeOperation.id).child('roles').child(roleTarget).set(roleId);
+    } else {
+      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    }
+  }
+  closeModal('roleModal');
+  renderOperations();
+}
+
+function clearRole() {
+  if (roleTarget === 'self') {
+    myRole = null;
+    localStorage.removeItem('paratech_myRole');
+    roleViewDismissed = false;
+  } else {
+    if (activeOperation.roles) {
+      delete activeOperation.roles[roleTarget];
+      if (db && deptId && activeOperation.id) {
+        operationsRef.child(activeOperation.id).child('roles').child(roleTarget).remove();
+      } else {
+        localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      }
+    }
+  }
+  closeModal('roleModal');
+  renderOperations();
+}
+
+function getRoleName(roleId) {
+  const r = ICS_ROLES.find(r => r.id === roleId);
+  return r ? r.name : roleId;
+}
+
+function getRoleAbbr(roleId) {
+  const r = ICS_ROLES.find(r => r.id === roleId);
+  return r ? r.abbr : roleId;
+}
+
+function getSuggestedView(roleId) {
+  const r = ICS_ROLES.find(r => r.id === roleId);
+  return r ? r.suggestedView : null;
+}
+
+function renderMyRoleDisplay() {
+  const el = document.getElementById('myRoleDisplay');
+  const section = document.getElementById('myRoleSection');
+  if (!activeOperation) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  if (myRole) {
+    const roleDef = ICS_ROLES.find(r => r.id === myRole);
+    el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}</span>`;
+  } else {
+    el.innerHTML = 'Not assigned — tap Change to pick a role';
+  }
+}
+
+function renderRoleSuggestion() {
+  const banner = document.getElementById('roleSuggestBanner');
+  if (!myRole || roleViewDismissed || !activeOperation) {
+    banner.style.display = 'none';
+    return;
+  }
+  const suggested = getSuggestedView(myRole);
+  if (!suggested || suggested === currentView) {
+    banner.style.display = 'none';
+    return;
+  }
+  const viewNames = { ops: 'Operations', command: 'Command', cuttable: 'Cut Table' };
+  banner.style.display = 'flex';
+  banner.className = 'role-suggest-banner';
+  banner.innerHTML = `
+    <span class="suggest-text">Your role (${getRoleName(myRole)}) works best with the <strong>${viewNames[suggested]}</strong> view.</span>
+    <div class="suggest-actions">
+      <button class="btn-suggest-switch" onclick="switchView('${suggested}')">Switch</button>
+      <button class="btn-suggest-dismiss" onclick="dismissRoleSuggestion()">✕</button>
+    </div>
+  `;
+}
+
+function dismissRoleSuggestion() {
+  roleViewDismissed = true;
+  document.getElementById('roleSuggestBanner').style.display = 'none';
+}
+
 function showAddExternal() {
   if (!activeOperation) return;
   const select = document.getElementById('extStrutModel');
@@ -2566,17 +2747,41 @@ function renderOperations() {
   document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
   document.getElementById('opTime').textContent = 'Started: ' + new Date(activeOperation.startTime).toLocaleString();
 
-  // Render assigned apparatus chips
+  // Render task force label
+  const opNameEl = document.getElementById('opName');
+  if (activeOperation.taskForce) {
+    const tfLabel = document.querySelector('.task-force-label');
+    if (!tfLabel) {
+      const lbl = document.createElement('span');
+      lbl.className = 'task-force-label';
+      lbl.textContent = activeOperation.taskForce;
+      opNameEl.parentNode.insertBefore(lbl, opNameEl);
+    } else {
+      tfLabel.textContent = activeOperation.taskForce;
+    }
+  } else {
+    const tfLabel = document.querySelector('.task-force-label');
+    if (tfLabel) tfLabel.remove();
+  }
+
+  // Render assigned apparatus chips with role badges
   const assignedList = document.getElementById('assignedApparatusList');
   const assigned = activeOperation.assignedApparatus || [];
+  const roles = activeOperation.roles || {};
   if (assigned.length > 0) {
     assignedList.innerHTML = assigned.map(appId => {
       const name = getApparatusName(appId);
-      return `<span class="app-chip">${name}<span class="chip-x" onclick="removeApparatusFromOp('${appId}')">&times;</span></span>`;
+      const roleId = roles[appId];
+      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+      return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
     }).join('');
   } else {
     assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
   }
+
+  // Render role display and suggestion banner
+  renderMyRoleDisplay();
+  renderRoleSuggestion();
 
   // Render external equipment
   const extList = document.getElementById('externalEquipmentList');
@@ -2805,8 +3010,8 @@ function confirmStartOp() {
   if (!name) return;
 
   const assignedApparatus = getStartOpSelectedApparatus();
-
   const multiBuilding = document.getElementById('opMultiBuilding').checked;
+  const taskForce = document.getElementById('newOpTaskForce').value.trim();
 
   const op = {
     name,
@@ -2816,6 +3021,12 @@ function confirmStartOp() {
     assignedApparatus,
     multiBuilding,
   };
+  if (taskForce) op.taskForce = taskForce;
+
+  // Reset device role for new operation
+  myRole = null;
+  roleViewDismissed = false;
+  localStorage.removeItem('paratech_myRole');
 
   if (db && deptId) {
     const newRef = operationsRef.push();
@@ -2830,6 +3041,7 @@ function confirmStartOp() {
 
   closeModal('startOpModal');
   document.getElementById('newOpName').value = '';
+  document.getElementById('newOpTaskForce').value = '';
 }
 
 function showAddShorePoint() {
@@ -3085,6 +3297,7 @@ function toggleLane(laneId) {
 // ============================================================
 function switchView(view) {
   currentView = view;
+  roleViewDismissed = true; // User made a deliberate choice
   document.querySelectorAll('#viewSwitcher button').forEach(b => b.classList.remove('active'));
   document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`).classList.add('active');
   document.getElementById('opsView').style.display = view === 'ops' ? '' : 'none';
@@ -3092,6 +3305,7 @@ function switchView(view) {
   document.getElementById('cutTableView').style.display = view === 'cuttable' ? '' : 'none';
   if (view === 'command') renderCommandView();
   if (view === 'cuttable') renderCutTableView();
+  renderRoleSuggestion();
 }
 
 // ============================================================
@@ -3353,6 +3567,22 @@ function renderCommandView() {
       <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
+  }
+
+  // Apparatus Roles section
+  const assigned = activeOperation.assignedApparatus || [];
+  const roles = activeOperation.roles || {};
+  if (assigned.length > 0) {
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Apparatus Roles</div>`;
+    for (const appId of assigned) {
+      const appName = getApparatusName(appId);
+      const roleId = roles[appId];
+      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
+      html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
+        <span style="font-weight:600;font-size:14px">${appName}</span>
+        ${roleBadge}
+      </div>`;
+    }
   }
 
   container.innerHTML = html;
@@ -4145,6 +4375,9 @@ function init() {
 
   const storedOp = localStorage.getItem('paratech_operation');
   if (storedOp) activeOperation = JSON.parse(storedOp);
+
+  // Restore device role
+  myRole = localStorage.getItem('paratech_myRole') || null;
 
   loadLocalApparatus();
   initFirebase();
