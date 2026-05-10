@@ -514,6 +514,7 @@ select { padding-right: 40px; }
   padding: 12px 16px;
   margin-bottom: 10px;
 }
+.shore-point.pending { border-color: #9C27B0; background: #F3E5F5; }
 .shore-point.process { border-color: var(--red); background: #FFEBEE; }
 .shore-point.strutplaced { border-color: var(--blue); background: #E3F2FD; }
 .shore-point.cutting { border-color: #F9A825; background: #FFFDE7; }
@@ -528,6 +529,7 @@ select { padding-right: 40px; }
   font-weight: 700;
   text-transform: uppercase;
 }
+.status-badge.pending { background: #F3E5F5; color: #7B1FA2; }
 .status-badge.process { background: var(--red-bg); color: var(--red); }
 .status-badge.strutplaced { background: #E3F2FD; color: #1565C0; }
 .status-badge.cutting { background: #FFF8E1; color: #F57F17; }
@@ -544,6 +546,8 @@ select { padding-right: 40px; }
 .lane-header .lane-arrow { font-size: 10px; transition: transform 0.2s; color: var(--text-secondary); }
 .lane-header .lane-arrow.collapsed { transform: rotate(-90deg); }
 .lane-header .lane-count { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+.lane-header.pending { border-left-color: #9C27B0; color: #7B1FA2; }
+.lane-header.pending .lane-count { background: #F3E5F5; color: #7B1FA2; }
 .lane-header.process { border-left-color: var(--red); color: var(--red); }
 .lane-header.process .lane-count { background: var(--red-bg); color: var(--red); }
 .lane-header.strutplaced { border-left-color: var(--blue); color: #1565C0; }
@@ -594,6 +598,7 @@ select { padding-right: 40px; }
 .drilldown-item .di-dot.returned { background: #9E9E9E; }
 .di-status-pills { display: flex; gap: 4px; flex-wrap: wrap; }
 .di-status-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 8px; }
+.di-status-pill.pending { background: #F3E5F5; color: #7B1FA2; }
 .di-status-pill.process { background: var(--red-bg); color: var(--red); }
 .di-status-pill.strutplaced { background: #E3F2FD; color: #1565C0; }
 .di-status-pill.cutting { background: #FFF8E1; color: #F57F17; }
@@ -1113,7 +1118,7 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.10.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.11.0</div>
   </div>
   <div class="conn-status" id="connStatus"></div>
 
@@ -1931,7 +1936,8 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    container.innerHTML = '<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.</div>';
+    const pendingBtn = isOperation ? '<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="deployPendingShorePoint()">📋 Save as Pending</button>' : '';
+    container.innerHTML = `<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.${pendingBtn}</div>`;
     return;
   }
 
@@ -2583,7 +2589,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.10.0'
+    appVersion: '1.11.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -3185,8 +3191,8 @@ function normalizeStatus(status) {
 }
 
 function renderShorePointCards(numbered) {
-  const statusOrder = ['process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
-  const statusLabels = { process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed & Returned' };
+  const statusOrder = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
+  const statusLabels = { pending: 'Pending — No Equipment', process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed & Returned' };
 
   const byStatus = {};
   for (const sp of numbered) {
@@ -3265,9 +3271,21 @@ function renderShorePointCards(numbered) {
           ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
-          ${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}
+          ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:#7B1FA2">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
         ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+
+      if (status === 'pending') {
+        // Check if equipment is now available
+        const opInv = getOperationInventory();
+        const matches = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions);
+        if (matches.length > 0) {
+          html += `<div style="background:#E8F5E9;border:1px solid #66BB6A;border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:#2E7D32;font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
+        }
+        html += `<div style="display:flex;gap:6px;margin-top:8px">
+          <button class="btn btn-sm" style="flex:1;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="assignEquipmentToPending('${sp.id}')">🔧 Assign Equipment</button>
+        </div>`;
+      }
 
       if (status === 'cutting' && sp.cutLength != null) {
         html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
@@ -3489,12 +3507,74 @@ function findForShorePoint() {
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available. Assign apparatus or add external equipment first.</div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="deployPendingShorePoint()">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
   const results = findStrutCombinations(length, load, sfIndex, apparatusInventory, null, deductions);
   renderResults(results, 'spResults', length, load, sfIndex, true);
+}
+
+function assignEquipmentToPending(spId) {
+  // Find the pending shore point and open edit form to assign a strut
+  const rawPoints = activeOperation.shorePoints || [];
+  const allPoints = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const sp = allPoints.find(p => p.id === spId);
+  if (!sp) return;
+  // Use editShorePoint which pre-fills the form
+  editShorePoint(spId);
+}
+
+function deployPendingShorePoint() {
+  const length = getMeasurementInches('sp');
+  if (!length || length <= 0) { alert('Enter a measurement first.'); return; }
+  if (!activeOperation) return;
+
+  const label = document.getElementById('spLabel').value.trim() || 'Shore Point';
+  const load = parseFloat(document.getElementById('spLoad').value) || 0;
+  const shoreType = document.getElementById('spShoreType').value;
+  const building = document.getElementById('spBuilding').value.trim() || null;
+  const floor = document.getElementById('spFloor').value.trim() || null;
+  const division = document.getElementById('spDivision').value.trim() || null;
+  const team = document.getElementById('spTeam').value.trim() || null;
+  const deductions = getDeductions('sp');
+  const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
+
+  const sp = {
+    label,
+    building,
+    floor,
+    division,
+    team,
+    shoreType,
+    requiredLength: length,
+    effectiveLength,
+    estimatedLoad: load,
+    safetyFactor: '4:1',
+    deductions: deductions || null,
+    deployedStrut: null,
+    deployedExtensions: [],
+    deployedPlates: [],
+    status: 'pending',
+    deployedAt: new Date().toISOString(),
+    returnedAt: null,
+    groupId: null,
+    groupIndex: null,
+    groupTotal: null,
+  };
+
+  if (db && deptId && activeOperation.id) {
+    const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
+    spRef.set(sp);
+  } else {
+    if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
+    activeOperation.shorePoints.push(sp);
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+
+  closeModal('shorePointModal');
+  renderOperations();
+  renderCommandView();
 }
 
 function deployShorePoint(result, qty) {
@@ -3822,7 +3902,7 @@ function renderDrilldownForLevel(points, level) {
   }
 
   const levelLabels = { building: 'Building', division: 'Div', floor: 'Area', team: 'Team' };
-  const statusOrder = ['process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
+  const statusOrder = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
   let html = '';
 
   // Sort: named groups first (alphabetical), ungrouped last
@@ -3881,7 +3961,7 @@ function renderCommandView() {
   }
 
   // Count by status
-  const counts = { process: 0, strutplaced: 0, cutting: 0, runner: 0, secured: 0, returned: 0 };
+  const counts = { pending: 0, process: 0, strutplaced: 0, cutting: 0, runner: 0, secured: 0, returned: 0 };
   for (const sp of points) {
     const st = normalizeStatus(sp.status);
     counts[st] = (counts[st] || 0) + 1;
@@ -3904,6 +3984,10 @@ function renderCommandView() {
     <div style="margin-bottom:16px">
       <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Dashboard</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+        ${counts.pending > 0 ? `<div style="background:#F3E5F5;padding:10px;border-radius:var(--radius);text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#7B1FA2">${counts.pending}</div>
+          <div style="font-size:10px;font-weight:600;color:#7B1FA2">Pending</div>
+        </div>` : ''}
         <div style="background:var(--red-bg);padding:10px;border-radius:var(--radius);text-align:center">
           <div style="font-size:22px;font-weight:800;color:var(--red)">${counts.process}</div>
           <div style="font-size:10px;font-weight:600;color:var(--red)">In Process</div>
@@ -3944,6 +4028,83 @@ function renderCommandView() {
     </div>
   `;
 
+  // ICS/NIMS Hierarchy Chart
+  const roles = activeOperation.roles || {};
+  const roleNamesMap = activeOperation.roleNames || {};
+  const individuals = activeOperation.individuals || {};
+  const assigned = activeOperation.assignedApparatus || [];
+
+  // Build a lookup: roleId → array of {name, type}
+  const roleAssignments = {};
+  for (const appId of assigned) {
+    const roleId = roles[appId];
+    if (roleId) {
+      if (!roleAssignments[roleId]) roleAssignments[roleId] = [];
+      const personName = roleNamesMap[appId];
+      roleAssignments[roleId].push({ name: personName || getApparatusName(appId), type: 'apparatus' });
+    }
+  }
+  for (const ind of Object.values(individuals)) {
+    const roleKey = 'ind-' + ind.id;
+    const roleId = roles[roleKey];
+    if (roleId) {
+      if (!roleAssignments[roleId]) roleAssignments[roleId] = [];
+      roleAssignments[roleId].push({ name: ind.name, type: 'individual' });
+    }
+  }
+  // My role
+  if (myRole) {
+    if (!roleAssignments[myRole]) roleAssignments[myRole] = [];
+    const myName = localStorage.getItem('paratech_myRoleName') || 'This Device';
+    roleAssignments[myRole].push({ name: myName, type: 'self' });
+  }
+
+  const hasAnyRoles = Object.keys(roleAssignments).length > 0;
+  if (hasAnyRoles) {
+    const renderNode = (roleId) => {
+      const r = ICS_ROLES.find(x => x.id === roleId);
+      if (!r) return '';
+      const people = roleAssignments[roleId] || [];
+      const filled = people.length > 0;
+      const nameList = people.map(p => p.name).join(', ');
+      return `<div style="background:${filled ? '#E3F2FD' : 'var(--surface)'};border:${filled ? '2px solid var(--blue)' : '1px solid #E0E0E0'};border-radius:var(--radius);padding:8px 12px;text-align:center;min-width:80px">
+        <div style="font-size:11px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
+        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : '<div style="font-size:11px;color:#BDBDBD;margin-top:2px">—</div>'}
+      </div>`;
+    };
+
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">ICS Organization</div>`;
+    // IC at top
+    html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode('ic')}</div>`;
+    // Connector line
+    html += `<div style="display:flex;justify-content:center"><div style="width:2px;height:12px;background:#BDBDBD"></div></div>`;
+    // Safety + Ops row
+    html += `<div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
+      ${renderNode('safety')}
+      ${renderNode('operations')}
+    </div>`;
+    // Connector line to ops children
+    html += `<div style="display:flex;justify-content:center"><div style="width:2px;height:12px;background:#BDBDBD"></div></div>`;
+    // Ops children: Entry, Rescue, Shoring, Runner, Cut, Wood
+    const opsChildren = ['entry', 'rescue', 'shoring', 'runner', 'cutting', 'wood'];
+    const activeOpsChildren = opsChildren.filter(id => roleAssignments[id]);
+    if (activeOpsChildren.length > 0) {
+      html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
+      for (const childId of activeOpsChildren) {
+        html += renderNode(childId);
+      }
+      html += `</div>`;
+    } else {
+      html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
+      for (const childId of opsChildren) {
+        html += `<div style="background:var(--surface);border:1px dashed #E0E0E0;border-radius:var(--radius);padding:6px 10px;text-align:center;min-width:60px">
+          <div style="font-size:10px;color:#BDBDBD">${ICS_ROLES.find(x => x.id === childId)?.abbr || childId}</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
   // Layout — group by hierarchy
   const levels = getHierarchyLevels();
   const topLevel = levels[0] || 'floor';
@@ -3961,7 +4122,7 @@ function renderCommandView() {
       const st = normalizeStatus(sp.status);
       statusCounts[st] = (statusCounts[st] || 0) + 1;
     }
-    const pills = ['process','strutplaced','cutting','runner','secured','returned']
+    const pills = ['pending','process','strutplaced','cutting','runner','secured','returned']
       .filter(s => statusCounts[s])
       .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
       .join('');
@@ -3975,15 +4136,12 @@ function renderCommandView() {
   }
 
   // Apparatus Roles section
-  const assigned = activeOperation.assignedApparatus || [];
-  const roles = activeOperation.roles || {};
   if (assigned.length > 0) {
     html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Apparatus Roles</div>`;
-    const roleNames = activeOperation.roleNames || {};
     for (const appId of assigned) {
       const appName = getApparatusName(appId);
       const roleId = roles[appId];
-      const personName = roleNames[appId];
+      const personName = roleNamesMap[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${personName}</span>` : '';
       html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
@@ -3994,10 +4152,10 @@ function renderCommandView() {
   }
 
   // Individual Roles section
-  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
-  if (individuals.length > 0) {
+  const individualsArr = Object.values(individuals);
+  if (individualsArr.length > 0) {
     html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Individual Roles</div>`;
-    for (const ind of individuals) {
+    for (const ind of individualsArr) {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
