@@ -374,8 +374,8 @@ select { padding-right: 40px; }
 .apparatus-checklist label:has(input:checked) { border-color: var(--blue); background: var(--blue-light); }
 .apparatus-checklist input[type="checkbox"] { width: 16px; height: 16px; }
 .assigned-apparatus-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 28px; }
-.app-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 14px; background: var(--blue-light); color: var(--blue); }
-.app-chip .chip-x { cursor: pointer; font-size: 15px; line-height: 1; opacity: 0.6; margin-left: 2px; }
+.app-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 14px; background: var(--blue-light); color: var(--blue); }
+.app-chip .chip-x { cursor: pointer; font-size: 16px; line-height: 1; opacity: 0.6; margin-left: 4px; padding: 4px; min-width: 24px; min-height: 24px; display: flex; align-items: center; justify-content: center; }
 .app-chip .chip-x:hover { opacity: 1; }
 .app-chip.external { background: #FFF3E0; color: #E65100; }
 .ext-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border: 1px solid #eee; border-radius: var(--radius); margin-bottom: 6px; font-size: 13px; }
@@ -551,9 +551,9 @@ select { padding-right: 40px; }
 .lane-body { padding: 4px 0 4px 8px; }
 .lane-body.collapsed { display: none; }
 .cut-length-display { font-size: 15px; font-weight: 700; color: #F57F17; margin-top: 4px; }
-.sp-edit-btn { background: none; border: 1px solid #E0E0E0; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
+.sp-edit-btn { background: none; border: 1px solid #E0E0E0; border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer; color: var(--text-secondary); min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; }
 .sp-edit-btn:hover { background: #F5F5F5; }
-.sp-delete-btn { background: none; border: 1px solid #FFCDD2; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; color: var(--red); }
+.sp-delete-btn { background: none; border: 1px solid #FFCDD2; border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer; color: var(--red); min-width: 36px; min-height: 36px; display: inline-flex; align-items: center; justify-content: center; margin-left: 6px; }
 .sp-delete-btn:hover { background: #FFEBEE; }
 .shore-point.grouped { border-left: 4px solid var(--blue); margin-bottom: 0; border-bottom: 1px dashed #ccc; border-radius: var(--radius) 8px 0 0; }
 .shore-point.grouped.group-mid { border-radius: 0; }
@@ -562,7 +562,7 @@ select { padding-right: 40px; }
 
 /* Drill-down navigation */
 .drilldown-breadcrumb { display: flex; align-items: center; gap: 4px; padding: 8px 0; margin-bottom: 8px; flex-wrap: wrap; }
-.drilldown-breadcrumb button { background: none; border: none; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.drilldown-breadcrumb button { background: none; border: none; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 10px; border-radius: 6px; min-height: 32px; }
 .drilldown-breadcrumb button:hover { background: var(--blue-light); }
 .drilldown-breadcrumb button.current { color: var(--text-primary); cursor: default; }
 .drilldown-breadcrumb button.current:hover { background: none; }
@@ -603,7 +603,7 @@ select { padding-right: 40px; }
 .role-suggest-banner { background: #E3F2FD; border: 1px solid #90CAF9; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .role-suggest-banner .suggest-text { font-size: 13px; color: #1565C0; flex: 1; }
 .role-suggest-banner .suggest-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.role-suggest-banner button { padding: 6px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.role-suggest-banner button { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; min-height: 36px; }
 .role-suggest-banner .btn-suggest-switch { background: var(--blue); color: white; }
 .role-suggest-banner .btn-suggest-dismiss { background: transparent; color: #1565C0; }
 .task-force-label { font-size: 12px; font-weight: 700; color: #283593; background: #E8EAF6; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 4px; }
