@@ -27,10 +27,15 @@
   --bg: #FAFAFA;
   --surface: #FFFFFF;
   --text: #212121;
-  --text-secondary: #757575;
+  --text-secondary: #616161;
   --nav-bg: #1a1a2e;
   --nav-text: #B0BEC5;
   --nav-active: #FFFFFF;
+  --pending: #7B1FA2;
+  --pending-bg: #F3E5F5;
+  --pending-border: #CE93D8;
+  --orange-dark: #E65100;
+  --orange-bg: #FFF3E0;
   --radius: 12px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
@@ -74,6 +79,29 @@ html, body {
 }
 .conn-status.offline { display: block; background: var(--red); color: white; }
 .conn-status.syncing { display: block; background: #FF9800; color: white; }
+
+/* --- Toast Notifications --- */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+.toast.warning { background: #E65100; }
 
 /* --- Screen Container --- */
 .screens {
@@ -1084,6 +1112,18 @@ select { padding-right: 40px; }
 @media (min-width: 500px) {
   .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 }
+
+/* Touch targets — 44px minimum per WCAG */
+.app-chip .chip-x { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.sp-edit-btn, .sp-delete-btn { min-width: 44px; min-height: 44px; }
+.drilldown-breadcrumb button { min-height: 44px; }
+
+/* Hover + focus states */
+.btn:hover { filter: brightness(0.95); }
+.btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.drilldown-item:hover { background: var(--blue-light); }
+.role-card:hover { border-color: var(--blue); }
+.quick-add-btn:hover, .quick-add-plate:hover { background: var(--blue-light); }
 </style>
 </head>
 <body>
@@ -1104,7 +1144,7 @@ select { padding-right: 40px; }
 <div class="inv-qv-overlay" id="qvOverlay" onclick="toggleQuickView()"></div>
 <div class="inv-quickview-panel" id="qvPanel">
   <div class="inv-qv-header">
-    <h3>Available Inventory</h3>
+    <h2 style="font-size:18px">Available Inventory</h2>
     <button class="inv-qv-close" onclick="toggleQuickView()">&times;</button>
   </div>
   <div class="inv-qv-body" id="qvBody"></div>
@@ -1118,9 +1158,9 @@ select { padding-right: 40px; }
   <div class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v1.11.0</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">v2.0.0</div>
   </div>
-  <div class="conn-status" id="connStatus"></div>
+  <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
   <!-- Screens -->
   <div class="screens">
@@ -1269,7 +1309,7 @@ select { padding-right: 40px; }
               <div style="font-size:18px;font-weight:700" id="opName"></div>
               <div style="font-size:13px;color:var(--text-secondary)" id="opTime"></div>
             </div>
-            <button class="btn btn-sm btn-danger" onclick="endOperation()">End</button>
+            <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
         <div class="flex-between mb-8">
@@ -1327,9 +1367,9 @@ select { padding-right: 40px; }
       </div>
       <div class="form-group">
         <label>Department Name</label>
-        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY">
+        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100">
       </div>
-      <button class="btn btn-primary mt-16" onclick="saveSettings()">Save Settings</button>
+      <button class="btn btn-primary mt-16" onclick="guardClick(this,saveSettings)">Save Settings</button>
       <div class="section-title">Data Management</div>
       <button class="btn btn-outline btn-sm" onclick="exportInventory()" style="width:100%;margin-bottom:8px">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm" onclick="importInventory()" style="width:100%;margin-bottom:8px">Import Inventory (Excel)</button>
@@ -1365,12 +1405,12 @@ select { padding-right: 40px; }
   <!-- Add Apparatus Modal -->
   <div class="modal-overlay" id="addApparatusModal">
     <div class="modal">
-      <h3>Add Apparatus</h3>
+      <h2 style="font-size:18px">Add Apparatus</h2>
       <div class="form-group">
         <label>Apparatus Name</label>
-        <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7">
+        <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
       </div>
-      <button class="btn btn-primary" onclick="confirmAddApparatus()">Add</button>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddApparatus)">Add</button>
       <div class="divider"></div>
       <div id="apparatusManageList"></div>
       <div class="divider"></div>
@@ -1381,7 +1421,7 @@ select { padding-right: 40px; }
   <!-- Add Equipment Modal -->
   <div class="modal-overlay" id="addEquipModal">
     <div class="modal">
-      <h3 id="addEquipTitle">Add Equipment</h3>
+      <h2 style="font-size:18px" id="addEquipTitle">Add Equipment</h2>
       <div class="quick-add-summary" id="quickAddSummary" style="display:none"></div>
       <div class="section-title">Quick Add — Struts</div>
       <div class="quick-add-grid" id="quickAddStruts"></div>
@@ -1397,7 +1437,7 @@ select { padding-right: 40px; }
   <!-- Add Shore Point Modal -->
   <div class="modal-overlay" id="shorePointModal">
     <div class="modal">
-      <h3>Add Shore Point</h3>
+      <h2 style="font-size:18px">Add Shore Point</h2>
       <div class="form-group">
         <label>Shore Type</label>
         <select id="spShoreType" onchange="onShoreTypeChange()">
@@ -1408,7 +1448,7 @@ select { padding-right: 40px; }
       </div>
       <div class="form-group">
         <label>Label</label>
-        <input type="text" id="spLabel" placeholder="e.g. West Wall Window">
+        <input type="text" id="spLabel" placeholder="e.g. West Wall Window" maxlength="100">
       </div>
       <div class="form-group" id="spBuildingGroup" style="display:none">
         <label>Building</label>
@@ -1524,7 +1564,7 @@ select { padding-right: 40px; }
         </div>
       </div>
       <button class="btn btn-primary" id="spFindBtn" onclick="findForShorePoint()">Find Available Struts</button>
-      <button class="btn btn-primary hidden" id="spSaveEditBtn" onclick="confirmEditShorePoint()" style="background:var(--green)">Save Changes</button>
+      <button class="btn btn-primary hidden" id="spSaveEditBtn" onclick="guardClick(this,confirmEditShorePoint)" style="background:var(--green)">Save Changes</button>
       <div id="spResults" class="results-container"></div>
       <div class="divider"></div>
       <button class="btn btn-outline" onclick="closeModal('shorePointModal')">Cancel</button>
@@ -1534,10 +1574,10 @@ select { padding-right: 40px; }
   <!-- Start Operation Modal -->
   <div class="modal-overlay" id="startOpModal">
     <div class="modal">
-      <h3>Start New Operation</h3>
+      <h2 style="font-size:18px">Start New Operation</h2>
       <div class="form-group">
         <label>Operation Name / Location</label>
-        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St">
+        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100">
       </div>
       <div class="form-group">
         <label>Task Force Name <span style="font-size:12px;color:var(--text-secondary);font-weight:400">(optional)</span></label>
@@ -1554,7 +1594,7 @@ select { padding-right: 40px; }
         <label>Assign Apparatus</label>
         <div id="startOpApparatusList" class="apparatus-checklist"></div>
       </div>
-      <button class="btn btn-primary" onclick="confirmStartOp()">Start Operation</button>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmStartOp)">Start Operation</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('startOpModal')">Cancel</button>
     </div>
@@ -1563,14 +1603,14 @@ select { padding-right: 40px; }
   <!-- Add External Equipment Modal -->
   <div class="modal-overlay" id="addExternalModal">
     <div class="modal">
-      <h3>Add External Equipment</h3>
+      <h2 style="font-size:18px">Add External Equipment</h2>
       <div class="form-group">
         <label>Department</label>
-        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD">
+        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100">
       </div>
       <div class="form-group">
         <label>Apparatus</label>
-        <input type="text" id="extApparatus" placeholder="e.g. Engine 99">
+        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100">
       </div>
       <div class="form-group">
         <label>Strut Model</label>
@@ -1581,7 +1621,7 @@ select { padding-right: 40px; }
         <label>Quantity</label>
         <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric">
       </div>
-      <button class="btn btn-primary" onclick="confirmAddExternal()">Add</button>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddExternal)">Add</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('addExternalModal')">Cancel</button>
     </div>
@@ -1590,7 +1630,7 @@ select { padding-right: 40px; }
   <!-- Role Assignment Modal -->
   <div class="modal-overlay" id="roleModal">
     <div class="modal">
-      <h3 id="roleModalTitle">Assign Role</h3>
+      <h2 style="font-size:18px" id="roleModalTitle">Assign Role</h2>
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px" id="roleModalSubtitle">Select an ICS role</p>
       <div id="roleNameGroup" style="display:none;margin-bottom:12px">
         <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Assigned To</label>
@@ -1605,12 +1645,12 @@ select { padding-right: 40px; }
   <!-- Add Individual Modal -->
   <div class="modal-overlay" id="addIndividualModal">
     <div class="modal">
-      <h3 id="addIndividualTitle">Add Individual</h3>
+      <h2 style="font-size:18px" id="addIndividualTitle">Add Individual</h2>
       <div class="form-group">
         <label>Name</label>
-        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith">
+        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith" maxlength="100">
       </div>
-      <button class="btn btn-primary" onclick="confirmAddIndividual()">Add</button>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddIndividual)">Add</button>
       <div style="height:8px"></div>
       <button class="btn btn-outline" onclick="closeModal('addIndividualModal')">Cancel</button>
     </div>
@@ -1619,7 +1659,7 @@ select { padding-right: 40px; }
   <!-- Feedback Modal -->
   <div class="modal-overlay" id="feedbackModal">
     <div class="modal">
-      <h3>Report Issue / Suggestion</h3>
+      <h2 style="font-size:18px">Report Issue / Suggestion</h2>
       <div class="form-group">
         <label>Category</label>
         <select id="feedbackCategory">
@@ -1630,10 +1670,10 @@ select { padding-right: 40px; }
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." style="width:100%;resize:vertical;font-family:inherit;font-size:14px;padding:10px;border:1px solid #ddd;border-radius:8px"></textarea>
+        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." maxlength="2000" style="width:100%;resize:vertical;font-family:inherit;font-size:14px;padding:10px;border:1px solid #ddd;border-radius:8px"></textarea>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="submitFeedback()" style="flex:1">Submit</button>
+        <button class="btn btn-primary" onclick="guardClick(this,submitFeedback)" style="flex:1">Submit</button>
         <button class="btn btn-outline" onclick="closeFeedbackModal()" style="flex:1">Cancel</button>
       </div>
     </div>
@@ -1926,6 +1966,10 @@ function runQuickSelect() {
     document.getElementById('quickResults').innerHTML = '<div class="no-results">Enter a length to search.</div>';
     return;
   }
+  if (load < 0 || load > MAX_LOAD_LBS) {
+    document.getElementById('quickResults').innerHTML = '<div class="no-results">Load must be between 0 and 500,000 lbs.</div>';
+    return;
+  }
 
   const systemFilter = getActiveSystemFilter();
   const deductions = getDeductions('qf');
@@ -1936,7 +1980,7 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    const pendingBtn = isOperation ? '<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="deployPendingShorePoint()">📋 Save as Pending</button>' : '';
+    const pendingBtn = isOperation ? '<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button>' : '';
     container.innerHTML = `<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.${pendingBtn}</div>`;
     return;
   }
@@ -2015,7 +2059,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="this.disabled=true;deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
@@ -2045,6 +2089,117 @@ let currentView = 'ops';
 let drilldownPath = []; // [{level:'building',value:'A'}, {level:'division',value:'C'}, ...]
 let myRole = null; // This device's self-assigned role
 let roleViewDismissed = false; // Whether user dismissed the view suggestion banner
+let editingExternalId = null;
+let editingIndividualId = null;
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+const DEFAULT_SF_INDEX = 2; // 4:1 safety factor
+const SAFETY_FACTORS = ['2:1', '3:1', '4:1'];
+const MAX_MEASUREMENT_INCHES = 360; // 30 feet — no strut exceeds this
+const MAX_LOAD_LBS = 500000;
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escapeHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function debounce(fn, ms) {
+  let t;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+let toastTimer = null;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'toast ' + (type || 'success');
+  // Force reflow for transition
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// Offline-safe Firebase write wrapper
+let pendingWrites = JSON.parse(localStorage.getItem('paratech_pendingWrites') || '[]');
+let isOnline = false;
+
+function firebaseSave(ref, method, data) {
+  if (!ref) return Promise.resolve();
+  let promise;
+  if (method === 'set') promise = ref.set(data);
+  else if (method === 'update') promise = ref.update(data);
+  else if (method === 'remove') promise = ref.remove();
+  else if (method === 'transaction') promise = ref.transaction(data);
+  else return Promise.reject(new Error('Unknown method: ' + method));
+
+  return promise.then((result) => {
+    // For transactions, check if committed
+    if (method === 'transaction' && result && !result.committed) {
+      console.warn('Transaction not committed:', ref.toString());
+    }
+  }).catch(err => {
+    console.warn('Firebase write failed:', err.message, ref.toString());
+    // Queue for retry on reconnect
+    const op = { path: ref.toString(), method, timestamp: Date.now() };
+    if (method !== 'transaction') {
+      op.data = data;
+      pendingWrites.push(op);
+      localStorage.setItem('paratech_pendingWrites', JSON.stringify(pendingWrites));
+    }
+    showToast('Offline — will sync later', 'warning');
+  });
+}
+
+function flushPendingWrites() {
+  if (pendingWrites.length === 0 || !db) return;
+  const writes = [...pendingWrites];
+  pendingWrites = [];
+  localStorage.removeItem('paratech_pendingWrites');
+  let flushed = 0;
+  for (const op of writes) {
+    try {
+      // Reconstruct ref from path
+      const path = op.path.replace(db.ref().toString(), '');
+      const ref = db.ref(path);
+      if (op.method === 'set') ref.set(op.data);
+      else if (op.method === 'update') ref.update(op.data);
+      else if (op.method === 'remove') ref.remove();
+      flushed++;
+    } catch (e) {
+      console.warn('Failed to flush pending write:', e);
+      pendingWrites.push(op);
+    }
+  }
+  if (flushed > 0) {
+    showToast(flushed + ' pending change' + (flushed > 1 ? 's' : '') + ' synced', 'success');
+  }
+  if (pendingWrites.length > 0) {
+    localStorage.setItem('paratech_pendingWrites', JSON.stringify(pendingWrites));
+  }
+}
+
+// Guard against double-clicks on buttons
+function guardClick(btn, fn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = 'Working…';
+  Promise.resolve().then(fn).finally(() => {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = orig;
+    }, 1000);
+  });
+}
 
 const ICS_ROLES = [
   { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command' },
@@ -2080,6 +2235,7 @@ function initFirebase() {
       if (snap.val() === true) {
         el.className = 'conn-status';
         el.textContent = '';
+        flushPendingWrites();
       } else {
         el.className = 'conn-status offline';
         el.textContent = 'Offline — changes will sync when reconnected';
@@ -2239,7 +2395,7 @@ function confirmAddApparatus() {
 
   if (db && deptId && apparatusRef) {
     const newRef = apparatusRef.push();
-    newRef.set({ name });
+    firebaseSave(newRef, 'set', { name });
     if (!selectedApparatus) selectedApparatus = newRef.key;
   } else {
     const app = {
@@ -2261,10 +2417,10 @@ function removeApparatus(id) {
   if (count > 0 && !confirm(`"${app.name}" has ${count} equipment items. Remove apparatus and all its equipment?`)) return;
 
   if (db && deptId && apparatusRef) {
-    apparatusRef.child(id).remove();
+    firebaseSave(apparatusRef.child(id), 'remove');
     const itemsToRemove = localInventory.filter(i => i.apparatus === id);
     for (const item of itemsToRemove) {
-      inventoryRef.child(item.id).remove();
+      firebaseSave(inventoryRef.child(item.id), 'remove');
     }
   } else {
     localInventory = localInventory.filter(i => i.apparatus !== id);
@@ -2292,6 +2448,11 @@ function getMeasurementInches(prefix) {
   const inches = parseFloat(document.getElementById(prefix + 'Inches').value) || 0;
   const fraction = parseFloat(document.getElementById(prefix + 'Fraction').value) || 0;
   const total = (feet * 12) + inches + fraction;
+  if (total < 0) return 0;
+  if (total > MAX_MEASUREMENT_INCHES) {
+    showToast('Measurement exceeds 30 ft maximum', 'warning');
+    return 0;
+  }
   // Also update the hidden field for backward compat
   const hiddenId = prefix === 'qf' ? 'inputLength' : 'spLength';
   const hidden = document.getElementById(hiddenId);
@@ -2433,7 +2594,7 @@ function updateQty(itemId, delta) {
     if (deployed > 0) return;
     if (db && deptId) {
       localInventory = localInventory.filter(i => i.id !== itemId);
-      inventoryRef.child(itemId).remove();
+      firebaseSave(inventoryRef.child(itemId), 'remove');
     } else {
       localInventory = localInventory.filter(i => i.id !== itemId);
       localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
@@ -2445,7 +2606,7 @@ function updateQty(itemId, delta) {
   item.quantity = newQty;
   item.available = newAvail;
   if (db && deptId) {
-    inventoryRef.child(itemId).update({ quantity: newQty, available: newAvail });
+    firebaseSave(inventoryRef.child(itemId), 'update', { quantity: newQty, available: newAvail });
   } else {
     localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
   }
@@ -2499,7 +2660,7 @@ function showAddEquipment() {
     const item = localInventory.find(i => i.type === 'plate' && i.plateId === plate.id && i.apparatus === selectedApparatus);
     const qty = item ? item.quantity : 0;
     if (qty > 0) plateCount += qty;
-    ph += `<button class="quick-add-plate ${qty > 0 ? 'added' : ''}" onclick="quickAdd('plate','','${plate.id}',0)"><img src="${plate.img}" alt="${plate.name}"><span class="plate-label">${plate.name}</span><span class="plate-ht">${plate.height}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+    ph += `<button class="quick-add-plate ${qty > 0 ? 'added' : ''}" onclick="quickAdd('plate','','${plate.id}',0)"><img src="${plate.img}" alt="${plate.name}" loading="lazy"><span class="plate-label">${plate.name}</span><span class="plate-ht">${plate.height}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
   }
   platesGrid.innerHTML = ph;
 
@@ -2547,7 +2708,7 @@ function quickAdd(type, system, model, length) {
       item.id = newRef.key;
       localInventory.push(item);
       const {id, ...firebaseItem} = item;
-      newRef.set(firebaseItem);
+      firebaseSave(newRef, 'set', firebaseItem);
     } else {
       item.id = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       localInventory.push(item);
@@ -2589,7 +2750,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '1.11.0'
+    appVersion: '2.0.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -2650,7 +2811,7 @@ function toggleApparatusAssignment(appId, assign) {
   activeOperation.assignedApparatus = assigned;
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('assignedApparatus').set(assigned);
+    firebaseSave(operationsRef.child(activeOperation.id).child('assignedApparatus'), 'set', assigned);
   } else {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
   }
@@ -2716,11 +2877,11 @@ function selectRole(roleId) {
     if (personName) activeOperation.roleNames[roleTarget] = personName;
     else delete activeOperation.roleNames[roleTarget];
     if (db && deptId && activeOperation.id) {
-      operationsRef.child(activeOperation.id).child('roles').child(roleTarget).set(roleId);
+      firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'set', roleId);
       if (personName) {
-        operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget).set(personName);
+        firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget), 'set', personName);
       } else {
-        operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget).remove();
+        firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget), 'remove');
       }
     } else {
       localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
@@ -2740,7 +2901,7 @@ function clearRole() {
     if (activeOperation.roles) {
       delete activeOperation.roles[roleTarget];
       if (db && deptId && activeOperation.id) {
-        operationsRef.child(activeOperation.id).child('roles').child(roleTarget).remove();
+        firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'remove');
       } else {
         localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
       }
@@ -2775,7 +2936,7 @@ function renderMyRoleDisplay() {
   if (myRole) {
     const roleDef = ICS_ROLES.find(r => r.id === myRole);
     const personName = localStorage.getItem('paratech_myRoleName');
-    const nameStr = personName ? ` — ${personName}` : '';
+    const nameStr = personName ? ` — ${escapeHtml(personName)}` : '';
     el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}${nameStr}</span>`;
   } else {
     el.innerHTML = 'Not assigned — tap Change to pick a role';
@@ -2855,6 +3016,7 @@ function confirmAddExternal() {
   const model = select.value;
   const system = select.options[select.selectedIndex].dataset.system;
   const qty = parseInt(document.getElementById('extQuantity').value) || 1;
+  if (qty < 1 || qty > 999) { alert('Quantity must be between 1 and 999.'); return; }
 
   if (!deptName && !apparatus) { alert('Please enter a department name or apparatus.'); return; }
   if (!model) { alert('Please select a strut model.'); return; }
@@ -2881,7 +3043,7 @@ function confirmAddExternal() {
     };
     activeOperation.externalEquipment[editingExternalId] = item;
     if (db && deptId && activeOperation.id) {
-      operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId).set(item);
+      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId), 'set', item);
     } else {
       localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     }
@@ -2901,7 +3063,7 @@ function confirmAddExternal() {
     if (db && deptId && activeOperation.id) {
       const newRef = operationsRef.child(activeOperation.id).child('externalEquipment').push();
       item.id = newRef.key;
-      newRef.set(item);
+      firebaseSave(newRef, 'set', item);
       activeOperation.externalEquipment[item.id] = item;
     } else {
       item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
@@ -2921,14 +3083,12 @@ function removeExternal(extId) {
   delete activeOperation.externalEquipment[extId];
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('externalEquipment').child(extId).remove();
+    firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
   } else {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
-
-let editingExternalId = null;
 
 function editExternal(extId) {
   if (!activeOperation || !activeOperation.externalEquipment) return;
@@ -2946,8 +3106,6 @@ function editExternal(extId) {
 // ============================================================
 // INDIVIDUALS
 // ============================================================
-let editingIndividualId = null;
-
 function showAddIndividual() {
   editingIndividualId = null;
   document.getElementById('addIndividualTitle').textContent = 'Add Individual';
@@ -2969,14 +3127,14 @@ function confirmAddIndividual() {
       activeOperation.roleNames['ind-' + editingIndividualId] = name;
     }
     if (db && deptId && activeOperation.id) {
-      operationsRef.child(activeOperation.id).child('individuals').child(editingIndividualId).set(activeOperation.individuals[editingIndividualId]);
+      firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(editingIndividualId), 'set', activeOperation.individuals[editingIndividualId]);
     }
   } else {
     // Add new
     const id = 'i' + Date.now();
     activeOperation.individuals[id] = { id, name };
     if (db && deptId && activeOperation.id) {
-      operationsRef.child(activeOperation.id).child('individuals').child(id).set({ id, name });
+      firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(id), 'set', { id, name });
     }
   }
 
@@ -2996,9 +3154,9 @@ function removeIndividual(indId) {
   if (activeOperation.roles) delete activeOperation.roles[roleKey];
   if (activeOperation.roleNames) delete activeOperation.roleNames[roleKey];
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('individuals').child(indId).remove();
-    operationsRef.child(activeOperation.id).child('roles').child(roleKey).remove();
-    operationsRef.child(activeOperation.id).child('roleNames').child(roleKey).remove();
+    firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(indId), 'remove');
+    firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleKey), 'remove');
+    firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleKey), 'remove');
   } else {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
   }
@@ -3110,7 +3268,7 @@ function renderOperations() {
       const roleNames = activeOperation.roleNames || {};
       const personName = roleNames[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-      const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${personName}</span>` : '';
+      const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
       return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
     }).join('');
   } else {
@@ -3126,7 +3284,7 @@ function renderOperations() {
   const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
   if (extEquip.length > 0) {
     extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
-      <div><span class="ext-info">${ext.model}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${ext.deptName} — ${ext.apparatus} (${ext.available}/${ext.quantity} avail)</span></div>
+      <div><span class="ext-info">${ext.model}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
       <div style="display:flex;align-items:center;gap:8px">
         <span onclick="editExternal('${ext.id}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
         <span class="chip-x" onclick="removeExternal('${ext.id}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
@@ -3144,7 +3302,7 @@ function renderOperations() {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-      return `<span class="app-chip" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${ind.name}${roleBadge}<span onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
+      return `<span class="app-chip" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
     }).join('');
   } else {
     indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
@@ -3193,6 +3351,7 @@ function normalizeStatus(status) {
 function renderShorePointCards(numbered) {
   const statusOrder = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
   const statusLabels = { pending: 'Pending — No Equipment', process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed & Returned' };
+  const strutCache = {};
 
   const byStatus = {};
   for (const sp of numbered) {
@@ -3257,14 +3416,14 @@ function renderShorePointCards(numbered) {
 
       html += `<div class="shore-point ${status}${groupClass}${lockClass}">
         <div class="flex-between mb-8">
-          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${sp.label || 'Shore Point'}</strong>${groupBadge}${lockIcon}</div>
+          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>${groupBadge}${lockIcon}</div>
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit">✎</button>
-            <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete">✕</button>
+            <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit" aria-label="Edit ${escapeHtml(sp.label) || 'Shore Point'}">✎</button>
+            <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete" aria-label="Delete ${escapeHtml(sp.label) || 'Shore Point'}">✕</button>
             <span class="status-badge ${status}">${statusLabels[status]}</span>
           </div>
         </div>
-        ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${sp.team}</div>` : ''}
+        ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.team)}</div>` : ''}
         ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -3273,12 +3432,13 @@ function renderShorePointCards(numbered) {
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:#7B1FA2">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${sp.deployedStrut.deptName || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
 
       if (status === 'pending') {
-        // Check if equipment is now available
+        // Check if equipment is now available (cached per measurement)
         const opInv = getOperationInventory();
-        const matches = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions);
+        const cacheKey = `${sp.effectiveLength || sp.requiredLength}-${sp.estimatedLoad || 0}`;
+        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
           html += `<div style="background:#E8F5E9;border:1px solid #66BB6A;border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:#2E7D32;font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
         }
@@ -3315,7 +3475,7 @@ function renderShorePointCards(numbered) {
         </div>`;
       }
       if (status === 'secured') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="this.disabled=true;returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
       }
       if (status === 'returned') {
         html += `<div style="font-size:12px;color:#757575;margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
@@ -3346,7 +3506,7 @@ function renderArchivedOps() {
     html += `<div class="op-card" style="margin-bottom:8px">
       <div class="flex-between mb-8">
         <div>
-          <div style="font-weight:700">${op.name || 'Unnamed'}</div>
+          <div style="font-weight:700">${escapeHtml(op.name) || 'Unnamed'}</div>
           <div style="font-size:12px;color:var(--text-secondary)">${startDate}${endDate ? ' – ' + endDate : ''} · ${pointCount} shore point${pointCount !== 1 ? 's' : ''}</div>
         </div>
         <span class="status-badge returned" style="font-size:11px">archived</span>
@@ -3365,7 +3525,7 @@ function viewArchivedOp(opId) {
   if (!op) return;
 
   const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints || {});
-  let detail = `<div class="op-card"><div class="flex-between mb-8"><div><div style="font-size:18px;font-weight:700">${op.name || 'Unnamed'}</div>`;
+  let detail = `<div class="op-card"><div class="flex-between mb-8"><div><div style="font-size:18px;font-weight:700">${escapeHtml(op.name) || 'Unnamed'}</div>`;
   detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${new Date(op.startTime).toLocaleString()}</div>`;
   if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${new Date(op.endTime).toLocaleString()}</div>`;
   detail += `</div></div></div>`;
@@ -3375,7 +3535,7 @@ function viewArchivedOp(opId) {
       ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
       : '';
     detail += `<div class="shore-point returned" style="margin-bottom:8px">
-      <strong>${sp.label || 'Shore Point'}</strong>
+      <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
       <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
       ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}
@@ -3393,7 +3553,7 @@ function deleteArchivedOp(opId) {
   if (!confirm('Delete this archived operation? This cannot be undone.')) return;
 
   if (db && deptId) {
-    operationsRef.child(opId).remove();
+    firebaseSave(operationsRef.child(opId), 'remove');
   } else {
     archivedOperations = archivedOperations.filter(o => o.id !== opId);
     renderArchivedOps();
@@ -3430,7 +3590,7 @@ function confirmStartOp() {
 
   if (db && deptId) {
     const newRef = operationsRef.push();
-    newRef.set(op);
+    firebaseSave(newRef, 'set', op);
   } else {
     op.id = 'local-op-' + Date.now();
     op.shorePoints = [];
@@ -3446,7 +3606,7 @@ function confirmStartOp() {
 
 function showAddShorePoint() {
   editingShorePointId = null;
-  document.querySelector('#shorePointModal .modal h3').textContent = 'Add Shore Point';
+  document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
   document.getElementById('spFindBtn').classList.remove('hidden');
   document.getElementById('spSaveEditBtn').classList.add('hidden');
   document.getElementById('spQtyGroup').style.display = '';
@@ -3504,10 +3664,14 @@ function findForShorePoint() {
   const sfIndex = 2;
 
   if (!length || length <= 0) return;
+  if (load < 0 || load > MAX_LOAD_LBS) {
+    showToast('Load must be between 0 and 500,000 lbs', 'warning');
+    return;
+  }
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="deployPendingShorePoint()">📋 Save as Pending</button></div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -3565,7 +3729,7 @@ function deployPendingShorePoint() {
 
   if (db && deptId && activeOperation.id) {
     const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
-    spRef.set(sp);
+    firebaseSave(spRef, 'set', sp);
   } else {
     if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
     activeOperation.shorePoints.push(sp);
@@ -3675,20 +3839,20 @@ function deployShorePoint(result, qty) {
 
     if (db && deptId && activeOperation) {
       const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
-      spRef.set(sp);
+      firebaseSave(spRef, 'set', sp);
       if (strutInvItem.external) {
-        operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
         if (activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
           activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
         }
       } else {
-        inventoryRef.child(strutInvItem.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
       }
       for (const ext of extInvItems) {
-        inventoryRef.child(ext.id).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
       }
       for (const pl of deployedPlates) {
-        inventoryRef.child(pl.inventoryId).child('available').transaction(v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
       }
     } else {
       if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
@@ -3754,7 +3918,7 @@ function updateShoreStatus(spId, newStatus) {
   }
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
   } else {
     Object.assign(sp, updateData);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
@@ -4143,9 +4307,9 @@ function renderCommandView() {
       const roleId = roles[appId];
       const personName = roleNamesMap[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
-      const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${personName}</span>` : '';
+      const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${escapeHtml(personName)}</span>` : '';
       html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
-        <span style="font-weight:600;font-size:14px">${appName}${personStr}</span>
+        <span style="font-weight:600;font-size:14px">${escapeHtml(appName)}${personStr}</span>
         ${roleBadge}
       </div>`;
     }
@@ -4160,7 +4324,7 @@ function renderCommandView() {
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
-        <span style="font-weight:600;font-size:14px">${ind.name}</span>
+        <span style="font-weight:600;font-size:14px">${escapeHtml(ind.name)}</span>
         ${roleBadge}
       </div>`;
     }
@@ -4219,7 +4383,7 @@ function renderCutTableView() {
     for (const sp of runnerPts) {
       html += `<div style="background:#F5F5F5;border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <strong>${sp.label || 'Shore Point'}</strong>
+          <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
           <span style="font-size:15px;font-weight:700;color:#757575">${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}</span>
         </div>
         <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
@@ -4267,7 +4431,7 @@ function renderCutTableCard(sp, mode) {
   return `<div style="background:var(--surface);border:2px solid ${borderColor};border-radius:var(--radius);padding:16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
       <div>
-        <strong style="font-size:15px">${sp.label || 'Shore Point'}</strong>
+        <strong style="font-size:15px">${escapeHtml(sp.label) || 'Shore Point'}</strong>
       </div>
       <span class="status-badge ${mode === 'done' ? 'runner' : 'cutting'}">${mode === 'done' ? 'Cut Done' : 'Cutting'}</span>
     </div>
@@ -4305,7 +4469,7 @@ function sendToRunner(spId) {
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
   } else {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     const sp = points.find(p => p.id === spId);
@@ -4326,7 +4490,7 @@ function markCutDone(spId) {
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update(updateData);
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
   } else {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     const sp = points.find(p => p.id === spId);
@@ -4386,7 +4550,7 @@ function editShorePoint(spId) {
   document.getElementById('spResults').innerHTML = '<div style="padding:12px;background:#E3F2FD;border-radius:8px;text-align:center;font-size:14px;color:var(--blue)"><strong>Editing shore point</strong> — update fields above and tap Save.</div>';
 
   // Change modal title
-  document.querySelector('#shorePointModal .modal h3').textContent = 'Edit Shore Point';
+  document.querySelector('#shorePointModal .modal h2').textContent = 'Edit Shore Point';
 
   document.getElementById('shorePointModal').classList.add('active');
 }
@@ -4414,7 +4578,7 @@ function confirmEditShorePoint() {
   }
 
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId).update(updateData);
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId), 'update', updateData);
   } else {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
     const sp = points.find(p => p.id === editingShorePointId);
@@ -4424,7 +4588,7 @@ function confirmEditShorePoint() {
   }
 
   editingShorePointId = null;
-  document.querySelector('#shorePointModal .modal h3').textContent = 'Add Shore Point';
+  document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
   closeModal('shorePointModal');
 }
 
@@ -4443,7 +4607,7 @@ function deleteShorePoint(spId) {
 
   // Remove from operation
   if (db && deptId && activeOperation.id) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).remove();
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'remove');
   } else {
     activeOperation.shorePoints = activeOperation.shorePoints.filter(p => p.id !== spId);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
@@ -4458,11 +4622,11 @@ function returnEquipmentSilent(sp) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
       if (db && deptId) {
-        operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
       }
     } else {
       if (db && deptId) {
-        inventoryRef.child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
       } else {
         const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
@@ -4473,7 +4637,7 @@ function returnEquipmentSilent(sp) {
     for (const ext of sp.deployedExtensions) {
       if (ext.inventoryId) {
         if (db && deptId) {
-          inventoryRef.child(ext.inventoryId).child('available').transaction(v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
         } else {
           const inv = localInventory.find(i => i.id === ext.inventoryId);
           if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
@@ -4485,7 +4649,7 @@ function returnEquipmentSilent(sp) {
     for (const pl of sp.deployedPlates) {
       if (pl.inventoryId) {
         if (db && deptId) {
-          inventoryRef.child(pl.inventoryId).child('available').transaction(v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
         } else {
           const inv = localInventory.find(i => i.id === pl.inventoryId);
           if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
@@ -4503,32 +4667,32 @@ function returnEquipment(spId) {
   if (!sp || sp.status === 'returned') return;
 
   if (db && deptId) {
-    operationsRef.child(activeOperation.id).child('shorePoints').child(spId).update({
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', {
       status: 'returned',
       returnedAt: new Date().toISOString(),
     });
 
     if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
       if (sp.deployedStrut.external) {
-        operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
         if (activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
           activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
         }
       } else {
-        inventoryRef.child(sp.deployedStrut.inventoryId).child('available').transaction(v => (v || 0) + 1);
+        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
       }
     }
     if (sp.deployedExtensions) {
       for (const ext of sp.deployedExtensions) {
         if (ext.inventoryId) {
-          inventoryRef.child(ext.inventoryId).child('available').transaction(v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
         }
       }
     }
     if (sp.deployedPlates) {
       for (const pl of sp.deployedPlates) {
         if (pl.inventoryId) {
-          inventoryRef.child(pl.inventoryId).child('available').transaction(v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
         }
       }
     }
@@ -4579,10 +4743,10 @@ function endOperation() {
     // Reset all inventory available = quantity as safety net
     for (const item of localInventory) {
       if (item.available < item.quantity) {
-        inventoryRef.child(item.id).child('available').set(item.quantity);
+        firebaseSave(inventoryRef.child(item.id).child('available'), 'set', item.quantity);
       }
     }
-    operationsRef.child(activeOperation.id).update({
+    firebaseSave(operationsRef.child(activeOperation.id), 'update', {
       status: 'archived',
       endTime: new Date().toISOString(),
     });
@@ -4609,7 +4773,7 @@ function saveSettings() {
   const name = document.getElementById('settingsDeptName').value.trim();
 
   if (db && deptId) {
-    settingsRef.set({ name });
+    firebaseSave(settingsRef, 'set', { name });
   }
 
   document.getElementById('deptName').textContent = name;
@@ -4771,7 +4935,7 @@ function applyImportData(data) {
       const { id: _, ...rest } = item;
       updates[id] = rest;
     }
-    inventoryRef.set(updates);
+    firebaseSave(inventoryRef, 'set', updates);
   } else {
     localInventory = data;
     localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
@@ -4913,7 +5077,7 @@ function initPlatePickers() {
       return a.name.localeCompare(b.name);
     });
     for (const plate of pickerPlates) {
-      const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}">` : '<div style="width:40px;height:40px;background:#F0F0F0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
+      const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}" loading="lazy">` : '<div style="width:40px;height:40px;background:#F0F0F0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
       html += `<div class="plate-option" data-id="${plate.id}" onclick="selectPlate('${pickerId}','${plate.id}')">
         ${imgHtml}
         <div class="plate-info">
@@ -5076,12 +5240,13 @@ function init() {
   toggleDeductions('qf');
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
   }
 }
 
 init();
 </script>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
