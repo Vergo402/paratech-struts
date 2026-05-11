@@ -42,7 +42,7 @@
   <header class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.1.1</div>
+    <div class="version-label">v3.2.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -254,6 +254,9 @@
         <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100">
       </div>
       <button class="btn btn-primary mt-16" onclick="guardClick(this,saveSettings)">Save Settings</button>
+      <div class="section-title">Apparatus Types</div>
+      <div id="apparatusTypesList"></div>
+      <button class="btn btn-outline btn-sm btn-block mb-8" onclick="addCustomApparatusType()">+ Add Type</button>
       <div class="section-title">Data Management</div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="exportInventory()">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="importInventory()">Import Inventory (Excel)</button>

@@ -248,6 +248,7 @@ function showTab(tab) {
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
   if (tab === 'inventory') renderInventory();
   if (tab === 'ops') renderOperations();
+  if (tab === 'settings') renderApparatusTypesList();
   updateQuickViewFab();
 }
 
@@ -748,6 +749,17 @@ function setupListeners() {
       document.getElementById('settingsDeptName').value = data.name;
     }
   });
+
+  db.ref(`departments/${deptId}/customApparatusTypes`).on('value', (snap) => {
+    const data = snap.val();
+    if (data && Array.isArray(data) && data.length > 0) {
+      customApparatusTypes = data;
+      localStorage.setItem('paratech_custom_apparatus_types', JSON.stringify(data));
+    } else {
+      customApparatusTypes = null;
+    }
+    renderApparatusTypesList();
+  });
 }
 
 function loadLocalInventory() {
@@ -764,6 +776,8 @@ function loadLocalApparatus() {
   if (localApparatus.length > 0 && !selectedApparatus) {
     selectedApparatus = localApparatus[0].id;
   }
+  const storedTypes = localStorage.getItem('paratech_custom_apparatus_types');
+  if (storedTypes) customApparatusTypes = JSON.parse(storedTypes);
 }
 
 function saveLocalApparatus() {
@@ -794,6 +808,8 @@ function selectApparatus(id) {
 
 function showAddApparatus() {
   document.getElementById('newApparatusName').value = '';
+  const sel = document.getElementById('newApparatusType');
+  sel.innerHTML = getApparatusTypes().map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
   renderApparatusManageList();
   document.getElementById('addApparatusModal').classList.add('active');
 }
@@ -819,7 +835,7 @@ function renderApparatusManageList() {
   container.innerHTML = html;
 }
 
-const APPARATUS_TYPES = [
+const APPARATUS_TYPES_DEFAULT = [
   { id: 'chief', name: 'Chief', order: 0 },
   { id: 'engine', name: 'Engine', order: 1 },
   { id: 'ladder', name: 'Ladder', order: 2 },
@@ -829,13 +845,106 @@ const APPARATUS_TYPES = [
   { id: 'other', name: 'Other', order: 6 },
 ];
 
+let customApparatusTypes = null; // loaded from Firebase or localStorage
+
+function getApparatusTypes() {
+  return customApparatusTypes || APPARATUS_TYPES_DEFAULT;
+}
+
+function initCustomApparatusTypes() {
+  if (!customApparatusTypes) {
+    customApparatusTypes = JSON.parse(JSON.stringify(APPARATUS_TYPES_DEFAULT));
+    saveCustomApparatusTypes();
+  }
+  return customApparatusTypes;
+}
+
+function saveCustomApparatusTypes() {
+  if (db && deptId) {
+    firebaseSave(firebase.database().ref(`departments/${deptId}/customApparatusTypes`), 'set', customApparatusTypes);
+  } else {
+    localStorage.setItem('paratech_custom_apparatus_types', JSON.stringify(customApparatusTypes));
+  }
+}
+
+function addCustomApparatusType() {
+  const name = prompt('New apparatus type name:');
+  if (!name || !name.trim()) return;
+  const types = initCustomApparatusTypes();
+  const id = 'type_' + Date.now();
+  types.push({ id, name: name.trim(), order: types.length });
+  saveCustomApparatusTypes();
+  renderApparatusTypesList();
+}
+
+function renameApparatusType(typeId) {
+  const types = initCustomApparatusTypes();
+  const t = types.find(t => t.id === typeId);
+  if (!t) return;
+  const name = prompt('Rename apparatus type:', t.name);
+  if (!name || !name.trim()) return;
+  t.name = name.trim();
+  saveCustomApparatusTypes();
+  renderApparatusTypesList();
+  renderApparatusTabs();
+  renderInventory();
+}
+
+function removeApparatusType(typeId) {
+  const types = initCustomApparatusTypes();
+  const inUse = localApparatus.filter(a => a.type === typeId);
+  if (inUse.length > 0) {
+    alert(`Cannot remove — ${inUse.length} apparatus use this type. Change their type first.`);
+    return;
+  }
+  if (!confirm('Remove this apparatus type?')) return;
+  customApparatusTypes = types.filter(t => t.id !== typeId);
+  customApparatusTypes.forEach((t, i) => t.order = i);
+  saveCustomApparatusTypes();
+  renderApparatusTypesList();
+}
+
+function moveApparatusType(typeId, direction) {
+  const types = initCustomApparatusTypes();
+  const idx = types.findIndex(t => t.id === typeId);
+  if (idx < 0) return;
+  const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= types.length) return;
+  [types[idx], types[swapIdx]] = [types[swapIdx], types[idx]];
+  types.forEach((t, i) => t.order = i);
+  saveCustomApparatusTypes();
+  renderApparatusTypesList();
+}
+
+function renderApparatusTypesList() {
+  const container = document.getElementById('apparatusTypesList');
+  if (!container) return;
+  const types = getApparatusTypes();
+  let html = '';
+  for (let i = 0; i < types.length; i++) {
+    const t = types[i];
+    const inUse = localApparatus.filter(a => a.type === t.id).length;
+    const useBadge = inUse > 0 ? `<span style="font-size:10px;color:var(--text-secondary)">${inUse} apparatus</span>` : '';
+    html += `<div class="inv-item" style="padding:6px 8px">
+      <span class="inv-item-name" style="font-size:14px">${escapeHtml(t.name)} ${useBadge}</span>
+      <span style="display:flex;gap:4px;align-items:center">
+        <button class="btn btn-sm" onclick="moveApparatusType('${t.id}','up')" style="padding:4px 8px;font-size:12px" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button class="btn btn-sm" onclick="moveApparatusType('${t.id}','down')" style="padding:4px 8px;font-size:12px" ${i === types.length - 1 ? 'disabled' : ''}>▼</button>
+        <button class="btn btn-sm" onclick="renameApparatusType('${t.id}')" style="padding:4px 8px;font-size:12px">Rename</button>
+        <button class="btn btn-sm btn-danger" onclick="removeApparatusType('${t.id}')" style="padding:4px 8px;font-size:12px">✕</button>
+      </span>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
 function getApparatusTypeName(typeId) {
-  const t = APPARATUS_TYPES.find(t => t.id === typeId);
+  const t = getApparatusTypes().find(t => t.id === typeId);
   return t ? t.name : 'Other';
 }
 
 function getApparatusTypeOrder(typeId) {
-  const t = APPARATUS_TYPES.find(t => t.id === typeId);
+  const t = getApparatusTypes().find(t => t.id === typeId);
   return t ? t.order : 99;
 }
 
@@ -867,7 +976,7 @@ function editApparatus(id) {
   const app = localApparatus.find(a => a.id === id);
   if (!app) return;
 
-  const typeOptions = APPARATUS_TYPES.map(t =>
+  const typeOptions = getApparatusTypes().map(t =>
     `<option value="${t.id}"${t.id === app.type ? ' selected' : ''}>${escapeHtml(t.name)}</option>`
   ).join('');
 
@@ -1241,7 +1350,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '3.1.1'
+    appVersion: '3.2.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
