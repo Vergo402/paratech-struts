@@ -42,7 +42,7 @@
   <header class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v2.2.0</div>
+    <div class="version-label">v2.3.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -138,13 +138,13 @@
         <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
       </div>
       <div class="system-toggles">
-        <button class="system-toggle active gold" id="toggleGold" onclick="toggleSystem('gold')">
+        <button class="system-toggle gold" id="toggleGold" onclick="toggleSystem('gold')">
           <span class="toggle-dot"></span><span class="toggle-label">Gold</span>
         </button>
-        <button class="system-toggle active grey" id="toggleGrey" onclick="toggleSystem('grey')">
+        <button class="system-toggle grey" id="toggleGrey" onclick="toggleSystem('grey')">
           <span class="toggle-dot"></span><span class="toggle-label">Grey</span>
         </button>
-        <button class="system-toggle active lockstroke" id="toggleLockstroke" onclick="toggleSystem('lockstroke')">
+        <button class="system-toggle lockstroke" id="toggleLockstroke" onclick="toggleSystem('lockstroke')">
           <span class="toggle-dot"></span><span class="toggle-label">LockStroke</span>
         </button>
       </div>
@@ -196,27 +196,27 @@
             <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
-        <div class="flex-between mb-8">
-          <span class="section-title m-0">Assigned Apparatus</span>
-          <button class="btn btn-sm btn-outline" onclick="showAssignApparatus()">+ Add</button>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▼</span> Assigned Apparatus</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">+ Add</button>
         </div>
-        <div id="assignedApparatusList" class="assigned-apparatus-chips"></div>
-        <div class="flex-between mb-8">
-          <span class="section-title m-0">External Equipment</span>
-          <button class="btn btn-sm btn-outline" onclick="showAddExternal()">+ Add</button>
+        <div id="sectionApparatus"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowExternal">▼</span> External Equipment</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
         </div>
-        <div id="externalEquipmentList"></div>
-        <div class="flex-between mb-8">
-          <span class="section-title m-0">Individuals</span>
-          <button class="btn btn-sm btn-outline" onclick="showAddIndividual()">+ Add</button>
+        <div id="sectionExternal"><div id="externalEquipmentList"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowIndividuals">▼</span> Individuals</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
         </div>
-        <div id="individualsList"></div>
+        <div id="sectionIndividuals"><div id="individualsList"></div></div>
         <div id="myRoleSection" class="mb-12">
-          <div class="flex-between mb-8">
-            <span class="section-title m-0">My Role</span>
-            <button class="btn btn-sm btn-outline" onclick="openMyRoleModal()">Change</button>
+          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')">
+            <span class="section-title m-0"><span class="section-arrow" id="arrowMyrole">▼</span> My Role</span>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
           </div>
-          <div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div>
+          <div id="sectionMyrole"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
         <div class="view-switcher" id="viewSwitcher">
@@ -348,8 +348,8 @@
           <input type="text" id="spFloor" placeholder="e.g. 2">
         </div>
         <div class="form-group flex-1">
-          <label>Team</label>
-          <input type="text" id="spTeam" placeholder="e.g. Team 1">
+          <label>Group</label>
+          <input type="text" id="spTeam" placeholder="e.g. Group 1">
         </div>
       </div>
       <div class="form-group">
