@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "paratech",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Paratech Struts\""],
+      "autoPort": true
+    }
+  ]
+}
