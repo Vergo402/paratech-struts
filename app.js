@@ -512,17 +512,133 @@ function guardClick(btn, fn) {
   });
 }
 
-const ICS_ROLES = [
-  { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command' },
-  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command' },
-  { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops' },
-  { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops' },
-  { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops' },
-  { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops' },
-  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops' },
-  { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable' },
-  { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops' },
+const ICS_ROLES_DEFAULT = [
+  { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command', parentId: null },
+  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
+  { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops', parentId: 'ic' },
+  { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable', parentId: 'operations' },
+  { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'operations' },
 ];
+
+// Backward compat alias — some code still references ICS_ROLES
+const ICS_ROLES = ICS_ROLES_DEFAULT;
+
+function getOperationRoles() {
+  if (activeOperation && activeOperation.customRoles && activeOperation.customRoles.length > 0) {
+    return activeOperation.customRoles;
+  }
+  return ICS_ROLES_DEFAULT;
+}
+
+function initCustomRoles() {
+  if (!activeOperation) return;
+  if (!activeOperation.customRoles || activeOperation.customRoles.length === 0) {
+    activeOperation.customRoles = JSON.parse(JSON.stringify(ICS_ROLES_DEFAULT));
+    saveCustomRoles();
+  }
+}
+
+function saveCustomRoles() {
+  if (!activeOperation) return;
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+}
+
+function addCustomRole(parentId) {
+  if (!activeOperation) return;
+  initCustomRoles();
+  const name = prompt('Role name:');
+  if (!name || !name.trim()) return;
+  const trimmed = name.trim();
+  const abbr = trimmed.length <= 6 ? trimmed : trimmed.substring(0, 6);
+  const id = 'custom_' + Date.now();
+  activeOperation.customRoles.push({
+    id, name: trimmed, abbr, suggestedView: 'ops', parentId: parentId
+  });
+  saveCustomRoles();
+  renderCommandView();
+}
+
+function editCustomRole(roleId) {
+  if (!activeOperation) return;
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const role = roles.find(r => r.id === roleId);
+  if (!role) return;
+  const newName = prompt('Rename role:', role.name);
+  if (!newName || !newName.trim()) return;
+  role.name = newName.trim();
+  role.abbr = role.name.length <= 6 ? role.name : role.name.substring(0, 6);
+  saveCustomRoles();
+  renderCommandView();
+}
+
+function removeCustomRole(roleId) {
+  if (!activeOperation) return;
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const role = roles.find(r => r.id === roleId);
+  if (!role) return;
+  // Check for children
+  const children = roles.filter(r => r.parentId === roleId);
+  if (children.length > 0) {
+    if (!confirm(`"${role.name}" has ${children.length} sub-role(s). Remove them all?`)) return;
+    // Recursively remove children
+    const removeIds = new Set();
+    const queue = [roleId];
+    while (queue.length) {
+      const id = queue.shift();
+      removeIds.add(id);
+      roles.filter(r => r.parentId === id).forEach(r => queue.push(r.id));
+    }
+    activeOperation.customRoles = roles.filter(r => !removeIds.has(r.id));
+  } else {
+    if (!confirm(`Remove "${role.name}"?`)) return;
+    activeOperation.customRoles = roles.filter(r => r.id !== roleId);
+  }
+  // Clear any assignments to removed roles
+  if (activeOperation.roles) {
+    for (const [targetId, assignedRole] of Object.entries(activeOperation.roles)) {
+      if (assignedRole === roleId || (children.length > 0 && !activeOperation.customRoles.find(r => r.id === assignedRole))) {
+        delete activeOperation.roles[targetId];
+      }
+    }
+  }
+  saveCustomRoles();
+  renderCommandView();
+}
+
+function showAddRoleMenu() {
+  if (!activeOperation) return;
+  const opRoles = getOperationRoles();
+  let listHtml = `<div style="padding:16px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Add New Role</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Select a parent position</div>`;
+  for (const r of opRoles) {
+    listHtml += `<div class="list-item-row" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
+      <span style="font-weight:600">${escapeHtml(r.name)}</span>
+      <span style="font-size:12px;color:var(--blue);font-weight:600">Add under →</span>
+    </div>`;
+  }
+  listHtml += `</div>`;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'orgChartModal';
+  overlay.innerHTML = `<div class="modal" style="max-width:360px">
+    <div class="modal-header"><span class="modal-title">Add Role</span>
+    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    ${listHtml}
+  </div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
 
 function initFirebase() {
   const firebaseConfig = {
@@ -1085,7 +1201,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '3.0.1'
+    appVersion: '3.1.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1263,7 +1379,7 @@ function openApparatusRoleModal(appId) {
 
 function renderRoleGrid(selectedRoleId) {
   const grid = document.getElementById('roleGrid');
-  grid.innerHTML = ICS_ROLES.map(r => `
+  grid.innerHTML = getOperationRoles().map(r => `
     <div class="role-card ${r.id === selectedRoleId ? 'selected' : ''}" onclick="selectRole('${r.id}')">
       <div class="role-name">${r.name}</div>
       <div class="role-abbr">${r.abbr}</div>
@@ -1325,7 +1441,7 @@ function clearRole() {
 function openOrgChartNode(roleId) {
   // Open the role modal pre-targeted to a specific ICS role from the org chart
   if (!activeOperation) return;
-  const roleDef = ICS_ROLES.find(r => r.id === roleId);
+  const roleDef = getOperationRoles().find(r => r.id === roleId);
   if (!roleDef) return;
 
   const roles = activeOperation.roles || {};
@@ -1396,6 +1512,13 @@ function openOrgChartNode(roleId) {
     listHtml += `<div style="text-align:center;color:var(--text-secondary);padding:16px 0">No apparatus or individuals in this operation yet</div>`;
   }
 
+  // Role management actions
+  listHtml += `<div style="border-top:1px solid #E0E0E0;margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:11px">+ Sub-Role</button>
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:11px">Rename</button>
+    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:11px;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A">Remove</button>` : ''}
+  </div>`;
+
   listHtml += `</div>`;
 
   // Show in a modal overlay
@@ -1457,17 +1580,17 @@ function clearOrgChartRole(targetId, roleId) {
 }
 
 function getRoleName(roleId) {
-  const r = ICS_ROLES.find(r => r.id === roleId);
+  const r = getOperationRoles().find(r => r.id === roleId);
   return r ? r.name : roleId;
 }
 
 function getRoleAbbr(roleId) {
-  const r = ICS_ROLES.find(r => r.id === roleId);
+  const r = getOperationRoles().find(r => r.id === roleId);
   return r ? r.abbr : roleId;
 }
 
 function getSuggestedView(roleId) {
-  const r = ICS_ROLES.find(r => r.id === roleId);
+  const r = getOperationRoles().find(r => r.id === roleId);
   return r ? r.suggestedView : null;
 }
 
@@ -1625,7 +1748,7 @@ function renderMyRoleDisplay() {
   section.style.display = 'block';
 
   if (myRole) {
-    const roleDef = ICS_ROLES.find(r => r.id === myRole);
+    const roleDef = getOperationRoles().find(r => r.id === myRole);
     const personName = localStorage.getItem('paratech_myRoleName');
     const nameStr = personName ? ` — ${escapeHtml(personName)}` : '';
     el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}${nameStr}</span>`;
@@ -2988,7 +3111,7 @@ function renderCommandView() {
   // ICS org chart — interactive with tap-to-move and drag-and-drop
   {
     const renderNode = (roleId) => {
-      const r = ICS_ROLES.find(x => x.id === roleId);
+      const r = getOperationRoles().find(x => x.id === roleId);
       if (!r) return '';
       const people = roleAssignments[roleId] || [];
       const filled = people.length > 0;
@@ -3010,25 +3133,39 @@ function renderCommandView() {
     };
 
     const modeLabel = orgChartPickedRole ? `<span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">ICS Organization${modeLabel}</div>`;
-    // IC at top
-    html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode('ic')}</div>`;
-    // Connector line
-    html += `<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>`;
-    // Safety + Ops row
-    html += `<div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
-      ${renderNode('safety')}
-      ${renderNode('operations')}
+    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">ICS Organization${modeLabel}</span>
+      <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:11px;padding:2px 8px">+ Role</button>
     </div>`;
-    // Connector line to ops children
-    html += `<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>`;
-    // Ops children — always show all 6
-    const opsChildren = ['entry', 'rescue', 'shoring', 'runner', 'cutting', 'wood'];
-    html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
-    for (const childId of opsChildren) {
-      html += renderNode(childId);
+
+    // Render org chart dynamically from tree structure
+    const opRoles = getOperationRoles();
+    const renderTree = (parentId) => {
+      const children = opRoles.filter(r => r.parentId === parentId);
+      if (children.length === 0) return '';
+      let h = '<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>';
+      h += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:4px">`;
+      for (const child of children) {
+        h += renderNode(child.id);
+      }
+      h += `</div>`;
+      // Render grandchildren for each child that has them
+      for (const child of children) {
+        const grandchildren = opRoles.filter(r => r.parentId === child.id);
+        if (grandchildren.length > 0) {
+          h += renderTree(child.id);
+        }
+      }
+      return h;
+    };
+
+    // Root nodes (no parent)
+    const roots = opRoles.filter(r => !r.parentId);
+    for (const root of roots) {
+      html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode(root.id)}</div>`;
+      html += renderTree(root.id);
     }
-    html += `</div>`;
+    html += `<div style="margin-bottom:16px"></div>`;
   }
 
   // Layout — group by hierarchy
