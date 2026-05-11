@@ -624,9 +624,10 @@ select { padding-right: 40px; }
 .di-status-pill.returned { background: #F5F5F5; color: #757575; }
 
 /* View switcher */
-.view-switcher { display: flex; background: #F5F5F5; border-radius: var(--radius); padding: 3px; margin-bottom: 12px; }
-.view-switcher button { flex: 1; padding: 8px 4px; border: none; background: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-.view-switcher button.active { background: white; color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.view-switcher { display: flex; background: #F5F5F5; border-radius: var(--radius); padding: 3px; gap: 2px; margin-bottom: 12px; }
+.view-switcher button { flex: 1; padding: 10px 4px; border: none; background: none; border-radius: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.view-switcher button:hover { background: rgba(0,0,0,0.04); }
+.view-switcher button.active { background: white; color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 3px solid var(--blue); }
 
 /* --- Role Badges & Assignment --- */
 .role-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #E8EAF6; color: #283593; margin-left: 4px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.3px; }
@@ -1184,6 +1185,14 @@ select { padding-right: 40px; }
 .text-xs { font-size: 11px; color: var(--text-secondary); }
 .text-danger { color: var(--red); }
 .divider-dot { width: 2px; height: 12px; background: #BDBDBD; }
+
+/* ICS Org Chart Nodes */
+.org-node { padding: 8px 12px; border-radius: var(--radius); min-width: 70px; text-align: center; cursor: pointer; transition: all 0.15s; border: 1.5px solid transparent; }
+.org-node:active { transform: scale(0.97); }
+.org-node-filled { background: #E3F2FD; border-color: var(--blue); }
+.org-node-filled:hover { border-color: #1565C0; }
+.org-node-empty { background: #FAFAFA; border: 1.5px dashed #BDBDBD; }
+.org-node-empty:hover { border-color: var(--blue); background: #F5F5F5; }
 .btn-gold-outline { background: #FFF8E1; color: #F57F17; border: 1px solid #F9A825; font-weight: 700; }
 .btn-blue-outline { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
 .btn-purple { background: #F3E5F5; color: #7B1FA2; border: 1px solid #CE93D8; font-weight: 700; margin-top: 8px; }

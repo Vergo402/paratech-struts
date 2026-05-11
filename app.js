@@ -1060,7 +1060,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '2.1.0'
+    appVersion: '2.2.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1219,6 +1219,140 @@ function clearRole() {
   }
   closeModal('roleModal');
   renderOperations();
+  renderCommandView();
+}
+
+function openOrgChartNode(roleId) {
+  // Open the role modal pre-targeted to a specific ICS role from the org chart
+  if (!activeOperation) return;
+  const roleDef = ICS_ROLES.find(r => r.id === roleId);
+  if (!roleDef) return;
+
+  const roles = activeOperation.roles || {};
+  const roleNamesMap = activeOperation.roleNames || {};
+  const assigned = activeOperation.assignedApparatus || [];
+  const individuals = Object.values(activeOperation.individuals || {});
+
+  // Find who is currently assigned to this role
+  const currentAssignees = [];
+  for (const appId of assigned) {
+    if (roles[appId] === roleId) {
+      currentAssignees.push({ id: appId, name: roleNamesMap[appId] || getApparatusName(appId), type: 'apparatus' });
+    }
+  }
+  for (const ind of individuals) {
+    const indKey = 'ind-' + ind.id;
+    if (roles[indKey] === roleId) {
+      currentAssignees.push({ id: indKey, name: ind.name, type: 'individual' });
+    }
+  }
+  if (myRole === roleId) {
+    currentAssignees.push({ id: 'self', name: localStorage.getItem('paratech_myRoleName') || 'This Device', type: 'self' });
+  }
+
+  // Find unassigned apparatus and individuals (no role, or different role)
+  const unassigned = [];
+  for (const appId of assigned) {
+    if (!roles[appId]) {
+      unassigned.push({ id: appId, name: getApparatusName(appId), type: 'apparatus' });
+    }
+  }
+  for (const ind of individuals) {
+    const indKey = 'ind-' + ind.id;
+    if (!roles[indKey]) {
+      unassigned.push({ id: indKey, name: ind.name, type: 'individual' });
+    }
+  }
+  if (!myRole) {
+    unassigned.push({ id: 'self', name: localStorage.getItem('paratech_myRoleName') || 'This Device', type: 'self' });
+  }
+
+  // Build a bottom-sheet style action list
+  let listHtml = `<div style="padding:16px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${roleDef.name}</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${roleDef.abbr} — tap to assign or clear</div>`;
+
+  if (currentAssignees.length > 0) {
+    listHtml += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Currently Assigned</div>`;
+    for (const a of currentAssignees) {
+      listHtml += `<div style="background:#E3F2FD;border:1px solid #90CAF9;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600">${escapeHtml(a.name)}</span>
+        <button class="btn" style="font-size:11px;padding:4px 10px;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A" onclick="clearOrgChartRole('${a.id}','${roleId}')">Clear</button>
+      </div>`;
+    }
+  }
+
+  if (unassigned.length > 0) {
+    listHtml += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:${currentAssignees.length > 0 ? '12px' : '0'} 0 6px">Available to Assign</div>`;
+    for (const u of unassigned) {
+      listHtml += `<div class="list-item-row" onclick="assignOrgChartRole('${u.id}','${roleId}')">
+        <span style="font-weight:600">${escapeHtml(u.name)}</span>
+        <span style="font-size:12px;color:var(--blue);font-weight:600">Assign →</span>
+      </div>`;
+    }
+  }
+
+  if (currentAssignees.length === 0 && unassigned.length === 0) {
+    listHtml += `<div style="text-align:center;color:var(--text-secondary);padding:16px 0">No apparatus or individuals in this operation yet</div>`;
+  }
+
+  listHtml += `</div>`;
+
+  // Show in a modal overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'orgChartModal';
+  overlay.innerHTML = `<div class="modal" style="max-width:360px">
+    <div class="modal-header"><span class="modal-title">${roleDef.abbr} Assignment</span>
+    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    ${listHtml}
+  </div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function assignOrgChartRole(targetId, roleId) {
+  if (!activeOperation) return;
+  if (!activeOperation.roles) activeOperation.roles = {};
+
+  if (targetId === 'self') {
+    myRole = roleId;
+    localStorage.setItem('paratech_myRole', roleId);
+    roleViewDismissed = false;
+  } else {
+    activeOperation.roles[targetId] = roleId;
+    if (db && deptId && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'set', roleId);
+    } else {
+      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    }
+  }
+
+  const modal = document.getElementById('orgChartModal');
+  if (modal) modal.remove();
+  renderCommandView();
+}
+
+function clearOrgChartRole(targetId, roleId) {
+  if (!activeOperation) return;
+
+  if (targetId === 'self') {
+    myRole = null;
+    localStorage.removeItem('paratech_myRole');
+    roleViewDismissed = false;
+  } else {
+    if (activeOperation.roles) {
+      delete activeOperation.roles[targetId];
+      if (db && deptId && activeOperation.id) {
+        firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'remove');
+      } else {
+        localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      }
+    }
+  }
+
+  const modal = document.getElementById('orgChartModal');
+  if (modal) modal.remove();
   renderCommandView();
 }
 
@@ -1742,7 +1876,7 @@ function renderShorePointCards(numbered) {
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:#7B1FA2">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
 
       if (status === 'pending') {
         // Check if equipment is now available (cached per measurement)
@@ -2208,6 +2342,14 @@ function deployShorePoint(result, qty) {
   closeModal('shorePointModal');
 }
 
+// Get all shore points in the same group (for grouped shore types like T-shores with qty > 1)
+function getGroupMembers(spId) {
+  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const sp = points.find(p => p.id === spId);
+  if (!sp || !sp.groupId) return [sp].filter(Boolean);
+  return points.filter(p => p.groupId === sp.groupId);
+}
+
 function updateShoreStatus(spId, newStatus) {
   if (!activeOperation) return;
 
@@ -2215,25 +2357,36 @@ function updateShoreStatus(spId, newStatus) {
   const sp = points.find(p => p.id === spId);
   if (!sp) return;
 
-  const updateData = { status: newStatus };
+  // Get all group members — they advance together
+  const members = getGroupMembers(spId);
 
-  // Calculate cut length when moving to cutting
-  if (newStatus === 'cutting') {
-    const headerH = sp.deductions?.header || 0;
-    const footerH = sp.deductions?.sole || 0;
-    updateData.cutLength = Math.round((sp.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
-    updateData.cuttingStartedAt = new Date().toISOString();
+  for (const member of members) {
+    // Skip members already at or past the target status
+    if (normalizeStatus(member.status) === newStatus) continue;
+
+    const updateData = { status: newStatus };
+
+    // Calculate cut length when moving to cutting (per-member, using its own deductions)
+    if (newStatus === 'cutting') {
+      const headerH = member.deductions?.header || 0;
+      const footerH = member.deductions?.sole || 0;
+      updateData.cutLength = Math.round((member.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
+      updateData.cuttingStartedAt = new Date().toISOString();
+    }
+
+    // Clear cutMarkedDone if sending back from runner to cutting
+    if (newStatus === 'cutting' && member.cutMarkedDone) {
+      updateData.cutMarkedDone = false;
+    }
+
+    if (db && deptId && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
+    } else {
+      Object.assign(member, updateData);
+    }
   }
 
-  // Clear cutMarkedDone if sending back from runner to cutting
-  if (newStatus === 'cutting' && sp.cutMarkedDone) {
-    updateData.cutMarkedDone = false;
-  }
-
-  if (db && deptId && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
-  } else {
-    Object.assign(sp, updateData);
+  if (!(db && deptId && activeOperation.id)) {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -2536,17 +2689,17 @@ function renderCommandView() {
     roleAssignments[myRole].push({ name: myName, type: 'self' });
   }
 
-  const hasAnyRoles = Object.keys(roleAssignments).length > 0;
-  if (hasAnyRoles) {
+  // Always show ICS org chart (interactive — tap to assign)
+  {
     const renderNode = (roleId) => {
       const r = ICS_ROLES.find(x => x.id === roleId);
       if (!r) return '';
       const people = roleAssignments[roleId] || [];
       const filled = people.length > 0;
       const nameList = people.map(p => p.name).join(', ');
-      return `<div style="background:${filled ? '#E3F2FD' : 'var(--surface)'};border:${filled ? '2px solid var(--blue)' : '1px solid #E0E0E0'};border-radius:var(--radius);padding:8px 12px;text-align:center;min-width:80px">
+      return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}" onclick="openOrgChartNode('${roleId}')">
         <div style="font-size:11px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
-        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : '<div style="font-size:11px;color:#BDBDBD;margin-top:2px">—</div>'}
+        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : '<div style="font-size:11px;color:#BDBDBD;margin-top:2px">Tap to assign</div>'}
       </div>`;
     };
 
@@ -2554,32 +2707,21 @@ function renderCommandView() {
     // IC at top
     html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode('ic')}</div>`;
     // Connector line
-    html += `<div style="display:flex;justify-content:center"><div style="width:2px;height:12px;background:#BDBDBD"></div></div>`;
+    html += `<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>`;
     // Safety + Ops row
     html += `<div style="display:flex;justify-content:center;gap:16px;margin-bottom:4px">
       ${renderNode('safety')}
       ${renderNode('operations')}
     </div>`;
     // Connector line to ops children
-    html += `<div style="display:flex;justify-content:center"><div style="width:2px;height:12px;background:#BDBDBD"></div></div>`;
-    // Ops children: Entry, Rescue, Shoring, Runner, Cut, Wood
+    html += `<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>`;
+    // Ops children — always show all 6
     const opsChildren = ['entry', 'rescue', 'shoring', 'runner', 'cutting', 'wood'];
-    const activeOpsChildren = opsChildren.filter(id => roleAssignments[id]);
-    if (activeOpsChildren.length > 0) {
-      html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
-      for (const childId of activeOpsChildren) {
-        html += renderNode(childId);
-      }
-      html += `</div>`;
-    } else {
-      html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
-      for (const childId of opsChildren) {
-        html += `<div style="background:var(--surface);border:1px dashed #E0E0E0;border-radius:var(--radius);padding:6px 10px;text-align:center;min-width:60px">
-          <div style="font-size:10px;color:#BDBDBD">${ICS_ROLES.find(x => x.id === childId)?.abbr || childId}</div>
-        </div>`;
-      }
-      html += `</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:16px">`;
+    for (const childId of opsChildren) {
+      html += renderNode(childId);
     }
+    html += `</div>`;
   }
 
   // Layout — group by hierarchy
@@ -2775,19 +2917,29 @@ function renderCutTableCard(sp, mode) {
 function sendToRunner(spId) {
   if (!activeOperation) return;
 
-  // Capture optional actual cut measurement
+  // Capture optional actual cut measurement from the triggering card
   const actualInput = document.getElementById('actual-' + spId);
   const actualVal = actualInput ? parseFloat(actualInput.value) : null;
 
-  const updateData = { status: 'runner', cutMarkedDone: false };
-  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
+  // Get all group members — they advance together
+  const members = getGroupMembers(spId);
 
-  if (db && deptId && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
-  } else {
+  for (const member of members) {
+    if (normalizeStatus(member.status) === 'runner') continue;
+
+    const updateData = { status: 'runner', cutMarkedDone: false };
+    // Apply the actual cut value to all members (same cut for grouped points)
+    if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
+
+    if (db && deptId && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
+    } else {
+      Object.assign(member, updateData);
+    }
+  }
+
+  if (!(db && deptId && activeOperation.id)) {
     const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
-    const sp = points.find(p => p.id === spId);
-    if (sp) Object.assign(sp, updateData);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -2800,15 +2952,24 @@ function markCutDone(spId) {
   // Capture optional actual cut measurement entered before marking done
   const actualInput = document.getElementById('actual-' + spId);
   const actualVal = actualInput ? parseFloat(actualInput.value) : null;
-  const updateData = { cutMarkedDone: true };
-  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
-  if (db && deptId && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', updateData);
-  } else {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
-    const sp = points.find(p => p.id === spId);
-    if (sp) Object.assign(sp, updateData);
+  // Get all group members — they advance together
+  const members = getGroupMembers(spId);
+
+  for (const member of members) {
+    if (member.cutMarkedDone) continue;
+
+    const updateData = { cutMarkedDone: true };
+    if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
+
+    if (db && deptId && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
+    } else {
+      Object.assign(member, updateData);
+    }
+  }
+
+  if (!(db && deptId && activeOperation.id)) {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -2973,15 +3134,12 @@ function returnEquipmentSilent(sp) {
   }
 }
 
-function returnEquipment(spId) {
-  if (!activeOperation) return;
-
-  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
-  const sp = points.find(p => p.id === spId);
-  if (!sp || sp.status === 'returned') return;
+function returnEquipmentSingle(sp) {
+  // Return equipment for a single shore point — handles both Firebase and local
+  if (!sp || normalizeStatus(sp.status) === 'returned') return;
 
   if (db && deptId) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'update', {
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', {
       status: 'returned',
       returnedAt: new Date().toISOString(),
     });
@@ -3038,6 +3196,20 @@ function returnEquipment(spId) {
         }
       }
     }
+  }
+}
+
+function returnEquipment(spId) {
+  if (!activeOperation) return;
+
+  // Get all group members — they return together, each with its own inventory
+  const members = getGroupMembers(spId);
+
+  for (const member of members) {
+    returnEquipmentSingle(member);
+  }
+
+  if (!(db && deptId)) {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
     renderOperations();
