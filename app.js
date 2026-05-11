@@ -1060,7 +1060,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '2.0.1'
+    appVersion: '2.1.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1639,10 +1639,10 @@ function renderOperations() {
   // Render breadcrumb
   renderBreadcrumb();
 
-  // Try drill-down list first
+  // Try drill-down list first, then always show shore point cards below
   const drillHtml = renderDrilldownList(filtered);
   if (drillHtml) {
-    spList.innerHTML = drillHtml;
+    spList.innerHTML = drillHtml + renderShorePointCards(filtered);
   } else {
     // At the bottom level — render shore point cards with status lanes
     spList.innerHTML = renderShorePointCards(filtered);
@@ -1742,7 +1742,7 @@ function renderShorePointCards(numbered) {
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:#7B1FA2">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
 
       if (status === 'pending') {
         // Check if equipment is now available (cached per measurement)
@@ -1757,8 +1757,11 @@ function renderShorePointCards(numbered) {
         </div>`;
       }
 
-      if (status === 'cutting' && sp.cutLength != null) {
-        html += `<div class="cut-length-display">✂ Cut Length: ${sp.cutLength}"</div>`;
+      if (['cutting','runner','secured','returned'].includes(status) && sp.cutLength != null) {
+        const displayCut = sp.actualCutLength != null ? sp.actualCutLength : sp.cutLength;
+        const diffWarning = (sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength)
+          ? ` <span class="cut-diff-warning">(expected: ${sp.cutLength}")</span>` : '';
+        html += `<div class="cut-length-display">✂ Cut: ${displayCut}"${diffWarning}</div>`;
       }
 
       // Status transition buttons
@@ -1780,8 +1783,8 @@ function renderShorePointCards(numbered) {
       }
       if (status === 'runner') {
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','secured')">→ Secured</button>
           <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">← Send Back</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','secured')">→ Secured</button>
         </div>`;
       }
       if (status === 'secured') {
@@ -2694,8 +2697,9 @@ function renderCutTableView() {
       html += `<div style="background:#F5F5F5;border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
-          <span style="font-size:15px;font-weight:700;color:#757575">${sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"'}</span>
+          <span style="font-size:15px;font-weight:700;color:#757575">${sp.actualCutLength != null ? sp.actualCutLength + '"' : (sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"')}</span>
         </div>
+        ${(sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength) ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${sp.cutLength}" → Actual: ${sp.actualCutLength}"</div>` : ''}
         <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
       </div>`;
     }
@@ -3420,9 +3424,24 @@ function openPlatePicker(pickerId) {
   closePlatePickers();
 
   if (!isOpen) {
-    // Highlight current selection
+    // Highlight current selection and filter by inventory for operations
+    const isOpsPicker = pickerId.startsWith('sp') && activeOperation;
+    let availablePlateIds = null;
+    if (isOpsPicker) {
+      const opInv = getOperationInventory();
+      availablePlateIds = new Set(opInv.filter(item => item.type === 'plate').map(item => item.plateId));
+      availablePlateIds.add('none'); // "None" always available
+    }
     grid.querySelectorAll('.plate-option').forEach(opt => {
       opt.classList.toggle('selected', opt.dataset.id === plateSelections[pickerId]);
+      if (availablePlateIds) {
+        const inStock = availablePlateIds.has(opt.dataset.id);
+        opt.classList.toggle('plate-unavailable', !inStock);
+        opt.style.pointerEvents = inStock ? '' : 'none';
+      } else {
+        opt.classList.remove('plate-unavailable');
+        opt.style.pointerEvents = '';
+      }
     });
 
     // Show scrim behind grid
