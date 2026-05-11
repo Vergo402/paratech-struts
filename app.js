@@ -812,6 +812,7 @@ function renderApparatusManageList() {
     html += `<div class="inv-item">
       <span class="inv-item-name">${app.name}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
+      <button class="btn btn-sm" onclick="editApparatus('${app.id}')" style="padding:6px 12px;font-size:13px">Edit</button>
       <button class="btn btn-sm btn-danger" onclick="removeApparatus('${app.id}')" style="padding:6px 12px;font-size:13px">Remove</button>
     </div>`;
   }
@@ -860,6 +861,45 @@ function confirmAddApparatus() {
     renderApparatusManageList();
   }
   document.getElementById('newApparatusName').value = '';
+}
+
+function editApparatus(id) {
+  const app = localApparatus.find(a => a.id === id);
+  if (!app) return;
+
+  const typeOptions = APPARATUS_TYPES.map(t =>
+    `<option value="${t.id}"${t.id === app.type ? ' selected' : ''}>${escapeHtml(t.name)}</option>`
+  ).join('');
+
+  const container = document.getElementById('apparatusManageList');
+  const editHtml = `<div class="section-title">Edit Apparatus</div>
+    <div class="form-group"><label>Name</label><input type="text" id="editAppName" value="${escapeHtml(app.name)}" maxlength="100"></div>
+    <div class="form-group"><label>Type</label><select id="editAppType">${typeOptions}</select></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-primary" onclick="saveEditApparatus('${app.id}')">Save</button>
+      <button class="btn btn-outline" onclick="renderApparatusManageList()">Cancel</button>
+    </div>`;
+  container.innerHTML = editHtml;
+}
+
+function saveEditApparatus(id) {
+  const name = document.getElementById('editAppName').value.trim();
+  const type = document.getElementById('editAppType').value || 'other';
+  if (!name) return;
+
+  if (db && deptId && apparatusRef) {
+    firebaseSave(apparatusRef.child(id), 'update', { name, type });
+  } else {
+    const app = localApparatus.find(a => a.id === id);
+    if (app) {
+      app.name = name;
+      app.type = type;
+      saveLocalApparatus();
+    }
+  }
+  renderApparatusTabs();
+  renderInventory();
+  renderApparatusManageList();
 }
 
 function removeApparatus(id) {
@@ -1201,7 +1241,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '3.1.0'
+    appVersion: '3.1.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
