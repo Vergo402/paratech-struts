@@ -1085,7 +1085,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '3.0.0'
+    appVersion: '3.0.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1126,9 +1126,13 @@ function showAssignApparatus() {
   if (!activeOperation) return;
   const assigned = activeOperation.assignedApparatus || [];
   let html = '<div style="padding:8px 0">';
-  for (const app of localApparatus) {
-    const checked = assigned.includes(app.id) ? 'checked' : '';
-    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${app.name}</label>`;
+  if (localApparatus.length === 0) {
+    html += '<p style="font-size:13px;color:var(--text-secondary);margin:0">No apparatus created yet. Add apparatus in the Inventory tab first.</p>';
+  } else {
+    for (const app of localApparatus) {
+      const checked = assigned.includes(app.id) ? 'checked' : '';
+      html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${app.name}</label>`;
+    }
   }
   html += '</div>';
   const container = document.getElementById('assignedApparatusList');
@@ -1470,19 +1474,19 @@ function getSuggestedView(roleId) {
 // ---- Org Chart Drag & Drop / Tap-to-Move ----
 
 function orgChartNodeClick(roleId) {
-  if (!orgChartPickedRole) {
-    // First tap: pick up this role's assignments
-    orgChartPickedRole = roleId;
-    renderCommandView();
-  } else if (orgChartPickedRole === roleId) {
-    // Tapped same node again: cancel
-    cancelOrgMove();
-  } else {
-    // Second tap on a different node: swap assignments
-    orgSwapRoles(orgChartPickedRole, roleId);
-    orgChartPickedRole = null;
-    renderCommandView();
+  // If we're in move mode (picked a node via long-press/drag), complete the swap
+  if (orgChartPickedRole) {
+    if (orgChartPickedRole === roleId) {
+      cancelOrgMove();
+    } else {
+      orgSwapRoles(orgChartPickedRole, roleId);
+      orgChartPickedRole = null;
+      renderCommandView();
+    }
+    return;
   }
+  // Normal tap: open the assign/manage modal
+  openOrgChartNode(roleId);
 }
 
 function orgDragStart(event, roleId) {
@@ -1506,15 +1510,18 @@ function orgDrop(event, targetRoleId) {
 // Touch drag state
 let orgTouchSourceRole = null;
 let orgTouchClone = null;
+let orgTouchMoved = false;
 
 function orgTouchStart(event, roleId) {
-  // Let the tap handler (orgChartNodeClick) deal with quick taps
-  // Only activate drag on long-ish touch (handled by touchmove triggering)
+  // Track touch start; if finger moves before release, it becomes a drag.
+  // If released without moving, orgTouchEnd treats it as a tap → orgChartNodeClick.
   orgTouchSourceRole = roleId;
+  orgTouchMoved = false;
 }
 
 function orgTouchMove(event) {
   if (!orgTouchSourceRole) return;
+  orgTouchMoved = true;
   event.preventDefault(); // Prevent scroll while dragging
 
   const touch = event.touches[0];
@@ -1562,8 +1569,12 @@ function orgTouchEnd(event, roleId) {
     orgTouchSourceRole = null;
     renderCommandView();
   } else {
-    // Was a tap, not a drag — let orgChartNodeClick handle it
+    // Was a tap, not a drag — handle as click
     orgTouchSourceRole = null;
+    if (!orgTouchMoved) {
+      event.preventDefault(); // Prevent synthetic click from also firing
+      orgChartNodeClick(roleId);
+    }
   }
 }
 
