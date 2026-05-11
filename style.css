@@ -1193,6 +1193,9 @@ select { padding-right: 40px; }
 .org-node-filled:hover { border-color: #1565C0; }
 .org-node-empty { background: #FAFAFA; border: 1.5px dashed #BDBDBD; }
 .org-node-empty:hover { border-color: var(--blue); background: #F5F5F5; }
+.org-node-picked { box-shadow: 0 0 0 3px var(--blue); transform: scale(1.05); border-color: var(--blue) !important; }
+.org-node-drop-target { border-color: var(--blue) !important; border-style: dashed !important; background: #E3F2FD; animation: orgPulse 1s ease-in-out infinite; }
+@keyframes orgPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(33,150,243,0.3); } 50% { box-shadow: 0 0 0 6px rgba(33,150,243,0); } }
 
 /* Collapsible Section Toggles */
 .section-toggle { cursor: pointer; user-select: none; }

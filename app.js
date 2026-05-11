@@ -401,6 +401,7 @@ let myRole = null; // This device's self-assigned role
 let roleViewDismissed = false; // Whether user dismissed the view suggestion banner
 let editingExternalId = null;
 let editingIndividualId = null;
+let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
 
 // ============================================================
 // CONSTANTS
@@ -1084,7 +1085,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '2.4.0'
+    appVersion: '3.0.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1464,6 +1465,146 @@ function getRoleAbbr(roleId) {
 function getSuggestedView(roleId) {
   const r = ICS_ROLES.find(r => r.id === roleId);
   return r ? r.suggestedView : null;
+}
+
+// ---- Org Chart Drag & Drop / Tap-to-Move ----
+
+function orgChartNodeClick(roleId) {
+  if (!orgChartPickedRole) {
+    // First tap: pick up this role's assignments
+    orgChartPickedRole = roleId;
+    renderCommandView();
+  } else if (orgChartPickedRole === roleId) {
+    // Tapped same node again: cancel
+    cancelOrgMove();
+  } else {
+    // Second tap on a different node: swap assignments
+    orgSwapRoles(orgChartPickedRole, roleId);
+    orgChartPickedRole = null;
+    renderCommandView();
+  }
+}
+
+function orgDragStart(event, roleId) {
+  event.dataTransfer.setData('text/plain', roleId);
+  event.dataTransfer.effectAllowed = 'move';
+  orgChartPickedRole = roleId;
+  // Brief delay so the picked highlight renders after drag image is captured
+  setTimeout(() => renderCommandView(), 0);
+}
+
+function orgDrop(event, targetRoleId) {
+  event.preventDefault();
+  const sourceRoleId = event.dataTransfer.getData('text/plain');
+  if (sourceRoleId && sourceRoleId !== targetRoleId) {
+    orgSwapRoles(sourceRoleId, targetRoleId);
+  }
+  orgChartPickedRole = null;
+  renderCommandView();
+}
+
+// Touch drag state
+let orgTouchSourceRole = null;
+let orgTouchClone = null;
+
+function orgTouchStart(event, roleId) {
+  // Let the tap handler (orgChartNodeClick) deal with quick taps
+  // Only activate drag on long-ish touch (handled by touchmove triggering)
+  orgTouchSourceRole = roleId;
+}
+
+function orgTouchMove(event) {
+  if (!orgTouchSourceRole) return;
+  event.preventDefault(); // Prevent scroll while dragging
+
+  const touch = event.touches[0];
+
+  // Create floating clone on first move
+  if (!orgTouchClone) {
+    const sourceEl = document.querySelector(`[data-role="${orgTouchSourceRole}"]`);
+    if (!sourceEl) return;
+    orgTouchClone = sourceEl.cloneNode(true);
+    orgTouchClone.style.position = 'fixed';
+    orgTouchClone.style.zIndex = '9999';
+    orgTouchClone.style.opacity = '0.8';
+    orgTouchClone.style.pointerEvents = 'none';
+    orgTouchClone.style.width = sourceEl.offsetWidth + 'px';
+    orgTouchClone.style.transform = 'scale(1.05)';
+    orgTouchClone.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)';
+    document.body.appendChild(orgTouchClone);
+
+    // Highlight picked state
+    orgChartPickedRole = orgTouchSourceRole;
+    renderCommandView();
+  }
+
+  // Follow finger
+  orgTouchClone.style.left = (touch.clientX - 40) + 'px';
+  orgTouchClone.style.top = (touch.clientY - 20) + 'px';
+}
+
+function orgTouchEnd(event, roleId) {
+  if (orgTouchClone) {
+    // Was a drag — find what's under the finger
+    orgTouchClone.remove();
+    orgTouchClone = null;
+
+    const touch = event.changedTouches[0];
+    const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetNode = targetEl ? targetEl.closest('[data-role]') : null;
+    const targetRoleId = targetNode ? targetNode.getAttribute('data-role') : null;
+
+    if (targetRoleId && targetRoleId !== orgTouchSourceRole) {
+      orgSwapRoles(orgTouchSourceRole, targetRoleId);
+    }
+
+    orgChartPickedRole = null;
+    orgTouchSourceRole = null;
+    renderCommandView();
+  } else {
+    // Was a tap, not a drag — let orgChartNodeClick handle it
+    orgTouchSourceRole = null;
+  }
+}
+
+function cancelOrgMove() {
+  orgChartPickedRole = null;
+  orgTouchSourceRole = null;
+  if (orgTouchClone) {
+    orgTouchClone.remove();
+    orgTouchClone = null;
+  }
+  renderCommandView();
+}
+
+function orgSwapRoles(roleA, roleB) {
+  if (!activeOperation || !activeOperation.roles) return;
+  const roles = activeOperation.roles;
+
+  // Collect all targets assigned to roleA and roleB
+  const assignedToA = [];
+  const assignedToB = [];
+  for (const [targetId, assignedRole] of Object.entries(roles)) {
+    if (assignedRole === roleA) assignedToA.push(targetId);
+    if (assignedRole === roleB) assignedToB.push(targetId);
+  }
+
+  // Swap: things assigned to A get reassigned to B and vice versa
+  for (const targetId of assignedToA) {
+    roles[targetId] = roleB;
+  }
+  for (const targetId of assignedToB) {
+    roles[targetId] = roleA;
+  }
+
+  // Persist
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), roles);
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+
+  showToast(`Swapped ${getRoleAbbr(roleA)} ↔ ${getRoleAbbr(roleB)}`);
 }
 
 function renderMyRoleDisplay() {
@@ -2833,21 +2974,32 @@ function renderCommandView() {
     roleAssignments[myRole].push({ name: myName, type: 'self' });
   }
 
-  // Always show ICS org chart (interactive — tap to assign)
+  // ICS org chart — interactive with tap-to-move and drag-and-drop
   {
     const renderNode = (roleId) => {
       const r = ICS_ROLES.find(x => x.id === roleId);
       if (!r) return '';
       const people = roleAssignments[roleId] || [];
       const filled = people.length > 0;
-      const nameList = people.map(p => p.name).join(', ');
-      return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}" onclick="openOrgChartNode('${roleId}')">
+      const nameList = people.map(p => escapeHtml(p.name)).join(', ');
+      const pickedClass = orgChartPickedRole === roleId ? ' org-node-picked' : '';
+      const dropTarget = orgChartPickedRole && orgChartPickedRole !== roleId ? ' org-node-drop-target' : '';
+      return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
+        onclick="orgChartNodeClick('${roleId}')"
+        draggable="true"
+        ondragstart="orgDragStart(event,'${roleId}')"
+        ondragover="event.preventDefault()"
+        ondrop="orgDrop(event,'${roleId}')"
+        ontouchstart="orgTouchStart(event,'${roleId}')"
+        ontouchmove="orgTouchMove(event)"
+        ontouchend="orgTouchEnd(event,'${roleId}')">
         <div style="font-size:11px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
-        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : '<div style="font-size:11px;color:#BDBDBD;margin-top:2px">Tap to assign</div>'}
+        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:11px;color:#BDBDBD;margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
       </div>`;
     };
 
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">ICS Organization</div>`;
+    const modeLabel = orgChartPickedRole ? `<span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">ICS Organization${modeLabel}</div>`;
     // IC at top
     html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode('ic')}</div>`;
     // Connector line
