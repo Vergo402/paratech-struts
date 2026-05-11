@@ -365,7 +365,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       if (strutInv && strutInv.external) {
         html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${strutInv.deptName}</span></div>`;
       } else if (strutInv && strutInv.apparatus) {
-        html += `<div style="margin-top:4px"><span class="apparatus-source">From: ${getApparatusName(strutInv.apparatus)}</span></div>`;
+        html += `<div style="margin-top:4px"><span class="apparatus-source">Equipment from: ${getApparatusName(strutInv.apparatus)}</span></div>`;
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
@@ -1060,7 +1060,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '2.3.0'
+    appVersion: '2.3.1'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1985,7 +1985,7 @@ function viewArchivedOp(opId) {
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
       <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
-      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">From: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}
+      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}
     </div>`;
   }
 
