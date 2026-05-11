@@ -688,10 +688,12 @@ function renderApparatusManageList() {
     return;
   }
   let html = '<div class="section-title">Existing Apparatus</div>';
-  for (const app of localApparatus) {
+  const sorted = [...localApparatus].sort((a, b) => getApparatusTypeOrder(a.type) - getApparatusTypeOrder(b.type));
+  for (const app of sorted) {
     const count = localInventory.filter(i => i.apparatus === app.id).reduce((sum, i) => sum + i.quantity, 0);
+    const typeBadge = app.type ? `<span style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${getApparatusTypeName(app.type)}</span>` : '';
     html += `<div class="inv-item">
-      <span class="inv-item-name">${app.name}</span>
+      <span class="inv-item-name">${app.name}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
       <button class="btn btn-sm btn-danger" onclick="removeApparatus('${app.id}')" style="padding:6px 12px;font-size:13px">Remove</button>
     </div>`;
@@ -699,18 +701,40 @@ function renderApparatusManageList() {
   container.innerHTML = html;
 }
 
+const APPARATUS_TYPES = [
+  { id: 'chief', name: 'Chief', order: 0 },
+  { id: 'engine', name: 'Engine', order: 1 },
+  { id: 'ladder', name: 'Ladder', order: 2 },
+  { id: 'rescue', name: 'Rescue', order: 3 },
+  { id: 'squad', name: 'Squad', order: 4 },
+  { id: 'taskforce', name: 'Task Force', order: 5 },
+  { id: 'other', name: 'Other', order: 6 },
+];
+
+function getApparatusTypeName(typeId) {
+  const t = APPARATUS_TYPES.find(t => t.id === typeId);
+  return t ? t.name : 'Other';
+}
+
+function getApparatusTypeOrder(typeId) {
+  const t = APPARATUS_TYPES.find(t => t.id === typeId);
+  return t ? t.order : 99;
+}
+
 function confirmAddApparatus() {
   const name = document.getElementById('newApparatusName').value.trim();
   if (!name) return;
+  const type = document.getElementById('newApparatusType').value || 'other';
 
   if (db && deptId && apparatusRef) {
     const newRef = apparatusRef.push();
-    firebaseSave(newRef, 'set', { name });
+    firebaseSave(newRef, 'set', { name, type });
     if (!selectedApparatus) selectedApparatus = newRef.key;
   } else {
     const app = {
       id: 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
       name,
+      type,
     };
     localApparatus.push(app);
     if (!selectedApparatus) selectedApparatus = app.id;
@@ -1060,7 +1084,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
     timestamp: firebase.database.ServerValue.TIMESTAMP,
-    appVersion: '2.3.1'
+    appVersion: '2.4.0'
   };
   if (db) {
     db.ref('feedback').push(entry).then(() => {
@@ -1130,6 +1154,77 @@ function toggleApparatusAssignment(appId, assign) {
 
 function removeApparatusFromOp(appId) {
   toggleApparatusAssignment(appId, false);
+}
+
+// ============================================================
+// APPARATUS GROUPS (Task Force / Strike Team)
+// ============================================================
+function showCreateGroupModal() {
+  if (!activeOperation) return;
+  const assigned = activeOperation.assignedApparatus || [];
+  if (assigned.length < 2) { alert('Need at least 2 assigned apparatus to create a group.'); return; }
+
+  // Build a checklist of assigned apparatus not already in a group
+  const existingGroups = activeOperation.apparatusGroups || {};
+  const alreadyGrouped = new Set();
+  for (const g of Object.values(existingGroups)) {
+    for (const mid of (g.members || [])) alreadyGrouped.add(mid);
+  }
+  const available = assigned.filter(id => !alreadyGrouped.has(id));
+  if (available.length < 2) { alert('All apparatus are already in groups.'); return; }
+
+  let html = `<div style="padding:16px">
+    <div class="form-group"><label>Group Name</label><input type="text" id="groupName" placeholder="e.g. TF-1, Strike Team Alpha" maxlength="50"></div>
+    <div class="form-group"><label>Type</label><select id="groupType">
+      <option value="Task Force">Task Force</option>
+      <option value="Strike Team">Strike Team</option>
+      <option value="Group">Group</option>
+    </select></div>
+    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Select Members</div>`;
+  for (const appId of available) {
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${appId}" class="group-member-cb" style="width:16px;height:16px"> ${getApparatusName(appId)}</label>`;
+  }
+  html += `<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="confirmCreateGroup()">Create Group</button></div>`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'createGroupModal';
+  overlay.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><span class="modal-title">Create Apparatus Group</span><button class="modal-close" onclick="document.getElementById('createGroupModal').remove()">&times;</button></div>${html}</div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function confirmCreateGroup() {
+  const name = (document.getElementById('groupName').value || '').trim();
+  if (!name) { alert('Enter a group name.'); return; }
+  const type = document.getElementById('groupType').value;
+  const members = [...document.querySelectorAll('.group-member-cb:checked')].map(cb => cb.value);
+  if (members.length < 2) { alert('Select at least 2 apparatus.'); return; }
+
+  if (!activeOperation.apparatusGroups) activeOperation.apparatusGroups = {};
+  const gid = 'grp-' + Date.now();
+  activeOperation.apparatusGroups[gid] = { name, type, members };
+
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'set', { name, type, members });
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+
+  const modal = document.getElementById('createGroupModal');
+  if (modal) modal.remove();
+  renderOperations();
+}
+
+function removeApparatusGroup(gid) {
+  if (!activeOperation || !activeOperation.apparatusGroups) return;
+  delete activeOperation.apparatusGroups[gid];
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'remove');
+  } else {
+    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  }
+  renderOperations();
 }
 
 // ============================================================
@@ -1706,15 +1801,55 @@ function renderOperations() {
   const assigned = activeOperation.assignedApparatus || [];
   const roles = activeOperation.roles || {};
   if (assigned.length > 0) {
-    assignedList.innerHTML = assigned.map(appId => {
-      const name = getApparatusName(appId);
-      const roleId = roles[appId];
-      const roleNames = activeOperation.roleNames || {};
-      const personName = roleNames[appId];
-      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-      const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-      return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
-    }).join('');
+    // Group assigned apparatus by type, then by apparatus groups
+    const appGroups = activeOperation.apparatusGroups || {};
+    const groupedAppIds = new Set();
+    for (const g of Object.values(appGroups)) {
+      for (const mid of (g.members || [])) groupedAppIds.add(mid);
+    }
+
+    // Build apparatus groups section
+    let groupsHtml = '';
+    for (const [gid, g] of Object.entries(appGroups)) {
+      const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
+        const name = getApparatusName(mid);
+        const roleId = roles[mid];
+        const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+      }).join('');
+      if (memberChips) {
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:10px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+      }
+    }
+
+    // Build ungrouped apparatus by type
+    const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
+    const byType = {};
+    for (const appId of ungrouped) {
+      const app = localApparatus.find(a => a.id === appId);
+      const typeId = app?.type || 'other';
+      if (!byType[typeId]) byType[typeId] = [];
+      byType[typeId].push(appId);
+    }
+    const sortedTypes = Object.keys(byType).sort((a, b) => getApparatusTypeOrder(a) - getApparatusTypeOrder(b));
+
+    let typeHtml = '';
+    for (const typeId of sortedTypes) {
+      const chips = byType[typeId].map(appId => {
+        const name = getApparatusName(appId);
+        const roleId = roles[appId];
+        const roleNames = activeOperation.roleNames || {};
+        const personName = roleNames[appId];
+        const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+        const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+      }).join('');
+      // Only show type header if multiple types present
+      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${getApparatusTypeName(typeId)}</div>` : '';
+      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
+    }
+
+    assignedList.innerHTML = groupsHtml + typeHtml;
   } else {
     assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
   }

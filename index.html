@@ -42,7 +42,7 @@
   <header class="header">
     <h1>Paratech Strut Selector</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v2.3.1</div>
+    <div class="version-label">v2.4.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -198,7 +198,7 @@
         </div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')">
           <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▼</span> Assigned Apparatus</span>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">+ Add</button>
+          <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">+ Add</button></div>
         </div>
         <div id="sectionApparatus"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')">
@@ -293,6 +293,18 @@
       <div class="form-group">
         <label>Apparatus Name</label>
         <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="newApparatusType">
+          <option value="engine">Engine</option>
+          <option value="ladder">Ladder</option>
+          <option value="rescue">Rescue</option>
+          <option value="squad">Squad</option>
+          <option value="chief">Chief</option>
+          <option value="taskforce">Task Force</option>
+          <option value="other">Other</option>
+        </select>
       </div>
       <button class="btn btn-primary" onclick="guardClick(this,confirmAddApparatus)">Add</button>
       <div class="divider"></div>
