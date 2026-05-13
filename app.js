@@ -242,13 +242,15 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 // ============================================================
 function showTab(tab) {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('screen-visible'); });
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
   const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', settings:'screenSettings' };
   const activeScreen = document.getElementById(screenMap[tab]);
   activeScreen.classList.add('active');
   // Trigger fade-in on next frame (display must be set first)
   requestAnimationFrame(() => activeScreen.classList.add('screen-visible'));
-  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  const activeBtn = document.querySelector(`[data-tab="${tab}"]`);
+  activeBtn.classList.add('active');
+  activeBtn.setAttribute('aria-current', 'page');
   if (tab === 'inventory') renderInventory();
   if (tab === 'ops') renderOperations();
   if (tab === 'settings') renderApparatusTypesList();
@@ -261,6 +263,7 @@ function showTab(tab) {
 function toggleSystem(sys) {
   const btn = document.getElementById('toggle' + sys.charAt(0).toUpperCase() + sys.slice(1));
   btn.classList.toggle('active');
+  btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
 }
 
 function getActiveSystemFilter() {
@@ -874,7 +877,7 @@ function showAddApparatus() {
   const sel = document.getElementById('newApparatusType');
   sel.innerHTML = getApparatusTypes().map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
   renderApparatusManageList();
-  document.getElementById('addApparatusModal').classList.add('active');
+  openModal('addApparatusModal');
 }
 
 function renderApparatusManageList() {
@@ -1324,7 +1327,7 @@ function showAddEquipment() {
     summary.style.display = 'none';
   }
 
-  document.getElementById('addEquipModal').classList.add('active');
+  openModal('addEquipModal');
 }
 
 function quickAdd(type, system, model, length) {
@@ -1367,16 +1370,30 @@ function quickAdd(type, system, model, length) {
   showAddEquipment();
 }
 
+let _lastFocusedElement = null;
+
+function openModal(id) {
+  _lastFocusedElement = document.activeElement;
+  document.getElementById(id).classList.add('active');
+  const modal = document.getElementById(id);
+  const focusable = modal.querySelector('input:not([type="hidden"]), select, textarea, button:not([disabled])');
+  if (focusable) requestAnimationFrame(() => focusable.focus());
+}
+
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
   if (id === 'addEquipModal' || id === 'addApparatusModal') renderInventory();
+  if (_lastFocusedElement && typeof _lastFocusedElement.focus === 'function') {
+    _lastFocusedElement.focus();
+    _lastFocusedElement = null;
+  }
 }
 
 // ============================================================
 // FEEDBACK
 // ============================================================
 function openFeedbackModal() {
-  document.getElementById('feedbackModal').classList.add('active');
+  openModal('feedbackModal');
 }
 
 function closeFeedbackModal() {
@@ -1557,7 +1574,7 @@ function openMyRoleModal() {
   document.getElementById('roleNameGroup').style.display = 'block';
   document.getElementById('rolePersonName').value = localStorage.getItem('paratech_myRoleName') || '';
   renderRoleGrid(myRole);
-  document.getElementById('roleModal').classList.add('active');
+  openModal('roleModal');
 }
 
 function openApparatusRoleModal(appId) {
@@ -1571,7 +1588,7 @@ function openApparatusRoleModal(appId) {
   const roles = activeOperation.roles || {};
   const currentRole = roles[appId] || null;
   renderRoleGrid(currentRole);
-  document.getElementById('roleModal').classList.add('active');
+  openModal('roleModal');
 }
 
 function renderRoleGrid(selectedRoleId) {
@@ -1989,7 +2006,7 @@ function showAddExternal() {
   document.getElementById('extDeptName').value = '';
   document.getElementById('extApparatus').value = '';
   document.getElementById('extQuantity').value = '1';
-  document.getElementById('addExternalModal').classList.add('active');
+  openModal('addExternalModal');
 }
 
 function populateExtStrutGrid(selectedModel) {
@@ -2113,7 +2130,7 @@ function editExternal(extId) {
   document.getElementById('extDeptName').value = ext.deptName || '';
   document.getElementById('extApparatus').value = ext.apparatus || '';
   document.getElementById('extQuantity').value = ext.quantity || 1;
-  document.getElementById('addExternalModal').classList.add('active');
+  openModal('addExternalModal');
 }
 
 // ============================================================
@@ -2123,7 +2140,7 @@ function showAddIndividual() {
   editingIndividualId = null;
   document.getElementById('addIndividualTitle').textContent = 'Add Individual';
   document.getElementById('individualName').value = '';
-  document.getElementById('addIndividualModal').classList.add('active');
+  openModal('addIndividualModal');
 }
 
 function confirmAddIndividual() {
@@ -2184,7 +2201,7 @@ function editIndividual(indId) {
   editingIndividualId = indId;
   document.getElementById('addIndividualTitle').textContent = 'Edit Individual';
   document.getElementById('individualName').value = ind.name || '';
-  document.getElementById('addIndividualModal').classList.add('active');
+  openModal('addIndividualModal');
 }
 
 function openIndividualRoleModal(indId) {
@@ -2197,7 +2214,7 @@ function openIndividualRoleModal(indId) {
   const roles = activeOperation.roles || {};
   const currentRole = roles[roleTarget] || null;
   renderRoleGrid(currentRole);
-  document.getElementById('roleModal').classList.add('active');
+  openModal('roleModal');
 }
 
 function getOperationInventory() {
@@ -2610,7 +2627,7 @@ function deleteArchivedOp(opId) {
 
 function startOperation() {
   populateStartOpApparatus();
-  document.getElementById('startOpModal').classList.add('active');
+  openModal('startOpModal');
 }
 
 function confirmStartOp() {
@@ -2694,15 +2711,19 @@ function showAddShorePoint() {
   updateDeductionSummary('sp');
   spQuantity = 1;
   document.querySelectorAll('.qty-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.qty) === 1);
+    const isOne = parseInt(b.dataset.qty) === 1;
+    b.classList.toggle('active', isOne);
+    b.setAttribute('aria-checked', isOne ? 'true' : 'false');
   });
-  document.getElementById('shorePointModal').classList.add('active');
+  openModal('shorePointModal');
 }
 
 function setSpQty(qty) {
   spQuantity = qty;
   document.querySelectorAll('.qty-btn').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.qty) === qty);
+    const isActive = parseInt(b.dataset.qty) === qty;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-checked', isActive ? 'true' : 'false');
   });
 }
 
@@ -3003,10 +3024,14 @@ function toggleLane(laneId) {
 let sectionCollapsedState = {};
 function toggleSection(sectionKey) {
   sectionCollapsedState[sectionKey] = !sectionCollapsedState[sectionKey];
+  const collapsed = sectionCollapsedState[sectionKey];
   const content = document.getElementById('section' + sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1));
   const arrow = document.getElementById('arrow' + sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1));
-  if (content) content.style.display = sectionCollapsedState[sectionKey] ? 'none' : '';
-  if (arrow) arrow.textContent = sectionCollapsedState[sectionKey] ? '▶' : '▼';
+  if (content) content.style.display = collapsed ? 'none' : '';
+  if (arrow) arrow.textContent = collapsed ? '▶' : '▼';
+  // Update aria-expanded on the toggle trigger
+  const trigger = document.querySelector(`[aria-controls="section${sectionKey.charAt(0).toUpperCase() + sectionKey.slice(1)}"]`);
+  if (trigger) trigger.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
 
 // ============================================================
@@ -3015,8 +3040,10 @@ function toggleSection(sectionKey) {
 function switchView(view) {
   currentView = view;
   roleViewDismissed = true; // User made a deliberate choice
-  document.querySelectorAll('#viewSwitcher button').forEach(b => b.classList.remove('active'));
-  document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`).classList.add('active');
+  document.querySelectorAll('#viewSwitcher button').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+  const activeTab = document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`);
+  activeTab.classList.add('active');
+  activeTab.setAttribute('aria-selected', 'true');
   document.getElementById('opsView').style.display = view === 'ops' ? 'block' : 'none';
   document.getElementById('commandView').style.display = view === 'command' ? 'block' : 'none';
   document.getElementById('cutTableView').style.display = view === 'cuttable' ? 'block' : 'none';
@@ -3632,7 +3659,7 @@ function editShorePoint(spId) {
   // Change modal title
   document.querySelector('#shorePointModal .modal h2').textContent = 'Edit Shore Point';
 
-  document.getElementById('shorePointModal').classList.add('active');
+  openModal('shorePointModal');
 }
 
 function confirmEditShorePoint() {

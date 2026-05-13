@@ -1333,3 +1333,26 @@ h1, h2, h3, h4 {
 body {
   line-height: 1.5;
 }
+
+/* Skip-to-content link */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  width: auto;
+  height: auto;
+  padding: 8px 16px;
+  background: var(--blue);
+  color: white;
+  border-radius: var(--radius);
+  z-index: 300;
+  font-weight: 600;
+}

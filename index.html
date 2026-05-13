@@ -11,17 +11,18 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a href="#screenSelect" class="skip-link">Skip to main content</a>
 
 <!-- Login Screen -->
 <section class="login-screen" id="loginScreen">
   <div class="login-logo">P</div>
-  <div class="login-title">Paratech Struts</div>
-  <div class="login-subtitle">Enter your Department ID to continue</div>
+  <h1 class="login-title">Paratech Struts</h1>
+  <p class="login-subtitle">Enter your Department ID to continue</p>
   <div class="login-form">
     <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false">
     <button class="btn btn-primary w-full" onclick="handleLogin()">Enter</button>
   </div>
-  <div class="login-hint">Your Department ID connects you to shared inventory and operations</div>
+  <p class="login-hint">Your Department ID connects you to shared inventory and operations</p>
 </section>
 
 <!-- Inventory Quick View -->
@@ -29,12 +30,12 @@
 <div class="inv-quickview-panel" id="qvPanel">
   <div class="inv-qv-header">
     <h2 class="modal-title">Available Inventory</h2>
-    <button class="inv-qv-close" onclick="toggleQuickView()">&times;</button>
+    <button class="inv-qv-close" onclick="toggleQuickView()" aria-label="Close inventory quick view">&times;</button>
   </div>
   <div class="inv-qv-body" id="qvBody"></div>
 </div>
-<button class="inv-quickview-btn" id="qvFab" onclick="toggleQuickView()">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
+<button class="inv-quickview-btn" id="qvFab" onclick="toggleQuickView()" aria-label="View available inventory">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
 </button>
 
 <div class="app" id="mainApp">
@@ -55,15 +56,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')">
-            <div class="input-hint">feet</div>
+            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfFeetHint">
+            <div class="input-hint" id="qfFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')">
-            <div class="input-hint">inches</div>
+            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfInchesHint">
+            <div class="input-hint" id="qfInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')">
+            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')" aria-describedby="qfFractionHint">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -81,7 +82,7 @@
               <option value="0.875">7/8</option>
               <option value="0.9375">15/16</option>
             </select>
-            <div class="input-hint">fraction</div>
+            <div class="input-hint" id="qfFractionHint">fraction</div>
           </div>
         </div>
         <input type="hidden" id="inputLength">
@@ -138,13 +139,13 @@
         <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
       </div>
       <div class="system-toggles">
-        <button class="system-toggle gold" id="toggleGold" onclick="toggleSystem('gold')">
+        <button class="system-toggle gold" id="toggleGold" onclick="toggleSystem('gold')" aria-pressed="false">
           <span class="toggle-dot"></span><span class="toggle-label">Gold</span>
         </button>
-        <button class="system-toggle grey" id="toggleGrey" onclick="toggleSystem('grey')">
+        <button class="system-toggle grey" id="toggleGrey" onclick="toggleSystem('grey')" aria-pressed="false">
           <span class="toggle-dot"></span><span class="toggle-label">Grey</span>
         </button>
-        <button class="system-toggle lockstroke" id="toggleLockstroke" onclick="toggleSystem('lockstroke')">
+        <button class="system-toggle lockstroke" id="toggleLockstroke" onclick="toggleSystem('lockstroke')" aria-pressed="false">
           <span class="toggle-dot"></span><span class="toggle-label">LockStroke</span>
         </button>
       </div>
@@ -171,7 +172,7 @@
         </div>
         <div id="inventoryList"></div>
         <div id="invEmpty" class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
           <p>No equipment in inventory yet.<br>Select an apparatus and tap "+ Add" to get started.</p>
         </div>
       </div>
@@ -181,7 +182,7 @@
     <section class="screen" id="screenOps">
       <div id="noActiveOp">
         <div class="empty-state">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
           <p>No active operation.</p>
         </div>
         <button class="btn btn-primary mt-16" onclick="startOperation()">Start New Operation</button>
@@ -196,35 +197,35 @@
             <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')" role="button" aria-expanded="true" aria-controls="sectionApparatus">
           <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▼</span> Assigned Apparatus</span>
           <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
         </div>
         <div id="sectionApparatus"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')" role="button" aria-expanded="true" aria-controls="sectionExternal">
           <span class="section-title m-0"><span class="section-arrow" id="arrowExternal">▼</span> External Equipment</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
         </div>
         <div id="sectionExternal"><div id="externalEquipmentList"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')" role="button" aria-expanded="true" aria-controls="sectionIndividuals">
           <span class="section-title m-0"><span class="section-arrow" id="arrowIndividuals">▼</span> Individuals</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
         </div>
         <div id="sectionIndividuals"><div id="individualsList"></div></div>
         <div id="myRoleSection" class="mb-12">
-          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')">
+          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')" role="button" aria-expanded="true" aria-controls="sectionMyrole">
             <span class="section-title m-0"><span class="section-arrow" id="arrowMyrole">▼</span> My Role</span>
             <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
           </div>
           <div id="sectionMyrole"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
-        <div class="view-switcher" id="viewSwitcher">
-          <button class="active" onclick="switchView('ops')">📋 Operations</button>
-          <button onclick="switchView('command')">🏗 Command</button>
-          <button onclick="switchView('cuttable')">✂️ Cut Table</button>
+        <div class="view-switcher" id="viewSwitcher" role="tablist">
+          <button class="active" onclick="switchView('ops')" role="tab" aria-selected="true" aria-controls="opsView">📋 Operations</button>
+          <button onclick="switchView('command')" role="tab" aria-selected="false" aria-controls="commandView">🏗 Command</button>
+          <button onclick="switchView('cuttable')" role="tab" aria-selected="false" aria-controls="cutTableView">✂️ Cut Table</button>
         </div>
-        <div id="opsView">
+        <div id="opsView" role="tabpanel">
           <div class="flex-between mb-8">
             <span class="section-title m-0">Shore Points</span>
             <button class="btn btn-sm btn-primary" onclick="showAddShorePoint()">+ Shore Point</button>
@@ -232,8 +233,8 @@
           <div id="drilldownBreadcrumb" class="drilldown-breadcrumb hidden"></div>
           <div id="shorePointsList"></div>
         </div>
-        <div id="commandView" class="hidden"></div>
-        <div id="cutTableView" class="hidden"></div>
+        <div id="commandView" class="hidden" role="tabpanel"></div>
+        <div id="cutTableView" class="hidden" role="tabpanel"></div>
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>
@@ -270,29 +271,29 @@
   <div class="feedback-link-wrap"><a href="#" onclick="event.preventDefault();openFeedbackModal()" class="feedback-link">Report Issue / Suggestion</a></div>
 
   <!-- Bottom Nav -->
-  <nav class="nav">
-    <button class="nav-btn active" onclick="showTab('select')" data-tab="select">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+  <nav class="nav" aria-label="Main navigation">
+    <button class="nav-btn active" onclick="showTab('select')" data-tab="select" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       Quick Find
     </button>
     <button class="nav-btn" onclick="showTab('ops')" data-tab="ops">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Operations
     </button>
     <button class="nav-btn" onclick="showTab('inventory')" data-tab="inventory">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
       Inventory
     </button>
     <button class="nav-btn" onclick="showTab('settings')" data-tab="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Settings
     </button>
   </nav>
 
   <!-- Add Apparatus Modal -->
-  <div class="modal-overlay" id="addApparatusModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="addApparatusModal" role="dialog" aria-modal="true" aria-labelledby="addApparatusTitle">
     <div class="modal">
-      <h2 class="modal-title">Add Apparatus</h2>
+      <h2 class="modal-title" id="addApparatusTitle">Add Apparatus</h2>
       <div class="form-group">
         <label>Apparatus Name</label>
         <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
@@ -318,7 +319,7 @@
   </div>
 
   <!-- Add Equipment Modal -->
-  <div class="modal-overlay" id="addEquipModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="addEquipModal" role="dialog" aria-modal="true" aria-labelledby="addEquipTitle">
     <div class="modal">
       <h2 class="modal-title" id="addEquipTitle">Add Equipment</h2>
       <div class="quick-add-summary hidden" id="quickAddSummary"></div>
@@ -334,9 +335,9 @@
   </div>
 
   <!-- Add Shore Point Modal -->
-  <div class="modal-overlay" id="shorePointModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="shorePointModal" role="dialog" aria-modal="true" aria-labelledby="shorePointTitle">
     <div class="modal">
-      <h2 class="modal-title">Add Shore Point</h2>
+      <h2 class="modal-title" id="shorePointTitle">Add Shore Point</h2>
       <div class="form-group">
         <label>Shore Type</label>
         <select id="spShoreType" onchange="onShoreTypeChange()">
@@ -371,15 +372,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')">
-            <div class="input-hint">feet</div>
+            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spFeetHint">
+            <div class="input-hint" id="spFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')">
-            <div class="input-hint">inches</div>
+            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spInchesHint">
+            <div class="input-hint" id="spInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')">
+            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')" aria-describedby="spFractionHint">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -397,7 +398,7 @@
               <option value="0.875">7/8</option>
               <option value="0.9375">15/16</option>
             </select>
-            <div class="input-hint">fraction</div>
+            <div class="input-hint" id="spFractionHint">fraction</div>
           </div>
         </div>
         <input type="hidden" id="spLength">
@@ -455,11 +456,11 @@
       </div>
       <div class="form-group" id="spQtyGroup">
         <label>Quantity</label>
-        <div class="d-flex gap-md">
-          <button class="btn btn-sm qty-btn active" onclick="setSpQty(1)" data-qty="1">1x</button>
-          <button class="btn btn-sm qty-btn" onclick="setSpQty(2)" data-qty="2">2x</button>
-          <button class="btn btn-sm qty-btn" onclick="setSpQty(3)" data-qty="3">3x</button>
-          <button class="btn btn-sm qty-btn" onclick="setSpQty(4)" data-qty="4">4x</button>
+        <div class="d-flex gap-md" role="radiogroup" aria-label="Shore point quantity">
+          <button class="btn btn-sm qty-btn active" onclick="setSpQty(1)" data-qty="1" role="radio" aria-checked="true">1x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(2)" data-qty="2" role="radio" aria-checked="false">2x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(3)" data-qty="3" role="radio" aria-checked="false">3x</button>
+          <button class="btn btn-sm qty-btn" onclick="setSpQty(4)" data-qty="4" role="radio" aria-checked="false">4x</button>
         </div>
       </div>
       <button class="btn btn-primary" id="spFindBtn" onclick="findForShorePoint()">Find Available Struts</button>
@@ -471,9 +472,9 @@
   </div>
 
   <!-- Start Operation Modal -->
-  <div class="modal-overlay" id="startOpModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="startOpModal" role="dialog" aria-modal="true" aria-labelledby="startOpTitle">
     <div class="modal">
-      <h2 class="modal-title">Start New Operation</h2>
+      <h2 class="modal-title" id="startOpTitle">Start New Operation</h2>
       <div class="form-group">
         <label>Operation Name / Location</label>
         <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100">
@@ -500,9 +501,9 @@
   </div>
 
   <!-- Add External Equipment Modal -->
-  <div class="modal-overlay" id="addExternalModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="addExternalModal" role="dialog" aria-modal="true" aria-labelledby="addExternalTitle">
     <div class="modal">
-      <h2 class="modal-title">Add External Equipment</h2>
+      <h2 class="modal-title" id="addExternalTitle">Add External Equipment</h2>
       <div class="form-group">
         <label>Department</label>
         <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100">
@@ -527,7 +528,7 @@
   </div>
 
   <!-- Role Assignment Modal -->
-  <div class="modal-overlay" id="roleModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="roleModal" role="dialog" aria-modal="true" aria-labelledby="roleModalTitle">
     <div class="modal">
       <h2 class="modal-title" id="roleModalTitle">Assign Role</h2>
       <p class="modal-subtitle" id="roleModalSubtitle">Select an ICS role</p>
@@ -542,7 +543,7 @@
   </div>
 
   <!-- Add Individual Modal -->
-  <div class="modal-overlay" id="addIndividualModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="addIndividualModal" role="dialog" aria-modal="true" aria-labelledby="addIndividualTitle">
     <div class="modal">
       <h2 class="modal-title" id="addIndividualTitle">Add Individual</h2>
       <div class="form-group">
@@ -556,9 +557,9 @@
   </div>
 
   <!-- Feedback Modal -->
-  <div class="modal-overlay" id="feedbackModal" role="dialog" aria-modal="true">
+  <div class="modal-overlay" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <div class="modal">
-      <h2 class="modal-title">Report Issue / Suggestion</h2>
+      <h2 class="modal-title" id="feedbackTitle">Report Issue / Suggestion</h2>
       <div class="form-group">
         <label>Category</label>
         <select id="feedbackCategory">
