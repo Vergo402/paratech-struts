@@ -114,6 +114,22 @@ On every change:
 
 ---
 
+## Production Audit Team (v3.3.0)
+
+Role-based Claude sessions for the 6-pass production-readiness audit:
+
+| Role | Model | Passes |
+|------|-------|--------|
+| Senior Full-Stack Engineer | Opus | 1 (Function & Logic), 2 (Architecture), 5 (Perf & Security) |
+| Mobile/Frontend Engineer | Sonnet | 3 (UX Polish) |
+| UX/Product Person | Sonnet | 4 (Accessibility) |
+| Structural Collapse SME | Haiku | QA review — domain logic across all passes |
+| DevOps/Backend Engineer | Opus | 5 (Perf & Security), 6 (Resilience) |
+
+Passes execute sequentially (1→2→3→4→5→6). Each pass produces refactored code + changelog entry.
+
+---
+
 ## Local Development
 
 ```bash

@@ -440,8 +440,15 @@ function showToast(msg, type) {
   toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
+// Safe JSON parse helper — returns fallback on corrupt data
+function safeParse(json, fallback) {
+  if (!json) return fallback;
+  try { return JSON.parse(json); }
+  catch (e) { console.warn('Corrupt localStorage data, using fallback:', e.message); return fallback; }
+}
+
 // Offline-safe Firebase write wrapper
-let pendingWrites = JSON.parse(localStorage.getItem('paratech_pendingWrites') || '[]');
+let pendingWrites = safeParse(localStorage.getItem('paratech_pendingWrites'), []);
 let isOnline = false;
 
 function firebaseSave(ref, method, data) {
@@ -505,12 +512,22 @@ function guardClick(btn, fn) {
   btn.disabled = true;
   const orig = btn.textContent;
   btn.textContent = 'Working…';
-  Promise.resolve().then(fn).finally(() => {
-    setTimeout(() => {
-      btn.disabled = false;
-      btn.textContent = orig;
-    }, 1000);
-  });
+  try {
+    Promise.resolve(fn()).catch(err => {
+      console.error('Action failed:', err);
+      showToast('Something went wrong', 'error');
+    }).finally(() => {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = orig;
+      }, 1000);
+    });
+  } catch (err) {
+    console.error('Action failed:', err);
+    showToast('Something went wrong', 'error');
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
 }
 
 const ICS_ROLES_DEFAULT = [
@@ -764,7 +781,7 @@ function setupListeners() {
 
 function loadLocalInventory() {
   const stored = localStorage.getItem('paratech_inventory');
-  if (stored) localInventory = JSON.parse(stored);
+  if (stored) localInventory = safeParse(stored, []);
 }
 
 // ============================================================
@@ -772,12 +789,12 @@ function loadLocalInventory() {
 // ============================================================
 function loadLocalApparatus() {
   const stored = localStorage.getItem('paratech_apparatus');
-  if (stored) localApparatus = JSON.parse(stored);
+  if (stored) localApparatus = safeParse(stored, []);
   if (localApparatus.length > 0 && !selectedApparatus) {
     selectedApparatus = localApparatus[0].id;
   }
   const storedTypes = localStorage.getItem('paratech_custom_apparatus_types');
-  if (storedTypes) customApparatusTypes = JSON.parse(storedTypes);
+  if (storedTypes) customApparatusTypes = safeParse(storedTypes, null);
 }
 
 function saveLocalApparatus() {
@@ -1145,9 +1162,9 @@ function renderInventory() {
         <span class="inv-item-name">${name}</span>
         <span class="inv-item-status">${statusText}</span>
         <div class="qty-controls">
-          <button class="qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+          <button class="inv-qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
           <span class="qty-val">${item.quantity}</span>
-          <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+          <button class="inv-qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
         </div>
       </div>`;
     }
@@ -1171,9 +1188,9 @@ function renderInventory() {
         <span class="inv-item-name">${name}</span>
         <span class="inv-item-status">${statusText}</span>
         <div class="qty-controls">
-          <button class="qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+          <button class="inv-qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
           <span class="qty-val">${item.quantity}</span>
-          <button class="qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+          <button class="inv-qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
         </div>
       </div>`;
     }
@@ -1349,7 +1366,7 @@ function submitFeedback() {
     text,
     deptId: localStorage.getItem('paratech_deptId') || null,
     deptName: localStorage.getItem('paratech_deptName') || null,
-    timestamp: firebase.database.ServerValue.TIMESTAMP,
+    timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
     appVersion: '3.2.0'
   };
   if (db) {
@@ -1882,7 +1899,7 @@ function orgSwapRoles(roleA, roleB) {
 
   // Persist
   if (db && deptId && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), roles);
+    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'set', roles);
   } else {
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
   }
@@ -1952,7 +1969,7 @@ function populateExtStrutGrid(selectedModel) {
   for (const s of STRUTS) {
     const isSelected = s.model === selectedModel;
     const color = s.system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}')" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : '#E0E0E0'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
+    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : '#E0E0E0'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
     sh += `<option value="${s.model}" data-system="${s.system}">${s.model}</option>`;
   }
   grid.innerHTML = gh;
@@ -1960,16 +1977,18 @@ function populateExtStrutGrid(selectedModel) {
   if (selectedModel) select.value = selectedModel;
 }
 
-function selectExtStrut(model, system) {
+function selectExtStrut(model, system, event) {
   document.getElementById('extStrutModel').value = model;
   // Update visual selection
   document.querySelectorAll('#extStrutGrid .quick-add-btn').forEach(btn => {
     btn.classList.remove('added');
     btn.style.borderColor = '#E0E0E0';
   });
-  event.currentTarget.classList.add('added');
-  const color = system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-  event.currentTarget.style.borderColor = color;
+  if (event && event.currentTarget) {
+    event.currentTarget.classList.add('added');
+    const color = system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
+    event.currentTarget.style.borderColor = color;
+  }
 }
 
 function confirmAddExternal() {
@@ -2748,7 +2767,10 @@ function deployPendingShorePoint() {
 }
 
 function deployShorePoint(result, qty) {
-  if (typeof result === 'string') result = JSON.parse(result);
+  if (typeof result === 'string') {
+    try { result = JSON.parse(result); }
+    catch (e) { showToast('Invalid shore point data', 'error'); return; }
+  }
   qty = qty || 1;
 
   const baseLabel = document.getElementById('spLabel').value.trim() || 'Shore Point';
@@ -4025,7 +4047,9 @@ function applyImportData(data) {
 
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
-  localStorage.clear();
+  // Only remove Paratech keys, not unrelated app data
+  const paratechKeys = Object.keys(localStorage).filter(k => k.startsWith('paratech_'));
+  paratechKeys.forEach(k => localStorage.removeItem(k));
   localInventory = [];
   localApparatus = [];
   selectedApparatus = null;
@@ -4292,6 +4316,25 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Close modals on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const activeModal = document.querySelector('.modal-overlay.active');
+    if (activeModal) {
+      closeModal(activeModal.id);
+      e.preventDefault();
+    }
+    closePlatePickers();
+  }
+});
+
+// Close modals on backdrop click
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) {
+    closeModal(e.target.id);
+  }
+});
+
 // ============================================================
 // INIT
 // ============================================================
@@ -4308,14 +4351,14 @@ function init() {
     document.getElementById('settingsDeptId').value = deptId;
   }
 
-  const settings = JSON.parse(localStorage.getItem('paratech_settings') || '{}');
+  const settings = safeParse(localStorage.getItem('paratech_settings'), {});
   if (settings.name) {
     document.getElementById('deptName').textContent = settings.name;
     document.getElementById('settingsDeptName').value = settings.name;
   }
 
   const storedOp = localStorage.getItem('paratech_operation');
-  if (storedOp) activeOperation = JSON.parse(storedOp);
+  if (storedOp) activeOperation = safeParse(storedOp, null);
 
   // Restore device role
   myRole = localStorage.getItem('paratech_myRole') || null;

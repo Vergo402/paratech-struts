@@ -25,8 +25,12 @@
   --pending-border: #CE93D8;
   --orange-dark: #E65100;
   --orange-bg: #FFF3E0;
+  --border: #E0E0E0;
   --radius: 12px;
+  --radius-md: 8px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
 }
 
 html, body {
@@ -174,7 +178,6 @@ select { padding-right: 40px; }
 .btn:active { opacity: 0.7; }
 .btn-primary { background: var(--blue); color: white; width: 100%; }
 .btn-danger { background: var(--red); color: white; }
-.btn-success { background: var(--green); color: white; }
 .btn-outline {
   background: none;
   border: 2px solid #E0E0E0;
@@ -431,7 +434,7 @@ select { padding-right: 40px; }
   align-items: center;
   gap: 4px;
 }
-.qty-btn {
+.inv-qty-btn {
   width: 44px;
   height: 44px;
   border-radius: 8px;
@@ -445,7 +448,7 @@ select { padding-right: 40px; }
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
 }
-.qty-btn:active { background: #E0E0E0; }
+.inv-qty-btn:active { background: #E0E0E0; }
 .qty-val {
   width: 36px;
   text-align: center;
