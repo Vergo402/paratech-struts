@@ -27,10 +27,13 @@
   --orange-bg: #FFF3E0;
   --border: #E0E0E0;
   --radius: 12px;
+  --radius-sm: 6px;
   --radius-md: 8px;
+  --radius-lg: 12px;
   --shadow: 0 2px 8px rgba(0,0,0,0.1);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 html, body {
@@ -106,8 +109,11 @@ html, body {
   display: none;
   padding: 16px;
   padding-bottom: 80px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
 .screen.active { display: block; }
+.screen.screen-visible { opacity: 1; }
 
 /* --- Bottom Nav --- */
 .nav {
@@ -677,6 +683,7 @@ select { padding-right: 40px; }
 .setup-container p { color: var(--text-secondary); margin-bottom: 24px; }
 
 /* --- Modal --- */
+.modal-section { padding: 16px; }
 .modal-overlay {
   display: none;
   position: fixed;
@@ -1134,6 +1141,78 @@ select { padding-right: 40px; }
 .role-card:hover { border-color: var(--blue); }
 .quick-add-btn:hover, .quick-add-plate:hover { background: var(--blue-light); }
 
+/* Focus-visible for non-button interactive elements */
+.system-toggle:focus-visible,
+.apparatus-tab:focus-visible,
+.nav-btn:focus-visible,
+.qty-btn:focus-visible,
+.org-node:focus-visible,
+.shore-type-option:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* Disabled button state */
+.btn:disabled, .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Small action buttons — xs variant (min 44px tap target) */
+.btn-xs {
+  min-height: 44px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+/* Warning alert box */
+.alert-warning {
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+/* Loading state for guardClick buttons */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+}
+.btn-loading::after {
+  content: 'Working\2026';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  animation: pulse 1s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Active/pressed states for interactive cards */
+.drilldown-item:active, .list-item-row:active { transform: scale(0.98); }
+
+/* Nav button active indicator dot */
+.nav-btn.active { position: relative; }
+.nav-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--nav-active);
+}
+
 /* ========================================
    UTILITY CLASSES
    ======================================== */
@@ -1232,19 +1311,9 @@ select { padding-right: 40px; }
    PROFESSIONAL UI POLISH
    ======================================== */
 
-/* Refined shadows and transitions */
-:root {
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-lg: 0 4px 12px rgba(0,0,0,0.08);
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-}
-
 /* Smooth transitions on interactive elements */
-.btn, .card, .modal, .chip, .drilldown-item, .role-card {
-  transition: all 0.15s ease;
+.btn, .chip, .drilldown-item, .role-card {
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 /* Card refinements */

@@ -241,10 +241,13 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 // UI — TAB NAVIGATION
 // ============================================================
 function showTab(tab) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('screen-visible'); });
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', settings:'screenSettings' };
-  document.getElementById(screenMap[tab]).classList.add('active');
+  const activeScreen = document.getElementById(screenMap[tab]);
+  activeScreen.classList.add('active');
+  // Trigger fade-in on next frame (display must be set first)
+  requestAnimationFrame(() => activeScreen.classList.add('screen-visible'));
   document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
   if (tab === 'inventory') renderInventory();
   if (tab === 'ops') renderOperations();
@@ -291,7 +294,7 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    const pendingBtn = isOperation ? '<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button>' : '';
+    const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button>' : '';
     container.innerHTML = `<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.${pendingBtn}</div>`;
     return;
   }
@@ -349,7 +352,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
     html += `<div class="card-secondary">`;
 
     if (r.recommendedQty > 1) {
-      html += `<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:14px">
+      html += `<div class="alert-warning">
         <strong style="color:var(--red)">⚠ ${r.recommendedQty}x struts recommended</strong>
         <div style="color:var(--text-secondary);font-size:13px;margin-top:2px">Single strut: ${r.capacity.toLocaleString()} lbs · ${r.recommendedQty}x total: ${r.totalCapacity.toLocaleString()} lbs</div>
       </div>`;
@@ -557,8 +560,7 @@ function flushPendingWrites() {
 function guardClick(btn, fn) {
   if (btn.disabled) return;
   btn.disabled = true;
-  const orig = btn.textContent;
-  btn.textContent = 'Working…';
+  btn.classList.add('btn-loading');
   try {
     Promise.resolve(fn()).catch(err => {
       console.error('Action failed:', err);
@@ -566,14 +568,14 @@ function guardClick(btn, fn) {
     }).finally(() => {
       setTimeout(() => {
         btn.disabled = false;
-        btn.textContent = orig;
+        btn.classList.remove('btn-loading');
       }, 1000);
     });
   } catch (err) {
     console.error('Action failed:', err);
     showToast('Something went wrong', 'error');
     btn.disabled = false;
-    btn.textContent = orig;
+    btn.classList.remove('btn-loading');
   }
 }
 
@@ -680,9 +682,9 @@ function removeCustomRole(roleId) {
 function showAddRoleMenu() {
   if (!activeOperation) return;
   const opRoles = getOperationRoles();
-  let listHtml = `<div style="padding:16px">
+  let listHtml = `<div class="modal-section">
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">Add New Role</div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Select a parent position</div>`;
+    <div class="text-muted-xs mb-12">Select a parent position</div>`;
   for (const r of opRoles) {
     listHtml += `<div class="list-item-row" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
       <span style="font-weight:600">${escapeHtml(r.name)}</span>
@@ -848,7 +850,7 @@ function saveLocalApparatus() {
 function renderApparatusTabs() {
   const container = document.getElementById('apparatusTabs');
   if (localApparatus.length === 0) {
-    container.innerHTML = '<div style="font-size:14px;color:var(--text-secondary)">No apparatus added yet. Tap "+ Apparatus" to create one.</div>';
+    container.innerHTML = '<div class="empty-state"><p class="text-muted-sm">No apparatus added yet. Tap "+ Apparatus" to create one.</p></div>';
     return;
   }
 
@@ -889,8 +891,8 @@ function renderApparatusManageList() {
     html += `<div class="inv-item">
       <span class="inv-item-name">${app.name}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
-      <button class="btn btn-sm" onclick="editApparatus('${app.id}')" style="padding:6px 12px;font-size:13px">Edit</button>
-      <button class="btn btn-sm btn-danger" onclick="removeApparatus('${app.id}')" style="padding:6px 12px;font-size:13px">Remove</button>
+      <button class="btn btn-xs" onclick="editApparatus('${app.id}')">Edit</button>
+      <button class="btn btn-xs btn-danger" onclick="removeApparatus('${app.id}')">Remove</button>
     </div>`;
   }
   container.innerHTML = html;
@@ -989,10 +991,10 @@ function renderApparatusTypesList() {
     html += `<div class="inv-item" style="padding:6px 8px">
       <span class="inv-item-name" style="font-size:14px">${escapeHtml(t.name)} ${useBadge}</span>
       <span style="display:flex;gap:4px;align-items:center">
-        <button class="btn btn-sm" onclick="moveApparatusType('${t.id}','up')" style="padding:4px 8px;font-size:12px" ${i === 0 ? 'disabled' : ''}>▲</button>
-        <button class="btn btn-sm" onclick="moveApparatusType('${t.id}','down')" style="padding:4px 8px;font-size:12px" ${i === types.length - 1 ? 'disabled' : ''}>▼</button>
-        <button class="btn btn-sm" onclick="renameApparatusType('${t.id}')" style="padding:4px 8px;font-size:12px">Rename</button>
-        <button class="btn btn-sm btn-danger" onclick="removeApparatusType('${t.id}')" style="padding:4px 8px;font-size:12px">✕</button>
+        <button class="btn btn-xs" onclick="moveApparatusType('${t.id}','up')" ${i === 0 ? 'disabled' : ''}>▲</button>
+        <button class="btn btn-xs" onclick="moveApparatusType('${t.id}','down')" ${i === types.length - 1 ? 'disabled' : ''}>▼</button>
+        <button class="btn btn-xs" onclick="renameApparatusType('${t.id}')">Rename</button>
+        <button class="btn btn-xs btn-danger" onclick="removeApparatusType('${t.id}')">✕</button>
       </span>
     </div>`;
   }
@@ -2363,7 +2365,7 @@ function renderOperations() {
   const allPoints = getShorePoints();
 
   if (allPoints.length === 0) {
-    spList.innerHTML = '<div class="empty-state"><p>No shore points yet.<br>Tap "+ Shore Point" to add one.</p></div>';
+    spList.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg><p>No shore points yet.<br>Tap &ldquo;+ Shore Point&rdquo; to add one.</p></div>';
     document.getElementById('drilldownBreadcrumb').style.display = 'none';
     updateQuickViewFab();
     renderArchivedOps();
@@ -2717,7 +2719,7 @@ function findForShorePoint() {
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm" style="margin-top:8px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button></div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm btn-purple" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -3426,7 +3428,7 @@ function renderCutTableView() {
   const donePts = allPts.filter(sp => normalizeStatus(sp.status) === 'cutting' && sp.cutMarkedDone);
 
   if (points.length === 0 && donePts.length === 0 && runnerPts.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No shore points at the cutting table.<br>Move shore points to "Cutting" from Operations view.</p></div>';
+    container.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 000 5H6"/><path d="M18 9h1.5a2.5 2.5 0 010 5H18"/><path d="M8 9h8"/><path d="M8 15h8"/><path d="M12 4v5M12 15v5"/></svg><p>No shore points at the cutting table.<br>Move shore points to &ldquo;Cutting&rdquo; from Operations view.</p></div>';
     return;
   }
 
@@ -4319,6 +4321,10 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
   }
+
+  // Trigger fade-in on the initially active screen
+  const initialScreen = document.querySelector('.screen.active');
+  if (initialScreen) requestAnimationFrame(() => initialScreen.classList.add('screen-visible'));
 }
 
 init();
