@@ -422,9 +422,33 @@ function escapeHtml(s) {
   return d.innerHTML;
 }
 
-function debounce(fn, ms) {
-  let t;
-  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+// Get shore points array from activeOperation (normalizes Firebase object vs local array)
+function getShorePoints() {
+  if (!activeOperation) return [];
+  const raw = activeOperation.shorePoints || [];
+  return Array.isArray(raw) ? raw : Object.values(raw);
+}
+
+// Save operation to Firebase or localStorage
+function persistOperation() {
+  if (db && deptId && activeOperation && activeOperation.id) return; // Firebase listeners handle it
+  localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+}
+
+// Look up shore type name by id
+function getShoreTypeName(shoreTypeId) {
+  if (!shoreTypeId) return '';
+  return (SHORE_TYPES.find(t => t.id === shoreTypeId) || {}).name || '';
+}
+
+// Build location breadcrumb string from a shore point
+function getLocationBreadcrumb(sp) {
+  const parts = [];
+  if (sp.building) parts.push(sp.building);
+  if (sp.division) parts.push(sp.division);
+  if (sp.floor) parts.push(sp.floor);
+  if (sp.team) parts.push(sp.team);
+  return parts.length > 0 ? parts.join(' › ') : '';
 }
 
 let toastTimer = null;
@@ -541,9 +565,6 @@ const ICS_ROLES_DEFAULT = [
   { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable', parentId: 'operations' },
   { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'operations' },
 ];
-
-// Backward compat alias — some code still references ICS_ROLES
-const ICS_ROLES = ICS_ROLES_DEFAULT;
 
 function getOperationRoles() {
   if (activeOperation && activeOperation.customRoles && activeOperation.customRoles.length > 0) {
@@ -1100,21 +1121,6 @@ function setMeasurementFromInches(prefix, totalInches) {
   document.getElementById(prefix + 'Fraction').value = String(closest);
 }
 
-function formatInchesDisplay(totalInches) {
-  if (!totalInches || totalInches <= 0) return '0"';
-  const feet = Math.floor(totalInches / 12);
-  const remaining = totalInches - (feet * 12);
-  const wholeInches = Math.floor(remaining);
-  const frac = Math.round((remaining - wholeInches) * 16) / 16;
-  const fracLabels = { 0: '', 0.0625: '1/16', 0.125: '1/8', 0.1875: '3/16', 0.25: '1/4', 0.3125: '5/16', 0.375: '3/8', 0.4375: '7/16', 0.5: '1/2', 0.5625: '9/16', 0.625: '5/8', 0.6875: '11/16', 0.75: '3/4', 0.8125: '13/16', 0.875: '7/8', 0.9375: '15/16' };
-  const fracStr = fracLabels[frac] || '';
-  if (feet > 0) {
-    const inchPart = fracStr ? `${wholeInches}-${fracStr}` : (wholeInches > 0 ? String(wholeInches) : '');
-    return inchPart ? `${feet}' ${inchPart}"` : `${feet}' 0"`;
-  }
-  return fracStr ? `${wholeInches}-${fracStr}"` : `${wholeInches}"`;
-}
-
 // ============================================================
 // INVENTORY MANAGEMENT
 // ============================================================
@@ -1655,7 +1661,7 @@ function openOrgChartNode(roleId) {
     <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${roleDef.abbr} — tap to assign or clear</div>`;
 
   if (currentAssignees.length > 0) {
-    listHtml += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Currently Assigned</div>`;
+    listHtml += `<div class="section-header-sm">Currently Assigned</div>`;
     for (const a of currentAssignees) {
       listHtml += `<div style="background:#E3F2FD;border:1px solid #90CAF9;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:600">${escapeHtml(a.name)}</span>
@@ -1665,7 +1671,7 @@ function openOrgChartNode(roleId) {
   }
 
   if (unassigned.length > 0) {
-    listHtml += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:${currentAssignees.length > 0 ? '12px' : '0'} 0 6px">Available to Assign</div>`;
+    listHtml += `<div class="section-header-sm" style="margin-top:${currentAssignees.length > 0 ? '12px' : '0'}">Available to Assign</div>`;
     for (const u of unassigned) {
       listHtml += `<div class="list-item-row" onclick="assignOrgChartRole('${u.id}','${roleId}')">
         <span style="font-weight:600">${escapeHtml(u.name)}</span>
@@ -2331,8 +2337,7 @@ function renderOperations() {
   }
 
   const spList = document.getElementById('shorePointsList');
-  const rawPoints = activeOperation.shorePoints || [];
-  const allPoints = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const allPoints = getShorePoints();
 
   if (allPoints.length === 0) {
     spList.innerHTML = '<div class="empty-state"><p>No shore points yet.<br>Tap "+ Shore Point" to add one.</p></div>';
@@ -2404,7 +2409,7 @@ function renderShorePointCards(numbered) {
         ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
         : '';
 
-      const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+      const shoreTypeLabel = getShoreTypeName(sp.shoreType);
       const dedInfo = sp.deductions ? (() => {
         const d = sp.deductions;
         const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
@@ -2428,13 +2433,7 @@ function renderShorePointCards(numbered) {
       const lockClass = isLocked ? ' locked' : '';
       const lockIcon = isLocked ? '<span class="sp-lock-icon">🔒</span>' : '';
 
-      // Location breadcrumb
-      const locParts = [];
-      if (sp.building) locParts.push(sp.building);
-      if (sp.division) locParts.push(sp.division);
-      if (sp.floor) locParts.push(sp.floor);
-      if (sp.team) locParts.push(sp.team);
-      const locText = locParts.length > 0 ? locParts.join(' › ') : '';
+      const locText = getLocationBreadcrumb(sp);
 
       html += `<div class="shore-point ${status}${groupClass}${lockClass}">
         <div class="flex-between mb-8">
@@ -2706,8 +2705,7 @@ function findForShorePoint() {
 
 function assignEquipmentToPending(spId) {
   // Find the pending shore point and open edit form to assign a strut
-  const rawPoints = activeOperation.shorePoints || [];
-  const allPoints = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const allPoints = getShorePoints();
   const sp = allPoints.find(p => p.id === spId);
   if (!sp) return;
   // Use editShorePoint which pre-fills the form
@@ -2925,7 +2923,7 @@ function deployShorePoint(result, qty) {
 
 // Get all shore points in the same group (for grouped shore types like T-shores with qty > 1)
 function getGroupMembers(spId) {
-  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
   if (!sp || !sp.groupId) return [sp].filter(Boolean);
   return points.filter(p => p.groupId === sp.groupId);
@@ -2934,7 +2932,7 @@ function getGroupMembers(spId) {
 function updateShoreStatus(spId, newStatus) {
   if (!activeOperation) return;
 
-  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
   if (!sp) return;
 
@@ -3032,8 +3030,7 @@ function drillTo(index) {
 
 function getFilteredPoints() {
   if (!activeOperation) return [];
-  const rawPoints = activeOperation.shorePoints || [];
-  const points = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const points = getShorePoints();
   // Filter by current drilldown path
   return points.filter(sp => {
     for (const seg of drilldownPath) {
@@ -3172,8 +3169,7 @@ function renderCommandView() {
   const container = document.getElementById('commandView');
   if (!activeOperation) { container.innerHTML = ''; return; }
 
-  const rawPoints = activeOperation.shorePoints || [];
-  const points = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const points = getShorePoints();
 
   if (points.length === 0) {
     container.innerHTML = '<div class="empty-state"><p>No shore points to display.</p></div>';
@@ -3202,7 +3198,7 @@ function renderCommandView() {
 
   let html = `
     <div style="margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Dashboard</div>
+      <div class="section-header">Dashboard</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
         ${counts.pending > 0 ? `<div style="background:#F3E5F5;padding:10px;border-radius:var(--radius);text-align:center">
           <div style="font-size:22px;font-weight:800;color:#7B1FA2">${counts.pending}</div>
@@ -3305,7 +3301,7 @@ function renderCommandView() {
 
     const modeLabel = orgChartPickedRole ? `<span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary)">ICS Organization${modeLabel}</span>
+      <span class="section-header" style="margin-bottom:0">ICS Organization${modeLabel}</span>
       <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:11px;padding:2px 8px">+ Role</button>
     </div>`;
 
@@ -3349,7 +3345,7 @@ function renderCommandView() {
     groups[key].push(sp);
   }
 
-  html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Layout</div>`;
+  html += `<div class="section-header">Layout</div>`;
   for (const [name, pts] of Object.entries(groups)) {
     const statusCounts = {};
     for (const sp of pts) {
@@ -3371,7 +3367,7 @@ function renderCommandView() {
 
   // Apparatus Roles section
   if (assigned.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Apparatus Roles</div>`;
+    html += `<div class="section-header" style="margin-top:16px">Apparatus Roles</div>`;
     for (const appId of assigned) {
       const appName = getApparatusName(appId);
       const roleId = roles[appId];
@@ -3388,7 +3384,7 @@ function renderCommandView() {
   // Individual Roles section
   const individualsArr = Object.values(individuals);
   if (individualsArr.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin:16px 0 8px">Individual Roles</div>`;
+    html += `<div class="section-header" style="margin-top:16px">Individual Roles</div>`;
     for (const ind of individualsArr) {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
@@ -3410,8 +3406,7 @@ function renderCutTableView() {
   const container = document.getElementById('cutTableView');
   if (!activeOperation) { container.innerHTML = ''; return; }
 
-  const rawPoints = activeOperation.shorePoints || [];
-  const allPts = Array.isArray(rawPoints) ? rawPoints : Object.values(rawPoints);
+  const allPts = getShorePoints();
 
   // "Ready to Cut" = cutting status, not yet marked done
   const points = allPts
@@ -3435,7 +3430,7 @@ function renderCutTableView() {
 
   let html = '';
   if (points.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:8px">Ready to Cut (${points.length})</div>`;
+    html += `<div class="section-header">Ready to Cut (${points.length})</div>`;
     for (const sp of points) {
       html += renderCutTableCard(sp, 'active');
     }
@@ -3465,17 +3460,8 @@ function renderCutTableView() {
   container.innerHTML = html;
 }
 
-function getLocationBreadcrumb(sp) {
-  const parts = [];
-  if (sp.building) parts.push(sp.building);
-  if (sp.division) parts.push(sp.division);
-  if (sp.floor) parts.push(sp.floor);
-  if (sp.team) parts.push(sp.team);
-  return parts.length > 0 ? parts.join(' › ') : '';
-}
-
 function renderCutTableCard(sp, mode) {
-  const shoreTypeLabel = sp.shoreType ? (SHORE_TYPES.find(t => t.id === sp.shoreType) || {}).name || '' : '';
+  const shoreTypeLabel = getShoreTypeName(sp.shoreType);
   const headerSize = sp.deductions?.header ? (sp.deductions.header === 3.5 ? '4×4' : '6×6') : 'None';
   const footerSize = sp.deductions?.sole ? (sp.deductions.sole === 3.5 ? '4×4' : '6×6') : 'None';
   const locText = getLocationBreadcrumb(sp);
@@ -3554,7 +3540,7 @@ function sendToRunner(spId) {
   }
 
   if (!(db && deptId && activeOperation.id)) {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const points = getShorePoints();
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
@@ -3593,7 +3579,7 @@ function markCutDone(spId) {
 
 function editShorePoint(spId) {
   if (!activeOperation) return;
-  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
   if (!sp) return;
 
@@ -3670,7 +3656,7 @@ function confirmEditShorePoint() {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId), 'update', updateData);
   } else {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const points = getShorePoints();
     const sp = points.find(p => p.id === editingShorePointId);
     if (sp) Object.assign(sp, updateData);
     localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
@@ -3686,13 +3672,13 @@ function deleteShorePoint(spId) {
   if (!activeOperation) return;
   if (!confirm('Delete this shore point? Equipment will be returned to inventory.')) return;
 
-  const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+  const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
   if (!sp) return;
 
   // Return equipment to inventory first if not already returned
   if (sp.status !== 'returned') {
-    returnEquipmentSilent(sp);
+    returnInventoryItems(sp);
   }
 
   // Remove from operation
@@ -3706,8 +3692,9 @@ function deleteShorePoint(spId) {
   }
 }
 
-function returnEquipmentSilent(sp) {
-  // Return equipment without changing status or re-rendering — used by delete
+function returnInventoryItems(sp) {
+  // Return deployed equipment (strut, extensions, plates) to inventory counts.
+  // Shared by both delete (silent) and return (with status change) paths.
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
@@ -3750,7 +3737,7 @@ function returnEquipmentSilent(sp) {
 }
 
 function returnEquipmentSingle(sp) {
-  // Return equipment for a single shore point — handles both Firebase and local
+  // Return equipment for a single shore point — updates status and inventory
   if (!sp || normalizeStatus(sp.status) === 'returned') return;
 
   if (db && deptId) {
@@ -3758,60 +3745,11 @@ function returnEquipmentSingle(sp) {
       status: 'returned',
       returnedAt: new Date().toISOString(),
     });
-
-    if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
-      if (sp.deployedStrut.external) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
-        if (activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
-          activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
-        }
-      } else {
-        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
-      }
-    }
-    if (sp.deployedExtensions) {
-      for (const ext of sp.deployedExtensions) {
-        if (ext.inventoryId) {
-          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
-        }
-      }
-    }
-    if (sp.deployedPlates) {
-      for (const pl of sp.deployedPlates) {
-        if (pl.inventoryId) {
-          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
-        }
-      }
-    }
   } else {
     sp.status = 'returned';
     sp.returnedAt = new Date().toISOString();
-
-    if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
-      if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
-        activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
-      } else {
-        const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
-        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-      }
-    }
-    if (sp.deployedExtensions) {
-      for (const ext of sp.deployedExtensions) {
-        if (ext.inventoryId) {
-          const inv = localInventory.find(i => i.id === ext.inventoryId);
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        }
-      }
-    }
-    if (sp.deployedPlates) {
-      for (const pl of sp.deployedPlates) {
-        if (pl.inventoryId) {
-          const inv = localInventory.find(i => i.id === pl.inventoryId);
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        }
-      }
-    }
   }
+  returnInventoryItems(sp);
 }
 
 function returnEquipment(spId) {
@@ -3835,7 +3773,7 @@ function endOperation() {
   if (!confirm('End this operation? All equipment will be marked as returned.')) return;
 
   if (db && deptId && activeOperation) {
-    const points = Array.isArray(activeOperation.shorePoints) ? activeOperation.shorePoints : Object.values(activeOperation.shorePoints || {});
+    const points = getShorePoints();
     for (const sp of points) {
       if (sp.status !== 'returned') {
         returnEquipment(sp.id);
