@@ -411,6 +411,16 @@ const DEFAULT_SF_INDEX = 2; // 4:1 safety factor
 const SAFETY_FACTORS = ['2:1', '3:1', '4:1'];
 const MAX_MEASUREMENT_INCHES = 360; // 30 feet — no strut exceeds this
 const MAX_LOAD_LBS = 500000;
+const STATUS_ORDER = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
+const STATUS_LABELS = {
+  pending: 'Pending — No Equipment',
+  process: 'In Process',
+  strutplaced: 'Strut Placed',
+  cutting: 'Cutting',
+  runner: 'Runner',
+  secured: 'Secured',
+  returned: 'Removed & Returned',
+};
 
 // ============================================================
 // UTILITIES
@@ -439,6 +449,19 @@ function persistOperation() {
 function getShoreTypeName(shoreTypeId) {
   if (!shoreTypeId) return '';
   return (SHORE_TYPES.find(t => t.id === shoreTypeId) || {}).name || '';
+}
+
+// Render status count pills for a set of shore points
+function renderStatusPills(points) {
+  const counts = {};
+  for (const sp of points) {
+    const st = normalizeStatus(sp.status);
+    counts[st] = (counts[st] || 0) + 1;
+  }
+  return STATUS_ORDER
+    .filter(s => counts[s] > 0)
+    .map(s => `<span class="di-status-pill ${s}">${counts[s]}</span>`)
+    .join('');
 }
 
 // Build location breadcrumb string from a shore point
@@ -2376,8 +2399,7 @@ function normalizeStatus(status) {
 }
 
 function renderShorePointCards(numbered) {
-  const statusOrder = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
-  const statusLabels = { pending: 'Pending — No Equipment', process: 'In Process', strutplaced: 'Strut Placed', cutting: 'Cutting', runner: 'Runner', secured: 'Secured', returned: 'Removed & Returned' };
+  // Uses global STATUS_ORDER and STATUS_LABELS
   const strutCache = {};
 
   const byStatus = {};
@@ -2388,7 +2410,7 @@ function renderShorePointCards(numbered) {
   }
 
   let html = '';
-  for (const status of statusOrder) {
+  for (const status of STATUS_ORDER) {
     const laneSPs = byStatus[status];
     if (!laneSPs || laneSPs.length === 0) continue;
 
@@ -2398,7 +2420,7 @@ function renderShorePointCards(numbered) {
     html += `<div class="lane">
       <div class="lane-header ${status}" onclick="toggleLane('${laneId}')">
         <span class="lane-arrow ${isCollapsed ? 'collapsed' : ''}">▼</span>
-        ${statusLabels[status]}
+        ${STATUS_LABELS[status]}
         <span class="lane-count">${laneSPs.length}</span>
       </div>
       <div class="lane-body ${isCollapsed ? 'collapsed' : ''}">`;
@@ -2441,7 +2463,7 @@ function renderShorePointCards(numbered) {
           <div style="display:flex;align-items:center;gap:4px">
             <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit" aria-label="Edit ${escapeHtml(sp.label) || 'Shore Point'}">✎</button>
             <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete" aria-label="Delete ${escapeHtml(sp.label) || 'Shore Point'}">✕</button>
-            <span class="status-badge ${status}">${statusLabels[status]}</span>
+            <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
         ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.team)}</div>` : ''}
@@ -3119,7 +3141,7 @@ function renderDrilldownForLevel(points, level) {
   }
 
   const levelLabels = { building: 'Building', division: 'Div', floor: 'Area', team: 'Group' };
-  const statusOrder = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 'secured', 'returned'];
+  // Uses global STATUS_ORDER
   let html = '';
 
   // Sort: named groups first (alphabetical), ungrouped last
@@ -3134,17 +3156,7 @@ function renderDrilldownForLevel(points, level) {
     const prefix = levelLabels[level];
     const displayName = key === '__ungrouped__' ? 'Unassigned' : (key.toLowerCase().startsWith(prefix.toLowerCase()) ? key : `${prefix} ${key}`);
 
-    // Count by status
-    const statusCounts = {};
-    for (const sp of groupPts) {
-      const st = normalizeStatus(sp.status);
-      statusCounts[st] = (statusCounts[st] || 0) + 1;
-    }
-
-    const pills = statusOrder
-      .filter(s => statusCounts[s] > 0)
-      .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
-      .join('');
+    const pills = renderStatusPills(groupPts);
 
     if (key === '__ungrouped__') {
       html += `<div class="drilldown-item" onclick="drillInto('${level}','__none__')" style="opacity:0.7">
@@ -3165,18 +3177,7 @@ function renderDrilldownForLevel(points, level) {
 // ============================================================
 // COMMAND VIEW
 // ============================================================
-function renderCommandView() {
-  const container = document.getElementById('commandView');
-  if (!activeOperation) { container.innerHTML = ''; return; }
-
-  const points = getShorePoints();
-
-  if (points.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No shore points to display.</p></div>';
-    return;
-  }
-
-  // Count by status
+function renderDashboardStats(points) {
   const counts = { pending: 0, process: 0, strutplaced: 0, cutting: 0, runner: 0, secured: 0, returned: 0 };
   for (const sp of points) {
     const st = normalizeStatus(sp.status);
@@ -3186,98 +3187,82 @@ function renderCommandView() {
   const done = counts.secured + counts.returned;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  // Time elapsed
   const started = activeOperation.startTime ? new Date(activeOperation.startTime) : new Date();
   const elapsed = Math.floor((Date.now() - started.getTime()) / 60000);
   const hrs = Math.floor(elapsed / 60);
   const mins = elapsed % 60;
   const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-
-  // Assigned apparatus
   const appCount = (activeOperation.assignedApparatus || []).length;
 
-  let html = `
-    <div style="margin-bottom:16px">
-      <div class="section-header">Dashboard</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-        ${counts.pending > 0 ? `<div style="background:#F3E5F5;padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#7B1FA2">${counts.pending}</div>
-          <div style="font-size:10px;font-weight:600;color:#7B1FA2">Pending</div>
-        </div>` : ''}
-        <div style="background:var(--red-bg);padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:var(--red)">${counts.process}</div>
-          <div style="font-size:10px;font-weight:600;color:var(--red)">In Process</div>
-        </div>
-        <div style="background:#E3F2FD;padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#1565C0">${counts.strutplaced}</div>
-          <div style="font-size:10px;font-weight:600;color:#1565C0">Strut Placed</div>
-        </div>
-        <div style="background:#FFF8E1;padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#F57F17">${counts.cutting}</div>
-          <div style="font-size:10px;font-weight:600;color:#F57F17">Cutting</div>
-        </div>
-        <div style="background:#FFF3E0;padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#E65100">${counts.runner}</div>
-          <div style="font-size:10px;font-weight:600;color:#E65100">Runner</div>
-        </div>
-        <div style="background:var(--green-bg);padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:var(--green)">${counts.secured}</div>
-          <div style="font-size:10px;font-weight:600;color:var(--green)">Secured</div>
-        </div>
-        <div style="background:#F5F5F5;padding:10px;border-radius:var(--radius);text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#757575">${counts.returned}</div>
-          <div style="font-size:10px;font-weight:600;color:#757575">Removed & Returned</div>
-        </div>
-      </div>
-      <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div><span style="font-size:13px;font-weight:600">Progress</span></div>
-        <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
-      </div>
-      <div style="background:#E3F2FD;border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
-        <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
-      </div>
-      <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
-        <span>⏱ ${timeStr}</span>
-        <span>🚒 ${appCount} apparatus</span>
-        <span>📍 ${total} shore points</span>
-      </div>
-    </div>
-  `;
+  const statusCards = [
+    { key: 'pending', bg: '#F3E5F5', color: '#7B1FA2', label: 'Pending', conditional: true },
+    { key: 'process', bg: 'var(--red-bg)', color: 'var(--red)', label: 'In Process' },
+    { key: 'strutplaced', bg: '#E3F2FD', color: '#1565C0', label: 'Strut Placed' },
+    { key: 'cutting', bg: '#FFF8E1', color: '#F57F17', label: 'Cutting' },
+    { key: 'runner', bg: '#FFF3E0', color: '#E65100', label: 'Runner' },
+    { key: 'secured', bg: 'var(--green-bg)', color: 'var(--green)', label: 'Secured' },
+    { key: 'returned', bg: '#F5F5F5', color: '#757575', label: 'Removed & Returned' },
+  ];
 
-  // ICS/NIMS Hierarchy Chart
+  const cardsHtml = statusCards
+    .filter(c => !c.conditional || counts[c.key] > 0)
+    .map(c => `<div style="background:${c.bg};padding:10px;border-radius:var(--radius);text-align:center">
+      <div style="font-size:22px;font-weight:800;color:${c.color}">${counts[c.key]}</div>
+      <div style="font-size:10px;font-weight:600;color:${c.color}">${c.label}</div>
+    </div>`).join('');
+
+  return `<div style="margin-bottom:16px">
+    <div class="section-header">Dashboard</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">${cardsHtml}</div>
+    <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div><span style="font-size:13px;font-weight:600">Progress</span></div>
+      <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
+    </div>
+    <div style="background:#E3F2FD;border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
+      <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
+    </div>
+    <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
+      <span>⏱ ${timeStr}</span>
+      <span>🚒 ${appCount} apparatus</span>
+      <span>📍 ${total} shore points</span>
+    </div>
+  </div>`;
+}
+
+function getRoleAssignments() {
   const roles = activeOperation.roles || {};
   const roleNamesMap = activeOperation.roleNames || {};
   const individuals = activeOperation.individuals || {};
   const assigned = activeOperation.assignedApparatus || [];
+  const assignments = {};
 
-  // Build a lookup: roleId → array of {name, type}
-  const roleAssignments = {};
   for (const appId of assigned) {
     const roleId = roles[appId];
     if (roleId) {
-      if (!roleAssignments[roleId]) roleAssignments[roleId] = [];
+      if (!assignments[roleId]) assignments[roleId] = [];
       const personName = roleNamesMap[appId];
-      roleAssignments[roleId].push({ name: personName || getApparatusName(appId), type: 'apparatus' });
+      assignments[roleId].push({ name: personName || getApparatusName(appId), type: 'apparatus' });
     }
   }
   for (const ind of Object.values(individuals)) {
     const roleKey = 'ind-' + ind.id;
     const roleId = roles[roleKey];
     if (roleId) {
-      if (!roleAssignments[roleId]) roleAssignments[roleId] = [];
-      roleAssignments[roleId].push({ name: ind.name, type: 'individual' });
+      if (!assignments[roleId]) assignments[roleId] = [];
+      assignments[roleId].push({ name: ind.name, type: 'individual' });
     }
   }
-  // My role
   if (myRole) {
-    if (!roleAssignments[myRole]) roleAssignments[myRole] = [];
+    if (!assignments[myRole]) assignments[myRole] = [];
     const myName = localStorage.getItem('paratech_myRoleName') || 'This Device';
-    roleAssignments[myRole].push({ name: myName, type: 'self' });
+    assignments[myRole].push({ name: myName, type: 'self' });
   }
+  return assignments;
+}
 
-  // ICS org chart — interactive with tap-to-move and drag-and-drop
-  {
-    const renderNode = (roleId) => {
+function renderOrgChart(roleAssignments) {
+  let html = '';
+  const renderNode = (roleId) => {
       const r = getOperationRoles().find(x => x.id === roleId);
       if (!r) return '';
       const people = roleAssignments[roleId] || [];
@@ -3332,10 +3317,11 @@ function renderCommandView() {
       html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode(root.id)}</div>`;
       html += renderTree(root.id);
     }
-    html += `<div style="margin-bottom:16px"></div>`;
-  }
+  html += `<div style="margin-bottom:16px"></div>`;
+  return html;
+}
 
-  // Layout — group by hierarchy
+function renderCommandLayout(points) {
   const levels = getHierarchyLevels();
   const topLevel = levels[0] || 'floor';
   const groups = {};
@@ -3345,18 +3331,9 @@ function renderCommandView() {
     groups[key].push(sp);
   }
 
-  html += `<div class="section-header">Layout</div>`;
+  let html = `<div class="section-header">Layout</div>`;
   for (const [name, pts] of Object.entries(groups)) {
-    const statusCounts = {};
-    for (const sp of pts) {
-      const st = normalizeStatus(sp.status);
-      statusCounts[st] = (statusCounts[st] || 0) + 1;
-    }
-    const pills = ['pending','process','strutplaced','cutting','runner','secured','returned']
-      .filter(s => statusCounts[s])
-      .map(s => `<span class="di-status-pill ${s}">${statusCounts[s]}</span>`)
-      .join('');
-
+    const pills = renderStatusPills(pts);
     const levelLabel = { building: 'Building', division: 'Div', floor: 'Area', team: 'Group' }[topLevel] || '';
     const escapedName = name.replace(/'/g, "\\'");
     html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
@@ -3364,8 +3341,18 @@ function renderCommandView() {
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
+  return html;
+}
 
-  // Apparatus Roles section
+function renderRolesSection() {
+  const roles = activeOperation.roles || {};
+  const roleNamesMap = activeOperation.roleNames || {};
+  const individuals = activeOperation.individuals || {};
+  const assigned = activeOperation.assignedApparatus || [];
+
+  let html = '';
+
+  // Apparatus Roles
   if (assigned.length > 0) {
     html += `<div class="section-header" style="margin-top:16px">Apparatus Roles</div>`;
     for (const appId of assigned) {
@@ -3381,7 +3368,7 @@ function renderCommandView() {
     }
   }
 
-  // Individual Roles section
+  // Individual Roles
   const individualsArr = Object.values(individuals);
   if (individualsArr.length > 0) {
     html += `<div class="section-header" style="margin-top:16px">Individual Roles</div>`;
@@ -3395,6 +3382,21 @@ function renderCommandView() {
       </div>`;
     }
   }
+
+  return html;
+}
+
+function renderCommandView() {
+  const container = document.getElementById('commandView');
+  if (!activeOperation) { container.innerHTML = ''; return; }
+
+  const points = getShorePoints();
+  const roleAssignments = getRoleAssignments();
+
+  let html = renderDashboardStats(points);
+  html += renderOrgChart(roleAssignments);
+  html += renderCommandLayout(points);
+  html += renderRolesSection();
 
   container.innerHTML = html;
 }
