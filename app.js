@@ -449,15 +449,18 @@ function validateInput(value, maxLength = 100) {
 }
 
 let xlsxLoaded = false;
+let xlsxPromise = null;
 async function loadXLSX() {
   if (xlsxLoaded || typeof XLSX !== 'undefined') { xlsxLoaded = true; return; }
-  await new Promise((resolve, reject) => {
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
     s.onload = () => { xlsxLoaded = true; resolve(); };
-    s.onerror = () => reject(new Error('Failed to load export library'));
+    s.onerror = () => { xlsxPromise = null; reject(new Error('Failed to load export library')); };
     document.head.appendChild(s);
   });
+  return xlsxPromise;
 }
 
 // Get shore points array from activeOperation (normalizes Firebase object vs local array)
@@ -973,7 +976,7 @@ function renameApparatusType(typeId) {
   if (!t) return;
   const name = prompt('Rename apparatus type:', t.name);
   if (!name || !name.trim()) return;
-  t.name = name.trim();
+  t.name = validateInput(name, 50);
   saveCustomApparatusTypes();
   renderApparatusTypesList();
   renderApparatusTabs();
@@ -1039,7 +1042,7 @@ function getApparatusTypeOrder(typeId) {
 }
 
 function confirmAddApparatus() {
-  const name = document.getElementById('newApparatusName').value.trim();
+  const name = validateInput(document.getElementById('newApparatusName').value, 100);
   if (!name) return;
   const type = document.getElementById('newApparatusType').value || 'other';
 
@@ -1082,7 +1085,7 @@ function editApparatus(id) {
 }
 
 function saveEditApparatus(id) {
-  const name = document.getElementById('editAppName').value.trim();
+  const name = validateInput(document.getElementById('editAppName').value, 100);
   const type = document.getElementById('editAppType').value || 'other';
   if (!name) return;
 
@@ -1428,7 +1431,7 @@ function closeFeedbackModal() {
 
 function submitFeedback() {
   const category = document.getElementById('feedbackCategory').value;
-  const text = document.getElementById('feedbackText').value.trim();
+  const text = validateInput(document.getElementById('feedbackText').value, 500);
   if (!text) {
     alert('Please enter a description.');
     return;
@@ -1541,7 +1544,7 @@ function showCreateGroupModal() {
     </select></div>
     <div style="font-size:14px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Select Members</div>`;
   for (const appId of available) {
-    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${escapeAttr(appId)}" class="group-member-cb" style="width:16px;height:16px"> ${escapeHtml(getApparatusName(appId))}</label>`;
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${appId}" class="group-member-cb" style="width:16px;height:16px"> ${escapeHtml(getApparatusName(appId))}</label>`;
   }
   html += `<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="confirmCreateGroup()">Create Group</button></div>`;
 
@@ -1626,7 +1629,7 @@ function renderRoleGrid(selectedRoleId) {
 }
 
 function selectRole(roleId) {
-  const personName = (document.getElementById('rolePersonName').value || '').trim();
+  const personName = validateInput(document.getElementById('rolePersonName').value || '', 100);
   if (roleTarget === 'self') {
     myRole = roleId;
     localStorage.setItem('paratech_myRole', roleId);
@@ -2064,8 +2067,8 @@ function selectExtStrut(model, system, event) {
 }
 
 function confirmAddExternal() {
-  const deptName = document.getElementById('extDeptName').value.trim();
-  const apparatus = document.getElementById('extApparatus').value.trim();
+  const deptName = validateInput(document.getElementById('extDeptName').value, 100);
+  const apparatus = validateInput(document.getElementById('extApparatus').value, 100);
   const select = document.getElementById('extStrutModel');
   const model = select.value;
   const system = select.options[select.selectedIndex].dataset.system;
@@ -2331,7 +2334,7 @@ function renderOperations() {
         const name = escapeHtml(getApparatusName(mid));
         const roleId = roles[mid];
         const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${escapeAttr(mid)}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
         groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
@@ -2358,7 +2361,7 @@ function renderOperations() {
         const personName = roleNames[appId];
         const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
         const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${escapeAttr(appId)}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${escapeAttr(appId)}')">&times;</span></span>`;
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
       }).join('');
       // Only show type header if multiple types present
       const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
@@ -2445,7 +2448,7 @@ function normalizeStatus(status) {
 function renderShorePointCards(numbered) {
   // Uses global STATUS_ORDER and STATUS_LABELS
   const strutCache = {};
-  const opInv = getOperationInventory();
+  let opInv = null;
 
   const byStatus = {};
   for (const sp of numbered) {
@@ -2523,6 +2526,8 @@ function renderShorePointCards(numbered) {
         ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}`;
 
       if (status === 'pending') {
+        // Lazy-compute operation inventory only when pending SPs exist
+        if (!opInv) opInv = getOperationInventory();
         // Check if equipment is now available (cached per measurement)
         const cacheKey = `${sp.effectiveLength || sp.requiredLength}-${sp.estimatedLoad || 0}`;
         const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
@@ -2787,13 +2792,13 @@ function deployPendingShorePoint() {
   if (!length || length <= 0) { alert('Enter a measurement first.'); return; }
   if (!activeOperation) return;
 
-  const label = document.getElementById('spLabel').value.trim() || 'Shore Point';
+  const label = validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point';
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const shoreType = document.getElementById('spShoreType').value;
-  const building = document.getElementById('spBuilding').value.trim() || null;
-  const floor = document.getElementById('spFloor').value.trim() || null;
-  const division = document.getElementById('spDivision').value.trim() || null;
-  const team = document.getElementById('spTeam').value.trim() || null;
+  const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
+  const floor = validateInput(document.getElementById('spFloor').value, 100) || null;
+  const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+  const team = validateInput(document.getElementById('spTeam').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
 
@@ -2841,7 +2846,7 @@ function deployShorePoint(result, qty) {
   }
   qty = qty || 1;
 
-  const baseLabel = document.getElementById('spLabel').value.trim() || 'Shore Point';
+  const baseLabel = validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point';
   const length = getMeasurementInches('sp');
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const sfIndex = 2;
@@ -2877,10 +2882,10 @@ function deployShorePoint(result, qty) {
     const label = qty > 1 ? `${baseLabel} (${n + 1}/${qty})` : baseLabel;
 
     const shoreType = document.getElementById('spShoreType').value;
-    const building = document.getElementById('spBuilding').value.trim() || null;
-    const floor = document.getElementById('spFloor').value.trim() || null;
-    const division = document.getElementById('spDivision').value.trim() || null;
-    const team = document.getElementById('spTeam').value.trim() || null;
+    const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
+    const floor = validateInput(document.getElementById('spFloor').value, 100) || null;
+    const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+    const team = validateInput(document.getElementById('spTeam').value, 100) || null;
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
 
@@ -3415,7 +3420,7 @@ function renderRolesSection() {
       const personName = roleNamesMap[appId];
       const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${escapeHtml(personName)}</span>` : '';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${escapeAttr(appId)}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(appName)}${personStr}</span>
         ${roleBadge}
       </div>`;
@@ -3430,7 +3435,7 @@ function renderRolesSection() {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${escapeAttr(ind.id)}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(ind.name)}</span>
         ${roleBadge}
       </div>`;
@@ -3691,11 +3696,11 @@ function confirmEditShorePoint() {
   if (!activeOperation || !editingShorePointId) return;
 
   const updateData = {
-    label: document.getElementById('spLabel').value.trim() || 'Shore Point',
-    building: document.getElementById('spBuilding').value.trim() || null,
-    floor: document.getElementById('spFloor').value.trim() || null,
-    division: document.getElementById('spDivision').value.trim() || null,
-    team: document.getElementById('spTeam').value.trim() || null,
+    label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
+    building: validateInput(document.getElementById('spBuilding').value, 100) || null,
+    floor: validateInput(document.getElementById('spFloor').value, 100) || null,
+    division: validateInput(document.getElementById('spDivision').value, 100) || null,
+    team: validateInput(document.getElementById('spTeam').value, 100) || null,
     shoreType: document.getElementById('spShoreType').value,
     requiredLength: getMeasurementInches('sp'),
     estimatedLoad: parseFloat(document.getElementById('spLoad').value) || 0,
@@ -3865,7 +3870,7 @@ function endOperation() {
 // SETTINGS
 // ============================================================
 function saveSettings() {
-  const name = document.getElementById('settingsDeptName').value.trim();
+  const name = validateInput(document.getElementById('settingsDeptName').value, 100);
 
   if (db && deptId) {
     firebaseSave(settingsRef, 'set', { name });
@@ -3876,7 +3881,7 @@ function saveSettings() {
 }
 
 async function exportInventory() {
-  showToast('Loading export library…');
+  if (!xlsxLoaded) showToast('Loading export library…');
   try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   const rows = localInventory.map(item => {
     const strutData = item.type === 'strut' ? STRUTS.find(s => s.model === item.model) : null;
@@ -3906,7 +3911,7 @@ async function exportInventory() {
 }
 
 async function downloadTemplate() {
-  showToast('Loading export library…');
+  if (!xlsxLoaded) showToast('Loading export library…');
   try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   // Build template with all available strut models and extensions
   const rows = [];
@@ -3978,7 +3983,7 @@ async function handleImport(event) {
   }
 
   // Excel/CSV import
-  showToast('Loading export library…');
+  if (!xlsxLoaded) showToast('Loading export library…');
   try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   const reader = new FileReader();
   reader.onload = (e) => {
