@@ -348,7 +348,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : d.bottomPlate + '"'}`); }
       html += `<div class="card-deductions">
         <strong>Opening:</strong> ${r.openingLength}" → <strong>Effective:</strong> ${effLen}" <span style="color:var(--blue)">(−${totalDed}")</span><br>
-        <span style="font-size:11px">${parts.join(' · ')}</span>
+        <span style="font-size:13px">${parts.join(' · ')}</span>
       </div>`;
     }
 
@@ -691,7 +691,7 @@ function showAddRoleMenu() {
   for (const r of opRoles) {
     listHtml += `<div class="list-item-row" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
       <span style="font-weight:600">${escapeHtml(r.name)}</span>
-      <span style="font-size:12px;color:var(--blue);font-weight:600">Add under →</span>
+      <span style="font-size:14px;color:var(--blue);font-weight:600">Add under →</span>
     </div>`;
   }
   listHtml += `</div>`;
@@ -890,7 +890,7 @@ function renderApparatusManageList() {
   const sorted = [...localApparatus].sort((a, b) => getApparatusTypeOrder(a.type) - getApparatusTypeOrder(b.type));
   for (const app of sorted) {
     const count = localInventory.filter(i => i.apparatus === app.id).reduce((sum, i) => sum + i.quantity, 0);
-    const typeBadge = app.type ? `<span style="font-size:10px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${getApparatusTypeName(app.type)}</span>` : '';
+    const typeBadge = app.type ? `<span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${getApparatusTypeName(app.type)}</span>` : '';
     html += `<div class="inv-item">
       <span class="inv-item-name">${app.name}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
@@ -990,7 +990,7 @@ function renderApparatusTypesList() {
   for (let i = 0; i < types.length; i++) {
     const t = types[i];
     const inUse = localApparatus.filter(a => a.type === t.id).length;
-    const useBadge = inUse > 0 ? `<span style="font-size:10px;color:var(--text-secondary)">${inUse} apparatus</span>` : '';
+    const useBadge = inUse > 0 ? `<span style="font-size:12px;color:var(--text-secondary)">${inUse} apparatus</span>` : '';
     html += `<div class="inv-item" style="padding:6px 8px">
       <span class="inv-item-name" style="font-size:14px">${escapeHtml(t.name)} ${useBadge}</span>
       <span style="display:flex;gap:4px;align-items:center">
@@ -1282,7 +1282,7 @@ function showAddEquipment() {
     const item = localInventory.find(i => i.type === 'strut' && i.model === s.model && i.apparatus === selectedApparatus);
     const qty = item ? item.quantity : 0;
     if (qty > 0) strutCount += qty;
-    sh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('strut','${s.system}','${s.model}',0)">${s.model}<br><span style="font-size:11px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+    sh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('strut','${s.system}','${s.model}',0)">${s.model}<br><span style="font-size:13px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
   }
   strutsGrid.innerHTML = sh;
 
@@ -1297,7 +1297,7 @@ function showAddEquipment() {
       const item = localInventory.find(i => i.type === 'extension' && i.system === es.system && i.length === size && i.apparatus === selectedApparatus);
       const qty = item ? item.quantity : 0;
       if (qty > 0) extCount += qty;
-      eh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:11px;color:var(--text-secondary)">${es.label}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+      eh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:13px;color:var(--text-secondary)">${es.label}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
     }
   }
   extsGrid.innerHTML = eh;
@@ -1515,7 +1515,7 @@ function showCreateGroupModal() {
       <option value="Strike Team">Strike Team</option>
       <option value="Group">Group</option>
     </select></div>
-    <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Select Members</div>`;
+    <div style="font-size:14px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Select Members</div>`;
   for (const appId of available) {
     html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${appId}" class="group-member-cb" style="width:16px;height:16px"> ${getApparatusName(appId)}</label>`;
   }
@@ -1707,7 +1707,7 @@ function openOrgChartNode(roleId) {
     for (const a of currentAssignees) {
       listHtml += `<div style="background:var(--blue-light);border:1px solid var(--blue);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:600">${escapeHtml(a.name)}</span>
-        <button class="btn" style="font-size:11px;padding:4px 10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="clearOrgChartRole('${a.id}','${roleId}')">Clear</button>
+        <button class="btn" style="font-size:13px;padding:6px 12px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="clearOrgChartRole('${a.id}','${roleId}')">Clear</button>
       </div>`;
     }
   }
@@ -1717,7 +1717,7 @@ function openOrgChartNode(roleId) {
     for (const u of unassigned) {
       listHtml += `<div class="list-item-row" onclick="assignOrgChartRole('${u.id}','${roleId}')">
         <span style="font-weight:600">${escapeHtml(u.name)}</span>
-        <span style="font-size:12px;color:var(--blue);font-weight:600">Assign →</span>
+        <span style="font-size:14px;color:var(--blue);font-weight:600">Assign →</span>
       </div>`;
     }
   }
@@ -1728,9 +1728,9 @@ function openOrgChartNode(roleId) {
 
   // Role management actions
   listHtml += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:11px">+ Sub-Role</button>
-    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:11px">Rename</button>
-    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:11px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:13px">+ Sub-Role</button>
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:13px">Rename</button>
+    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:13px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
   </div>`;
 
   listHtml += `</div>`;
@@ -2017,7 +2017,7 @@ function populateExtStrutGrid(selectedModel) {
   for (const s of STRUTS) {
     const isSelected = s.model === selectedModel;
     const color = s.system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : 'var(--border)'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
+    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:13px;min-height:56px;border-color:${isSelected ? color : 'var(--border)'}">${s.model}<br><span style="font-size:12px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
     sh += `<option value="${s.model}" data-system="${s.system}">${s.model}</option>`;
   }
   grid.innerHTML = gh;
@@ -2309,7 +2309,7 @@ function renderOperations() {
         return `<span class="app-chip" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:10px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
       }
     }
 
@@ -2332,11 +2332,11 @@ function renderOperations() {
         const roleNames = activeOperation.roleNames || {};
         const personName = roleNames[appId];
         const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-        const personBadge = personName ? `<span style="font-size:11px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
+        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
         return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
       }).join('');
       // Only show type header if multiple types present
-      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${getApparatusTypeName(typeId)}</div>` : '';
+      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${getApparatusTypeName(typeId)}</div>` : '';
       typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
     }
 
@@ -2486,8 +2486,8 @@ function renderShorePointCards(numbered) {
           </div>
         </div>
         ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.team)}</div>` : ''}
-        ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
-        ${shoreTypeLabel ? `<div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
+        ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
+        ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
           ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
         </div>
@@ -2574,7 +2574,7 @@ function renderArchivedOps() {
           <div style="font-weight:700">${escapeHtml(op.name) || 'Unnamed'}</div>
           <div style="font-size:12px;color:var(--text-secondary)">${startDate}${endDate ? ' – ' + endDate : ''} · ${pointCount} shore point${pointCount !== 1 ? 's' : ''}</div>
         </div>
-        <span class="status-badge returned" style="font-size:11px">archived</span>
+        <span class="status-badge returned" style="font-size:13px">archived</span>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-sm btn-outline" onclick="viewArchivedOp('${op.id}')" style="flex:1">View</button>
@@ -3224,20 +3224,20 @@ function renderDashboardStats(points) {
   const appCount = (activeOperation.assignedApparatus || []).length;
 
   const statusCards = [
-    { key: 'pending', bg: '#F3E5F5', color: '#7B1FA2', label: 'Pending', conditional: true },
+    { key: 'pending', bg: 'var(--pending-bg)', color: 'var(--pending)', label: 'Pending', conditional: true },
     { key: 'process', bg: 'var(--red-bg)', color: 'var(--red)', label: 'In Process' },
-    { key: 'strutplaced', bg: '#E3F2FD', color: '#1565C0', label: 'Strut Placed' },
-    { key: 'cutting', bg: '#FFF8E1', color: '#F57F17', label: 'Cutting' },
-    { key: 'runner', bg: '#FFF3E0', color: '#E65100', label: 'Runner' },
+    { key: 'strutplaced', bg: 'var(--blue-light)', color: 'var(--blue)', label: 'Strut Placed' },
+    { key: 'cutting', bg: 'var(--cutting-bg)', color: 'var(--cutting-text)', label: 'Cutting' },
+    { key: 'runner', bg: 'var(--runner-bg)', color: 'var(--runner-text)', label: 'Runner' },
     { key: 'secured', bg: 'var(--green-bg)', color: 'var(--green)', label: 'Secured' },
-    { key: 'returned', bg: '#F5F5F5', color: '#757575', label: 'Removed & Returned' },
+    { key: 'returned', bg: 'var(--surface-alt)', color: 'var(--text-hint)', label: 'Removed & Returned' },
   ];
 
   const cardsHtml = statusCards
     .filter(c => !c.conditional || counts[c.key] > 0)
     .map(c => `<div style="background:${c.bg};padding:10px;border-radius:var(--radius);text-align:center">
       <div style="font-size:22px;font-weight:800;color:${c.color}">${counts[c.key]}</div>
-      <div style="font-size:10px;font-weight:600;color:${c.color}">${c.label}</div>
+      <div style="font-size:13px;font-weight:600;color:${c.color}">${c.label}</div>
     </div>`).join('');
 
   return `<div style="margin-bottom:16px">
@@ -3247,7 +3247,7 @@ function renderDashboardStats(points) {
       <div><span style="font-size:13px;font-weight:600">Progress</span></div>
       <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
     </div>
-    <div style="background:var(--blue-light);border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
+    <div style="background:var(--blue-light);border-radius:8px;height:16px;overflow:hidden;margin-bottom:12px">
       <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
     </div>
     <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
@@ -3308,15 +3308,15 @@ function renderOrgChart(roleAssignments) {
         ontouchstart="orgTouchStart(event,'${roleId}')"
         ontouchmove="orgTouchMove(event)"
         ontouchend="orgTouchEnd(event,'${roleId}')">
-        <div style="font-size:11px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
-        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:11px;color:var(--text-disabled);margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
+        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
+        ${filled ? `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:13px;color:var(--text-disabled);margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
       </div>`;
     };
 
-    const modeLabel = orgChartPickedRole ? `<span style="font-size:11px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
+    const modeLabel = orgChartPickedRole ? `<span style="font-size:13px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <span class="section-header" style="margin-bottom:0">ICS Organization${modeLabel}</span>
-      <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:11px;padding:2px 8px">+ Role</button>
+      <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
     </div>`;
 
     // Render org chart dynamically from tree structure
@@ -3483,7 +3483,7 @@ function renderCutTableView() {
           <span style="font-size:15px;font-weight:700;color:var(--text-hint)">${sp.actualCutLength != null ? sp.actualCutLength + '"' : (sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"')}</span>
         </div>
         ${(sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength) ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${sp.cutLength}" → Actual: ${sp.actualCutLength}"</div>` : ''}
-        <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
       </div>`;
     }
   }
@@ -3523,15 +3523,15 @@ function renderCutTableCard(sp, mode) {
       </div>
       <span class="status-badge ${mode === 'done' ? 'runner' : 'cutting'}">${mode === 'done' ? 'Cut Done' : 'Cutting'}</span>
     </div>
-    ${locText ? `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">${locText}</div>` : ''}
+    ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">${locText}</div>` : ''}
     <div style="display:flex;gap:12px;align-items:baseline;margin:8px 0">
       <div>
-        <div style="font-size:11px;color:var(--text-secondary)">Opening</div>
+        <div style="font-size:13px;color:var(--text-secondary)">Opening</div>
         <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${sp.requiredLength}"</div>
       </div>
       <div style="font-size:18px;color:var(--text-secondary)">→</div>
       <div>
-        <div style="font-size:11px;color:var(--text-secondary)">Expected Cut</div>
+        <div style="font-size:13px;color:var(--text-secondary)">Expected Cut</div>
         <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${sp.cutLength != null ? sp.cutLength + '"' : '?'}</div>
       </div>
     </div>
