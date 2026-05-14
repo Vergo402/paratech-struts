@@ -891,7 +891,7 @@ function renderApparatusTabs() {
   for (const app of localApparatus) {
     const count = localInventory.filter(i => i.apparatus === app.id).reduce((sum, i) => sum + i.quantity, 0);
     const active = selectedApparatus === app.id ? 'active' : '';
-    html += `<button class="apparatus-tab ${active}" onclick="selectApparatus('${app.id}')">${app.name}<span class="app-count">(${count})</span></button>`;
+    html += `<button class="apparatus-tab ${active}" onclick="selectApparatus('${app.id}')">${escapeHtml(app.name)}<span class="app-count">(${count})</span></button>`;
   }
   container.innerHTML = html;
 }
@@ -922,7 +922,7 @@ function renderApparatusManageList() {
     const count = localInventory.filter(i => i.apparatus === app.id).reduce((sum, i) => sum + i.quantity, 0);
     const typeBadge = app.type ? `<span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${escapeHtml(getApparatusTypeName(app.type))}</span>` : '';
     html += `<div class="inv-item">
-      <span class="inv-item-name">${app.name}${typeBadge}</span>
+      <span class="inv-item-name">${escapeHtml(app.name)}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
       <button class="btn btn-xs" onclick="editApparatus('${app.id}')">Edit</button>
       <button class="btn btn-xs btn-danger" onclick="removeApparatus('${app.id}')">Remove</button>
@@ -1472,7 +1472,7 @@ function populateStartOpApparatus() {
   }
   let html = '';
   for (const app of localApparatus) {
-    html += `<label><input type="checkbox" value="${app.id}" checked> ${app.name}</label>`;
+    html += `<label><input type="checkbox" value="${app.id}" checked> ${escapeHtml(app.name)}</label>`;
   }
   container.innerHTML = html;
 }
@@ -1491,7 +1491,7 @@ function showAssignApparatus() {
   } else {
     for (const app of localApparatus) {
       const checked = assigned.includes(app.id) ? 'checked' : '';
-      html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${app.name}</label>`;
+      html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${escapeHtml(app.name)}</label>`;
     }
   }
   html += '</div>';
@@ -4101,7 +4101,7 @@ function renderQuickViewInventory() {
 
   let html = '';
   Object.keys(grouped).sort().forEach(appName => {
-    html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">${appName}</div>`;
+    html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">${escapeHtml(appName)}</div>`;
     grouped[appName].sort((a, b) => (a.model || '').localeCompare(b.model || '')).forEach(item => {
       const name = item.type === 'strut' ? item.model
         : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId)
