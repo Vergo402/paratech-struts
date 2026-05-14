@@ -370,7 +370,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       const opInv = getOperationInventory();
       const strutInv = opInv.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
       if (strutInv && strutInv.external) {
-        html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External: ${strutInv.deptName}</span></div>`;
+        html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External: ${escapeHtml(strutInv.deptName)}</span></div>`;
       } else if (strutInv && strutInv.apparatus) {
         html += `<div style="margin-top:4px"><span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(strutInv.apparatus))}</span></div>`;
       }
@@ -443,6 +443,9 @@ function escapeAttr(s) {
   return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Storage-layer sanitizer: strips control chars + enforces length.
+// HTML metacharacters (< > & ") are intentionally preserved here — they're
+// handled at render time by escapeHtml() so field labels can contain & or quotes.
 function validateInput(value, maxLength = 100) {
   if (typeof value !== 'string') return '';
   return value.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLength);
@@ -498,10 +501,10 @@ function renderStatusPills(points) {
 // Build location breadcrumb string from a shore point
 function getLocationBreadcrumb(sp) {
   const parts = [];
-  if (sp.building) parts.push(sp.building);
-  if (sp.division) parts.push(sp.division);
-  if (sp.floor) parts.push(sp.floor);
-  if (sp.team) parts.push(sp.team);
+  if (sp.building) parts.push(escapeHtml(sp.building));
+  if (sp.division) parts.push(escapeHtml(sp.division));
+  if (sp.floor) parts.push(escapeHtml(sp.floor));
+  if (sp.team) parts.push(escapeHtml(sp.team));
   return parts.length > 0 ? parts.join(' › ') : '';
 }
 
@@ -1431,7 +1434,7 @@ function closeFeedbackModal() {
 
 function submitFeedback() {
   const category = document.getElementById('feedbackCategory').value;
-  const text = validateInput(document.getElementById('feedbackText').value, 500);
+  const text = validateInput(document.getElementById('feedbackText').value, 2000);
   if (!text) {
     alert('Please enter a description.');
     return;
