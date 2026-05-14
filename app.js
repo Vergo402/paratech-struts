@@ -370,7 +370,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       const opInv = getOperationInventory();
       const strutInv = opInv.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
       if (strutInv && strutInv.external) {
-        html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External: ${strutInv.deptName}</span></div>`;
+        html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External: ${strutInv.deptName}</span></div>`;
       } else if (strutInv && strutInv.apparatus) {
         html += `<div style="margin-top:4px"><span class="apparatus-source">Equipment from: ${getApparatusName(strutInv.apparatus)}</span></div>`;
       }
@@ -1705,9 +1705,9 @@ function openOrgChartNode(roleId) {
   if (currentAssignees.length > 0) {
     listHtml += `<div class="section-header-sm">Currently Assigned</div>`;
     for (const a of currentAssignees) {
-      listHtml += `<div style="background:#E3F2FD;border:1px solid #90CAF9;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      listHtml += `<div style="background:var(--blue-light);border:1px solid var(--blue);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
         <span style="font-weight:600">${escapeHtml(a.name)}</span>
-        <button class="btn" style="font-size:11px;padding:4px 10px;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A" onclick="clearOrgChartRole('${a.id}','${roleId}')">Clear</button>
+        <button class="btn" style="font-size:11px;padding:4px 10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="clearOrgChartRole('${a.id}','${roleId}')">Clear</button>
       </div>`;
     }
   }
@@ -1727,10 +1727,10 @@ function openOrgChartNode(roleId) {
   }
 
   // Role management actions
-  listHtml += `<div style="border-top:1px solid #E0E0E0;margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+  listHtml += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:11px">+ Sub-Role</button>
     <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:11px">Rename</button>
-    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:11px;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A">Remove</button>` : ''}
+    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:11px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
   </div>`;
 
   listHtml += `</div>`;
@@ -2017,7 +2017,7 @@ function populateExtStrutGrid(selectedModel) {
   for (const s of STRUTS) {
     const isSelected = s.model === selectedModel;
     const color = s.system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : '#E0E0E0'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
+    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:12px;min-height:56px;border-color:${isSelected ? color : 'var(--border)'}">${s.model}<br><span style="font-size:10px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
     sh += `<option value="${s.model}" data-system="${s.system}">${s.model}</option>`;
   }
   grid.innerHTML = gh;
@@ -2492,9 +2492,9 @@ function renderShorePointCards(numbered) {
           ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
-          ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:#7B1FA2">⏳ No equipment assigned</span>' : '?')}${extText}
+          ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:#FFF3E0;color:#E65100">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
 
       if (status === 'pending') {
         // Check if equipment is now available (cached per measurement)
@@ -2502,10 +2502,10 @@ function renderShorePointCards(numbered) {
         const cacheKey = `${sp.effectiveLength || sp.requiredLength}-${sp.estimatedLoad || 0}`;
         const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
-          html += `<div style="background:#E8F5E9;border:1px solid #66BB6A;border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:#2E7D32;font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
+          html += `<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:var(--green);font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
         }
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;font-weight:700" onclick="assignEquipmentToPending('${sp.id}')">🔧 Assign Equipment</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--pending-bg);color:var(--pending);border:1px solid var(--pending-border);font-weight:700" onclick="assignEquipmentToPending('${sp.id}')">🔧 Assign Equipment</button>
         </div>`;
       }
 
@@ -2519,31 +2519,31 @@ function renderShorePointCards(numbered) {
       // Status transition buttons
       if (status === 'process') {
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9" onclick="updateShoreStatus('${sp.id}','strutplaced')">→ Strut Placed</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)" onclick="updateShoreStatus('${sp.id}','strutplaced')">→ Strut Placed</button>
         </div>`;
       }
       if (status === 'strutplaced') {
         html += `<div class="action-row">
           <button class="btn btn-sm" style="flex:1;background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="updateShoreStatus('${sp.id}','process')">← Send Back</button>
-          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border)" onclick="updateShoreStatus('${sp.id}','cutting')">→ Cutting</button>
         </div>`;
       }
       if (status === 'cutting') {
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9" onclick="updateShoreStatus('${sp.id}','strutplaced')">← Send Back</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)" onclick="updateShoreStatus('${sp.id}','strutplaced')">← Send Back</button>
         </div>`;
       }
       if (status === 'runner') {
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825" onclick="updateShoreStatus('${sp.id}','cutting')">← Send Back</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border)" onclick="updateShoreStatus('${sp.id}','cutting')">← Send Back</button>
           <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','secured')">→ Secured</button>
         </div>`;
       }
       if (status === 'secured') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:#F5F5F5;color:#757575;border:1px solid #BDBDBD" onclick="this.disabled=true;returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled)" onclick="this.disabled=true;returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
       }
       if (status === 'returned') {
-        html += `<div style="font-size:12px;color:#757575;margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+        html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
       }
       html += `</div>`;
     }
@@ -3243,11 +3243,11 @@ function renderDashboardStats(points) {
   return `<div style="margin-bottom:16px">
     <div class="section-header">Dashboard</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">${cardsHtml}</div>
-    <div style="background:#F5F5F5;border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <div style="background:var(--surface-alt);border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div><span style="font-size:13px;font-weight:600">Progress</span></div>
       <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
     </div>
-    <div style="background:#E3F2FD;border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
+    <div style="background:var(--blue-light);border-radius:8px;height:8px;overflow:hidden;margin-bottom:12px">
       <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
     </div>
     <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
@@ -3309,7 +3309,7 @@ function renderOrgChart(roleAssignments) {
         ontouchmove="orgTouchMove(event)"
         ontouchend="orgTouchEnd(event,'${roleId}')">
         <div style="font-size:11px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
-        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:11px;color:#BDBDBD;margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
+        ${filled ? `<div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:11px;color:var(--text-disabled);margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
       </div>`;
     };
 
@@ -3365,7 +3365,7 @@ function renderCommandLayout(points) {
     const pills = renderStatusPills(pts);
     const levelLabel = { building: 'Building', division: 'Div', floor: 'Area', team: 'Group' }[topLevel] || '';
     const escapedName = name.replace(/'/g, "\\'");
-    html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
+    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
       <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
@@ -3390,7 +3390,7 @@ function renderRolesSection() {
       const personName = roleNamesMap[appId];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${escapeHtml(personName)}</span>` : '';
-      html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(appName)}${personStr}</span>
         ${roleBadge}
       </div>`;
@@ -3405,7 +3405,7 @@ function renderRolesSection() {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
-      html += `<div style="background:var(--surface);border:1px solid #E0E0E0;border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(ind.name)}</span>
         ${roleBadge}
       </div>`;
@@ -3468,19 +3468,19 @@ function renderCutTableView() {
   }
 
   if (donePts.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#E65100;margin:16px 0 8px">Cut Complete — Send Runner (${donePts.length})</div>`;
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--orange-dark);margin:16px 0 8px">Cut Complete — Send Runner (${donePts.length})</div>`;
     for (const sp of donePts) {
       html += renderCutTableCard(sp, 'done');
     }
   }
 
   if (runnerPts.length > 0) {
-    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:#757575;margin:16px 0 8px">Sent to Runner (${runnerPts.length})</div>`;
+    html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-hint);margin:16px 0 8px">Sent to Runner (${runnerPts.length})</div>`;
     for (const sp of runnerPts) {
-      html += `<div style="background:#F5F5F5;border:1px solid #E0E0E0;border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
+      html += `<div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
-          <span style="font-size:15px;font-weight:700;color:#757575">${sp.actualCutLength != null ? sp.actualCutLength + '"' : (sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"')}</span>
+          <span style="font-size:15px;font-weight:700;color:var(--text-hint)">${sp.actualCutLength != null ? sp.actualCutLength + '"' : (sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"')}</span>
         </div>
         ${(sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength) ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${sp.cutLength}" → Actual: ${sp.actualCutLength}"</div>` : ''}
         <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
@@ -3503,18 +3503,18 @@ function renderCutTableCard(sp, mode) {
 
   // Actual measurement field (optional override if cut differs from expected)
   const actualField = sp.actualCutLength != null
-    ? `<div style="font-size:13px;color:#E65100;font-weight:600;margin-top:4px">Actual: ${sp.actualCutLength}"</div>`
+    ? `<div style="font-size:13px;color:var(--orange-dark);font-weight:600;margin-top:4px">Actual: ${sp.actualCutLength}"</div>`
     : '';
 
   const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
   const actionBtn = mode === 'active'
     ? `<div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid #E0E0E0;border-radius:6px;font-size:13px">
+          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
         </div>
-        <button class="btn btn-sm" style="width:100%;background:#FFF8E1;color:#F57F17;border:1px solid #F9A825;font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
+        <button class="btn btn-sm" style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
       </div>`
-    : `<button class="btn btn-sm" style="width:100%;background:#FFF3E0;color:#E65100;border:1px solid #E65100;font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Send to Runner</button>`;
+    : `<button class="btn btn-sm" style="width:100%;background:var(--runner-bg);color:var(--runner-text);border:1px solid var(--runner-border);font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Send to Runner</button>`;
 
   return `<div style="background:var(--surface);border:2px solid ${borderColor};border-radius:var(--radius);padding:16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
@@ -3532,7 +3532,7 @@ function renderCutTableCard(sp, mode) {
       <div style="font-size:18px;color:var(--text-secondary)">→</div>
       <div>
         <div style="font-size:11px;color:var(--text-secondary)">Expected Cut</div>
-        <div style="font-size:36px;font-weight:800;color:#F57F17;line-height:1">${sp.cutLength != null ? sp.cutLength + '"' : '?'}</div>
+        <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${sp.cutLength != null ? sp.cutLength + '"' : '?'}</div>
       </div>
     </div>
     ${actualField}
@@ -3654,7 +3654,7 @@ function editShorePoint(spId) {
   document.getElementById('spQtyGroup').style.display = 'none';
 
   // Show edit info
-  document.getElementById('spResults').innerHTML = '<div style="padding:12px;background:#E3F2FD;border-radius:8px;text-align:center;font-size:14px;color:var(--blue)"><strong>Editing shore point</strong> — update fields above and tap Save.</div>';
+  document.getElementById('spResults').innerHTML = '<div style="padding:12px;background:var(--blue-light);border-radius:8px;text-align:center;font-size:14px;color:var(--blue)"><strong>Editing shore point</strong> — update fields above and tap Save.</div>';
 
   // Change modal title
   document.querySelector('#shorePointModal .modal h2').textContent = 'Edit Shore Point';
@@ -4149,7 +4149,7 @@ function initPlatePickers() {
       return a.name.localeCompare(b.name);
     });
     for (const plate of pickerPlates) {
-      const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}" loading="lazy">` : '<div style="width:40px;height:40px;background:#F0F0F0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
+      const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}" loading="lazy">` : '<div style="width:40px;height:40px;background:var(--border-light);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
       html += `<div class="plate-option" data-id="${plate.id}" onclick="selectPlate('${pickerId}','${plate.id}')">
         ${imgHtml}
         <div class="plate-info">
