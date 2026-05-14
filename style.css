@@ -1417,12 +1417,20 @@ body {
   .quick-add-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
 
+/* Theme toggle — segmented control */
+.theme-toggle { display: flex; gap: 4px; background: var(--surface-alt); border-radius: var(--radius); padding: 4px; }
+.theme-option { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-radius: calc(var(--radius) - 4px); cursor: pointer; transition: background 0.15s, color 0.15s; }
+.theme-option:hover { color: var(--text); }
+.theme-option.active { background: var(--surface); color: var(--blue); box-shadow: var(--shadow-sm); }
+
 /* ========================================
    DARK MODE
+   Applied via [data-theme="dark"] on <html>. JavaScript resolves the user's
+   preference ('system' | 'light' | 'dark') and sets the attribute on load
+   and on system theme change, so CSS only needs one selector.
    ======================================== */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121212;
+:root[data-theme="dark"] {
+  --bg: #121212;
     --surface: #1E1E1E;
     --surface-alt: #2A2A2A;
     --surface-muted: #252525;
@@ -1463,15 +1471,14 @@ body {
     --runner-bg: #3A2A15;
     --runner-text: #FF9100;
     --runner-border: #FF9100;
-  }
 
-  /* Input fields */
-  input[type="number"], input[type="text"], select {
+  /* Input fields — & prefix required for nested type selectors */
+  & input[type="number"], & input[type="text"], & select {
     background: #2A2A2A;
     border-color: #444444;
     color: var(--text);
   }
-  input:focus, select:focus { border-color: var(--blue); }
+  & input:focus, & select:focus { border-color: var(--blue); }
   .select-compact { background: #2A2A2A; border-color: #444444; }
   .textarea { background: #2A2A2A; border-color: #444444; color: var(--text); }
 

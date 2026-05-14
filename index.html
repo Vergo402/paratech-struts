@@ -10,6 +10,19 @@
 <title>FieldStruts</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
+<script>
+  // Apply theme before stylesheets paint to prevent flash of wrong theme.
+  // Stored preference values: 'system', 'light', 'dark'. Default = 'system'.
+  // We always resolve to a concrete data-theme (light or dark) so CSS only
+  // needs to check one attribute instead of also handling media queries.
+  (function() {
+    try {
+      var pref = localStorage.getItem('fieldstruts_theme') || 'system';
+      var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) { /* localStorage unavailable */ }
+  })();
+</script>
 </head>
 <body>
 <a href="#screenSelect" class="skip-link">Skip to main content</a>
@@ -44,7 +57,7 @@
   <header class="header">
     <h1>FieldStruts</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.4.1</div>
+    <div class="version-label">v3.5.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -256,6 +269,15 @@
         <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100">
       </div>
       <button class="btn btn-primary mt-16" onclick="guardClick(this,saveSettings)">Save Settings</button>
+      <div class="section-title">Appearance</div>
+      <div class="form-group">
+        <label>Theme</label>
+        <div class="theme-toggle" role="radiogroup" aria-label="Theme">
+          <button class="theme-option" data-theme-option="system" onclick="setTheme('system')" role="radio">System</button>
+          <button class="theme-option" data-theme-option="light" onclick="setTheme('light')" role="radio">Light</button>
+          <button class="theme-option" data-theme-option="dark" onclick="setTheme('dark')" role="radio">Dark</button>
+        </div>
+      </div>
       <div class="section-title">Apparatus Types</div>
       <div id="apparatusTypesList"></div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="addCustomApparatusType()">+ Add Type</button>
@@ -366,7 +388,9 @@
         </div>
         <div class="form-group flex-1">
           <label>Group</label>
-          <input type="text" id="spGroup" placeholder="e.g. Group 1">
+          <select id="spGroup">
+            <option value="">— None —</option>
+          </select>
         </div>
       </div>
       <div class="form-group">

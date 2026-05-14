@@ -513,7 +513,7 @@ function getLocationBreadcrumb(sp) {
   if (sp.building) parts.push(escapeHtml(sp.building));
   if (sp.division) parts.push(escapeHtml(sp.division));
   if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
-  if (sp.group || sp.team) parts.push(escapeHtml(sp.group || sp.team));
+  if (sp.group || sp.team) parts.push(escapeHtml(getGroupDisplayName(sp.group || sp.team)));
   return parts.length > 0 ? parts.join(' › ') : '';
 }
 
@@ -1343,6 +1343,37 @@ function getApparatusName(id) {
   return app ? app.name : 'Unknown';
 }
 
+// Group field on shore points stores an apparatus ID (preferred) or a legacy
+// free-text string. This helper resolves it to a display name — apparatus
+// name if it matches, otherwise the raw value. Backwards-compatible with
+// historical free-text groups so old data still renders correctly.
+function getGroupDisplayName(value) {
+  if (!value) return '';
+  const app = localApparatus.find(a => a.id === value);
+  return app ? app.name : value;
+}
+
+// Populate the shore point Group <select> with apparatus assigned to the
+// current operation. Called when the shore point modal opens (new + edit)
+// and when assigned apparatus changes mid-edit.
+function populateGroupDropdown(currentValue) {
+  const select = document.getElementById('spGroup');
+  if (!select) return;
+  const assigned = (activeOperation && activeOperation.assignedApparatus) || [];
+  let html = '<option value="">— None —</option>';
+  for (const appId of assigned) {
+    const name = getApparatusName(appId);
+    html += `<option value="${escapeHtml(appId)}">${escapeHtml(name)}</option>`;
+  }
+  // If the current value is legacy free-text (not in assigned apparatus),
+  // add it as a one-off option so editing doesn't silently drop it
+  if (currentValue && !assigned.includes(currentValue) && currentValue !== '') {
+    html += `<option value="${escapeHtml(currentValue)}">${escapeHtml(currentValue)} (legacy)</option>`;
+  }
+  select.innerHTML = html;
+  select.value = currentValue || '';
+}
+
 // Measurement helpers — convert between compound (feet/inches/fraction) and total inches
 function getMeasurementInches(prefix) {
   const feet = parseFloat(document.getElementById(prefix + 'Feet').value) || 0;
@@ -1651,7 +1682,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.4.1'
+    appVersion: '3.5.0'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -2797,7 +2828,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${(sp.group || sp.team) ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.group || sp.team)}</div>` : ''}
+        ${(sp.group || sp.team) ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(sp.group || sp.team))}</div>` : ''}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -2993,7 +3024,8 @@ function showAddShorePoint() {
   document.getElementById('spBuilding').value = '';
   document.getElementById('spArea').value = '';
   document.getElementById('spDivision').value = '';
-  document.getElementById('spGroup').value = '';
+  // Populate Group dropdown from operation's assigned apparatus
+  populateGroupDropdown('');
 
   // Show/hide building field based on operation setting
   const isMulti = activeOperation && activeOperation.multiBuilding;
@@ -3004,7 +3036,7 @@ function showAddShorePoint() {
     if (seg.level === 'building') document.getElementById('spBuilding').value = seg.value;
     if (seg.level === 'division') document.getElementById('spDivision').value = seg.value;
     if (seg.level === 'area') document.getElementById('spArea').value = seg.value;
-    if (seg.level === 'group') document.getElementById('spGroup').value = seg.value;
+    if (seg.level === 'group') populateGroupDropdown(seg.value);
   }
   setMeasurementFromInches('sp', 0);
   document.getElementById('spLength').value = '';
@@ -3429,8 +3461,10 @@ function renderBreadcrumb() {
     const isLast = i === drilldownPath.length - 1;
     html += `<span class="bc-sep">›</span>`;
     const lbl = levelLabels[seg.level];
-    const display = seg.value.toLowerCase().startsWith(lbl.toLowerCase()) ? seg.value : `${lbl} ${seg.value}`;
-    html += `<button class="${isLast ? 'current' : ''}" onclick="drillTo(${i})">${display}</button>`;
+    // Resolve apparatus IDs to names when crumb is a Group level
+    const resolvedVal = seg.level === 'group' ? getGroupDisplayName(seg.value) : seg.value;
+    const display = resolvedVal.toLowerCase().startsWith(lbl.toLowerCase()) ? resolvedVal : `${lbl} ${resolvedVal}`;
+    html += `<button class="${isLast ? 'current' : ''}" onclick="drillTo(${i})">${escapeHtml(display)}</button>`;
   });
   bc.innerHTML = html;
 }
@@ -3497,7 +3531,10 @@ function renderDrilldownForLevel(points, level) {
   for (const key of keys) {
     const groupPts = groups[key];
     const prefix = levelLabels[level];
-    const displayName = key === '__ungrouped__' ? 'Unassigned' : (key.toLowerCase().startsWith(prefix.toLowerCase()) ? key : `${prefix} ${key}`);
+    // For the group level, resolve apparatus IDs to apparatus names so the
+    // drilldown shows e.g. "Rescue 56" instead of the raw ID
+    const resolvedKey = level === 'group' ? getGroupDisplayName(key) : key;
+    const displayName = key === '__ungrouped__' ? 'Unassigned' : (resolvedKey.toLowerCase().startsWith(prefix.toLowerCase()) ? resolvedKey : `${prefix} ${resolvedKey}`);
 
     const pills = renderStatusPills(groupPts);
 
@@ -3740,9 +3777,11 @@ function renderCommandLayout(points) {
     const pills = renderStatusPills(pts);
     const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
     const escapedName = name.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
-    const safeName = escapeHtml(name);
+    // Resolve apparatus IDs to names when top level is Group
+    const resolvedName = (topLevel === 'group' && name !== 'Unassigned') ? getGroupDisplayName(name) : name;
+    const safeName = escapeHtml(resolvedName);
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
-      <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
+      <span style="font-weight:600">${name === 'Unassigned' ? name : (resolvedName.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
@@ -4001,7 +4040,7 @@ function editShorePoint(spId) {
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  document.getElementById('spGroup').value = sp.group || sp.team || '';
+  populateGroupDropdown(sp.group || sp.team || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -4224,6 +4263,47 @@ function saveSettings() {
 
   document.getElementById('deptName').textContent = name;
   safeSetItem('fieldstruts_settings', JSON.stringify({ name }));
+}
+
+// ---- Theme ----
+// Three preference values: 'system' (default), 'light', 'dark'.
+// We resolve to a concrete data-theme attribute on <html> so CSS only needs
+// to check one selector. Re-resolve when the system theme changes.
+function getThemePreference() {
+  try { return localStorage.getItem('fieldstruts_theme') || 'system'; }
+  catch (e) { return 'system'; }
+}
+
+function resolveTheme(pref) {
+  if (pref === 'dark') return 'dark';
+  if (pref === 'light') return 'light';
+  // 'system' — match the OS
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+
+function applyTheme() {
+  const pref = getThemePreference();
+  document.documentElement.setAttribute('data-theme', resolveTheme(pref));
+  // Update segmented control state if visible
+  document.querySelectorAll('[data-theme-option]').forEach(btn => {
+    const isActive = btn.getAttribute('data-theme-option') === pref;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+  });
+}
+
+function setTheme(pref) {
+  if (pref !== 'system' && pref !== 'light' && pref !== 'dark') return;
+  try { localStorage.setItem('fieldstruts_theme', pref); } catch (e) { /* unavailable */ }
+  applyTheme();
+}
+
+// React to OS theme changes when user has 'system' selected
+if (window.matchMedia) {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const handler = () => { if (getThemePreference() === 'system') applyTheme(); };
+  if (mq.addEventListener) mq.addEventListener('change', handler);
+  else if (mq.addListener) mq.addListener(handler); // Safari < 14
 }
 
 async function exportInventory() {
@@ -4690,6 +4770,7 @@ document.addEventListener('click', (e) => {
 // INIT
 // ============================================================
 function init() {
+  applyTheme(); // Re-apply to mark the active segmented control button (already set on <html> by inline script)
   deptId = localStorage.getItem('fieldstruts_deptId');
 
   if (!deptId) {
