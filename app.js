@@ -372,7 +372,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       if (strutInv && strutInv.external) {
         html += `<div style="margin-top:4px"><span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External: ${strutInv.deptName}</span></div>`;
       } else if (strutInv && strutInv.apparatus) {
-        html += `<div style="margin-top:4px"><span class="apparatus-source">Equipment from: ${getApparatusName(strutInv.apparatus)}</span></div>`;
+        html += `<div style="margin-top:4px"><span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(strutInv.apparatus))}</span></div>`;
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
@@ -436,6 +436,28 @@ function escapeHtml(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+function escapeAttr(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function validateInput(value, maxLength = 100) {
+  if (typeof value !== 'string') return '';
+  return value.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLength);
+}
+
+let xlsxLoaded = false;
+async function loadXLSX() {
+  if (xlsxLoaded || typeof XLSX !== 'undefined') { xlsxLoaded = true; return; }
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+    s.onload = () => { xlsxLoaded = true; resolve(); };
+    s.onerror = () => reject(new Error('Failed to load export library'));
+    document.head.appendChild(s);
+  });
 }
 
 // Get shore points array from activeOperation (normalizes Firebase object vs local array)
@@ -623,7 +645,8 @@ function addCustomRole(parentId) {
   initCustomRoles();
   const name = prompt('Role name:');
   if (!name || !name.trim()) return;
-  const trimmed = name.trim();
+  const trimmed = validateInput(name, 100);
+  if (!trimmed) return;
   const abbr = trimmed.length <= 6 ? trimmed : trimmed.substring(0, 6);
   const id = 'custom_' + Date.now();
   activeOperation.customRoles.push({
@@ -641,7 +664,8 @@ function editCustomRole(roleId) {
   if (!role) return;
   const newName = prompt('Rename role:', role.name);
   if (!newName || !newName.trim()) return;
-  role.name = newName.trim();
+  role.name = validateInput(newName, 100);
+  if (!role.name) return;
   role.abbr = role.name.length <= 6 ? role.name : role.name.substring(0, 6);
   saveCustomRoles();
   renderCommandView();
@@ -890,7 +914,7 @@ function renderApparatusManageList() {
   const sorted = [...localApparatus].sort((a, b) => getApparatusTypeOrder(a.type) - getApparatusTypeOrder(b.type));
   for (const app of sorted) {
     const count = localInventory.filter(i => i.apparatus === app.id).reduce((sum, i) => sum + i.quantity, 0);
-    const typeBadge = app.type ? `<span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${getApparatusTypeName(app.type)}</span>` : '';
+    const typeBadge = app.type ? `<span style="font-size:12px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;margin-left:4px">${escapeHtml(getApparatusTypeName(app.type))}</span>` : '';
     html += `<div class="inv-item">
       <span class="inv-item-name">${app.name}${typeBadge}</span>
       <span class="inv-item-status">${count} items</span>
@@ -938,7 +962,7 @@ function addCustomApparatusType() {
   if (!name || !name.trim()) return;
   const types = initCustomApparatusTypes();
   const id = 'type_' + Date.now();
-  types.push({ id, name: name.trim(), order: types.length });
+  types.push({ id, name: validateInput(name, 50), order: types.length });
   saveCustomApparatusTypes();
   renderApparatusTypesList();
 }
@@ -1517,7 +1541,7 @@ function showCreateGroupModal() {
     </select></div>
     <div style="font-size:14px;font-weight:700;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px">Select Members</div>`;
   for (const appId of available) {
-    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${appId}" class="group-member-cb" style="width:16px;height:16px"> ${getApparatusName(appId)}</label>`;
+    html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${escapeAttr(appId)}" class="group-member-cb" style="width:16px;height:16px"> ${escapeHtml(getApparatusName(appId))}</label>`;
   }
   html += `<button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="confirmCreateGroup()">Create Group</button></div>`;
 
@@ -1530,7 +1554,7 @@ function showCreateGroupModal() {
 }
 
 function confirmCreateGroup() {
-  const name = (document.getElementById('groupName').value || '').trim();
+  const name = validateInput(document.getElementById('groupName').value || '', 100);
   if (!name) { alert('Enter a group name.'); return; }
   const type = document.getElementById('groupType').value;
   const members = [...document.querySelectorAll('.group-member-cb:checked')].map(cb => cb.value);
@@ -1595,8 +1619,8 @@ function renderRoleGrid(selectedRoleId) {
   const grid = document.getElementById('roleGrid');
   grid.innerHTML = getOperationRoles().map(r => `
     <div class="role-card ${r.id === selectedRoleId ? 'selected' : ''}" onclick="selectRole('${r.id}')">
-      <div class="role-name">${r.name}</div>
-      <div class="role-abbr">${r.abbr}</div>
+      <div class="role-name">${escapeHtml(r.name)}</div>
+      <div class="role-abbr">${escapeHtml(r.abbr)}</div>
     </div>
   `).join('');
 }
@@ -1699,8 +1723,8 @@ function openOrgChartNode(roleId) {
 
   // Build a bottom-sheet style action list
   let listHtml = `<div style="padding:16px">
-    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${roleDef.name}</div>
-    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${roleDef.abbr} — tap to assign or clear</div>`;
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">${escapeHtml(roleDef.name)}</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">${escapeHtml(roleDef.abbr)} — tap to assign or clear</div>`;
 
   if (currentAssignees.length > 0) {
     listHtml += `<div class="section-header-sm">Currently Assigned</div>`;
@@ -1740,7 +1764,7 @@ function openOrgChartNode(roleId) {
   overlay.className = 'modal-overlay active';
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
-    <div class="modal-header"><span class="modal-title">${roleDef.abbr} Assignment</span>
+    <div class="modal-header"><span class="modal-title">${escapeHtml(roleDef.abbr)} Assignment</span>
     <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
@@ -1965,7 +1989,7 @@ function renderMyRoleDisplay() {
     const roleDef = getOperationRoles().find(r => r.id === myRole);
     const personName = localStorage.getItem('paratech_myRoleName');
     const nameStr = personName ? ` — ${escapeHtml(personName)}` : '';
-    el.innerHTML = `<span class="role-badge">${roleDef ? roleDef.abbr : myRole}</span> <span style="font-weight:600;color:var(--text-primary)">${getRoleName(myRole)}${nameStr}</span>`;
+    el.innerHTML = `<span class="role-badge">${escapeHtml(roleDef ? roleDef.abbr : myRole)}</span> <span style="font-weight:600;color:var(--text-primary)">${escapeHtml(getRoleName(myRole))}${nameStr}</span>`;
   } else {
     el.innerHTML = 'Not assigned — tap Change to pick a role';
   }
@@ -1986,7 +2010,7 @@ function renderRoleSuggestion() {
   banner.style.display = 'flex';
   banner.className = 'role-suggest-banner';
   banner.innerHTML = `
-    <span class="suggest-text">Your role (${getRoleName(myRole)}) works best with the <strong>${viewNames[suggested]}</strong> view.</span>
+    <span class="suggest-text">Your role (${escapeHtml(getRoleName(myRole))}) works best with the <strong>${viewNames[suggested]}</strong> view.</span>
     <div class="suggest-actions">
       <button class="btn-suggest-switch" onclick="switchView('${suggested}')">Switch</button>
       <button class="btn-suggest-dismiss" onclick="dismissRoleSuggestion()">✕</button>
@@ -2144,7 +2168,7 @@ function showAddIndividual() {
 }
 
 function confirmAddIndividual() {
-  const name = (document.getElementById('individualName').value || '').trim();
+  const name = validateInput(document.getElementById('individualName').value || '', 100);
   if (!name) { alert('Please enter a name.'); return; }
   if (!activeOperation) return;
   if (!activeOperation.individuals) activeOperation.individuals = {};
@@ -2221,7 +2245,8 @@ function getOperationInventory() {
   const assigned = activeOperation && activeOperation.assignedApparatus;
   let inv;
   if (assigned && assigned.length > 0) {
-    inv = localInventory.filter(i => i.apparatus && assigned.includes(i.apparatus));
+    const assignedSet = new Set(assigned);
+    inv = localInventory.filter(i => i.apparatus && assignedSet.has(i.apparatus));
   } else {
     inv = localInventory.filter(i => i.apparatus);
   }
@@ -2303,10 +2328,10 @@ function renderOperations() {
     let groupsHtml = '';
     for (const [gid, g] of Object.entries(appGroups)) {
       const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
-        const name = getApparatusName(mid);
+        const name = escapeHtml(getApparatusName(mid));
         const roleId = roles[mid];
-        const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${escapeAttr(mid)}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
         groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
@@ -2327,16 +2352,16 @@ function renderOperations() {
     let typeHtml = '';
     for (const typeId of sortedTypes) {
       const chips = byType[typeId].map(appId => {
-        const name = getApparatusName(appId);
+        const name = escapeHtml(getApparatusName(appId));
         const roleId = roles[appId];
         const roleNames = activeOperation.roleNames || {};
         const personName = roleNames[appId];
-        const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
         const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+        return `<span class="app-chip" onclick="openApparatusRoleModal('${escapeAttr(appId)}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${escapeAttr(appId)}')">&times;</span></span>`;
       }).join('');
       // Only show type header if multiple types present
-      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${getApparatusTypeName(typeId)}</div>` : '';
+      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
       typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
     }
 
@@ -2371,7 +2396,7 @@ function renderOperations() {
     indList.innerHTML = individuals.map(ind => {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
-      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '';
+      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
       return `<span class="app-chip" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
     }).join('');
   } else {
@@ -2420,6 +2445,7 @@ function normalizeStatus(status) {
 function renderShorePointCards(numbered) {
   // Uses global STATUS_ORDER and STATUS_LABELS
   const strutCache = {};
+  const opInv = getOperationInventory();
 
   const byStatus = {};
   for (const sp of numbered) {
@@ -2494,11 +2520,10 @@ function renderShorePointCards(numbered) {
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}`;
 
       if (status === 'pending') {
         // Check if equipment is now available (cached per measurement)
-        const opInv = getOperationInventory();
         const cacheKey = `${sp.effectiveLength || sp.requiredLength}-${sp.estimatedLoad || 0}`;
         const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
@@ -2603,7 +2628,7 @@ function viewArchivedOp(opId) {
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
       <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
-      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${getApparatusName(sp.deployedStrut.apparatus)}</span>` : ''}
+      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
     </div>`;
   }
 
@@ -2631,12 +2656,12 @@ function startOperation() {
 }
 
 function confirmStartOp() {
-  const name = document.getElementById('newOpName').value.trim();
+  const name = validateInput(document.getElementById('newOpName').value, 100);
   if (!name) return;
 
   const assignedApparatus = getStartOpSelectedApparatus();
   const multiBuilding = document.getElementById('opMultiBuilding').checked;
-  const taskForce = document.getElementById('newOpTaskForce').value.trim();
+  const taskForce = validateInput(document.getElementById('newOpTaskForce').value, 100);
 
   const op = {
     name,
@@ -3308,12 +3333,12 @@ function renderOrgChart(roleAssignments) {
         ontouchstart="orgTouchStart(event,'${roleId}')"
         ontouchmove="orgTouchMove(event)"
         ontouchend="orgTouchEnd(event,'${roleId}')">
-        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${r.abbr}</div>
+        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${escapeHtml(r.abbr)}</div>
         ${filled ? `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:13px;color:var(--text-disabled);margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
       </div>`;
     };
 
-    const modeLabel = orgChartPickedRole ? `<span style="font-size:13px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${getRoleAbbr(orgChartPickedRole)}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
+    const modeLabel = orgChartPickedRole ? `<span style="font-size:13px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
     html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <span class="section-header" style="margin-bottom:0">ICS Organization${modeLabel}</span>
       <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
@@ -3388,9 +3413,9 @@ function renderRolesSection() {
       const appName = getApparatusName(appId);
       const roleId = roles[appId];
       const personName = roleNamesMap[appId];
-      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
+      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${escapeHtml(personName)}</span>` : '';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${escapeAttr(appId)}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(appName)}${personStr}</span>
         ${roleBadge}
       </div>`;
@@ -3404,8 +3429,8 @@ function renderRolesSection() {
     for (const ind of individualsArr) {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
-      const roleBadge = roleId ? `<span class="role-badge">${getRoleAbbr(roleId)}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
+      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${escapeAttr(ind.id)}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(ind.name)}</span>
         ${roleBadge}
       </div>`;
@@ -3850,7 +3875,9 @@ function saveSettings() {
   localStorage.setItem('paratech_settings', JSON.stringify({ name }));
 }
 
-function exportInventory() {
+async function exportInventory() {
+  showToast('Loading export library…');
+  try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   const rows = localInventory.map(item => {
     const strutData = item.type === 'strut' ? STRUTS.find(s => s.model === item.model) : null;
     return {
@@ -3878,7 +3905,9 @@ function exportInventory() {
   XLSX.writeFile(wb, `paratech-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
-function downloadTemplate() {
+async function downloadTemplate() {
+  showToast('Loading export library…');
+  try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   // Build template with all available strut models and extensions
   const rows = [];
   const systems = ['LongShore', 'AcmeThread', 'LockStroke'];
@@ -3927,7 +3956,7 @@ function importInventory() {
   document.getElementById('importFile').click();
 }
 
-function handleImport(event) {
+async function handleImport(event) {
   const file = event.target.files[0];
   if (!file) return;
 
@@ -3949,6 +3978,8 @@ function handleImport(event) {
   }
 
   // Excel/CSV import
+  showToast('Loading export library…');
+  try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
   const reader = new FileReader();
   reader.onload = (e) => {
     try {

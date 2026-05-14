@@ -24,7 +24,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('firebasejs') || event.request.url.includes('firebaseio')) {
+  if (event.request.url.includes('firebasejs') || event.request.url.includes('firebaseio') || event.request.url.includes('sheetjs')) {
     return;
   }
   event.respondWith(
