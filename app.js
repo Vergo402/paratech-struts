@@ -411,7 +411,7 @@ let editingIndividualId = null;
 let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
 let orgReparentMode = false; // True when long-press drag triggers reparent instead of swap
 let orgLongPressTimer = null; // Timer for long-press detection
-let lastReparentUndo = null; // Single-step undo state: { roleId, oldParentId }
+let lastReparentUndo = null; // Most recent undo state: { roleId, oldParentId }
 const orgCollapsedNodes = new Set(JSON.parse(sessionStorage.getItem('orgCollapsed') || '[]'));
 
 // ============================================================
@@ -518,16 +518,22 @@ function getLocationBreadcrumb(sp) {
 }
 
 let toastTimer = null;
-function showToast(msg, type) {
+function showToast(msg, type, duration) {
   const el = document.getElementById('toast');
   if (!el) return;
-  el.textContent = msg;
+  // Support HTML in toasts (e.g. undo links) — XSS-safe because all callers
+  // escape user-controlled strings via escapeHtml() before passing them here
+  if (/<[a-z][\s\S]*>/i.test(msg)) {
+    el.innerHTML = msg;
+  } else {
+    el.textContent = msg;
+  }
   el.className = 'toast ' + (type || 'success');
   // Force reflow for transition
   void el.offsetWidth;
   el.classList.add('visible');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 3000);
 }
 
 // Safe JSON parse helper — returns fallback on corrupt data
@@ -748,7 +754,7 @@ function orgReparentRole(childId, newParentId) {
 
   const childName = child.abbr;
   const parentName = newParent.abbr;
-  showToast(`Moved ${escapeHtml(childName)} under ${escapeHtml(parentName)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600">Undo</a>`);
+  showToast(`Moved ${escapeHtml(childName)} under ${escapeHtml(parentName)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600;margin-left:8px">Undo</a>`, 'success', 8000);
   renderCommandView();
 }
 
@@ -880,6 +886,15 @@ function removeCustomRole(roleId) {
       }
     }
   }
+  // Clean up org chart interaction state if removed role was active
+  if (orgChartPickedRole === roleId || (children.length > 0 && !activeOperation.customRoles.find(r => r.id === orgChartPickedRole))) {
+    orgChartPickedRole = null;
+    orgReparentMode = false;
+  }
+  if (lastReparentUndo && lastReparentUndo.roleId === roleId) {
+    lastReparentUndo = null;
+  }
+  orgCollapsedNodes.delete(roleId);
   saveCustomRoles();
   renderCommandView();
 }
@@ -996,6 +1011,7 @@ function setupListeners() {
       });
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
+    if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
   }, (err) => onListenerError('operations', err));
 
   operationsRef.orderByChild('status').equalTo('archived').on('value', (snap) => {
@@ -2067,6 +2083,13 @@ function orgDragStart(event, roleId) {
   setTimeout(() => renderCommandView(), 0);
 }
 
+function orgDragEnd(event) {
+  // Clean up stale state when drag is cancelled (Escape key, drop outside targets)
+  orgChartPickedRole = null;
+  orgReparentMode = false;
+  renderCommandView();
+}
+
 function orgDrop(event, targetRoleId) {
   event.preventDefault();
   const sourceRoleId = event.dataTransfer.getData('text/plain');
@@ -2088,6 +2111,14 @@ let orgTouchClone = null;
 let orgTouchMoved = false;
 
 function orgTouchStart(event, roleId) {
+  // If already in pick-and-place mode (orgChartPickedRole is set), let orgChartNodeClick
+  // handle the tap — don't reset reparentMode or start a new long-press timer
+  if (orgChartPickedRole) {
+    orgTouchSourceRole = null;
+    orgTouchMoved = false;
+    return;
+  }
+
   const r = getOperationRoles().find(x => x.id === roleId);
   const isLocked = r && (!r.parentId || r.id === 'safety');
 
@@ -2174,10 +2205,14 @@ function orgTouchEnd(event, roleId) {
     orgTouchSourceRole = null;
     orgReparentMode = false;
     renderCommandView();
-  } else if (orgReparentMode && orgChartPickedRole) {
-    // Long-press activated reparent mode but no drag — wait for tap on target
+  } else if (orgReparentMode && orgChartPickedRole && orgTouchSourceRole) {
+    // Long-press activated reparent mode, user lifting finger from SOURCE node — enter pick-and-place wait
     orgTouchSourceRole = null;
     // Don't clear orgChartPickedRole — user will tap destination
+  } else if (orgChartPickedRole && !orgTouchSourceRole && !orgTouchMoved) {
+    // In pick-and-place mode — user tapped a TARGET node (orgTouchStart set orgTouchSourceRole=null)
+    event.preventDefault(); // Prevent synthetic click doubling up
+    orgChartNodeClick(roleId);
   } else {
     // Was a tap, not a drag — handle as click
     orgTouchSourceRole = null;
@@ -3630,7 +3665,8 @@ function renderOrgChart(roleAssignments, shorePoints) {
 
     // Draggable unless locked (IC/Safety)
     const dragAttrs = isLocked ? 'draggable="false"' : `draggable="true"
-        ondragstart="orgDragStart(event,'${roleId}')"`;
+        ondragstart="orgDragStart(event,'${roleId}')"
+        ondragend="orgDragEnd(event)"`;
 
     return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
         onclick="orgChartNodeClick('${roleId}')"
@@ -3650,7 +3686,7 @@ function renderOrgChart(roleAssignments, shorePoints) {
   const totalAvailable = (activeOperation.assignedApparatus || []).length +
     Object.keys(activeOperation.individuals || {}).length +
     (myRole ? 1 : 0);
-  const headcount = totalAvailable > 0 ? `<span style="font-size:12px;color:var(--text-secondary);font-weight:400;margin-left:8px">${totalAssigned}/${totalAvailable} assigned</span>` : '';
+  const headcount = totalAvailable > 0 ? `<span style="font-size:12px;color:var(--text-secondary);font-weight:400;margin-left:8px">${totalAssigned}/${totalAvailable} resources assigned</span>` : '';
 
   const modeLabel = orgChartPickedRole
     ? `<span style="font-size:13px;color:${orgReparentMode ? 'var(--orange-dark)' : 'var(--blue)'};font-weight:400;text-transform:none;margin-left:8px">${orgReparentMode ? 'Reparenting' : 'Moving'} ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>`
@@ -3702,9 +3738,10 @@ function renderCommandLayout(points) {
   for (const [name, pts] of Object.entries(groups)) {
     const pills = renderStatusPills(pts);
     const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
-    const escapedName = name.replace(/'/g, "\\'");
+    const escapedName = name.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+    const safeName = escapeHtml(name);
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
-      <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
+      <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
