@@ -1303,6 +1303,20 @@ select { padding-right: 40px; }
 .org-node-empty:hover { border-color: var(--blue); background: var(--surface-alt); }
 .org-node-picked { box-shadow: 0 0 0 3px var(--blue); transform: scale(1.05); border-color: var(--blue) !important; }
 .org-node-drop-target { border-color: var(--blue) !important; border-style: dashed !important; background: var(--blue-light); box-shadow: 0 0 0 3px rgba(33,150,243,0.3); }
+.org-node-reparent-picked { box-shadow: 0 0 0 3px var(--orange-dark); transform: scale(1.05); border-color: var(--orange-dark) !important; }
+
+/* Org Chart Tree Layout */
+.org-children-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 4px; }
+.org-subtree { display: flex; flex-direction: column; align-items: center; }
+.org-divider { display: flex; justify-content: center; }
+.org-collapse-btn { font-size: 10px; color: var(--text-secondary); cursor: pointer; margin-left: 4px; user-select: none; }
+.org-collapse-btn:hover { color: var(--blue); }
+
+/* Role Status Indicators */
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+.status-active { background: #22c55e; }
+.status-staged { background: #eab308; }
+.span-warning { color: var(--orange-dark); font-size: 11px; margin-left: 4px; cursor: help; }
 
 /* Collapsible Section Toggles */
 .section-toggle { cursor: pointer; user-select: none; }
@@ -1473,6 +1487,9 @@ body {
   .org-node-empty { background: #1A1A1A; border-color: #555555; }
   .org-node-empty:hover { background: #2A2A2A; }
   .org-node-drop-target { background: #1A2A3A; }
+  .org-node-reparent-picked { box-shadow: 0 0 0 3px #F57C00; border-color: #F57C00 !important; }
+  .org-collapse-btn { color: #999; }
+  .org-collapse-btn:hover { color: #42A5F5; }
 
   /* Modal */
   .modal-overlay { background: rgba(0,0,0,0.7); }

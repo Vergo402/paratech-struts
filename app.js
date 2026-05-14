@@ -409,6 +409,10 @@ let roleViewDismissed = false; // Whether user dismissed the view suggestion ban
 let editingExternalId = null;
 let editingIndividualId = null;
 let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
+let orgReparentMode = false; // True when long-press drag triggers reparent instead of swap
+let orgLongPressTimer = null; // Timer for long-press detection
+let lastReparentUndo = null; // Single-step undo state: { roleId, oldParentId }
+const orgCollapsedNodes = new Set(JSON.parse(sessionStorage.getItem('orgCollapsed') || '[]'));
 
 // ============================================================
 // CONSTANTS
@@ -678,6 +682,140 @@ function saveCustomRoles() {
   } else {
     safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
+}
+
+function toggleOrgCollapse(roleId) {
+  if (orgCollapsedNodes.has(roleId)) orgCollapsedNodes.delete(roleId);
+  else orgCollapsedNodes.add(roleId);
+  sessionStorage.setItem('orgCollapsed', JSON.stringify([...orgCollapsedNodes]));
+  renderCommandView();
+}
+
+function isDescendantOf(candidateParentId, ofRoleId) {
+  const roles = getOperationRoles();
+  let current = candidateParentId;
+  const visited = new Set();
+  let depth = 0;
+  while (current && depth < 20) {
+    if (current === ofRoleId) return true;
+    if (visited.has(current)) return false;
+    visited.add(current);
+    const parent = roles.find(r => r.id === current);
+    current = parent ? parent.parentId : null;
+    depth++;
+  }
+  return false;
+}
+
+function getSubtreeIds(roleId) {
+  const roles = getOperationRoles();
+  const ids = new Set();
+  const queue = [roleId];
+  while (queue.length) {
+    const id = queue.shift();
+    ids.add(id);
+    roles.filter(r => r.parentId === id).forEach(r => queue.push(r.id));
+  }
+  return ids;
+}
+
+function canReparent() {
+  if (!myRole) return false;
+  return myRole === 'ic' || myRole === 'safety';
+}
+
+function orgReparentRole(childId, newParentId) {
+  if (!activeOperation || !canReparent()) return;
+  initCustomRoles();
+
+  const roles = activeOperation.customRoles;
+  const child = roles.find(r => r.id === childId);
+  const newParent = roles.find(r => r.id === newParentId);
+  if (!child || !newParent) return;
+
+  // Guards
+  if (!child.parentId) return; // Can't move root (IC)
+  if (child.id === 'safety') return; // Safety locked to IC
+  if (childId === newParentId) return; // Self-drop
+  if (isDescendantOf(newParentId, childId)) return; // Would create cycle
+
+  // Save undo state
+  lastReparentUndo = { roleId: childId, oldParentId: child.parentId };
+
+  // Reparent — children follow automatically since their parentId still points to this role
+  child.parentId = newParentId;
+  saveCustomRoles();
+
+  const childName = child.abbr;
+  const parentName = newParent.abbr;
+  showToast(`Moved ${escapeHtml(childName)} under ${escapeHtml(parentName)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600">Undo</a>`);
+  renderCommandView();
+}
+
+function undoReparent() {
+  if (!lastReparentUndo || !activeOperation) return;
+  initCustomRoles();
+  const role = activeOperation.customRoles.find(r => r.id === lastReparentUndo.roleId);
+  if (role) {
+    role.parentId = lastReparentUndo.oldParentId;
+    saveCustomRoles();
+    showToast('Reparent undone');
+  }
+  lastReparentUndo = null;
+  renderCommandView();
+}
+
+function showMoveRoleModal(roleId) {
+  if (!canReparent()) return;
+  const roles = getOperationRoles();
+  const subtreeIds = getSubtreeIds(roleId);
+  const currentRole = roles.find(r => r.id === roleId);
+  if (!currentRole) return;
+
+  // Valid targets: all roles except self, own descendants
+  const targets = roles.filter(r =>
+    r.id !== roleId &&
+    !subtreeIds.has(r.id) &&
+    !(roleId === 'safety' && r.id !== 'ic')
+  );
+
+  let listHtml = `<div style="padding:16px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Move ${escapeHtml(currentRole.name)}</div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Select new parent role</div>`;
+
+  for (const t of targets) {
+    const isCurrent = t.id === currentRole.parentId;
+    listHtml += `<div class="list-item-row" onclick="confirmReparent('${roleId}','${t.id}')" style="${isCurrent ? 'border-left:3px solid var(--blue);padding-left:9px' : ''}">
+      <span style="font-weight:600">${escapeHtml(t.name)}${isCurrent ? ' (current)' : ''}</span>
+      <span style="font-size:14px;color:var(--blue)">→</span>
+    </div>`;
+  }
+  listHtml += `</div>`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'orgChartModal';
+  overlay.innerHTML = `<div class="modal" style="max-width:360px">
+    <div class="modal-header"><span class="modal-title">Move Role</span>
+    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    ${listHtml}
+  </div>`;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function confirmReparent(childId, newParentId) {
+  const child = getOperationRoles().find(r => r.id === childId);
+  const parent = getOperationRoles().find(r => r.id === newParentId);
+  if (!child || !parent) return;
+  const subtreeCount = getSubtreeIds(childId).size - 1;
+  const msg = subtreeCount > 0
+    ? `Move "${child.name}" (and ${subtreeCount} sub-role(s)) under "${parent.name}"?`
+    : `Move "${child.name}" under "${parent.name}"?`;
+  if (!confirm(msg)) return;
+  const modal = document.getElementById('orgChartModal');
+  if (modal) modal.remove();
+  orgReparentRole(childId, newParentId);
 }
 
 function addCustomRole(parentId) {
@@ -1497,7 +1635,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.3.2'
+    appVersion: '3.4.0'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -1810,8 +1948,10 @@ function openOrgChartNode(roleId) {
   }
 
   // Role management actions
+  const canMove = canReparent() && roleDef.parentId && roleDef.id !== 'safety';
   listHtml += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:13px">+ Sub-Role</button>
+    ${canMove ? `<button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();showMoveRoleModal('${roleId}')" style="font-size:13px">Move to…</button>` : ''}
     <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:13px">Rename</button>
     ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:13px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
   </div>`;
@@ -1894,11 +2034,18 @@ function getSuggestedView(roleId) {
 // ---- Org Chart Drag & Drop / Tap-to-Move ----
 
 function orgChartNodeClick(roleId) {
-  // If we're in move mode (picked a node via long-press/drag), complete the swap
+  // If we're in move mode, complete the action
   if (orgChartPickedRole) {
     if (orgChartPickedRole === roleId) {
       cancelOrgMove();
+    } else if (orgReparentMode) {
+      // Reparent mode: make picked role a child of clicked role
+      orgReparentRole(orgChartPickedRole, roleId);
+      orgChartPickedRole = null;
+      orgReparentMode = false;
+      renderCommandView();
     } else {
+      // Swap mode: swap assignments
       orgSwapRoles(orgChartPickedRole, roleId);
       orgChartPickedRole = null;
       renderCommandView();
@@ -1910,9 +2057,12 @@ function orgChartNodeClick(roleId) {
 }
 
 function orgDragStart(event, roleId) {
+  const r = getOperationRoles().find(x => x.id === roleId);
+  if (r && (!r.parentId || r.id === 'safety')) return; // IC and Safety are not draggable
   event.dataTransfer.setData('text/plain', roleId);
   event.dataTransfer.effectAllowed = 'move';
   orgChartPickedRole = roleId;
+  orgReparentMode = event.shiftKey && canReparent(); // Hold Shift for reparent on desktop
   // Brief delay so the picked highlight renders after drag image is captured
   setTimeout(() => renderCommandView(), 0);
 }
@@ -1921,9 +2071,14 @@ function orgDrop(event, targetRoleId) {
   event.preventDefault();
   const sourceRoleId = event.dataTransfer.getData('text/plain');
   if (sourceRoleId && sourceRoleId !== targetRoleId) {
-    orgSwapRoles(sourceRoleId, targetRoleId);
+    if (orgReparentMode) {
+      orgReparentRole(sourceRoleId, targetRoleId);
+    } else {
+      orgSwapRoles(sourceRoleId, targetRoleId);
+    }
   }
   orgChartPickedRole = null;
+  orgReparentMode = false;
   renderCommandView();
 }
 
@@ -1933,16 +2088,37 @@ let orgTouchClone = null;
 let orgTouchMoved = false;
 
 function orgTouchStart(event, roleId) {
-  // Track touch start; if finger moves before release, it becomes a drag.
-  // If released without moving, orgTouchEnd treats it as a tap → orgChartNodeClick.
+  const r = getOperationRoles().find(x => x.id === roleId);
+  const isLocked = r && (!r.parentId || r.id === 'safety');
+
   orgTouchSourceRole = roleId;
   orgTouchMoved = false;
+  orgReparentMode = false;
+
+  // Clear any existing long-press timer
+  if (orgLongPressTimer) { clearTimeout(orgLongPressTimer); orgLongPressTimer = null; }
+
+  // Start long-press timer for reparent mode (500ms hold without moving)
+  if (!isLocked && canReparent()) {
+    orgLongPressTimer = setTimeout(() => {
+      orgLongPressTimer = null;
+      if (!orgTouchMoved && orgTouchSourceRole === roleId) {
+        orgReparentMode = true;
+        if (navigator.vibrate) navigator.vibrate(50);
+        orgChartPickedRole = roleId;
+        renderCommandView();
+      }
+    }, 500);
+  }
 }
 
 function orgTouchMove(event) {
   if (!orgTouchSourceRole) return;
   orgTouchMoved = true;
   event.preventDefault(); // Prevent scroll while dragging
+
+  // Cancel long-press timer if finger moves before 500ms
+  if (orgLongPressTimer) { clearTimeout(orgLongPressTimer); orgLongPressTimer = null; }
 
   const touch = event.touches[0];
 
@@ -1957,7 +2133,9 @@ function orgTouchMove(event) {
     orgTouchClone.style.pointerEvents = 'none';
     orgTouchClone.style.width = sourceEl.offsetWidth + 'px';
     orgTouchClone.style.transform = 'scale(1.05)';
-    orgTouchClone.style.boxShadow = '0 4px 16px rgba(0,0,0,0.2)';
+    orgTouchClone.style.boxShadow = orgReparentMode
+      ? '0 4px 16px rgba(245,124,0,0.4)' : '0 4px 16px rgba(0,0,0,0.2)';
+    if (orgReparentMode) orgTouchClone.style.borderColor = 'var(--orange-dark)';
     document.body.appendChild(orgTouchClone);
 
     // Highlight picked state
@@ -1971,6 +2149,9 @@ function orgTouchMove(event) {
 }
 
 function orgTouchEnd(event, roleId) {
+  // Clear long-press timer
+  if (orgLongPressTimer) { clearTimeout(orgLongPressTimer); orgLongPressTimer = null; }
+
   if (orgTouchClone) {
     // Was a drag — find what's under the finger
     orgTouchClone.remove();
@@ -1982,12 +2163,21 @@ function orgTouchEnd(event, roleId) {
     const targetRoleId = targetNode ? targetNode.getAttribute('data-role') : null;
 
     if (targetRoleId && targetRoleId !== orgTouchSourceRole) {
-      orgSwapRoles(orgTouchSourceRole, targetRoleId);
+      if (orgReparentMode) {
+        orgReparentRole(orgTouchSourceRole, targetRoleId);
+      } else {
+        orgSwapRoles(orgTouchSourceRole, targetRoleId);
+      }
     }
 
     orgChartPickedRole = null;
     orgTouchSourceRole = null;
+    orgReparentMode = false;
     renderCommandView();
+  } else if (orgReparentMode && orgChartPickedRole) {
+    // Long-press activated reparent mode but no drag — wait for tap on target
+    orgTouchSourceRole = null;
+    // Don't clear orgChartPickedRole — user will tap destination
   } else {
     // Was a tap, not a drag — handle as click
     orgTouchSourceRole = null;
@@ -2001,6 +2191,8 @@ function orgTouchEnd(event, roleId) {
 function cancelOrgMove() {
   orgChartPickedRole = null;
   orgTouchSourceRole = null;
+  orgReparentMode = false;
+  if (orgLongPressTimer) { clearTimeout(orgLongPressTimer); orgLongPressTimer = null; }
   if (orgTouchClone) {
     orgTouchClone.remove();
     orgTouchClone = null;
@@ -3375,63 +3567,123 @@ function getRoleAssignments() {
   return assignments;
 }
 
-function renderOrgChart(roleAssignments) {
+function renderOrgChart(roleAssignments, shorePoints) {
   let html = '';
+  const opRoles = getOperationRoles();
+  const roles = activeOperation.roles || {};
+
+  // Build set of apparatus with active shore points for status indicators
+  const activeApparatus = new Set();
+  for (const sp of (shorePoints || [])) {
+    const status = normalizeStatus(sp.status);
+    if (sp.deployedStrut && sp.deployedStrut.apparatus && status !== 'returned' && status !== 'archived') {
+      activeApparatus.add(sp.deployedStrut.apparatus);
+    }
+  }
+
+  // Map roleId → has active shore points
+  const roleHasActiveSP = {};
+  for (const [targetId, roleId] of Object.entries(roles)) {
+    if (activeApparatus.has(targetId)) {
+      roleHasActiveSP[roleId] = true;
+    }
+  }
+
   const renderNode = (roleId) => {
-      const r = getOperationRoles().find(x => x.id === roleId);
-      if (!r) return '';
-      const people = roleAssignments[roleId] || [];
-      const filled = people.length > 0;
-      const nameList = people.map(p => escapeHtml(p.name)).join(', ');
-      const pickedClass = orgChartPickedRole === roleId ? ' org-node-picked' : '';
-      const dropTarget = orgChartPickedRole && orgChartPickedRole !== roleId ? ' org-node-drop-target' : '';
-      return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
+    const r = opRoles.find(x => x.id === roleId);
+    if (!r) return '';
+    const people = roleAssignments[roleId] || [];
+    const filled = people.length > 0;
+    const nameList = people.map(p => escapeHtml(p.name)).join(', ');
+    const isLocked = !r.parentId || r.id === 'safety'; // IC and Safety are immovable
+    const hasChildren = opRoles.some(x => x.parentId === roleId);
+    const collapsed = orgCollapsedNodes.has(roleId);
+
+    // Picked/drop-target classes
+    let pickedClass = '';
+    if (orgChartPickedRole === roleId) {
+      pickedClass = orgReparentMode ? ' org-node-reparent-picked' : ' org-node-picked';
+    }
+    const isValidDrop = orgChartPickedRole && orgChartPickedRole !== roleId &&
+      (!orgReparentMode || !isDescendantOf(roleId, orgChartPickedRole));
+    const dropTarget = isValidDrop ? ' org-node-drop-target' : '';
+
+    // Status indicator
+    let statusDot = '';
+    if (filled) {
+      statusDot = roleHasActiveSP[roleId]
+        ? '<span class="status-dot status-active" title="Active"></span>'
+        : '<span class="status-dot status-staged" title="Staged"></span>';
+    }
+
+    // Span of control warning
+    const directReports = opRoles.filter(x => x.parentId === roleId).length;
+    const spanWarning = directReports > 7 ? '<span class="span-warning" title="Span of control exceeded (>7)">⚠</span>' : '';
+
+    // Collapse chevron
+    const chevron = hasChildren ? `<span class="org-collapse-btn" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
+
+    // Drop target helper text
+    const dropText = orgChartPickedRole
+      ? (orgReparentMode ? 'Add as child' : 'Drop here')
+      : 'Tap to assign';
+
+    // Draggable unless locked (IC/Safety)
+    const dragAttrs = isLocked ? 'draggable="false"' : `draggable="true"
+        ondragstart="orgDragStart(event,'${roleId}')"`;
+
+    return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
         onclick="orgChartNodeClick('${roleId}')"
-        draggable="true"
-        ondragstart="orgDragStart(event,'${roleId}')"
+        ${dragAttrs}
         ondragover="event.preventDefault()"
         ondrop="orgDrop(event,'${roleId}')"
         ontouchstart="orgTouchStart(event,'${roleId}')"
         ontouchmove="orgTouchMove(event)"
         ontouchend="orgTouchEnd(event,'${roleId}')">
-        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${escapeHtml(r.abbr)}</div>
-        ${filled ? `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:13px;color:var(--text-disabled);margin-top:2px">${orgChartPickedRole ? 'Drop here' : 'Tap to assign'}</div>`}
+        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${statusDot}${escapeHtml(r.abbr)}${spanWarning}${chevron}</div>
+        ${filled ? `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:13px;color:var(--text-disabled);margin-top:2px">${dropText}</div>`}
       </div>`;
-    };
+  };
 
-    const modeLabel = orgChartPickedRole ? `<span style="font-size:13px;color:var(--blue);font-weight:400;text-transform:none;margin-left:8px">Moving ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>` : '';
-    html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span class="section-header" style="margin-bottom:0">ICS Organization${modeLabel}</span>
-      <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
-    </div>`;
+  // Header with headcount and mode label
+  const totalAssigned = Object.values(roleAssignments).reduce((sum, arr) => sum + arr.length, 0);
+  const totalAvailable = (activeOperation.assignedApparatus || []).length +
+    Object.keys(activeOperation.individuals || {}).length +
+    (myRole ? 1 : 0);
+  const headcount = totalAvailable > 0 ? `<span style="font-size:12px;color:var(--text-secondary);font-weight:400;margin-left:8px">${totalAssigned}/${totalAvailable} assigned</span>` : '';
 
-    // Render org chart dynamically from tree structure
-    const opRoles = getOperationRoles();
-    const renderTree = (parentId) => {
-      const children = opRoles.filter(r => r.parentId === parentId);
-      if (children.length === 0) return '';
-      let h = '<div style="display:flex;justify-content:center"><div class="divider-dot"></div></div>';
-      h += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:4px">`;
-      for (const child of children) {
-        h += renderNode(child.id);
-      }
-      h += `</div>`;
-      // Render grandchildren for each child that has them
-      for (const child of children) {
-        const grandchildren = opRoles.filter(r => r.parentId === child.id);
-        if (grandchildren.length > 0) {
-          h += renderTree(child.id);
-        }
-      }
-      return h;
-    };
+  const modeLabel = orgChartPickedRole
+    ? `<span style="font-size:13px;color:${orgReparentMode ? 'var(--orange-dark)' : 'var(--blue)'};font-weight:400;text-transform:none;margin-left:8px">${orgReparentMode ? 'Reparenting' : 'Moving'} ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>`
+    : '';
 
-    // Root nodes (no parent)
-    const roots = opRoles.filter(r => !r.parentId);
-    for (const root of roots) {
-      html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode(root.id)}</div>`;
-      html += renderTree(root.id);
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+    <span class="section-header" style="margin-bottom:0">ICS Organization${headcount}${modeLabel}</span>
+    <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
+  </div>`;
+
+  // Render org chart with column-per-subtree layout
+  const renderTree = (parentId) => {
+    if (orgCollapsedNodes.has(parentId)) return '';
+    const children = opRoles.filter(r => r.parentId === parentId);
+    if (children.length === 0) return '';
+    let h = '<div class="org-divider"><div class="divider-dot"></div></div>';
+    h += '<div class="org-children-row">';
+    for (const child of children) {
+      h += '<div class="org-subtree">';
+      h += renderNode(child.id);
+      h += renderTree(child.id);
+      h += '</div>';
     }
+    h += '</div>';
+    return h;
+  };
+
+  // Root nodes (no parent)
+  const roots = opRoles.filter(r => !r.parentId);
+  for (const root of roots) {
+    html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode(root.id)}</div>`;
+    html += renderTree(root.id);
+  }
   html += `<div style="margin-bottom:16px"></div>`;
   return html;
 }
@@ -3509,7 +3761,7 @@ function renderCommandView() {
   const roleAssignments = getRoleAssignments();
 
   let html = renderDashboardStats(points);
-  html += renderOrgChart(roleAssignments);
+  html += renderOrgChart(roleAssignments, points);
   html += renderCommandLayout(points);
   html += renderRolesSection();
 
