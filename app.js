@@ -1464,6 +1464,7 @@ function openModal(id) {
 function closeModal(id) {
   document.getElementById(id).classList.remove('active');
   if (id === 'addEquipModal' || id === 'addApparatusModal') renderInventory();
+  if (id === 'addApparatusModal' && activeOperation) showAssignApparatus();
   if (_lastFocusedElement && typeof _lastFocusedElement.focus === 'function') {
     _lastFocusedElement.focus();
     _lastFocusedElement = null;
@@ -1496,7 +1497,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.3.1'
+    appVersion: '3.3.2'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -1538,13 +1539,14 @@ function showAssignApparatus() {
   const assigned = activeOperation.assignedApparatus || [];
   let html = '<div style="padding:8px 0">';
   if (localApparatus.length === 0) {
-    html += '<p style="font-size:13px;color:var(--text-secondary);margin:0">No apparatus created yet. Add apparatus in the Inventory tab first.</p>';
+    html += '<p style="font-size:13px;color:var(--text-secondary);margin:0">No apparatus created yet.</p>';
   } else {
     for (const app of localApparatus) {
       const checked = assigned.includes(app.id) ? 'checked' : '';
       html += `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px"><input type="checkbox" value="${app.id}" ${checked} onchange="toggleApparatusAssignment('${app.id}', this.checked)" style="width:16px;height:16px"> ${escapeHtml(app.name)}</label>`;
     }
   }
+  html += `<button class="btn btn-outline" onclick="showAddApparatus()" style="width:100%;margin-top:8px;font-size:13px">+ Create New Apparatus</button>`;
   html += '</div>';
   const container = document.getElementById('assignedApparatusList');
   container.innerHTML = html;
@@ -2687,7 +2689,7 @@ function viewArchivedOp(opId) {
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
       <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
-      ${sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
+      ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
     </div>`;
   }
 
