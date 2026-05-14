@@ -1382,20 +1382,22 @@ body {
    TABLET RESPONSIVE
    ======================================== */
 @media (min-width: 768px) {
-  .app { max-width: 900px; }
+  .app { max-width: 700px; }
   .screen { padding: 20px 24px; padding-bottom: 80px; }
   .modal { max-width: 700px; }
   .quick-add-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-  .inv-quickview-panel { width: 380px; }
+  .inv-quickview-panel { width: 380px; right: -400px; }
   .measurement-row { gap: 10px; }
   .role-grid { grid-template-columns: 1fr 1fr 1fr; }
   .quick-add-plate-grid { grid-template-columns: repeat(4, 1fr); }
   .ext-strut-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .inv-quickview-btn { right: calc(50vw - 350px + 12px); }
+  .btn-primary { max-width: 480px; }
 }
 
 @media (min-width: 1024px) {
-  .app { max-width: 1100px; }
-  .screen { padding: 24px 32px; padding-bottom: 80px; }
+  .app { max-width: 700px; }
+  .screen { padding: 20px 24px; padding-bottom: 80px; }
   .modal { max-width: 800px; }
   .role-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
   .quick-add-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
