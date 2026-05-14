@@ -344,8 +344,8 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       const parts = [];
       if (d.header) parts.push(`Header ${d.header}"`);
       if (d.sole) parts.push(`Footer ${d.sole}"`);
-      if (d.topPlate) { const p = BASE_PLATES.find(b => b.height === d.topPlate && b.id !== 'none'); parts.push(`Top: ${p ? p.name : d.topPlate + '"'}`); }
-      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : d.bottomPlate + '"'}`); }
+      if (d.topPlate) { const p = BASE_PLATES.find(b => b.id === d.topPlateName) || BASE_PLATES.find(b => b.height === d.topPlate && b.id !== 'none'); parts.push(`Top: ${p ? p.name : d.topPlate + '"'}`); }
+      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.id === d.bottomPlateName) || BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : d.bottomPlate + '"'}`); }
       html += `<div class="card-deductions">
         <strong>Opening:</strong> ${r.openingLength}" → <strong>Effective:</strong> ${effLen}" <span style="color:var(--blue)">(−${totalDed}")</span><br>
         <span style="font-size:13px">${parts.join(' · ')}</span>
@@ -1651,7 +1651,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.4.0'
+    appVersion: '3.4.1'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -2806,7 +2806,7 @@ function renderShorePointCards(numbered) {
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
-        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}`;
+        ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}`;
 
       if (status === 'pending') {
         // Lazy-compute operation inventory only when pending SPs exist
@@ -2916,7 +2916,7 @@ function viewArchivedOp(opId) {
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
       <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
-      ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Assigned to: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
+      ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
     </div>`;
   }
 
@@ -3334,7 +3334,8 @@ function toggleLane(laneId) {
   renderOperations();
 }
 
-let sectionCollapsedState = {};
+// Default to collapsed — operations content is the primary view, header sections are secondary
+let sectionCollapsedState = { apparatus: true, external: true, individuals: true, myrole: true };
 function toggleSection(sectionKey) {
   sectionCollapsedState[sectionKey] = !sectionCollapsedState[sectionKey];
   const collapsed = sectionCollapsedState[sectionKey];
