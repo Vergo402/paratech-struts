@@ -1010,7 +1010,12 @@ select { padding-right: 40px; }
 
 /* --- Plate Picker with Images --- */
 .plate-option-grid {
-  display: none;
+  /* Use visibility instead of display so iOS Safari initializes the touch
+     scroll layer correctly. With display:none → display:block, iOS sometimes
+     fails to set up overflow scrolling on a position:fixed element. Using
+     visibility keeps the element in the layout tree at all times. */
+  visibility: hidden;
+  pointer-events: none;
   position: fixed;
   left: 16px;
   right: 16px;
@@ -1026,8 +1031,15 @@ select { padding-right: 40px; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  /* Explicit touch-action prevents the browser from interpreting upward
+     swipes as page-level gestures (e.g. pull-to-refresh) and forces vertical
+     pan handling on this element specifically. */
+  touch-action: pan-y;
+  /* Promote to its own compositing layer so iOS Safari treats scrolling as
+     a layer transform instead of trying to scroll the page underneath. */
+  transform: translateZ(0);
 }
-.plate-option-grid.open { display: block; }
+.plate-option-grid.open { visibility: visible; pointer-events: auto; }
 .plate-grid-scrim {
   display: none;
   position: fixed;
