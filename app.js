@@ -508,8 +508,8 @@ function getLocationBreadcrumb(sp) {
   const parts = [];
   if (sp.building) parts.push(escapeHtml(sp.building));
   if (sp.division) parts.push(escapeHtml(sp.division));
-  if (sp.floor) parts.push(escapeHtml(sp.floor));
-  if (sp.team) parts.push(escapeHtml(sp.team));
+  if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
+  if (sp.group || sp.team) parts.push(escapeHtml(sp.group || sp.team));
   return parts.length > 0 ? parts.join(' › ') : '';
 }
 
@@ -850,7 +850,12 @@ function setupListeners() {
     const ops = Object.entries(data).map(([id, op]) => ({ id, ...op }));
     activeOperation = ops.length > 0 ? ops[0] : null;
     if (activeOperation && activeOperation.shorePoints) {
-      activeOperation.shorePoints = Object.entries(activeOperation.shorePoints).map(([id, sp]) => ({ id, ...sp }));
+      activeOperation.shorePoints = Object.entries(activeOperation.shorePoints).map(([id, sp]) => {
+        // Migrate legacy field names: floor→area, team→group
+        if (sp.floor && !sp.area) sp.area = sp.floor;
+        if (sp.team && !sp.group) sp.group = sp.team;
+        return { id, ...sp };
+      });
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
   }, (err) => onListenerError('operations', err));
@@ -859,7 +864,12 @@ function setupListeners() {
     const data = snap.val() || {};
     archivedOperations = Object.entries(data).map(([id, op]) => {
       if (op.shorePoints) {
-        op.shorePoints = Object.entries(op.shorePoints).map(([spId, sp]) => ({ id: spId, ...sp }));
+        op.shorePoints = Object.entries(op.shorePoints).map(([spId, sp]) => {
+          // Migrate legacy field names: floor→area, team→group
+          if (sp.floor && !sp.area) sp.area = sp.floor;
+          if (sp.team && !sp.group) sp.group = sp.team;
+          return { id: spId, ...sp };
+        });
       }
       return { id, ...op };
     });
@@ -1486,7 +1496,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.3.0'
+    appVersion: '3.3.1'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -2558,7 +2568,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${sp.team ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.team)}</div>` : ''}
+        ${(sp.group || sp.team) ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(sp.group || sp.team)}</div>` : ''}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -2752,9 +2762,9 @@ function showAddShorePoint() {
   document.getElementById('spResults').innerHTML = '';
   document.getElementById('spLabel').value = '';
   document.getElementById('spBuilding').value = '';
-  document.getElementById('spFloor').value = '';
+  document.getElementById('spArea').value = '';
   document.getElementById('spDivision').value = '';
-  document.getElementById('spTeam').value = '';
+  document.getElementById('spGroup').value = '';
 
   // Show/hide building field based on operation setting
   const isMulti = activeOperation && activeOperation.multiBuilding;
@@ -2764,8 +2774,8 @@ function showAddShorePoint() {
   for (const seg of drilldownPath) {
     if (seg.level === 'building') document.getElementById('spBuilding').value = seg.value;
     if (seg.level === 'division') document.getElementById('spDivision').value = seg.value;
-    if (seg.level === 'floor') document.getElementById('spFloor').value = seg.value;
-    if (seg.level === 'team') document.getElementById('spTeam').value = seg.value;
+    if (seg.level === 'area') document.getElementById('spArea').value = seg.value;
+    if (seg.level === 'group') document.getElementById('spGroup').value = seg.value;
   }
   setMeasurementFromInches('sp', 0);
   document.getElementById('spLength').value = '';
@@ -2840,18 +2850,18 @@ function deployPendingShorePoint() {
   const load = parseFloat(document.getElementById('spLoad').value) || 0;
   const shoreType = document.getElementById('spShoreType').value;
   const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
-  const floor = validateInput(document.getElementById('spFloor').value, 100) || null;
+  const area = validateInput(document.getElementById('spArea').value, 100) || null;
   const division = validateInput(document.getElementById('spDivision').value, 100) || null;
-  const team = validateInput(document.getElementById('spTeam').value, 100) || null;
+  const group = validateInput(document.getElementById('spGroup').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
 
   const sp = {
     label,
     building,
-    floor,
+    area,
     division,
-    team,
+    group,
     shoreType,
     requiredLength: length,
     effectiveLength,
@@ -2927,9 +2937,9 @@ function deployShorePoint(result, qty) {
 
     const shoreType = document.getElementById('spShoreType').value;
     const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
-    const floor = validateInput(document.getElementById('spFloor').value, 100) || null;
+    const area = validateInput(document.getElementById('spArea').value, 100) || null;
     const division = validateInput(document.getElementById('spDivision').value, 100) || null;
-    const team = validateInput(document.getElementById('spTeam').value, 100) || null;
+    const group = validateInput(document.getElementById('spGroup').value, 100) || null;
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
 
@@ -2950,9 +2960,9 @@ function deployShorePoint(result, qty) {
     const sp = {
       label,
       building,
-      floor,
+      area,
       division,
-      team,
+      group,
       shoreType,
       requiredLength: length,
       effectiveLength,
@@ -3131,10 +3141,10 @@ function switchView(view) {
 // ============================================================
 function getHierarchyLevels() {
   // ICS hierarchy order — building only if multi-building op
-  // Drill-down stops at Area (floor). Group is shown on each card instead.
+  // Drill-down stops at Area. Group is shown on each card instead.
   const levels = [];
   if (activeOperation && activeOperation.multiBuilding) levels.push('building');
-  levels.push('division', 'floor');
+  levels.push('division', 'area');
   return levels;
 }
 
@@ -3183,7 +3193,7 @@ function renderBreadcrumb() {
     return;
   }
   bc.style.display = 'flex';
-  const levelLabels = { building: 'Building', division: 'Division', floor: 'Area', team: 'Group' };
+  const levelLabels = { building: 'Building', division: 'Division', area: 'Area', group: 'Group' };
   let html = `<button onclick="drillTo(-1)">All</button>`;
   drilldownPath.forEach((seg, i) => {
     const isLast = i === drilldownPath.length - 1;
@@ -3243,7 +3253,7 @@ function renderDrilldownForLevel(points, level) {
     groups[key].push(sp);
   }
 
-  const levelLabels = { building: 'Building', division: 'Div', floor: 'Area', team: 'Group' };
+  const levelLabels = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' };
   // Uses global STATUS_ORDER
   let html = '';
 
@@ -3426,7 +3436,7 @@ function renderOrgChart(roleAssignments) {
 
 function renderCommandLayout(points) {
   const levels = getHierarchyLevels();
-  const topLevel = levels[0] || 'floor';
+  const topLevel = levels[0] || 'area';
   const groups = {};
   for (const sp of points) {
     const key = sp[topLevel] || 'Unassigned';
@@ -3437,7 +3447,7 @@ function renderCommandLayout(points) {
   let html = `<div class="section-header">Layout</div>`;
   for (const [name, pts] of Object.entries(groups)) {
     const pills = renderStatusPills(pts);
-    const levelLabel = { building: 'Building', division: 'Div', floor: 'Area', team: 'Group' }[topLevel] || '';
+    const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
     const escapedName = name.replace(/'/g, "\\'");
     html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
       <span style="font-weight:600">${name === 'Unassigned' ? name : (name.toLowerCase().startsWith(levelLabel.toLowerCase()) ? name : levelLabel + ' ' + name)}</span>
@@ -3697,9 +3707,9 @@ function editShorePoint(spId) {
   // Populate modal with existing data
   document.getElementById('spLabel').value = sp.label || '';
   document.getElementById('spBuilding').value = sp.building || '';
-  document.getElementById('spFloor').value = sp.floor || '';
+  document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  document.getElementById('spTeam').value = sp.team || '';
+  document.getElementById('spGroup').value = sp.group || sp.team || '';
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -3742,9 +3752,9 @@ function confirmEditShorePoint() {
   const updateData = {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
-    floor: validateInput(document.getElementById('spFloor').value, 100) || null,
+    area: validateInput(document.getElementById('spArea').value, 100) || null,
     division: validateInput(document.getElementById('spDivision').value, 100) || null,
-    team: validateInput(document.getElementById('spTeam').value, 100) || null,
+    group: validateInput(document.getElementById('spGroup').value, 100) || null,
     shoreType: document.getElementById('spShoreType').value,
     requiredLength: getMeasurementInches('sp'),
     estimatedLoad: parseFloat(document.getElementById('spLoad').value) || 0,
