@@ -1,4 +1,4 @@
-const CACHE_NAME = 'paratech-struts-v3.2.0';
+const CACHE_NAME = 'fieldstruts-v3.3.0';
 const ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,13 @@ const ASSETS = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        ASSETS.map(url =>
+          cache.add(url).catch(err => console.warn('Failed to cache:', url, err))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

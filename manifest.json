@@ -1,7 +1,7 @@
 {
-  "name": "Paratech Strut Selector",
-  "short_name": "Struts",
-  "description": "Rescue strut selection and inventory management for Paratech shoring systems",
+  "name": "FieldStruts",
+  "short_name": "FieldStruts",
+  "description": "Rescue strut selection and inventory management for shoring operations",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",

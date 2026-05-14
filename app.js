@@ -48,7 +48,7 @@ const LONGSHORE_LOAD_TABLE = [
 ];
 
 
-// Base plate heights from Paratech O&M Manual Table 2-1
+// Base plate heights from manufacturer O&M Manual Table 2-1
 const BASE_PLATES = [
   { id:'none', name:'None', height:0, img:'' },
   { id:'rigid6', name:'Rigid Base 6"', height:1.0, img:'data:image/jpeg;base64,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' },
@@ -297,7 +297,7 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button>' : '';
+    const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button>' : '';
     container.innerHTML = `<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.${pendingBtn}</div>`;
     return;
   }
@@ -376,7 +376,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="this.disabled=true;deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="this.disabled=true;setTimeout(()=>this.disabled=false,2000);deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
@@ -456,13 +456,18 @@ let xlsxPromise = null;
 async function loadXLSX() {
   if (xlsxLoaded || typeof XLSX !== 'undefined') { xlsxLoaded = true; return; }
   if (xlsxPromise) return xlsxPromise;
-  xlsxPromise = new Promise((resolve, reject) => {
-    const s = document.createElement('script');
-    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-    s.onload = () => { xlsxLoaded = true; resolve(); };
-    s.onerror = () => { xlsxPromise = null; reject(new Error('Failed to load export library')); };
-    document.head.appendChild(s);
-  });
+  xlsxPromise = Promise.race([
+    new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      s.onload = () => { xlsxLoaded = true; resolve(); };
+      s.onerror = () => { xlsxPromise = null; reject(new Error('Failed to load export library')); };
+      document.head.appendChild(s);
+    }),
+    new Promise((_, reject) =>
+      setTimeout(() => { xlsxPromise = null; reject(new Error('Export library timed out')); }, 15000)
+    )
+  ]);
   return xlsxPromise;
 }
 
@@ -476,7 +481,7 @@ function getShorePoints() {
 // Save operation to Firebase or localStorage
 function persistOperation() {
   if (db && deptId && activeOperation && activeOperation.id) return; // Firebase listeners handle it
-  localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
 }
 
 // Look up shore type name by id
@@ -528,8 +533,18 @@ function safeParse(json, fallback) {
   catch (e) { console.warn('Corrupt localStorage data, using fallback:', e.message); return fallback; }
 }
 
+// Safe localStorage write — catches quota/private-browsing errors
+function safeSetItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.error('localStorage write failed:', key, e.message);
+    showToast('Storage full — changes may not persist offline', 'error');
+  }
+}
+
 // Offline-safe Firebase write wrapper
-let pendingWrites = safeParse(localStorage.getItem('paratech_pendingWrites'), []);
+let pendingWrites = safeParse(localStorage.getItem('fieldstruts_pendingWrites'), []);
 let isOnline = false;
 
 function firebaseSave(ref, method, data) {
@@ -545,15 +560,16 @@ function firebaseSave(ref, method, data) {
     // For transactions, check if committed
     if (method === 'transaction' && result && !result.committed) {
       console.warn('Transaction not committed:', ref.toString());
+      showToast('Sync conflict — verify the change', 'warning');
     }
   }).catch(err => {
     console.warn('Firebase write failed:', err.message, ref.toString());
     // Queue for retry on reconnect
-    const op = { path: ref.toString(), method, timestamp: Date.now() };
+    const op = { path: ref.toString(), method, timestamp: Date.now(), retries: 0 };
     if (method !== 'transaction') {
       op.data = data;
       pendingWrites.push(op);
-      localStorage.setItem('paratech_pendingWrites', JSON.stringify(pendingWrites));
+      safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
     }
     showToast('Offline — will sync later', 'warning');
   });
@@ -563,28 +579,46 @@ function flushPendingWrites() {
   if (pendingWrites.length === 0 || !db) return;
   const writes = [...pendingWrites];
   pendingWrites = [];
-  localStorage.removeItem('paratech_pendingWrites');
+  // Filter stale or exhausted writes
+  const MAX_RETRIES = 3;
+  const MAX_AGE = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const viable = writes.filter(op => {
+    if (now - op.timestamp > MAX_AGE) { console.warn('Discarding stale pending write (>24h):', op.path); return false; }
+    if ((op.retries || 0) >= MAX_RETRIES) { console.warn('Discarding write after max retries:', op.path); return false; }
+    return true;
+  });
   let flushed = 0;
-  for (const op of writes) {
+  const failed = [];
+  const promises = [];
+  for (const op of viable) {
     try {
-      // Reconstruct ref from path
       const path = op.path.replace(db.ref().toString(), '');
       const ref = db.ref(path);
-      if (op.method === 'set') ref.set(op.data);
-      else if (op.method === 'update') ref.update(op.data);
-      else if (op.method === 'remove') ref.remove();
-      flushed++;
+      let p;
+      if (op.method === 'set') p = ref.set(op.data);
+      else if (op.method === 'update') p = ref.update(op.data);
+      else if (op.method === 'remove') p = ref.remove();
+      else { failed.push(op); continue; }
+      promises.push(
+        p.then(() => { flushed++; })
+         .catch(() => { failed.push({ ...op, retries: (op.retries || 0) + 1 }); })
+      );
     } catch (e) {
-      console.warn('Failed to flush pending write:', e);
-      pendingWrites.push(op);
+      console.warn('Failed to reconstruct ref:', e);
+      failed.push({ ...op, retries: (op.retries || 0) + 1 });
     }
   }
-  if (flushed > 0) {
-    showToast(flushed + ' pending change' + (flushed > 1 ? 's' : '') + ' synced', 'success');
-  }
-  if (pendingWrites.length > 0) {
-    localStorage.setItem('paratech_pendingWrites', JSON.stringify(pendingWrites));
-  }
+  Promise.all(promises).then(() => {
+    pendingWrites = failed.concat(pendingWrites);
+    if (pendingWrites.length > 0) {
+      safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+    } else {
+      localStorage.removeItem('fieldstruts_pendingWrites');
+    }
+    if (flushed > 0) showToast(flushed + ' pending change' + (flushed > 1 ? 's' : '') + ' synced');
+    if (failed.length > 0) showToast(failed.length + ' change' + (failed.length > 1 ? 's' : '') + ' failed — will retry', 'warning');
+  });
 }
 
 // Guard against double-clicks on buttons
@@ -642,7 +676,7 @@ function saveCustomRoles() {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 }
 
@@ -757,10 +791,12 @@ function initFirebase() {
     connRef.on('value', (snap) => {
       const el = document.getElementById('connStatus');
       if (snap.val() === true) {
+        isOnline = true;
         el.className = 'conn-status';
         el.textContent = '';
         flushPendingWrites();
       } else {
+        isOnline = false;
         el.className = 'conn-status offline';
         el.textContent = 'Offline — changes will sync when reconnected';
       }
@@ -772,7 +808,7 @@ function handleLogin() {
   const id = document.getElementById('loginDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
   deptId = id;
-  localStorage.setItem('paratech_deptId', deptId);
+  safeSetItem('fieldstruts_deptId', deptId);
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('settingsDeptId').value = deptId;
   setupListeners();
@@ -782,8 +818,13 @@ function connectDepartment() {
   const id = document.getElementById('settingsDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
   deptId = id;
-  localStorage.setItem('paratech_deptId', deptId);
+  safeSetItem('fieldstruts_deptId', deptId);
   setupListeners();
+}
+
+function onListenerError(name, err) {
+  console.error('Firebase listener error [' + name + ']:', err.message);
+  showToast('Sync error — using cached data', 'error');
 }
 
 function setupListeners() {
@@ -799,10 +840,10 @@ function setupListeners() {
   inventoryRef.on('value', (snap) => {
     const data = snap.val() || {};
     localInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
     if (document.getElementById('addEquipModal').classList.contains('active')) showAddEquipment();
-  });
+  }, (err) => onListenerError('inventory', err));
 
   operationsRef.orderByChild('status').equalTo('active').on('value', (snap) => {
     const data = snap.val() || {};
@@ -812,7 +853,7 @@ function setupListeners() {
       activeOperation.shorePoints = Object.entries(activeOperation.shorePoints).map(([id, sp]) => ({ id, ...sp }));
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
-  });
+  }, (err) => onListenerError('operations', err));
 
   operationsRef.orderByChild('status').equalTo('archived').on('value', (snap) => {
     const data = snap.val() || {};
@@ -824,19 +865,19 @@ function setupListeners() {
     });
     archivedOperations.sort((a, b) => new Date(b.endTime || b.startTime) - new Date(a.endTime || a.startTime));
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
-  });
+  }, (err) => onListenerError('archives', err));
 
   apparatusRef = db.ref(`departments/${deptId}/apparatus`);
 
   apparatusRef.on('value', (snap) => {
     const data = snap.val() || {};
     localApparatus = Object.entries(data).map(([id, item]) => ({ id, ...item }));
-    localStorage.setItem('paratech_apparatus', JSON.stringify(localApparatus));
+    safeSetItem('fieldstruts_apparatus', JSON.stringify(localApparatus));
     if (localApparatus.length > 0 && !localApparatus.find(a => a.id === selectedApparatus)) {
       selectedApparatus = localApparatus[0].id;
     }
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
-  });
+  }, (err) => onListenerError('apparatus', err));
 
   settingsRef.on('value', (snap) => {
     const data = snap.val() || {};
@@ -844,22 +885,22 @@ function setupListeners() {
       document.getElementById('deptName').textContent = data.name;
       document.getElementById('settingsDeptName').value = data.name;
     }
-  });
+  }, (err) => onListenerError('settings', err));
 
   db.ref(`departments/${deptId}/customApparatusTypes`).on('value', (snap) => {
     const data = snap.val();
     if (data && Array.isArray(data) && data.length > 0) {
       customApparatusTypes = data;
-      localStorage.setItem('paratech_custom_apparatus_types', JSON.stringify(data));
+      safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(data));
     } else {
       customApparatusTypes = null;
     }
     renderApparatusTypesList();
-  });
+  }, (err) => onListenerError('apparatus types', err));
 }
 
 function loadLocalInventory() {
-  const stored = localStorage.getItem('paratech_inventory');
+  const stored = localStorage.getItem('fieldstruts_inventory');
   if (stored) localInventory = safeParse(stored, []);
 }
 
@@ -867,17 +908,17 @@ function loadLocalInventory() {
 // APPARATUS MANAGEMENT
 // ============================================================
 function loadLocalApparatus() {
-  const stored = localStorage.getItem('paratech_apparatus');
+  const stored = localStorage.getItem('fieldstruts_apparatus');
   if (stored) localApparatus = safeParse(stored, []);
   if (localApparatus.length > 0 && !selectedApparatus) {
     selectedApparatus = localApparatus[0].id;
   }
-  const storedTypes = localStorage.getItem('paratech_custom_apparatus_types');
+  const storedTypes = localStorage.getItem('fieldstruts_custom_apparatus_types');
   if (storedTypes) customApparatusTypes = safeParse(storedTypes, null);
 }
 
 function saveLocalApparatus() {
-  localStorage.setItem('paratech_apparatus', JSON.stringify(localApparatus));
+  safeSetItem('fieldstruts_apparatus', JSON.stringify(localApparatus));
 }
 
 function renderApparatusTabs() {
@@ -959,7 +1000,7 @@ function saveCustomApparatusTypes() {
   if (db && deptId) {
     firebaseSave(firebase.database().ref(`departments/${deptId}/customApparatusTypes`), 'set', customApparatusTypes);
   } else {
-    localStorage.setItem('paratech_custom_apparatus_types', JSON.stringify(customApparatusTypes));
+    safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(customApparatusTypes));
   }
 }
 
@@ -1122,7 +1163,7 @@ function removeApparatus(id) {
     localInventory = localInventory.filter(i => i.apparatus !== id);
     localApparatus = localApparatus.filter(a => a.id !== id);
     saveLocalApparatus();
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
   }
 
   if (selectedApparatus === id) {
@@ -1278,7 +1319,7 @@ function updateQty(itemId, delta) {
       firebaseSave(inventoryRef.child(itemId), 'remove');
     } else {
       localInventory = localInventory.filter(i => i.id !== itemId);
-      localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     }
     renderInventory();
     return;
@@ -1289,7 +1330,7 @@ function updateQty(itemId, delta) {
   if (db && deptId) {
     firebaseSave(inventoryRef.child(itemId), 'update', { quantity: newQty, available: newAvail });
   } else {
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
   }
   renderInventory();
 }
@@ -1393,7 +1434,7 @@ function quickAdd(type, system, model, length) {
     } else {
       item.id = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       localInventory.push(item);
-      localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     }
   }
 
@@ -1442,21 +1483,21 @@ function submitFeedback() {
   const entry = {
     category,
     text,
-    deptId: localStorage.getItem('paratech_deptId') || null,
-    deptName: localStorage.getItem('paratech_deptName') || null,
+    deptId: localStorage.getItem('fieldstruts_deptId') || null,
+    deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.2.0'
+    appVersion: '3.3.0'
   };
   if (db) {
-    db.ref('feedback').push(entry).then(() => {
-      alert('Thank you! Your feedback has been submitted.');
-      closeFeedbackModal();
-    }).catch(() => {
-      alert('Feedback saved and will sync when online.');
-      closeFeedbackModal();
-    });
+    const feedbackRef = db.ref('feedback').push();
+    firebaseSave(feedbackRef, 'set', entry);
+    alert('Thank you! Your feedback has been submitted.');
+    closeFeedbackModal();
   } else {
-    alert('Unable to submit — no database connection.');
+    // No db — queue for later via pending writes
+    pendingWrites.push({ path: 'feedback/' + Date.now(), method: 'set', data: entry, timestamp: Date.now(), retries: 0 });
+    safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+    alert('Feedback saved — will submit when online.');
   }
 }
 
@@ -1512,7 +1553,7 @@ function toggleApparatusAssignment(appId, assign) {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('assignedApparatus'), 'set', assigned);
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -1573,7 +1614,7 @@ function confirmCreateGroup() {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'set', { name, type, members });
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 
   const modal = document.getElementById('createGroupModal');
@@ -1587,7 +1628,7 @@ function removeApparatusGroup(gid) {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'remove');
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -1602,7 +1643,7 @@ function openMyRoleModal() {
   document.getElementById('roleModalTitle').textContent = 'My Role';
   document.getElementById('roleModalSubtitle').textContent = 'Pick your ICS role on this device';
   document.getElementById('roleNameGroup').style.display = 'block';
-  document.getElementById('rolePersonName').value = localStorage.getItem('paratech_myRoleName') || '';
+  document.getElementById('rolePersonName').value = localStorage.getItem('fieldstruts_myRoleName') || '';
   renderRoleGrid(myRole);
   openModal('roleModal');
 }
@@ -1635,9 +1676,9 @@ function selectRole(roleId) {
   const personName = validateInput(document.getElementById('rolePersonName').value || '', 100);
   if (roleTarget === 'self') {
     myRole = roleId;
-    localStorage.setItem('paratech_myRole', roleId);
-    if (personName) localStorage.setItem('paratech_myRoleName', personName);
-    else localStorage.removeItem('paratech_myRoleName');
+    safeSetItem('fieldstruts_myRole', roleId);
+    if (personName) safeSetItem('fieldstruts_myRoleName', personName);
+    else localStorage.removeItem('fieldstruts_myRoleName');
     roleViewDismissed = false;
   } else {
     // Assign role to apparatus/individual
@@ -1654,7 +1695,7 @@ function selectRole(roleId) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget), 'remove');
       }
     } else {
-      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
   }
   closeModal('roleModal');
@@ -1665,7 +1706,7 @@ function selectRole(roleId) {
 function clearRole() {
   if (roleTarget === 'self') {
     myRole = null;
-    localStorage.removeItem('paratech_myRole');
+    localStorage.removeItem('fieldstruts_myRole');
     roleViewDismissed = false;
   } else {
     if (activeOperation.roles) {
@@ -1673,7 +1714,7 @@ function clearRole() {
       if (db && deptId && activeOperation.id) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'remove');
       } else {
-        localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+        safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
       }
     }
   }
@@ -1707,7 +1748,7 @@ function openOrgChartNode(roleId) {
     }
   }
   if (myRole === roleId) {
-    currentAssignees.push({ id: 'self', name: localStorage.getItem('paratech_myRoleName') || 'This Device', type: 'self' });
+    currentAssignees.push({ id: 'self', name: localStorage.getItem('fieldstruts_myRoleName') || 'This Device', type: 'self' });
   }
 
   // Find unassigned apparatus and individuals (no role, or different role)
@@ -1724,7 +1765,7 @@ function openOrgChartNode(roleId) {
     }
   }
   if (!myRole) {
-    unassigned.push({ id: 'self', name: localStorage.getItem('paratech_myRoleName') || 'This Device', type: 'self' });
+    unassigned.push({ id: 'self', name: localStorage.getItem('fieldstruts_myRoleName') || 'This Device', type: 'self' });
   }
 
   // Build a bottom-sheet style action list
@@ -1784,14 +1825,14 @@ function assignOrgChartRole(targetId, roleId) {
 
   if (targetId === 'self') {
     myRole = roleId;
-    localStorage.setItem('paratech_myRole', roleId);
+    safeSetItem('fieldstruts_myRole', roleId);
     roleViewDismissed = false;
   } else {
     activeOperation.roles[targetId] = roleId;
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'set', roleId);
     } else {
-      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
   }
 
@@ -1805,7 +1846,7 @@ function clearOrgChartRole(targetId, roleId) {
 
   if (targetId === 'self') {
     myRole = null;
-    localStorage.removeItem('paratech_myRole');
+    localStorage.removeItem('fieldstruts_myRole');
     roleViewDismissed = false;
   } else {
     if (activeOperation.roles) {
@@ -1813,7 +1854,7 @@ function clearOrgChartRole(targetId, roleId) {
       if (db && deptId && activeOperation.id) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'remove');
       } else {
-        localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+        safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
       }
     }
   }
@@ -1979,7 +2020,7 @@ function orgSwapRoles(roleA, roleB) {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'set', roles);
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 
   showToast(`Swapped ${getRoleAbbr(roleA)} ↔ ${getRoleAbbr(roleB)}`);
@@ -1993,7 +2034,7 @@ function renderMyRoleDisplay() {
 
   if (myRole) {
     const roleDef = getOperationRoles().find(r => r.id === myRole);
-    const personName = localStorage.getItem('paratech_myRoleName');
+    const personName = localStorage.getItem('fieldstruts_myRoleName');
     const nameStr = personName ? ` — ${escapeHtml(personName)}` : '';
     el.innerHTML = `<span class="role-badge">${escapeHtml(roleDef ? roleDef.abbr : myRole)}</span> <span style="font-weight:600;color:var(--text-primary)">${escapeHtml(getRoleName(myRole))}${nameStr}</span>`;
   } else {
@@ -2105,7 +2146,7 @@ function confirmAddExternal() {
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId), 'set', item);
     } else {
-      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
     editingExternalId = null;
   } else {
@@ -2128,7 +2169,7 @@ function confirmAddExternal() {
     } else {
       item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
       activeOperation.externalEquipment[item.id] = item;
-      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
   }
 
@@ -2145,7 +2186,7 @@ function removeExternal(extId) {
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -2199,7 +2240,7 @@ function confirmAddIndividual() {
   }
 
   if (!db || !deptId) {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   closeModal('addIndividualModal');
   renderOperations();
@@ -2218,7 +2259,7 @@ function removeIndividual(indId) {
     firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleKey), 'remove');
     firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleKey), 'remove');
   } else {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
   renderCommandView();
@@ -2573,7 +2614,7 @@ function renderShorePointCards(numbered) {
         </div>`;
       }
       if (status === 'secured') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled)" onclick="this.disabled=true;returnEquipment('${sp.id}')">Remove & Return Equipment</button>`;
+        html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled)" onclick="guardClick(this,()=>returnEquipment('${sp.id}'))">Remove & Return Equipment</button>`;
       }
       if (status === 'returned') {
         html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
@@ -2684,7 +2725,7 @@ function confirmStartOp() {
   // Reset device role for new operation
   myRole = null;
   roleViewDismissed = false;
-  localStorage.removeItem('paratech_myRole');
+  localStorage.removeItem('fieldstruts_myRole');
 
   if (db && deptId) {
     const newRef = operationsRef.push();
@@ -2693,7 +2734,7 @@ function confirmStartOp() {
     op.id = 'local-op-' + Date.now();
     op.shorePoints = [];
     activeOperation = op;
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
 
@@ -2731,7 +2772,7 @@ function showAddShorePoint() {
   document.getElementById('spLoad').value = '';
   document.getElementById('spShoreType').value = 't-shore';
   // Restore deduction toggle from preference
-  const dedPref = localStorage.getItem('paratech_deductionToggle') === 'true';
+  const dedPref = localStorage.getItem('fieldstruts_deductionToggle') === 'true';
   document.getElementById('spDeductionToggle').checked = dedPref;
   toggleDeductions('sp');
   // Reset plate selections
@@ -2773,7 +2814,7 @@ function findForShorePoint() {
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm btn-purple" onclick="this.disabled=true;deployPendingShorePoint()">📋 Save as Pending</button></div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -2834,7 +2875,7 @@ function deployPendingShorePoint() {
   } else {
     if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
     activeOperation.shorePoints.push(sp);
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 
   closeModal('shorePointModal');
@@ -2990,8 +3031,8 @@ function deployShorePoint(result, qty) {
     drilldownPath = newPath;
 
     if (!(db && deptId && activeOperation)) {
-      localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
-      localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
       renderOperations();
     }
   }
@@ -3044,7 +3085,7 @@ function updateShoreStatus(spId, newStatus) {
   }
 
   if (!(db && deptId && activeOperation.id)) {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
 }
@@ -3316,7 +3357,7 @@ function getRoleAssignments() {
   }
   if (myRole) {
     if (!assignments[myRole]) assignments[myRole] = [];
-    const myName = localStorage.getItem('paratech_myRoleName') || 'This Device';
+    const myName = localStorage.getItem('fieldstruts_myRoleName') || 'This Device';
     assignments[myRole].push({ name: myName, type: 'self' });
   }
   return assignments;
@@ -3605,7 +3646,7 @@ function sendToRunner(spId) {
 
   if (!(db && deptId && activeOperation.id)) {
     const points = getShorePoints();
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
   if (currentView === 'cuttable') renderCutTableView();
@@ -3635,7 +3676,7 @@ function markCutDone(spId) {
   }
 
   if (!(db && deptId && activeOperation.id)) {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
   if (currentView === 'cuttable') renderCutTableView();
@@ -3723,7 +3764,7 @@ function confirmEditShorePoint() {
     const points = getShorePoints();
     const sp = points.find(p => p.id === editingShorePointId);
     if (sp) Object.assign(sp, updateData);
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     renderOperations();
   }
 
@@ -3750,8 +3791,8 @@ function deleteShorePoint(spId) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'remove');
   } else {
     activeOperation.shorePoints = activeOperation.shorePoints.filter(p => p.id !== spId);
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     renderOperations();
   }
 }
@@ -3827,8 +3868,8 @@ function returnEquipment(spId) {
   }
 
   if (!(db && deptId)) {
-    localStorage.setItem('paratech_operation', JSON.stringify(activeOperation));
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     renderOperations();
   }
 }
@@ -3863,8 +3904,8 @@ function endOperation() {
       item.available = item.quantity;
     }
     activeOperation = null;
-    localStorage.removeItem('paratech_operation');
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    localStorage.removeItem('fieldstruts_operation');
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     renderOperations();
   }
 }
@@ -3880,7 +3921,7 @@ function saveSettings() {
   }
 
   document.getElementById('deptName').textContent = name;
-  localStorage.setItem('paratech_settings', JSON.stringify({ name }));
+  safeSetItem('fieldstruts_settings', JSON.stringify({ name }));
 }
 
 async function exportInventory() {
@@ -3910,7 +3951,7 @@ async function exportInventory() {
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
-  XLSX.writeFile(wb, `paratech-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `fieldstruts-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 async function downloadTemplate() {
@@ -3957,7 +3998,7 @@ async function downloadTemplate() {
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Inventory Template');
-  XLSX.writeFile(wb, 'paratech-inventory-template.xlsx');
+  XLSX.writeFile(wb, 'fieldstruts-inventory-template.xlsx');
 }
 
 function importInventory() {
@@ -4047,7 +4088,7 @@ function applyImportData(data) {
     firebaseSave(inventoryRef, 'set', updates);
   } else {
     localInventory = data;
-    localStorage.setItem('paratech_inventory', JSON.stringify(localInventory));
+    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     renderInventory();
   }
   alert('Inventory imported successfully');
@@ -4055,9 +4096,9 @@ function applyImportData(data) {
 
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
-  // Only remove Paratech keys, not unrelated app data
-  const paratechKeys = Object.keys(localStorage).filter(k => k.startsWith('paratech_'));
-  paratechKeys.forEach(k => localStorage.removeItem(k));
+  // Only remove FieldStruts keys, not unrelated app data
+  const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldstruts_'));
+  appKeys.forEach(k => localStorage.removeItem(k));
   localInventory = [];
   localApparatus = [];
   selectedApparatus = null;
@@ -4134,7 +4175,7 @@ function toggleDeductions(prefix) {
   } else {
     panel.classList.add('hidden');
   }
-  localStorage.setItem('paratech_deductionToggle', toggle.checked);
+  safeSetItem('fieldstruts_deductionToggle', toggle.checked);
   updateDeductionSummary(prefix);
 }
 
@@ -4347,7 +4388,7 @@ document.addEventListener('click', (e) => {
 // INIT
 // ============================================================
 function init() {
-  deptId = localStorage.getItem('paratech_deptId');
+  deptId = localStorage.getItem('fieldstruts_deptId');
 
   if (!deptId) {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -4359,17 +4400,17 @@ function init() {
     document.getElementById('settingsDeptId').value = deptId;
   }
 
-  const settings = safeParse(localStorage.getItem('paratech_settings'), {});
+  const settings = safeParse(localStorage.getItem('fieldstruts_settings'), {});
   if (settings.name) {
     document.getElementById('deptName').textContent = settings.name;
     document.getElementById('settingsDeptName').value = settings.name;
   }
 
-  const storedOp = localStorage.getItem('paratech_operation');
+  const storedOp = localStorage.getItem('fieldstruts_operation');
   if (storedOp) activeOperation = safeParse(storedOp, null);
 
   // Restore device role
-  myRole = localStorage.getItem('paratech_myRole') || null;
+  myRole = localStorage.getItem('fieldstruts_myRole') || null;
 
   loadLocalApparatus();
   initFirebase();
@@ -4380,12 +4421,44 @@ function init() {
 
   // Initialize plate pickers and restore deduction preferences
   initPlatePickers();
-  const dedPref = localStorage.getItem('paratech_deductionToggle') === 'true';
+  const dedPref = localStorage.getItem('fieldstruts_deductionToggle') === 'true';
   document.getElementById('qfDeductionToggle').checked = dedPref;
   toggleDeductions('qf');
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => {
+        // Check for updates every 30 minutes
+        setInterval(() => reg.update(), 30 * 60 * 1000);
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast('Update available — tap to refresh', 'warning');
+              const toast = document.getElementById('toast');
+              if (toast) {
+                toast.style.cursor = 'pointer';
+                toast.style.pointerEvents = 'auto';
+                toast.onclick = () => { toast.onclick = null; location.reload(); };
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                  toast.classList.remove('visible');
+                  toast.style.cursor = '';
+                  toast.style.pointerEvents = '';
+                }, 10000);
+              }
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('SW registration failed:', err));
+    // Handle controller change — reload unless mid-operation
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!activeOperation || !document.getElementById('screenOps').classList.contains('active')) {
+        location.reload();
+      }
+    });
   }
 
   // Trigger fade-in on the initially active screen
