@@ -428,12 +428,20 @@ let lastReparentUndo = null; // Most recent undo state: { roleId, oldParentId }
 // module init. The previous unguarded JSON.parse would throw at top level, halting all subsequent
 // `let`/`const` declarations and preventing init() from running — the app would render its static
 // HTML but be functionally inert (no listeners attached, no department-connect logic, etc.).
-// A common path: phone dropped, browser kills session storage write mid-flight → corrupt value
-// persists → user clears site data trying to recover → loses work. Fail soft instead.
+// Also validate that the parsed value is an array before passing to `new Set()` — `new Set(42)`
+// or `new Set({...})` throws TypeError on non-iterable values, which would re-introduce the brick.
+// Fail soft instead: log, clear the bad value, and start with an empty set.
 const orgCollapsedNodes = new Set((() => {
   try {
     const raw = sessionStorage.getItem('orgCollapsed');
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      console.warn('orgCollapsed in sessionStorage was not an array, resetting');
+      try { sessionStorage.removeItem('orgCollapsed'); } catch {}
+      return [];
+    }
+    return parsed;
   } catch (e) {
     console.warn('Corrupt orgCollapsed in sessionStorage, resetting:', e && e.message);
     try { sessionStorage.removeItem('orgCollapsed'); } catch {}
