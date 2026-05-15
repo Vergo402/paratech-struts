@@ -4270,6 +4270,12 @@ function endOperation() {
       status: 'archived',
       endTime: new Date().toISOString(),
     });
+    // S5 (v3.5.2): clear local state optimistically — the Firebase listener may not echo
+    // before the user reloads (especially if the write is offline-queued), and on reload the
+    // archived operation would resurrect as active because localStorage still pointed to it.
+    activeOperation = null;
+    localStorage.removeItem('fieldstruts_operation');
+    renderOperations();
   } else {
     const points = activeOperation?.shorePoints || [];
     for (const sp of points) {
