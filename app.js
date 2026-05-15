@@ -250,7 +250,46 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
     }
   }
 
+  // LongShore unrated-zone sentinel (v3.5.2): if the requested length is beyond the
+  // manufacturer's chart (>192" / 16 ft) but at least one LongShore strut in candidates
+  // CAN physically reach the length, surface an explicit warning instead of silently
+  // omitting LongShore. The rescuer needs to know "physically possible but unrated"
+  // — not just see no LongShore option and wonder why.
+  if (searchLength > 192) {
+    const lsCandidates = strutCandidates.filter(s => s.system === 'LongShore');
+    const lsExts = EXTENSIONS.LongShore || [];
+    const maxLsExt = lsExts.length > 0 ? Math.max(...lsExts) : 0;
+    for (const ls of lsCandidates) {
+      // LongShore: max 1 extension, so reach = ls.extended + max single extension
+      const minReach = ls.collapsed;
+      const maxReach = ls.extended + maxLsExt;
+      if (searchLength >= minReach && searchLength <= maxReach) {
+        results.push({
+          strut: ls,
+          extensions: [],
+          extTotal: 0,
+          adjCollapsed: ls.collapsed,
+          adjExtended: maxReach,
+          capacity: 0,
+          capacityAll: [0, 0, 0],
+          margin: 0,
+          componentCount: 1,
+          recommendedQty: 0,
+          totalCapacity: 0,
+          deductions: deductions || null,
+          effectiveLength: searchLength,
+          openingLength: requiredLength,
+          unrated: true,
+          unratedReason: `LongShore is not rated by Paratech beyond 16 ft (192"). ${ls.model} can physically reach this length, but working load is unverified. Consult rescue engineering before proceeding.`,
+        });
+        break; // One sentinel is enough — don't list every model
+      }
+    }
+  }
+
   results.sort((a, b) => {
+    // Unrated sentinels always sort to the top — they're warnings, not options
+    if (a.unrated !== b.unrated) return a.unrated ? -1 : 1;
     if (a.recommendedQty !== b.recommendedQty) return a.recommendedQty - b.recommendedQty;
     if (a.componentCount !== b.componentCount) return a.componentCount - b.componentCount;
     if (b.margin !== a.margin) return b.margin - a.margin;
@@ -260,9 +299,10 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
     return a.strut.extended - b.strut.extended;
   });
 
-  // Only show extension combos for a strut model if that strut can't reach on its own
-  const strutOnlyModels = new Set(results.filter(r => r.extensions.length === 0).map(r => r.strut.model));
-  const filtered = results.filter(r => r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model));
+  // Only show extension combos for a strut model if that strut can't reach on its own.
+  // Unrated sentinels are always kept (they're warnings, not redundant extension combos).
+  const strutOnlyModels = new Set(results.filter(r => !r.unrated && r.extensions.length === 0).map(r => r.strut.model));
+  const filtered = results.filter(r => r.unrated || r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model));
 
   return filtered;
 }
@@ -334,6 +374,26 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
 
   let html = '';
   results.forEach((r) => {
+    // Unrated-zone sentinel: render as warning card with no capacity numbers or deploy action.
+    // The rescuer must consult engineering before proceeding; this is not a deployable option.
+    if (r.unrated) {
+      const systemLabel = r.strut.system === 'LongShore' ? 'GOLD — LongShore' : r.strut.system === 'LockStroke' ? 'GREY — LockStroke' : 'GREY — AcmeThread';
+      html += `<div class="result-card unrated-warning" style="border:2px solid var(--orange-dark);background:var(--orange-bg)">
+        <div class="card-primary">
+          <div class="system-label" style="color:var(--orange-dark);font-weight:700">⚠ UNRATED ZONE — CONSULT ENGINEERING</div>
+          <div class="model-name">${escapeHtml(r.strut.model)} <span style="font-size:13px;font-weight:400;color:var(--text-secondary)">(${systemLabel})</span></div>
+          <div class="range">Physical reach: ${r.adjCollapsed}" – ${r.adjExtended}"</div>
+          <div style="margin-top:10px;padding:10px;background:var(--bg-primary);border-radius:6px;color:var(--text-primary);font-size:14px;line-height:1.4">
+            ${escapeHtml(r.unratedReason)}
+          </div>
+          <div style="margin-top:8px;font-size:13px;color:var(--text-secondary)">
+            No deploy action available. Working load capacity is not published by Paratech for this length.
+          </div>
+        </div>
+      </div>`;
+      return;
+    }
+
     const colorClass = r.strut.color;
     const systemLabel = r.strut.system === 'LongShore' ? 'GOLD — LongShore' : r.strut.system === 'LockStroke' ? 'GREY — LockStroke' : 'GREY — AcmeThread';
 
