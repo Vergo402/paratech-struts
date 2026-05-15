@@ -3942,7 +3942,7 @@ function renderOrgChart(roleAssignments, shorePoints) {
         ondragend="orgDragEnd(event)"`;
 
     return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
-        onclick="orgChartNodeClick('${roleId}')"
+        role="button" tabindex="0" onclick="orgChartNodeClick('${roleId}')"
         ${dragAttrs}
         ondragover="event.preventDefault()"
         ondrop="orgDrop(event,'${roleId}')"
