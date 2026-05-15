@@ -1780,7 +1780,7 @@ function updateQty(itemId, delta) {
     if (deployed > 0) return;
     localInventory = localInventory.filter(i => i.id !== itemId);
     persistInventory();
-    if (db && deptId) {
+    if (db && deptId && inventoryRef) {
       firebaseSave(inventoryRef.child(itemId), 'remove');
     }
     renderInventory();
@@ -1790,7 +1790,7 @@ function updateQty(itemId, delta) {
   item.quantity = newQty;
   item.available = newAvail;
   persistInventory();
-  if (db && deptId) {
+  if (db && deptId && inventoryRef) {
     firebaseSave(inventoryRef.child(itemId), 'update', { quantity: newQty, available: newAvail });
   }
   renderInventory();
@@ -1889,7 +1889,7 @@ function quickAdd(type, system, model, length) {
     item.id = (db && inventoryRef) ? inventoryRef.push().key : ('local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
     localInventory.push(item);
     persistInventory();
-    if (db && deptId) {
+    if (db && deptId && inventoryRef) {
       const {id, ...firebaseItem} = item;
       firebaseSave(inventoryRef.child(item.id), 'set', firebaseItem);
     }
@@ -3257,7 +3257,7 @@ function deleteArchivedOp(opId) {
   if (!confirm('Delete this archived operation? This cannot be undone.')) return;
 
   archivedOperations = archivedOperations.filter(o => o.id !== opId);
-  if (db && deptId) {
+  if (db && deptId && operationsRef) {
     firebaseSave(operationsRef.child(opId), 'remove');
   }
   renderArchivedOps();
@@ -3295,7 +3295,7 @@ function confirmStartOp() {
   op.shorePoints = [];
   activeOperation = op;
   persistOperation();
-  if (db && deptId) {
+  if (db && deptId && operationsRef) {
     const {id, shorePoints, ...firebaseOp} = op;
     firebaseSave(operationsRef.child(op.id), 'set', firebaseOp);
   }
@@ -4467,13 +4467,13 @@ function returnInventoryItems(sp) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
       extItem.available = Math.min(extItem.quantity, extItem.available + 1);
-      if (db && deptId) {
+      if (db && deptId && operationsRef) {
         firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity));
       }
     } else {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
       if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-      if (db && deptId) {
+      if (db && deptId && inventoryRef) {
         firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
       }
     }
@@ -4483,7 +4483,7 @@ function returnInventoryItems(sp) {
       if (ext.inventoryId) {
         const inv = localInventory.find(i => i.id === ext.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId) {
+        if (db && deptId && inventoryRef) {
           firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
         }
       }
@@ -4494,7 +4494,7 @@ function returnInventoryItems(sp) {
       if (pl.inventoryId) {
         const inv = localInventory.find(i => i.id === pl.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId) {
+        if (db && deptId && inventoryRef) {
           firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
         }
       }
@@ -4565,7 +4565,7 @@ function endOperation() {
 function saveSettings() {
   const name = validateInput(document.getElementById('settingsDeptName').value, 100);
 
-  if (db && deptId) {
+  if (db && deptId && settingsRef) {
     firebaseSave(settingsRef, 'set', { name });
   }
 
@@ -4786,7 +4786,7 @@ function applyImportData(data) {
     id: item.id || (useFirebaseKeys ? inventoryRef.push().key : ('inv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6))),
   }));
   persistInventory();
-  if (db && deptId) {
+  if (db && deptId && inventoryRef) {
     const updates = {};
     for (const item of localInventory) {
       const { id, ...rest } = item;
