@@ -4033,6 +4033,21 @@ function renderOrgChart(roleAssignments, shorePoints) {
   return html;
 }
 
+// X3 (v3.5.2): click handler for command-layout cards. Reads level/value from
+// data-attributes (entity-decoded by the browser via dataset). Replaces the previous
+// inline `onclick="drilldownPath=[...]"` that interpolated user-controlled `name`
+// into JS-context-inside-HTML-attribute — vulnerable to attribute-breakout XSS
+// via `"` and JS-string-breakout XSS via `'`. Data-attribute pattern avoids both
+// classes by keeping the value as inert string data, never executed as code.
+function commandLayoutClick(el) {
+  const level = el.dataset.level;
+  const value = el.dataset.value;
+  if (!level || value === undefined) return;
+  drilldownPath = [{ level, value }];
+  switchView('ops');
+  renderOperations();
+}
+
 function renderCommandLayout(points) {
   const levels = getHierarchyLevels();
   const topLevel = levels[0] || 'area';
@@ -4047,12 +4062,11 @@ function renderCommandLayout(points) {
   for (const [name, pts] of Object.entries(groups)) {
     const pills = renderStatusPills(pts);
     const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
-    const escapedName = name.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
     // Resolve apparatus IDs to names when top level is Group
     const resolvedName = (topLevel === 'group' && name !== 'Unassigned') ? getGroupDisplayName(name) : name;
     const safeName = escapeHtml(resolvedName);
-    html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="drilldownPath=[{level:'${topLevel}',value:'${escapedName}'}];switchView('ops');renderOperations()">
-      <span style="font-weight:600">${name === 'Unassigned' ? name : (resolvedName.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
+    html += `<div class="layout-card" role="button" tabindex="0" data-level="${escapeAttr(topLevel)}" data-value="${escapeAttr(name)}" onclick="commandLayoutClick(this)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <span style="font-weight:600">${name === 'Unassigned' ? 'Unassigned' : (resolvedName.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
