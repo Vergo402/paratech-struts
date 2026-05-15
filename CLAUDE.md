@@ -11,9 +11,9 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 ## Architecture
 
 - **3-file split** (refactored from single-file in v2.0.1):
-  - `index.html` (~590 lines) — HTML shell, modals, forms
-  - `app.js` (~4,000 lines) — All application logic, constants, Firebase integration
-  - `style.css` (~1,250 lines) — All styles
+  - `index.html` (~630 lines) — HTML shell, modals, forms
+  - `app.js` (~5,200 lines) — All application logic, constants, Firebase integration
+  - `style.css` (~1,580 lines) — All styles
 - **Service worker:** `sw.js` — offline caching with stale-while-revalidate
 - **Backend:** Firebase Realtime Database (compat SDK v9.23.0) — project `paratech-c3ab4`
 - **Hosting:** GitHub Pages (auto-deploys on push to `main`)
@@ -45,9 +45,9 @@ Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
 
 On every change:
 1. Update version in **3 places:**
-   - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 45)
-   - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1088)
-   - `sw.js` cache name: `const CACHE_NAME = 'paratech-struts-v{VERSION}';`
+   - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
+   - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
+   - `sw.js` cache name: `const CACHE_NAME = 'fieldstruts-v{VERSION}';`
 2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
 3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
 4. Create GitHub release with notes
@@ -71,8 +71,8 @@ On every change:
 - `BASE_PLATES[]` — 14 connector types with heights and base64 thumbnail images
 - `WOOD_SIZES[]` — Header/footer lumber options (None, 4x4, 6x6)
 - `SHORE_TYPES[]` — USACE shore configurations
-- `APPARATUS_TYPES[]` — Apparatus type hierarchy (Chief, Engine, Ladder, Rescue, Squad, Task Force, Other)
-- `ICS_ROLES[]` — ICS/NIMS roles (IC, Safety, Operations, Entry, Rescue, Shoring, Runner, Cutting, Wood)
+- `APPARATUS_TYPES_DEFAULT[]` — Apparatus type hierarchy (Chief, Engine, Ladder, Rescue, Squad, Task Force, Other)
+- `ICS_ROLES_DEFAULT[]` — ICS/NIMS roles (IC, Safety, Operations, Entry, Rescue, Shoring, Runner, Cutting, Wood)
 
 ### Key Functions (app.js)
 - `findStrutCombinations()` — Core algorithm: finds struts that fit a measurement with optional deductions

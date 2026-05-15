@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+
+# Claude Code worktrees & local settings
+.claude/worktrees/
+.claude/settings.local.json
+.claude/launch.json
+
+# Review queue (pending manual delete)
+_review-to-delete/
+
+# Node
+node_modules/
+
+# Firebase local
+.firebase/
+.firebaserc
+
+# Claude memory (personal, not for public repo)
+MEMORY.md
+
+# Large binaries (reference docs kept locally)
+docs/*.pdf
+docs/*.docx
