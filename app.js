@@ -160,6 +160,13 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 
   const results = [];
   const useInventory = !!inventory;
+  // NEW-3 (v3.5.2): track the highest single-strut capacity across combos that were rejected
+  // SOLELY because recommendedQty > 4. If the full search returns no valid results AND at
+  // least one combo failed for that reason, emit an informational warning so the rescuer
+  // knows the load exceeds 4-strut capacity (rather than seeing "no combinations" with no
+  // explanation — they could think the configuration is geometrically impossible when it's
+  // actually a load-magnitude issue).
+  let bestExceedsCapacityCombo = null;
 
   let strutCandidates = useInventory
     ? inventory.filter(i => i.type === 'strut' && i.available > 0).map(i => {
@@ -229,7 +236,20 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
       let recommendedQty = 1;
       if (!isUnratedZone && estimatedLoad > 0 && capacity < estimatedLoad) {
         recommendedQty = Math.ceil(estimatedLoad / capacity);
-        if (recommendedQty > 4) continue;
+        if (recommendedQty > 4) {
+          // NEW-3: capture the strongest combo we had to reject due to >4-strut requirement.
+          // Used to build an informational warning if NO valid combos exist for this search.
+          if (!bestExceedsCapacityCombo || capacity > bestExceedsCapacityCombo.capacity) {
+            bestExceedsCapacityCombo = {
+              strut,
+              extensions: [e1, e2].filter(e => e > 0),
+              capacity,
+              maxFourStrutCapacity: capacity * 4,
+              neededQty: recommendedQty,
+            };
+          }
+          continue;
+        }
       }
 
       const capacityAll = isUnratedZone
@@ -265,9 +285,38 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
     }
   }
 
+  // NEW-3 (v3.5.2): if the search found no valid combos AND at least one combo was rejected
+  // because it would need more than 4 struts to handle the load, surface that as an explicit
+  // informational warning. Without this, the rescuer sees "no combinations found" with no
+  // distinction between "no strut fits this length" and "load exceeds 4-strut capacity" —
+  // they may re-enter smaller load numbers to "make it work", building false confidence.
+  if (results.length === 0 && bestExceedsCapacityCombo) {
+    const c = bestExceedsCapacityCombo;
+    results.push({
+      strut: c.strut,
+      extensions: c.extensions,
+      extTotal: c.extensions.reduce((a, b) => a + b, 0),
+      adjCollapsed: c.strut.collapsed,
+      adjExtended: c.strut.extended,
+      capacity: c.capacity,
+      capacityAll: [0, 0, 0],
+      margin: 0,
+      componentCount: 1 + c.extensions.length,
+      recommendedQty: 0,
+      totalCapacity: c.maxFourStrutCapacity,
+      deductions: deductions || null,
+      effectiveLength: searchLength,
+      openingLength: requiredLength,
+      exceedsCapacity: true,
+      exceedsCapacityReason: `Load (${estimatedLoad.toLocaleString()} lb) exceeds 4-strut capacity at ${requiredLength}". Best available: ${c.strut.model} at ${c.capacity.toLocaleString()} lb per strut (4× = ${c.maxFourStrutCapacity.toLocaleString()} lb maximum). This load would require ${c.neededQty} struts. Verify the load calculation or consult rescue engineering before proceeding — this app does not recommend deployments beyond 4 struts per opening.`,
+    });
+  }
+
   results.sort((a, b) => {
-    // Unrated sentinels always sort to the top — they're warnings, not options
-    if (a.unrated !== b.unrated) return a.unrated ? -1 : 1;
+    // Warnings (unrated + exceeds-capacity) always sort to the top — they're not deployable options
+    const aWarn = (a.unrated || a.exceedsCapacity) ? 1 : 0;
+    const bWarn = (b.unrated || b.exceedsCapacity) ? 1 : 0;
+    if (aWarn !== bWarn) return bWarn - aWarn;
     if (a.recommendedQty !== b.recommendedQty) return a.recommendedQty - b.recommendedQty;
     if (a.componentCount !== b.componentCount) return a.componentCount - b.componentCount;
     if (b.margin !== a.margin) return b.margin - a.margin;
@@ -278,9 +327,9 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
   });
 
   // Only show extension combos for a strut model if that strut can't reach on its own.
-  // Unrated sentinels are always kept (they're warnings, not redundant extension combos).
-  const strutOnlyModels = new Set(results.filter(r => !r.unrated && r.extensions.length === 0).map(r => r.strut.model));
-  const filtered = results.filter(r => r.unrated || r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model));
+  // Warnings (unrated / exceeds-capacity) are always kept — they're not redundant combos.
+  const strutOnlyModels = new Set(results.filter(r => !r.unrated && !r.exceedsCapacity && r.extensions.length === 0).map(r => r.strut.model));
+  const filtered = results.filter(r => r.unrated || r.exceedsCapacity || r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model));
 
   return filtered;
 }
@@ -352,6 +401,23 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
 
   let html = '';
   results.forEach((r, idx) => {
+    // Exceeds-capacity result (NEW-3): the load is higher than 4 struts of any rated
+    // configuration could handle at this length. Informational only — not deployable
+    // (no amount of acknowledgment makes 4 struts equal to 5+ struts). Tells the rescuer
+    // why they're seeing no normal results so they can verify the load calculation or
+    // pursue a different shoring approach.
+    if (r.exceedsCapacity) {
+      html += `<div class="result-card exceeds-warning" style="border:2px solid var(--red);background:var(--red-bg)">
+        <div class="card-primary">
+          <div class="system-label" style="color:var(--red);font-weight:700">⚠ LOAD EXCEEDS 4-STRUT CAPACITY</div>
+          <div style="margin-top:10px;padding:10px;background:var(--bg-primary);border-radius:6px;color:var(--text-primary);font-size:14px;line-height:1.5">
+            ${escapeHtml(r.exceedsCapacityReason)}
+          </div>
+        </div>
+      </div>`;
+      return;
+    }
+
     // Unrated-zone result: physically valid LongShore configuration beyond manufacturer's
     // chart. Render as a warning card with extensions visible and a deploy path gated by an
     // acknowledgment checkbox. Team can proceed AFTER consulting rescue engineering.
