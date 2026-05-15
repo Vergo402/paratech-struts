@@ -105,6 +105,8 @@ On every change:
 - **CSS stacking context:** `.modal-overlay` (z-index 100) traps fixed children. The plate picker grid must be moved to `document.body` when opened inside a modal, then moved back on close.
 - **Plate picker:** Uses bottom sheet pattern (anchored to `bottom: 0`, `max-height: 60vh`) with a scrim backdrop. v3.5.1 fix: `touch-action: pan-y` + `transform: translateZ(0)` + `visibility` toggle (instead of `display`) for iOS scroll reliability.
 - **Firebase + service worker:** Firebase WebSocket URLs are excluded from SW caching (see `sw.js` fetch handler).
+- **Local-first writes (v3.5.3):** Every mutation writes to in-memory state + localStorage first (`persistOperation()` / `persistInventory()`), then conditionally syncs to Firebase. `firebaseSave()` handles offline queuing internally. Never fork on `if (db) { firebase } else { localStorage }` — always do both.
+- **`persistOperation()` / `persistInventory()`:** Centralized localStorage saves. Use these instead of raw `safeSetItem` calls. Defined at ~line 677.
 - **`firebaseSave()` wrapper:** All Firebase writes go through this — handles the online/offline split in one place.
 - **`escapeHtml()`:** Returns escaped via `div.textContent = s; return div.innerHTML`. **CRITICAL:** This escapes `<`, `>`, `&` but NOT `"` or `'`. Safe for element text contexts ONLY, not attribute values. Use `escapeAttr()` inside `attr="..."` interpolations.
 - **Org chart drag-and-drop:** Supports 3 input methods — tap-to-pick-and-place, HTML5 drag events, touch drag with floating clone. State tracked via `orgChartPickedRole`.
@@ -137,10 +139,16 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 | **NEW-6** | Excel ID preservation | Export now includes an `ID` column; import reads it through so round-trips don't orphan deployed-strut references. |
 | **NEW-7** | Inventory return transaction sanity | Transaction handlers now abort on missing nodes (no phantom-item creation) and clamp `available` to `quantity` (no over-increment). |
 
-### ⏳ Still pending — v3.5.3 candidates
+### ✅ Fixed in v3.5.3
 
-- **S6 / NEW-8** — `isOnline` write routing root fix. Most online mutation call-sites still use `if (db && deptId) { firebaseSave } else { safeSetItem }` instead of routing on the actual connection state. The S5/S8 fixes addressed individual call-sites; the structural fix is a half-day refactor across ~50 sites.
-- **S8 family** — `deployShorePoint` + `returnEquipmentSingle` + `returnEquipment` still have the silent-failure-online pattern. Complex enough to warrant their own commits with careful review of multi-resource transaction paths.
+| ID | Area | Notes |
+|---|---|---|
+| **S6 / NEW-8** | Local-first write architecture | Eliminated the `if (db) { firebase } else { localStorage }` fork across all 44 mutation sites. Every write is now local-first + conditional Firebase sync. |
+| **S8 family** | deployShorePoint + returnEquipment | Local inventory decrements/increments now unconditional for all item types (struts, extensions, plates, external equipment). |
+| — | persistOperation / persistInventory | Centralized 24 operation and 10 inventory `safeSetItem` copy-pastes into two functions. |
+
+### ⏳ Still pending — v3.5.4 candidates
+
 - **Firebase security rules** — Anonymous database access is still wide-open. Lockdown rules (write-restricted to auth'd writers) can ship without code changes once the rules are designed and deployed via Firebase console.
 
 ### ⏳ Still pending — v3.6.0 candidates
