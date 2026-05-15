@@ -50,13 +50,31 @@ const ACME_LOAD_TABLE = [
   [144,  7660,  5106,  3830],   // 12 ft — manual
 ];
 
+// Paratech LongShore Load Table — all three columns (2:1, 3:1, 4:1) are published directly
+// in the manufacturer's chart, so no derivation is needed.
+// Source: Paratech Rescue Struts datasheet (Dec 2019)
+//   https://www.teamequipment.com/wp-content/uploads/2019/12/Paratech-Rescue-Struts.pdf
+// Per datasheet: "The data in this table has been confirmed by physical testing, witnessed
+// and certified by an independent, licensed structural engineering company."
+// Chart defines working loads for 6–16 ft only; LongShore is not rated below 6 ft. Lengths
+// below the first row will return the 72" row values via the floor branch in getLoadCapacity.
+// PRE-v3.5.2 table was missing rows for 9, 11, 13, 14, 15 ft. Linear interpolation between
+// 144" and 192" over-reported by ~18% at 13 ft (8,250 lb by interp vs 7,000 lb manual) —
+// same risk class as the ACME 11 ft cliff (S2). Also: the pre-v3.5.2 row at 24" was not
+// in the manual at all (LongShore isn't operational at 2 ft); removed in v3.5.2.
 const LONGSHORE_LOAD_TABLE = [
-  [24, 44000, 29333, 22000],
-  [84, 44000, 29333, 22000],
-  [96, 40000, 26666, 20000],
-  [120, 24000, 16000, 12000],
-  [144, 20000, 13333, 10000],
-  [192, 6000, 4000, 3000],
+  // [length_in, 2:1, 3:1, 4:1]
+  [72,  44000, 29333, 22000],   // 6 ft  — manual
+  [84,  44000, 29333, 22000],   // 7 ft  — manual
+  [96,  40000, 26666, 20000],   // 8 ft  — manual
+  [108, 32000, 21333, 16000],   // 9 ft  — NEW ROW from manual
+  [120, 24000, 16000, 12000],   // 10 ft — manual
+  [132, 22000, 14667, 11000],   // 11 ft — NEW ROW from manual
+  [144, 20000, 13333, 10000],   // 12 ft — manual
+  [156, 14000,  9332,  7000],   // 13 ft — NEW ROW — was 8250 by interp (+17.9% over)
+  [168, 12000,  8000,  6000],   // 14 ft — NEW ROW — was 6500 by interp (+8.3% over)
+  [180,  9000,  6000,  4500],   // 15 ft — NEW ROW — was 4750 by interp (+5.6% over)
+  [192,  6000,  4000,  3000],   // 16 ft — manual
 ];
 
 
