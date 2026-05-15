@@ -29,13 +29,25 @@ const EXTENSIONS = {
 };
 
 // Load tables: [lengthInches, load2to1, load3to1, load4to1]
+// 4:1 column = Paratech O&M Manual Table 2-7 (PN 22-796198, 02 JAN 2018) "Working Load lb (kg)"
+//   The manual defines this as the safe working load for collapse/rescue stabilization.
+// 3:1 column = derived as 4:1 × 4/3, rounded DOWN (floor) for conservative behavior.
+// 2:1 column = derived as 4:1 × 2 (exact).
+// Linear interpolation in getLoadCapacity() between rows.
+// PRE-v3.5.2 table was missing rows for 3, 5, 7, 9, and 11 ft. Linear interpolation between
+// 120" and 144" over-reported capacity by ~17% at 132" (11 ft) vs the manual — corrected in v3.5.2.
 const ACME_LOAD_TABLE = [
-  [24, 43500, 29000, 21750],
-  [48, 40000, 26667, 20000],
-  [72, 28250, 18830, 14125],
-  [96, 24050, 16030, 12025],
-  [120, 10725, 7150, 5360],
-  [144, 7660, 5000, 3830],
+  [24,  40000, 26666, 20000],   // 2 ft  — manual; was 21750 (4:1) = +8.75% over manual
+  [36,  40000, 26666, 20000],   // 3 ft  — NEW ROW from manual (interp was wrong)
+  [48,  40000, 26666, 20000],   // 4 ft  — manual
+  [60,  33102, 22068, 16551],   // 5 ft  — NEW ROW from manual
+  [72,  28250, 18833, 14125],   // 6 ft  — manual
+  [84,  26162, 17441, 13081],   // 7 ft  — NEW ROW from manual
+  [96,  24050, 16033, 12025],   // 8 ft  — manual
+  [108, 18276, 12184,  9138],   // 9 ft  — NEW ROW from manual
+  [120, 10720,  7146,  5360],   // 10 ft — manual
+  [132,  7864,  5242,  3932],   // 11 ft — NEW ROW from manual — was 4595 by interp (+17% over)
+  [144,  7660,  5106,  3830],   // 12 ft — manual
 ];
 
 const LONGSHORE_LOAD_TABLE = [
