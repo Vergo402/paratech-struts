@@ -1929,6 +1929,48 @@ function closeFeedbackModal() {
   document.getElementById('feedbackModal').classList.remove('active');
   document.getElementById('feedbackCategory').value = 'bug';
   document.getElementById('feedbackText').value = '';
+  clearFeedbackImage();
+}
+
+let feedbackImageData = null;
+
+function previewFeedbackImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('Image must be under 5 MB.');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxW = 800, maxH = 600;
+      let w = img.width, h = img.height;
+      if (w > maxW || h > maxH) {
+        const ratio = Math.min(maxW / w, maxH / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      feedbackImageData = canvas.toDataURL('image/jpeg', 0.6);
+      document.getElementById('feedbackImageThumb').src = feedbackImageData;
+      document.getElementById('feedbackImagePreview').style.display = 'inline-block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFeedbackImage() {
+  feedbackImageData = null;
+  const input = document.getElementById('feedbackImage');
+  if (input) input.value = '';
+  document.getElementById('feedbackImagePreview').style.display = 'none';
 }
 
 function submitFeedback() {
@@ -1944,8 +1986,9 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.6.0'
+    appVersion: '3.7.0'
   };
+  if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
     const feedbackRef = db.ref('feedback').push();
     firebaseSave(feedbackRef, 'set', entry);
