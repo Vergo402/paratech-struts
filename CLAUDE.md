@@ -157,14 +157,19 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 | — | Performance | `getApparatusName()` builds a `Map` on first call per render cycle — O(1) lookups instead of O(n) `find()` in loops. |
 | — | Wedge deduction | Verified correct — two formulas are intentionally different. Strut search deducts plates (part of strut assembly); cut length deducts wedge (wood replaces strut+plates). Not a bug. |
 
-### ⏳ Still pending — v3.6.x / v3.7.0 candidates
+### ✅ Fixed in v3.7.0
 
-- **Firebase security rules** — Anonymous database access is still wide-open. Lockdown rules (write-restricted to auth'd writers) can ship without code changes once the rules are designed and deployed via Firebase console.
-- **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — these are arrays, and granular updates on Firebase arrays are unsafe (positional semantics). Fix requires data model migration to keyed objects (v4.0.0 scope).
+| Feature | Notes |
+|---|---|
+| **Firebase Anonymous Auth** | Added `firebase-auth-compat.js` SDK + `signInAnonymously()` on init. Auth-aware `setupListeners()` waits for `onAuthStateChanged` + `getIdToken` before attaching realtime listeners. |
+| **Database security rules** | All reads/writes require `auth != null`. Data validation on departments, inventory, apparatus, operations, feedback. `.indexOn` for operations status queries. Rules deployed via Firebase CLI (`database.rules.json`). |
+| **Feedback photo attachment (#60)** | Camera/gallery file picker in feedback modal. Client-side compression (800×600 max, JPEG 0.6, base64). 5MB input limit, 500KB output limit enforced by database rules. |
+| **Status dot key** | Green/amber legend below ICS Organization header showing Active vs Staged meaning. |
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
-- **Firebase Auth** — Anonymous Auth + per-device UID + Security Rules.
+- **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department.
+- **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — arrays need migration to keyed objects.
 - **NIMS doctrine overhaul** — Default ICS structure is not NIMS-compliant for Type I/II incidents. The `"Group"` field on shore points stores apparatus IDs but NIMS Group is a functional command unit — terminology violation.
 - **3rd-party UX paradigm shifts** — Roster tab move (move Apparatus/External/Individuals/My-Role OFF Operations page), SP recommendation dedup (220 cards for 11 configs at TF scale), compact shore-point card mode, activity feed paradigm.
 
