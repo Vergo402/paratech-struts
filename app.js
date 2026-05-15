@@ -1693,7 +1693,9 @@ function renderInventory() {
     const exts = items.filter(i => i.type === 'extension').sort((a, b) => a.length - b.length);
 
     for (const item of [...struts, ...exts]) {
-      const name = item.type === 'strut' ? item.model : `${item.length}" Extension`;
+      // X2 (v3.5.2): item.model is user-controlled (Excel import preserves it). Escape for
+      // display; escape ID for the onclick handler attribute.
+      const name = item.type === 'strut' ? escapeHtml(item.model) : `${item.length}" Extension`;
       const deployed = activeOperation ? Math.max(0, item.quantity - item.available) : 0;
       const statusText = deployed > 0 ? `${deployed} deployed` : '';
 
@@ -1701,9 +1703,9 @@ function renderInventory() {
         <span class="inv-item-name">${name}</span>
         <span class="inv-item-status">${statusText}</span>
         <div class="qty-controls">
-          <button class="inv-qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+          <button class="inv-qty-btn" onclick="updateQty('${escapeAttr(item.id)}', -1)">−</button>
           <span class="qty-val">${item.quantity}</span>
-          <button class="inv-qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+          <button class="inv-qty-btn" onclick="updateQty('${escapeAttr(item.id)}', 1)">+</button>
         </div>
       </div>`;
     }
@@ -1719,7 +1721,11 @@ function renderInventory() {
   if (plates.length > 0) {
     html += `<div class="inv-section"><div class="inv-section-header"><span class="dot" style="background:var(--blue)"></span>Connector Plates</div>`;
     for (const item of plates) {
-      const name = item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId;
+      // X2 (v3.5.2): escape user-controlled fields. item.model may come from Excel import;
+      // item.plateId is constrained by app constants but still routed through escape for defense
+      // in depth. item.id is escaped for the onclick attribute.
+      const rawName = item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId;
+      const name = escapeHtml(rawName);
       const deployed = activeOperation ? Math.max(0, item.quantity - item.available) : 0;
       const statusText = deployed > 0 ? `${deployed} deployed` : '';
 
@@ -1727,9 +1733,9 @@ function renderInventory() {
         <span class="inv-item-name">${name}</span>
         <span class="inv-item-status">${statusText}</span>
         <div class="qty-controls">
-          <button class="inv-qty-btn" onclick="updateQty('${item.id}', -1)">−</button>
+          <button class="inv-qty-btn" onclick="updateQty('${escapeAttr(item.id)}', -1)">−</button>
           <span class="qty-val">${item.quantity}</span>
-          <button class="inv-qty-btn" onclick="updateQty('${item.id}', 1)">+</button>
+          <button class="inv-qty-btn" onclick="updateQty('${escapeAttr(item.id)}', 1)">+</button>
         </div>
       </div>`;
     }
@@ -2934,11 +2940,13 @@ function renderOperations() {
   const extList = document.getElementById('externalEquipmentList');
   const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
   if (extEquip.length > 0) {
+    // X2 (v3.5.2): ext.model, ext.deptName, ext.apparatus are user-controlled. Escape for
+    // display; escape ext.id for the onclick attribute.
     extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
-      <div><span class="ext-info">${ext.model}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
+      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span onclick="editExternal('${ext.id}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
-        <span class="chip-x" onclick="removeExternal('${ext.id}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+        <span onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
+        <span class="chip-x" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
       </div>
     </div>`).join('');
   } else {
@@ -4795,9 +4803,11 @@ function renderQuickViewInventory() {
   Object.keys(grouped).sort().forEach(appName => {
     html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">${escapeHtml(appName)}</div>`;
     grouped[appName].sort((a, b) => (a.model || '').localeCompare(b.model || '')).forEach(item => {
-      const name = item.type === 'strut' ? item.model
+      // X2 (v3.5.2): escape user-controlled item.model / item.plateId fallback for display.
+      const rawName = item.type === 'strut' ? item.model
         : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId)
         : `${item.length}" Extension`;
+      const name = escapeHtml(rawName);
       const avail = item.available != null ? item.available : item.quantity;
       const total = item.quantity;
       const countClass = avail === 0 ? 'zero' : avail <= 1 ? 'low' : '';
