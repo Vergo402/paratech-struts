@@ -3796,14 +3796,19 @@ function renderDrilldownForLevel(points, level) {
 
     const pills = renderStatusPills(groupPts);
 
+    // X1 (v3.5.2): the `key` here is user-controlled — it's the SP's building/division/area/
+    // group field. Previously interpolated raw into an onclick handler with only a backslash-
+    // escape for single quotes, which left openings for XSS via " or > or attribute-breakout
+    // sequences. `displayName` was also interpolated raw, allowing stored XSS via field text.
+    // Fix: escapeAttr() for the onclick attribute value, escapeHtml() for the rendered label.
     if (key === '__ungrouped__') {
-      html += `<div class="drilldown-item" onclick="drillInto('${level}','__none__')" style="opacity:0.7">
-        <span class="di-label">${displayName}</span>
+      html += `<div class="drilldown-item" onclick="drillInto('${escapeAttr(level)}','__none__')" style="opacity:0.7">
+        <span class="di-label">${escapeHtml(displayName)}</span>
         <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
       </div>`;
     } else {
-      html += `<div class="drilldown-item" onclick="drillInto('${level}','${key.replace(/'/g, "\\'")}')">
-        <span class="di-label">${displayName}</span>
+      html += `<div class="drilldown-item" onclick="drillInto('${escapeAttr(level)}','${escapeAttr(key)}')">
+        <span class="di-label">${escapeHtml(displayName)}</span>
         <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
       </div>`;
     }
