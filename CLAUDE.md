@@ -147,17 +147,20 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 | **S8 family** | deployShorePoint + returnEquipment | Local inventory decrements/increments now unconditional for all item types (struts, extensions, plates, external equipment). |
 | — | persistOperation / persistInventory | Centralized 24 operation and 10 inventory `safeSetItem` copy-pastes into two functions. |
 
-### ⏳ Still pending — v3.5.4 candidates
+### ✅ Fixed in v3.6.0
+
+| ID | Area | Notes |
+|---|---|---|
+| **R1** | Listener leak | `teardownListeners()` detaches all `.on()` listeners before `setupListeners()` reattaches. Stored query refs (`activeOpsQuery`, `archivedOpsQuery`) and promoted `customTypesRef` to module scope. |
+| **R3** | orgSwapRoles concurrent safety | Uses granular `update()` on changed keys instead of full-subtree `set()` on `roles` object. |
+| — | Accessibility | 23 interactive `<div onclick>` / `<span onclick>` patterns now have `role="button"` + `tabindex="0"`. Delegated keyboard handler for Enter/Space. Section toggles gained `tabindex="0"`. |
+| — | Performance | `getApparatusName()` builds a `Map` on first call per render cycle — O(1) lookups instead of O(n) `find()` in loops. |
+| — | Wedge deduction | Verified correct — two formulas are intentionally different. Strut search deducts plates (part of strut assembly); cut length deducts wedge (wood replaces strut+plates). Not a bug. |
+
+### ⏳ Still pending — v3.6.x / v3.7.0 candidates
 
 - **Firebase security rules** — Anonymous database access is still wide-open. Lockdown rules (write-restricted to auth'd writers) can ship without code changes once the rules are designed and deployed via Firebase console.
-
-### ⏳ Still pending — v3.6.0 candidates
-
-- **R1** — Zero `.off()` calls in `setupListeners`. Every dept-switch leaks listeners.
-- **R3-R6** — Full-subtree `set` on shared structures (`roles`, `customRoles`, `assignedApparatus`, `/inventory`). Concurrent edits clobber. Convert to keyed `update({path: value})` writes.
-- **Wedge deduction inconsistency** — `effectiveLength` for strut search omits `WEDGE_DEDUCTION`; cut length omits plate heights. Two different formulas. See `.claude/audits/v3.5.1-deep-audit-round2.md` S-H1.
-- **Accessibility** — 40+ `<div onclick>` / `<span onclick>` patterns need role + keyboard support. (Light-mode badge contrast already shipped in v3.5.2.)
-- **Performance** — `localApparatus.find()` O(n) inside O(m) render loops at scale. Build `Map<id, name>` once per render.
+- **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — these are arrays, and granular updates on Firebase arrays are unsafe (positional semantics). Fix requires data model migration to keyed objects (v4.0.0 scope).
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
