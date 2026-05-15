@@ -22,3 +22,7 @@ MEMORY.md
 # Large binaries (reference docs kept locally)
 docs/*.pdf
 docs/*.docx
+!docs/FieldStruts-User-Manual.docx
+
+# Manual screenshot sources (embedded in the Word file)
+docs/manual-screenshots/
