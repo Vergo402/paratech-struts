@@ -424,7 +424,22 @@ let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
 let orgReparentMode = false; // True when long-press drag triggers reparent instead of swap
 let orgLongPressTimer = null; // Timer for long-press detection
 let lastReparentUndo = null; // Most recent undo state: { roleId, oldParentId }
-const orgCollapsedNodes = new Set(JSON.parse(sessionStorage.getItem('orgCollapsed') || '[]'));
+// S4 (fixed v3.5.2): guard sessionStorage parse so a corrupt 'orgCollapsed' value can't break
+// module init. The previous unguarded JSON.parse would throw at top level, halting all subsequent
+// `let`/`const` declarations and preventing init() from running — the app would render its static
+// HTML but be functionally inert (no listeners attached, no department-connect logic, etc.).
+// A common path: phone dropped, browser kills session storage write mid-flight → corrupt value
+// persists → user clears site data trying to recover → loses work. Fail soft instead.
+const orgCollapsedNodes = new Set((() => {
+  try {
+    const raw = sessionStorage.getItem('orgCollapsed');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    console.warn('Corrupt orgCollapsed in sessionStorage, resetting:', e && e.message);
+    try { sessionStorage.removeItem('orgCollapsed'); } catch {}
+    return [];
+  }
+})());
 
 // ============================================================
 // CONSTANTS
