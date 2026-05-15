@@ -215,21 +215,32 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
       }
 
       const capacity = getLoadCapacity(strut.system, searchLength, sfIndex);
-      if (capacity <= 0) continue;
+
+      // Detect "unrated zone": physically valid LongShore configuration but the requested
+      // length is beyond Paratech's published working load chart (>192" / 16 ft).
+      // Paratech doesn't publish capacity at these lengths, but the strut can physically
+      // reach. We surface these combos as deployable WARNINGS so a team that has consulted
+      // rescue engineering can still proceed if they accept responsibility.
+      const isUnratedZone = capacity <= 0 && strut.system === 'LongShore' && searchLength > 192;
+
+      // Skip if capacity is zero for any other reason (truly out of range)
+      if (capacity <= 0 && !isUnratedZone) continue;
 
       let recommendedQty = 1;
-      if (estimatedLoad > 0 && capacity < estimatedLoad) {
+      if (!isUnratedZone && estimatedLoad > 0 && capacity < estimatedLoad) {
         recommendedQty = Math.ceil(estimatedLoad / capacity);
         if (recommendedQty > 4) continue;
       }
 
-      const capacityAll = [
-        getLoadCapacity(strut.system, searchLength, 0),
-        getLoadCapacity(strut.system, searchLength, 1),
-        getLoadCapacity(strut.system, searchLength, 2),
-      ];
+      const capacityAll = isUnratedZone
+        ? [0, 0, 0]
+        : [
+            getLoadCapacity(strut.system, searchLength, 0),
+            getLoadCapacity(strut.system, searchLength, 1),
+            getLoadCapacity(strut.system, searchLength, 2),
+          ];
 
-      const totalCapacity = capacity * recommendedQty;
+      const totalCapacity = isUnratedZone ? 0 : capacity * recommendedQty;
 
       results.push({
         strut,
@@ -239,51 +250,18 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
         adjExtended,
         capacity,
         capacityAll,
-        margin: estimatedLoad > 0 ? totalCapacity - estimatedLoad : capacity,
+        margin: isUnratedZone ? 0 : (estimatedLoad > 0 ? totalCapacity - estimatedLoad : capacity),
         componentCount: 1 + extCount,
         recommendedQty,
         totalCapacity,
         deductions: deductions || null,
         effectiveLength: searchLength,
         openingLength: requiredLength,
+        unrated: isUnratedZone,
+        unratedReason: isUnratedZone
+          ? `LongShore is not rated by Paratech beyond 16 ft (192"). This configuration can physically reach the opening, but working load is unverified. Consult rescue engineering before proceeding.`
+          : undefined,
       });
-    }
-  }
-
-  // LongShore unrated-zone sentinel (v3.5.2): if the requested length is beyond the
-  // manufacturer's chart (>192" / 16 ft) but at least one LongShore strut in candidates
-  // CAN physically reach the length, surface an explicit warning instead of silently
-  // omitting LongShore. The rescuer needs to know "physically possible but unrated"
-  // — not just see no LongShore option and wonder why.
-  if (searchLength > 192) {
-    const lsCandidates = strutCandidates.filter(s => s.system === 'LongShore');
-    const lsExts = EXTENSIONS.LongShore || [];
-    const maxLsExt = lsExts.length > 0 ? Math.max(...lsExts) : 0;
-    for (const ls of lsCandidates) {
-      // LongShore: max 1 extension, so reach = ls.extended + max single extension
-      const minReach = ls.collapsed;
-      const maxReach = ls.extended + maxLsExt;
-      if (searchLength >= minReach && searchLength <= maxReach) {
-        results.push({
-          strut: ls,
-          extensions: [],
-          extTotal: 0,
-          adjCollapsed: ls.collapsed,
-          adjExtended: maxReach,
-          capacity: 0,
-          capacityAll: [0, 0, 0],
-          margin: 0,
-          componentCount: 1,
-          recommendedQty: 0,
-          totalCapacity: 0,
-          deductions: deductions || null,
-          effectiveLength: searchLength,
-          openingLength: requiredLength,
-          unrated: true,
-          unratedReason: `LongShore is not rated by Paratech beyond 16 ft (192"). ${ls.model} can physically reach this length, but working load is unverified. Consult rescue engineering before proceeding.`,
-        });
-        break; // One sentinel is enough — don't list every model
-      }
     }
   }
 
@@ -373,24 +351,59 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation)
   }
 
   let html = '';
-  results.forEach((r) => {
-    // Unrated-zone sentinel: render as warning card with no capacity numbers or deploy action.
-    // The rescuer must consult engineering before proceeding; this is not a deployable option.
+  results.forEach((r, idx) => {
+    // Unrated-zone result: physically valid LongShore configuration beyond manufacturer's
+    // chart. Render as a warning card with extensions visible and a deploy path gated by an
+    // acknowledgment checkbox. Team can proceed AFTER consulting rescue engineering.
     if (r.unrated) {
       const systemLabel = r.strut.system === 'LongShore' ? 'GOLD — LongShore' : r.strut.system === 'LockStroke' ? 'GREY — LockStroke' : 'GREY — AcmeThread';
+      const extDisplay = r.extensions.length > 0
+        ? `<div class="ext-section">
+            <span class="ext-label">Extensions:</span>
+            ${r.extensions.map(e => `<span class="ext-chip">${e}"</span>`).join('')}
+          </div>
+          <div class="total-reach">Strut alone: ${r.strut.collapsed}" – ${r.strut.extended}"</div>`
+        : `<div class="no-ext">No extensions needed</div>`;
+
       html += `<div class="result-card unrated-warning" style="border:2px solid var(--orange-dark);background:var(--orange-bg)">
         <div class="card-primary">
-          <div class="system-label" style="color:var(--orange-dark);font-weight:700">⚠ UNRATED ZONE — CONSULT ENGINEERING</div>
+          <div class="system-label" style="color:var(--orange-dark);font-weight:700">⚠ UNRATED ZONE — ENGINEERING JUDGMENT REQUIRED</div>
           <div class="model-name">${escapeHtml(r.strut.model)} <span style="font-size:13px;font-weight:400;color:var(--text-secondary)">(${systemLabel})</span></div>
-          <div class="range">Physical reach: ${r.adjCollapsed}" – ${r.adjExtended}"</div>
+          <div class="range">${r.adjCollapsed}" – ${r.adjExtended}" (physical reach)</div>
+          ${extDisplay}
           <div style="margin-top:10px;padding:10px;background:var(--bg-primary);border-radius:6px;color:var(--text-primary);font-size:14px;line-height:1.4">
             ${escapeHtml(r.unratedReason)}
           </div>
-          <div style="margin-top:8px;font-size:13px;color:var(--text-secondary)">
-            No deploy action available. Working load capacity is not published by Paratech for this length.
-          </div>
-        </div>
-      </div>`;
+        </div>`;
+
+      if (isOperation) {
+        const opInv = getOperationInventory();
+        const strutInv = opInv.find(i => i.type === 'strut' && i.model === r.strut.model && i.available > 0);
+        const apparatusBadge = strutInv && strutInv.external
+          ? `<div style="margin-top:8px"><span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External: ${escapeHtml(strutInv.deptName)}</span></div>`
+          : strutInv && strutInv.apparatus
+            ? `<div style="margin-top:8px"><span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(strutInv.apparatus))}</span></div>`
+            : '';
+        const deployQty = Math.max(spQuantity, 1);
+        const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
+        const ackId = `unrated-ack-${idx}`;
+        const btnId = `unrated-btn-${idx}`;
+        html += `${apparatusBadge}
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--orange-dark)">
+          <label for="${ackId}" style="display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4;cursor:pointer;color:var(--orange-dark);font-weight:600">
+            <input type="checkbox" id="${ackId}" style="margin-top:2px;flex-shrink:0;width:18px;height:18px"
+                   onchange="document.getElementById('${btnId}').disabled = !this.checked">
+            <span>I acknowledge this configuration is outside Paratech's published working load range. Rescue engineering has been consulted and my team accepts responsibility for this deployment.</span>
+          </label>
+          <button id="${btnId}" class="btn btn-sm" disabled
+                  style="margin-top:10px;background:var(--orange-dark);color:white;border:none;width:100%;font-weight:700"
+                  onclick="this.disabled=true;setTimeout(()=>{const cb=document.getElementById('${ackId}');if(cb)cb.checked=false;this.disabled=true;},2000);deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">
+            ⚠ Deploy (Unrated)${qtyLabel}
+          </button>
+        </div>`;
+      }
+
+      html += `</div>`;
       return;
     }
 
@@ -2976,12 +2989,16 @@ function renderShorePointCards(numbered) {
       const isLocked = status === 'strutplaced' || status === 'cutting' || status === 'runner';
       const lockClass = isLocked ? ' locked' : '';
       const lockIcon = isLocked ? '<span class="sp-lock-icon">🔒</span>' : '';
+      // Persistent unrated-zone indicator: this SP was deployed beyond Paratech's published
+      // working load chart. The team acknowledged the warning at deploy time; the badge keeps
+      // the context visible for safety officers / after-action review.
+      const unratedBadge = sp.unrated ? '<span class="sp-unrated-badge" title="Deployed in unrated zone — see notes" style="margin-left:6px;padding:2px 6px;background:var(--orange-dark);color:white;border-radius:4px;font-size:11px;font-weight:700">⚠ UNRATED</span>' : '';
 
       const locText = getLocationBreadcrumb(sp);
 
-      html += `<div class="shore-point ${status}${groupClass}${lockClass}">
+      html += `<div class="shore-point ${status}${groupClass}${lockClass}${sp.unrated ? ' unrated-deployed' : ''}">
         <div class="flex-between mb-8">
-          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>${groupBadge}${lockIcon}</div>
+          <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>${groupBadge}${lockIcon}${unratedBadge}</div>
           <div style="display:flex;align-items:center;gap:4px">
             <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit" aria-label="Edit ${escapeHtml(sp.label) || 'Shore Point'}">✎</button>
             <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete" aria-label="Delete ${escapeHtml(sp.label) || 'Shore Point'}">✕</button>
@@ -3419,6 +3436,10 @@ function deployShorePoint(result, qty) {
       groupId: groupId,
       groupIndex: qty > 1 ? n : null,
       groupTotal: qty > 1 ? qty : null,
+      // Preserve unrated-zone flag so the deployed SP carries its acknowledged-warning
+      // context forward (visible in operations view + audit/after-action review).
+      unrated: result.unrated || false,
+      unratedReason: result.unrated ? (result.unratedReason || null) : null,
     };
 
     if (db && deptId && activeOperation) {
