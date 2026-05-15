@@ -4600,9 +4600,14 @@ if (window.matchMedia) {
 async function exportInventory() {
   if (!xlsxLoaded) showToast('Loading export library…');
   try { await loadXLSX(); } catch (e) { showToast('Failed to load export library'); return; }
+  // NEW-6 (v3.5.2): include the stable `id` so a round-trip (export → modify → import)
+  // preserves identity. Previously the export omitted id, the importer minted fresh IDs
+  // via inventoryRef.push().key, and every deployed shore point's deployedStrut.inventoryId
+  // reference was orphaned — phantom inventory math, broken equipment-return paths.
   const rows = localInventory.map(item => {
     const strutData = item.type === 'strut' ? STRUTS.find(s => s.model === item.model) : null;
     return {
+      ID: item.id || '',
       Type: item.type === 'strut' ? 'Strut' : 'Extension',
       Model: item.type === 'strut' ? item.model : '',
       System: item.system || '',
@@ -4617,9 +4622,9 @@ async function exportInventory() {
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
-  // Set column widths
+  // Set column widths (ID column first, then existing columns)
   ws['!cols'] = [
-    { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
+    { wch: 22 }, { wch: 10 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
     { wch: 18 }, { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 14 }
   ];
   const wb = XLSX.utils.book_new();
@@ -4717,10 +4722,16 @@ async function handleImport(event) {
         const type = (row.Type || '').toLowerCase();
         const avail = parseInt(row.Available) || qty;
 
+        // NEW-6 (v3.5.2): preserve the ID column from export so round-trips don't orphan
+        // deployed-strut references. If the cell is blank (legacy spreadsheet, new row),
+        // applyImportData will mint a fresh ID at write time.
+        const importedId = row.ID && String(row.ID).trim() ? String(row.ID).trim() : undefined;
+
         if (type === 'strut' && row.Model) {
           const strut = STRUTS.find(s => s.model === row.Model);
           if (!strut) continue;
           items.push({
+            id: importedId,
             type: 'strut',
             model: row.Model,
             system: strut.system,
@@ -4730,6 +4741,7 @@ async function handleImport(event) {
           });
         } else if (type === 'extension' && row['Extension Length']) {
           items.push({
+            id: importedId,
             type: 'extension',
             length: parseInt(row['Extension Length']),
             system: row.System || 'LongShore',
@@ -4754,13 +4766,21 @@ function applyImportData(data) {
   if (db && deptId) {
     const updates = {};
     for (const item of data) {
+      // NEW-6: prefer the ID carried over from the Excel ID column so deployed-strut
+      // references aren't orphaned on a round-trip. Falls back to a fresh push() key
+      // for rows without an ID (legacy spreadsheets, freshly added inventory rows).
       const id = item.id || inventoryRef.push().key;
       const { id: _, ...rest } = item;
       updates[id] = rest;
     }
     firebaseSave(inventoryRef, 'set', updates);
   } else {
-    localInventory = data;
+    // Offline branch: mint a fresh local ID for items missing one so localInventory
+    // entries always have a stable `id` for deployed-strut reference integrity.
+    localInventory = data.map(item => ({
+      ...item,
+      id: item.id || ('inv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
+    }));
     safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     renderInventory();
   }
