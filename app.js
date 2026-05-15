@@ -1017,7 +1017,28 @@ function setupListeners() {
   operationsRef = db.ref(`departments/${deptId}/operations`);
   settingsRef = db.ref(`departments/${deptId}/settings`);
 
+  // S7 (v3.5.2): first-fire guards. If a listener's FIRST snapshot is empty but we already
+  // have local data, push local up to Firebase instead of wiping it. Protects against:
+  //   - User typed the wrong deptId (dept exists but has no inventory yet)
+  //   - First connect after building up offline data
+  // After the first fire, treat Firebase as source of truth (subsequent empties DO wipe).
+  let inventoryFirstFire = true;
+  let apparatusFirstFire = true;
+  let customTypesFirstFire = true;
+
   inventoryRef.on('value', (snap) => {
+    if (inventoryFirstFire && !snap.exists() && localInventory.length > 0) {
+      inventoryFirstFire = false;
+      const payload = {};
+      for (const item of localInventory) {
+        const { id, ...rest } = item;
+        payload[id] = rest;
+      }
+      firebaseSave(inventoryRef, 'set', payload);
+      showToast('Pushed local inventory to Firebase', 'success');
+      return;
+    }
+    inventoryFirstFire = false;
     const data = snap.val() || {};
     localInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
     safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
@@ -1061,6 +1082,17 @@ function setupListeners() {
   apparatusRef = db.ref(`departments/${deptId}/apparatus`);
 
   apparatusRef.on('value', (snap) => {
+    if (apparatusFirstFire && !snap.exists() && localApparatus.length > 0) {
+      apparatusFirstFire = false;
+      const payload = {};
+      for (const item of localApparatus) {
+        const { id, ...rest } = item;
+        payload[id] = rest;
+      }
+      firebaseSave(apparatusRef, 'set', payload);
+      return;
+    }
+    apparatusFirstFire = false;
     const data = snap.val() || {};
     localApparatus = Object.entries(data).map(([id, item]) => ({ id, ...item }));
     safeSetItem('fieldstruts_apparatus', JSON.stringify(localApparatus));
@@ -1078,7 +1110,15 @@ function setupListeners() {
     }
   }, (err) => onListenerError('settings', err));
 
-  db.ref(`departments/${deptId}/customApparatusTypes`).on('value', (snap) => {
+  const customTypesRef = db.ref(`departments/${deptId}/customApparatusTypes`);
+  customTypesRef.on('value', (snap) => {
+    if (customTypesFirstFire && !snap.exists() && Array.isArray(customApparatusTypes) && customApparatusTypes.length > 0) {
+      customTypesFirstFire = false;
+      firebaseSave(customTypesRef, 'set', customApparatusTypes);
+      renderApparatusTypesList();
+      return;
+    }
+    customTypesFirstFire = false;
     const data = snap.val();
     if (data && Array.isArray(data) && data.length > 0) {
       customApparatusTypes = data;
