@@ -103,14 +103,75 @@ On every change:
 ## Known Patterns & Gotchas
 
 - **CSS stacking context:** `.modal-overlay` (z-index 100) traps fixed children. The plate picker grid must be moved to `document.body` when opened inside a modal, then moved back on close.
-- **Plate picker:** Uses bottom sheet pattern (anchored to `bottom: 0`, `max-height: 60vh`) with a scrim backdrop.
+- **Plate picker:** Uses bottom sheet pattern (anchored to `bottom: 0`, `max-height: 60vh`) with a scrim backdrop. v3.5.1 fix: `touch-action: pan-y` + `transform: translateZ(0)` + `visibility` toggle (instead of `display`) for iOS scroll reliability.
 - **Firebase + service worker:** Firebase WebSocket URLs are excluded from SW caching (see `sw.js` fetch handler).
 - **`firebaseSave()` wrapper:** All Firebase writes go through this — handles the online/offline split in one place.
-- **`escapeHtml()`:** Must be used on any user-controlled string rendered via innerHTML.
+- **`escapeHtml()`:** Returns escaped via `div.textContent = s; return div.innerHTML`. **CRITICAL:** This escapes `<`, `>`, `&` but NOT `"` or `'`. Safe for element text contexts ONLY, not attribute values. Use `escapeAttr()` inside `attr="..."` interpolations.
 - **Org chart drag-and-drop:** Supports 3 input methods — tap-to-pick-and-place, HTML5 drag events, touch drag with floating clone. State tracked via `orgChartPickedRole`.
 - **Grouped shore points:** Shore types with qty > 1 share a `groupId`. Status transitions, cut marking, runner sends, and equipment returns apply to all group members at once. Guards prevent double-processing of already-advanced members.
 - **Git auth:** SSH key (configured 2026-05-09). Single repo, no staging remote.
-- **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team").
+- **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team"). **CAVEAT:** v3.5.0 made the SP `group` field a dropdown of apparatus IDs — this is NIMS-terminology-incorrect (NIMS Group is a functional command unit, not a resource). To be renamed `assignedResource` in v4.0.0.
+
+---
+
+## v3.5.2 hotfix (2026-05-14) — what shipped
+
+The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`. The v3.5.2 hotfix shipped 17 commits addressing safety-critical, data-integrity, security, and accessibility findings. Remaining items are staged for v3.5.3 / v3.6.0 / v4.0.0.
+
+### ✅ Fixed in v3.5.2
+
+| ID | Area | Notes |
+|---|---|---|
+| **S2/S3** | ACME load table | All 11 rows now match Paratech O&M Manual Table 2-7 exactly. 132" (11 ft) was over-reporting by 17% via interpolation cliff; 24" was over-reporting by 8.75%. See header comment on `ACME_LOAD_TABLE`. |
+| **S1** | Double-deduction in pending re-validation | `findStrutCombinations` now receives `sp.requiredLength` (raw) instead of `sp.effectiveLength` (already deducted). Cache key includes deduction hash. |
+| **S4** | sessionStorage parse guard | Top-level `JSON.parse(orgCollapsed)` is now try/catch wrapped and `Array.isArray()` validated. Corrupt or non-array values no longer halt module init. |
+| **S5** | endOperation online localStorage cleanup | Online branch now mirrors offline: `activeOperation = null` + localStorage removal + render. |
+| **S7** | Firebase listener first-fire guard | inventory/apparatus/customApparatusTypes listeners no longer wipe local data when the first snapshot is empty. Pushes local up to Firebase instead. |
+| **S8** (partial) | confirmAddApparatus + updateShoreStatus optimistic | Both now apply local-first then Firebase. `deployShorePoint` + `returnEquipment` family still pending for v3.5.3 (complex multi-resource transactions). |
+| **X1** | Drilldown XSS | Building, division, area, group fields all `escapeAttr()` in onclick + `escapeHtml()` in label. |
+| **X2** | Inventory model XSS | renderInventory + Quick View + external equipment list all escape user-controlled fields. |
+| **X3** | Command Layout onclick XSS | Inline JS construction replaced with data-attribute handler (`commandLayoutClick(this)`). |
+| **A2** | Cutting/Runner badge contrast (light mode) | `--cutting-text` 6.76:1 and `--runner-text` 5.56:1 — both pass WCAG AA. Dark mode contrast already passes (no change needed). |
+| **NEW-2** | LongShore load table | All 11 rows now match the Paratech LongShore datasheet (Dec 2019) exactly. 13 ft was over-reporting by 17.9%; 14 ft by 8.3%; 15 ft by 5.6%. Lengths < 6 ft (72") removed (not in datasheet). Lengths > 16 ft surface a deployable "unrated zone" warning that requires explicit team acknowledgment. |
+| **NEW-3** | qty>4 sentinel | Instead of silent rejection, surface an explicit informational warning when load exceeds 4-strut capacity at the given length. |
+| **NEW-6** | Excel ID preservation | Export now includes an `ID` column; import reads it through so round-trips don't orphan deployed-strut references. |
+| **NEW-7** | Inventory return transaction sanity | Transaction handlers now abort on missing nodes (no phantom-item creation) and clamp `available` to `quantity` (no over-increment). |
+
+### ⏳ Still pending — v3.5.3 candidates
+
+- **S6 / NEW-8** — `isOnline` write routing root fix. Most online mutation call-sites still use `if (db && deptId) { firebaseSave } else { safeSetItem }` instead of routing on the actual connection state. The S5/S8 fixes addressed individual call-sites; the structural fix is a half-day refactor across ~50 sites.
+- **S8 family** — `deployShorePoint` + `returnEquipmentSingle` + `returnEquipment` still have the silent-failure-online pattern. Complex enough to warrant their own commits with careful review of multi-resource transaction paths.
+- **Firebase security rules** — Anonymous database access is still wide-open. Lockdown rules (write-restricted to auth'd writers) can ship without code changes once the rules are designed and deployed via Firebase console.
+
+### ⏳ Still pending — v3.6.0 candidates
+
+- **R1** — Zero `.off()` calls in `setupListeners`. Every dept-switch leaks listeners.
+- **R3-R6** — Full-subtree `set` on shared structures (`roles`, `customRoles`, `assignedApparatus`, `/inventory`). Concurrent edits clobber. Convert to keyed `update({path: value})` writes.
+- **Wedge deduction inconsistency** — `effectiveLength` for strut search omits `WEDGE_DEDUCTION`; cut length omits plate heights. Two different formulas. See `.claude/audits/v3.5.1-deep-audit-round2.md` S-H1.
+- **Accessibility** — 40+ `<div onclick>` / `<span onclick>` patterns need role + keyboard support. (Light-mode badge contrast already shipped in v3.5.2.)
+- **Performance** — `localApparatus.find()` O(n) inside O(m) render loops at scale. Build `Map<id, name>` once per render.
+
+### ⏳ Still pending — v4.0.0 (major restructure)
+
+- **Firebase Auth** — Anonymous Auth + per-device UID + Security Rules.
+- **NIMS doctrine overhaul** — Default ICS structure is not NIMS-compliant for Type I/II incidents. The `"Group"` field on shore points stores apparatus IDs but NIMS Group is a functional command unit — terminology violation.
+- **3rd-party UX paradigm shifts** — Roster tab move (move Apparatus/External/Individuals/My-Role OFF Operations page), SP recommendation dedup (220 cards for 11 configs at TF scale), compact shore-point card mode, activity feed paradigm.
+
+---
+
+## Audit references
+
+Comprehensive audit complete on v3.5.1. See:
+- `.claude/audits/AUDIT-INDEX.md` — Top-level entry point
+- `.claude/audits/findings-ledger.md` — Every finding catalogued (~100 unique issues)
+- `.claude/audits/v3.5.1-deep-audit-round2.md` — Round 2 deep findings
+- `.claude/audits/v3.5.1-comprehensive-audit.md` — Round 1 (with caveats — see Round 2 corrections)
+- `.claude/audits/interactive-findings.md` — Live findings from driving app at Surfside scale
+
+Implementation:
+- `.claude/plans/MASTER-PLAN.md` — Comprehensive multi-release plan covering all findings
+- `.claude/plans/v3.5.2-safety-hotfix.md` — Minimum-viable safety hotfix
+- `.claude/plans/v3.6.0-comprehensive-audit-fixes.md` — Round 1 plan (superseded by MASTER-PLAN)
 
 ---
 
