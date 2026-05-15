@@ -563,6 +563,9 @@ let inventoryRef = null;
 let operationsRef = null;
 let settingsRef = null;
 let apparatusRef = null;
+let customTypesRef = null;
+let activeOpsQuery = null;
+let archivedOpsQuery = null;
 let localInventory = [];
 let activeOperation = null;
 let localApparatus = [];
@@ -985,7 +988,7 @@ function showMoveRoleModal(roleId) {
 
   for (const t of targets) {
     const isCurrent = t.id === currentRole.parentId;
-    listHtml += `<div class="list-item-row" onclick="confirmReparent('${roleId}','${t.id}')" style="${isCurrent ? 'border-left:3px solid var(--blue);padding-left:9px' : ''}">
+    listHtml += `<div class="list-item-row" role="button" tabindex="0" onclick="confirmReparent('${roleId}','${t.id}')" style="${isCurrent ? 'border-left:3px solid var(--blue);padding-left:9px' : ''}">
       <span style="font-weight:600">${escapeHtml(t.name)}${isCurrent ? ' (current)' : ''}</span>
       <span style="font-size:14px;color:var(--blue)">→</span>
     </div>`;
@@ -1100,7 +1103,7 @@ function showAddRoleMenu() {
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">Add New Role</div>
     <div class="text-muted-xs mb-12">Select a parent position</div>`;
   for (const r of opRoles) {
-    listHtml += `<div class="list-item-row" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
+    listHtml += `<div class="list-item-row" role="button" tabindex="0" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
       <span style="font-weight:600">${escapeHtml(r.name)}</span>
       <span style="font-size:14px;color:var(--blue);font-weight:600">Add under →</span>
     </div>`;
@@ -1174,11 +1177,22 @@ function onListenerError(name, err) {
   showToast('Sync error — using cached data', 'error');
 }
 
+function teardownListeners() {
+  if (inventoryRef) inventoryRef.off();
+  if (activeOpsQuery) activeOpsQuery.off();
+  if (archivedOpsQuery) archivedOpsQuery.off();
+  if (apparatusRef) apparatusRef.off();
+  if (settingsRef) settingsRef.off();
+  if (customTypesRef) customTypesRef.off();
+}
+
 function setupListeners() {
   if (!db || !deptId) {
     loadLocalInventory();
     return;
   }
+
+  teardownListeners();
 
   inventoryRef = db.ref(`departments/${deptId}/inventory`);
   operationsRef = db.ref(`departments/${deptId}/operations`);
@@ -1213,7 +1227,8 @@ function setupListeners() {
     if (document.getElementById('addEquipModal').classList.contains('active')) showAddEquipment();
   }, (err) => onListenerError('inventory', err));
 
-  operationsRef.orderByChild('status').equalTo('active').on('value', (snap) => {
+  activeOpsQuery = operationsRef.orderByChild('status').equalTo('active');
+  activeOpsQuery.on('value', (snap) => {
     const data = snap.val() || {};
     const ops = Object.entries(data).map(([id, op]) => ({ id, ...op }));
     activeOperation = ops.length > 0 ? ops[0] : null;
@@ -1229,7 +1244,8 @@ function setupListeners() {
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
   }, (err) => onListenerError('operations', err));
 
-  operationsRef.orderByChild('status').equalTo('archived').on('value', (snap) => {
+  archivedOpsQuery = operationsRef.orderByChild('status').equalTo('archived');
+  archivedOpsQuery.on('value', (snap) => {
     const data = snap.val() || {};
     archivedOperations = Object.entries(data).map(([id, op]) => {
       if (op.shorePoints) {
@@ -1277,7 +1293,7 @@ function setupListeners() {
     }
   }, (err) => onListenerError('settings', err));
 
-  const customTypesRef = db.ref(`departments/${deptId}/customApparatusTypes`);
+  customTypesRef = db.ref(`departments/${deptId}/customApparatusTypes`);
   customTypesRef.on('value', (snap) => {
     if (customTypesFirstFire && !snap.exists() && Array.isArray(customApparatusTypes) && customApparatusTypes.length > 0) {
       customTypesFirstFire = false;
@@ -1562,9 +1578,14 @@ function removeApparatus(id) {
   renderApparatusManageList();
 }
 
+let _apparatusNameMap = null;
+let _apparatusNameMapSource = null;
 function getApparatusName(id) {
-  const app = localApparatus.find(a => a.id === id);
-  return app ? app.name : 'Unknown';
+  if (_apparatusNameMapSource !== localApparatus) {
+    _apparatusNameMap = new Map(localApparatus.map(a => [a.id, a.name]));
+    _apparatusNameMapSource = localApparatus;
+  }
+  return _apparatusNameMap.get(id) || 'Unknown';
 }
 
 // Group field on shore points stores an apparatus ID (preferred) or a legacy
@@ -1905,7 +1926,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.5.3'
+    appVersion: '3.6.0'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -2080,7 +2101,7 @@ function openApparatusRoleModal(appId) {
 function renderRoleGrid(selectedRoleId) {
   const grid = document.getElementById('roleGrid');
   grid.innerHTML = getOperationRoles().map(r => `
-    <div class="role-card ${r.id === selectedRoleId ? 'selected' : ''}" onclick="selectRole('${r.id}')">
+    <div class="role-card ${r.id === selectedRoleId ? 'selected' : ''}" role="button" tabindex="0" onclick="selectRole('${r.id}')">
       <div class="role-name">${escapeHtml(r.name)}</div>
       <div class="role-abbr">${escapeHtml(r.abbr)}</div>
     </div>
@@ -2199,7 +2220,7 @@ function openOrgChartNode(roleId) {
   if (unassigned.length > 0) {
     listHtml += `<div class="section-header-sm" style="margin-top:${currentAssignees.length > 0 ? '12px' : '0'}">Available to Assign</div>`;
     for (const u of unassigned) {
-      listHtml += `<div class="list-item-row" onclick="assignOrgChartRole('${u.id}','${roleId}')">
+      listHtml += `<div class="list-item-row" role="button" tabindex="0" onclick="assignOrgChartRole('${u.id}','${roleId}')">
         <span style="font-weight:600">${escapeHtml(u.name)}</span>
         <span style="font-size:14px;color:var(--blue);font-weight:600">Assign →</span>
       </div>`;
@@ -2502,7 +2523,10 @@ function orgSwapRoles(roleA, roleB) {
 
   persistOperation();
   if (db && deptId && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'set', roles);
+    const updates = {};
+    for (const targetId of assignedToA) updates[targetId] = roleB;
+    for (const targetId of assignedToB) updates[targetId] = roleA;
+    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'update', updates);
   }
 
   showToast(`Swapped ${getRoleAbbr(roleA)} ↔ ${getRoleAbbr(roleB)}`);
@@ -2844,10 +2868,10 @@ function renderOperations() {
         const name = escapeHtml(getApparatusName(mid));
         const roleId = roles[mid];
         const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
       }
     }
 
@@ -2871,7 +2895,7 @@ function renderOperations() {
         const personName = roleNames[appId];
         const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
         const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-        return `<span class="app-chip" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
       }).join('');
       // Only show type header if multiple types present
       const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
@@ -2896,8 +2920,8 @@ function renderOperations() {
     extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
       <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
-        <span class="chip-x" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+        <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
+        <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
       </div>
     </div>`).join('');
   } else {
@@ -2912,7 +2936,7 @@ function renderOperations() {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-      return `<span class="app-chip" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
+      return `<span class="app-chip" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span role="button" tabindex="0" onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
     }).join('');
   } else {
     indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
@@ -2978,7 +3002,7 @@ function renderShorePointCards(numbered) {
     const isCollapsed = laneCollapsedState[laneId] || false;
 
     html += `<div class="lane">
-      <div class="lane-header ${status}" onclick="toggleLane('${laneId}')">
+      <div class="lane-header ${status}" role="button" tabindex="0" onclick="toggleLane('${laneId}')">
         <span class="lane-arrow ${isCollapsed ? 'collapsed' : ''}">▼</span>
         ${STATUS_LABELS[status]}
         <span class="lane-count">${laneSPs.length}</span>
@@ -3750,12 +3774,12 @@ function renderDrilldownForLevel(points, level) {
     // sequences. `displayName` was also interpolated raw, allowing stored XSS via field text.
     // Fix: escapeAttr() for the onclick attribute value, escapeHtml() for the rendered label.
     if (key === '__ungrouped__') {
-      html += `<div class="drilldown-item" onclick="drillInto('${escapeAttr(level)}','__none__')" style="opacity:0.7">
+      html += `<div class="drilldown-item" role="button" tabindex="0" onclick="drillInto('${escapeAttr(level)}','__none__')" style="opacity:0.7">
         <span class="di-label">${escapeHtml(displayName)}</span>
         <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
       </div>`;
     } else {
-      html += `<div class="drilldown-item" onclick="drillInto('${escapeAttr(level)}','${escapeAttr(key)}')">
+      html += `<div class="drilldown-item" role="button" tabindex="0" onclick="drillInto('${escapeAttr(level)}','${escapeAttr(key)}')">
         <span class="di-label">${escapeHtml(displayName)}</span>
         <div class="di-meta"><div class="di-status-pills">${pills}</div><span class="di-count">${groupPts.length}</span><span class="di-arrow">›</span></div>
       </div>`;
@@ -3905,7 +3929,7 @@ function renderOrgChart(roleAssignments, shorePoints) {
     const spanWarning = directReports > 7 ? '<span class="span-warning" title="Span of control exceeded (>7)">⚠</span>' : '';
 
     // Collapse chevron
-    const chevron = hasChildren ? `<span class="org-collapse-btn" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
+    const chevron = hasChildren ? `<span class="org-collapse-btn" role="button" tabindex="0" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
 
     // Drop target helper text
     const dropText = orgChartPickedRole
@@ -4030,7 +4054,7 @@ function renderRolesSection() {
       const personName = roleNamesMap[appId];
       const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
       const personStr = personName ? `<span style="font-size:12px;color:var(--text-secondary);margin-left:4px">${escapeHtml(personName)}</span>` : '';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openApparatusRoleModal('${appId}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(appName)}${personStr}</span>
         ${roleBadge}
       </div>`;
@@ -4045,7 +4069,7 @@ function renderRolesSection() {
       const roleKey = 'ind-' + ind.id;
       const roleId = roles[roleKey];
       const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '<span style="font-size:12px;color:var(--text-secondary)">No role</span>';
-      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="openIndividualRoleModal('${ind.id}')">
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')">
         <span style="font-weight:600;font-size:14px">${escapeHtml(ind.name)}</span>
         ${roleBadge}
       </div>`;
@@ -4846,7 +4870,7 @@ function initPlatePickers() {
     });
     for (const plate of pickerPlates) {
       const imgHtml = plate.img ? `<img src="${plate.img}" alt="${plate.name}" loading="lazy">` : '<div style="width:40px;height:40px;background:var(--border-light);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)">—</div>';
-      html += `<div class="plate-option" data-id="${plate.id}" onclick="selectPlate('${pickerId}','${plate.id}')">
+      html += `<div class="plate-option" data-id="${plate.id}" role="button" tabindex="0" onclick="selectPlate('${pickerId}','${plate.id}')">
         ${imgHtml}
         <div class="plate-info">
           <div class="plate-name">${plate.name}</div>
@@ -4990,6 +5014,10 @@ document.addEventListener('keydown', (e) => {
       e.preventDefault();
     }
     closePlatePickers();
+  }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.getAttribute('role') === 'button' && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    e.target.click();
   }
 });
 

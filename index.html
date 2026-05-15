@@ -57,7 +57,7 @@
   <header class="header">
     <h1>FieldStruts</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.5.3</div>
+    <div class="version-label">v3.6.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -211,23 +211,23 @@
             <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')" role="button" aria-expanded="false" aria-controls="sectionApparatus">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionApparatus">
           <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▶</span> Assigned Apparatus</span>
           <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
         </div>
         <div id="sectionApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')" role="button" aria-expanded="false" aria-controls="sectionExternal">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionExternal">
           <span class="section-title m-0"><span class="section-arrow" id="arrowExternal">▶</span> External Equipment</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
         </div>
         <div id="sectionExternal" style="display:none"><div id="externalEquipmentList"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')" role="button" aria-expanded="false" aria-controls="sectionIndividuals">
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionIndividuals">
           <span class="section-title m-0"><span class="section-arrow" id="arrowIndividuals">▶</span> Individuals</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
         </div>
         <div id="sectionIndividuals" style="display:none"><div id="individualsList"></div></div>
         <div id="myRoleSection" class="mb-12">
-          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')" role="button" aria-expanded="false" aria-controls="sectionMyrole">
+          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionMyrole">
             <span class="section-title m-0"><span class="section-arrow" id="arrowMyrole">▶</span> My Role</span>
             <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
           </div>
