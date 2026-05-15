@@ -674,10 +674,13 @@ function getShorePoints() {
   return Array.isArray(raw) ? raw : Object.values(raw);
 }
 
-// Save operation to Firebase or localStorage
 function persistOperation() {
-  if (db && deptId && activeOperation && activeOperation.id) return; // Firebase listeners handle it
+  if (!activeOperation) return;
   safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+}
+
+function persistInventory() {
+  safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
 }
 
 // Look up shore type name by id
@@ -875,10 +878,9 @@ function initCustomRoles() {
 
 function saveCustomRoles() {
   if (!activeOperation) return;
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 }
 
@@ -1206,7 +1208,7 @@ function setupListeners() {
     inventoryFirstFire = false;
     const data = snap.val() || {};
     localInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
+    persistInventory();
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
     if (document.getElementById('addEquipModal').classList.contains('active')) showAddEquipment();
   }, (err) => onListenerError('inventory', err));
@@ -1393,10 +1395,9 @@ function initCustomApparatusTypes() {
 }
 
 function saveCustomApparatusTypes() {
+  safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(customApparatusTypes));
   if (db && deptId) {
     firebaseSave(firebase.database().ref(`departments/${deptId}/customApparatusTypes`), 'set', customApparatusTypes);
-  } else {
-    safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(customApparatusTypes));
   }
 }
 
@@ -1486,29 +1487,15 @@ function confirmAddApparatus() {
   if (!name) return;
   const type = document.getElementById('newApparatusType').value || 'other';
 
+  const id = (db && apparatusRef) ? apparatusRef.push().key : ('app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
+  localApparatus.push({ id, name, type });
+  if (!selectedApparatus) selectedApparatus = id;
+  saveLocalApparatus();
   if (db && deptId && apparatusRef) {
-    // S8 (v3.5.2): optimistic-local-then-Firebase. Without the local push, the user sees no UI
-    // change until the Firebase listener echoes the new apparatus back — they typically re-tap
-    // Save, creating duplicate Firebase records.
-    const newRef = apparatusRef.push();
-    const id = newRef.key;
-    localApparatus.push({ id, name, type });
-    if (!selectedApparatus) selectedApparatus = id;
-    firebaseSave(newRef, 'set', { name, type });
-    renderApparatusTabs();
-    renderApparatusManageList();
-  } else {
-    const app = {
-      id: 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      name,
-      type,
-    };
-    localApparatus.push(app);
-    if (!selectedApparatus) selectedApparatus = app.id;
-    saveLocalApparatus();
-    renderApparatusTabs();
-    renderApparatusManageList();
+    firebaseSave(apparatusRef.child(id), 'set', { name, type });
   }
+  renderApparatusTabs();
+  renderApparatusManageList();
   document.getElementById('newApparatusName').value = '';
 }
 
@@ -1536,15 +1523,14 @@ function saveEditApparatus(id) {
   const type = document.getElementById('editAppType').value || 'other';
   if (!name) return;
 
+  const app = localApparatus.find(a => a.id === id);
+  if (app) {
+    app.name = name;
+    app.type = type;
+  }
+  saveLocalApparatus();
   if (db && deptId && apparatusRef) {
     firebaseSave(apparatusRef.child(id), 'update', { name, type });
-  } else {
-    const app = localApparatus.find(a => a.id === id);
-    if (app) {
-      app.name = name;
-      app.type = type;
-      saveLocalApparatus();
-    }
   }
   renderApparatusTabs();
   renderInventory();
@@ -1556,17 +1542,16 @@ function removeApparatus(id) {
   const count = localInventory.filter(i => i.apparatus === id).reduce((sum, i) => sum + i.quantity, 0);
   if (count > 0 && !confirm(`"${app.name}" has ${count} equipment items. Remove apparatus and all its equipment?`)) return;
 
+  const itemsToRemove = localInventory.filter(i => i.apparatus === id);
+  localInventory = localInventory.filter(i => i.apparatus !== id);
+  localApparatus = localApparatus.filter(a => a.id !== id);
+  saveLocalApparatus();
+  persistInventory();
   if (db && deptId && apparatusRef) {
     firebaseSave(apparatusRef.child(id), 'remove');
-    const itemsToRemove = localInventory.filter(i => i.apparatus === id);
     for (const item of itemsToRemove) {
       firebaseSave(inventoryRef.child(item.id), 'remove');
     }
-  } else {
-    localInventory = localInventory.filter(i => i.apparatus !== id);
-    localApparatus = localApparatus.filter(a => a.id !== id);
-    saveLocalApparatus();
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
   }
 
   if (selectedApparatus === id) {
@@ -1754,12 +1739,10 @@ function updateQty(itemId, delta) {
 
   if (newQty === 0) {
     if (deployed > 0) return;
+    localInventory = localInventory.filter(i => i.id !== itemId);
+    persistInventory();
     if (db && deptId) {
-      localInventory = localInventory.filter(i => i.id !== itemId);
       firebaseSave(inventoryRef.child(itemId), 'remove');
-    } else {
-      localInventory = localInventory.filter(i => i.id !== itemId);
-      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
     }
     renderInventory();
     return;
@@ -1767,10 +1750,9 @@ function updateQty(itemId, delta) {
 
   item.quantity = newQty;
   item.available = newAvail;
+  persistInventory();
   if (db && deptId) {
     firebaseSave(inventoryRef.child(itemId), 'update', { quantity: newQty, available: newAvail });
-  } else {
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
   }
   renderInventory();
 }
@@ -1865,16 +1847,12 @@ function quickAdd(type, system, model, length) {
     };
     if (type === 'plate') item.plateId = model;
 
+    item.id = (db && inventoryRef) ? inventoryRef.push().key : ('local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+    localInventory.push(item);
+    persistInventory();
     if (db && deptId) {
-      const newRef = inventoryRef.push();
-      item.id = newRef.key;
-      localInventory.push(item);
       const {id, ...firebaseItem} = item;
-      firebaseSave(newRef, 'set', firebaseItem);
-    } else {
-      item.id = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-      localInventory.push(item);
-      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
+      firebaseSave(inventoryRef.child(item.id), 'set', firebaseItem);
     }
   }
 
@@ -1927,7 +1905,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.5.2'
+    appVersion: '3.5.3'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
@@ -1991,11 +1969,9 @@ function toggleApparatusAssignment(appId, assign) {
     assigned = assigned.filter(id => id !== appId);
   }
   activeOperation.assignedApparatus = assigned;
-
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('assignedApparatus'), 'set', assigned);
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -2052,11 +2028,9 @@ function confirmCreateGroup() {
   if (!activeOperation.apparatusGroups) activeOperation.apparatusGroups = {};
   const gid = 'grp-' + Date.now();
   activeOperation.apparatusGroups[gid] = { name, type, members };
-
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'set', { name, type, members });
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 
   const modal = document.getElementById('createGroupModal');
@@ -2067,10 +2041,9 @@ function confirmCreateGroup() {
 function removeApparatusGroup(gid) {
   if (!activeOperation || !activeOperation.apparatusGroups) return;
   delete activeOperation.apparatusGroups[gid];
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'remove');
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -2129,6 +2102,7 @@ function selectRole(roleId) {
     activeOperation.roles[roleTarget] = roleId;
     if (personName) activeOperation.roleNames[roleTarget] = personName;
     else delete activeOperation.roleNames[roleTarget];
+    persistOperation();
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'set', roleId);
       if (personName) {
@@ -2136,8 +2110,6 @@ function selectRole(roleId) {
       } else {
         firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget), 'remove');
       }
-    } else {
-      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
   }
   closeModal('roleModal');
@@ -2153,10 +2125,9 @@ function clearRole() {
   } else {
     if (activeOperation.roles) {
       delete activeOperation.roles[roleTarget];
+      persistOperation();
       if (db && deptId && activeOperation.id) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'remove');
-      } else {
-        safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
       }
     }
   }
@@ -2273,10 +2244,9 @@ function assignOrgChartRole(targetId, roleId) {
     roleViewDismissed = false;
   } else {
     activeOperation.roles[targetId] = roleId;
+    persistOperation();
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'set', roleId);
-    } else {
-      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
   }
 
@@ -2295,10 +2265,9 @@ function clearOrgChartRole(targetId, roleId) {
   } else {
     if (activeOperation.roles) {
       delete activeOperation.roles[targetId];
+      persistOperation();
       if (db && deptId && activeOperation.id) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'remove');
-      } else {
-        safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
       }
     }
   }
@@ -2531,11 +2500,9 @@ function orgSwapRoles(roleA, roleB) {
     roles[targetId] = roleA;
   }
 
-  // Persist
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'set', roles);
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
 
   showToast(`Swapped ${getRoleAbbr(roleA)} ↔ ${getRoleAbbr(roleB)}`);
@@ -2658,10 +2625,9 @@ function confirmAddExternal() {
       external: true,
     };
     activeOperation.externalEquipment[editingExternalId] = item;
+    persistOperation();
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId), 'set', item);
-    } else {
-      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
     }
     editingExternalId = null;
   } else {
@@ -2676,15 +2642,11 @@ function confirmAddExternal() {
       available: qty,
       external: true,
     };
+    item.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('externalEquipment').push().key : ('ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
+    activeOperation.externalEquipment[item.id] = item;
+    persistOperation();
     if (db && deptId && activeOperation.id) {
-      const newRef = operationsRef.child(activeOperation.id).child('externalEquipment').push();
-      item.id = newRef.key;
-      firebaseSave(newRef, 'set', item);
-      activeOperation.externalEquipment[item.id] = item;
-    } else {
-      item.id = 'ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-      activeOperation.externalEquipment[item.id] = item;
-      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(item.id), 'set', item);
     }
   }
 
@@ -2697,11 +2659,9 @@ function removeExternal(extId) {
   if (!confirm('Remove this external equipment?')) return;
 
   delete activeOperation.externalEquipment[extId];
-
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
 }
@@ -2735,27 +2695,19 @@ function confirmAddIndividual() {
   if (!activeOperation) return;
   if (!activeOperation.individuals) activeOperation.individuals = {};
 
+  const indId = editingIndividualId || ('i' + Date.now());
   if (editingIndividualId) {
-    // Edit existing
-    activeOperation.individuals[editingIndividualId].name = name;
-    // Update roleNames if it was using the old name
-    if (activeOperation.roleNames && activeOperation.roleNames['ind-' + editingIndividualId]) {
-      activeOperation.roleNames['ind-' + editingIndividualId] = name;
-    }
-    if (db && deptId && activeOperation.id) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(editingIndividualId), 'set', activeOperation.individuals[editingIndividualId]);
+    activeOperation.individuals[indId].name = name;
+    if (activeOperation.roleNames && activeOperation.roleNames['ind-' + indId]) {
+      activeOperation.roleNames['ind-' + indId] = name;
     }
   } else {
-    // Add new
-    const id = 'i' + Date.now();
-    activeOperation.individuals[id] = { id, name };
-    if (db && deptId && activeOperation.id) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(id), 'set', { id, name });
-    }
+    activeOperation.individuals[indId] = { id: indId, name };
   }
 
-  if (!db || !deptId) {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  persistOperation();
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(indId), 'set', activeOperation.individuals[indId]);
   }
   closeModal('addIndividualModal');
   renderOperations();
@@ -2769,12 +2721,11 @@ function removeIndividual(indId) {
   const roleKey = 'ind-' + indId;
   if (activeOperation.roles) delete activeOperation.roles[roleKey];
   if (activeOperation.roleNames) delete activeOperation.roleNames[roleKey];
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(indId), 'remove');
     firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleKey), 'remove');
     firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleKey), 'remove');
-  } else {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
   }
   renderOperations();
   renderCommandView();
@@ -3220,12 +3171,11 @@ function viewArchivedOp(opId) {
 function deleteArchivedOp(opId) {
   if (!confirm('Delete this archived operation? This cannot be undone.')) return;
 
+  archivedOperations = archivedOperations.filter(o => o.id !== opId);
   if (db && deptId) {
     firebaseSave(operationsRef.child(opId), 'remove');
-  } else {
-    archivedOperations = archivedOperations.filter(o => o.id !== opId);
-    renderArchivedOps();
   }
+  renderArchivedOps();
 }
 
 function startOperation() {
@@ -3256,16 +3206,15 @@ function confirmStartOp() {
   roleViewDismissed = false;
   localStorage.removeItem('fieldstruts_myRole');
 
+  op.id = (db && operationsRef) ? operationsRef.push().key : ('local-op-' + Date.now());
+  op.shorePoints = [];
+  activeOperation = op;
+  persistOperation();
   if (db && deptId) {
-    const newRef = operationsRef.push();
-    firebaseSave(newRef, 'set', op);
-  } else {
-    op.id = 'local-op-' + Date.now();
-    op.shorePoints = [];
-    activeOperation = op;
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    renderOperations();
+    const {id, shorePoints, ...firebaseOp} = op;
+    firebaseSave(operationsRef.child(op.id), 'set', firebaseOp);
   }
+  renderOperations();
 
   closeModal('startOpModal');
   document.getElementById('newOpName').value = '';
@@ -3399,13 +3348,12 @@ function deployPendingShorePoint() {
     groupTotal: null,
   };
 
+  sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now());
+  if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
+  activeOperation.shorePoints.push(sp);
+  persistOperation();
   if (db && deptId && activeOperation.id) {
-    const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
-    firebaseSave(spRef, 'set', sp);
-  } else {
-    if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
-    activeOperation.shorePoints.push(sp);
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
   }
 
   closeModal('shorePointModal');
@@ -3516,14 +3464,28 @@ function deployShorePoint(result, qty) {
       unratedReason: result.unrated ? (result.unratedReason || null) : null,
     };
 
-    if (db && deptId && activeOperation) {
-      const spRef = operationsRef.child(activeOperation.id).child('shorePoints').push();
-      firebaseSave(spRef, 'set', sp);
+    sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now() + '-' + n);
+
+    // Always update local inventory counts
+    if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
+      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
+    } else {
+      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+    }
+    for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+    for (const pl of deployedPlates) {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    }
+
+    if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
+    activeOperation.shorePoints.push(sp);
+
+    // Sync to Firebase
+    if (db && deptId && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
       if (strutInvItem.external) {
         firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
-        if (activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
-          activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
-        }
       } else {
         firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
       }
@@ -3533,20 +3495,6 @@ function deployShorePoint(result, qty) {
       for (const pl of deployedPlates) {
         firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
       }
-    } else {
-      if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
-        activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
-      } else {
-        strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-      }
-      for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
-      for (const pl of deployedPlates) {
-        const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) plInv.available = Math.max(0, plInv.available - 1);
-      }
-      sp.id = 'sp-' + Date.now() + '-' + n;
-      if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
-      activeOperation.shorePoints.push(sp);
     }
 
     deployed.push(sp);
@@ -3564,11 +3512,9 @@ function deployShorePoint(result, qty) {
     }
     drilldownPath = newPath;
 
-    if (!(db && deptId && activeOperation)) {
-      safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-      safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
-      renderOperations();
-    }
+    persistOperation();
+    persistInventory();
+    renderOperations();
   }
 
   closeModal('shorePointModal');
@@ -3611,19 +3557,13 @@ function updateShoreStatus(spId, newStatus) {
       updateData.cutMarkedDone = false;
     }
 
-    // S8 (v3.5.2): apply update to local member object FIRST so the UI reflects the new status
-    // immediately. Previously only the offline branch mutated `member`, so an online status change
-    // showed no UI update until the Firebase listener echo arrived (or never, if offline-queued).
     Object.assign(member, updateData);
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
     }
   }
 
-  // Persist + re-render in both branches. The localStorage write keeps the local-first contract
-  // even when online (S6 mitigation): if Firebase write fails or the listener doesn't echo,
-  // local state is still consistent.
-  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  persistOperation();
   renderOperations();
 }
 
@@ -4263,18 +4203,14 @@ function sendToRunner(spId) {
     // Apply the actual cut value to all members (same cut for grouped points)
     if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
+    Object.assign(member, updateData);
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
-    } else {
-      Object.assign(member, updateData);
     }
   }
 
-  if (!(db && deptId && activeOperation.id)) {
-    const points = getShorePoints();
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    renderOperations();
-  }
+  persistOperation();
+  renderOperations();
   if (currentView === 'cuttable') renderCutTableView();
 }
 
@@ -4294,17 +4230,14 @@ function markCutDone(spId) {
     const updateData = { cutMarkedDone: true };
     if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
+    Object.assign(member, updateData);
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
-    } else {
-      Object.assign(member, updateData);
     }
   }
 
-  if (!(db && deptId && activeOperation.id)) {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    renderOperations();
-  }
+  persistOperation();
+  renderOperations();
   if (currentView === 'cuttable') renderCutTableView();
 }
 
@@ -4384,15 +4317,14 @@ function confirmEditShorePoint() {
     updateData.effectiveLength = Math.round((updateData.requiredLength - totalDed) * 10) / 10;
   }
 
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === editingShorePointId);
+  if (sp) Object.assign(sp, updateData);
+  persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId), 'update', updateData);
-  } else {
-    const points = getShorePoints();
-    const sp = points.find(p => p.id === editingShorePointId);
-    if (sp) Object.assign(sp, updateData);
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    renderOperations();
   }
+  renderOperations();
 
   editingShorePointId = null;
   document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
@@ -4412,15 +4344,15 @@ function deleteShorePoint(spId) {
     returnInventoryItems(sp);
   }
 
-  // Remove from operation
+  if (activeOperation.shorePoints) {
+    activeOperation.shorePoints = activeOperation.shorePoints.filter(p => p.id !== spId);
+  }
+  persistOperation();
+  persistInventory();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'remove');
-  } else {
-    activeOperation.shorePoints = activeOperation.shorePoints.filter(p => p.id !== spId);
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
-    renderOperations();
   }
+  renderOperations();
 }
 
 // NEW-7 (v3.5.2): inventory transaction handler — guard against phantom-item creation
@@ -4441,8 +4373,6 @@ function makeReturnIncrementer(maxQty) {
 }
 
 function returnInventoryItems(sp) {
-  // Return deployed equipment (strut, extensions, plates) to inventory counts.
-  // Shared by both delete (silent) and return (with status change) paths.
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
@@ -4452,10 +4382,9 @@ function returnInventoryItems(sp) {
       }
     } else {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
+      if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
       if (db && deptId) {
         firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
-      } else {
-        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
       }
     }
   }
@@ -4463,10 +4392,9 @@ function returnInventoryItems(sp) {
     for (const ext of sp.deployedExtensions) {
       if (ext.inventoryId) {
         const inv = localInventory.find(i => i.id === ext.inventoryId);
+        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         if (db && deptId) {
           firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
-        } else {
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         }
       }
     }
@@ -4475,10 +4403,9 @@ function returnInventoryItems(sp) {
     for (const pl of sp.deployedPlates) {
       if (pl.inventoryId) {
         const inv = localInventory.find(i => i.id === pl.inventoryId);
+        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         if (db && deptId) {
           firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
-        } else {
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         }
       }
     }
@@ -4486,17 +4413,15 @@ function returnInventoryItems(sp) {
 }
 
 function returnEquipmentSingle(sp) {
-  // Return equipment for a single shore point — updates status and inventory
   if (!sp || normalizeStatus(sp.status) === 'returned') return;
 
-  if (db && deptId) {
+  sp.status = 'returned';
+  sp.returnedAt = new Date().toISOString();
+  if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', {
       status: 'returned',
-      returnedAt: new Date().toISOString(),
+      returnedAt: sp.returnedAt,
     });
-  } else {
-    sp.status = 'returned';
-    sp.returnedAt = new Date().toISOString();
   }
   returnInventoryItems(sp);
 }
@@ -4511,53 +4436,37 @@ function returnEquipment(spId) {
     returnEquipmentSingle(member);
   }
 
-  if (!(db && deptId)) {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
-    renderOperations();
-  }
+  persistOperation();
+  persistInventory();
+  renderOperations();
 }
 
 function endOperation() {
   if (!confirm('End this operation? All equipment will be marked as returned.')) return;
 
+  const points = getShorePoints();
+  for (const sp of points) {
+    if (sp.status !== 'returned') returnEquipment(sp.id);
+  }
+
+  for (const item of localInventory) {
+    item.available = item.quantity;
+  }
+
   if (db && deptId && activeOperation) {
-    const points = getShorePoints();
-    for (const sp of points) {
-      if (sp.status !== 'returned') {
-        returnEquipment(sp.id);
-      }
-    }
-    // Reset all inventory available = quantity as safety net
     for (const item of localInventory) {
-      if (item.available < item.quantity) {
-        firebaseSave(inventoryRef.child(item.id).child('available'), 'set', item.quantity);
-      }
+      firebaseSave(inventoryRef.child(item.id).child('available'), 'set', item.quantity);
     }
     firebaseSave(operationsRef.child(activeOperation.id), 'update', {
       status: 'archived',
       endTime: new Date().toISOString(),
     });
-    // S5 (v3.5.2): clear local state optimistically — the Firebase listener may not echo
-    // before the user reloads (especially if the write is offline-queued), and on reload the
-    // archived operation would resurrect as active because localStorage still pointed to it.
-    activeOperation = null;
-    localStorage.removeItem('fieldstruts_operation');
-    renderOperations();
-  } else {
-    const points = activeOperation?.shorePoints || [];
-    for (const sp of points) {
-      if (sp.status !== 'returned') returnEquipment(sp.id);
-    }
-    // Reset all inventory available = quantity as safety net
-    for (const item of localInventory) {
-      item.available = item.quantity;
-    }
-    activeOperation = null;
-    localStorage.removeItem('fieldstruts_operation');
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
-    renderOperations();
   }
+
+  activeOperation = null;
+  localStorage.removeItem('fieldstruts_operation');
+  persistInventory();
+  renderOperations();
 }
 
 // ============================================================
@@ -4781,27 +4690,21 @@ async function handleImport(event) {
 }
 
 function applyImportData(data) {
+  const useFirebaseKeys = db && inventoryRef;
+  localInventory = data.map(item => ({
+    ...item,
+    id: item.id || (useFirebaseKeys ? inventoryRef.push().key : ('inv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6))),
+  }));
+  persistInventory();
   if (db && deptId) {
     const updates = {};
-    for (const item of data) {
-      // NEW-6: prefer the ID carried over from the Excel ID column so deployed-strut
-      // references aren't orphaned on a round-trip. Falls back to a fresh push() key
-      // for rows without an ID (legacy spreadsheets, freshly added inventory rows).
-      const id = item.id || inventoryRef.push().key;
-      const { id: _, ...rest } = item;
+    for (const item of localInventory) {
+      const { id, ...rest } = item;
       updates[id] = rest;
     }
     firebaseSave(inventoryRef, 'set', updates);
-  } else {
-    // Offline branch: mint a fresh local ID for items missing one so localInventory
-    // entries always have a stable `id` for deployed-strut reference integrity.
-    localInventory = data.map(item => ({
-      ...item,
-      id: item.id || ('inv-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
-    }));
-    safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
-    renderInventory();
   }
+  renderInventory();
   alert('Inventory imported successfully');
 }
 
