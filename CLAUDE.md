@@ -51,10 +51,29 @@ On every change:
 2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
 3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
 4. Create GitHub release with notes
+5. **Update user manual** (see below)
 
 **PATCH** (x.x.+1): bug fixes, label changes, UI tweaks
 **MINOR** (x.+1.0): new features
 **MAJOR** (+1.0.0): breaking changes, major restructuring
+
+### User Manual — Auto-Update Rule
+
+The user manual lives at `docs/USER-MANUAL.md`. It **must be updated and committed** whenever any of the following change:
+
+- Features added, removed, or modified (any MINOR or MAJOR release)
+- Shore types, ICS roles, apparatus types, or other operational constants
+- UI workflow changes (new screens, changed navigation, status lifecycle)
+- Shore point lifecycle statuses
+- Settings options
+
+**Do NOT update the manual for PATCH releases** (bug fixes only).
+
+When updating:
+1. Edit the relevant section(s) in `docs/USER-MANUAL.md`
+2. Update the **Version** and **Last updated** fields at the top
+3. Add a row to the **Version History** table (major.minor only)
+4. Commit and push with the feature — the manual ships in the same commit
 
 ---
 
