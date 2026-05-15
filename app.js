@@ -1322,9 +1322,16 @@ function confirmAddApparatus() {
   const type = document.getElementById('newApparatusType').value || 'other';
 
   if (db && deptId && apparatusRef) {
+    // S8 (v3.5.2): optimistic-local-then-Firebase. Without the local push, the user sees no UI
+    // change until the Firebase listener echoes the new apparatus back — they typically re-tap
+    // Save, creating duplicate Firebase records.
     const newRef = apparatusRef.push();
+    const id = newRef.key;
+    localApparatus.push({ id, name, type });
+    if (!selectedApparatus) selectedApparatus = id;
     firebaseSave(newRef, 'set', { name, type });
-    if (!selectedApparatus) selectedApparatus = newRef.key;
+    renderApparatusTabs();
+    renderApparatusManageList();
   } else {
     const app = {
       id: 'app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
@@ -3423,17 +3430,20 @@ function updateShoreStatus(spId, newStatus) {
       updateData.cutMarkedDone = false;
     }
 
+    // S8 (v3.5.2): apply update to local member object FIRST so the UI reflects the new status
+    // immediately. Previously only the offline branch mutated `member`, so an online status change
+    // showed no UI update until the Firebase listener echo arrived (or never, if offline-queued).
+    Object.assign(member, updateData);
     if (db && deptId && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
-    } else {
-      Object.assign(member, updateData);
     }
   }
 
-  if (!(db && deptId && activeOperation.id)) {
-    safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
-    renderOperations();
-  }
+  // Persist + re-render in both branches. The localStorage write keeps the local-first contract
+  // even when online (S6 mitigation): if Firebase write fails or the listener doesn't echo,
+  // local state is still consistent.
+  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  renderOperations();
 }
 
 function toggleLane(laneId) {
