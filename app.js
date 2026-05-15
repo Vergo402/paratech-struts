@@ -3970,6 +3970,11 @@ function renderOrgChart(roleAssignments, shorePoints) {
     <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
   </div>`;
 
+  html += `<div class="status-key">
+    <span class="status-key-item"><span class="status-dot status-active"></span> Active</span>
+    <span class="status-key-item"><span class="status-dot status-staged"></span> Staged</span>
+  </div>`;
+
   // Render org chart with column-per-subtree layout
   const renderTree = (parentId) => {
     if (orgCollapsedNodes.has(parentId)) return '';
