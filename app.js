@@ -2854,9 +2854,17 @@ function renderShorePointCards(numbered) {
       if (status === 'pending') {
         // Lazy-compute operation inventory only when pending SPs exist
         if (!opInv) opInv = getOperationInventory();
-        // Check if equipment is now available (cached per measurement)
-        const cacheKey = `${sp.effectiveLength || sp.requiredLength}-${sp.estimatedLoad || 0}`;
-        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.effectiveLength || sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
+        // Check if equipment is now available (cached per measurement).
+        // Pass sp.requiredLength (raw opening), NOT sp.effectiveLength — findStrutCombinations
+        // applies deductions internally. Passing effectiveLength + deductions would deduct twice
+        // and recommend a strut shorter than the actual opening needs (S1 safety bug, fixed v3.5.2).
+        // Cache key includes deductions hash so SPs with same length but different deductions
+        // don't share cached results.
+        const dedKey = sp.deductions
+          ? `${sp.deductions.header || 0}-${sp.deductions.sole || 0}-${sp.deductions.topPlate || 0}-${sp.deductions.bottomPlate || 0}`
+          : 'none';
+        const cacheKey = `${sp.requiredLength}-${sp.estimatedLoad || 0}-${dedKey}`;
+        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
           html += `<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:var(--green);font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
         }
