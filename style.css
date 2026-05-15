@@ -33,11 +33,18 @@
   --border: #E0E0E0;
   --border-light: #F0F0F0;
   --card-secondary-bg: #FAFAFA;
+  /* A2 (v3.5.2): WCAG contrast fixes for status badges in light mode.
+   * Previous: #F57F17 on #FFF176 = 2.28:1 (fails AA 4.5:1) — illegible in sunlight.
+   *           #E65100 on #FFCC80 = 2.56:1 (fails AA 4.5:1).
+   * Now:      #7A4500 on #FFF176 = 6.76:1 (passes AA + AAA).
+   *           #8A3300 on #FFCC80 = 5.56:1 (passes AA).
+   * Border colors kept at the previous saturated values for visual chip identity.
+   */
   --cutting-bg: #FFF176;
-  --cutting-text: #F57F17;
+  --cutting-text: #7A4500;
   --cutting-border: #F9A825;
   --runner-bg: #FFCC80;
-  --runner-text: #E65100;
+  --runner-text: #8A3300;
   --runner-border: #E65100;
   --radius: 6px;
   --radius-sm: 3px;
