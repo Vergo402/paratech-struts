@@ -1137,6 +1137,10 @@ function initFirebase() {
     db = firebase.database();
     db.goOnline();
 
+    firebase.auth().signInAnonymously().catch(err => {
+      console.warn('Anonymous auth failed:', err.message);
+    });
+
     const connRef = db.ref('.info/connected');
     connRef.on('value', (snap) => {
       const el = document.getElementById('connStatus');
@@ -1173,6 +1177,7 @@ function connectDepartment() {
 }
 
 function onListenerError(name, err) {
+  if (err.message && err.message.includes('permission_denied') && !firebase.auth()._authReady) return;
   console.error('Firebase listener error [' + name + ']:', err.message);
   showToast('Sync error — using cached data', 'error');
 }
@@ -1189,6 +1194,19 @@ function teardownListeners() {
 function setupListeners() {
   if (!db || !deptId) {
     loadLocalInventory();
+    return;
+  }
+  if (firebase.auth && !firebase.auth()._authReady) {
+    const unsub = firebase.auth().onAuthStateChanged((user) => {
+      unsub();
+      if (!user) return;
+      user.getIdToken(true).then(() => {
+        firebase.auth()._authReady = true;
+        setupListeners();
+      }).catch(() => {
+        firebase.auth()._authReady = true;
+      });
+    });
     return;
   }
 
@@ -5063,9 +5081,9 @@ function init() {
   myRole = localStorage.getItem('fieldstruts_myRole') || null;
 
   loadLocalApparatus();
+  loadLocalInventory();
   initFirebase();
   if (deptId && db) setupListeners();
-  else loadLocalInventory();
 
   updateQuickViewFab();
 

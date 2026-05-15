@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "departments": {
+      "$deptId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "inventory": {
+          "$itemId": {
+            ".validate": "newData.hasChildren(['name', 'quantity', 'available'])"
+          }
+        },
+        "apparatus": {
+          "$appId": {
+            ".validate": "newData.hasChildren(['name', 'type'])"
+          }
+        },
+        "operations": {
+          ".indexOn": ["status"],
+          "$opId": {
+            ".validate": "newData.hasChild('name') && newData.hasChild('status')"
+          }
+        }
+      }
+    },
+    "feedback": {
+      ".read": "auth != null",
+      "$feedbackId": {
+        ".write": "auth != null",
+        ".validate": "newData.hasChildren(['category', 'text', 'timestamp'])"
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
