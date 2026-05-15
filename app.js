@@ -4423,20 +4423,38 @@ function deleteShorePoint(spId) {
   }
 }
 
+// NEW-7 (v3.5.2): inventory transaction handler — guard against phantom-item creation
+// and over-increment.
+//   - If the Firebase node doesn't exist (item was deleted but a deployed SP still
+//     references its inventoryId), `v` arrives as null/undefined. The previous
+//     `(v || 0) + 1` would CREATE a phantom node `{available: 1}` with no model/system/
+//     apparatus, corrupting the inventory tree. Now we return undefined to abort the
+//     transaction — no write happens.
+//   - If `maxQty` is known (from local inventory), clamp the result so concurrent
+//     returns can't push `available > quantity` (would falsify "always have X to deploy").
+function makeReturnIncrementer(maxQty) {
+  return (v) => {
+    if (v === null || v === undefined) return undefined; // node deleted — don't create phantom
+    const next = (v || 0) + 1;
+    return maxQty != null ? Math.min(maxQty, next) : next;
+  };
+}
+
 function returnInventoryItems(sp) {
   // Return deployed equipment (strut, extensions, plates) to inventory counts.
   // Shared by both delete (silent) and return (with status change) paths.
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
-      activeOperation.externalEquipment[sp.deployedStrut.inventoryId].available++;
+      const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
+      extItem.available = Math.min(extItem.quantity, extItem.available + 1);
       if (db && deptId) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity));
       }
     } else {
+      const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
       if (db && deptId) {
-        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
+        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
       } else {
-        const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
       }
     }
@@ -4444,10 +4462,10 @@ function returnInventoryItems(sp) {
   if (sp.deployedExtensions) {
     for (const ext of sp.deployedExtensions) {
       if (ext.inventoryId) {
+        const inv = localInventory.find(i => i.id === ext.inventoryId);
         if (db && deptId) {
-          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
         } else {
-          const inv = localInventory.find(i => i.id === ext.inventoryId);
           if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         }
       }
@@ -4456,10 +4474,10 @@ function returnInventoryItems(sp) {
   if (sp.deployedPlates) {
     for (const pl of sp.deployedPlates) {
       if (pl.inventoryId) {
+        const inv = localInventory.find(i => i.id === pl.inventoryId);
         if (db && deptId) {
-          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => (v || 0) + 1);
+          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
         } else {
-          const inv = localInventory.find(i => i.id === pl.inventoryId);
           if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         }
       }
