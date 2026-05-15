@@ -1927,7 +1927,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.5.1'
+    appVersion: '3.5.2'
   };
   if (db) {
     const feedbackRef = db.ref('feedback').push();
