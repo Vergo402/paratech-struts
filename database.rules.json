@@ -41,6 +41,14 @@
         }
       }
     },
+    "diagnostics": {
+      "sync": {
+        "$logId": {
+          ".write": "auth != null",
+          ".validate": "newData.hasChild('ts') && newData.hasChild('event')"
+        }
+      }
+    },
     "$other": {
       ".read": false,
       ".write": false

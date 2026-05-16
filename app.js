@@ -790,6 +790,41 @@ function safeSetItem(key, value) {
 let pendingWrites = safeParse(localStorage.getItem('fieldstruts_pendingWrites'), []);
 let isOnline = false;
 
+// Sync diagnostics — backend-only logs at /diagnostics/sync/. No UI surface.
+// Inspect via Firebase console. Best-effort: diagnostic writes never go through
+// firebaseSave (would recurse — a failed diag write would queue a diag write).
+let _syncDiagBuffer = [];
+let _lastOfflineToastTs = 0;
+let _lastFailToastTs = 0;
+const SYNC_TOAST_DEBOUNCE_MS = 30000;
+
+function logSyncEvent(event, extra) {
+  if (!db) return;
+  const user = firebase.auth().currentUser;
+  const entry = {
+    ts: firebase.database.ServerValue.TIMESTAMP,
+    event,
+    uid: user ? user.uid : null,
+    deptId: deptId || null,
+    appVersion: '3.7.5',
+    ...(extra || {}),
+  };
+  if (isOnline && user) {
+    db.ref('diagnostics/sync').push(entry).catch(() => {});
+  } else {
+    _syncDiagBuffer.push(entry);
+    if (_syncDiagBuffer.length > 50) _syncDiagBuffer.shift();
+  }
+}
+
+function flushSyncDiagBuffer() {
+  if (!db || !isOnline || !firebase.auth().currentUser || _syncDiagBuffer.length === 0) return;
+  const batch = _syncDiagBuffer.splice(0);
+  for (const entry of batch) {
+    db.ref('diagnostics/sync').push(entry).catch(() => {});
+  }
+}
+
 function firebaseSave(ref, method, data) {
   if (!ref) return Promise.resolve();
   let promise;
@@ -814,7 +849,13 @@ function firebaseSave(ref, method, data) {
       pendingWrites.push(op);
       safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
     }
-    showToast('Offline — will sync later', 'warning');
+    // Debounce — the conn-status banner already shows persistent state; the
+    // toast is for transient awareness, not per-mutation spam.
+    const now = Date.now();
+    if (now - _lastOfflineToastTs > SYNC_TOAST_DEBOUNCE_MS) {
+      showToast('Offline — will sync later', 'warning');
+      _lastOfflineToastTs = now;
+    }
   });
 }
 
@@ -827,8 +868,16 @@ function flushPendingWrites() {
   const MAX_AGE = 24 * 60 * 60 * 1000;
   const now = Date.now();
   const viable = writes.filter(op => {
-    if (now - op.timestamp > MAX_AGE) { console.warn('Discarding stale pending write (>24h):', op.path); return false; }
-    if ((op.retries || 0) >= MAX_RETRIES) { console.warn('Discarding write after max retries:', op.path); return false; }
+    if (now - op.timestamp > MAX_AGE) {
+      console.warn('Discarding stale pending write (>24h):', op.path);
+      logSyncEvent('discard_stale', { path: op.path, method: op.method, ageMs: now - op.timestamp });
+      return false;
+    }
+    if ((op.retries || 0) >= MAX_RETRIES) {
+      console.warn('Discarding write after max retries:', op.path);
+      logSyncEvent('discard_max_retries', { path: op.path, method: op.method, retries: op.retries });
+      return false;
+    }
     return true;
   });
   let flushed = 0;
@@ -859,8 +908,20 @@ function flushPendingWrites() {
     } else {
       localStorage.removeItem('fieldstruts_pendingWrites');
     }
+    logSyncEvent('flush', {
+      attempted: viable.length,
+      synced: flushed,
+      failed: failed.length,
+      pendingAfter: pendingWrites.length,
+    });
     if (flushed > 0) showToast(flushed + ' pending change' + (flushed > 1 ? 's' : '') + ' synced');
-    if (failed.length > 0) showToast(failed.length + ' change' + (failed.length > 1 ? 's' : '') + ' failed — will retry', 'warning');
+    if (failed.length > 0) {
+      const nowTs = Date.now();
+      if (nowTs - _lastFailToastTs > SYNC_TOAST_DEBOUNCE_MS) {
+        showToast('Sync delayed — retrying ' + failed.length + ' update' + (failed.length > 1 ? 's' : ''), 'warning');
+        _lastFailToastTs = nowTs;
+      }
+    }
   });
 }
 
@@ -1184,6 +1245,7 @@ function initFirebase() {
         el.className = 'conn-status';
         el.textContent = '';
         flushPendingWrites();
+        flushSyncDiagBuffer();
       } else {
         isOnline = false;
         el.className = 'conn-status offline';
@@ -2027,7 +2089,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.7.4'
+    appVersion: '3.7.5'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
