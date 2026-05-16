@@ -806,7 +806,7 @@ function logSyncEvent(event, extra) {
     event,
     uid: user ? user.uid : null,
     deptId: deptId || null,
-    appVersion: '3.7.5',
+    appVersion: '3.8.0',
     ...(extra || {}),
   };
   if (isOnline && user) {
@@ -2089,7 +2089,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.7.5'
+    appVersion: '3.8.0'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
@@ -3707,6 +3707,7 @@ function deployShorePoint(result, qty) {
 
     persistOperation();
     persistInventory();
+    renderInventory();
     renderOperations();
   }
 
@@ -3728,8 +3729,9 @@ function updateShoreStatus(spId, newStatus) {
   const sp = points.find(p => p.id === spId);
   if (!sp) return;
 
-  // Get all group members — they advance together
-  const members = getGroupMembers(spId);
+  // Pre-cutting phases advance as a group; cutting workflow is individual
+  const individualPhase = ['cutting', 'runner', 'secured'];
+  const members = individualPhase.includes(normalizeStatus(sp.status)) ? [sp] : getGroupMembers(spId);
 
   for (const member of members) {
     // Skip members already at or past the target status
@@ -4387,24 +4389,19 @@ function renderCutTableCard(sp, mode) {
 function sendToRunner(spId) {
   if (!activeOperation) return;
 
-  // Capture optional actual cut measurement from the triggering card
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === spId);
+  if (!sp || normalizeStatus(sp.status) === 'runner') return;
+
   const actualInput = document.getElementById('actual-' + spId);
   const actualVal = actualInput ? parseFloat(actualInput.value) : null;
 
-  // Get all group members — they advance together
-  const members = getGroupMembers(spId);
+  const updateData = { status: 'runner', cutMarkedDone: false };
+  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
-  for (const member of members) {
-    if (normalizeStatus(member.status) === 'runner') continue;
-
-    const updateData = { status: 'runner', cutMarkedDone: false };
-    // Apply the actual cut value to all members (same cut for grouped points)
-    if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
-
-    Object.assign(member, updateData);
-    if (db && deptId && activeOperation.id) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
-    }
+  Object.assign(sp, updateData);
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', updateData);
   }
 
   persistOperation();
@@ -4415,23 +4412,19 @@ function sendToRunner(spId) {
 function markCutDone(spId) {
   if (!activeOperation) return;
 
-  // Capture optional actual cut measurement entered before marking done
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === spId);
+  if (!sp || sp.cutMarkedDone) return;
+
   const actualInput = document.getElementById('actual-' + spId);
   const actualVal = actualInput ? parseFloat(actualInput.value) : null;
 
-  // Get all group members — they advance together
-  const members = getGroupMembers(spId);
+  const updateData = { cutMarkedDone: true };
+  if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
-  for (const member of members) {
-    if (member.cutMarkedDone) continue;
-
-    const updateData = { cutMarkedDone: true };
-    if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
-
-    Object.assign(member, updateData);
-    if (db && deptId && activeOperation.id) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
-    }
+  Object.assign(sp, updateData);
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', updateData);
   }
 
   persistOperation();
@@ -4627,15 +4620,15 @@ function returnEquipmentSingle(sp) {
 function returnEquipment(spId) {
   if (!activeOperation) return;
 
-  // Get all group members — they return together, each with its own inventory
-  const members = getGroupMembers(spId);
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === spId);
+  if (!sp) return;
 
-  for (const member of members) {
-    returnEquipmentSingle(member);
-  }
+  returnEquipmentSingle(sp);
 
   persistOperation();
   persistInventory();
+  renderInventory();
   renderOperations();
 }
 

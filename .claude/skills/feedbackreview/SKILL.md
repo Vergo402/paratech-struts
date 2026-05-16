@@ -1,66 +1,55 @@
 ---
 name: feedbackreview
-description: "Review the Paratech Struts Firebase feedback database, create GitHub issues for new items, and draft a plan to fix them. Use this skill whenever Alex says 'review feedback', 'feedback review', 'check feedback and plan fixes', 'what's new in feedback', 'triage feedback', or '/feedbackreview'. This is the full feedback pipeline — from Firebase to GitHub issues to a fix plan."
+description: "Pull feedback from Firebase, create GitHub issues, clear transferred entries, and draft a fix plan. Use this skill whenever Alex says 'review feedback', 'feedback review', 'check feedback', 'triage feedback', or '/feedbackreview'."
 ---
 
 # Feedback Review Pipeline
 
-This skill runs the full feedback-to-plan pipeline for the Paratech Strut Selector app:
-
-1. **Pull** all feedback from Firebase
-2. **Triage** entries by category and severity
-3. **Sync** new items to GitHub issues (skip duplicates)
-4. **Draft** a versioned plan to address the issues
-
-The goal is to turn raw user feedback into an actionable development plan in one pass. Alex is a firefighter who built this app for his department — keep everything clear and non-jargony.
+Pull feedback from Firebase, transfer each entry to a GitHub issue, delete transferred entries from Firebase, and draft a versioned fix plan.
 
 ---
 
-## Phase 1: Pull & Triage Feedback
+## Phase 1: Pull Feedback
 
-### Fetch from Firebase
-
-```bash
-curl -s "https://paratech-c3ab4-default-rtdb.firebaseio.com/feedback.json"
-```
-
-Each entry has: `category` (bug/feature), `text`, `appVersion`, `deptId`, `deptName`, `timestamp`.
-
-### Fetch existing GitHub issues
+### Fetch from Firebase (authenticated)
 
 ```bash
-gh issue list --repo Vergo402/paratech-struts --state all --limit 200 --json number,title,body,state,labels
+firebase database:get /feedback --project paratech-c3ab4
 ```
 
-### Triage
+The REST endpoint requires auth — always use the Firebase CLI (logged in locally).
 
-Present Alex a summary table of ALL feedback entries, organized by category:
+Each entry has: `category` (bug/feature), `text`, `appVersion`, `deptId`, `timestamp`.
+
+### Handle empty queue
+
+If the result is `null` or empty, report "No new feedback" and stop.
+
+### Present summary
+
+Show Alex a table of what's in the queue:
 
 ```
-## Feedback Summary
+## Feedback Queue (X items)
 
-### Bugs (X items)
-| # | Date | Version | Dept | Description | GitHub Issue |
-|---|------|---------|------|-------------|--------------|
-| 1 | 2026-05-10 | v1.8.0 | hfd217 | Short description... | #12 or NEW |
+### Bugs (X)
+| # | Date | Version | Dept | Description |
+|---|------|---------|------|-------------|
+| 1 | 2026-05-16 | v3.7.5 | hfd217 | Short description... |
 
-### Feature Requests (X items)
-| # | Date | Version | Dept | Description | GitHub Issue |
-|---|------|---------|------|-------------|--------------|
+### Feature Requests (X)
+| # | Date | Version | Dept | Description |
+|---|------|---------|------|-------------|
 ...
 ```
 
-For the "GitHub Issue" column:
-- If the feedback text already appears in an existing issue body, show the issue number (e.g., `#7`)
-- If it's new, show `NEW`
-
-A feedback entry is a **duplicate** if any existing issue body contains the exact feedback `text` field.
+Convert timestamps to YYYY-MM-DD. Filter out obvious test entries (e.g. "test feedback", dept "test353").
 
 ---
 
 ## Phase 2: Create GitHub Issues
 
-For each NEW (non-duplicate) feedback entry, create a GitHub issue.
+For each feedback entry, create a GitHub issue.
 
 **Label:** `bug` for bugs, `enhancement` for features.
 
@@ -73,53 +62,62 @@ For each NEW (non-duplicate) feedback entry, create a GitHub issue.
 **Description:** {text}
 ```
 
-Convert the timestamp to YYYY-MM-DD for the date.
-
 ```bash
 gh issue create --repo Vergo402/paratech-struts \
   --title "Bug: short summary" \
   --label "bug" \
-  --body "**Source:** In-app feedback (v1.8.0, dept hfd217, 2026-05-10)
+  --body "$(cat <<'EOF'
+**Source:** In-app feedback (v3.7.5, dept hfd217, 2026-05-16)
 
-**Description:** The full feedback text here"
+**Description:** The full feedback text here
+EOF
+)"
 ```
 
-After creating issues, show Alex what was created:
+After creating issues, show what was created:
 
 ```
 ### Issues Created
 | Issue | Title | Label |
 |-------|-------|-------|
-| #13 | Bug: Shore point collapses on entry | bug |
-| #14 | Feature: Add runner role | enhancement |
-
-### Duplicates Skipped: X
+| #64 | Bug: Inventory not updating on shore point creation | bug |
+| #65 | Feature: Individual wood cut tracking | enhancement |
 ```
-
-**Important:** Ask Alex for confirmation before creating the issues. Show the list of what you plan to create and wait for a "yes" before running the `gh issue create` commands.
 
 ---
 
-## Phase 3: Draft Fix Plan
+## Phase 3: Clear Transferred Feedback
 
-After issues are synced, draft a plan to address them. This follows the project's plan format (see `.claude/plans/` for examples).
+Delete all transferred entries from Firebase in a single batch update. Keep any entries that failed to create as issues.
+
+```bash
+firebase database:update --force --project paratech-c3ab4 /feedback \
+  --data '{ "-entryKey1": null, "-entryKey2": null }'
+```
+
+Also delete any test entries that were filtered out in Phase 1.
+
+Confirm to Alex: "Cleared X entries from Firebase feedback queue."
+
+---
+
+## Phase 4: Draft Fix Plan
 
 ### Determine the version number
 
 - Read the current version from `sw.js` (the `CACHE_NAME` line)
 - **PATCH** bump (x.x.+1) if all items are bug fixes
 - **MINOR** bump (x.+1.0) if there are new features
-- Use the next appropriate version number for the plan
 
 ### Plan structure
 
-Save the plan to `.claude/plans/` with a descriptive filename. Use this template:
+Save the plan to `.claude/plans/` with a descriptive filename:
 
 ```markdown
 # Plan: v{VERSION} — {Short Theme}
 
 ## Context
-{1-2 sentences on what triggered this — e.g., "X new feedback items from Firebase, covering Y bugs and Z feature requests."}
+{1-2 sentences — how many items, what triggered this.}
 
 ---
 
@@ -132,7 +130,7 @@ Save the plan to `.claude/plans/` with a descriptive filename. Use this template
 {List each feature with description and implementation approach}
 
 ### Deferred
-{Any items that are too large or complex for this release — note why and suggest which future version}
+{Items too large for this release — note why and which future version}
 
 ---
 
@@ -141,7 +139,7 @@ Save the plan to `.claude/plans/` with a descriptive filename. Use this template
 ### Bug/Feature 1: {title}
 **Issue:** #{number}
 **Symptom:** {what the user sees}
-**Investigate:** {where to look in the code — be specific about functions/line ranges}
+**Investigate:** {where to look — name functions, file, line ranges}
 **Fix:** {proposed approach}
 
 ### Bug/Feature 2: {title}
@@ -153,13 +151,13 @@ Save the plan to `.claude/plans/` with a descriptive filename. Use this template
 
 | File | Changes |
 |------|---------|
-| `index.html` | {specific changes} |
+| `app.js` | {specific changes} |
 | `sw.js` | Cache name bump to v{VERSION} |
 
 ---
 
 ## Release Checklist
-- [ ] Version bump in 3 places (index.html header, index.html feedback appVersion, sw.js cache name)
+- [ ] Version bump in 3 places (index.html header, app.js appVersion, sw.js cache name)
 - [ ] Test each fix
 - [ ] Push to main
 - [ ] Create GitHub release v{VERSION}
@@ -168,16 +166,13 @@ Save the plan to `.claude/plans/` with a descriptive filename. Use this template
 
 ### Making the plan useful
 
-The plan needs to be specific enough that a future Claude session can pick it up and execute. That means:
-
-- **Name the functions** involved in each bug/feature. Read `index.html` to find relevant code — search for keywords from the feedback text.
-- **Give line number ranges** where the fix likely lives (these shift between versions, so give function names too).
-- **Separate quick fixes from larger work.** Bugs and small features go in the immediate release. Major features (redesigns, new systems) get deferred with a note about scope.
-- **Consider dependencies** between items. If Feature A requires Bug B to be fixed first, note that.
+- **Name the functions** involved. Read `app.js` to find relevant code.
+- **Give line number ranges** (these shift, so include function names too).
+- **Separate quick fixes from larger work.** Bugs and small features go in the immediate release. Major features get deferred.
+- **Consider dependencies** between items.
 
 ### Severity-based ordering
 
-Address items in this priority order:
 1. Bugs that cause data loss or incorrect behavior
 2. Bugs that affect usability
 3. Small features that improve existing workflows
@@ -185,16 +180,15 @@ Address items in this priority order:
 
 ---
 
-## Phase 4: Report to Alex
-
-Finish with a clean summary:
+## Phase 5: Report
 
 ```
 ## Feedback Review Complete
 
-- **Feedback entries reviewed:** X
-- **New issues created:** Y
-- **Duplicates skipped:** Z
+- **Feedback entries processed:** X
+- **Issues created:** Y
+- **Test entries discarded:** Z
+- **Firebase queue cleared:** Yes
 - **Plan saved to:** .claude/plans/{filename}.md
 - **Target version:** v{VERSION}
 
@@ -203,15 +197,14 @@ Finish with a clean summary:
 - {Y features to add}
 - {Z items deferred}
 
-Ready to start working on the plan? Just say "go" or "start the plan."
+Ready to start working on the plan? Just say "go."
 ```
 
 ---
 
 ## Notes
 
-- The repo is `Vergo402/paratech-struts` — use SSH, already configured
-- The app is a single-file PWA: everything lives in `index.html`
-- Version must be updated in 3 places on every release (see CLAUDE.md)
-- Work on a feature branch, not directly on `main`, unless Alex says otherwise
-- `docs/feedback.sh` in the docs folder is a standalone script that does the Firebase pull — you can use it for reference but this skill does its own fetch with more processing
+- Repo: `Vergo402/paratech-struts` (SSH)
+- 3-file split: `index.html`, `app.js`, `style.css`
+- Version bumped in 3 places every release (see CLAUDE.md)
+- Work on feature branches, not directly on `main`
