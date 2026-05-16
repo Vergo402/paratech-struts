@@ -235,6 +235,21 @@ select { padding-right: 40px; }
   padding: 32px 16px;
   color: var(--text-secondary);
 }
+.no-results.info-fallback {
+  text-align: left;
+  background: var(--bg-secondary, var(--surface));
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.info-fallback-list {
+  margin: 4px 0 8px 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-style: italic;
+}
+.info-fallback-list li { padding: 2px 0; }
 .result-card {
   background: var(--surface);
   border-radius: var(--radius);

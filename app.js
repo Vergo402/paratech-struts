@@ -408,10 +408,28 @@ function runQuickSelect() {
   renderResults(results, 'quickResults', length, load, sfIndex, false);
 }
 
-function renderResults(results, containerId, length, load, sfIndex, isOperation) {
+function renderResults(results, containerId, length, load, sfIndex, isOperation, informational) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
     const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button>' : '';
+    // If the inventory-filtered search returned nothing but unrestricted Paratech models exist,
+    // surface them as informational ("would fit if you had them") rather than the bare empty state.
+    if (informational && informational.length > 0) {
+      const deployable = informational.filter(r => !r.exceedsCapacity && !r.unrated);
+      if (deployable.length > 0) {
+        const items = deployable.slice(0, 6).map(r => {
+          const extStr = r.extensions.length > 0 ? ` + ${r.extensions.map(e => e + '"').join(' + ')}` : '';
+          return `<li>${escapeHtml(r.strut.model)}${extStr}</li>`;
+        }).join('');
+        container.innerHTML = `<div class="no-results info-fallback">
+          <div style="font-weight:600;margin-bottom:6px">No matching struts on assigned apparatus.</div>
+          <div style="font-size:13px;margin-bottom:8px">These Paratech models would fit if available:</div>
+          <ul class="info-fallback-list">${items}</ul>
+          ${pendingBtn}
+        </div>`;
+        return;
+      }
+    }
     container.innerHTML = `<div class="no-results">No strut combinations found for these parameters.<br>Try adjusting the length or load.${pendingBtn}</div>`;
     return;
   }
@@ -2009,7 +2027,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.7.2'
+    appVersion: '3.7.3'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
@@ -3406,7 +3424,12 @@ function findForShorePoint() {
   }
   const deductions = getDeductions('sp');
   const results = findStrutCombinations(length, load, sfIndex, apparatusInventory, null, deductions);
-  renderResults(results, 'spResults', length, load, sfIndex, true);
+  // If inventory-filtered search returns nothing, re-run unrestricted so we can tell the rescuer
+  // which Paratech models would fit if they had them on scene (vs. nothing fits geometrically).
+  const informational = results.length === 0
+    ? findStrutCombinations(length, load, sfIndex, null, null, deductions)
+    : [];
+  renderResults(results, 'spResults', length, load, sfIndex, true, informational);
 }
 
 function assignEquipmentToPending(spId) {
