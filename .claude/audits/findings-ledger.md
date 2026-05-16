@@ -277,9 +277,23 @@ Status:
 
 ---
 
+## Strategic audit closures — misty-journal.md STOP-SHIP findings
+
+The strategic roadmap (`.claude/plans/v4.0-to-v5.0-roadmap.md`) flagged five STOP-SHIP findings (C1–C5) from the 19-reviewer audit team. Status of the two that overlap with the algorithm work in this ledger:
+
+| ID | Original concern | Status | Verified |
+|----|------------------|--------|----------|
+| C1 | Linear interpolation in `getLoadCapacity()` over-reports capacity at intermediate lengths (Euler 1/L² concavity) | ✅ CLOSED in v3.7.2 — interpolation replaced with conservative floor (returns the longer/lower-capacity row). | `app.js:143-164` + header comment `app.js:46-50`. Audit script ran 21 probes (10 adjacent-row midpoints + 11 exact-row matches) against ACME_LOAD_TABLE — all pass, none over-report. |
+| C3 | LockStroke extension compatibility treated per-system; Paratech tubes differ per-strut (LK 19-25 vs LK 55-89) | ✅ CLOSED — per-strut `LOCKSTROKE_EXTENSIONS` map in place; `findStrutCombinations` keys off `strut.id` first, falls back to `EXTENSIONS[system]` only for non-LockStroke. | `app.js:31-39` (map) + `app.js:198-200` (lookup). |
+
+C2 (Firebase rules), C4 (E&O insurance), C5 (offline conflict resolution) remain open and are scoped to v4.0.0 / Pre-Phase 0.
+
+---
+
 ## Cross-references
 
 - Audit details: `v3.5.1-deep-audit-round2.md` (Round 2 verified findings) and `v3.5.1-comprehensive-audit.md` (Round 1, with caveats listed in Round 2's "Headline corrections")
 - Implementation: `MASTER-PLAN.md` (comprehensive multi-release plan)
 - Interactive evidence: `interactive-findings.md`
 - v3.5.2 hotfix specifics: `v3.5.2-safety-hotfix.md`
+- Strategic roadmap (C1–C5 source): `v4.0-to-v5.0-roadmap.md`

@@ -2,22 +2,24 @@
 
 **Covers every finding from the two-round audit.** Pull individual finding details from `.claude/audits/findings-ledger.md`. This plan sequences fixes across releases with code-level specifics.
 
+> **Status as of 2026-05-16:** v3.5.2 ✅ shipped, v3.6.0 ✅ shipped, v3.7.x ✅ shipped (v3.7.0 auth + photos, v3.7.1 auth race hotfix, v3.7.2 safety/liability + interpolation→conservative-floor, v3.7.3 empty-state clarity). The v4.0.0 section of this plan is **superseded** by `.claude/plans/v4.0-to-v5.0-roadmap.md`, which adds the 19-reviewer strategic audit (C1–C5 STOP-SHIP findings, monorepo/React-Native phasing, legal/IP, vendor-agnostic data model). This file is retained for v3.x finding traceability.
+
 ---
 
 ## Release roadmap
 
-| Release | Theme | Effort | Risk | Scope |
-|---|---|---|---|---|
-| **v3.5.2** | SAFETY HOTFIX — algorithm + data integrity + brick + critical XSS | 1-2 days | Low | 14 surgical fixes |
-| **v3.6.0** | UX / Safety / Race conditions / Accessibility | 4-6 weeks | Medium | ~60 findings |
-| **v4.0.0** | Multi-agency + NIMS doctrine + Auth (BREAKING) | 6-10 weeks | High | ~15 findings + breaking schema changes |
-| **v4.1+** | Deferred polish + advanced features | TBD | — | Remaining low-priority items |
+| Release | Theme | Effort | Risk | Scope | Status |
+|---|---|---|---|---|---|
+| **v3.5.2** | SAFETY HOTFIX — algorithm + data integrity + brick + critical XSS | 1-2 days | Low | 14 surgical fixes | ✅ Shipped |
+| **v3.6.0** | UX / Safety / Race conditions / Accessibility | 4-6 weeks | Medium | ~60 findings | ✅ Shipped |
+| **v4.0.0** | Multi-agency + NIMS doctrine + Auth (BREAKING) | 6-10 weeks | High | ~15 findings + breaking schema changes | ⏳ Planned (see v4.0-to-v5.0-roadmap.md) |
+| **v4.1+** | Deferred polish + advanced features | TBD | — | Remaining low-priority items | ⏳ Planned |
 
 ---
 
-# Release 1: v3.5.2 SAFETY HOTFIX
+# Release 1: v3.5.2 SAFETY HOTFIX ✅ Shipped
 
-**Detail:** See `.claude/plans/v3.5.2-safety-hotfix.md` for fix-by-fix specifics.
+**Detail:** See `.claude/plans/archive/v3.5.2-safety-hotfix.md` for fix-by-fix specifics.
 
 **Headline:** Fix the strut algorithm capacity over-reporting at 11 ft and 2 ft. This is the only finding with a direct line from "app says it's OK" to "rescuer dies."
 
@@ -35,7 +37,9 @@
 
 ---
 
-# Release 2: v3.6.0 — UX, Safety, Race Conditions, Accessibility
+# Release 2: v3.6.0 — UX, Safety, Race Conditions, Accessibility ✅ Shipped
+
+**Detail:** See `.claude/plans/archive/v3.6.0-comprehensive-audit-fixes.md` for the full fix-by-fix plan.
 
 **Effort estimate:** 4-6 weeks (one developer-equivalent)
 
@@ -855,7 +859,9 @@ Most NIMS doctrine items defer to v4.0.0. But N9 (three-tier span warning) is sm
 
 ---
 
-# Release 3: v4.0.0 — Multi-Agency / NIMS / Auth (BREAKING)
+# Release 3: v4.0.0 — Multi-Agency / NIMS / Auth (BREAKING) ⏳ Planned
+
+> **Superseded by [`v4.0-to-v5.0-roadmap.md`](v4.0-to-v5.0-roadmap.md).** The strategic roadmap reframes v4.0.0 as Phase 0 of a multi-platform plan (PWA → React Native + web command module) and adds 19-reviewer audit findings, legal/IP groundwork, and a vendor-agnostic data model. Use that file for current planning; the section below is retained for the original v3.x-audit-derived scope.
 
 **Effort estimate:** 6-10 weeks
 
