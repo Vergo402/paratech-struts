@@ -57,7 +57,7 @@
   <header class="header">
     <h1>FieldStruts</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.8.3</div>
+    <div class="version-label">v3.9.0</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -616,9 +616,15 @@
   <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" class="hidden" onchange="handleImport(event)">
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"
+        integrity="sha384-ajMUFBUFMCyjh8uxJg6bkGcKe9RTolyjwbxB3yES0QQMenP3Oztj/W9vA2SJPcIh"
+        crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"
+        integrity="sha384-xD1t9dGSVKobUztxDkv6xUI0H4AnFz0NxwlgDJJ7FDlblG9xxr1Z9iauCZuJYj6p"
+        crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"
+        integrity="sha384-f6/UpzjTjIXASlp20cArQsaRh1EvHVJd5kegy/gYR9W2D0a32TnEqUEiW4Zm/5O0"
+        crossorigin="anonymous"></script>
 <script src="app.js"></script>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

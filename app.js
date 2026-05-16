@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.8.3';
+const APP_VERSION = '3.9.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -695,6 +695,9 @@ async function loadXLSX() {
     new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      // F-5A-6: SRI pin so a compromised CDN can't substitute a malicious xlsx.full.min.js
+      s.integrity = 'sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT';
+      s.crossOrigin = 'anonymous';
       s.onload = () => { xlsxLoaded = true; resolve(); };
       s.onerror = () => { xlsxPromise = null; reject(new Error('Failed to load export library')); };
       document.head.appendChild(s);
@@ -1186,13 +1189,21 @@ function removeCustomRole(roleId) {
     if (!confirm(`Remove "${role.name}"?`)) return;
     activeOperation.customRoles = roles.filter(r => r.id !== roleId);
   }
-  // Clear any assignments to removed roles
+  // Clear any assignments to removed roles (local + Firebase via granular updates)
+  const removedTargets = [];
   if (activeOperation.roles) {
     for (const [targetId, assignedRole] of Object.entries(activeOperation.roles)) {
       if (assignedRole === roleId || (children.length > 0 && !activeOperation.customRoles.find(r => r.id === assignedRole))) {
         delete activeOperation.roles[targetId];
+        removedTargets.push(targetId);
       }
     }
+  }
+  // F-1D-1 fix: sync removed assignments to Firebase so they don't get re-hydrated by the listener
+  if (db && deptId && activeOperation.id && removedTargets.length > 0) {
+    const updates = {};
+    for (const targetId of removedTargets) updates[targetId] = null;
+    firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'update', updates);
   }
   // Clean up org chart interaction state if removed role was active
   if (orgChartPickedRole === roleId || (children.length > 0 && !activeOperation.customRoles.find(r => r.id === orgChartPickedRole))) {
@@ -2230,7 +2241,7 @@ function confirmCreateGroup() {
   if (members.length < 2) { alert('Select at least 2 apparatus.'); return; }
 
   if (!activeOperation.apparatusGroups) activeOperation.apparatusGroups = {};
-  const gid = 'grp-' + Date.now();
+  const gid = 'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
   activeOperation.apparatusGroups[gid] = { name, type, members };
   persistOperation();
   if (db && deptId && activeOperation.id) {
@@ -3197,8 +3208,9 @@ function renderShorePointCards(numbered) {
 
     const sorted = [...laneSPs].reverse();
     for (const sp of sorted) {
+      // F-1C-19 fix: coerce ext.length to number so a poisoned Firebase value can't inject HTML
       const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-        ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+        ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
         : '';
 
       const shoreTypeLabel = getShoreTypeName(sp.shoreType);
@@ -3247,7 +3259,7 @@ function renderShorePointCards(numbered) {
           ${Number.isFinite(sp.requiredLength) ? `${sp.requiredLength}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(sp.estimatedLoad) ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
-          ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
+          ${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
         </div>
         ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}`;
 
@@ -3360,13 +3372,16 @@ function viewArchivedOp(opId) {
   detail += `</div></div></div>`;
 
   for (const sp of points) {
+    // F-1C-19 fix: coerce/escape Firebase-sourced fields to prevent stored XSS via peer write
     const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-      ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+      ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
       : '';
+    const reqLen = Number(sp.requiredLength);
+    const estLoad = Number(sp.estimatedLoad);
     detail += `<div class="shore-point returned" style="margin-bottom:8px">
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
-      <div style="font-size:14px;color:var(--text-secondary)">${sp.requiredLength}" @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
-      <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</div>
+      <div style="font-size:14px;color:var(--text-secondary)">${Number.isFinite(reqLen) ? reqLen + '"' : '— no length —'} @ ${Number.isFinite(estLoad) && estLoad > 0 ? estLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
+      <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : '?'}${extText}</div>
       ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
     </div>`;
   }
@@ -3760,9 +3775,14 @@ function updateShoreStatus(spId, newStatus) {
   const individualPhase = ['cutting', 'runner', 'secured'];
   const members = individualPhase.includes(normalizeStatus(sp.status)) ? [sp] : getGroupMembers(spId);
 
+  const targetIdx = STATUS_ORDER.indexOf(newStatus);
   for (const member of members) {
-    // Skip members already at or past the target status
-    if (normalizeStatus(member.status) === newStatus) continue;
+    const memberIdx = STATUS_ORDER.indexOf(normalizeStatus(member.status));
+    // Skip exact match (already there)
+    if (memberIdx === targetIdx) continue;
+    // Group transitions (pre-cutting): never regress members that are already past target
+    // — protects cutting/runner/secured progress on group-mates from a Send Back on a different member
+    if (members.length > 1 && targetIdx >= 0 && memberIdx > targetIdx) continue;
 
     const updateData = { status: newStatus };
 
@@ -4890,8 +4910,19 @@ async function handleImport(event) {
           items.push({
             id: importedId,
             type: 'extension',
+            model: '',
             length: parseInt(row['Extension Length']),
             system: row.System || 'LongShore',
+            apparatus: row.Apparatus || '',
+            quantity: qty,
+            available: Math.min(avail, qty)
+          });
+        } else if (type === 'plate' && row['Plate ID']) {
+          items.push({
+            id: importedId,
+            type: 'plate',
+            model: row.Model || '',
+            plateId: String(row['Plate ID']).trim(),
             apparatus: row.Apparatus || '',
             quantity: qty,
             available: Math.min(avail, qty)
@@ -5182,15 +5213,20 @@ function onShoreTypeChange() {
   document.getElementById('spDeductionToggle').checked = true;
   toggleDeductions('sp');
 
-  if (type === '3-post') {
-    setSpQty(3);
-    document.getElementById('spHeader').value = '5.5';
-    document.getElementById('spSole').value = '5.5';
-  } else if (type === 'double-t') {
-    setSpQty(2);
-  } else {
-    setSpQty(1);
+  // F-1A-11 fix: auto-fill header/footer deductions from SHORE_TYPES config
+  // (was only happening for 3-post before; T-Shore and Double-T defaulted to 0 silently)
+  const shoreCfg = SHORE_TYPES.find(t => t.id === type);
+  if (shoreCfg) {
+    const headerWood = WOOD_SIZES.find(w => w.id === shoreCfg.defaultHeader);
+    const footerWood = WOOD_SIZES.find(w => w.id === shoreCfg.defaultFooter);
+    document.getElementById('spHeader').value = headerWood ? headerWood.height : 0;
+    document.getElementById('spSole').value = footerWood ? footerWood.height : 0;
   }
+
+  if (type === '3-post') setSpQty(3);
+  else if (type === 'double-t') setSpQty(2);
+  else setSpQty(1);
+
   updateDeductionSummary('sp');
 }
 
