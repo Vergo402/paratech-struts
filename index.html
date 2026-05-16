@@ -17,7 +17,7 @@
   // needs to check one attribute instead of also handling media queries.
   (function() {
     try {
-      var pref = localStorage.getItem('fieldstruts_theme') || 'system';
+      var pref = localStorage.getItem('fieldshore_theme') || 'system';
       var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     } catch (e) { /* localStorage unavailable */ }
@@ -57,7 +57,7 @@
   <header class="header">
     <h1>FieldShore</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.9.0</div>
+    <div class="version-label">v3.8.3</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
