@@ -806,7 +806,7 @@ function logSyncEvent(event, extra) {
     event,
     uid: user ? user.uid : null,
     deptId: deptId || null,
-    appVersion: '3.8.0',
+    appVersion: '3.8.1',
     ...(extra || {}),
   };
   if (isOnline && user) {
@@ -843,7 +843,7 @@ function firebaseSave(ref, method, data) {
   }).catch(err => {
     console.warn('Firebase write failed:', err.message, ref.toString());
     // Queue for retry on reconnect
-    const op = { path: ref.toString(), method, timestamp: Date.now(), retries: 0 };
+    const op = { path: ref.toString(), method, timestamp: Date.now(), retries: 0, lastError: err.message || String(err) };
     if (method !== 'transaction') {
       op.data = data;
       pendingWrites.push(op);
@@ -894,7 +894,7 @@ function flushPendingWrites() {
       else { failed.push(op); continue; }
       promises.push(
         p.then(() => { flushed++; })
-         .catch(() => { failed.push({ ...op, retries: (op.retries || 0) + 1 }); })
+         .catch(err => { failed.push({ ...op, retries: (op.retries || 0) + 1, lastError: err.message || String(err) }); })
       );
     } catch (e) {
       console.warn('Failed to reconstruct ref:', e);
@@ -908,11 +908,13 @@ function flushPendingWrites() {
     } else {
       localStorage.removeItem('fieldstruts_pendingWrites');
     }
+    const errors = failed.slice(0, 5).map(op => ({ path: op.path.replace(/.*firebaseio\.com/, ''), method: op.method, error: op.lastError }));
     logSyncEvent('flush', {
       attempted: viable.length,
       synced: flushed,
       failed: failed.length,
       pendingAfter: pendingWrites.length,
+      errors: errors.length > 0 ? errors : undefined,
     });
     if (flushed > 0) showToast(flushed + ' pending change' + (flushed > 1 ? 's' : '') + ' synced');
     if (failed.length > 0) {
@@ -2089,7 +2091,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.8.0'
+    appVersion: '3.8.1'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
