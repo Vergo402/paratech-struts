@@ -2,7 +2,7 @@
 
 **Covers every finding from the two-round audit.** Pull individual finding details from `.claude/audits/findings-ledger.md`. This plan sequences fixes across releases with code-level specifics.
 
-> **Status as of 2026-05-16:** v3.5.2 ✅ shipped, v3.6.0 ✅ shipped, v3.7.x ✅ shipped (v3.7.0 auth + photos, v3.7.1 auth race hotfix, v3.7.2 safety/liability + interpolation→conservative-floor, v3.7.3 empty-state clarity), v3.8.x ✅ shipped (v3.8.0 individual wood cut tracking + inventory display fix, v3.8.1 sync diagnostics error capture). The v4.0.0 section of this plan is **superseded** by `.claude/plans/v4.0-to-v5.0-roadmap.md`, which adds the 19-reviewer strategic audit (C1–C5 STOP-SHIP findings, monorepo/React-Native phasing, legal/IP, vendor-agnostic data model). This file is retained for v3.x finding traceability.
+> **Status as of 2026-05-16:** v3.5.2 ✅ shipped, v3.6.0 ✅ shipped, v3.7.x ✅ shipped (v3.7.0 auth + photos, v3.7.1 auth race hotfix, v3.7.2 safety/liability + interpolation→conservative-floor, v3.7.3 empty-state clarity), v3.8.x ✅ shipped (v3.8.0 individual wood cut tracking + inventory display fix, v3.8.1 sync diagnostics error capture, v3.8.2 Firebase validate rule fix, v3.8.3 audit quick wins), v3.9.x ✅ shipped (v3.9.0 audit minor — status guard / Excel ext+plate import / orphan-role sync / SRI / peer-XSS hardening, v3.9.1 revert T-Shore deduction auto-fill). The v4.0.0 section of this plan is **superseded** by `.claude/plans/v4.0-to-v5.0-roadmap.md`, which adds the 19-reviewer strategic audit (C1–C5 STOP-SHIP findings, monorepo/React-Native phasing, legal/IP, vendor-agnostic data model). This file is retained for v3.x finding traceability.
 
 ---
 

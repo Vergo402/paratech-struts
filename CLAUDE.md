@@ -211,6 +211,35 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 |---|---|
 | **Sync diagnostics — error capture** | `flushPendingWrites()` now captures `err.message` on failed writes and includes up to 5 error details in `logSyncEvent('flush')`. `firebaseSave()` queued writes also store `lastError`. Deployed `/diagnostics/sync/` security rules. |
 
+### ✅ Fixed in v3.8.2
+
+| Feature | Notes |
+|---|---|
+| **Firebase inventory validate rule field mismatch** | `database.rules.json` validate rule required `name` field but inventory items use `model`. Every inventory write since v3.7.0 had silently failed validation with `PERMISSION_DENIED`. Rule corrected and deployed. `APP_VERSION` promoted to module-level constant. Pending writes from older versions now discarded via version filter. Transaction failures logged to `/diagnostics/sync/` via `logSyncEvent('transaction_failed')`. |
+
+### ✅ Fixed in v3.8.3
+
+| Feature | Notes |
+|---|---|
+| **Audit v3.8.2 quick wins** | 13 quick wins from the v3.8.2 full audit action plan. XSS attribute escaping (3 sites in apparatus rename + group dropdown), `g.type` escape in group label, `sessionStorage.setItem` in try/catch, case-insensitive `normalizeStatus`, `\|\| 0` guard on external equipment available decrement, missing `renderInventory()` calls after deploy/return/end, empty-name error toast in `confirmStartOp`, random suffix on deploy `groupId`, clear `myRoleName` on role-clear, read `deptName` from settings on feedback submission, close feedback modal in no-db branch, reset `opMultiBuilding` checkbox in `confirmStartOp`, guard undefined interpolations in `renderShorePointCards`. |
+
+### ✅ Fixed in v3.9.0
+
+| Feature | Notes |
+|---|---|
+| **Status-progression guard (F-1C-1)** | `updateShoreStatus()` uses `STATUS_ORDER` to skip group members already past the target status. Pre-cutting transitions (Send Back / Strut Placed / Cutting) no longer regress group-mates that have already advanced into cutting/runner/secured. |
+| **Excel import — extensions and plates (F-1D-2)** | Extension items now include `model: ''` to pass the v3.8.2 validate rule. Added plate import via new `Plate ID` column. Excel imports no longer silently lose extension and plate rows. |
+| **Orphan role assignment sync (F-1D-1)** | `removeCustomRole()` syncs cleared role assignments to Firebase via granular `update({ targetId: null })`. Listener no longer re-hydrates stale assignments to deleted roles. |
+| **Apparatus group ID hardening (F-1C-9b)** | `confirmCreateGroup()` `gid` now `'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)` — prevents same-ms collisions across devices. |
+| **Subresource Integrity (F-5A-6)** | Firebase SDK (3 scripts) and SheetJS pinned with SHA-384 `integrity` + `crossorigin="anonymous"`. Compromised CDN can no longer substitute malicious JS. SheetJS SRI added to dynamic loader in `loadXLSX()`. |
+| **Shore-point peer-XSS hardening (F-1C-19)** | `renderShorePointCards()` and `viewArchivedOp()` now `escapeHtml()` `sp.deployedStrut.model` and coerce `ext.length` via `Number()`. Closes stored-XSS from peer write to Firebase shore-point data. |
+
+### ✅ Fixed in v3.9.1
+
+| Feature | Notes |
+|---|---|
+| **Revert F-1A-11 deduction auto-fill** | v3.9.0 auto-populated header/footer wood deductions for all shore types, defaulting T-Shore and Double-T to 4x4 (3.5"). That was wrong — T-Shore and Double-T can be built with either 4x4 or 6x6 lumber depending on load and span; operator must make explicit choice. 3-Post still auto-fills 6x6 (USACE/FEMA spec). |
+
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
 - **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department.
