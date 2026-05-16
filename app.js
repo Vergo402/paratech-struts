@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.8.2';
+const APP_VERSION = '3.8.3';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -996,7 +996,12 @@ function saveCustomRoles() {
 function toggleOrgCollapse(roleId) {
   if (orgCollapsedNodes.has(roleId)) orgCollapsedNodes.delete(roleId);
   else orgCollapsedNodes.add(roleId);
-  sessionStorage.setItem('orgCollapsed', JSON.stringify([...orgCollapsedNodes]));
+  try {
+    sessionStorage.setItem('orgCollapsed', JSON.stringify([...orgCollapsedNodes]));
+  } catch (e) {
+    // Private browsing / quota exceeded — degrade silently; view-state only.
+    console.warn('sessionStorage unavailable:', e.message);
+  }
   renderCommandView();
 }
 
@@ -1656,7 +1661,7 @@ function editApparatus(id) {
 
   const container = document.getElementById('apparatusManageList');
   const editHtml = `<div class="section-title">Edit Apparatus</div>
-    <div class="form-group"><label>Name</label><input type="text" id="editAppName" value="${escapeHtml(app.name)}" maxlength="100"></div>
+    <div class="form-group"><label>Name</label><input type="text" id="editAppName" value="${escapeAttr(app.name)}" maxlength="100"></div>
     <div class="form-group"><label>Type</label><select id="editAppType">${typeOptions}</select></div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn btn-primary" onclick="saveEditApparatus('${app.id}')">Save</button>
@@ -1739,12 +1744,12 @@ function populateGroupDropdown(currentValue) {
   let html = '<option value="">— None —</option>';
   for (const appId of assigned) {
     const name = getApparatusName(appId);
-    html += `<option value="${escapeHtml(appId)}">${escapeHtml(name)}</option>`;
+    html += `<option value="${escapeAttr(appId)}">${escapeHtml(name)}</option>`;
   }
   // If the current value is legacy free-text (not in assigned apparatus),
   // add it as a one-off option so editing doesn't silently drop it
   if (currentValue && !assigned.includes(currentValue) && currentValue !== '') {
-    html += `<option value="${escapeHtml(currentValue)}">${escapeHtml(currentValue)} (legacy)</option>`;
+    html += `<option value="${escapeAttr(currentValue)}">${escapeHtml(currentValue)} (legacy)</option>`;
   }
   select.innerHTML = html;
   select.value = currentValue || '';
@@ -2097,7 +2102,10 @@ function submitFeedback() {
     category,
     text,
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
-    deptName: localStorage.getItem('fieldstruts_deptName') || null,
+    deptName: (() => {
+      const settings = safeParse(localStorage.getItem('fieldstruts_settings'), {});
+      return settings.name || null;
+    })(),
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
     appVersion: APP_VERSION
   };
@@ -2112,6 +2120,7 @@ function submitFeedback() {
     pendingWrites.push({ path: 'feedback/' + Date.now(), method: 'set', data: entry, timestamp: Date.now(), retries: 0 });
     safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
     alert('Feedback saved — will submit when online.');
+    closeFeedbackModal();
   }
 }
 
@@ -2316,6 +2325,7 @@ function clearRole() {
   if (roleTarget === 'self') {
     myRole = null;
     localStorage.removeItem('fieldstruts_myRole');
+    localStorage.removeItem('fieldstruts_myRoleName');
     roleViewDismissed = false;
   } else {
     if (activeOperation.roles) {
@@ -3045,7 +3055,7 @@ function renderOperations() {
         return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${g.type || ''}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
       }
     }
 
@@ -3149,10 +3159,12 @@ function renderOperations() {
 }
 
 function normalizeStatus(status) {
-  // Backward compat: map old statuses to new ones
-  if (status === 'deployed' || status === 'placed') return 'process'; // old v1.7 "placed"/"deployed" = new "in process"
-  if (status === 'finalized') return 'secured';
-  return status || 'process';
+  // Backward compat: map old statuses to new ones; case-insensitive (Excel roundtrips can capitalize).
+  if (!status) return 'process';
+  const s = String(status).toLowerCase();
+  if (s === 'deployed' || s === 'placed') return 'process'; // old v1.7 "placed"/"deployed" = new "in process"
+  if (s === 'finalized') return 'secured';
+  return s;
 }
 
 function renderShorePointCards(numbered) {
@@ -3232,7 +3244,7 @@ function renderShorePointCards(numbered) {
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-          ${sp.requiredLength}"${dedInfo} @ ${sp.estimatedLoad ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+          ${Number.isFinite(sp.requiredLength) ? `${sp.requiredLength}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(sp.estimatedLoad) ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? sp.deployedStrut.model : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
@@ -3383,7 +3395,11 @@ function startOperation() {
 
 function confirmStartOp() {
   const name = validateInput(document.getElementById('newOpName').value, 100);
-  if (!name) return;
+  if (!name) {
+    showToast('Operation name is required.', 'error');
+    document.getElementById('newOpName').focus();
+    return;
+  }
 
   const assignedApparatus = getStartOpSelectedApparatus();
   const multiBuilding = document.getElementById('opMultiBuilding').checked;
@@ -3417,6 +3433,7 @@ function confirmStartOp() {
   closeModal('startOpModal');
   document.getElementById('newOpName').value = '';
   document.getElementById('newOpTaskForce').value = '';
+  document.getElementById('opMultiBuilding').checked = false;
 }
 
 function showAddShorePoint() {
@@ -3577,7 +3594,7 @@ function deployShorePoint(result, qty) {
   const sfIndex = 2;
 
   const deployed = [];
-  const groupId = qty > 1 ? 'grp-' + Date.now() : null;
+  const groupId = qty > 1 ? 'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) : null;
 
   for (let n = 0; n < qty; n++) {
     const opInv = getOperationInventory();
@@ -3671,7 +3688,7 @@ function deployShorePoint(result, qty) {
 
     // Always update local inventory counts
     if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
-      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, activeOperation.externalEquipment[strutInvItem.id].available - 1);
+      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
     } else {
       strutInvItem.available = Math.max(0, strutInvItem.available - 1);
     }
@@ -4554,6 +4571,7 @@ function deleteShorePoint(spId) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'remove');
   }
   renderOperations();
+  renderInventory();
 }
 
 // NEW-7 (v3.5.2): inventory transaction handler — guard against phantom-item creation
@@ -4668,6 +4686,7 @@ function endOperation() {
   localStorage.removeItem('fieldstruts_operation');
   persistInventory();
   renderOperations();
+  renderInventory();
 }
 
 // ============================================================
