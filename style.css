@@ -717,6 +717,7 @@ select { padding-right: 40px; }
   justify-content: center;
 }
 .modal-overlay.active { display: flex; }
+#disclaimerModal { z-index: 300; align-items: center; }
 .modal {
   background: var(--surface);
   border-radius: var(--radius) var(--radius) 0 0;

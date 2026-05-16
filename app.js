@@ -28,12 +28,24 @@ const EXTENSIONS = {
   LongShore: [12, 24, 48, 67],
 };
 
+// Per-strut extension compatibility (Paratech O&M Manual Section 2.3):
+// LockStroke extensions are NOT interchangeable across all strut sizes.
+// Smaller LK struts use smaller-diameter tubes incompatible with larger extensions.
+const LOCKSTROKE_EXTENSIONS = {
+  'lk-19-25': [6, 12],
+  'lk-25-36': [6, 12],
+  'lk-37-58': [6, 12, 24, 36],
+  'lk-55-89': [6, 12, 24, 36],
+};
+
 // Load tables: [lengthInches, load2to1, load3to1, load4to1]
 // 4:1 column = Paratech O&M Manual Table 2-7 (PN 22-796198, 02 JAN 2018) "Working Load lb (kg)"
 //   The manual defines this as the safe working load for collapse/rescue stabilization.
 // 3:1 column = derived as 4:1 × 4/3, rounded DOWN (floor) for conservative behavior.
 // 2:1 column = derived as 4:1 × 2 (exact).
-// Linear interpolation in getLoadCapacity() between rows.
+// Conservative floor in getLoadCapacity(): for lengths between rows, returns the
+// capacity of the next longer row (lower capacity). Linear interpolation was removed
+// in v3.7.2 — it overestimates buckling-governed capacity (Euler 1/L² concavity).
 // PRE-v3.5.2 table was missing rows for 3, 5, 7, 9, and 11 ft. Linear interpolation between
 // 120" and 144" over-reported capacity by ~17% at 132" (11 ft) vs the manual — corrected in v3.5.2.
 const ACME_LOAD_TABLE = [
@@ -144,8 +156,11 @@ function getLoadCapacity(system, totalLengthIn, sfIndex) {
     }
   }
   if (lower[0] === upper[0]) return lower[sfIndex + 1];
-  const frac = (totalLengthIn - lower[0]) / (upper[0] - lower[0]);
-  return Math.round(lower[sfIndex + 1] * (1 - frac) + upper[sfIndex + 1] * frac);
+  // Conservative floor: return the capacity of the longer (upper) row.
+  // Euler buckling varies as 1/L² — linear interpolation overestimates capacity
+  // between data points. The upper row is always the conservative choice.
+  if (totalLengthIn === lower[0]) return lower[sfIndex + 1];
+  return upper[sfIndex + 1];
 }
 
 function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory, systemFilter, deductions) {
@@ -180,7 +195,9 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
   }
 
   for (const strut of strutCandidates) {
-    const exts = EXTENSIONS[strut.system] || [];
+    const exts = (strut.system === 'LockStroke' && LOCKSTROKE_EXTENSIONS[strut.id])
+      ? LOCKSTROKE_EXTENSIONS[strut.id]
+      : (EXTENSIONS[strut.system] || []);
     const combos = [[0, 0]];
     for (let i = 0; i < exts.length; i++) {
       combos.push([exts[i], 0]);
@@ -1212,6 +1229,12 @@ function setupListeners() {
 
   teardownListeners();
 
+  // Register this device's UID as a department member (enables security rules scoping)
+  const uid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+  if (uid) {
+    db.ref(`departments/${deptId}/members/${uid}`).set(true);
+  }
+
   inventoryRef = db.ref(`departments/${deptId}/inventory`);
   operationsRef = db.ref(`departments/${deptId}/operations`);
   settingsRef = db.ref(`departments/${deptId}/settings`);
@@ -1986,7 +2009,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.7.1'
+    appVersion: '3.7.2'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
@@ -5175,6 +5198,20 @@ function init() {
   // Trigger fade-in on the initially active screen
   const initialScreen = document.querySelector('.screen.active');
   if (initialScreen) requestAnimationFrame(() => initialScreen.classList.add('screen-visible'));
+
+  // Show liability disclaimer once per session
+  if (!sessionStorage.getItem('fieldstruts_disclaimerAck')) {
+    document.getElementById('disclaimerModal').classList.add('active');
+  }
+}
+
+function acknowledgeDisclaimer() {
+  sessionStorage.setItem('fieldstruts_disclaimerAck', '1');
+  const log = JSON.parse(localStorage.getItem('fieldstruts_disclaimerLog') || '[]');
+  log.push({ ts: new Date().toISOString(), deptId: deptId || 'none' });
+  if (log.length > 100) log.splice(0, log.length - 100);
+  localStorage.setItem('fieldstruts_disclaimerLog', JSON.stringify(log));
+  document.getElementById('disclaimerModal').classList.remove('active');
 }
 
 init();

@@ -2,10 +2,16 @@
   "rules": {
     "departments": {
       "$deptId": {
-        ".read": "auth != null",
-        ".write": "auth != null",
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && (data.child('members').child(auth.uid).exists() || !data.child('members').exists())",
         "name": {
           ".validate": "newData.isString() && newData.val().length <= 100"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid",
+            ".validate": "newData.isBoolean()"
+          }
         },
         "inventory": {
           "$itemId": {

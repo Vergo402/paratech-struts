@@ -57,7 +57,7 @@
   <header class="header">
     <h1>FieldStruts</h1>
     <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.7.1</div>
+    <div class="version-label">v3.7.2</div>
   </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
@@ -609,6 +609,19 @@
         <button class="btn btn-primary flex-1" onclick="guardClick(this,submitFeedback)">Submit</button>
         <button class="btn btn-outline flex-1" onclick="closeFeedbackModal()">Cancel</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Liability Disclaimer Modal -->
+  <div class="modal-overlay" id="disclaimerModal" role="dialog" aria-modal="true" aria-labelledby="disclaimerTitle" style="z-index:300;align-items:center">
+    <div class="modal" style="max-width:420px">
+      <h2 class="modal-title" id="disclaimerTitle" style="color:var(--orange-dark)">Important Safety Notice</h2>
+      <div style="font-size:13px;line-height:1.5;margin-bottom:16px">
+        <p style="margin-bottom:10px">Strut selection recommendations are based on manufacturer published data and <strong>do not constitute engineering design</strong>.</p>
+        <p style="margin-bottom:10px">All emergency shoring must be reviewed by qualified personnel per AHJ requirements. This tool supplements — but does not replace — hands-on training, field assessment, and professional engineering judgment.</p>
+        <p style="margin-bottom:0">By proceeding, you acknowledge that deployment decisions are the sole responsibility of on-scene personnel.</p>
+      </div>
+      <button class="btn btn-primary" onclick="acknowledgeDisclaimer()" style="width:100%">I Understand — Continue</button>
     </div>
   </div>
 
