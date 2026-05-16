@@ -1,4 +1,4 @@
-# Paratech Strut Selector — Roadmap Phase Plan
+# FieldShore — Roadmap Phase Plan
 
 _Created: 2026-05-11 | Current version: v3.0.0_
 
