@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.9.0';
+const APP_VERSION = '3.9.1';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -5213,20 +5213,19 @@ function onShoreTypeChange() {
   document.getElementById('spDeductionToggle').checked = true;
   toggleDeductions('sp');
 
-  // F-1A-11 fix: auto-fill header/footer deductions from SHORE_TYPES config
-  // (was only happening for 3-post before; T-Shore and Double-T defaulted to 0 silently)
-  const shoreCfg = SHORE_TYPES.find(t => t.id === type);
-  if (shoreCfg) {
-    const headerWood = WOOD_SIZES.find(w => w.id === shoreCfg.defaultHeader);
-    const footerWood = WOOD_SIZES.find(w => w.id === shoreCfg.defaultFooter);
-    document.getElementById('spHeader').value = headerWood ? headerWood.height : 0;
-    document.getElementById('spSole').value = footerWood ? footerWood.height : 0;
+  // 3-Post specifies 6x6 lumber by USACE/FEMA spec, so auto-fill is safe.
+  // T-Shore and Double-T can be built with EITHER 4x4 or 6x6 lumber — the operator
+  // chooses based on load and span. We deliberately do NOT auto-fill them so the
+  // operator must make the explicit choice (avoids a wrong default silently pre-selecting).
+  if (type === '3-post') {
+    setSpQty(3);
+    document.getElementById('spHeader').value = '5.5';
+    document.getElementById('spSole').value = '5.5';
+  } else if (type === 'double-t') {
+    setSpQty(2);
+  } else {
+    setSpQty(1);
   }
-
-  if (type === '3-post') setSpQty(3);
-  else if (type === 'double-t') setSpQty(2);
-  else setSpQty(1);
-
   updateDeductionSummary('sp');
 }
 
