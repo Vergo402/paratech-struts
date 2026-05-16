@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldstruts-v3.7.3';
+const CACHE_NAME = 'fieldstruts-v3.7.4';
 const ASSETS = [
   './',
   './index.html',

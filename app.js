@@ -2027,7 +2027,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.7.3'
+    appVersion: '3.7.4'
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
@@ -5221,20 +5221,6 @@ function init() {
   // Trigger fade-in on the initially active screen
   const initialScreen = document.querySelector('.screen.active');
   if (initialScreen) requestAnimationFrame(() => initialScreen.classList.add('screen-visible'));
-
-  // Show liability disclaimer once per session
-  if (!sessionStorage.getItem('fieldstruts_disclaimerAck')) {
-    document.getElementById('disclaimerModal').classList.add('active');
-  }
-}
-
-function acknowledgeDisclaimer() {
-  sessionStorage.setItem('fieldstruts_disclaimerAck', '1');
-  const log = JSON.parse(localStorage.getItem('fieldstruts_disclaimerLog') || '[]');
-  log.push({ ts: new Date().toISOString(), deptId: deptId || 'none' });
-  if (log.length > 100) log.splice(0, log.length - 100);
-  localStorage.setItem('fieldstruts_disclaimerLog', JSON.stringify(log));
-  document.getElementById('disclaimerModal').classList.remove('active');
 }
 
 init();
