@@ -129,7 +129,7 @@ When updating:
 - **`firebaseSave()` wrapper:** All Firebase writes go through this — handles the online/offline split in one place.
 - **`escapeHtml()`:** Returns escaped via `div.textContent = s; return div.innerHTML`. **CRITICAL:** This escapes `<`, `>`, `&` but NOT `"` or `'`. Safe for element text contexts ONLY, not attribute values. Use `escapeAttr()` inside `attr="..."` interpolations.
 - **Org chart drag-and-drop:** Supports 3 input methods — tap-to-pick-and-place, HTML5 drag events, touch drag with floating clone. State tracked via `orgChartPickedRole`.
-- **Grouped shore points:** Shore types with qty > 1 share a `groupId`. Status transitions, cut marking, runner sends, and equipment returns apply to all group members at once. Guards prevent double-processing of already-advanced members.
+- **Grouped shore points — phase-based split (v3.8.0):** Shore types with qty > 1 share a `groupId`. Behavior depends on phase: **pre-cutting** (pending → process → strutplaced → cutting) transitions apply to all group members at once via `getGroupMembers()`. **Cutting workflow** (cutting → runner → secured → returned) transitions operate on individual points only. Controlled by `individualPhase = ['cutting', 'runner', 'secured']` check in `updateShoreStatus()`. `markCutDone()`, `sendToRunner()`, and `returnEquipment()` always operate individually.
 - **Git auth:** SSH key (configured 2026-05-09). Single repo, no staging remote.
 - **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team"). **CAVEAT:** v3.5.0 made the SP `group` field a dropdown of apparatus IDs — this is NIMS-terminology-incorrect (NIMS Group is a functional command unit, not a resource). To be renamed `assignedResource` in v4.0.0.
 
@@ -184,6 +184,32 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 | **Database security rules** | All reads/writes require `auth != null`. Data validation on departments, inventory, apparatus, operations, feedback. `.indexOn` for operations status queries. Rules deployed via Firebase CLI (`database.rules.json`). |
 | **Feedback photo attachment (#60)** | Camera/gallery file picker in feedback modal. Client-side compression (800×600 max, JPEG 0.6, base64). 5MB input limit, 500KB output limit enforced by database rules. |
 | **Status dot key** | Green/amber legend below ICS Organization header showing Active vs Staged meaning. |
+
+### ✅ Fixed in v3.7.2
+
+| Feature | Notes |
+|---|---|
+| **Safety-critical load interpolation** | Replaced linear interpolation with conservative-floor method — always uses the shorter (higher-capacity) datasheet row when a measurement falls between two rows. Prevents over-reporting safe load. |
+| **Liability disclaimer** | Added disclaimer on strut results: capacity figures are planning aids, not engineering certifications. |
+
+### ✅ Fixed in v3.7.3
+
+| Feature | Notes |
+|---|---|
+| **Empty state clarity** | When inventory lacks a fitting strut, the results area now shows a clear "No matching struts found" message with guidance, instead of a blank screen. |
+
+### ✅ Fixed in v3.8.0
+
+| Feature | Notes |
+|---|---|
+| **Inventory display refresh (#64)** | Added `renderInventory()` after `persistInventory()` in `deployShorePoint()` and `returnEquipment()`. Inventory tab now updates immediately after deploying or returning equipment. |
+| **Individual wood cut tracking (#65)** | Phase-based group/individual split. Pre-cutting transitions remain group-wide; cutting workflow (cutting → runner → secured → returned) operates per-card. `markCutDone()`, `sendToRunner()`, `returnEquipment()` all rewritten from group to individual. |
+
+### ✅ Fixed in v3.8.1
+
+| Feature | Notes |
+|---|---|
+| **Sync diagnostics — error capture** | `flushPendingWrites()` now captures `err.message` on failed writes and includes up to 5 error details in `logSyncEvent('flush')`. `firebaseSave()` queued writes also store `lastError`. Deployed `/diagnostics/sync/` security rules. |
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 

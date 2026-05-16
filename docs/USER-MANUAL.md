@@ -1,7 +1,7 @@
 # FieldStruts User Manual
 
-**Version:** 3.7  
-**Last updated:** 2026-05-15  
+**Version:** 3.8  
+**Last updated:** 2026-05-16  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldStruts is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -156,7 +156,7 @@ When no matching equipment is available, shore points are saved as **Pending** w
 
 ### Grouped Shore Points
 
-Shore types with quantity > 1 (e.g., a 3-strut T-shore) create grouped shore points that advance together. Status changes, cut marking, runner sends, and equipment returns apply to all members of the group at once.
+Shore types with quantity > 1 (e.g., a 3-strut T-shore) create grouped shore points. Early status transitions (In Process → Strut Placed → Cutting) advance all members together, since the physical shore system is set up as a unit. Once in the cutting workflow, each card tracks independently — wood is cut, sent to the runner, secured, and returned one piece at a time.
 
 ### Drill-Down Navigation
 
@@ -243,6 +243,8 @@ Set your device's ICS role from the **My Role** section. This determines which v
 
 The **Cut Table** sub-tab is a focused view for the cutting station. It shows all shore points currently in the **Cutting** status with their required measurements, making it easy to see what needs to be cut without scrolling through the full operations list.
 
+Each shore point card has its own **Mark Cut Complete** button — even within a group, each piece of lumber is tracked individually. Once marked, the card moves to the **Cut Complete** section where it can be sent to the runner independently.
+
 ---
 
 ## 7. Inventory
@@ -322,7 +324,8 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| **v3.7** | 2026-05-15 | Firebase Anonymous Auth + security rules. Photo attachment in feedback form. Status dot key/legend on ICS org chart. |
+| **v3.8** | 2026-05-16 | Individual wood cut tracking per shore point card (grouped points no longer share cut/runner/secured lifecycle). Inventory tab updates immediately after deploying or returning equipment. Sync diagnostics for offline write queue troubleshooting. |
+| **v3.7** | 2026-05-15 | Firebase Anonymous Auth + security rules. Photo attachment in feedback form. Status dot key/legend on ICS org chart. Liability disclaimer (removed). Clearer empty state when inventory lacks a fitting strut. Conservative-floor interpolation for load capacity. |
 | **v3.6** | 2026-05-15 | Firebase listener cleanup (no more leak on department switch). Concurrent edit safety for org chart swaps. Keyboard accessibility for all interactive elements. Performance optimization for apparatus name lookups. |
 | **v3.5** | 2026-05-14 | Dark/light/system theme toggle. Shore point Group field changed to apparatus dropdown. Local-first write architecture across all mutation sites. |
 | **v3.4** | 2026-05-14 | Command page overhaul: role reparenting (long-press drag + "Move to..." menu), collapsible branches, status indicators (active/staged), headcount badge, span-of-control warnings. |
