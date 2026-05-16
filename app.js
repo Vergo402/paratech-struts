@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.8.2';
+const APP_VERSION = '3.9.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -4911,7 +4911,8 @@ function applyImportData(data) {
 
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
-  // Only remove FieldStruts keys, not unrelated app data
+  // Only remove FieldShore keys, not unrelated app data
+  // (localStorage prefix retained as `fieldstruts_` from pre-rename to preserve user state)
   const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldstruts_'));
   appKeys.forEach(k => localStorage.removeItem(k));
   localInventory = [];

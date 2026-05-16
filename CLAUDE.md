@@ -1,8 +1,10 @@
-# Paratech Strut Selector — Project Guide
+# FieldShore — Project Guide
 
 ## What This Is
 
-A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. Built for field use on mobile — works offline.
+FieldShore (formerly "FieldStruts") is a PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. Built for field use on mobile — works offline.
+
+> **Branding note:** User-visible name is **FieldShore** as of v3.9.0. The `fieldstruts_*` localStorage key prefix is retained from the prior name to avoid wiping user state on upgrade. Service worker cache prefix is `fieldshore-v{VERSION}`.
 
 **Live:** https://vergo402.github.io/paratech-struts/
 
@@ -47,7 +49,7 @@ On every change:
 1. Update version in **3 places:**
    - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
    - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
-   - `sw.js` cache name: `const CACHE_NAME = 'fieldstruts-v{VERSION}';`
+   - `sw.js` cache name: `const CACHE_NAME = 'fieldshore-v{VERSION}';`
 2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
 3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
 4. Create GitHub release with notes

@@ -1,4 +1,4 @@
-# FieldStruts
+# FieldShore
 
 A progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure.
 

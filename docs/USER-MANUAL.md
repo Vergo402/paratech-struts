@@ -1,10 +1,10 @@
-# FieldStruts User Manual
+# FieldShore User Manual
 
-**Version:** 3.8  
+**Version:** 3.9  
 **Last updated:** 2026-05-16  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
-FieldStruts is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
+FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
 
 ---
 
@@ -27,7 +27,7 @@ FieldStruts is a progressive web app for USAR/FEMA firefighters to select Parate
 
 ### Installing the App
 
-FieldStruts is a Progressive Web App (PWA). No app store required.
+FieldShore is a Progressive Web App (PWA). No app store required.
 
 1. Open [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/) on your phone or tablet.
 2. **iOS:** Tap the Share button → "Add to Home Screen."
@@ -302,7 +302,7 @@ The **Settings** tab includes:
 
 ## 9. Offline Use
 
-FieldStruts is designed for field use where connectivity is unreliable.
+FieldShore is designed for field use where connectivity is unreliable.
 
 - The app caches all assets via a service worker and works fully offline after the first load.
 - All data changes write to local storage first, then sync to Firebase when a connection is available.
@@ -324,6 +324,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.9** | 2026-05-16 | App renamed from "FieldStruts" to **FieldShore**. Branding-only release — no functional changes. Internal storage keys preserved to avoid wiping user state. |
 | **v3.8** | 2026-05-16 | Individual wood cut tracking per shore point card (grouped points no longer share cut/runner/secured lifecycle). Inventory tab updates immediately after deploying or returning equipment. Sync diagnostics for offline write queue troubleshooting. |
 | **v3.7** | 2026-05-15 | Firebase Anonymous Auth + security rules. Photo attachment in feedback form. Status dot key/legend on ICS org chart. Liability disclaimer (removed). Clearer empty state when inventory lacks a fitting strut. Conservative-floor interpolation for load capacity. |
 | **v3.6** | 2026-05-15 | Firebase listener cleanup (no more leak on department switch). Concurrent edit safety for org chart swaps. Keyboard accessibility for all interactive elements. Performance optimization for apparatus name lookups. |
