@@ -129,6 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
+const APP_VERSION = '3.8.2';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -806,7 +807,7 @@ function logSyncEvent(event, extra) {
     event,
     uid: user ? user.uid : null,
     deptId: deptId || null,
-    appVersion: '3.8.1',
+    appVersion: APP_VERSION,
     ...(extra || {}),
   };
   if (isOnline && user) {
@@ -843,11 +844,13 @@ function firebaseSave(ref, method, data) {
   }).catch(err => {
     console.warn('Firebase write failed:', err.message, ref.toString());
     // Queue for retry on reconnect
-    const op = { path: ref.toString(), method, timestamp: Date.now(), retries: 0, lastError: err.message || String(err) };
+    const op = { path: ref.toString(), method, timestamp: Date.now(), retries: 0, lastError: err.message || String(err), appVersion: APP_VERSION };
     if (method !== 'transaction') {
       op.data = data;
       pendingWrites.push(op);
       safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+    } else {
+      logSyncEvent('transaction_failed', { path: ref.toString().replace(/.*firebaseio\.com/, ''), error: err.message || String(err) });
     }
     // Debounce — the conn-status banner already shows persistent state; the
     // toast is for transient awareness, not per-mutation spam.
@@ -868,6 +871,11 @@ function flushPendingWrites() {
   const MAX_AGE = 24 * 60 * 60 * 1000;
   const now = Date.now();
   const viable = writes.filter(op => {
+    if (op.appVersion && op.appVersion !== APP_VERSION) {
+      console.warn('Discarding write from old version:', op.appVersion, op.path);
+      logSyncEvent('discard_version', { path: op.path, method: op.method, fromVersion: op.appVersion });
+      return false;
+    }
     if (now - op.timestamp > MAX_AGE) {
       console.warn('Discarding stale pending write (>24h):', op.path);
       logSyncEvent('discard_stale', { path: op.path, method: op.method, ageMs: now - op.timestamp });
@@ -2091,7 +2099,7 @@ function submitFeedback() {
     deptId: localStorage.getItem('fieldstruts_deptId') || null,
     deptName: localStorage.getItem('fieldstruts_deptName') || null,
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
-    appVersion: '3.8.1'
+    appVersion: APP_VERSION
   };
   if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
