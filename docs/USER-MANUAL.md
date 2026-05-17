@@ -1,7 +1,7 @@
 # FieldStruts User Manual
 
-**Version:** 3.10  
-**Last updated:** 2026-05-16  
+**Version:** 3.11  
+**Last updated:** 2026-05-17  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldStruts is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -328,6 +328,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.11** | 2026-05-17 | Field-feedback round-up. Quick Find plate picker selection fixed (tap on a connector now actually selects it). Header scrolls away with content instead of locking real estate at the top. Edit Apparatus modal no longer shows the Add form simultaneously. Quick-add inventory list preserves scroll position when adding items near the bottom. Pending shore-point length edits now keep effective length in sync when deductions are toggled off, with success toast. Comprehensive dark-mode contrast pass — buttons, plate pickers, apparatus tabs, qty controls, and small action buttons are all theme-aware (no more black-on-dark text). |
 | **v3.10** | 2026-05-16 | LongShore unrated-zone deploys now require an explicit acknowledgement modal (audit trail captures who/when). Pending shore points have a real "Assign Equipment" deploy flow. Locked-card status buttons are role-gated (Cutting / Runner / Entry-Rescue-Shoring, with IC / Safety override). Excel imports warn before orphaning deployed equipment references. Persistent banner on auth-failure / sync degradation with manual retry. SheetJS bundled into the service worker for offline import/export. Fully-extended boundary warning on strut results. |
 | **v3.9** | 2026-05-16 | Group status guard — sending one shore point back through the workflow no longer drags advanced group-mates with it. Excel imports support extensions and connector plates (not just struts). Firebase scripts pinned with Subresource Integrity. Stored XSS hardening on shore point card rendering. |
 | **v3.8** | 2026-05-16 | Individual wood cut tracking per shore point card (grouped points no longer share cut/runner/secured lifecycle). Inventory tab updates immediately after deploying or returning equipment. Sync diagnostics for offline write queue troubleshooting. |
