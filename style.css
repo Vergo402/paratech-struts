@@ -200,6 +200,11 @@ select { padding-right: 40px; }
   min-height: 56px;
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.15s;
+  /* Theme-aware defaults so any .btn variant without explicit color/bg
+     (e.g. .btn-xs alone, .btn-sm alone) doesn't fall through to UA defaults
+     that render as black-on-white "islands of light" in dark mode (#88). */
+  color: var(--text);
+  background: var(--surface);
 }
 .btn:active { opacity: 0.7; }
 .btn-primary { background: var(--blue); color: white; width: 100%; }
@@ -362,6 +367,7 @@ select { padding-right: 40px; }
   border-radius: var(--radius);
   border: 2px solid var(--border);
   background: var(--surface);
+  color: var(--text);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: all 0.15s;
@@ -421,6 +427,7 @@ select { padding-right: 40px; }
   border-radius: 20px;
   border: 2px solid var(--border);
   background: var(--surface);
+  color: var(--text);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -499,6 +506,7 @@ select { padding-right: 40px; }
   border-radius: 4px;
   border: 2px solid var(--border);
   background: var(--surface);
+  color: var(--text);
   font-size: 20px;
   font-weight: 700;
   cursor: pointer;
@@ -1114,6 +1122,7 @@ select { padding-right: 40px; }
   border: 2px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface);
+  color: var(--text);
   cursor: pointer;
   min-height: 48px;
   text-align: left;

@@ -53,16 +53,18 @@
 </button>
 
 <div class="app" id="mainApp">
-  <!-- Header -->
-  <header class="header">
-    <h1>FieldStruts</h1>
-    <div class="subtitle" id="deptName"></div>
-    <div class="version-label">v3.10.1</div>
-  </header>
   <div class="conn-status" id="connStatus" role="status" aria-live="polite"></div>
 
   <!-- Screens -->
   <main class="screens">
+    <!-- Header lives inside the scrolling container so it scrolls away as
+         the user scrolls the page (#83) — reclaims vertical real estate on
+         short phones / landscape. -->
+    <header class="header">
+      <h1>FieldStruts</h1>
+      <div class="subtitle" id="deptName"></div>
+      <div class="version-label">v3.11.0</div>
+    </header>
 
     <!-- Screen 1: Quick Select -->
     <section class="screen active" id="screenSelect">
@@ -317,24 +319,26 @@
   <div class="modal-overlay" id="addApparatusModal" role="dialog" aria-modal="true" aria-labelledby="addApparatusTitle">
     <div class="modal">
       <h2 class="modal-title" id="addApparatusTitle">Add Apparatus</h2>
-      <div class="form-group">
-        <label>Apparatus Name</label>
-        <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
+      <div id="addApparatusForm">
+        <div class="form-group">
+          <label>Apparatus Name</label>
+          <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="newApparatusType">
+            <option value="engine">Engine</option>
+            <option value="ladder">Ladder</option>
+            <option value="rescue">Rescue</option>
+            <option value="squad">Squad</option>
+            <option value="chief">Chief</option>
+            <option value="taskforce">Task Force</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="guardClick(this,confirmAddApparatus)">Add</button>
+        <div class="divider"></div>
       </div>
-      <div class="form-group">
-        <label>Type</label>
-        <select id="newApparatusType">
-          <option value="engine">Engine</option>
-          <option value="ladder">Ladder</option>
-          <option value="rescue">Rescue</option>
-          <option value="squad">Squad</option>
-          <option value="chief">Chief</option>
-          <option value="taskforce">Task Force</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <button class="btn btn-primary" onclick="guardClick(this,confirmAddApparatus)">Add</button>
-      <div class="divider"></div>
       <div id="apparatusManageList"></div>
       <div class="divider"></div>
       <button class="btn btn-outline" onclick="closeModal('addApparatusModal')">Done</button>

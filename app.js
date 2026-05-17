@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.10.1';
+const APP_VERSION = '3.11.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -1829,6 +1829,12 @@ function showAddApparatus() {
 }
 
 function renderApparatusManageList() {
+  // Any caller of this is returning to the default "Add + manage list" view,
+  // so restore the Add form and modal title that editApparatus may have hidden.
+  const addForm = document.getElementById('addApparatusForm');
+  if (addForm) addForm.style.display = '';
+  const title = document.getElementById('addApparatusTitle');
+  if (title) title.textContent = 'Add Apparatus';
   const container = document.getElementById('apparatusManageList');
   if (localApparatus.length === 0) {
     container.innerHTML = '';
@@ -1986,9 +1992,14 @@ function editApparatus(id) {
     `<option value="${t.id}"${t.id === app.type ? ' selected' : ''}>${escapeHtml(t.name)}</option>`
   ).join('');
 
+  // Hide the Add form + retitle so the modal only shows the edit flow (#87).
+  const addForm = document.getElementById('addApparatusForm');
+  if (addForm) addForm.style.display = 'none';
+  const title = document.getElementById('addApparatusTitle');
+  if (title) title.textContent = 'Edit Apparatus';
+
   const container = document.getElementById('apparatusManageList');
-  const editHtml = `<div class="section-title">Edit Apparatus</div>
-    <div class="form-group"><label>Name</label><input type="text" id="editAppName" value="${escapeAttr(app.name)}" maxlength="100"></div>
+  const editHtml = `<div class="form-group"><label>Name</label><input type="text" id="editAppName" value="${escapeAttr(app.name)}" maxlength="100"></div>
     <div class="form-group"><label>Type</label><select id="editAppType">${typeOptions}</select></div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <button class="btn btn-primary" onclick="saveEditApparatus('${app.id}')">Save</button>
@@ -2247,6 +2258,14 @@ function showAddEquipment() {
     return;
   }
 
+  // When called from quickAdd() the modal is already open and we're just
+  // re-rendering the grids. Capture scrollTop so we can restore it after the
+  // innerHTML rewrites blow it away (#86).
+  const modalEl = document.getElementById('addEquipModal');
+  const wasOpen = modalEl.classList.contains('active');
+  const scrollContainer = modalEl.querySelector('.modal');
+  const savedScroll = wasOpen && scrollContainer ? scrollContainer.scrollTop : 0;
+
   const appName = getApparatusName(selectedApparatus);
   document.getElementById('addEquipTitle').textContent = 'Add Equipment — ' + appName;
 
@@ -2304,7 +2323,12 @@ function showAddEquipment() {
     summary.style.display = 'none';
   }
 
-  openModal('addEquipModal');
+  if (!wasOpen) {
+    openModal('addEquipModal');
+  } else if (savedScroll > 0 && scrollContainer) {
+    // Modal stayed open across the re-render — put the user back where they were.
+    scrollContainer.scrollTop = savedScroll;
+  }
 }
 
 function quickAdd(type, system, model, length) {
@@ -5122,6 +5146,29 @@ function editShorePoint(spId) {
 function confirmEditShorePoint() {
   if (!activeOperation || !editingShorePointId) return;
 
+  // Verify the SP still exists (could have been deleted by a peer device while
+  // the modal was open) — bail out cleanly instead of writing a phantom record.
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === editingShorePointId);
+  if (!sp) {
+    showToast('Shore point no longer exists', 'warning');
+    editingShorePointId = null;
+    document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
+    closeModal('shorePointModal');
+    return;
+  }
+
+  const requiredLength = getMeasurementInches('sp');
+  const deductions = getDeductions('sp') || null;
+  // Always recompute effectiveLength so it stays in sync with requiredLength,
+  // including the case where the operator toggled deductions OFF during edit
+  // (previously the old effectiveLength would stick, masking the new length
+  // in some downstream displays — #85).
+  const totalDed = deductions
+    ? (deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)
+    : 0;
+  const effectiveLength = Math.round((requiredLength - totalDed) * 10) / 10;
+
   const updateData = {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
@@ -5129,26 +5176,19 @@ function confirmEditShorePoint() {
     division: validateInput(document.getElementById('spDivision').value, 100) || null,
     group: validateInput(document.getElementById('spGroup').value, 100) || null,
     shoreType: document.getElementById('spShoreType').value,
-    requiredLength: getMeasurementInches('sp'),
+    requiredLength,
+    effectiveLength,
     estimatedLoad: parseFloat(document.getElementById('spLoad').value) || 0,
-    deductions: getDeductions('sp') || null,
+    deductions,
   };
 
-  // Recalculate effective length
-  if (updateData.deductions) {
-    const d = updateData.deductions;
-    const totalDed = (d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0);
-    updateData.effectiveLength = Math.round((updateData.requiredLength - totalDed) * 10) / 10;
-  }
-
-  const points = getShorePoints();
-  const sp = points.find(p => p.id === editingShorePointId);
-  if (sp) Object.assign(sp, updateData);
+  Object.assign(sp, updateData);
   persistOperation();
   if (db && deptId && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId), 'update', updateData);
   }
   renderOperations();
+  showToast(`Updated ${escapeHtml(sp.label || 'shore point')}`, 'success');
 
   editingShorePointId = null;
   document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
@@ -5887,8 +5927,11 @@ function openPlatePicker(pickerId) {
     }
     scrim.classList.add('open');
 
-    // Move grid to body so it escapes the modal's stacking context
-    if (grid.closest('.modal-overlay')) {
+    // Always move grid to <body> so it escapes any ancestor containing block
+    // (a parent with transform/filter/will-change/contain turns position:fixed
+    // into position:absolute relative to that ancestor, which broke the QF
+    // pickers in #82 — grid rendered at 0x0 behind the scrim).
+    if (grid.parentElement !== document.body) {
       grid._originalParent = grid.parentElement;
       document.body.appendChild(grid);
     }
