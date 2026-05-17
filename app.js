@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.9.2';
+const APP_VERSION = '3.10.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -280,6 +280,12 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 
       const totalCapacity = isUnratedZone ? 0 : capacity * recommendedQty;
 
+      // F-4B-1 (v3.10.0): zero-margin warning at exact extension boundary.
+      // When the effective length equals adjExtended (strut fully extended + max
+      // extension), there's no room for the opening to grow at all — any
+      // settling or shift puts the strut at risk. Fires regardless of load.
+      const atExtendedBoundary = !isUnratedZone && Math.abs(searchLength - adjExtended) < 0.05;
+
       results.push({
         strut,
         extensions: [e1, e2].filter(e => e > 0),
@@ -299,6 +305,7 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
         unratedReason: isUnratedZone
           ? `LongShore is not rated by Paratech beyond 16 ft (192"). This configuration can physically reach the opening, but working load is unverified. Consult rescue engineering before proceeding.`
           : undefined,
+        boundaryWarning: atExtendedBoundary ? 'fully-extended' : null,
       });
     }
   }
@@ -566,6 +573,16 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
       </div>`;
     }
 
+    // F-4B-1 (v3.10.0): zero-margin warning at fully-extended boundary.
+    // The strut + any extensions are at their max reach; if the opening
+    // shifts even 1/8" the strut can't extend further. Surface explicitly.
+    if (r.boundaryWarning === 'fully-extended') {
+      html += `<div class="alert-warning" style="background:var(--yellow-bg,#FFF8E1);border:1px solid var(--yellow,#F9A825);color:#5D4037;padding:8px 12px;border-radius:6px;margin:6px 0;font-size:13px;line-height:1.4">
+        <strong>⚠ Fully extended — zero margin</strong>
+        <div style="font-size:12px;margin-top:2px">Strut is at its maximum reach (${r.adjExtended}"). No room to compensate if the opening grows. Consider a longer strut or additional extension if available.</div>
+      </div>`;
+    }
+
     if (load > 0 && r.margin < 0) {
       html += `<div class="detail"><span>Capacity (4:1)${r.recommendedQty > 1 ? ' each' : ''}</span><span class="detail-val">${r.capacity.toLocaleString()} lbs</span></div>`;
       html += `<div class="detail"><span>Margin${r.recommendedQty > 1 ? ` (${r.recommendedQty}x)` : ''}</span><span class="detail-val ${marginClass}">${r.margin > 0 ? '+' : ''}${r.margin.toLocaleString()} lbs</span></div>`;
@@ -602,6 +619,14 @@ let apparatusRef = null;
 let customTypesRef = null;
 let activeOpsQuery = null;
 let archivedOpsQuery = null;
+// F-1B-01 (v3.10.0): connRef promoted to module scope so teardownListeners
+// can detach it cleanly. Re-attached by setupConnListener() from init and
+// from setupListeners (after dept switch).
+let connRef = null;
+let connRefCallback = null;
+// F-1E-2 (v3.10.0): member registrations that exhausted their retry budget
+// — flushed on reconnect by flushPendingWrites.
+let pendingMemberRegistrations = [];
 let localInventory = [];
 let activeOperation = null;
 let localApparatus = [];
@@ -610,6 +635,10 @@ let spQuantity = 1;
 let archivedOperations = [];
 let laneCollapsedState = {};
 let editingShorePointId = null;
+// F-1C-7 (v3.10.0): pending-SP upgrade mode. Set by assignEquipmentToPending;
+// read at the top of deployShorePoint to route to upgradePendingToDeployed
+// instead of creating new SPs. Cleared on modal close or after deploy.
+let assigningToPendingId = null;
 let currentView = 'ops';
 let drilldownPath = []; // [{level:'building',value:'A'}, {level:'division',value:'C'}, ...]
 let myRole = null; // This device's self-assigned role
@@ -666,6 +695,23 @@ const STATUS_LABELS = {
 // ============================================================
 // UTILITIES
 // ============================================================
+
+// F-4B-13 (v3.10.0): generic input-handler debouncer. Audit flagged a concern
+// that Quick Find inputs were calling findStrutCombinations on every keystroke;
+// in v3.10.0 those inputs only call updateDeductionSummary (cheap) and the
+// expensive search is gated by an explicit Find Struts button — so no live
+// debounce is needed today. This helper is here so future input handlers that
+// DO call findStrutCombinations have a ready wrapper (e.g., if the modal
+// auto-searches on input later). See `.claude/audits/v3.10.0-lockstroke-smoke-test.md`
+// notes for the closure rationale.
+function debounce(fn, wait) {
+  let t = null;
+  return function (...args) {
+    if (t) clearTimeout(t);
+    t = setTimeout(() => { t = null; fn.apply(this, args); }, wait);
+  };
+}
+
 function escapeHtml(s) {
   if (!s) return '';
   const d = document.createElement('div');
@@ -1041,6 +1087,36 @@ function canReparent() {
   return myRole === 'ic' || myRole === 'safety';
 }
 
+// F-1C-10 (v3.10.0): role-gate matrix for locked-card status transitions.
+// Returns { allowed, reason } so callers can render greyed buttons + tooltips.
+// Doctrine:
+//   • mark-cut-done / send-to-runner — Cutting role owns the cut station
+//   • mark-secured                    — Runner owns the handoff & final placement
+//   • return-equipment                — Entry/Rescue/Shoring own the equipment recovery
+// IC and Safety always override (command authority + life-safety stop work).
+// If no role is set on the device, the gate is open (don't block field crews
+// who haven't set up roles yet).
+const SHORE_ACTION_ALLOWED_ROLES = {
+  'mark-cut-done':    ['cutting', 'ic', 'safety'],
+  'send-to-runner':   ['cutting', 'ic', 'safety'],
+  'mark-secured':     ['runner', 'ic', 'safety'],
+  'return-equipment': ['entry', 'rescue', 'shoring', 'ic', 'safety'],
+};
+
+function canPerformShoreAction(action) {
+  const allowed = SHORE_ACTION_ALLOWED_ROLES[action];
+  if (!allowed) return { allowed: true, reason: '' };
+  if (!myRole) return { allowed: true, reason: '' };
+  if (allowed.includes(myRole)) return { allowed: true, reason: '' };
+  const roleLabels = allowed
+    .filter(r => r !== 'ic' && r !== 'safety')
+    .map(r => {
+      const def = (typeof getOperationRoles === 'function' ? getOperationRoles() : ICS_ROLES_DEFAULT).find(x => x.id === r);
+      return def ? def.name : r;
+    });
+  return { allowed: false, reason: `Requires role: ${roleLabels.join(', ')} (or IC / Safety override)` };
+}
+
 function orgReparentRole(childId, newParentId) {
   if (!activeOperation || !canReparent()) return;
   initCustomRoles();
@@ -1259,25 +1335,134 @@ function initFirebase() {
     db = firebase.database();
     db.goOnline();
 
+    // F-1E-1 (v3.10.0): signInAnonymously failure now surfaces a persistent
+    // banner instead of console-only. Auto-clears on successful auth state
+    // change. Member-registration retries also feed this banner.
     firebase.auth().signInAnonymously().catch(err => {
-      console.warn('Anonymous auth failed:', err.message);
+      console.warn('Anonymous auth failed:', err && err.message);
+      showAuthFailureBanner('Sync unavailable — running offline-only.');
     });
+    if (firebase.auth().onAuthStateChanged) {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          hideAuthFailureBanner();
+          // F-1E-2: flush any queued member registrations on auth recovery
+          flushPendingMemberRegistrations();
+        }
+      });
+    }
 
-    const connRef = db.ref('.info/connected');
-    connRef.on('value', (snap) => {
-      const el = document.getElementById('connStatus');
-      if (snap.val() === true) {
-        isOnline = true;
-        el.className = 'conn-status';
-        el.textContent = '';
-        flushPendingWrites();
-        flushSyncDiagBuffer();
-      } else {
-        isOnline = false;
-        el.className = 'conn-status offline';
-        el.textContent = 'Offline — changes will sync when reconnected';
-      }
+    setupConnListener();
+  }
+}
+
+// F-1B-01 + F-1E-3 + F-1E-4 (v3.10.0): module-scoped connRef setup so
+// teardownListeners can detach it; null-guards on snap + el; error
+// callback wired to the persistent banner path.
+function setupConnListener() {
+  if (!db) return;
+  if (connRef && connRefCallback) {
+    try { connRef.off('value', connRefCallback); } catch (e) { /* ignore */ }
+  }
+  connRef = db.ref('.info/connected');
+  connRefCallback = (snap) => {
+    if (!snap) return; // F-1E-3 null guard
+    const el = document.getElementById('connStatus');
+    if (!el) return; // null guard if DOM not ready
+    if (snap.val() === true) {
+      isOnline = true;
+      el.className = 'conn-status';
+      el.textContent = '';
+      flushPendingWrites();
+      flushSyncDiagBuffer();
+      flushPendingMemberRegistrations();
+    } else {
+      isOnline = false;
+      el.className = 'conn-status offline';
+      el.textContent = 'Offline — changes will sync when reconnected';
+    }
+  };
+  // F-1E-4: error callback (was missing — listener failures went silent)
+  const onConnErr = (err) => {
+    console.warn('.info/connected listener error:', err && err.message);
+    onListenerError('.info/connected', err);
+  };
+  connRef.on('value', connRefCallback, onConnErr);
+}
+
+// F-1E-1: persistent yellow banner for auth/sync failures. Built lazily;
+// reused on subsequent calls. Auto-hidden by onAuthStateChanged success.
+function showAuthFailureBanner(msg) {
+  let banner = document.getElementById('authFailureBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'authFailureBanner';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:200;background:var(--yellow,#FFEB3B);color:#000;padding:10px 16px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--orange-dark,#E65100);box-shadow:0 2px 8px rgba(0,0,0,0.15)';
+    banner.innerHTML = `
+      <span style="flex:1" id="authFailureBannerMsg"></span>
+      <button type="button" id="authFailureRetryBtn" style="background:#000;color:#fff;border:none;padding:6px 14px;border-radius:4px;font-weight:700;cursor:pointer;font-size:13px;min-height:32px">Retry</button>
+    `;
+    document.body.appendChild(banner);
+    banner.querySelector('#authFailureRetryBtn').addEventListener('click', retryAuth);
+  }
+  const msgEl = banner.querySelector('#authFailureBannerMsg');
+  if (msgEl) msgEl.textContent = msg || 'Sync unavailable — running offline-only.';
+  banner.style.display = 'flex';
+}
+
+function hideAuthFailureBanner() {
+  const banner = document.getElementById('authFailureBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function retryAuth() {
+  if (typeof firebase === 'undefined' || !firebase.auth) return;
+  const btn = document.getElementById('authFailureRetryBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  firebase.auth().signInAnonymously()
+    .then(() => {
+      hideAuthFailureBanner();
+      flushPendingMemberRegistrations();
+      if (deptId) setupListeners();
+    })
+    .catch((err) => {
+      console.warn('Auth retry failed:', err && err.message);
+      if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
     });
+}
+
+// F-1E-2 (v3.10.0): member registration with retry + offline queue.
+// Replaces the fire-and-forget set(true) in setupListeners — that single
+// write failing meant the user could never write to the department
+// (security rules deny non-members).
+function registerMember(uid, attempt) {
+  attempt = attempt || 0;
+  if (!db || !deptId || !uid) return;
+  const targetDept = deptId;
+  db.ref(`departments/${targetDept}/members/${uid}`).set(true).catch((err) => {
+    if (attempt < 2) {
+      setTimeout(() => registerMember(uid, attempt + 1), 1000 * Math.pow(2, attempt));
+      return;
+    }
+    // Exhausted retries — queue for reconnect flush
+    if (!pendingMemberRegistrations.some(p => p.deptId === targetDept && p.uid === uid)) {
+      pendingMemberRegistrations.push({ deptId: targetDept, uid });
+    }
+    console.warn('Member registration queued (will retry on reconnect):', err && err.message);
+    showAuthFailureBanner('Department membership pending — retrying on reconnect.');
+  });
+}
+
+function flushPendingMemberRegistrations() {
+  if (!db || pendingMemberRegistrations.length === 0) return;
+  const queue = pendingMemberRegistrations.slice();
+  pendingMemberRegistrations = [];
+  for (const item of queue) {
+    const uid = firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid;
+    if (!uid || uid !== item.uid) continue;
+    registerMember(item.uid);
   }
 }
 
@@ -1312,6 +1497,12 @@ function teardownListeners() {
   if (apparatusRef) apparatusRef.off();
   if (settingsRef) settingsRef.off();
   if (customTypesRef) customTypesRef.off();
+  // F-1B-01 (v3.10.0): detach connectivity listener so dept-switch/logout
+  // doesn't leave a stray subscription. Re-attached by setupConnListener
+  // in setupListeners below (and in initFirebase at first boot).
+  if (connRef && connRefCallback) {
+    try { connRef.off('value', connRefCallback); } catch (e) { /* ignore */ }
+  }
 }
 
 function setupListeners() {
@@ -1334,12 +1525,12 @@ function setupListeners() {
   }
 
   teardownListeners();
+  // F-1B-01: re-attach connectivity listener after dept-switch teardown
+  setupConnListener();
 
-  // Register this device's UID as a department member (enables security rules scoping)
+  // F-1E-2: Register UID with retry queue (was: fire-and-forget set(true))
   const uid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
-  if (uid) {
-    db.ref(`departments/${deptId}/members/${uid}`).set(true);
-  }
+  if (uid) registerMember(uid);
 
   inventoryRef = db.ref(`departments/${deptId}/inventory`);
   operationsRef = db.ref(`departments/${deptId}/operations`);
@@ -2041,6 +2232,9 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('active');
   if (id === 'addEquipModal' || id === 'addApparatusModal') renderInventory();
   if (id === 'addApparatusModal' && activeOperation) showAssignApparatus();
+  // F-1C-7 (v3.10.0): clear pending-upgrade routing flag so a stale id
+  // doesn't redirect the next Add-Shore-Point deploy into an upgrade.
+  if (id === 'shorePointModal') assigningToPendingId = null;
   if (_lastFocusedElement && typeof _lastFocusedElement.focus === 'function') {
     _lastFocusedElement.focus();
     _lastFocusedElement = null;
@@ -3310,13 +3504,24 @@ function renderShorePointCards(numbered) {
         </div>`;
       }
       if (status === 'runner') {
+        // F-1C-10: → Secured gated to Runner role (IC/Safety override)
+        const securedGate = canPerformShoreAction('mark-secured');
+        const securedAttrs = securedGate.allowed
+          ? `onclick="updateShoreStatus('${sp.id}','secured')"`
+          : `disabled aria-disabled="true" title="${escapeAttr(securedGate.reason)}" style="opacity:0.5;cursor:not-allowed"`;
         html += `<div class="action-row">
           <button class="btn btn-sm" style="flex:1;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border)" onclick="updateShoreStatus('${sp.id}','cutting')">← Send Back</button>
-          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="updateShoreStatus('${sp.id}','secured')">→ Secured</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--green-bg);color:var(--green);border:1px solid var(--green)" ${securedAttrs}>→ Secured</button>
         </div>`;
       }
       if (status === 'secured') {
-        html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled)" onclick="guardClick(this,()=>returnEquipment('${sp.id}'))">Remove & Return Equipment</button>`;
+        // F-1C-10: Remove & Return gated to entry/rescue/shoring (IC/Safety override)
+        const returnGate = canPerformShoreAction('return-equipment');
+        if (returnGate.allowed) {
+          html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled)" onclick="guardClick(this,()=>returnEquipment('${sp.id}'))">Remove & Return Equipment</button>`;
+        } else {
+          html += `<button class="btn btn-sm mt-16" style="width:100%;background:var(--surface-alt);color:var(--text-hint);border:1px solid var(--text-disabled);opacity:0.5;cursor:not-allowed" disabled aria-disabled="true" title="${escapeAttr(returnGate.reason)}">Remove & Return Equipment</button>`;
+        }
       }
       if (status === 'returned') {
         html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
@@ -3536,13 +3741,174 @@ function findForShorePoint() {
   renderResults(results, 'spResults', length, load, sfIndex, true, informational);
 }
 
+// F-1C-7 (v3.10.0): Pending shore points now have a real deploy path.
+// Was: just opened the metadata edit form. Now: pre-fills the form with
+// the pending SP's measurement/load/deductions, auto-runs findForShorePoint
+// to populate deploy options against current inventory, and routes the
+// resulting deploy button click to upgradePendingToDeployed (which
+// transitions pending → process and decrements inventory).
 function assignEquipmentToPending(spId) {
-  // Find the pending shore point and open edit form to assign a strut
-  const allPoints = getShorePoints();
-  const sp = allPoints.find(p => p.id === spId);
+  if (!activeOperation) return;
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === spId);
   if (!sp) return;
-  // Use editShorePoint which pre-fills the form
-  editShorePoint(spId);
+
+  assigningToPendingId = spId;
+  editingShorePointId = null;
+
+  const isMulti = activeOperation.multiBuilding;
+  document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
+
+  document.getElementById('spLabel').value = sp.label || '';
+  document.getElementById('spBuilding').value = sp.building || '';
+  document.getElementById('spArea').value = sp.area || sp.floor || '';
+  document.getElementById('spDivision').value = sp.division || '';
+  populateGroupDropdown(sp.group || sp.team || '');
+  document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
+  setMeasurementFromInches('sp', sp.requiredLength || 0);
+  document.getElementById('spLength').value = sp.requiredLength || '';
+  document.getElementById('spLoad').value = sp.estimatedLoad || '';
+
+  if (sp.deductions) {
+    document.getElementById('spDeductionToggle').checked = true;
+    toggleDeductions('sp');
+    document.getElementById('spHeader').value = sp.deductions.header || '0';
+    document.getElementById('spSole').value = sp.deductions.sole || '0';
+    plateSelections.spTopPlate = sp.deductions.topPlateName || 'none';
+    plateSelections.spBottomPlate = sp.deductions.bottomPlateName || 'none';
+    updatePlatePickerDisplay('spTopPlate');
+    updatePlatePickerDisplay('spBottomPlate');
+    updateDeductionSummary('sp');
+  } else {
+    document.getElementById('spDeductionToggle').checked = false;
+    toggleDeductions('sp');
+  }
+
+  // Assign-equipment mode: hide Save (no metadata edit), hide Qty (single SP),
+  // show Find so user can re-query if they tweak load/deductions
+  document.getElementById('spFindBtn').classList.remove('hidden');
+  document.getElementById('spSaveEditBtn').classList.add('hidden');
+  document.getElementById('spQtyGroup').style.display = 'none';
+  spQuantity = 1;
+
+  document.querySelector('#shorePointModal .modal h2').textContent = 'Assign Equipment';
+  openModal('shorePointModal');
+
+  // Auto-run the strut finder so deploy options are immediately visible
+  findForShorePoint();
+}
+
+// F-1C-7: Upgrade a pending SP to deployed (status: pending → process).
+// Mirrors the inventory decrement + Firebase sync logic of deployShorePoint
+// but updates the existing SP instead of creating new ones. Qty is always 1
+// for a single pending SP — additional struts (e.g., t-shore pair) are
+// handled by creating additional pending SPs and deploying each in turn.
+function upgradePendingToDeployed(result, pendingId) {
+  if (!activeOperation) return;
+  const points = getShorePoints();
+  const sp = points.find(p => p.id === pendingId);
+  if (!sp) { showToast('Pending shore point no longer exists', 'error'); return; }
+  if (sp.status !== 'pending') { showToast('Shore point is no longer pending', 'warning'); return; }
+
+  const opInv = getOperationInventory();
+  const strutInvItem = opInv.find(i => i.type === 'strut' && i.model === result.strut.model && i.available > 0);
+  if (!strutInvItem) {
+    alert('This strut is not available in any apparatus inventory.');
+    return;
+  }
+
+  const extInvItems = [];
+  for (const extSize of result.extensions) {
+    const ext = localInventory.find(i =>
+      i.type === 'extension' &&
+      i.length === extSize &&
+      i.apparatus &&
+      (i.system === result.strut.system || (result.strut.system === 'LockStroke' && i.system === 'AcmeThread') || (result.strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
+      i.available > 0 &&
+      !extInvItems.some(e => e.id === i.id && i.available <= extInvItems.filter(x => x.id === i.id).length)
+    );
+    if (ext) extInvItems.push(ext);
+  }
+
+  const deductions = getDeductions('sp');
+  const deployedPlates = [];
+  if (deductions) {
+    const platesToDeploy = [];
+    if (deductions.topPlateName && deductions.topPlateName !== 'none') platesToDeploy.push(deductions.topPlateName);
+    if (deductions.bottomPlateName && deductions.bottomPlateName !== 'none') platesToDeploy.push(deductions.bottomPlateName);
+    for (const plateId of platesToDeploy) {
+      const plateInv = opInv.find(i => i.type === 'plate' && i.plateId === plateId && i.available > 0);
+      if (plateInv) {
+        deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
+      }
+    }
+  }
+
+  // Apply update to the existing SP (mutate in place — already in activeOperation)
+  sp.deployedStrut = {
+    inventoryId: strutInvItem.id,
+    model: result.strut.model,
+    system: result.strut.system,
+    apparatus: strutInvItem.apparatus,
+    external: strutInvItem.external || false,
+    deptName: strutInvItem.deptName || null,
+  };
+  sp.deployedExtensions = extInvItems.map(e => ({
+    inventoryId: e.id,
+    length: e.length,
+    system: e.system,
+    apparatus: e.apparatus,
+  }));
+  sp.deployedPlates = deployedPlates;
+  sp.deductions = deductions || sp.deductions || null;
+  sp.effectiveLength = result.effectiveLength || sp.effectiveLength || sp.requiredLength;
+  sp.estimatedLoad = parseFloat(document.getElementById('spLoad').value) || sp.estimatedLoad || 0;
+  sp.safetyFactor = ['2:1', '3:1', '4:1'][2];
+  sp.status = 'process';
+  sp.deployedAt = new Date().toISOString();
+  // F-4B-7 audit trail propagation if the user acknowledged through the modal
+  sp.unrated = result.unrated || false;
+  sp.unratedReason = result.unrated ? (result.unratedReason || null) : null;
+  sp.unratedAcknowledged = result.unrated ? true : false;
+  sp.acknowledgedBy = result.unrated ? (localStorage.getItem('fieldstruts_myRoleName') || 'Unknown') : null;
+  sp.acknowledgedAt = result.unrated
+    ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
+    : null;
+
+  // Decrement local inventory counts
+  if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
+    activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
+  } else {
+    strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+  }
+  for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+  for (const pl of deployedPlates) {
+    const plInv = localInventory.find(i => i.id === pl.inventoryId);
+    if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+  }
+
+  // Sync to Firebase
+  if (db && deptId && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
+    if (strutInvItem.external) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+    } else {
+      firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+    }
+    for (const ext of extInvItems) {
+      firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+    }
+    for (const pl of deployedPlates) {
+      firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+    }
+  }
+
+  persistOperation();
+  persistInventory();
+  renderInventory();
+  renderOperations();
+  closeModal('shorePointModal');
+  showToast(`${escapeHtml(sp.label || 'Shore point')} → ${result.strut.model} deployed`, 'success');
 }
 
 function deployPendingShorePoint() {
@@ -3596,12 +3962,86 @@ function deployPendingShorePoint() {
   renderCommandView();
 }
 
-function deployShorePoint(result, qty) {
+// F-4B-7 (v3.10.0): Forced acknowledgment modal for LongShore unrated-zone
+// deploys. The result-card checkbox is the first gate; this modal is the
+// second, undismissable gate — backdrop tap is intentionally a no-op so the
+// user must explicitly choose Cancel or Acknowledge. Escape cancels (safe
+// default). Captures who acknowledged + when on the deployed SP for
+// after-action review and liability traceability.
+function confirmUnratedDeploy(result) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active unrated-confirm-overlay';
+    overlay.style.zIndex = '400';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'unratedConfirmTitle');
+
+    const strutLabel = escapeHtml(result.strut && result.strut.model ? result.strut.model : 'Strut');
+    const lengthLabel = (result.adjCollapsed && result.adjExtended)
+      ? `${result.adjCollapsed}" – ${result.adjExtended}"`
+      : '';
+
+    overlay.innerHTML = `<div class="modal" style="max-width:480px;padding:24px;border:2px solid var(--orange-dark)">
+      <h2 id="unratedConfirmTitle" style="font-size:18px;margin-bottom:12px;color:var(--orange-dark);font-weight:700">⚠ UNRATED CONFIGURATION — CONFIRM</h2>
+      <div style="margin-bottom:16px;font-size:14px;line-height:1.5;color:var(--text-primary)">
+        <strong>${strutLabel}</strong>${lengthLabel ? ` at ${lengthLabel}` : ''} exceeds Paratech's published working-load range.
+      </div>
+      <div style="margin-bottom:20px;padding:12px;background:var(--orange-bg);border-radius:6px;font-size:13px;line-height:1.5;color:var(--text-primary)">
+        Capacity figures shown are <strong>extrapolated, not certified</strong>. Confirm the team has consulted rescue engineering and independently assessed structural conditions before deploying this shore.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button data-action="cancel" class="btn btn-outline" style="min-height:56px;font-weight:600">Cancel</button>
+        <button data-action="ack" class="btn" style="min-height:56px;background:var(--orange-dark);color:white;border:none;font-weight:700">I Acknowledge — Deploy</button>
+      </div>
+    </div>`;
+
+    const cleanup = (val) => {
+      document.removeEventListener('keydown', onKey);
+      overlay.remove();
+      resolve(val);
+    };
+
+    overlay.addEventListener('click', (e) => {
+      const action = e.target.dataset && e.target.dataset.action;
+      if (action === 'cancel') cleanup(false);
+      else if (action === 'ack') cleanup(true);
+      // Backdrop click (no data-action) is intentionally a no-op
+    });
+
+    const onKey = (e) => { if (e.key === 'Escape') cleanup(false); };
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+      if (cancelBtn) cancelBtn.focus();
+    }, 50);
+  });
+}
+
+async function deployShorePoint(result, qty) {
   if (typeof result === 'string') {
     try { result = JSON.parse(result); }
     catch (e) { showToast('Invalid shore point data', 'error'); return; }
   }
   qty = qty || 1;
+
+  // F-4B-7: Forced second-gate confirmation for unrated-zone deploys
+  if (result.unrated) {
+    const acknowledged = await confirmUnratedDeploy(result);
+    if (!acknowledged) return;
+  }
+
+  // F-1C-7 (v3.10.0): Pending-SP upgrade path. Route to the in-place upgrade
+  // function instead of creating new SPs. The pending SP retains its label,
+  // location, and ID; we just attach a strut + advance status to 'process'.
+  if (assigningToPendingId) {
+    const pendingId = assigningToPendingId;
+    assigningToPendingId = null;
+    upgradePendingToDeployed(result, pendingId);
+    return;
+  }
 
   const baseLabel = validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point';
   const length = getMeasurementInches('sp');
@@ -3697,6 +4137,12 @@ function deployShorePoint(result, qty) {
       // context forward (visible in operations view + audit/after-action review).
       unrated: result.unrated || false,
       unratedReason: result.unrated ? (result.unratedReason || null) : null,
+      // F-4B-7: audit trail for the forced acknowledgment modal (v3.10.0)
+      unratedAcknowledged: result.unrated ? true : false,
+      acknowledgedBy: result.unrated ? (localStorage.getItem('fieldstruts_myRoleName') || 'Unknown') : null,
+      acknowledgedAt: result.unrated
+        ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
+        : null,
     };
 
     sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now() + '-' + n);
@@ -3766,6 +4212,12 @@ function getGroupMembers(spId) {
 
 function updateShoreStatus(spId, newStatus) {
   if (!activeOperation) return;
+  // F-1C-10: → Secured is gated to Runner (IC/Safety override). Other
+  // transitions remain open — recovery paths shouldn't be over-gated.
+  if (newStatus === 'secured') {
+    const gate = canPerformShoreAction('mark-secured');
+    if (!gate.allowed) { showToast(gate.reason, 'warning'); return; }
+  }
 
   const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
@@ -4394,14 +4846,17 @@ function renderCutTableCard(sp, mode) {
     : '';
 
   const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
+  // F-1C-10: Cut-station actions gated to Cutting role (IC/Safety override)
+  const cutGate = canPerformShoreAction(mode === 'active' ? 'mark-cut-done' : 'send-to-runner');
+  const cutDisabledAttrs = cutGate.allowed ? '' : `disabled aria-disabled="true" title="${escapeAttr(cutGate.reason)}" style="opacity:0.5;cursor:not-allowed"`;
   const actionBtn = mode === 'active'
     ? `<div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px">
+          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"${cutGate.allowed ? '' : ' disabled'}>
         </div>
-        <button class="btn btn-sm" style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')">✓ Mark Cut Complete</button>
+        <button class="btn btn-sm" ${cutGate.allowed ? `style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')"` : `style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px;opacity:0.5;cursor:not-allowed" disabled aria-disabled="true" title="${escapeAttr(cutGate.reason)}"`}>✓ Mark Cut Complete</button>
       </div>`
-    : `<button class="btn btn-sm" style="width:100%;background:var(--runner-bg);color:var(--runner-text);border:1px solid var(--runner-border);font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')">→ Send to Runner</button>`;
+    : `<button class="btn btn-sm" ${cutGate.allowed ? `style="width:100%;background:var(--runner-bg);color:var(--runner-text);border:1px solid var(--runner-border);font-weight:700;min-height:44px;font-size:15px" onclick="sendToRunner('${sp.id}')"` : `style="width:100%;background:var(--runner-bg);color:var(--runner-text);border:1px solid var(--runner-border);font-weight:700;min-height:44px;font-size:15px;opacity:0.5;cursor:not-allowed" disabled aria-disabled="true" title="${escapeAttr(cutGate.reason)}"`}>→ Send to Runner</button>`;
 
   return `<div style="background:var(--surface);border:2px solid ${borderColor};border-radius:var(--radius);padding:16px;margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
@@ -4435,6 +4890,9 @@ function renderCutTableCard(sp, mode) {
 
 function sendToRunner(spId) {
   if (!activeOperation) return;
+  // F-1C-10: defense-in-depth role gate (UI also disables the button)
+  const gate = canPerformShoreAction('send-to-runner');
+  if (!gate.allowed) { showToast(gate.reason, 'warning'); return; }
 
   const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
@@ -4458,6 +4916,9 @@ function sendToRunner(spId) {
 
 function markCutDone(spId) {
   if (!activeOperation) return;
+  // F-1C-10: defense-in-depth role gate (UI also disables the button)
+  const gate = canPerformShoreAction('mark-cut-done');
+  if (!gate.allowed) { showToast(gate.reason, 'warning'); return; }
 
   const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
@@ -4665,8 +5126,15 @@ function returnEquipmentSingle(sp) {
   returnInventoryItems(sp);
 }
 
-function returnEquipment(spId) {
+function returnEquipment(spId, skipRoleGate) {
   if (!activeOperation) return;
+  // F-1C-10: defense-in-depth role gate (UI also disables the button).
+  // endOperation passes skipRoleGate=true because the IC's end-of-op confirm
+  // is its own gate (and cascading returns shouldn't be blocked).
+  if (!skipRoleGate) {
+    const gate = canPerformShoreAction('return-equipment');
+    if (!gate.allowed) { showToast(gate.reason, 'warning'); return; }
+  }
 
   const points = getShorePoints();
   const sp = points.find(p => p.id === spId);
@@ -4685,7 +5153,8 @@ function endOperation() {
 
   const points = getShorePoints();
   for (const sp of points) {
-    if (sp.status !== 'returned') returnEquipment(sp.id);
+    // F-1C-10: end-of-op cascade bypasses the per-action role gate
+    if (sp.status !== 'returned') returnEquipment(sp.id, true);
   }
 
   for (const item of localInventory) {
@@ -4940,7 +5409,114 @@ async function handleImport(event) {
   event.target.value = '';
 }
 
-function applyImportData(data) {
+// F-1D-16 (v3.10.0): Collect inventory IDs currently referenced by deployed
+// shore points (strut + extensions + plates), so we can warn before an import
+// orphans them. Only walks the active operation; archived ops are immutable.
+function findDeployedInventoryReferences() {
+  const refs = new Set();
+  if (!activeOperation || !Array.isArray(activeOperation.shorePoints)) return refs;
+  for (const sp of activeOperation.shorePoints) {
+    if (!sp || sp.status === 'returned') continue;
+    if (sp.deployedStrut && sp.deployedStrut.inventoryId) refs.add(sp.deployedStrut.inventoryId);
+    if (Array.isArray(sp.deployedExtensions)) {
+      for (const ext of sp.deployedExtensions) {
+        if (ext && ext.inventoryId) refs.add(ext.inventoryId);
+      }
+    }
+    if (Array.isArray(sp.deployedPlates)) {
+      for (const pl of sp.deployedPlates) {
+        if (pl && pl.inventoryId) refs.add(pl.inventoryId);
+      }
+    }
+  }
+  return refs;
+}
+
+// F-1D-16: Blocking confirmation modal when import would orphan deployed
+// references. Cancel returns 'cancel'; "Import anyway" returns
+// 'import-anyway'. Backdrop click is a no-op (must explicitly choose).
+function confirmImportOrphans(orphanCount, sampleLabels) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active import-orphans-overlay';
+    overlay.style.zIndex = '400';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'importOrphansTitle');
+
+    const samples = sampleLabels.slice(0, 3).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    const moreNote = sampleLabels.length > 3 ? `<li>… and ${sampleLabels.length - 3} more</li>` : '';
+
+    overlay.innerHTML = `<div class="modal" style="max-width:480px;padding:24px;border:2px solid var(--red,#D32F2F)">
+      <h2 id="importOrphansTitle" style="font-size:18px;margin-bottom:12px;color:var(--red,#D32F2F);font-weight:700">⚠ Import would orphan deployed equipment</h2>
+      <div style="margin-bottom:12px;font-size:14px;line-height:1.5;color:var(--text-primary)">
+        <strong>${orphanCount}</strong> deployed shore point${orphanCount === 1 ? '' : 's'} reference inventory IDs not present in this import:
+      </div>
+      <ul style="margin:0 0 16px 18px;font-size:13px;line-height:1.6;color:var(--text-primary)">${samples}${moreNote}</ul>
+      <div style="margin-bottom:20px;padding:12px;background:var(--red-bg,#FFEBEE);border-radius:6px;font-size:13px;line-height:1.5;color:var(--text-primary)">
+        Cancel and reconcile the IDs first (export current inventory, edit the spreadsheet to preserve those IDs), or import anyway — the affected shore points will show "deployed against deleted inventory" and their equipment counts won't return.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button data-action="cancel" class="btn btn-outline" style="min-height:56px;font-weight:600">Cancel Import</button>
+        <button data-action="import-anyway" class="btn" style="min-height:56px;background:var(--red,#D32F2F);color:white;border:none;font-weight:700">Import Anyway</button>
+      </div>
+    </div>`;
+
+    const cleanup = (val) => {
+      document.removeEventListener('keydown', onKey);
+      overlay.remove();
+      resolve(val);
+    };
+    overlay.addEventListener('click', (e) => {
+      const action = e.target.dataset && e.target.dataset.action;
+      if (action === 'cancel') cleanup('cancel');
+      else if (action === 'import-anyway') cleanup('import-anyway');
+    });
+    const onKey = (e) => { if (e.key === 'Escape') cleanup('cancel'); };
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+      if (cancelBtn) cancelBtn.focus();
+    }, 50);
+  });
+}
+
+async function applyImportData(data) {
+  // F-1D-16: pre-import check. Walk active operation shore points; if any
+  // reference an inventory ID not present in the import set, block with a
+  // confirmation modal (orphan dangling deployed-strut references is a
+  // common cause of silent inventory drift after a partial spreadsheet).
+  const referenced = findDeployedInventoryReferences();
+  if (referenced.size > 0) {
+    const importedIds = new Set(data.map(it => it.id).filter(Boolean));
+    const orphaned = [];
+    for (const refId of referenced) {
+      if (!importedIds.has(refId)) orphaned.push(refId);
+    }
+    if (orphaned.length > 0) {
+      // Build sample labels: prefer SP label + strut model, fall back to id
+      const sampleLabels = [];
+      if (activeOperation && Array.isArray(activeOperation.shorePoints)) {
+        for (const sp of activeOperation.shorePoints) {
+          if (!sp) continue;
+          const hasOrphan =
+            (sp.deployedStrut && orphaned.includes(sp.deployedStrut.inventoryId)) ||
+            (Array.isArray(sp.deployedExtensions) && sp.deployedExtensions.some(e => e && orphaned.includes(e.inventoryId))) ||
+            (Array.isArray(sp.deployedPlates) && sp.deployedPlates.some(p => p && orphaned.includes(p.inventoryId)));
+          if (hasOrphan) {
+            const label = sp.label || 'Shore Point';
+            const model = sp.deployedStrut && sp.deployedStrut.model ? ` (${sp.deployedStrut.model})` : '';
+            sampleLabels.push(label + model);
+          }
+        }
+      }
+      const choice = await confirmImportOrphans(sampleLabels.length, sampleLabels);
+      if (choice === 'cancel') return;
+    }
+  }
+
   const useFirebaseKeys = db && inventoryRef;
   localInventory = data.map(item => ({
     ...item,

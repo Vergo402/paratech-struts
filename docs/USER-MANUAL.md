@@ -1,6 +1,6 @@
 # FieldStruts User Manual
 
-**Version:** 3.9  
+**Version:** 3.10  
 **Last updated:** 2026-05-16  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
@@ -148,11 +148,15 @@ Each shore point progresses through six statuses:
 | **Secured** | In place and operational |
 | **Removed & Returned** | Shore deconstructed, equipment returned to inventory |
 
-Use the status buttons on each shore point card to advance or send back through the workflow.
+Use the status buttons on each shore point card to advance or send back through the workflow. Locked-card actions are role-gated: only **Cutting** can mark a cut complete or send to the runner; only **Runner** can mark the shore secured; only **Entry / Rescue / Initial Shoring** can remove and return equipment. **IC** and **Safety** can override any gate. If your role doesn't match the action, the button shows greyed with a tooltip explaining what's required — switch your role in My Role (Command tab) or have a teammate with the right role advance it.
+
+When the strut finder offers a configuration in the LongShore unrated zone (>16 ft), the deploy button shows a final confirmation modal — Cancel or "I Acknowledge — Deploy" — before the shore point is created. The acknowledgement, including who tapped it and when, is recorded on the shore point for after-action review.
 
 ### Pending Shore Points
 
 When no matching equipment is available, shore points are saved as **Pending** with a purple status badge. The app monitors inventory and shows a green "Equipment now available!" indicator when a match appears (e.g., after equipment is returned or external equipment is added).
+
+Tap **Assign Equipment** on a pending card to open the strut picker pre-filled with that shore point's measurement, load, and deductions. The finder runs automatically against the current operation inventory; pick a strut to deploy. The pending card transitions to **In Process** and inventory decrements — the shore point keeps its label and location.
 
 ### Grouped Shore Points
 
@@ -324,6 +328,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.10** | 2026-05-16 | LongShore unrated-zone deploys now require an explicit acknowledgement modal (audit trail captures who/when). Pending shore points have a real "Assign Equipment" deploy flow. Locked-card status buttons are role-gated (Cutting / Runner / Entry-Rescue-Shoring, with IC / Safety override). Excel imports warn before orphaning deployed equipment references. Persistent banner on auth-failure / sync degradation with manual retry. SheetJS bundled into the service worker for offline import/export. Fully-extended boundary warning on strut results. |
 | **v3.9** | 2026-05-16 | Group status guard — sending one shore point back through the workflow no longer drags advanced group-mates with it. Excel imports support extensions and connector plates (not just struts). Firebase scripts pinned with Subresource Integrity. Stored XSS hardening on shore point card rendering. |
 | **v3.8** | 2026-05-16 | Individual wood cut tracking per shore point card (grouped points no longer share cut/runner/secured lifecycle). Inventory tab updates immediately after deploying or returning equipment. Sync diagnostics for offline write queue troubleshooting. |
 | **v3.7** | 2026-05-15 | Firebase Anonymous Auth + security rules. Photo attachment in feedback form. Status dot key/legend on ICS org chart. Liability disclaimer (removed). Clearer empty state when inventory lacks a fitting strut. Conservative-floor interpolation for load capacity. |
