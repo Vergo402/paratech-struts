@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldstruts-v3.9.2';
+const CACHE_NAME = 'fieldstruts-v3.10.0';
 const ASSETS = [
   './',
   './index.html',
@@ -6,15 +6,26 @@ const ASSETS = [
   './app.js',
   './manifest.json',
 ];
+// F-5B-14 (v3.10.0): precache SheetJS so air-gapped incident sites can still
+// import/export inventory after first launch. Cross-origin URL is handled via
+// Request with mode:'cors' so the SRI-pinned script tag in app.js can still
+// validate the cached response.
+const CROSS_ORIGIN_ASSETS = [
+  'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all(
-        ASSETS.map(url =>
+      Promise.all([
+        ...ASSETS.map(url =>
           cache.add(url).catch(err => console.warn('Failed to cache:', url, err))
-        )
-      )
+        ),
+        ...CROSS_ORIGIN_ASSETS.map(url => {
+          const req = new Request(url, { mode: 'cors', credentials: 'omit' });
+          return cache.add(req).catch(err => console.warn('Failed to cache cross-origin:', url, err));
+        }),
+      ])
     )
   );
   self.skipWaiting();
@@ -30,9 +41,13 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('firebasejs') || event.request.url.includes('firebaseio') || event.request.url.includes('sheetjs')) {
+  // Firebase realtime URLs bypass the SW entirely — they're WebSocket-like
+  // long-polls and caching breaks sync semantics.
+  if (event.request.url.includes('firebasejs') || event.request.url.includes('firebaseio')) {
     return;
   }
+  // F-5B-14: SheetJS is served cache-first so offline import/export keeps
+  // working after the first install. Falls back to network on cache miss.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetchPromise = fetch(event.request).then((response) => {

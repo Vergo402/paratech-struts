@@ -26,7 +26,28 @@
         "operations": {
           ".indexOn": ["status"],
           "$opId": {
-            ".validate": "newData.hasChild('name') && newData.hasChild('status')"
+            ".validate": "newData.hasChild('name') && newData.hasChild('status')",
+            "shorePoints": {
+              "$spId": {
+                "status": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(pending|process|strutplaced|cutting|runner|secured|returned)$/)"
+                },
+                "requiredLength": {
+                  ".validate": "newData.isNumber() && newData.val() >= 12 && newData.val() <= 500"
+                },
+                "estimatedLoad": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500000"
+                },
+                "label": {
+                  ".validate": "newData.isString() && newData.val().length <= 200"
+                }
+              }
+            },
+            "roles": {
+              "$targetId": {
+                ".validate": "newData.isString() && newData.val().length <= 64"
+              }
+            }
           }
         }
       }
