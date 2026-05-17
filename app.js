@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.9.1';
+const APP_VERSION = '3.9.2';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -4426,7 +4426,7 @@ function renderCutTableCard(sp, mode) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:13px;margin:10px 0">
       <div>Header: <strong>${headerSize}</strong></div>
       <div>Footer: <strong>${footerSize}</strong></div>
-      <div>Strut: <strong>${sp.deployedStrut ? sp.deployedStrut.model : '?'}${extText}</strong></div>
+      <div>Strut: <strong>${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : '?'}${extText}</strong></div>
       ${shoreTypeLabel ? `<div>Type: <strong>${shoreTypeLabel}</strong></div>` : ''}
     </div>
     ${actionBtn}
