@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.11.0';
+const APP_VERSION = '3.11.1';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -764,11 +764,11 @@ function getShorePoints() {
 
 function persistOperation() {
   if (!activeOperation) return;
-  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  safeSetItem('fieldshore_operation', JSON.stringify(activeOperation));
 }
 
 function persistInventory() {
-  safeSetItem('fieldstruts_inventory', JSON.stringify(localInventory));
+  safeSetItem('fieldshore_inventory', JSON.stringify(localInventory));
 }
 
 // Look up shore type name by id
@@ -837,7 +837,7 @@ function safeSetItem(key, value) {
 }
 
 // Offline-safe Firebase write wrapper
-let pendingWrites = safeParse(localStorage.getItem('fieldstruts_pendingWrites'), []);
+let pendingWrites = safeParse(localStorage.getItem('fieldshore_pendingWrites'), []);
 let isOnline = false;
 
 // Sync diagnostics — backend-only logs at /diagnostics/sync/. No UI surface.
@@ -917,7 +917,7 @@ function firebaseSave(ref, method, data) {
     if (method !== 'transaction') {
       op.data = data;
       pendingWrites.push(op);
-      safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+      safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
     } else {
       logSyncEvent('transaction_failed', { path: ref.toString().replace(/.*firebaseio\.com/, ''), error: err.message || String(err) });
     }
@@ -976,7 +976,7 @@ async function maybeBackup(reason) {
     const meta = {
       ts: now,
       reason: reason || 'auto',
-      by: localStorage.getItem('fieldstruts_myRoleName') || 'Unknown',
+      by: localStorage.getItem('fieldshore_myRoleName') || 'Unknown',
       appVersion: APP_VERSION,
     };
     await db.ref(`departments/${deptId}/_backups/${now}`).set({ ...data, _meta: meta });
@@ -1009,7 +1009,7 @@ async function backupBeforeDestructiveWrite(subtreePath, reason) {
     ts,
     subtree: subtreePath,
     reason: reason || 'unspecified',
-    by: localStorage.getItem('fieldstruts_myRoleName') || 'Unknown',
+    by: localStorage.getItem('fieldshore_myRoleName') || 'Unknown',
     appVersion: APP_VERSION,
   };
   try {
@@ -1086,9 +1086,9 @@ function flushPendingWrites() {
   Promise.all(promises).then(() => {
     pendingWrites = failed.concat(pendingWrites);
     if (pendingWrites.length > 0) {
-      safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+      safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
     } else {
-      localStorage.removeItem('fieldstruts_pendingWrites');
+      localStorage.removeItem('fieldshore_pendingWrites');
     }
     const errors = failed.slice(0, 5).map(op => ({ path: op.path.replace(/.*firebaseio\.com/, ''), method: op.method, error: op.lastError }));
     logSyncEvent('flush', {
@@ -1595,7 +1595,7 @@ function handleLogin() {
   const id = document.getElementById('loginDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
   deptId = id;
-  safeSetItem('fieldstruts_deptId', deptId);
+  safeSetItem('fieldshore_deptId', deptId);
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('settingsDeptId').value = deptId;
   setupListeners();
@@ -1605,7 +1605,7 @@ function connectDepartment() {
   const id = document.getElementById('settingsDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
   deptId = id;
-  safeSetItem('fieldstruts_deptId', deptId);
+  safeSetItem('fieldshore_deptId', deptId);
   setupListeners();
 }
 
@@ -1741,7 +1741,7 @@ function setupListeners() {
     apparatusFirstFire = false;
     const data = snap.val() || {};
     localApparatus = Object.entries(data).map(([id, item]) => ({ id, ...item }));
-    safeSetItem('fieldstruts_apparatus', JSON.stringify(localApparatus));
+    safeSetItem('fieldshore_apparatus', JSON.stringify(localApparatus));
     if (localApparatus.length > 0 && !localApparatus.find(a => a.id === selectedApparatus)) {
       selectedApparatus = localApparatus[0].id;
     }
@@ -1768,7 +1768,7 @@ function setupListeners() {
     const data = snap.val();
     if (data && Array.isArray(data) && data.length > 0) {
       customApparatusTypes = data;
-      safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(data));
+      safeSetItem('fieldshore_custom_apparatus_types', JSON.stringify(data));
     } else {
       customApparatusTypes = null;
     }
@@ -1777,7 +1777,7 @@ function setupListeners() {
 }
 
 function loadLocalInventory() {
-  const stored = localStorage.getItem('fieldstruts_inventory');
+  const stored = localStorage.getItem('fieldshore_inventory');
   if (stored) localInventory = safeParse(stored, []);
 }
 
@@ -1785,17 +1785,17 @@ function loadLocalInventory() {
 // APPARATUS MANAGEMENT
 // ============================================================
 function loadLocalApparatus() {
-  const stored = localStorage.getItem('fieldstruts_apparatus');
+  const stored = localStorage.getItem('fieldshore_apparatus');
   if (stored) localApparatus = safeParse(stored, []);
   if (localApparatus.length > 0 && !selectedApparatus) {
     selectedApparatus = localApparatus[0].id;
   }
-  const storedTypes = localStorage.getItem('fieldstruts_custom_apparatus_types');
+  const storedTypes = localStorage.getItem('fieldshore_custom_apparatus_types');
   if (storedTypes) customApparatusTypes = safeParse(storedTypes, null);
 }
 
 function saveLocalApparatus() {
-  safeSetItem('fieldstruts_apparatus', JSON.stringify(localApparatus));
+  safeSetItem('fieldshore_apparatus', JSON.stringify(localApparatus));
 }
 
 function renderApparatusTabs() {
@@ -1880,7 +1880,7 @@ function initCustomApparatusTypes() {
 }
 
 function saveCustomApparatusTypes() {
-  safeSetItem('fieldstruts_custom_apparatus_types', JSON.stringify(customApparatusTypes));
+  safeSetItem('fieldshore_custom_apparatus_types', JSON.stringify(customApparatusTypes));
   if (db && deptId) {
     firebaseSave(firebase.database().ref(`departments/${deptId}/customApparatusTypes`), 'set', customApparatusTypes);
   }
@@ -2455,9 +2455,9 @@ function submitFeedback() {
   const entry = {
     category,
     text,
-    deptId: localStorage.getItem('fieldstruts_deptId') || null,
+    deptId: localStorage.getItem('fieldshore_deptId') || null,
     deptName: (() => {
-      const settings = safeParse(localStorage.getItem('fieldstruts_settings'), {});
+      const settings = safeParse(localStorage.getItem('fieldshore_settings'), {});
       return settings.name || null;
     })(),
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
@@ -2472,7 +2472,7 @@ function submitFeedback() {
   } else {
     // No db — queue for later via pending writes
     pendingWrites.push({ path: 'feedback/' + Date.now(), method: 'set', data: entry, timestamp: Date.now(), retries: 0 });
-    safeSetItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+    safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
     alert('Feedback saved — will submit when online.');
     closeFeedbackModal();
   }
@@ -2616,7 +2616,7 @@ function openMyRoleModal() {
   document.getElementById('roleModalTitle').textContent = 'My Role';
   document.getElementById('roleModalSubtitle').textContent = 'Pick your ICS role on this device';
   document.getElementById('roleNameGroup').style.display = 'block';
-  document.getElementById('rolePersonName').value = localStorage.getItem('fieldstruts_myRoleName') || '';
+  document.getElementById('rolePersonName').value = localStorage.getItem('fieldshore_myRoleName') || '';
   renderRoleGrid(myRole);
   openModal('roleModal');
 }
@@ -2649,9 +2649,9 @@ function selectRole(roleId) {
   const personName = validateInput(document.getElementById('rolePersonName').value || '', 100);
   if (roleTarget === 'self') {
     myRole = roleId;
-    safeSetItem('fieldstruts_myRole', roleId);
-    if (personName) safeSetItem('fieldstruts_myRoleName', personName);
-    else localStorage.removeItem('fieldstruts_myRoleName');
+    safeSetItem('fieldshore_myRole', roleId);
+    if (personName) safeSetItem('fieldshore_myRoleName', personName);
+    else localStorage.removeItem('fieldshore_myRoleName');
     roleViewDismissed = false;
   } else {
     // Assign role to apparatus/individual
@@ -2678,8 +2678,8 @@ function selectRole(roleId) {
 function clearRole() {
   if (roleTarget === 'self') {
     myRole = null;
-    localStorage.removeItem('fieldstruts_myRole');
-    localStorage.removeItem('fieldstruts_myRoleName');
+    localStorage.removeItem('fieldshore_myRole');
+    localStorage.removeItem('fieldshore_myRoleName');
     roleViewDismissed = false;
   } else {
     if (activeOperation.roles) {
@@ -2720,7 +2720,7 @@ function openOrgChartNode(roleId) {
     }
   }
   if (myRole === roleId) {
-    currentAssignees.push({ id: 'self', name: localStorage.getItem('fieldstruts_myRoleName') || 'This Device', type: 'self' });
+    currentAssignees.push({ id: 'self', name: localStorage.getItem('fieldshore_myRoleName') || 'This Device', type: 'self' });
   }
 
   // Find unassigned apparatus and individuals (no role, or different role)
@@ -2737,7 +2737,7 @@ function openOrgChartNode(roleId) {
     }
   }
   if (!myRole) {
-    unassigned.push({ id: 'self', name: localStorage.getItem('fieldstruts_myRoleName') || 'This Device', type: 'self' });
+    unassigned.push({ id: 'self', name: localStorage.getItem('fieldshore_myRoleName') || 'This Device', type: 'self' });
   }
 
   // Build a bottom-sheet style action list
@@ -2799,7 +2799,7 @@ function assignOrgChartRole(targetId, roleId) {
 
   if (targetId === 'self') {
     myRole = roleId;
-    safeSetItem('fieldstruts_myRole', roleId);
+    safeSetItem('fieldshore_myRole', roleId);
     roleViewDismissed = false;
   } else {
     activeOperation.roles[targetId] = roleId;
@@ -2819,7 +2819,7 @@ function clearOrgChartRole(targetId, roleId) {
 
   if (targetId === 'self') {
     myRole = null;
-    localStorage.removeItem('fieldstruts_myRole');
+    localStorage.removeItem('fieldshore_myRole');
     roleViewDismissed = false;
   } else {
     if (activeOperation.roles) {
@@ -3078,7 +3078,7 @@ function renderMyRoleDisplay() {
 
   if (myRole) {
     const roleDef = getOperationRoles().find(r => r.id === myRole);
-    const personName = localStorage.getItem('fieldstruts_myRoleName');
+    const personName = localStorage.getItem('fieldshore_myRoleName');
     const nameStr = personName ? ` — ${escapeHtml(personName)}` : '';
     el.innerHTML = `<span class="role-badge">${escapeHtml(roleDef ? roleDef.abbr : myRole)}</span> <span style="font-weight:600;color:var(--text-primary)">${escapeHtml(getRoleName(myRole))}${nameStr}</span>`;
   } else {
@@ -3787,7 +3787,7 @@ function confirmStartOp() {
   // Reset device role for new operation
   myRole = null;
   roleViewDismissed = false;
-  localStorage.removeItem('fieldstruts_myRole');
+  localStorage.removeItem('fieldshore_myRole');
 
   op.id = (db && operationsRef) ? operationsRef.push().key : ('local-op-' + Date.now());
   op.shorePoints = [];
@@ -3835,7 +3835,7 @@ function showAddShorePoint() {
   document.getElementById('spLoad').value = '';
   document.getElementById('spShoreType').value = 't-shore';
   // Restore deduction toggle from preference
-  const dedPref = localStorage.getItem('fieldstruts_deductionToggle') === 'true';
+  const dedPref = localStorage.getItem('fieldshore_deductionToggle') === 'true';
   document.getElementById('spDeductionToggle').checked = dedPref;
   toggleDeductions('sp');
   // Reset plate selections
@@ -4019,7 +4019,7 @@ function upgradePendingToDeployed(result, pendingId) {
   sp.unrated = result.unrated || false;
   sp.unratedReason = result.unrated ? (result.unratedReason || null) : null;
   sp.unratedAcknowledged = result.unrated ? true : false;
-  sp.acknowledgedBy = result.unrated ? (localStorage.getItem('fieldstruts_myRoleName') || 'Unknown') : null;
+  sp.acknowledgedBy = result.unrated ? (localStorage.getItem('fieldshore_myRoleName') || 'Unknown') : null;
   sp.acknowledgedAt = result.unrated
     ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
     : null;
@@ -4288,7 +4288,7 @@ async function deployShorePoint(result, qty) {
       unratedReason: result.unrated ? (result.unratedReason || null) : null,
       // F-4B-7: audit trail for the forced acknowledgment modal (v3.10.0)
       unratedAcknowledged: result.unrated ? true : false,
-      acknowledgedBy: result.unrated ? (localStorage.getItem('fieldstruts_myRoleName') || 'Unknown') : null,
+      acknowledgedBy: result.unrated ? (localStorage.getItem('fieldshore_myRoleName') || 'Unknown') : null,
       acknowledgedAt: result.unrated
         ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
         : null,
@@ -4688,7 +4688,7 @@ function getRoleAssignments() {
   }
   if (myRole) {
     if (!assignments[myRole]) assignments[myRole] = [];
-    const myName = localStorage.getItem('fieldstruts_myRoleName') || 'This Device';
+    const myName = localStorage.getItem('fieldshore_myRoleName') || 'This Device';
     assignments[myRole].push({ name: myName, type: 'self' });
   }
   return assignments;
@@ -5350,7 +5350,7 @@ async function endOperation() {
   }
 
   activeOperation = null;
-  localStorage.removeItem('fieldstruts_operation');
+  localStorage.removeItem('fieldshore_operation');
   persistInventory();
   renderOperations();
   renderInventory();
@@ -5367,7 +5367,7 @@ function saveSettings() {
   }
 
   document.getElementById('deptName').textContent = name;
-  safeSetItem('fieldstruts_settings', JSON.stringify({ name }));
+  safeSetItem('fieldshore_settings', JSON.stringify({ name }));
 }
 
 // ---- Theme ----
@@ -5375,7 +5375,7 @@ function saveSettings() {
 // We resolve to a concrete data-theme attribute on <html> so CSS only needs
 // to check one selector. Re-resolve when the system theme changes.
 function getThemePreference() {
-  try { return localStorage.getItem('fieldstruts_theme') || 'system'; }
+  try { return localStorage.getItem('fieldshore_theme') || 'system'; }
   catch (e) { return 'system'; }
 }
 
@@ -5399,7 +5399,7 @@ function applyTheme() {
 
 function setTheme(pref) {
   if (pref !== 'system' && pref !== 'light' && pref !== 'dark') return;
-  try { localStorage.setItem('fieldstruts_theme', pref); } catch (e) { /* unavailable */ }
+  try { localStorage.setItem('fieldshore_theme', pref); } catch (e) { /* unavailable */ }
   applyTheme();
 }
 
@@ -5443,7 +5443,7 @@ async function exportInventory() {
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
-  XLSX.writeFile(wb, `fieldstruts-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `fieldshore-inventory-${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 async function downloadTemplate() {
@@ -5490,7 +5490,7 @@ async function downloadTemplate() {
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Inventory Template');
-  XLSX.writeFile(wb, 'fieldstruts-inventory-template.xlsx');
+  XLSX.writeFile(wb, 'fieldshore-inventory-template.xlsx');
 }
 
 function importInventory() {
@@ -5728,8 +5728,7 @@ async function applyImportData(data) {
 
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
-  // Only remove FieldStruts keys, not unrelated app data
-  const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldstruts_'));
+  const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldshore_'));
   appKeys.forEach(k => localStorage.removeItem(k));
   localInventory = [];
   localApparatus = [];
@@ -5809,7 +5808,7 @@ function toggleDeductions(prefix) {
   } else {
     panel.classList.add('hidden');
   }
-  safeSetItem('fieldstruts_deductionToggle', toggle.checked);
+  safeSetItem('fieldshore_deductionToggle', toggle.checked);
   updateDeductionSummary(prefix);
 }
 
@@ -6034,7 +6033,7 @@ document.addEventListener('click', (e) => {
 // ============================================================
 function init() {
   applyTheme(); // Re-apply to mark the active segmented control button (already set on <html> by inline script)
-  deptId = localStorage.getItem('fieldstruts_deptId');
+  deptId = localStorage.getItem('fieldshore_deptId');
 
   if (!deptId) {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -6046,17 +6045,17 @@ function init() {
     document.getElementById('settingsDeptId').value = deptId;
   }
 
-  const settings = safeParse(localStorage.getItem('fieldstruts_settings'), {});
+  const settings = safeParse(localStorage.getItem('fieldshore_settings'), {});
   if (settings.name) {
     document.getElementById('deptName').textContent = settings.name;
     document.getElementById('settingsDeptName').value = settings.name;
   }
 
-  const storedOp = localStorage.getItem('fieldstruts_operation');
+  const storedOp = localStorage.getItem('fieldshore_operation');
   if (storedOp) activeOperation = safeParse(storedOp, null);
 
   // Restore device role
-  myRole = localStorage.getItem('fieldstruts_myRole') || null;
+  myRole = localStorage.getItem('fieldshore_myRole') || null;
 
   loadLocalApparatus();
   loadLocalInventory();
@@ -6067,7 +6066,7 @@ function init() {
 
   // Initialize plate pickers and restore deduction preferences
   initPlatePickers();
-  const dedPref = localStorage.getItem('fieldstruts_deductionToggle') === 'true';
+  const dedPref = localStorage.getItem('fieldshore_deductionToggle') === 'true';
   document.getElementById('qfDeductionToggle').checked = dedPref;
   toggleDeductions('qf');
 

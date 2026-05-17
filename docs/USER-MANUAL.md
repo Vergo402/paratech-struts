@@ -1,10 +1,10 @@
-# FieldStruts User Manual
+# FieldShore User Manual
 
 **Version:** 3.11  
 **Last updated:** 2026-05-17  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
-FieldStruts is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
+FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
 
 ---
 
@@ -27,7 +27,7 @@ FieldStruts is a progressive web app for USAR/FEMA firefighters to select Parate
 
 ### Installing the App
 
-FieldStruts is a Progressive Web App (PWA). No app store required.
+FieldShore is a Progressive Web App (PWA). No app store required.
 
 1. Open [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/) on your phone or tablet.
 2. **iOS:** Tap the Share button → "Add to Home Screen."
@@ -306,7 +306,7 @@ The **Settings** tab includes:
 
 ## 9. Offline Use
 
-FieldStruts is designed for field use where connectivity is unreliable.
+FieldShore is designed for field use where connectivity is unreliable.
 
 - The app caches all assets via a service worker and works fully offline after the first load.
 - All data changes write to local storage first, then sync to Firebase when a connection is available.

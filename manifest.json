@@ -1,6 +1,6 @@
 {
-  "name": "FieldStruts",
-  "short_name": "FieldStruts",
+  "name": "FieldShore",
+  "short_name": "FieldShore",
   "description": "Rescue strut selection and inventory management for shoring operations",
   "start_url": "./index.html",
   "display": "standalone",

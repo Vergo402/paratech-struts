@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0D0D1A" media="(prefers-color-scheme: dark)">
-<title>FieldStruts</title>
+<title>FieldShore</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script>
@@ -17,7 +17,7 @@
   // needs to check one attribute instead of also handling media queries.
   (function() {
     try {
-      var pref = localStorage.getItem('fieldstruts_theme') || 'system';
+      var pref = localStorage.getItem('fieldshore_theme') || 'system';
       var dark = pref === 'dark' || (pref === 'system' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     } catch (e) { /* localStorage unavailable */ }
@@ -30,7 +30,7 @@
 <!-- Login Screen -->
 <section class="login-screen" id="loginScreen">
   <div class="login-logo">P</div>
-  <h1 class="login-title">FieldStruts</h1>
+  <h1 class="login-title">FieldShore</h1>
   <p class="login-subtitle">Enter your Department ID to continue</p>
   <div class="login-form">
     <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false">
@@ -61,9 +61,9 @@
          the user scrolls the page (#83) — reclaims vertical real estate on
          short phones / landscape. -->
     <header class="header">
-      <h1>FieldStruts</h1>
+      <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.11.0</div>
+      <div class="version-label">v3.11.1</div>
     </header>
 
     <!-- Screen 1: Quick Select -->

@@ -1,4 +1,4 @@
-# Paratech Strut Selector — Project Guide
+# FieldShore — Project Guide
 
 ## What This Is
 
@@ -47,7 +47,7 @@ On every change:
 1. Update version in **3 places:**
    - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
    - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
-   - `sw.js` cache name: `const CACHE_NAME = 'fieldstruts-v{VERSION}';`
+   - `sw.js` cache name: `const CACHE_NAME = 'fieldshore-v{VERSION}';`
 2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
 3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
 4. Create GitHub release with notes
