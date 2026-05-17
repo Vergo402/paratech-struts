@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.10.0';
+const APP_VERSION = '3.10.1';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -877,6 +877,17 @@ function flushSyncDiagBuffer() {
 
 function firebaseSave(ref, method, data) {
   if (!ref) return Promise.resolve();
+  // v3.10.1 SAFETY: explicit kill-switch for tests / DevTools sessions.
+  // Set `window.disableFirebaseWrites = true` to make every Firebase write a
+  // no-op. This is a real escape hatch — unlike `window.db = null` which only
+  // sets a window property and leaves the lexical `db` binding intact.
+  // Reason for existence: v3.10.0 UI walkthroughs wiped hfd217 inventory
+  // because `window.db = null` did nothing and `applyImportData` wrote a
+  // synthetic test payload to production.
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) {
+    console.info('[firebaseSave] disabled by window.disableFirebaseWrites — ' + method + ' on ' + (ref.toString ? ref.toString().slice(-80) : '?'));
+    return Promise.resolve();
+  }
   let promise;
   if (method === 'set') promise = ref.set(data);
   else if (method === 'update') promise = ref.update(data);
@@ -890,6 +901,15 @@ function firebaseSave(ref, method, data) {
       console.warn('Transaction not committed:', ref.toString());
       showToast('Sync conflict — verify the change', 'warning');
     }
+    // v3.10.1: trigger a throttled dept-wide snapshot after every successful
+    // non-backup write. maybeBackup is internally rate-limited and
+    // non-blocking — it never affects the user-perceived save latency.
+    try {
+      const refStr = ref.toString ? ref.toString() : '';
+      if (refStr.indexOf('/_backups/') === -1 && refStr.indexOf('/_backups') === -1) {
+        maybeBackup(method).catch(err => console.warn('maybeBackup error (non-fatal):', err && err.message));
+      }
+    } catch (e) { /* non-fatal — backup path is best-effort */ }
   }).catch(err => {
     console.warn('Firebase write failed:', err.message, ref.toString());
     // Queue for retry on reconnect
@@ -909,6 +929,111 @@ function firebaseSave(ref, method, data) {
       _lastOfflineToastTs = now;
     }
   });
+}
+
+// v3.10.1 BACKUP SAFETY NET
+// ============================================================
+// Two layers of automatic Firebase backups for each department:
+//
+// 1. PERIODIC: After every successful firebaseSave (other than writes to
+//    _backups itself), maybeBackup() runs. Throttled to once per 60 seconds
+//    per device. Snapshots the entire dept tree (excluding _backups) into
+//    /departments/{deptId}/_backups/{timestamp}/.
+//
+// 2. PRE-DESTRUCTIVE: Before any subtree-wide set (Excel import,
+//    endOperation cascade), backupBeforeDestructiveWrite() runs. Blocking,
+//    bypasses the throttle, and ABORTS the destructive write if the backup
+//    fails. This is the line of defense that v3.10.1 was made to add — the
+//    v3.10.0 walkthroughs wiped hfd217's inventory because no pre-wipe
+//    backup existed.
+//
+// Storage: capped at MAX_BACKUPS_PER_DEPT (50) — pruneOldBackups() drops
+// the oldest after each new backup.
+//
+// Restore: until v3.11.0 ships a Settings UI, restore is via Firebase CLI:
+//   firebase database:get  /departments/{dept}/_backups/{ts}/inventory --output inv.json
+//   firebase database:set  /departments/{dept}/inventory inv.json
+const MAX_BACKUPS_PER_DEPT = 50;
+const MIN_BACKUP_INTERVAL_MS = 60 * 1000;
+let _lastBackupTs = 0;
+let _backupInFlight = false;
+
+async function maybeBackup(reason) {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId) return;
+  if (_backupInFlight) return;
+  const now = Date.now();
+  if (now - _lastBackupTs < MIN_BACKUP_INTERVAL_MS) return;
+  _lastBackupTs = now;
+  _backupInFlight = true;
+  try {
+    const deptRef = db.ref(`departments/${deptId}`);
+    const snap = await deptRef.once('value');
+    const data = snap.val();
+    if (!data) return;
+    // Don't snapshot the snapshots — exclude _backups before writing
+    if (data._backups) delete data._backups;
+    const meta = {
+      ts: now,
+      reason: reason || 'auto',
+      by: localStorage.getItem('fieldstruts_myRoleName') || 'Unknown',
+      appVersion: APP_VERSION,
+    };
+    await db.ref(`departments/${deptId}/_backups/${now}`).set({ ...data, _meta: meta });
+    pruneOldBackups().catch(err => console.warn('Backup prune failed (non-fatal):', err && err.message));
+  } catch (e) {
+    console.warn('Periodic backup failed (non-fatal):', e && e.message);
+  } finally {
+    _backupInFlight = false;
+  }
+}
+
+async function backupBeforeDestructiveWrite(subtreePath, reason) {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) {
+    // Test mode — no live data exists at the target, no backup needed.
+    return;
+  }
+  if (!db || !deptId) throw new Error('No Firebase connection — cannot create backup before destructive write');
+  const sourceRef = db.ref(`departments/${deptId}/${subtreePath}`);
+  let data;
+  try {
+    const snap = await sourceRef.once('value');
+    data = snap.val();
+  } catch (e) {
+    throw new Error('Backup READ failed for ' + subtreePath + ': ' + (e.message || String(e)));
+  }
+  if (data === null || data === undefined) return; // nothing to backup
+  const ts = Date.now();
+  const backupRoot = db.ref(`departments/${deptId}/_backups/${ts}`);
+  const meta = {
+    ts,
+    subtree: subtreePath,
+    reason: reason || 'unspecified',
+    by: localStorage.getItem('fieldstruts_myRoleName') || 'Unknown',
+    appVersion: APP_VERSION,
+  };
+  try {
+    await backupRoot.update({ [subtreePath]: data, _meta: meta });
+  } catch (e) {
+    throw new Error('Backup WRITE failed for ' + subtreePath + ': ' + (e.message || String(e)));
+  }
+  // Prune older backups so storage doesn't grow unbounded
+  pruneOldBackups().catch(err => console.warn('Backup pruning failed (non-fatal):', err && err.message));
+}
+
+async function pruneOldBackups() {
+  if (!db || !deptId) return;
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  const backupsRef = db.ref(`departments/${deptId}/_backups`);
+  const snap = await backupsRef.once('value');
+  const entries = snap.val();
+  if (!entries) return;
+  const keys = Object.keys(entries).sort(); // numeric ts sorts lex as strings within same length
+  if (keys.length <= MAX_BACKUPS_PER_DEPT) return;
+  const toDelete = keys.slice(0, keys.length - MAX_BACKUPS_PER_DEPT);
+  const updates = {};
+  for (const k of toDelete) updates[k] = null;
+  await backupsRef.update(updates);
 }
 
 function flushPendingWrites() {
@@ -5148,8 +5273,21 @@ function returnEquipment(spId, skipRoleGate) {
   renderOperations();
 }
 
-function endOperation() {
+async function endOperation() {
   if (!confirm('End this operation? All equipment will be marked as returned.')) return;
+
+  // v3.10.1: take pre-destructive snapshots before the inventory blanket-reset
+  // and the operation archive. If either backup fails, abort — we'd rather
+  // not end the op than risk losing recovery state.
+  if (db && deptId && activeOperation) {
+    try {
+      await backupBeforeDestructiveWrite('inventory', 'pre-endOperation');
+      await backupBeforeDestructiveWrite('operations/' + activeOperation.id, 'pre-endOperation');
+    } catch (err) {
+      alert('End-operation aborted: could not create backup.\n\n' + (err && err.message || String(err)) + '\n\nNo data was changed. Retry when connection is stable.');
+      return;
+    }
+  }
 
   const points = getShorePoints();
   for (const sp of points) {
@@ -5514,6 +5652,19 @@ async function applyImportData(data) {
       }
       const choice = await confirmImportOrphans(sampleLabels.length, sampleLabels);
       if (choice === 'cancel') return;
+    }
+  }
+
+  // v3.10.1: take a pre-destructive snapshot of the current Firebase
+  // inventory state BEFORE the wholesale set below replaces it. If the
+  // backup write fails, abort the import — better to lose the import than
+  // to lose existing data with no recovery point.
+  if (db && deptId && inventoryRef) {
+    try {
+      await backupBeforeDestructiveWrite('inventory', 'pre-import');
+    } catch (err) {
+      alert('Import aborted: could not create backup before overwrite.\n\n' + (err && err.message || String(err)) + '\n\nNo data was changed. Retry when connection is stable.');
+      return;
     }
   }
 
