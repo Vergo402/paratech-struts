@@ -739,6 +739,76 @@ function validateInput(value, maxLength = 100) {
   return value.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLength);
 }
 
+// IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
+// the same canonical radio designator within a department create life-safety
+// radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
+// and on edit; existing duplicates in stored data are not migrated.
+//
+// Canonicalization: trim, collapse whitespace, lowercase, then expand the
+// leading word via fire-service abbreviations. "Trk" is special — it expands
+// to BOTH "truck" and "ladder" because in fire-service nomenclature those two
+// designations refer to the same aerial-apparatus role. Departments that
+// legitimately run both Truck N and Ladder N as distinct units are supported:
+// they have different canonicals (truck N vs ladder N), so they coexist; only
+// the abbreviated form Trk N is rejected because it's ambiguous between them.
+//
+// Deliberately excluded — do NOT expand:
+//   "Dept" (most commonly = Department, not Deputy Chief — auto-correcting to
+//   a chief-officer designator would create the very ambiguity this prevents)
+//   "T"    (already ambiguous between Trk and Twr, both expanded explicitly)
+//   "BC"   (could be Battalion Chief, Battalion Commander, or Branch Chief)
+const APPARATUS_ABBREVIATIONS = {
+  // multi-letter
+  eng:  'engine',
+  trk:  'truck',           // see truck/ladder synonym handling below
+  twr:  'tower ladder',
+  res:  'rescue',
+  batt: 'battalion chief',
+  // single-letter (unambiguous in current app scope)
+  e:    'engine',
+  l:    'ladder',
+  r:    'rescue',
+  u:    'utility',
+};
+
+// Returns the set of alternate canonical forms for a name. Most names produce
+// a 1-element set; only Trk (and the lowercased canonical "truck"/"ladder"
+// after abbreviation expansion) produces a 2-element set because of the
+// Truck/Ladder synonym rule.
+function canonicalizeApparatusName(name) {
+  if (typeof name !== 'string') return [];
+  const trimmed = name.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!trimmed) return [];
+  const firstSpace = trimmed.indexOf(' ');
+  const head = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
+  const tail = firstSpace === -1 ? '' : trimmed.slice(firstSpace); // includes leading space
+  const expanded = APPARATUS_ABBREVIATIONS[head];
+  if (expanded === undefined) {
+    return [trimmed];
+  }
+  // Truck/Ladder cross-collision: Trk -> both truck and ladder
+  if (head === 'trk') {
+    return [`truck${tail}`, `ladder${tail}`];
+  }
+  return [`${expanded}${tail}`];
+}
+
+// Returns { ok: bool, conflictsWith?: string[] }. conflictsWith holds the
+// existing apparatus names whose canonical alternates intersect this name's.
+function validateApparatusName(name, excludeId = null) {
+  const newAlts = canonicalizeApparatusName(name);
+  if (newAlts.length === 0) return { ok: false, conflictsWith: [] };
+  const conflicts = [];
+  for (const existing of localApparatus) {
+    if (excludeId && existing.id === excludeId) continue;
+    const existingAlts = canonicalizeApparatusName(existing.name);
+    if (newAlts.some(a => existingAlts.includes(a))) {
+      conflicts.push(existing.name);
+    }
+  }
+  return conflicts.length === 0 ? { ok: true } : { ok: false, conflictsWith: conflicts };
+}
+
 let xlsxLoaded = false;
 let xlsxPromise = null;
 async function loadXLSX() {
@@ -1999,6 +2069,13 @@ function getApparatusTypeOrder(typeId) {
 function confirmAddApparatus() {
   const name = validateInput(document.getElementById('newApparatusName').value, 100);
   if (!name) return;
+  // IP-033: reject canonical-name collisions within the department
+  const check = validateApparatusName(name);
+  if (!check.ok) {
+    const list = (check.conflictsWith || []).join(', ');
+    showToast(`Name conflicts with: ${list}. Pick a different designator.`, 'error');
+    return;
+  }
   const type = document.getElementById('newApparatusType').value || 'other';
 
   const id = (db && apparatusRef) ? apparatusRef.push().key : ('app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
@@ -2041,6 +2118,14 @@ function saveEditApparatus(id) {
   const name = validateInput(document.getElementById('editAppName').value, 100);
   const type = document.getElementById('editAppType').value || 'other';
   if (!name) return;
+  // IP-033: reject canonical-name collisions, but allow the apparatus to keep
+  // its own name (excludeId)
+  const check = validateApparatusName(name, id);
+  if (!check.ok) {
+    const list = (check.conflictsWith || []).join(', ');
+    showToast(`Name conflicts with: ${list}. Pick a different designator.`, 'error');
+    return;
+  }
 
   const app = localApparatus.find(a => a.id === id);
   if (app) {
