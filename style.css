@@ -1486,6 +1486,19 @@ body {
 .hazard-badge-mitigated { background: var(--text-disabled); color: #fff; }
 
 /* ========================================
+   FORCE UPDATE OVERLAY (v3.12.0 Phase 7b)
+   Full-screen blocking modal when the client's APP_VERSION falls below the
+   admin-set /config/minAppVersion. No dismissal — only Reload Now.
+   ======================================== */
+.force-update-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.92); display: flex; align-items: center; justify-content: center; padding: 24px; pointer-events: auto; }
+.force-update-card { background: var(--surface); border: 2px solid var(--orange-dark); border-radius: 12px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
+.force-update-card h2 { font-size: 22px; font-weight: 800; color: var(--orange-dark); margin-bottom: 12px; }
+.force-update-card p { font-size: 15px; color: var(--text); line-height: 1.5; margin-bottom: 20px; }
+.force-update-card .reload-btn { width: 100%; min-height: 56px; background: var(--orange-dark); color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 16px; cursor: pointer; }
+.force-update-card .reload-btn:hover { filter: brightness(1.1); }
+.force-update-card .version-meta { font-size: 12px; color: var(--text-secondary); margin-top: 16px; text-align: center; }
+
+/* ========================================
    DARK MODE
    Applied via [data-theme="dark"] on <html>. JavaScript resolves the user's
    preference ('system' | 'light' | 'dark') and sets the attribute on load

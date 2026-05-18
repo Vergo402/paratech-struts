@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.11.3';
+const APP_VERSION = '3.12.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -1636,6 +1636,10 @@ function initFirebase() {
           hideAuthFailureBanner();
           // F-1E-2: flush any queued member registrations on auth recovery
           flushPendingMemberRegistrations();
+          // v3.12.0 Phase 7b: check minimum-supported version. Auth is required
+          // (rules read=true on /config but auth gates the wider tree). Silent
+          // skip on offline / permission error — will re-run on next recovery.
+          checkMinVersion();
         }
       });
     }
@@ -6281,6 +6285,102 @@ async function applyImportData(data) {
   alert('Inventory imported successfully');
 }
 
+// v3.12.0 Phase 7b: force-update mechanism.
+// Compares semver strings like "3.12.0". Returns true if `a < b`.
+function semverLessThan(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const pa = a.split('.').map(n => parseInt(n, 10));
+  const pb = b.split('.').map(n => parseInt(n, 10));
+  if (pa.some(isNaN) || pb.some(isNaN)) return false;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const av = pa[i] || 0;
+    const bv = pb[i] || 0;
+    if (av < bv) return true;
+    if (av > bv) return false;
+  }
+  return false;
+}
+
+// Render the full-screen blocking overlay. Caller is responsible for ensuring
+// this is only shown when an update is actually required (we never show it on
+// the equality case — only strict-less-than).
+function showForceUpdateOverlay(requiredVersion) {
+  if (document.getElementById('forceUpdateOverlay')) return; // idempotent
+  const overlay = document.createElement('div');
+  overlay.id = 'forceUpdateOverlay';
+  overlay.className = 'force-update-overlay';
+  overlay.setAttribute('role', 'alertdialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'forceUpdateTitle');
+  overlay.innerHTML = `<div class="force-update-card">
+    <h2 id="forceUpdateTitle">Update Required</h2>
+    <p>FieldShore has been updated. Please reload to get version <strong>v${escapeHtml(requiredVersion)}</strong>. Your local changes (if any) will be preserved.</p>
+    <button class="reload-btn" id="forceUpdateReloadBtn" type="button">Reload Now</button>
+    <div class="version-meta">Current: v${escapeHtml(APP_VERSION)} · Required: v${escapeHtml(requiredVersion)}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('forceUpdateReloadBtn').addEventListener('click', forceUpdateReload);
+}
+
+// Clear all SW + caches, then hard reload. Local data in localStorage survives.
+async function forceUpdateReload() {
+  const btn = document.getElementById('forceUpdateReloadBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Reloading…'; }
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) { console.warn('force-update cleanup failed:', e); }
+  // location.reload(true) is non-standard but still honored in Safari for
+  // forcing a network fetch. Other browsers ignore the arg but SW is already
+  // unregistered so they'll fetch fresh anyway.
+  try { location.reload(true); } catch (e) { location.reload(); }
+}
+
+// Boot-time check against Firebase /config/minAppVersion. If APP_VERSION is
+// lower than the admin-set minimum, render the blocking overlay. Offline or
+// permission failure → silently skip; check will re-run on auth recovery.
+function checkMinVersion() {
+  if (!db) return;
+  try {
+    db.ref('config/minAppVersion').once('value').then((snap) => {
+      const required = snap && snap.val();
+      if (!required || typeof required !== 'string') return;
+      if (semverLessThan(APP_VERSION, required)) {
+        showForceUpdateOverlay(required);
+      }
+    }).catch((err) => {
+      console.info('minVersion check skipped:', err && err.message);
+    });
+  } catch (e) { console.info('minVersion check threw:', e && e.message); }
+}
+
+// SW version-handshake. Catches the case where app.js is fresh but sw.js cached
+// is stale (or vice versa). On mismatch → forceUpdateReload. Silent skip if
+// no SW controller or browser lacks the channel API.
+function verifySWVersion() {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  try {
+    const channel = new MessageChannel();
+    const timeoutId = setTimeout(() => { /* silent give-up */ }, 3000);
+    channel.port1.onmessage = (event) => {
+      clearTimeout(timeoutId);
+      const swVersion = event.data && event.data.version;
+      if (swVersion && swVersion !== APP_VERSION) {
+        console.warn('SW/app version mismatch — SW:', swVersion, 'App:', APP_VERSION);
+        showToast('Updating to latest version…', 'info');
+        setTimeout(forceUpdateReload, 1500);
+      }
+    };
+    navigator.serviceWorker.controller.postMessage({ type: 'getVersion' }, [channel.port2]);
+  } catch (e) { /* non-fatal */ }
+}
+
 // v3.12.0 R3-03: manual override for the SW update check. The 5-min interval
 // is best-effort; this button gives the operator a way to force a check now
 // (e.g. after seeing a hotfix announcement in dispatch chatter).
@@ -6647,6 +6747,10 @@ function init() {
         // ~10 min worst case; a 5-min cadence keeps total hotfix delivery
         // under ~15 min. Settings → "Check for updates" gives manual override.
         setInterval(() => reg.update(), 5 * 60 * 1000);
+        // v3.12.0 Phase 7b: handshake — verify the SW's CACHE_NAME version
+        // matches the loaded APP_VERSION. Catches stale-SW + fresh-app race
+        // (and vice versa) that would otherwise leave the user wedged.
+        setTimeout(verifySWVersion, 2000);
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (!newWorker) return;
