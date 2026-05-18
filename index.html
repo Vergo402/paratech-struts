@@ -247,10 +247,10 @@
           <div class="op-time" id="cmdOpTime"></div>
         </div>
         <div id="cmdDashboard"></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdOrgchart')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdOrgchart">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdOrgchart">▶</span> ICS Organization</span>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdOrgchart')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdOrgchart">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdOrgchart">▼</span> ICS Organization</span>
         </div>
-        <div id="sectionCmdOrgchart" style="display:none"><div id="orgChartContainer"></div></div>
+        <div id="sectionCmdOrgchart"><div id="orgChartContainer"></div></div>
         <div id="cmdLayout"></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdApparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdApparatus">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdApparatus">▶</span> Assigned Apparatus</span>
@@ -274,11 +274,11 @@
           </div>
           <div id="sectionCmdMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
         </div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdHazards">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▶</span> Hazards (ICS-208)</span>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdHazards">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▼</span> Hazards (ICS-208)</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
         </div>
-        <div id="sectionCmdHazards" style="display:none"><div id="hazardLogList"></div></div>
+        <div id="sectionCmdHazards"><div id="hazardLogList"></div></div>
       </div>
     </section>
 
@@ -634,7 +634,7 @@
       </div>
       <div class="form-group">
         <label for="hazardLocation">Location</label>
-        <input type="text" id="hazardLocation" placeholder="e.g. Building A, Div 2, Area 3" maxlength="200" aria-label="Hazard location">
+        <input type="text" id="hazardLocation" placeholder="e.g. Building A, Div 2, Area 3" maxlength="200" aria-label="Hazard location" autocomplete="off" spellcheck="false">
       </div>
       <div class="form-group">
         <label for="hazardSeverity">Severity</label>
@@ -648,9 +648,9 @@
         <label for="hazardNotes">Notes (optional)</label>
         <textarea id="hazardNotes" rows="3" placeholder="Mitigation in place, witnesses, photos taken, etc." maxlength="500" aria-label="Hazard notes"></textarea>
       </div>
-      <button class="btn btn-primary" onclick="guardClick(this,confirmAddHazard)">Add Hazard</button>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddHazard)" style="min-height:56px;font-weight:700">Add Hazard</button>
       <div class="spacer-sm"></div>
-      <button class="btn btn-outline" onclick="closeModal('addHazardModal')">Cancel</button>
+      <button class="btn btn-outline" onclick="closeModal('addHazardModal')" style="min-height:56px">Cancel</button>
     </div>
   </div>
 

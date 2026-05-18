@@ -3592,16 +3592,33 @@ function confirmAddHazard() {
   showToast('Hazard logged', 'success');
 }
 
-function markHazardMitigated(hazardId) {
+async function markHazardMitigated(hazardId) {
   if (!activeOperation || !activeOperation.hazards) return;
   const hazard = activeOperation.hazards[hazardId];
   if (!hazard) return;
+  // v3.12.0 BC review: use customConfirm for dialog-pattern consistency with the
+  // rest of v3.12.0 destructive actions (was native confirm()). No requireType
+  // gate — mitigation is recoverable via Reopen.
   if (hazard.mitigatedAt) {
-    if (!confirm('This hazard is already marked mitigated. Reopen it?')) return;
+    const ok = await customConfirm({
+      title: 'Reopen this hazard?',
+      body: 'This hazard is currently marked mitigated. Reopening it will clear the mitigation record and put it back in the open list.',
+      confirmLabel: 'Reopen',
+      cancelLabel: 'Cancel',
+      confirmStyle: 'warning'
+    });
+    if (!ok) return;
     hazard.mitigatedBy = null;
     hazard.mitigatedAt = null;
   } else {
-    if (!confirm(`Mark "${HAZARD_TYPE_LABELS[hazard.type] || hazard.type}" at ${hazard.location} as mitigated?`)) return;
+    const ok = await customConfirm({
+      title: 'Mark mitigated?',
+      body: `${HAZARD_TYPE_LABELS[hazard.type] || hazard.type} at ${hazard.location} will be marked mitigated and dropped to the bottom of the list.`,
+      confirmLabel: 'Mark Mitigated',
+      cancelLabel: 'Cancel',
+      confirmStyle: 'primary'
+    });
+    if (!ok) return;
     hazard.mitigatedBy = localStorage.getItem('fieldshore_myRoleName') || 'Unknown';
     hazard.mitigatedAt = Date.now();
   }
@@ -4926,9 +4943,11 @@ function toggleLane(laneId) {
 
 // v3.12.0: section-collapse keys for Command tab (cmdApparatus, cmdExternal, cmdIndividuals,
 // cmdMyrole, cmdOrgchart, cmdHazards). Legacy keys (apparatus, external, individuals, myrole)
-// are no longer used — sections moved to Command. Defaulting to collapsed remains the right
-// posture for the new Command tab too: org chart is the dense primary content.
-let sectionCollapsedState = { cmdApparatus: true, cmdExternal: true, cmdIndividuals: true, cmdMyrole: true, cmdOrgchart: true, cmdHazards: true };
+// are no longer used — sections moved to Command. Per battalion-chief review: org chart and
+// hazards default to OPEN so a relieving IC can see open hazards + chain of command at a
+// glance during command transfer without having to tap-expand each section. Apparatus /
+// external / individuals / my-role stay collapsed (they're roster, not transfer-critical).
+let sectionCollapsedState = { cmdApparatus: true, cmdExternal: true, cmdIndividuals: true, cmdMyrole: true, cmdOrgchart: false, cmdHazards: false };
 function toggleSection(sectionKey) {
   sectionCollapsedState[sectionKey] = !sectionCollapsedState[sectionKey];
   const collapsed = sectionCollapsedState[sectionKey];
