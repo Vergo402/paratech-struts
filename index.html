@@ -616,6 +616,42 @@
     </div>
   </div>
 
+  <!-- Hazard Log Modal (v3.12.0 D3 — ICS-208 Safety Message/Plan) -->
+  <div class="modal-overlay" id="addHazardModal" role="dialog" aria-modal="true" aria-labelledby="addHazardTitle">
+    <div class="modal">
+      <h2 class="modal-title" id="addHazardTitle">Add Hazard</h2>
+      <div class="form-group">
+        <label for="hazardType">Type</label>
+        <select id="hazardType" aria-label="Hazard type">
+          <option value="structural-instability">Structural Instability</option>
+          <option value="utility">Utility (gas/electric/water)</option>
+          <option value="atmospheric">Atmospheric (gas/smoke/dust)</option>
+          <option value="fall">Fall Hazard</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hazardLocation">Location</label>
+        <input type="text" id="hazardLocation" placeholder="e.g. Building A, Div 2, Area 3" maxlength="200" aria-label="Hazard location">
+      </div>
+      <div class="form-group">
+        <label for="hazardSeverity">Severity</label>
+        <select id="hazardSeverity" aria-label="Hazard severity">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hazardNotes">Notes (optional)</label>
+        <textarea id="hazardNotes" rows="3" placeholder="Mitigation in place, witnesses, photos taken, etc." maxlength="500" aria-label="Hazard notes"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddHazard)">Add Hazard</button>
+      <div class="spacer-sm"></div>
+      <button class="btn btn-outline" onclick="closeModal('addHazardModal')">Cancel</button>
+    </div>
+  </div>
+
   <!-- Feedback Modal -->
   <div class="modal-overlay" id="feedbackModal" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
     <div class="modal">

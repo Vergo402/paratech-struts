@@ -58,6 +58,14 @@
               "$idx": {
                 ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8"
               }
+            },
+            "hazards": {
+              "$hazardId": {
+                ".validate": "newData.hasChildren(['type','location','severity','reportedAt']) && newData.child('location').isString() && newData.child('location').val().length <= 200 && newData.child('type').isString() && newData.child('severity').isString() && newData.child('severity').val().matches(/^(low|medium|high)$/)",
+                "notes": {
+                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)"
+                }
+              }
             }
           }
         }

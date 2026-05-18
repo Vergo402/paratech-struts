@@ -1469,6 +1469,21 @@ body {
 .theme-option.active { background: var(--surface); color: var(--blue); box-shadow: var(--shadow-sm); }
 
 /* ========================================
+   HAZARD LOG (v3.12.0 D3 — ICS-208)
+   ======================================== */
+.hazard-card { background: var(--surface); border: 1px solid var(--border); border-left-width: 4px; border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.hazard-card.hazard-sev-high { border-left-color: var(--red); background: var(--red-bg); color: var(--text); }
+.hazard-card.hazard-sev-medium { border-left-color: var(--orange-dark); background: var(--orange-bg); color: var(--text); }
+.hazard-card.hazard-sev-low { border-left-color: var(--blue); background: var(--blue-light); color: var(--text); }
+.hazard-card.hazard-mitigated { opacity: 0.65; background: var(--surface-alt); border-left-color: var(--text-disabled); color: var(--text-primary); }
+.hazard-card .btn { flex-shrink: 0; white-space: nowrap; width: auto; }
+.hazard-badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 3px; margin-left: 4px; letter-spacing: 0.4px; vertical-align: middle; }
+.hazard-badge-high { background: var(--red); color: #fff; }
+.hazard-badge-medium { background: var(--orange-dark); color: #fff; }
+.hazard-badge-low { background: var(--blue); color: #fff; }
+.hazard-badge-mitigated { background: var(--text-disabled); color: #fff; }
+
+/* ========================================
    DARK MODE
    Applied via [data-theme="dark"] on <html>. JavaScript resolves the user's
    preference ('system' | 'light' | 'dark') and sets the attribute on load

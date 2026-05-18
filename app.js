@@ -3479,6 +3479,137 @@ function openIndividualRoleModal(indId) {
   openModal('roleModal');
 }
 
+// ============================================================
+// HAZARD LOG (v3.12.0 D3 — ICS-208 Safety Message/Plan)
+// ============================================================
+// Hazards live on activeOperation.hazards as a keyed object (hazardId → hazard).
+// Mitigation is a partial update setting mitigatedBy/mitigatedAt. Records persist
+// in the archived op snapshot when endOperation moves status to 'archived'.
+
+const HAZARD_TYPE_LABELS = {
+  'structural-instability': 'Structural Instability',
+  'utility': 'Utility',
+  'atmospheric': 'Atmospheric',
+  'fall': 'Fall Hazard',
+  'other': 'Other'
+};
+
+function showAddHazard() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  document.getElementById('hazardType').value = 'structural-instability';
+  document.getElementById('hazardLocation').value = '';
+  document.getElementById('hazardSeverity').value = 'medium';
+  document.getElementById('hazardNotes').value = '';
+  openModal('addHazardModal');
+}
+
+function confirmAddHazard() {
+  if (!activeOperation) return;
+  const type = document.getElementById('hazardType').value;
+  const location = validateInput(document.getElementById('hazardLocation').value, 200);
+  const severity = document.getElementById('hazardSeverity').value;
+  const notes = validateInput(document.getElementById('hazardNotes').value, 500);
+  if (!location) { showToast('Location is required', 'warning'); return; }
+  if (!['low','medium','high'].includes(severity)) { showToast('Invalid severity', 'warning'); return; }
+  if (!HAZARD_TYPE_LABELS[type]) { showToast('Invalid type', 'warning'); return; }
+  // Jitter on the ID prevents same-ms collisions across devices.
+  const hazardId = 'hz-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  // In-memory uses Date.now() so fmtTimestamp renders immediately. Firebase write
+  // uses ServerValue.TIMESTAMP so the persisted record reflects server clock; the
+  // listener echoes the resolved number back and overwrites the local value.
+  const nowLocal = Date.now();
+  const hazardLocal = {
+    type, location, severity,
+    notes: notes || null,
+    reportedBy: localStorage.getItem('fieldshore_myRoleName') || 'Unknown',
+    reportedAt: nowLocal,
+    mitigatedBy: null,
+    mitigatedAt: null
+  };
+  if (!activeOperation.hazards) activeOperation.hazards = {};
+  activeOperation.hazards[hazardId] = hazardLocal;
+  persistOperation();
+  if (db && deptId && operationsRef && activeOperation.id) {
+    const hazardWrite = { ...hazardLocal };
+    if (typeof firebase !== 'undefined' && firebase.database) {
+      hazardWrite.reportedAt = firebase.database.ServerValue.TIMESTAMP;
+    }
+    firebaseSave(operationsRef.child(activeOperation.id).child('hazards').child(hazardId), 'set', hazardWrite);
+  }
+  renderHazardLog();
+  closeModal('addHazardModal');
+  showToast('Hazard logged', 'success');
+}
+
+function markHazardMitigated(hazardId) {
+  if (!activeOperation || !activeOperation.hazards) return;
+  const hazard = activeOperation.hazards[hazardId];
+  if (!hazard) return;
+  if (hazard.mitigatedAt) {
+    if (!confirm('This hazard is already marked mitigated. Reopen it?')) return;
+    hazard.mitigatedBy = null;
+    hazard.mitigatedAt = null;
+  } else {
+    if (!confirm(`Mark "${HAZARD_TYPE_LABELS[hazard.type] || hazard.type}" at ${hazard.location} as mitigated?`)) return;
+    hazard.mitigatedBy = localStorage.getItem('fieldshore_myRoleName') || 'Unknown';
+    hazard.mitigatedAt = Date.now();
+  }
+  persistOperation();
+  if (db && deptId && operationsRef && activeOperation.id) {
+    const writeData = {
+      mitigatedBy: hazard.mitigatedBy,
+      mitigatedAt: hazard.mitigatedAt === null
+        ? null
+        : ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : hazard.mitigatedAt)
+    };
+    firebaseSave(operationsRef.child(activeOperation.id).child('hazards').child(hazardId), 'update', writeData);
+  }
+  renderHazardLog();
+}
+
+function renderHazardLog() {
+  const list = document.getElementById('hazardLogList');
+  if (!list) return;
+  if (!activeOperation) { list.innerHTML = ''; return; }
+  const hazards = activeOperation.hazards || {};
+  const entries = Object.entries(hazards);
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--text-secondary)">No hazards logged.</div>';
+    return;
+  }
+  // Sort: open hazards first (by severity desc, then most-recent), then mitigated (most-recent first)
+  const sevOrder = { high: 0, medium: 1, low: 2 };
+  entries.sort(([, a], [, b]) => {
+    const aOpen = !a.mitigatedAt;
+    const bOpen = !b.mitigatedAt;
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    if (aOpen) {
+      const sevDiff = (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9);
+      if (sevDiff !== 0) return sevDiff;
+    }
+    return (b.reportedAt || 0) - (a.reportedAt || 0);
+  });
+  list.innerHTML = entries.map(([id, h]) => {
+    const typeLabel = HAZARD_TYPE_LABELS[h.type] || h.type;
+    const sev = (h.severity || 'low').toLowerCase();
+    const mitigated = !!h.mitigatedAt;
+    const reportedStr = h.reportedAt ? fmtTimestamp(h.reportedAt) : '';
+    const mitigatedStr = h.mitigatedAt ? fmtTimestamp(h.mitigatedAt) : '';
+    const notes = h.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${escapeHtml(h.notes)}</div>` : '';
+    return `<div class="hazard-card hazard-sev-${escapeAttr(sev)} ${mitigated ? 'hazard-mitigated' : ''}" data-hazard-id="${escapeAttr(id)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${escapeHtml(typeLabel)} <span class="hazard-badge hazard-badge-${escapeAttr(sev)}">${escapeHtml(sev.toUpperCase())}</span>${mitigated ? ' <span class="hazard-badge hazard-badge-mitigated">MITIGATED</span>' : ''}</div>
+          <div style="font-size:13px;color:var(--text-primary);margin-top:2px">${escapeHtml(h.location)}</div>
+          ${notes}
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Reported by ${escapeHtml(h.reportedBy || '—')} ${reportedStr}${mitigated ? ` · Mitigated by ${escapeHtml(h.mitigatedBy || '—')} ${mitigatedStr}` : ''}</div>
+        </div>
+        <button class="btn btn-sm ${mitigated ? 'btn-outline' : 'btn-primary'}" onclick="markHazardMitigated('${escapeAttr(id)}')">${mitigated ? 'Reopen' : 'Mitigate'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function getOperationInventory() {
   const assigned = activeOperation && activeOperation.assignedApparatus;
   let inv;
