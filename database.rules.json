@@ -53,6 +53,11 @@
               "$targetId": {
                 ".validate": "newData.isString() && newData.val().length <= 64"
               }
+            },
+            "customRoles": {
+              "$idx": {
+                ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8"
+              }
             }
           }
         }

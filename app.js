@@ -1303,12 +1303,25 @@ function initCustomRoles() {
   }
 }
 
-function saveCustomRoles() {
+// v3.12.0 H4: granular per-index writes by default to avoid whole-array clobber
+// on concurrent peer reparent/edit. Deletion still uses full-array set because
+// Firebase .update() with sparse indices does NOT shrink an array. Schema
+// migration to keyed-by-roleId object is deferred to v4.0.0 (see roadmap R4)
+// so this stays array-shape on disk and keeps v3.11.3 peers functional.
+function saveCustomRoles(opts) {
   if (!activeOperation) return;
   persistOperation();
-  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
-    firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
+  if (!(db && deptId && operationsRef && activeOperation.id)) return; // H9 (v3.11.3) operationsRef guard parity
+  const ref = operationsRef.child(activeOperation.id).child('customRoles');
+  if (opts && opts.deletion) {
+    // Full-array set is required to shrink the on-disk array (.update with sparse
+    // indices leaves stale entries behind).
+    firebaseSave(ref, 'set', activeOperation.customRoles);
+    return;
   }
+  const updates = {};
+  activeOperation.customRoles.forEach((role, idx) => { updates[idx] = role; });
+  firebaseSave(ref, 'update', updates);
 }
 
 function toggleOrgCollapse(roleId) {
@@ -1560,7 +1573,8 @@ function removeCustomRole(roleId) {
     lastReparentUndo = null;
   }
   orgCollapsedNodes.delete(roleId);
-  saveCustomRoles();
+  // v3.12.0 H4: deletion path uses full-array set so Firebase shrinks the array.
+  saveCustomRoles({ deletion: true });
   renderCommandView();
 }
 
