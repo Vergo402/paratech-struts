@@ -372,7 +372,7 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 function showTab(tab) {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('screen-visible'); });
   document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
-  const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', settings:'screenSettings' };
+  const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', command:'screenCommand', settings:'screenSettings' };
   const activeScreen = document.getElementById(screenMap[tab]);
   activeScreen.classList.add('active');
   // Trigger fade-in on next frame (display must be set first)
@@ -382,6 +382,7 @@ function showTab(tab) {
   activeBtn.setAttribute('aria-current', 'page');
   if (tab === 'inventory') renderInventory();
   if (tab === 'ops') renderOperations();
+  if (tab === 'command') renderCommand();
   if (tab === 'settings') renderApparatusTypesList();
   updateQuickViewFab();
 }
@@ -3218,22 +3219,27 @@ function renderMyRoleDisplay() {
 
 function renderRoleSuggestion() {
   const banner = document.getElementById('roleSuggestBanner');
+  if (!banner) return; // banner lives on Operations tab only — Command tab has no banner
   if (!myRole || roleViewDismissed || !activeOperation) {
     banner.style.display = 'none';
     return;
   }
   const suggested = getSuggestedView(myRole);
-  if (!suggested || suggested === currentView) {
-    banner.style.display = 'none';
-    return;
-  }
+  if (!suggested) { banner.style.display = 'none'; return; }
+  // v3.12.0: Command is now a top-level tab. Suppress banner when already on it.
+  const onCommandTab = document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active');
+  if (suggested === 'command' && onCommandTab) { banner.style.display = 'none'; return; }
+  if (suggested !== 'command' && suggested === currentView) { banner.style.display = 'none'; return; }
   const viewNames = { ops: 'Operations', command: 'Command', cuttable: 'Cut Table' };
+  // Switch action: 'command' navigates to the top-level Command tab; 'ops'/'cuttable'
+  // toggle the internal view-switcher on the Operations tab.
+  const switchAction = suggested === 'command' ? `showTab('command')` : `switchView('${suggested}')`;
   banner.style.display = 'flex';
   banner.className = 'role-suggest-banner';
   banner.innerHTML = `
     <span class="suggest-text">Your role (${escapeHtml(getRoleName(myRole))}) works best with the <strong>${viewNames[suggested]}</strong> view.</span>
     <div class="suggest-actions">
-      <button class="btn-suggest-switch" onclick="switchView('${suggested}')">Switch</button>
+      <button class="btn-suggest-switch" onclick="${switchAction}">Switch</button>
       <button class="btn-suggest-dismiss" onclick="dismissRoleSuggestion()">✕</button>
     </div>
   `;
@@ -3482,6 +3488,158 @@ function getOperationInventory() {
 // ============================================================
 // OPERATIONS
 // ============================================================
+
+// v3.12.0: extracted helper — populates op-name + op-time + task-force label
+// for either the Operations or Command tab header. prefix is '' (Ops) or 'cmd' (Command).
+function populateOpHeader(prefix) {
+  const nameId = prefix ? prefix + 'OpName' : 'opName';
+  const timeId = prefix ? prefix + 'OpTime' : 'opTime';
+  const nameEl = document.getElementById(nameId);
+  const timeEl = document.getElementById(timeId);
+  if (!nameEl || !timeEl) return;
+  nameEl.textContent = activeOperation.name || 'Unnamed Operation';
+  timeEl.textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
+  // Task-force label rendered only on the Operations header (the Command header is read-only)
+  if (!prefix) {
+    if (activeOperation.taskForce) {
+      const tfLabel = document.querySelector('.task-force-label');
+      if (!tfLabel) {
+        const lbl = document.createElement('span');
+        lbl.className = 'task-force-label';
+        lbl.textContent = activeOperation.taskForce;
+        nameEl.parentNode.insertBefore(lbl, nameEl);
+      } else {
+        tfLabel.textContent = activeOperation.taskForce;
+      }
+    } else {
+      const tfLabel = document.querySelector('.task-force-label');
+      if (tfLabel) tfLabel.remove();
+    }
+  }
+}
+
+// v3.12.0: extracted helper — renders the Assigned Apparatus chips with role badges.
+// Same DOM target (#assignedApparatusList) regardless of whether the host screen
+// is Operations or Command, so the function is host-agnostic.
+function renderAssignedApparatus() {
+  const assignedList = document.getElementById('assignedApparatusList');
+  if (!assignedList) return;
+  const assigned = activeOperation.assignedApparatus || [];
+  const roles = activeOperation.roles || {};
+  if (assigned.length > 0) {
+    const appGroups = activeOperation.apparatusGroups || {};
+    const groupedAppIds = new Set();
+    for (const g of Object.values(appGroups)) {
+      for (const mid of (g.members || [])) groupedAppIds.add(mid);
+    }
+    let groupsHtml = '';
+    for (const [gid, g] of Object.entries(appGroups)) {
+      const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
+        const name = escapeHtml(getApparatusName(mid));
+        const roleId = roles[mid];
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+      }).join('');
+      if (memberChips) {
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+      }
+    }
+    const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
+    const byType = {};
+    for (const appId of ungrouped) {
+      const app = localApparatus.find(a => a.id === appId);
+      const typeId = app?.type || 'other';
+      if (!byType[typeId]) byType[typeId] = [];
+      byType[typeId].push(appId);
+    }
+    const sortedTypes = Object.keys(byType).sort((a, b) => getApparatusTypeOrder(a) - getApparatusTypeOrder(b));
+    let typeHtml = '';
+    for (const typeId of sortedTypes) {
+      const chips = byType[typeId].map(appId => {
+        const name = escapeHtml(getApparatusName(appId));
+        const roleId = roles[appId];
+        const roleNames = activeOperation.roleNames || {};
+        const personName = roleNames[appId];
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+      }).join('');
+      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
+      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
+    }
+    assignedList.innerHTML = groupsHtml + typeHtml;
+  } else {
+    assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
+  }
+}
+
+// v3.12.0: extracted helper — external equipment list. Host-agnostic.
+function renderExternalEquipmentList() {
+  const extList = document.getElementById('externalEquipmentList');
+  if (!extList) return;
+  const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
+  if (extEquip.length > 0) {
+    extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
+      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
+        <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+      </div>
+    </div>`).join('');
+  } else {
+    extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
+  }
+}
+
+// v3.12.0: extracted helper — individuals list with role badges. Host-agnostic.
+function renderIndividualsList() {
+  const indList = document.getElementById('individualsList');
+  if (!indList) return;
+  const roles = activeOperation.roles || {};
+  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
+  if (individuals.length > 0) {
+    indList.innerHTML = individuals.map(ind => {
+      const roleKey = 'ind-' + ind.id;
+      const roleId = roles[roleKey];
+      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+      return `<span class="app-chip" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span role="button" tabindex="0" onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
+    }).join('');
+  } else {
+    indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
+  }
+}
+
+// v3.12.0: Command-tab orchestrator. Apparatus / external / individuals / my-role / org-chart
+// now live on the Command screen per issue #90. Dashboard stats and command-layout view
+// are preserved from the old #commandView (which used to be an internal sub-tab of Operations).
+function renderCommand() {
+  const noOp = document.getElementById('noActiveOpCommand');
+  const active = document.getElementById('activeOpCommand');
+  if (!noOp || !active) return; // Defensive — screen may not exist (legacy index.html)
+  if (!activeOperation) {
+    noOp.style.display = 'block';
+    active.style.display = 'none';
+    return;
+  }
+  noOp.style.display = 'none';
+  active.style.display = 'block';
+  populateOpHeader('cmd');
+  const points = getShorePoints();
+  const dashboardEl = document.getElementById('cmdDashboard');
+  if (dashboardEl) dashboardEl.innerHTML = renderDashboardStats(points);
+  const orgEl = document.getElementById('orgChartContainer');
+  if (orgEl) orgEl.innerHTML = renderOrgChart(getRoleAssignments(), points);
+  const layoutEl = document.getElementById('cmdLayout');
+  if (layoutEl) layoutEl.innerHTML = renderCommandLayout(points);
+  renderAssignedApparatus();
+  renderExternalEquipmentList();
+  renderIndividualsList();
+  renderMyRoleDisplay();
+  if (typeof renderHazardLog === 'function') renderHazardLog(); // Phase 4 — may not exist yet
+}
+
+// (renderCommandView shim defined below at the old function's site for clarity.)
+
 function renderOperations() {
   const noOp = document.getElementById('noActiveOp');
   const active = document.getElementById('activeOp');
@@ -3497,118 +3655,12 @@ function renderOperations() {
   noOp.style.display = 'none';
   active.style.display = 'block';
 
-  document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
-  document.getElementById('opTime').textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
-
-  // Render task force label
-  const opNameEl = document.getElementById('opName');
-  if (activeOperation.taskForce) {
-    const tfLabel = document.querySelector('.task-force-label');
-    if (!tfLabel) {
-      const lbl = document.createElement('span');
-      lbl.className = 'task-force-label';
-      lbl.textContent = activeOperation.taskForce;
-      opNameEl.parentNode.insertBefore(lbl, opNameEl);
-    } else {
-      tfLabel.textContent = activeOperation.taskForce;
-    }
-  } else {
-    const tfLabel = document.querySelector('.task-force-label');
-    if (tfLabel) tfLabel.remove();
-  }
-
-  // Render assigned apparatus chips with role badges
-  const assignedList = document.getElementById('assignedApparatusList');
-  const assigned = activeOperation.assignedApparatus || [];
-  const roles = activeOperation.roles || {};
-  if (assigned.length > 0) {
-    // Group assigned apparatus by type, then by apparatus groups
-    const appGroups = activeOperation.apparatusGroups || {};
-    const groupedAppIds = new Set();
-    for (const g of Object.values(appGroups)) {
-      for (const mid of (g.members || [])) groupedAppIds.add(mid);
-    }
-
-    // Build apparatus groups section
-    let groupsHtml = '';
-    for (const [gid, g] of Object.entries(appGroups)) {
-      const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
-        const name = escapeHtml(getApparatusName(mid));
-        const roleId = roles[mid];
-        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
-      }).join('');
-      if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
-      }
-    }
-
-    // Build ungrouped apparatus by type
-    const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
-    const byType = {};
-    for (const appId of ungrouped) {
-      const app = localApparatus.find(a => a.id === appId);
-      const typeId = app?.type || 'other';
-      if (!byType[typeId]) byType[typeId] = [];
-      byType[typeId].push(appId);
-    }
-    const sortedTypes = Object.keys(byType).sort((a, b) => getApparatusTypeOrder(a) - getApparatusTypeOrder(b));
-
-    let typeHtml = '';
-    for (const typeId of sortedTypes) {
-      const chips = byType[typeId].map(appId => {
-        const name = escapeHtml(getApparatusName(appId));
-        const roleId = roles[appId];
-        const roleNames = activeOperation.roleNames || {};
-        const personName = roleNames[appId];
-        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
-      }).join('');
-      // Only show type header if multiple types present
-      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
-      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
-    }
-
-    assignedList.innerHTML = groupsHtml + typeHtml;
-  } else {
-    assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
-  }
-
-  // Render role display and suggestion banner
-  renderMyRoleDisplay();
+  populateOpHeader('');
+  // v3.12.0: apparatus / external / individuals / my-role moved to Command tab (issue #90).
+  // The DOM elements may still be missing here if the user is on Operations — that's fine,
+  // their renderers are host-agnostic and run on every renderCommand() call.
+  // Keep role suggestion banner on Operations — it nudges toward Ops/Cut Table view switch.
   renderRoleSuggestion();
-
-  // Render external equipment
-  const extList = document.getElementById('externalEquipmentList');
-  const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
-  if (extEquip.length > 0) {
-    // X2 (v3.5.2): ext.model, ext.deptName, ext.apparatus are user-controlled. Escape for
-    // display; escape ext.id for the onclick attribute.
-    extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
-      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
-        <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
-      </div>
-    </div>`).join('');
-  } else {
-    extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
-  }
-
-  // Render individuals
-  const indList = document.getElementById('individualsList');
-  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
-  if (individuals.length > 0) {
-    indList.innerHTML = individuals.map(ind => {
-      const roleKey = 'ind-' + ind.id;
-      const roleId = roles[roleKey];
-      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-      return `<span class="app-chip" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span role="button" tabindex="0" onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
-    }).join('');
-  } else {
-    indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
-  }
 
   const spList = document.getElementById('shorePointsList');
   const allPoints = getShorePoints();
@@ -4562,8 +4614,11 @@ function toggleLane(laneId) {
   renderOperations();
 }
 
-// Default to collapsed — operations content is the primary view, header sections are secondary
-let sectionCollapsedState = { apparatus: true, external: true, individuals: true, myrole: true };
+// v3.12.0: section-collapse keys for Command tab (cmdApparatus, cmdExternal, cmdIndividuals,
+// cmdMyrole, cmdOrgchart, cmdHazards). Legacy keys (apparatus, external, individuals, myrole)
+// are no longer used — sections moved to Command. Defaulting to collapsed remains the right
+// posture for the new Command tab too: org chart is the dense primary content.
+let sectionCollapsedState = { cmdApparatus: true, cmdExternal: true, cmdIndividuals: true, cmdMyrole: true, cmdOrgchart: true, cmdHazards: true };
 function toggleSection(sectionKey) {
   sectionCollapsedState[sectionKey] = !sectionCollapsedState[sectionKey];
   const collapsed = sectionCollapsedState[sectionKey];
@@ -4577,19 +4632,19 @@ function toggleSection(sectionKey) {
 }
 
 // ============================================================
-// VIEW SWITCHER
+// VIEW SWITCHER (Operations tab — Ops view vs Cut Table view)
 // ============================================================
+// v3.12.0: dropped the `command` branch. Command is now a top-level tab (showTab('command')),
+// not an internal view inside Operations. Legacy callers of `switchView('command')` were
+// rewritten to `showTab('command')`. See R7-02 / issue #90.
 function switchView(view) {
   currentView = view;
   roleViewDismissed = true; // User made a deliberate choice
   document.querySelectorAll('#viewSwitcher button').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
   const activeTab = document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`);
-  activeTab.classList.add('active');
-  activeTab.setAttribute('aria-selected', 'true');
+  if (activeTab) { activeTab.classList.add('active'); activeTab.setAttribute('aria-selected', 'true'); }
   document.getElementById('opsView').style.display = view === 'ops' ? 'block' : 'none';
-  document.getElementById('commandView').style.display = view === 'command' ? 'block' : 'none';
   document.getElementById('cutTableView').style.display = view === 'cuttable' ? 'block' : 'none';
-  if (view === 'command') renderCommandView();
   if (view === 'cuttable') renderCutTableView();
   renderRoleSuggestion();
 }
@@ -5051,20 +5106,10 @@ function renderRolesSection() {
   return html;
 }
 
-function renderCommandView() {
-  const container = document.getElementById('commandView');
-  if (!activeOperation) { container.innerHTML = ''; return; }
-
-  const points = getShorePoints();
-  const roleAssignments = getRoleAssignments();
-
-  let html = renderDashboardStats(points);
-  html += renderOrgChart(roleAssignments, points);
-  html += renderCommandLayout(points);
-  html += renderRolesSection();
-
-  container.innerHTML = html;
-}
+// v3.12.0: shim — Command is now a top-level tab (#screenCommand), not an internal view
+// inside Operations. All 20+ existing callers of renderCommandView() route here, which
+// forwards to the new orchestrator that targets the dedicated screen's containers.
+function renderCommandView() { renderCommand(); }
 
 // ============================================================
 // CUT TABLE VIEW

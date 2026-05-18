@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "paratech",
+      "name": "fieldshore",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Paratech Struts\""],
+      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/Field Shore/nice-mccarthy-4376b3\""],
       "autoPort": true
     }
   ]

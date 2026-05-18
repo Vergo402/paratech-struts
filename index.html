@@ -213,32 +213,9 @@
             <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionApparatus">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▶</span> Assigned Apparatus</span>
-          <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
-        </div>
-        <div id="sectionApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionExternal">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowExternal">▶</span> External Equipment</span>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
-        </div>
-        <div id="sectionExternal" style="display:none"><div id="externalEquipmentList"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionIndividuals">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowIndividuals">▶</span> Individuals</span>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
-        </div>
-        <div id="sectionIndividuals" style="display:none"><div id="individualsList"></div></div>
-        <div id="myRoleSection" class="mb-12">
-          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionMyrole">
-            <span class="section-title m-0"><span class="section-arrow" id="arrowMyrole">▶</span> My Role</span>
-            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
-          </div>
-          <div id="sectionMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
-        </div>
         <div id="roleSuggestBanner" class="hidden"></div>
         <div class="view-switcher" id="viewSwitcher" role="tablist">
           <button class="active" onclick="switchView('ops')" role="tab" aria-selected="true" aria-controls="opsView">📋 Operations</button>
-          <button onclick="switchView('command')" role="tab" aria-selected="false" aria-controls="commandView">🏗 Command</button>
           <button onclick="switchView('cuttable')" role="tab" aria-selected="false" aria-controls="cutTableView">✂️ Cut Table</button>
         </div>
         <div id="opsView" role="tabpanel">
@@ -249,11 +226,60 @@
           <div id="drilldownBreadcrumb" class="drilldown-breadcrumb hidden"></div>
           <div id="shorePointsList"></div>
         </div>
-        <div id="commandView" class="hidden" role="tabpanel"></div>
         <div id="cutTableView" class="hidden" role="tabpanel"></div>
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>
+    </section>
+
+    <!-- Screen 3b: Command (v3.12.0 — separated from Operations per issue #90) -->
+    <section class="screen" id="screenCommand">
+      <div id="noActiveOpCommand">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21V14h6v7"/></svg>
+          <p>No active operation.</p>
+        </div>
+        <button class="btn btn-primary mt-16" onclick="startOperation()">Start New Operation</button>
+      </div>
+      <div id="activeOpCommand" class="hidden">
+        <div class="op-card">
+          <div class="op-name" id="cmdOpName"></div>
+          <div class="op-time" id="cmdOpTime"></div>
+        </div>
+        <div id="cmdDashboard"></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdOrgchart')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdOrgchart">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdOrgchart">▶</span> ICS Organization</span>
+        </div>
+        <div id="sectionCmdOrgchart" style="display:none"><div id="orgChartContainer"></div></div>
+        <div id="cmdLayout"></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdApparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdApparatus">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdApparatus">▶</span> Assigned Apparatus</span>
+          <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
+        </div>
+        <div id="sectionCmdApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdExternal')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdExternal">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdExternal">▶</span> External Equipment</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
+        </div>
+        <div id="sectionCmdExternal" style="display:none"><div id="externalEquipmentList"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdIndividuals')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdIndividuals">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdIndividuals">▶</span> Individuals</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
+        </div>
+        <div id="sectionCmdIndividuals" style="display:none"><div id="individualsList"></div></div>
+        <div id="myRoleSection" class="mb-12">
+          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdMyrole')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdMyrole">
+            <span class="section-title m-0"><span class="section-arrow" id="arrowCmdMyrole">▶</span> My Role</span>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
+          </div>
+          <div id="sectionCmdMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
+        </div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdHazards">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▶</span> Hazards (ICS-208)</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
+        </div>
+        <div id="sectionCmdHazards" style="display:none"><div id="hazardLogList"></div></div>
+      </div>
     </section>
 
     <!-- Screen 4: Settings -->
@@ -304,6 +330,10 @@
     <button class="nav-btn" onclick="showTab('ops')" data-tab="ops">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Operations
+    </button>
+    <button class="nav-btn" onclick="showTab('command')" data-tab="command">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21V14h6v7"/></svg>
+      Command
     </button>
     <button class="nav-btn" onclick="showTab('inventory')" data-tab="inventory">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
