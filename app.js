@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.11.1';
+const APP_VERSION = '3.11.2';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -165,6 +165,13 @@ function getLoadCapacity(system, totalLengthIn, sfIndex) {
 }
 
 function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory, systemFilter, deductions) {
+  // IP-011 (v3.11.2): defensive numeric coercion. estimatedLoad may arrive as
+  // a string from a peer-write or stale-shape Firebase data; downstream code
+  // does arithmetic and `.toLocaleString()` on it which fails silently or
+  // throws on strings. Coerce once at the boundary so the rest of the function
+  // can trust the type.
+  estimatedLoad = Number(estimatedLoad) || 0;
+  requiredLength = Number(requiredLength) || 0;
   // Apply deductions to get effective strut length needed
   let effectiveLength = requiredLength;
   if (deductions) {
@@ -419,7 +426,7 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation, informational) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button>' : '';
+    const pendingBtn = isOperation ? '<br><button id="spSavePendingBtn" class="btn btn-sm btn-purple js-save-pending-btn" onclick="guardClick(this,() => deployPendingShorePoint(\'no-match\'))">📋 Save as Pending</button>' : '';
     // If the inventory-filtered search returned nothing but unrestricted Paratech models exist,
     // surface them as informational ("would fit if you had them") rather than the bare empty state.
     if (informational && informational.length > 0) {
@@ -598,7 +605,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="this.disabled=true;setTimeout(()=>this.disabled=false,2000);deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="guardClick(this,()=>deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty}))">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
@@ -730,6 +737,91 @@ function escapeAttr(s) {
 function validateInput(value, maxLength = 100) {
   if (typeof value !== 'string') return '';
   return value.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLength);
+}
+
+// IP-034 (v3.11.2): centralized 24-hour timestamp formatters. Fireground radio
+// doctrine is 24-hour time regardless of device locale, so we force en-US and
+// hour12:false everywhere a timestamp is displayed. Any new timestamp display
+// should go through these helpers rather than .toLocaleString() directly.
+const TIMESTAMP_LOCALE = 'en-US';
+const TIMESTAMP_OPTS = { hour12: false };
+function fmtTimestamp(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString(TIMESTAMP_LOCALE, TIMESTAMP_OPTS);
+}
+function fmtDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString(TIMESTAMP_LOCALE);
+}
+
+// IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
+// the same canonical radio designator within a department create life-safety
+// radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
+// and on edit; existing duplicates in stored data are not migrated.
+//
+// Canonicalization: trim, collapse whitespace, lowercase, then expand the
+// leading word via fire-service abbreviations. "Trk" is special — it expands
+// to BOTH "truck" and "ladder" because in fire-service nomenclature those two
+// designations refer to the same aerial-apparatus role. Departments that
+// legitimately run both Truck N and Ladder N as distinct units are supported:
+// they have different canonicals (truck N vs ladder N), so they coexist; only
+// the abbreviated form Trk N is rejected because it's ambiguous between them.
+//
+// Deliberately excluded — do NOT expand:
+//   "Dept" (most commonly = Department, not Deputy Chief — auto-correcting to
+//   a chief-officer designator would create the very ambiguity this prevents)
+//   "T"    (already ambiguous between Trk and Twr, both expanded explicitly)
+//   "BC"   (could be Battalion Chief, Battalion Commander, or Branch Chief)
+const APPARATUS_ABBREVIATIONS = {
+  // multi-letter
+  eng:  'engine',
+  trk:  'truck',           // see truck/ladder synonym handling below
+  twr:  'tower ladder',
+  res:  'rescue',
+  batt: 'battalion chief',
+  // single-letter (unambiguous in current app scope)
+  e:    'engine',
+  l:    'ladder',
+  r:    'rescue',
+  u:    'utility',
+};
+
+// Returns the set of alternate canonical forms for a name. Most names produce
+// a 1-element set; only Trk (and the lowercased canonical "truck"/"ladder"
+// after abbreviation expansion) produces a 2-element set because of the
+// Truck/Ladder synonym rule.
+function canonicalizeApparatusName(name) {
+  if (typeof name !== 'string') return [];
+  const trimmed = name.trim().replace(/\s+/g, ' ').toLowerCase();
+  if (!trimmed) return [];
+  const firstSpace = trimmed.indexOf(' ');
+  const head = firstSpace === -1 ? trimmed : trimmed.slice(0, firstSpace);
+  const tail = firstSpace === -1 ? '' : trimmed.slice(firstSpace); // includes leading space
+  const expanded = APPARATUS_ABBREVIATIONS[head];
+  if (expanded === undefined) {
+    return [trimmed];
+  }
+  // Truck/Ladder cross-collision: Trk -> both truck and ladder
+  if (head === 'trk') {
+    return [`truck${tail}`, `ladder${tail}`];
+  }
+  return [`${expanded}${tail}`];
+}
+
+// Returns { ok: bool, conflictsWith?: string[] }. conflictsWith holds the
+// existing apparatus names whose canonical alternates intersect this name's.
+function validateApparatusName(name, excludeId = null) {
+  const newAlts = canonicalizeApparatusName(name);
+  if (newAlts.length === 0) return { ok: false, conflictsWith: [] };
+  const conflicts = [];
+  for (const existing of localApparatus) {
+    if (excludeId && existing.id === excludeId) continue;
+    const existingAlts = canonicalizeApparatusName(existing.name);
+    if (newAlts.some(a => existingAlts.includes(a))) {
+      conflicts.push(existing.name);
+    }
+  }
+  return conflicts.length === 0 ? { ok: true } : { ok: false, conflictsWith: conflicts };
 }
 
 let xlsxLoaded = false;
@@ -1109,26 +1201,41 @@ function flushPendingWrites() {
   });
 }
 
-// Guard against double-clicks on buttons
+// Guard against double-clicks on buttons.
+// IP-010 (v3.11.2): surface user-visible feedback on EVERY click — including the
+// early-return path when the button is already disabled. The Surfside hotwash
+// found the previous early-return swallowed the first click silently, costing
+// ~90 seconds of OP1 time before the participant discovered a double-click
+// workaround. Now: toast on early return, btn-loading class + appended " …" on
+// happy path, console.log for diagnostic visibility.
 function guardClick(btn, fn) {
-  if (btn.disabled) return;
+  if (btn.disabled) {
+    showToast('Working — please wait', 'info');
+    return;
+  }
+  console.log('guardClick fired', btn.id || btn.textContent.trim().slice(0, 40));
   btn.disabled = true;
   btn.classList.add('btn-loading');
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = originalHTML + ' …';
+  const restore = () => {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = originalHTML;
+    }, 1000);
+  };
   try {
     Promise.resolve(fn()).catch(err => {
       console.error('Action failed:', err);
       showToast('Something went wrong', 'error');
-    }).finally(() => {
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.classList.remove('btn-loading');
-      }, 1000);
-    });
+    }).finally(restore);
   } catch (err) {
     console.error('Action failed:', err);
     showToast('Something went wrong', 'error');
     btn.disabled = false;
     btn.classList.remove('btn-loading');
+    btn.innerHTML = originalHTML;
   }
 }
 
@@ -1746,6 +1853,13 @@ function setupListeners() {
       selectedApparatus = localApparatus[0].id;
     }
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
+    // IP-048: if the Start-Op modal is open when apparatus data arrives, re-render
+    // its checkbox list. Without this, OP-creation on a cold cache shows an empty
+    // list and the user has to dismiss + re-open the modal to see chips.
+    const startOpModalEl = document.getElementById('startOpModal');
+    if (startOpModalEl && startOpModalEl.classList.contains('active')) {
+      populateStartOpApparatus();
+    }
   }, (err) => onListenerError('apparatus', err));
 
   settingsRef.on('value', (snap) => {
@@ -1970,6 +2084,13 @@ function getApparatusTypeOrder(typeId) {
 function confirmAddApparatus() {
   const name = validateInput(document.getElementById('newApparatusName').value, 100);
   if (!name) return;
+  // IP-033: reject canonical-name collisions within the department
+  const check = validateApparatusName(name);
+  if (!check.ok) {
+    const list = (check.conflictsWith || []).join(', ');
+    showToast(`Name conflicts with: ${list}. Pick a different designator.`, 'error');
+    return;
+  }
   const type = document.getElementById('newApparatusType').value || 'other';
 
   const id = (db && apparatusRef) ? apparatusRef.push().key : ('app-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
@@ -2012,6 +2133,14 @@ function saveEditApparatus(id) {
   const name = validateInput(document.getElementById('editAppName').value, 100);
   const type = document.getElementById('editAppType').value || 'other';
   if (!name) return;
+  // IP-033: reject canonical-name collisions, but allow the apparatus to keep
+  // its own name (excludeId)
+  const check = validateApparatusName(name, id);
+  if (!check.ok) {
+    const list = (check.conflictsWith || []).join(', ');
+    showToast(`Name conflicts with: ${list}. Pick a different designator.`, 'error');
+    return;
+  }
 
   const app = localApparatus.find(a => a.id === id);
   if (app) {
@@ -3368,7 +3497,7 @@ function renderOperations() {
   active.style.display = 'block';
 
   document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
-  document.getElementById('opTime').textContent = 'Started: ' + new Date(activeOperation.startTime).toLocaleString();
+  document.getElementById('opTime').textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
 
   // Render task force label
   const opNameEl = document.getElementById('opName');
@@ -3599,7 +3728,7 @@ function renderShorePointCards(numbered) {
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-          ${Number.isFinite(sp.requiredLength) ? `${sp.requiredLength}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(sp.estimatedLoad) ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+          ${Number.isFinite(Number(sp.requiredLength)) ? `${Number(sp.requiredLength)}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(Number(sp.estimatedLoad)) ? Number(sp.estimatedLoad).toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
@@ -3618,8 +3747,11 @@ function renderShorePointCards(numbered) {
         const dedKey = sp.deductions
           ? `${sp.deductions.header || 0}-${sp.deductions.sole || 0}-${sp.deductions.topPlate || 0}-${sp.deductions.bottomPlate || 0}`
           : 'none';
-        const cacheKey = `${sp.requiredLength}-${sp.estimatedLoad || 0}-${dedKey}`;
-        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
+        // IP-011: coerce length+load to numbers for stable cache key and correct downstream math
+        const spLen = Number(sp.requiredLength) || 0;
+        const spLoad = Number(sp.estimatedLoad) || 0;
+        const cacheKey = `${spLen}-${spLoad}-${dedKey}`;
+        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(spLen, spLoad, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
           html += `<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:var(--green);font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
         }
@@ -3673,7 +3805,7 @@ function renderShorePointCards(numbered) {
         }
       }
       if (status === 'returned') {
-        html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+        html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${fmtTimestamp(sp.returnedAt)}</div>`;
       }
       html += `</div>`;
     }
@@ -3695,8 +3827,8 @@ function renderArchivedOps() {
   for (const op of archivedOperations) {
     const points = op.shorePoints || [];
     const pointCount = Array.isArray(points) ? points.length : Object.keys(points).length;
-    const startDate = new Date(op.startTime).toLocaleDateString();
-    const endDate = op.endTime ? new Date(op.endTime).toLocaleDateString() : '';
+    const startDate = fmtDate(op.startTime);
+    const endDate = fmtDate(op.endTime);
 
     html += `<div class="op-card" style="margin-bottom:8px">
       <div class="flex-between mb-8">
@@ -3721,8 +3853,8 @@ function viewArchivedOp(opId) {
 
   const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints || {});
   let detail = `<div class="op-card"><div class="flex-between mb-8"><div><div style="font-size:18px;font-weight:700">${escapeHtml(op.name) || 'Unnamed'}</div>`;
-  detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${new Date(op.startTime).toLocaleString()}</div>`;
-  if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${new Date(op.endTime).toLocaleString()}</div>`;
+  detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${fmtTimestamp(op.startTime)}</div>`;
+  if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${fmtTimestamp(op.endTime)}</div>`;
   detail += `</div></div></div>`;
 
   for (const sp of points) {
@@ -3877,7 +4009,7 @@ function findForShorePoint() {
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button></div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button id="spSavePendingBtn" class="btn btn-sm btn-purple js-save-pending-btn" onclick="guardClick(this,() => deployPendingShorePoint(\'no-inventory\'))">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -4060,7 +4192,7 @@ function upgradePendingToDeployed(result, pendingId) {
   showToast(`${escapeHtml(sp.label || 'Shore point')} → ${result.strut.model} deployed`, 'success');
 }
 
-function deployPendingShorePoint() {
+function deployPendingShorePoint(reason) {
   const length = getMeasurementInches('sp');
   if (!length || length <= 0) { alert('Enter a measurement first.'); return; }
   if (!activeOperation) return;
@@ -4074,6 +4206,13 @@ function deployPendingShorePoint() {
   const group = validateInput(document.getElementById('spGroup').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
+
+  // IP-007: pendingReason records why the SP was saved as pending.
+  // 'no-inventory' = apparatus inventory was empty at save time.
+  // 'no-match'     = inventory existed but no strut matched length+load.
+  // Used by future v3.12.0 SP-card badging ("Awaiting inventory" vs "Awaiting matching strut").
+  const validReasons = ['no-inventory', 'no-match'];
+  const pendingReason = validReasons.includes(reason) ? reason : null;
 
   const sp = {
     label,
@@ -4091,6 +4230,7 @@ function deployPendingShorePoint() {
     deployedExtensions: [],
     deployedPlates: [],
     status: 'pending',
+    pendingReason,
     deployedAt: new Date().toISOString(),
     returnedAt: null,
     groupId: null,
@@ -4695,6 +4835,7 @@ function getRoleAssignments() {
 }
 
 function renderOrgChart(roleAssignments, shorePoints) {
+  roleAssignments = roleAssignments || {};
   let html = '';
   const opRoles = getOperationRoles();
   const roles = activeOperation.roles || {};
