@@ -4695,6 +4695,7 @@ function getRoleAssignments() {
 }
 
 function renderOrgChart(roleAssignments, shorePoints) {
+  roleAssignments = roleAssignments || {};
   let html = '';
   const opRoles = getOperationRoles();
   const roles = activeOperation.roles || {};
