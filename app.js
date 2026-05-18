@@ -739,6 +739,21 @@ function validateInput(value, maxLength = 100) {
   return value.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, maxLength);
 }
 
+// IP-034 (v3.11.2): centralized 24-hour timestamp formatters. Fireground radio
+// doctrine is 24-hour time regardless of device locale, so we force en-US and
+// hour12:false everywhere a timestamp is displayed. Any new timestamp display
+// should go through these helpers rather than .toLocaleString() directly.
+const TIMESTAMP_LOCALE = 'en-US';
+const TIMESTAMP_OPTS = { hour12: false };
+function fmtTimestamp(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString(TIMESTAMP_LOCALE, TIMESTAMP_OPTS);
+}
+function fmtDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString(TIMESTAMP_LOCALE);
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
@@ -3482,7 +3497,7 @@ function renderOperations() {
   active.style.display = 'block';
 
   document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
-  document.getElementById('opTime').textContent = 'Started: ' + new Date(activeOperation.startTime).toLocaleString();
+  document.getElementById('opTime').textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
 
   // Render task force label
   const opNameEl = document.getElementById('opName');
@@ -3790,7 +3805,7 @@ function renderShorePointCards(numbered) {
         }
       }
       if (status === 'returned') {
-        html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${sp.returnedAt ? new Date(sp.returnedAt).toLocaleString() : ''}</div>`;
+        html += `<div style="font-size:12px;color:var(--text-hint);margin-top:8px">Removed ${fmtTimestamp(sp.returnedAt)}</div>`;
       }
       html += `</div>`;
     }
@@ -3812,8 +3827,8 @@ function renderArchivedOps() {
   for (const op of archivedOperations) {
     const points = op.shorePoints || [];
     const pointCount = Array.isArray(points) ? points.length : Object.keys(points).length;
-    const startDate = new Date(op.startTime).toLocaleDateString();
-    const endDate = op.endTime ? new Date(op.endTime).toLocaleDateString() : '';
+    const startDate = fmtDate(op.startTime);
+    const endDate = fmtDate(op.endTime);
 
     html += `<div class="op-card" style="margin-bottom:8px">
       <div class="flex-between mb-8">
@@ -3838,8 +3853,8 @@ function viewArchivedOp(opId) {
 
   const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints || {});
   let detail = `<div class="op-card"><div class="flex-between mb-8"><div><div style="font-size:18px;font-weight:700">${escapeHtml(op.name) || 'Unnamed'}</div>`;
-  detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${new Date(op.startTime).toLocaleString()}</div>`;
-  if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${new Date(op.endTime).toLocaleString()}</div>`;
+  detail += `<div style="font-size:13px;color:var(--text-secondary)">Started: ${fmtTimestamp(op.startTime)}</div>`;
+  if (op.endTime) detail += `<div style="font-size:13px;color:var(--text-secondary)">Ended: ${fmtTimestamp(op.endTime)}</div>`;
   detail += `</div></div></div>`;
 
   for (const sp of points) {
