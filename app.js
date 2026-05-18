@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.12.0';
+const APP_VERSION = '3.13.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -3879,7 +3879,8 @@ function renderOperations() {
   }
 
   noOp.style.display = 'none';
-  active.style.display = 'block';
+  active.style.display = '';
+  active.classList.remove('hidden');
 
   populateOpHeader('');
   // v3.12.0: apparatus / external / individuals / my-role moved to Command tab (issue #90).
@@ -6718,10 +6719,36 @@ document.addEventListener('click', (e) => {
 });
 
 // ============================================================
+// View mode (desktop / mobile) — desktop-only toggle in header
+// ============================================================
+const VIEW_MODE_KEY = 'fieldshore-viewMode';
+function applyViewMode() {
+  const mode = (function() { try { return localStorage.getItem(VIEW_MODE_KEY); } catch (e) { return null; } })() || 'desktop';
+  const root = document.documentElement;
+  const btn = document.getElementById('viewModeToggle');
+  if (mode === 'mobile') {
+    root.classList.add('force-mobile-view');
+    if (btn) { btn.setAttribute('aria-label', 'Switch to desktop view'); btn.setAttribute('title', 'Switch to desktop view'); }
+  } else {
+    root.classList.remove('force-mobile-view');
+    if (btn) { btn.setAttribute('aria-label', 'Switch to mobile view'); btn.setAttribute('title', 'Switch to mobile view'); }
+  }
+}
+function toggleViewMode() {
+  let current;
+  try { current = localStorage.getItem(VIEW_MODE_KEY); } catch (e) { current = null; }
+  const next = current === 'mobile' ? 'desktop' : 'mobile';
+  safeSetItem(VIEW_MODE_KEY, next);
+  applyViewMode();
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
   applyTheme(); // Re-apply to mark the active segmented control button (already set on <html> by inline script)
+  applyViewMode(); // Sync aria/title on toggle button (class already set on <html> by inline script)
+  document.getElementById('viewModeToggle')?.addEventListener('click', toggleViewMode);
   deptId = localStorage.getItem('fieldshore_deptId');
 
   if (!deptId) {

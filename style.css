@@ -1464,6 +1464,91 @@ body {
   .quick-add-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
 
+/* ========================================
+   DESKTOP VIEW (≥1024px)
+   Scoped to :root:not(.force-mobile-view) so users can opt back to
+   the mobile layout via the upper-right toggle button.
+   ======================================== */
+
+/* View-mode toggle button — hidden by default (mobile/tablet portrait) */
+.view-mode-toggle { display: none; }
+.view-mode-toggle .vm-icon { width: 18px; height: 18px; display: block; }
+.view-mode-toggle .vm-icon-desktop { display: none; }
+:root.force-mobile-view .view-mode-toggle .vm-icon-phone { display: none; }
+:root.force-mobile-view .view-mode-toggle .vm-icon-desktop { display: block; }
+
+@media (min-width: 1024px) {
+  /* Toggle button — fixed top-right of viewport, always visible on desktop */
+  .view-mode-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 10px;
+    right: 12px;
+    z-index: 200;
+    width: 34px;
+    height: 34px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.15s;
+  }
+  .view-mode-toggle:hover { background: rgba(255,255,255,0.22); }
+  .view-mode-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* SHELL — wider container, nav becomes horizontal top bar */
+  :root:not(.force-mobile-view) .app {
+    max-width: 1200px;
+  }
+  :root:not(.force-mobile-view) .nav {
+    order: -1;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding-bottom: 0;
+    justify-content: center;
+  }
+  :root:not(.force-mobile-view) .nav-btn {
+    flex: 0 1 220px;
+    flex-direction: row;
+    min-height: 48px;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  :root:not(.force-mobile-view) .nav-btn svg {
+    margin-bottom: 0;
+  }
+  /* Active-tab dot sits to the LEFT of the icon in row mode */
+  :root:not(.force-mobile-view) .nav-btn.active::after {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+  }
+  :root:not(.force-mobile-view) .screen {
+    padding: 20px 24px;
+    padding-bottom: 20px;
+  }
+
+  /* OPERATIONS — side-by-side: shell left (sticky roster), views right */
+  :root:not(.force-mobile-view) #activeOp {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  :root:not(.force-mobile-view) .op-shell {
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+    padding-right: 8px;
+  }
+  :root:not(.force-mobile-view) .op-views { min-width: 0; }
+}
+
 /* Theme toggle — segmented control */
 .theme-toggle { display: flex; gap: 4px; background: var(--surface-alt); border-radius: var(--radius); padding: 4px; }
 .theme-option { flex: 1; padding: 10px 12px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-radius: calc(var(--radius) - 4px); cursor: pointer; transition: background 0.15s, color 0.15s; }
