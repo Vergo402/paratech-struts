@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.11.3';
+const APP_VERSION = '3.12.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -372,7 +372,7 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
 function showTab(tab) {
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.classList.remove('screen-visible'); });
   document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
-  const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', settings:'screenSettings' };
+  const screenMap = { select:'screenSelect', inventory:'screenInventory', ops:'screenOps', command:'screenCommand', settings:'screenSettings' };
   const activeScreen = document.getElementById(screenMap[tab]);
   activeScreen.classList.add('active');
   // Trigger fade-in on next frame (display must be set first)
@@ -382,6 +382,7 @@ function showTab(tab) {
   activeBtn.setAttribute('aria-current', 'page');
   if (tab === 'inventory') renderInventory();
   if (tab === 'ops') renderOperations();
+  if (tab === 'command') renderCommand();
   if (tab === 'settings') renderApparatusTypesList();
   updateQuickViewFab();
 }
@@ -646,6 +647,8 @@ let localApparatus = [];
 let selectedApparatus = null;
 let spQuantity = 1;
 let archivedOperations = [];
+// v3.12.0 R1-12: cap initial archived-ops fetch. "Load older" doubles this.
+let archivedOpsLimit = 50;
 let laneCollapsedState = {};
 let editingShorePointId = null;
 // F-1C-7 (v3.10.0): pending-SP upgrade mode. Set by assignEquipmentToPending;
@@ -888,13 +891,24 @@ function renderStatusPills(points) {
     .join('');
 }
 
+// v3.12.0 N2: SP "group" field is a NIMS-terminology misnomer (NIMS Group is a
+// functional command unit, not a resource ID). The field is being renamed to
+// "assignedResource" with a dual-write window through the v3.12.x train; full
+// cutover at v4.0.0. This helper centralizes the read fallback chain so callers
+// don't have to spell it out. `sp.team` is the v3.5.0-and-earlier legacy name.
+function getSPGroup(sp) {
+  if (!sp) return null;
+  return sp.assignedResource ?? sp.group ?? sp.team ?? null;
+}
+
 // Build location breadcrumb string from a shore point
 function getLocationBreadcrumb(sp) {
   const parts = [];
   if (sp.building) parts.push(escapeHtml(sp.building));
   if (sp.division) parts.push(escapeHtml(sp.division));
   if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
-  if (sp.group || sp.team) parts.push(escapeHtml(getGroupDisplayName(sp.group || sp.team)));
+  const grp = getSPGroup(sp);
+  if (grp) parts.push(escapeHtml(getGroupDisplayName(grp)));
   return parts.length > 0 ? parts.join(' › ') : '';
 }
 
@@ -1026,6 +1040,7 @@ function firebaseSave(ref, method, data) {
       op.data = data;
       pendingWrites.push(op);
       safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+      refreshOfflineBanner(); // v3.12.0 R7-04: update count in banner
     } else {
       logSyncEvent('transaction_failed', { path: ref.toString().replace(/.*firebaseio\.com/, ''), error: err.message || String(err) });
     }
@@ -1223,6 +1238,7 @@ function flushPendingWrites() {
         _lastFailToastTs = nowTs;
       }
     }
+    refreshOfflineBanner(); // v3.12.0 R7-04: reflect new queue count if still offline
   });
 }
 
@@ -1291,12 +1307,25 @@ function initCustomRoles() {
   }
 }
 
-function saveCustomRoles() {
+// v3.12.0 H4: granular per-index writes by default to avoid whole-array clobber
+// on concurrent peer reparent/edit. Deletion still uses full-array set because
+// Firebase .update() with sparse indices does NOT shrink an array. Schema
+// migration to keyed-by-roleId object is deferred to v4.0.0 (see roadmap R4)
+// so this stays array-shape on disk and keeps v3.11.3 peers functional.
+function saveCustomRoles(opts) {
   if (!activeOperation) return;
   persistOperation();
-  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
-    firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
+  if (!(db && deptId && operationsRef && activeOperation.id)) return; // H9 (v3.11.3) operationsRef guard parity
+  const ref = operationsRef.child(activeOperation.id).child('customRoles');
+  if (opts && opts.deletion) {
+    // Full-array set is required to shrink the on-disk array (.update with sparse
+    // indices leaves stale entries behind).
+    firebaseSave(ref, 'set', activeOperation.customRoles);
+    return;
   }
+  const updates = {};
+  activeOperation.customRoles.forEach((role, idx) => { updates[idx] = role; });
+  firebaseSave(ref, 'update', updates);
 }
 
 function toggleOrgCollapse(roleId) {
@@ -1548,7 +1577,8 @@ function removeCustomRole(roleId) {
     lastReparentUndo = null;
   }
   orgCollapsedNodes.delete(roleId);
-  saveCustomRoles();
+  // v3.12.0 H4: deletion path uses full-array set so Firebase shrinks the array.
+  saveCustomRoles({ deletion: true });
   renderCommandView();
 }
 
@@ -1606,12 +1636,29 @@ function initFirebase() {
           hideAuthFailureBanner();
           // F-1E-2: flush any queued member registrations on auth recovery
           flushPendingMemberRegistrations();
+          // v3.12.0 Phase 7b: check minimum-supported version. Auth is required
+          // (rules read=true on /config but auth gates the wider tree). Silent
+          // skip on offline / permission error — will re-run on next recovery.
+          checkMinVersion();
         }
       });
     }
 
     setupConnListener();
   }
+}
+
+// v3.12.0 R7-04: IC asks "is my data safe?" not "am I online?" — show the
+// pending-write count in the offline banner so they have a concrete answer.
+// Called from setupConnListener (offline branch), firebaseSave queueing path,
+// and flushPendingWrites so the banner reflects the live queue length.
+function refreshOfflineBanner() {
+  const el = document.getElementById('connStatus');
+  if (!el || !el.classList.contains('offline')) return;
+  const n = (typeof pendingWrites !== 'undefined' && pendingWrites && pendingWrites.length) || 0;
+  el.textContent = n > 0
+    ? `Offline — ${n} change${n === 1 ? '' : 's'} queued, will sync when reconnected`
+    : 'Offline — changes will sync when reconnected';
 }
 
 // F-1B-01 + F-1E-3 + F-1E-4 (v3.10.0): module-scoped connRef setup so
@@ -1641,7 +1688,7 @@ function setupConnListener() {
     } else {
       isOnline = false;
       el.className = 'conn-status offline';
-      el.textContent = 'Offline — changes will sync when reconnected';
+      refreshOfflineBanner(); // v3.12.0 R7-04: shows pending-write count
     }
   };
   // F-1E-4: error callback (was missing — listener failures went silent)
@@ -1747,6 +1794,20 @@ function handleLogin() {
 function connectDepartment() {
   const id = document.getElementById('settingsDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
+  // v3.12.0 R1-11: filter out queued writes targeted at a previous department.
+  // Without this, dept-switch carries stale writes that would either get denied
+  // by security rules (different membership) or worse, leak data to a dept the
+  // user no longer intends to write to. Feedback writes (path: 'feedback/...')
+  // don't contain '/departments/' so they're preserved.
+  const stale = pendingWrites.filter(w => w.path && w.path.indexOf('/departments/') !== -1 && w.path.indexOf('/departments/' + id + '/') === -1);
+  if (stale.length > 0) {
+    const keep = pendingWrites.filter(w => !stale.includes(w));
+    pendingWrites = keep;
+    if (pendingWrites.length > 0) safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+    else localStorage.removeItem('fieldshore_pendingWrites');
+    showToast(`Discarded ${stale.length} queued change${stale.length === 1 ? '' : 's'} for previous department`, 'warning');
+    refreshOfflineBanner();
+  }
   deptId = id;
   safeSetItem('fieldshore_deptId', deptId);
   setupListeners();
@@ -1812,6 +1873,7 @@ function setupListeners() {
   let inventoryFirstFire = true;
   let apparatusFirstFire = true;
   let customTypesFirstFire = true;
+  let activeOpsFirstFire = true; // v3.12.0 R1-08: same pattern, applied to active-ops listener
 
   inventoryRef.on('value', (snap) => {
     if (inventoryFirstFire && !snap.exists() && localInventory.length > 0) {
@@ -1835,6 +1897,17 @@ function setupListeners() {
 
   activeOpsQuery = operationsRef.orderByChild('status').equalTo('active');
   activeOpsQuery.on('value', (snap) => {
+    // v3.12.0 R1-08: first-fire guard. If the server has no active op but we
+    // already have one in memory (offline build-up, dept-switch race), push
+    // ours up instead of wiping. After the first fire, treat Firebase as source
+    // of truth — subsequent empties DO clear (e.g. peer ended the op).
+    if (activeOpsFirstFire && !snap.exists() && activeOperation && activeOperation.id) {
+      activeOpsFirstFire = false;
+      const { id, ...payload } = activeOperation;
+      firebaseSave(operationsRef.child(id), 'set', payload);
+      return;
+    }
+    activeOpsFirstFire = false;
     const data = snap.val() || {};
     const ops = Object.entries(data).map(([id, op]) => ({ id, ...op }));
     activeOperation = ops.length > 0 ? ops[0] : null;
@@ -1843,6 +1916,7 @@ function setupListeners() {
         // Migrate legacy field names: floor→area, team→group
         if (sp.floor && !sp.area) sp.area = sp.floor;
         if (sp.team && !sp.group) sp.group = sp.team;
+        if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
         return { id, ...sp };
       });
     }
@@ -1850,7 +1924,10 @@ function setupListeners() {
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
   }, (err) => onListenerError('operations', err));
 
-  archivedOpsQuery = operationsRef.orderByChild('status').equalTo('archived');
+  // v3.12.0 R1-12: cap archived-ops listener at the most recent N records to
+  // avoid an unbounded read at dept-switch. Operator can tap "Load older" to
+  // double the cap (handler: loadMoreArchivedOps below).
+  archivedOpsQuery = operationsRef.orderByChild('status').equalTo('archived').limitToLast(archivedOpsLimit);
   archivedOpsQuery.on('value', (snap) => {
     const data = snap.val() || {};
     archivedOperations = Object.entries(data).map(([id, op]) => {
@@ -1859,6 +1936,7 @@ function setupListeners() {
           // Migrate legacy field names: floor→area, team→group
           if (sp.floor && !sp.area) sp.area = sp.floor;
           if (sp.team && !sp.group) sp.group = sp.team;
+          if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
           return { id: spId, ...sp };
         });
       }
@@ -2603,6 +2681,7 @@ function submitFeedback() {
     // No db — queue for later via pending writes
     pendingWrites.push({ path: 'feedback/' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), method: 'set', data: entry, timestamp: Date.now(), retries: 0 }); // R1-10 (v3.11.3): jitter prevents same-ms offline feedback collisions
     safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+    refreshOfflineBanner(); // v3.12.0 R7-04
     alert('Feedback saved — will submit when online.');
     closeFeedbackModal();
   }
@@ -3218,22 +3297,27 @@ function renderMyRoleDisplay() {
 
 function renderRoleSuggestion() {
   const banner = document.getElementById('roleSuggestBanner');
+  if (!banner) return; // banner lives on Operations tab only — Command tab has no banner
   if (!myRole || roleViewDismissed || !activeOperation) {
     banner.style.display = 'none';
     return;
   }
   const suggested = getSuggestedView(myRole);
-  if (!suggested || suggested === currentView) {
-    banner.style.display = 'none';
-    return;
-  }
+  if (!suggested) { banner.style.display = 'none'; return; }
+  // v3.12.0: Command is now a top-level tab. Suppress banner when already on it.
+  const onCommandTab = document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active');
+  if (suggested === 'command' && onCommandTab) { banner.style.display = 'none'; return; }
+  if (suggested !== 'command' && suggested === currentView) { banner.style.display = 'none'; return; }
   const viewNames = { ops: 'Operations', command: 'Command', cuttable: 'Cut Table' };
+  // Switch action: 'command' navigates to the top-level Command tab; 'ops'/'cuttable'
+  // toggle the internal view-switcher on the Operations tab.
+  const switchAction = suggested === 'command' ? `showTab('command')` : `switchView('${suggested}')`;
   banner.style.display = 'flex';
   banner.className = 'role-suggest-banner';
   banner.innerHTML = `
     <span class="suggest-text">Your role (${escapeHtml(getRoleName(myRole))}) works best with the <strong>${viewNames[suggested]}</strong> view.</span>
     <div class="suggest-actions">
-      <button class="btn-suggest-switch" onclick="switchView('${suggested}')">Switch</button>
+      <button class="btn-suggest-switch" onclick="${switchAction}">Switch</button>
       <button class="btn-suggest-dismiss" onclick="dismissRoleSuggestion()">✕</button>
     </div>
   `;
@@ -3446,6 +3530,154 @@ function openIndividualRoleModal(indId) {
   openModal('roleModal');
 }
 
+// ============================================================
+// HAZARD LOG (v3.12.0 D3 — ICS-208 Safety Message/Plan)
+// ============================================================
+// Hazards live on activeOperation.hazards as a keyed object (hazardId → hazard).
+// Mitigation is a partial update setting mitigatedBy/mitigatedAt. Records persist
+// in the archived op snapshot when endOperation moves status to 'archived'.
+
+const HAZARD_TYPE_LABELS = {
+  'structural-instability': 'Structural Instability',
+  'utility': 'Utility',
+  'atmospheric': 'Atmospheric',
+  'fall': 'Fall Hazard',
+  'other': 'Other'
+};
+
+function showAddHazard() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  document.getElementById('hazardType').value = 'structural-instability';
+  document.getElementById('hazardLocation').value = '';
+  document.getElementById('hazardSeverity').value = 'medium';
+  document.getElementById('hazardNotes').value = '';
+  openModal('addHazardModal');
+}
+
+function confirmAddHazard() {
+  if (!activeOperation) return;
+  const type = document.getElementById('hazardType').value;
+  const location = validateInput(document.getElementById('hazardLocation').value, 200);
+  const severity = document.getElementById('hazardSeverity').value;
+  const notes = validateInput(document.getElementById('hazardNotes').value, 500);
+  if (!location) { showToast('Location is required', 'warning'); return; }
+  if (!['low','medium','high'].includes(severity)) { showToast('Invalid severity', 'warning'); return; }
+  if (!HAZARD_TYPE_LABELS[type]) { showToast('Invalid type', 'warning'); return; }
+  // Jitter on the ID prevents same-ms collisions across devices.
+  const hazardId = 'hz-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  // In-memory uses Date.now() so fmtTimestamp renders immediately. Firebase write
+  // uses ServerValue.TIMESTAMP so the persisted record reflects server clock; the
+  // listener echoes the resolved number back and overwrites the local value.
+  const nowLocal = Date.now();
+  const hazardLocal = {
+    type, location, severity,
+    notes: notes || null,
+    reportedBy: localStorage.getItem('fieldshore_myRoleName') || 'Unknown',
+    reportedAt: nowLocal,
+    mitigatedBy: null,
+    mitigatedAt: null
+  };
+  if (!activeOperation.hazards) activeOperation.hazards = {};
+  activeOperation.hazards[hazardId] = hazardLocal;
+  persistOperation();
+  if (db && deptId && operationsRef && activeOperation.id) {
+    const hazardWrite = { ...hazardLocal };
+    if (typeof firebase !== 'undefined' && firebase.database) {
+      hazardWrite.reportedAt = firebase.database.ServerValue.TIMESTAMP;
+    }
+    firebaseSave(operationsRef.child(activeOperation.id).child('hazards').child(hazardId), 'set', hazardWrite);
+  }
+  renderHazardLog();
+  closeModal('addHazardModal');
+  showToast('Hazard logged', 'success');
+}
+
+async function markHazardMitigated(hazardId) {
+  if (!activeOperation || !activeOperation.hazards) return;
+  const hazard = activeOperation.hazards[hazardId];
+  if (!hazard) return;
+  // v3.12.0 BC review: use customConfirm for dialog-pattern consistency with the
+  // rest of v3.12.0 destructive actions (was native confirm()). No requireType
+  // gate — mitigation is recoverable via Reopen.
+  if (hazard.mitigatedAt) {
+    const ok = await customConfirm({
+      title: 'Reopen this hazard?',
+      body: 'This hazard is currently marked mitigated. Reopening it will clear the mitigation record and put it back in the open list.',
+      confirmLabel: 'Reopen',
+      cancelLabel: 'Cancel',
+      confirmStyle: 'warning'
+    });
+    if (!ok) return;
+    hazard.mitigatedBy = null;
+    hazard.mitigatedAt = null;
+  } else {
+    const ok = await customConfirm({
+      title: 'Mark mitigated?',
+      body: `${HAZARD_TYPE_LABELS[hazard.type] || hazard.type} at ${hazard.location} will be marked mitigated and dropped to the bottom of the list.`,
+      confirmLabel: 'Mark Mitigated',
+      cancelLabel: 'Cancel',
+      confirmStyle: 'primary'
+    });
+    if (!ok) return;
+    hazard.mitigatedBy = localStorage.getItem('fieldshore_myRoleName') || 'Unknown';
+    hazard.mitigatedAt = Date.now();
+  }
+  persistOperation();
+  if (db && deptId && operationsRef && activeOperation.id) {
+    const writeData = {
+      mitigatedBy: hazard.mitigatedBy,
+      mitigatedAt: hazard.mitigatedAt === null
+        ? null
+        : ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : hazard.mitigatedAt)
+    };
+    firebaseSave(operationsRef.child(activeOperation.id).child('hazards').child(hazardId), 'update', writeData);
+  }
+  renderHazardLog();
+}
+
+function renderHazardLog() {
+  const list = document.getElementById('hazardLogList');
+  if (!list) return;
+  if (!activeOperation) { list.innerHTML = ''; return; }
+  const hazards = activeOperation.hazards || {};
+  const entries = Object.entries(hazards);
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--text-secondary)">No hazards logged.</div>';
+    return;
+  }
+  // Sort: open hazards first (by severity desc, then most-recent), then mitigated (most-recent first)
+  const sevOrder = { high: 0, medium: 1, low: 2 };
+  entries.sort(([, a], [, b]) => {
+    const aOpen = !a.mitigatedAt;
+    const bOpen = !b.mitigatedAt;
+    if (aOpen !== bOpen) return aOpen ? -1 : 1;
+    if (aOpen) {
+      const sevDiff = (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9);
+      if (sevDiff !== 0) return sevDiff;
+    }
+    return (b.reportedAt || 0) - (a.reportedAt || 0);
+  });
+  list.innerHTML = entries.map(([id, h]) => {
+    const typeLabel = HAZARD_TYPE_LABELS[h.type] || h.type;
+    const sev = (h.severity || 'low').toLowerCase();
+    const mitigated = !!h.mitigatedAt;
+    const reportedStr = h.reportedAt ? fmtTimestamp(h.reportedAt) : '';
+    const mitigatedStr = h.mitigatedAt ? fmtTimestamp(h.mitigatedAt) : '';
+    const notes = h.notes ? `<div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${escapeHtml(h.notes)}</div>` : '';
+    return `<div class="hazard-card hazard-sev-${escapeAttr(sev)} ${mitigated ? 'hazard-mitigated' : ''}" data-hazard-id="${escapeAttr(id)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${escapeHtml(typeLabel)} <span class="hazard-badge hazard-badge-${escapeAttr(sev)}">${escapeHtml(sev.toUpperCase())}</span>${mitigated ? ' <span class="hazard-badge hazard-badge-mitigated">MITIGATED</span>' : ''}</div>
+          <div style="font-size:13px;color:var(--text-primary);margin-top:2px">${escapeHtml(h.location)}</div>
+          ${notes}
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Reported by ${escapeHtml(h.reportedBy || '—')} ${reportedStr}${mitigated ? ` · Mitigated by ${escapeHtml(h.mitigatedBy || '—')} ${mitigatedStr}` : ''}</div>
+        </div>
+        <button class="btn btn-sm ${mitigated ? 'btn-outline' : 'btn-primary'}" onclick="markHazardMitigated('${escapeAttr(id)}')">${mitigated ? 'Reopen' : 'Mitigate'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function getOperationInventory() {
   const assigned = activeOperation && activeOperation.assignedApparatus;
   let inv;
@@ -3482,6 +3714,158 @@ function getOperationInventory() {
 // ============================================================
 // OPERATIONS
 // ============================================================
+
+// v3.12.0: extracted helper — populates op-name + op-time + task-force label
+// for either the Operations or Command tab header. prefix is '' (Ops) or 'cmd' (Command).
+function populateOpHeader(prefix) {
+  const nameId = prefix ? prefix + 'OpName' : 'opName';
+  const timeId = prefix ? prefix + 'OpTime' : 'opTime';
+  const nameEl = document.getElementById(nameId);
+  const timeEl = document.getElementById(timeId);
+  if (!nameEl || !timeEl) return;
+  nameEl.textContent = activeOperation.name || 'Unnamed Operation';
+  timeEl.textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
+  // Task-force label rendered only on the Operations header (the Command header is read-only)
+  if (!prefix) {
+    if (activeOperation.taskForce) {
+      const tfLabel = document.querySelector('.task-force-label');
+      if (!tfLabel) {
+        const lbl = document.createElement('span');
+        lbl.className = 'task-force-label';
+        lbl.textContent = activeOperation.taskForce;
+        nameEl.parentNode.insertBefore(lbl, nameEl);
+      } else {
+        tfLabel.textContent = activeOperation.taskForce;
+      }
+    } else {
+      const tfLabel = document.querySelector('.task-force-label');
+      if (tfLabel) tfLabel.remove();
+    }
+  }
+}
+
+// v3.12.0: extracted helper — renders the Assigned Apparatus chips with role badges.
+// Same DOM target (#assignedApparatusList) regardless of whether the host screen
+// is Operations or Command, so the function is host-agnostic.
+function renderAssignedApparatus() {
+  const assignedList = document.getElementById('assignedApparatusList');
+  if (!assignedList) return;
+  const assigned = activeOperation.assignedApparatus || [];
+  const roles = activeOperation.roles || {};
+  if (assigned.length > 0) {
+    const appGroups = activeOperation.apparatusGroups || {};
+    const groupedAppIds = new Set();
+    for (const g of Object.values(appGroups)) {
+      for (const mid of (g.members || [])) groupedAppIds.add(mid);
+    }
+    let groupsHtml = '';
+    for (const [gid, g] of Object.entries(appGroups)) {
+      const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
+        const name = escapeHtml(getApparatusName(mid));
+        const roleId = roles[mid];
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
+      }).join('');
+      if (memberChips) {
+        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+      }
+    }
+    const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
+    const byType = {};
+    for (const appId of ungrouped) {
+      const app = localApparatus.find(a => a.id === appId);
+      const typeId = app?.type || 'other';
+      if (!byType[typeId]) byType[typeId] = [];
+      byType[typeId].push(appId);
+    }
+    const sortedTypes = Object.keys(byType).sort((a, b) => getApparatusTypeOrder(a) - getApparatusTypeOrder(b));
+    let typeHtml = '';
+    for (const typeId of sortedTypes) {
+      const chips = byType[typeId].map(appId => {
+        const name = escapeHtml(getApparatusName(appId));
+        const roleId = roles[appId];
+        const roleNames = activeOperation.roleNames || {};
+        const personName = roleNames[appId];
+        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
+        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
+      }).join('');
+      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
+      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
+    }
+    assignedList.innerHTML = groupsHtml + typeHtml;
+  } else {
+    assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
+  }
+}
+
+// v3.12.0: extracted helper — external equipment list. Host-agnostic.
+function renderExternalEquipmentList() {
+  const extList = document.getElementById('externalEquipmentList');
+  if (!extList) return;
+  const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
+  if (extEquip.length > 0) {
+    extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
+      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
+        <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
+      </div>
+    </div>`).join('');
+  } else {
+    extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
+  }
+}
+
+// v3.12.0: extracted helper — individuals list with role badges. Host-agnostic.
+function renderIndividualsList() {
+  const indList = document.getElementById('individualsList');
+  if (!indList) return;
+  const roles = activeOperation.roles || {};
+  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
+  if (individuals.length > 0) {
+    indList.innerHTML = individuals.map(ind => {
+      const roleKey = 'ind-' + ind.id;
+      const roleId = roles[roleKey];
+      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
+      return `<span class="app-chip" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span role="button" tabindex="0" onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
+    }).join('');
+  } else {
+    indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
+  }
+}
+
+// v3.12.0: Command-tab orchestrator. Apparatus / external / individuals / my-role / org-chart
+// now live on the Command screen per issue #90. Dashboard stats and command-layout view
+// are preserved from the old #commandView (which used to be an internal sub-tab of Operations).
+function renderCommand() {
+  const noOp = document.getElementById('noActiveOpCommand');
+  const active = document.getElementById('activeOpCommand');
+  if (!noOp || !active) return; // Defensive — screen may not exist (legacy index.html)
+  if (!activeOperation) {
+    noOp.style.display = 'block';
+    active.style.display = 'none';
+    return;
+  }
+  noOp.style.display = 'none';
+  active.style.display = 'block';
+  populateOpHeader('cmd');
+  const points = getShorePoints();
+  const dashboardEl = document.getElementById('cmdDashboard');
+  if (dashboardEl) dashboardEl.innerHTML = renderDashboardStats(points);
+  const orgEl = document.getElementById('orgChartContainer');
+  if (orgEl) orgEl.innerHTML = renderOrgChart(getRoleAssignments(), points);
+  const layoutEl = document.getElementById('cmdLayout');
+  if (layoutEl) layoutEl.innerHTML = renderCommandLayout(points);
+  renderAssignedApparatus();
+  renderExternalEquipmentList();
+  renderIndividualsList();
+  renderMyRoleDisplay();
+  if (typeof renderHazardLog === 'function') renderHazardLog(); // Phase 4 — may not exist yet
+}
+
+// (renderCommandView shim defined below at the old function's site for clarity.)
+
 function renderOperations() {
   const noOp = document.getElementById('noActiveOp');
   const active = document.getElementById('activeOp');
@@ -3497,118 +3881,12 @@ function renderOperations() {
   noOp.style.display = 'none';
   active.style.display = 'block';
 
-  document.getElementById('opName').textContent = activeOperation.name || 'Unnamed Operation';
-  document.getElementById('opTime').textContent = 'Started: ' + fmtTimestamp(activeOperation.startTime);
-
-  // Render task force label
-  const opNameEl = document.getElementById('opName');
-  if (activeOperation.taskForce) {
-    const tfLabel = document.querySelector('.task-force-label');
-    if (!tfLabel) {
-      const lbl = document.createElement('span');
-      lbl.className = 'task-force-label';
-      lbl.textContent = activeOperation.taskForce;
-      opNameEl.parentNode.insertBefore(lbl, opNameEl);
-    } else {
-      tfLabel.textContent = activeOperation.taskForce;
-    }
-  } else {
-    const tfLabel = document.querySelector('.task-force-label');
-    if (tfLabel) tfLabel.remove();
-  }
-
-  // Render assigned apparatus chips with role badges
-  const assignedList = document.getElementById('assignedApparatusList');
-  const assigned = activeOperation.assignedApparatus || [];
-  const roles = activeOperation.roles || {};
-  if (assigned.length > 0) {
-    // Group assigned apparatus by type, then by apparatus groups
-    const appGroups = activeOperation.apparatusGroups || {};
-    const groupedAppIds = new Set();
-    for (const g of Object.values(appGroups)) {
-      for (const mid of (g.members || [])) groupedAppIds.add(mid);
-    }
-
-    // Build apparatus groups section
-    let groupsHtml = '';
-    for (const [gid, g] of Object.entries(appGroups)) {
-      const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
-        const name = escapeHtml(getApparatusName(mid));
-        const roleId = roles[mid];
-        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
-      }).join('');
-      if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
-      }
-    }
-
-    // Build ungrouped apparatus by type
-    const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
-    const byType = {};
-    for (const appId of ungrouped) {
-      const app = localApparatus.find(a => a.id === appId);
-      const typeId = app?.type || 'other';
-      if (!byType[typeId]) byType[typeId] = [];
-      byType[typeId].push(appId);
-    }
-    const sortedTypes = Object.keys(byType).sort((a, b) => getApparatusTypeOrder(a) - getApparatusTypeOrder(b));
-
-    let typeHtml = '';
-    for (const typeId of sortedTypes) {
-      const chips = byType[typeId].map(appId => {
-        const name = escapeHtml(getApparatusName(appId));
-        const roleId = roles[appId];
-        const roleNames = activeOperation.roleNames || {};
-        const personName = roleNames[appId];
-        const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
-        return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
-      }).join('');
-      // Only show type header if multiple types present
-      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
-      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
-    }
-
-    assignedList.innerHTML = groupsHtml + typeHtml;
-  } else {
-    assignedList.innerHTML = '<span style="font-size:13px;color:var(--text-secondary)">All apparatus (tap + Add to assign specific ones)</span>';
-  }
-
-  // Render role display and suggestion banner
-  renderMyRoleDisplay();
+  populateOpHeader('');
+  // v3.12.0: apparatus / external / individuals / my-role moved to Command tab (issue #90).
+  // The DOM elements may still be missing here if the user is on Operations — that's fine,
+  // their renderers are host-agnostic and run on every renderCommand() call.
+  // Keep role suggestion banner on Operations — it nudges toward Ops/Cut Table view switch.
   renderRoleSuggestion();
-
-  // Render external equipment
-  const extList = document.getElementById('externalEquipmentList');
-  const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
-  if (extEquip.length > 0) {
-    // X2 (v3.5.2): ext.model, ext.deptName, ext.apparatus are user-controlled. Escape for
-    // display; escape ext.id for the onclick attribute.
-    extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
-      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
-        <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
-      </div>
-    </div>`).join('');
-  } else {
-    extList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None</div>';
-  }
-
-  // Render individuals
-  const indList = document.getElementById('individualsList');
-  const individuals = activeOperation.individuals ? Object.values(activeOperation.individuals) : [];
-  if (individuals.length > 0) {
-    indList.innerHTML = individuals.map(ind => {
-      const roleKey = 'ind-' + ind.id;
-      const roleId = roles[roleKey];
-      const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-      return `<span class="app-chip" role="button" tabindex="0" onclick="openIndividualRoleModal('${ind.id}')" style="cursor:pointer">${escapeHtml(ind.name)}${roleBadge}<span role="button" tabindex="0" onclick="event.stopPropagation();editIndividual('${ind.id}')" style="font-size:13px;cursor:pointer;margin-left:2px;color:var(--blue)" title="Edit">✎</span><span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeIndividual('${ind.id}')">&times;</span></span>`;
-    }).join('');
-  } else {
-    indList.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">None added</div>';
-  }
 
   const spList = document.getElementById('shorePointsList');
   const allPoints = getShorePoints();
@@ -3725,7 +4003,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${(sp.group || sp.team) ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(sp.group || sp.team))}</div>` : ''}
+        ${(() => { const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -3848,7 +4126,20 @@ function renderArchivedOps() {
       </div>
     </div>`;
   }
+  // v3.12.0 R1-12: pagination — if we received exactly `archivedOpsLimit`
+  // records the server likely has more. Offer to load the next page.
+  if (archivedOperations.length >= archivedOpsLimit) {
+    html += `<button class="btn btn-outline btn-sm btn-block" onclick="loadMoreArchivedOps()" style="margin-top:8px">Load older archived ops (showing ${archivedOperations.length})</button>`;
+  }
   container.innerHTML = html;
+}
+
+// v3.12.0 R1-12: double the archive page size and re-attach the listener.
+function loadMoreArchivedOps() {
+  archivedOpsLimit = Math.min(archivedOpsLimit * 2, 1000);
+  showToast(`Loading up to ${archivedOpsLimit} archived ops…`);
+  if (archivedOpsQuery) try { archivedOpsQuery.off(); } catch (e) { /* ignore */ }
+  setupListeners(); // re-attaches all listeners with the new limit
 }
 
 function viewArchivedOp(opId) {
@@ -4048,7 +4339,7 @@ function assignEquipmentToPending(spId) {
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  populateGroupDropdown(sp.group || sp.team || '');
+  populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -4225,7 +4516,8 @@ function deployPendingShorePoint(reason) {
     building,
     area,
     division,
-    group,
+    group,                          // v3.12.0 N2 dual-write: legacy key (read-fallback)
+    assignedResource: group,        // v3.12.0 N2 dual-write: new NIMS-correct key
     shoreType,
     requiredLength: length,
     effectiveLength,
@@ -4263,6 +4555,92 @@ function deployPendingShorePoint(reason) {
 // user must explicitly choose Cancel or Acknowledge. Escape cancels (safe
 // default). Captures who acknowledged + when on the deployed SP for
 // after-action review and liability traceability.
+// v3.12.0 R7-05: generic custom-confirm helper modeled on confirmUnratedDeploy.
+// Used by endOperation() and any other destructive action that needs a stronger
+// gate than native confirm() — including a typed-string requirement to defeat
+// gloved-finger mistaps. Returns a Promise<boolean>.
+//
+// Options:
+//   title         — heading text (required)
+//   body          — body paragraph (required)
+//   confirmLabel  — confirm button text (default: 'Confirm')
+//   cancelLabel   — cancel button text (default: 'Cancel')
+//   confirmStyle  — 'danger' | 'warning' | 'primary' (default: 'primary')
+//   requireType   — optional string the user must type before the confirm
+//                   button unlocks (case-sensitive, gloves-resistance)
+function customConfirm(opts) {
+  opts = opts || {};
+  const title = opts.title || 'Confirm';
+  const body = opts.body || '';
+  const confirmLabel = opts.confirmLabel || 'Confirm';
+  const cancelLabel = opts.cancelLabel || 'Cancel';
+  const confirmStyle = opts.confirmStyle || 'primary';
+  const requireType = opts.requireType || null;
+  const styleColors = {
+    danger:  { border: 'var(--red)',         heading: 'var(--red)',         bg: 'var(--red-bg)',    btnBg: 'var(--red)' },
+    warning: { border: 'var(--orange-dark)', heading: 'var(--orange-dark)', bg: 'var(--orange-bg)', btnBg: 'var(--orange-dark)' },
+    primary: { border: 'var(--blue)',        heading: 'var(--blue)',        bg: 'var(--blue-light)', btnBg: 'var(--blue)' }
+  };
+  const c = styleColors[confirmStyle] || styleColors.primary;
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active custom-confirm-overlay';
+    overlay.style.zIndex = '400';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    const titleId = 'cc-' + Date.now();
+    overlay.setAttribute('aria-labelledby', titleId);
+    const typeFieldHtml = requireType
+      ? `<div style="margin-bottom:16px">
+           <label for="${titleId}-type" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">Type <strong>${escapeHtml(requireType)}</strong> to confirm</label>
+           <input type="text" id="${titleId}-type" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Type confirmation phrase" style="width:100%;padding:10px 12px;font-size:16px;border:1px solid var(--border);border-radius:6px">
+         </div>`
+      : '';
+    overlay.innerHTML = `<div class="modal" style="max-width:480px;padding:24px;border:2px solid ${c.border}">
+      <h2 id="${titleId}" style="font-size:18px;margin-bottom:12px;color:${c.heading};font-weight:700">${escapeHtml(title)}</h2>
+      <div style="margin-bottom:16px;padding:12px;background:${c.bg};border-radius:6px;font-size:14px;line-height:1.5;color:var(--text)">
+        ${escapeHtml(body)}
+      </div>
+      ${typeFieldHtml}
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button data-action="cancel" class="btn btn-outline" style="min-height:56px;font-weight:600">${escapeHtml(cancelLabel)}</button>
+        <button data-action="confirm" class="btn" style="min-height:56px;background:${c.btnBg};color:white;border:none;font-weight:700">${escapeHtml(confirmLabel)}</button>
+      </div>
+    </div>`;
+
+    const confirmBtn = overlay.querySelector('[data-action="confirm"]');
+    const typeInput = requireType ? overlay.querySelector(`#${titleId}-type`) : null;
+    const updateConfirmState = () => {
+      if (!requireType) return;
+      const ok = typeInput && typeInput.value === requireType;
+      confirmBtn.disabled = !ok;
+      confirmBtn.style.opacity = ok ? '1' : '0.5';
+    };
+    if (typeInput) {
+      typeInput.addEventListener('input', updateConfirmState);
+      updateConfirmState();
+    }
+
+    const cleanup = (val) => {
+      document.removeEventListener('keydown', onKey);
+      overlay.remove();
+      resolve(val);
+    };
+    overlay.addEventListener('click', (e) => {
+      const action = e.target.dataset && e.target.dataset.action;
+      if (action === 'cancel') cleanup(false);
+      else if (action === 'confirm' && !confirmBtn.disabled) cleanup(true);
+    });
+    const onKey = (e) => { if (e.key === 'Escape') cleanup(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      if (typeInput) { typeInput.focus(); }
+      else { const cancelBtn = overlay.querySelector('[data-action="cancel"]'); if (cancelBtn) cancelBtn.focus(); }
+    }, 50);
+  });
+}
+
 function confirmUnratedDeploy(result) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -4400,7 +4778,8 @@ async function deployShorePoint(result, qty) {
       building,
       area,
       division,
-      group,
+      group,                          // v3.12.0 N2 dual-write: legacy key
+      assignedResource: group,        // v3.12.0 N2 dual-write: new key
       shoreType,
       requiredLength: length,
       effectiveLength,
@@ -4562,8 +4941,13 @@ function toggleLane(laneId) {
   renderOperations();
 }
 
-// Default to collapsed — operations content is the primary view, header sections are secondary
-let sectionCollapsedState = { apparatus: true, external: true, individuals: true, myrole: true };
+// v3.12.0: section-collapse keys for Command tab (cmdApparatus, cmdExternal, cmdIndividuals,
+// cmdMyrole, cmdOrgchart, cmdHazards). Legacy keys (apparatus, external, individuals, myrole)
+// are no longer used — sections moved to Command. Per battalion-chief review: org chart and
+// hazards default to OPEN so a relieving IC can see open hazards + chain of command at a
+// glance during command transfer without having to tap-expand each section. Apparatus /
+// external / individuals / my-role stay collapsed (they're roster, not transfer-critical).
+let sectionCollapsedState = { cmdApparatus: true, cmdExternal: true, cmdIndividuals: true, cmdMyrole: true, cmdOrgchart: false, cmdHazards: false };
 function toggleSection(sectionKey) {
   sectionCollapsedState[sectionKey] = !sectionCollapsedState[sectionKey];
   const collapsed = sectionCollapsedState[sectionKey];
@@ -4577,19 +4961,19 @@ function toggleSection(sectionKey) {
 }
 
 // ============================================================
-// VIEW SWITCHER
+// VIEW SWITCHER (Operations tab — Ops view vs Cut Table view)
 // ============================================================
+// v3.12.0: dropped the `command` branch. Command is now a top-level tab (showTab('command')),
+// not an internal view inside Operations. Legacy callers of `switchView('command')` were
+// rewritten to `showTab('command')`. See R7-02 / issue #90.
 function switchView(view) {
   currentView = view;
   roleViewDismissed = true; // User made a deliberate choice
   document.querySelectorAll('#viewSwitcher button').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
   const activeTab = document.querySelector(`#viewSwitcher button[onclick="switchView('${view}')"]`);
-  activeTab.classList.add('active');
-  activeTab.setAttribute('aria-selected', 'true');
+  if (activeTab) { activeTab.classList.add('active'); activeTab.setAttribute('aria-selected', 'true'); }
   document.getElementById('opsView').style.display = view === 'ops' ? 'block' : 'none';
-  document.getElementById('commandView').style.display = view === 'command' ? 'block' : 'none';
   document.getElementById('cutTableView').style.display = view === 'cuttable' ? 'block' : 'none';
-  if (view === 'command') renderCommandView();
   if (view === 'cuttable') renderCutTableView();
   renderRoleSuggestion();
 }
@@ -4627,7 +5011,9 @@ function getFilteredPoints() {
   // Filter by current drilldown path
   return points.filter(sp => {
     for (const seg of drilldownPath) {
-      const val = sp[seg.level] || null;
+      // v3.12.0 N2: 'group' lookup uses the dual-write fallback chain so
+      // drilldown stays consistent regardless of which key the SP record uses.
+      const val = seg.level === 'group' ? getSPGroup(sp) : (sp[seg.level] || null);
       if (seg.value === '__none__') {
         if (val !== null) return false;
       } else {
@@ -4891,9 +5277,14 @@ function renderOrgChart(roleAssignments, shorePoints) {
         : '<span class="status-dot status-staged" title="Staged"></span>';
     }
 
-    // Span of control warning
+    // v3.12.0 R6-04/N9: Span-of-control caution tier. NIMS doctrine targets 1:5
+    // (optimal range 1:3 – 1:7). 6–7 reports = yellow caution; >7 = red exceeded.
     const directReports = opRoles.filter(x => x.parentId === roleId).length;
-    const spanWarning = directReports > 7 ? '<span class="span-warning" title="Span of control exceeded (>7)">⚠</span>' : '';
+    const spanWarning = directReports > 7
+      ? '<span class="span-warning span-red" title="Span of control EXCEEDED (>7) — split this branch">⚠</span>'
+      : (directReports >= 6
+        ? '<span class="span-warning span-yellow" title="Approaching span-of-control limit (6–7) — NIMS optimal is 1:5">⚠</span>'
+        : '');
 
     // Collapse chevron
     const chevron = hasChildren ? `<span class="org-collapse-btn" role="button" tabindex="0" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
@@ -5051,20 +5442,10 @@ function renderRolesSection() {
   return html;
 }
 
-function renderCommandView() {
-  const container = document.getElementById('commandView');
-  if (!activeOperation) { container.innerHTML = ''; return; }
-
-  const points = getShorePoints();
-  const roleAssignments = getRoleAssignments();
-
-  let html = renderDashboardStats(points);
-  html += renderOrgChart(roleAssignments, points);
-  html += renderCommandLayout(points);
-  html += renderRolesSection();
-
-  container.innerHTML = html;
-}
+// v3.12.0: shim — Command is now a top-level tab (#screenCommand), not an internal view
+// inside Operations. All 20+ existing callers of renderCommandView() route here, which
+// forwards to the new orchestrator that targets the dedicated screen's containers.
+function renderCommandView() { renderCommand(); }
 
 // ============================================================
 // CUT TABLE VIEW
@@ -5273,7 +5654,7 @@ function editShorePoint(spId) {
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  populateGroupDropdown(sp.group || sp.team || '');
+  populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -5336,12 +5717,14 @@ function confirmEditShorePoint() {
     : 0;
   const effectiveLength = Math.round((requiredLength - totalDed) * 10) / 10;
 
+  const editGroup = validateInput(document.getElementById('spGroup').value, 100) || null;
   const updateData = {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
     area: validateInput(document.getElementById('spArea').value, 100) || null,
     division: validateInput(document.getElementById('spDivision').value, 100) || null,
-    group: validateInput(document.getElementById('spGroup').value, 100) || null,
+    group: editGroup,                      // v3.12.0 N2 dual-write: legacy key
+    assignedResource: editGroup,           // v3.12.0 N2 dual-write: new key
     shoreType: document.getElementById('spShoreType').value,
     requiredLength,
     effectiveLength,
@@ -5496,7 +5879,20 @@ function returnEquipment(spId, skipRoleGate) {
 }
 
 async function endOperation() {
-  if (!confirm('End this operation? All equipment will be marked as returned.')) return;
+  // v3.12.0 R7-05: replace native confirm() with a custom sheet that requires
+  // the user to type "END" before the danger button unlocks. The v3.10.1 backup
+  // is the actual safety net for accidental ends; this gate is gloves-resistance
+  // against mistaps. Per audit: "v3.10.1 backup is the actual safety net; this
+  // is UI gating against gloved-finger mistaps."
+  const ok = await customConfirm({
+    title: 'End Operation?',
+    body: 'All equipment will be marked as returned. This cannot be undone (a backup is created automatically, but recovery requires admin support).',
+    confirmLabel: 'End Operation',
+    cancelLabel: 'Cancel',
+    confirmStyle: 'danger',
+    requireType: 'END'
+  });
+  if (!ok) return;
 
   // v3.10.1: take pre-destructive snapshots before the inventory blanket-reset
   // and the operation archive. If either backup fails, abort — we'd rather
@@ -5908,6 +6304,117 @@ async function applyImportData(data) {
   alert('Inventory imported successfully');
 }
 
+// v3.12.0 Phase 7b: force-update mechanism.
+// Compares semver strings like "3.12.0". Returns true if `a < b`.
+function semverLessThan(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const pa = a.split('.').map(n => parseInt(n, 10));
+  const pb = b.split('.').map(n => parseInt(n, 10));
+  if (pa.some(isNaN) || pb.some(isNaN)) return false;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const av = pa[i] || 0;
+    const bv = pb[i] || 0;
+    if (av < bv) return true;
+    if (av > bv) return false;
+  }
+  return false;
+}
+
+// Render the full-screen blocking overlay. Caller is responsible for ensuring
+// this is only shown when an update is actually required (we never show it on
+// the equality case — only strict-less-than).
+function showForceUpdateOverlay(requiredVersion) {
+  if (document.getElementById('forceUpdateOverlay')) return; // idempotent
+  const overlay = document.createElement('div');
+  overlay.id = 'forceUpdateOverlay';
+  overlay.className = 'force-update-overlay';
+  overlay.setAttribute('role', 'alertdialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'forceUpdateTitle');
+  overlay.innerHTML = `<div class="force-update-card">
+    <h2 id="forceUpdateTitle">Update Required</h2>
+    <p>FieldShore has been updated. Please reload to get version <strong>v${escapeHtml(requiredVersion)}</strong>. Your local changes (if any) will be preserved.</p>
+    <button class="reload-btn" id="forceUpdateReloadBtn" type="button">Reload Now</button>
+    <div class="version-meta">Current: v${escapeHtml(APP_VERSION)} · Required: v${escapeHtml(requiredVersion)}</div>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('forceUpdateReloadBtn').addEventListener('click', forceUpdateReload);
+}
+
+// Clear all SW + caches, then hard reload. Local data in localStorage survives.
+async function forceUpdateReload() {
+  const btn = document.getElementById('forceUpdateReloadBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Reloading…'; }
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+  } catch (e) { console.warn('force-update cleanup failed:', e); }
+  // location.reload(true) is non-standard but still honored in Safari for
+  // forcing a network fetch. Other browsers ignore the arg but SW is already
+  // unregistered so they'll fetch fresh anyway.
+  try { location.reload(true); } catch (e) { location.reload(); }
+}
+
+// Boot-time check against Firebase /config/minAppVersion. If APP_VERSION is
+// lower than the admin-set minimum, render the blocking overlay. Offline or
+// permission failure → silently skip; check will re-run on auth recovery.
+function checkMinVersion() {
+  if (!db) return;
+  try {
+    db.ref('config/minAppVersion').once('value').then((snap) => {
+      const required = snap && snap.val();
+      if (!required || typeof required !== 'string') return;
+      if (semverLessThan(APP_VERSION, required)) {
+        showForceUpdateOverlay(required);
+      }
+    }).catch((err) => {
+      console.info('minVersion check skipped:', err && err.message);
+    });
+  } catch (e) { console.info('minVersion check threw:', e && e.message); }
+}
+
+// SW version-handshake. Catches the case where app.js is fresh but sw.js cached
+// is stale (or vice versa). On mismatch → forceUpdateReload. Silent skip if
+// no SW controller or browser lacks the channel API.
+function verifySWVersion() {
+  if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+  try {
+    const channel = new MessageChannel();
+    const timeoutId = setTimeout(() => { /* silent give-up */ }, 3000);
+    channel.port1.onmessage = (event) => {
+      clearTimeout(timeoutId);
+      const swVersion = event.data && event.data.version;
+      if (swVersion && swVersion !== APP_VERSION) {
+        console.warn('SW/app version mismatch — SW:', swVersion, 'App:', APP_VERSION);
+        showToast('Updating to latest version…', 'info');
+        setTimeout(forceUpdateReload, 1500);
+      }
+    };
+    navigator.serviceWorker.controller.postMessage({ type: 'getVersion' }, [channel.port2]);
+  } catch (e) { /* non-fatal */ }
+}
+
+// v3.12.0 R3-03: manual override for the SW update check. The 5-min interval
+// is best-effort; this button gives the operator a way to force a check now
+// (e.g. after seeing a hotfix announcement in dispatch chatter).
+function manualCheckForUpdates() {
+  if (!('serviceWorker' in navigator)) { showToast('Service worker unavailable', 'warning'); return; }
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) { showToast('No service worker registration', 'info'); return; }
+    showToast('Checking for updates…', 'info');
+    reg.update().catch(err => {
+      console.warn('manual SW update failed:', err && err.message);
+      showToast('Update check failed: ' + (err && err.message || 'unknown'), 'error');
+    });
+  });
+}
+
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
   const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldshore_'));
@@ -6255,8 +6762,14 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => {
-        // Check for updates every 30 minutes
-        setInterval(() => reg.update(), 30 * 60 * 1000);
+        // v3.12.0 R3-03: drop from 30→5 min. GitHub Pages + Fastly cache adds
+        // ~10 min worst case; a 5-min cadence keeps total hotfix delivery
+        // under ~15 min. Settings → "Check for updates" gives manual override.
+        setInterval(() => reg.update(), 5 * 60 * 1000);
+        // v3.12.0 Phase 7b: handshake — verify the SW's CACHE_NAME version
+        // matches the loaded APP_VERSION. Catches stale-SW + fresh-app race
+        // (and vice versa) that would otherwise leave the user wedged.
+        setTimeout(verifySWVersion, 2000);
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (!newWorker) return;

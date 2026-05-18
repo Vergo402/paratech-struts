@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldshore-v3.11.3';
+const CACHE_NAME = 'fieldshore-v3.12.0';
 const ASSETS = [
   './',
   './index.html',
@@ -38,6 +38,20 @@ self.addEventListener('activate', (event) => {
     )
   );
   self.clients.claim();
+});
+
+// v3.12.0 Phase 7b: version-handshake. app.js sends {type:'getVersion'} on boot;
+// SW replies with the CACHE_NAME-derived version. If app's APP_VERSION differs
+// from the SW's, app triggers forceUpdateReload() to clear stale caches.
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  if (data.type === 'getVersion') {
+    const port = event.ports && event.ports[0];
+    const version = CACHE_NAME.replace(/^fieldshore-v/, '');
+    if (port) port.postMessage({ type: 'version', version, cacheName: CACHE_NAME });
+  } else if (data.type === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {

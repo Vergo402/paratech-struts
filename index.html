@@ -33,7 +33,7 @@
   <h1 class="login-title">FieldShore</h1>
   <p class="login-subtitle">Enter your Department ID to continue</p>
   <div class="login-form">
-    <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Department ID">
     <button class="btn btn-primary w-full" onclick="handleLogin()">Enter</button>
   </div>
   <p class="login-hint">Your Department ID connects you to shared inventory and operations</p>
@@ -63,7 +63,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.11.3</div>
+      <div class="version-label">v3.12.0</div>
     </header>
 
     <!-- Screen 1: Quick Select -->
@@ -72,15 +72,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfFeetHint">
+            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfFeetHint" aria-label="Opening height feet">
             <div class="input-hint" id="qfFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfInchesHint">
+            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfInchesHint" aria-label="Opening height inches">
             <div class="input-hint" id="qfInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')" aria-describedby="qfFractionHint">
+            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')" aria-describedby="qfFractionHint" aria-label="Opening height fractional inch">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -105,7 +105,7 @@
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
-          <input type="checkbox" id="qfDeductionToggle" onchange="toggleDeductions('qf')">
+          <input type="checkbox" id="qfDeductionToggle" onchange="toggleDeductions('qf')" aria-label="Include deductions in calculation">
           <span class="toggle-slider"></span>
         </label>
         <label for="qfDeductionToggle">Include Deductions (header, footer, plates)</label>
@@ -113,7 +113,7 @@
       <div class="deduction-panel hidden" id="qfDeductionPanel">
         <div class="deduction-row">
           <label>Header</label>
-          <select id="qfHeader" onchange="updateDeductionSummary('qf')">
+          <select id="qfHeader" onchange="updateDeductionSummary('qf')" aria-label="Header lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -121,7 +121,7 @@
         </div>
         <div class="deduction-row">
           <label>Footer</label>
-          <select id="qfSole" onchange="updateDeductionSummary('qf')">
+          <select id="qfSole" onchange="updateDeductionSummary('qf')" aria-label="Footer lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -152,7 +152,7 @@
       </div>
       <div class="form-group">
         <label>Estimated Load (lbs) — optional</label>
-        <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
+        <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0" aria-label="Estimated load in pounds">
       </div>
       <div class="system-toggles">
         <button class="system-toggle gold" id="toggleGold" onclick="toggleSystem('gold')" aria-pressed="false">
@@ -213,32 +213,9 @@
             <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
           </div>
         </div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('apparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionApparatus">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowApparatus">▶</span> Assigned Apparatus</span>
-          <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
-        </div>
-        <div id="sectionApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('external')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionExternal">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowExternal">▶</span> External Equipment</span>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
-        </div>
-        <div id="sectionExternal" style="display:none"><div id="externalEquipmentList"></div></div>
-        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('individuals')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionIndividuals">
-          <span class="section-title m-0"><span class="section-arrow" id="arrowIndividuals">▶</span> Individuals</span>
-          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
-        </div>
-        <div id="sectionIndividuals" style="display:none"><div id="individualsList"></div></div>
-        <div id="myRoleSection" class="mb-12">
-          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('myrole')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionMyrole">
-            <span class="section-title m-0"><span class="section-arrow" id="arrowMyrole">▶</span> My Role</span>
-            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
-          </div>
-          <div id="sectionMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
-        </div>
         <div id="roleSuggestBanner" class="hidden"></div>
         <div class="view-switcher" id="viewSwitcher" role="tablist">
           <button class="active" onclick="switchView('ops')" role="tab" aria-selected="true" aria-controls="opsView">📋 Operations</button>
-          <button onclick="switchView('command')" role="tab" aria-selected="false" aria-controls="commandView">🏗 Command</button>
           <button onclick="switchView('cuttable')" role="tab" aria-selected="false" aria-controls="cutTableView">✂️ Cut Table</button>
         </div>
         <div id="opsView" role="tabpanel">
@@ -249,11 +226,60 @@
           <div id="drilldownBreadcrumb" class="drilldown-breadcrumb hidden"></div>
           <div id="shorePointsList"></div>
         </div>
-        <div id="commandView" class="hidden" role="tabpanel"></div>
         <div id="cutTableView" class="hidden" role="tabpanel"></div>
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>
+    </section>
+
+    <!-- Screen 3b: Command (v3.12.0 — separated from Operations per issue #90) -->
+    <section class="screen" id="screenCommand">
+      <div id="noActiveOpCommand">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21V14h6v7"/></svg>
+          <p>No active operation.</p>
+        </div>
+        <button class="btn btn-primary mt-16" onclick="startOperation()">Start New Operation</button>
+      </div>
+      <div id="activeOpCommand" class="hidden">
+        <div class="op-card">
+          <div class="op-name" id="cmdOpName"></div>
+          <div class="op-time" id="cmdOpTime"></div>
+        </div>
+        <div id="cmdDashboard"></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdOrgchart')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdOrgchart">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdOrgchart">▼</span> ICS Organization</span>
+        </div>
+        <div id="sectionCmdOrgchart"><div id="orgChartContainer"></div></div>
+        <div id="cmdLayout"></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdApparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdApparatus">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdApparatus">▶</span> Assigned Apparatus</span>
+          <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
+        </div>
+        <div id="sectionCmdApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdExternal')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdExternal">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdExternal">▶</span> External Equipment</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
+        </div>
+        <div id="sectionCmdExternal" style="display:none"><div id="externalEquipmentList"></div></div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdIndividuals')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdIndividuals">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdIndividuals">▶</span> Individuals</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddIndividual()">+ Add</button>
+        </div>
+        <div id="sectionCmdIndividuals" style="display:none"><div id="individualsList"></div></div>
+        <div id="myRoleSection" class="mb-12">
+          <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdMyrole')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdMyrole">
+            <span class="section-title m-0"><span class="section-arrow" id="arrowCmdMyrole">▶</span> My Role</span>
+            <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();openMyRoleModal()">Change</button>
+          </div>
+          <div id="sectionCmdMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
+        </div>
+        <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdHazards">
+          <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▼</span> Hazards (ICS-208)</span>
+          <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
+        </div>
+        <div id="sectionCmdHazards"><div id="hazardLogList"></div></div>
+      </div>
     </section>
 
     <!-- Screen 4: Settings -->
@@ -262,13 +288,13 @@
       <div class="form-group">
         <label>Department ID</label>
         <div class="d-flex gap-md">
-          <input type="text" id="settingsDeptId" placeholder="e.g. engine42">
+          <input type="text" id="settingsDeptId" placeholder="e.g. engine42" aria-label="Department ID">
           <button class="btn btn-sm btn-primary nowrap" onclick="connectDepartment()">Connect</button>
         </div>
       </div>
       <div class="form-group">
         <label>Department Name</label>
-        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100">
+        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100" aria-label="Department name">
       </div>
       <button class="btn btn-primary mt-16" onclick="guardClick(this,saveSettings)">Save Settings</button>
       <div class="section-title">Appearance</div>
@@ -283,6 +309,8 @@
       <div class="section-title">Apparatus Types</div>
       <div id="apparatusTypesList"></div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="addCustomApparatusType()">+ Add Type</button>
+      <div class="section-title">App Updates</div>
+      <button class="btn btn-outline btn-sm btn-block mb-8" onclick="manualCheckForUpdates()">Check for Updates</button>
       <div class="section-title">Data Management</div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="exportInventory()">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="importInventory()">Import Inventory (Excel)</button>
@@ -305,6 +333,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Operations
     </button>
+    <button class="nav-btn" onclick="showTab('command')" data-tab="command">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21V14h6v7"/></svg>
+      Command
+    </button>
     <button class="nav-btn" onclick="showTab('inventory')" data-tab="inventory">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4M4 7l8 4M4 7v10l8 4m0-10v10"/></svg>
       Inventory
@@ -322,11 +354,11 @@
       <div id="addApparatusForm">
         <div class="form-group">
           <label>Apparatus Name</label>
-          <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
+          <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100" aria-label="Apparatus name">
         </div>
         <div class="form-group">
           <label>Type</label>
-          <select id="newApparatusType">
+          <select id="newApparatusType" aria-label="Apparatus type">
             <option value="engine">Engine</option>
             <option value="ladder">Ladder</option>
             <option value="rescue">Rescue</option>
@@ -367,7 +399,7 @@
       <h2 class="modal-title" id="shorePointTitle">Add Shore Point</h2>
       <div class="form-group">
         <label>Shore Type</label>
-        <select id="spShoreType" onchange="onShoreTypeChange()">
+        <select id="spShoreType" onchange="onShoreTypeChange()" aria-label="Shore type">
           <option value="t-shore">Vertical T-Shore</option>
           <option value="double-t">Double-T Vertical Shore</option>
           <option value="3-post">3-Post Vertical Shore</option>
@@ -375,24 +407,24 @@
       </div>
       <div class="form-group">
         <label>Label</label>
-        <input type="text" id="spLabel" placeholder="e.g. West Wall Window" maxlength="100">
+        <input type="text" id="spLabel" placeholder="e.g. West Wall Window" maxlength="100" aria-label="Shore point label">
       </div>
       <div class="form-group hidden" id="spBuildingGroup">
         <label>Building</label>
-        <input type="text" id="spBuilding" placeholder="e.g. Building A">
+        <input type="text" id="spBuilding" placeholder="e.g. Building A" aria-label="Building">
       </div>
       <div class="form-row-3">
         <div class="form-group flex-1">
           <label>Division</label>
-          <input type="text" id="spDivision" placeholder="e.g. A">
+          <input type="text" id="spDivision" placeholder="e.g. A" aria-label="Division">
         </div>
         <div class="form-group flex-1">
           <label>Area / Room</label>
-          <input type="text" id="spArea" placeholder="e.g. 2">
+          <input type="text" id="spArea" placeholder="e.g. 2" aria-label="Area">
         </div>
         <div class="form-group flex-1">
           <label>Group</label>
-          <select id="spGroup">
+          <select id="spGroup" aria-label="Assigned apparatus group">
             <option value="">— None —</option>
           </select>
         </div>
@@ -401,15 +433,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spFeetHint">
+            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spFeetHint" aria-label="Opening height feet">
             <div class="input-hint" id="spFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spInchesHint">
+            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spInchesHint" aria-label="Opening height inches">
             <div class="input-hint" id="spInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')" aria-describedby="spFractionHint">
+            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')" aria-describedby="spFractionHint" aria-label="Opening height fractional inch">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -434,7 +466,7 @@
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
-          <input type="checkbox" id="spDeductionToggle" onchange="toggleDeductions('sp')">
+          <input type="checkbox" id="spDeductionToggle" onchange="toggleDeductions('sp')" aria-label="Include deductions in calculation">
           <span class="toggle-slider"></span>
         </label>
         <label for="spDeductionToggle">Include Deductions</label>
@@ -442,7 +474,7 @@
       <div class="deduction-panel hidden" id="spDeductionPanel">
         <div class="deduction-row">
           <label>Header</label>
-          <select id="spHeader" onchange="updateDeductionSummary('sp')">
+          <select id="spHeader" onchange="updateDeductionSummary('sp')" aria-label="Header lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -450,7 +482,7 @@
         </div>
         <div class="deduction-row">
           <label>Footer</label>
-          <select id="spSole" onchange="updateDeductionSummary('sp')">
+          <select id="spSole" onchange="updateDeductionSummary('sp')" aria-label="Footer lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -481,7 +513,7 @@
       </div>
       <div class="form-group">
         <label>Estimated Load (lbs) — optional</label>
-        <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
+        <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0" aria-label="Estimated load in pounds">
         <small class="form-hint" style="display:block;margin-top:4px;color:var(--text-secondary);font-size:12px">Enter load in pounds (lbs) — numeric only. Leave blank if unknown.</small>
       </div>
       <div class="form-group" id="spQtyGroup">
@@ -507,15 +539,15 @@
       <h2 class="modal-title" id="startOpTitle">Start New Operation</h2>
       <div class="form-group">
         <label>Operation Name / Location</label>
-        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100">
+        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100" aria-label="Operation name">
       </div>
       <div class="form-group">
         <label>Task Force Name <span class="label-hint">(optional)</span></label>
-        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1">
+        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1" aria-label="Task force designation">
       </div>
       <div class="deduction-toggle my-12">
         <label class="toggle-switch">
-          <input type="checkbox" id="opMultiBuilding">
+          <input type="checkbox" id="opMultiBuilding" aria-label="Operation spans multiple buildings">
           <span class="toggle-slider"></span>
         </label>
         <label for="opMultiBuilding">Multi-building operation</label>
@@ -536,20 +568,20 @@
       <h2 class="modal-title" id="addExternalTitle">Add External Equipment</h2>
       <div class="form-group">
         <label>Department</label>
-        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100">
+        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100" aria-label="External department name">
       </div>
       <div class="form-group">
         <label>Apparatus</label>
-        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100">
+        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100" aria-label="External apparatus designation">
       </div>
       <div class="form-group">
         <label>Strut Model</label>
-        <select id="extStrutModel" class="hidden"></select>
+        <select id="extStrutModel" class="hidden" aria-label="External strut model"></select>
         <div id="extStrutGrid" class="ext-strut-grid"></div>
       </div>
       <div class="form-group">
         <label>Quantity</label>
-        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric">
+        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric" aria-label="Quantity">
       </div>
       <button class="btn btn-primary" onclick="guardClick(this,confirmAddExternal)">Add</button>
       <div class="spacer-sm"></div>
@@ -564,7 +596,7 @@
       <p class="modal-subtitle" id="roleModalSubtitle">Select an ICS role</p>
       <div id="roleNameGroup" class="role-name-group hidden">
         <label class="label-sm">Assigned To</label>
-        <input type="text" id="rolePersonName" placeholder="e.g. FF Jones" class="mt-4">
+        <input type="text" id="rolePersonName" placeholder="e.g. FF Jones" class="mt-4" aria-label="Person name for this role">
       </div>
       <div class="role-grid" id="roleGrid"></div>
       <button class="btn btn-outline btn-block mb-8" onclick="clearRole()">Clear Role</button>
@@ -578,11 +610,47 @@
       <h2 class="modal-title" id="addIndividualTitle">Add Individual</h2>
       <div class="form-group">
         <label>Name</label>
-        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith" maxlength="100">
+        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith" maxlength="100" aria-label="Individual name">
       </div>
       <button class="btn btn-primary" onclick="guardClick(this,confirmAddIndividual)">Add</button>
       <div class="spacer-sm"></div>
       <button class="btn btn-outline" onclick="closeModal('addIndividualModal')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Hazard Log Modal (v3.12.0 D3 — ICS-208 Safety Message/Plan) -->
+  <div class="modal-overlay" id="addHazardModal" role="dialog" aria-modal="true" aria-labelledby="addHazardTitle">
+    <div class="modal">
+      <h2 class="modal-title" id="addHazardTitle">Add Hazard</h2>
+      <div class="form-group">
+        <label for="hazardType">Type</label>
+        <select id="hazardType" aria-label="Hazard type">
+          <option value="structural-instability">Structural Instability</option>
+          <option value="utility">Utility (gas/electric/water)</option>
+          <option value="atmospheric">Atmospheric (gas/smoke/dust)</option>
+          <option value="fall">Fall Hazard</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hazardLocation">Location</label>
+        <input type="text" id="hazardLocation" placeholder="e.g. Building A, Div 2, Area 3" maxlength="200" aria-label="Hazard location" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label for="hazardSeverity">Severity</label>
+        <select id="hazardSeverity" aria-label="Hazard severity">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="hazardNotes">Notes (optional)</label>
+        <textarea id="hazardNotes" rows="3" placeholder="Mitigation in place, witnesses, photos taken, etc." maxlength="500" aria-label="Hazard notes"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="guardClick(this,confirmAddHazard)" style="min-height:56px;font-weight:700">Add Hazard</button>
+      <div class="spacer-sm"></div>
+      <button class="btn btn-outline" onclick="closeModal('addHazardModal')" style="min-height:56px">Cancel</button>
     </div>
   </div>
 
@@ -592,7 +660,7 @@
       <h2 class="modal-title" id="feedbackTitle">Report Issue / Suggestion</h2>
       <div class="form-group">
         <label>Category</label>
-        <select id="feedbackCategory">
+        <select id="feedbackCategory" aria-label="Feedback category">
           <option value="bug">Bug Report</option>
           <option value="feature">Feature Request</option>
           <option value="other">Other</option>
@@ -600,7 +668,7 @@
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." maxlength="2000" class="textarea"></textarea>
+        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." maxlength="2000" class="textarea" aria-label="Feedback details"></textarea>
       </div>
       <!-- H6 (v3.11.3): photo-attachment feature removed. See submitFeedback() comment in app.js. -->
       <div class="d-flex gap-md">
@@ -611,7 +679,7 @@
   </div>
 
   <!-- Hidden file input for import -->
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" class="hidden" onchange="handleImport(event)">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" class="hidden" onchange="handleImport(event)" aria-label="Inventory file to import">
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"
