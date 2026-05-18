@@ -1761,6 +1761,13 @@ function setupListeners() {
       selectedApparatus = localApparatus[0].id;
     }
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
+    // IP-048: if the Start-Op modal is open when apparatus data arrives, re-render
+    // its checkbox list. Without this, OP-creation on a cold cache shows an empty
+    // list and the user has to dismiss + re-open the modal to see chips.
+    const startOpModalEl = document.getElementById('startOpModal');
+    if (startOpModalEl && startOpModalEl.classList.contains('active')) {
+      populateStartOpApparatus();
+    }
   }, (err) => onListenerError('apparatus', err));
 
   settingsRef.on('value', (snap) => {
