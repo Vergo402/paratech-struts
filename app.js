@@ -165,6 +165,13 @@ function getLoadCapacity(system, totalLengthIn, sfIndex) {
 }
 
 function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory, systemFilter, deductions) {
+  // IP-011 (v3.11.2): defensive numeric coercion. estimatedLoad may arrive as
+  // a string from a peer-write or stale-shape Firebase data; downstream code
+  // does arithmetic and `.toLocaleString()` on it which fails silently or
+  // throws on strings. Coerce once at the boundary so the rest of the function
+  // can trust the type.
+  estimatedLoad = Number(estimatedLoad) || 0;
+  requiredLength = Number(requiredLength) || 0;
   // Apply deductions to get effective strut length needed
   let effectiveLength = requiredLength;
   if (deductions) {
@@ -3621,7 +3628,7 @@ function renderShorePointCards(numbered) {
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-          ${Number.isFinite(sp.requiredLength) ? `${sp.requiredLength}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(sp.estimatedLoad) ? sp.estimatedLoad.toLocaleString() + ' lbs' : 'no load specified'}
+          ${Number.isFinite(Number(sp.requiredLength)) ? `${Number(sp.requiredLength)}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(Number(sp.estimatedLoad)) ? Number(sp.estimatedLoad).toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
@@ -3640,8 +3647,11 @@ function renderShorePointCards(numbered) {
         const dedKey = sp.deductions
           ? `${sp.deductions.header || 0}-${sp.deductions.sole || 0}-${sp.deductions.topPlate || 0}-${sp.deductions.bottomPlate || 0}`
           : 'none';
-        const cacheKey = `${sp.requiredLength}-${sp.estimatedLoad || 0}-${dedKey}`;
-        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(sp.requiredLength, sp.estimatedLoad || 0, 2, opInv, null, sp.deductions));
+        // IP-011: coerce length+load to numbers for stable cache key and correct downstream math
+        const spLen = Number(sp.requiredLength) || 0;
+        const spLoad = Number(sp.estimatedLoad) || 0;
+        const cacheKey = `${spLen}-${spLoad}-${dedKey}`;
+        const matches = strutCache[cacheKey] || (strutCache[cacheKey] = findStrutCombinations(spLen, spLoad, 2, opInv, null, sp.deductions));
         if (matches.length > 0) {
           html += `<div style="background:var(--green-bg);border:1px solid var(--green);border-radius:6px;padding:8px;margin-top:8px;font-size:13px;color:var(--green);font-weight:600">✅ Equipment now available! (${matches.length} option${matches.length > 1 ? 's' : ''})</div>`;
         }
