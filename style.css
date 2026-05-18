@@ -1611,7 +1611,8 @@ body {
 .ops-drilldown-search-row { padding: 0 4px 10px; }
 .ops-drilldown-search-row input {
   width: 100%;
-  padding: 8px 12px;
+  min-height: 44px; /* v3.14.2: glove-width tap target (rugged-iPad command post) */
+  padding: 10px 12px;
   background: var(--surface-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -1626,7 +1627,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px;
+  min-height: 44px; /* v3.14.2: glove-width tap target */
+  padding: 10px 8px;
   border-radius: var(--radius);
   cursor: pointer;
   font-size: 14px;
@@ -1641,21 +1643,25 @@ body {
 .ops-tree-counts { display: flex; gap: 3px; flex-shrink: 0; }
 .ops-tree-count {
   display: inline-block;
-  min-width: 18px;
-  padding: 1px 5px;
+  min-width: 20px;
+  padding: 2px 6px;
   border-radius: 9px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   text-align: center;
   background: var(--text-disabled);
   color: #fff;
 }
-.tree-count-process { background: var(--blue); }
-.tree-count-strutplaced { background: #7b61ff; }
-.tree-count-cutting { background: var(--orange-dark); }
+/* v3.14.2 — pill colors aligned with .lane-header.* status colors so the
+   tree counts and the right-pane lane headers share one mental model.
+   Cutting (gold) is now visually distinct from Runner (orange-dark). */
+.tree-count-pending { background: var(--pending); }
+.tree-count-process { background: var(--red); }
+.tree-count-strutplaced { background: var(--blue); }
+.tree-count-cutting { background: var(--cutting-border); color: var(--cutting-text); }
 .tree-count-runner { background: var(--orange-dark); }
 .tree-count-secured { background: var(--green); }
-.tree-count-returned { background: var(--text-disabled); }
+.tree-count-returned { background: var(--text-disabled); color: #424242; }
 .ops-tree-empty { padding: 12px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 
 /* Theme toggle — segmented control */
