@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.13.1</div>
+      <div class="version-label">v3.14.0</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -233,19 +233,27 @@
           </div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
+        <div class="op-shell">
+          <div class="ops-drilldown-search-row">
+            <input id="drilldownSearchInput" type="search" placeholder="Search shore points…" oninput="applyDrilldownSearch()" autocomplete="off" aria-label="Search shore points">
+          </div>
+          <div id="drilldownTree" class="ops-drilldown-tree" role="navigation" aria-label="Drilldown navigation"></div>
+        </div>
+        <div class="op-views">
         <div class="view-switcher" id="viewSwitcher" role="tablist">
           <button class="active" onclick="switchView('ops')" role="tab" aria-selected="true" aria-controls="opsView">📋 Operations</button>
           <button onclick="switchView('cuttable')" role="tab" aria-selected="false" aria-controls="cutTableView">✂️ Cut Table</button>
         </div>
         <div id="opsView" role="tabpanel">
-          <div class="flex-between mb-8">
+          <div class="flex-between mb-8 ops-shore-points-header">
             <span class="section-title m-0">Shore Points</span>
-            <button class="btn btn-sm btn-primary" onclick="showAddShorePoint()">+ Shore Point</button>
+            <button class="btn btn-sm btn-primary ops-add-sp-btn" onclick="showAddShorePoint()">+ Shore Point</button>
           </div>
           <div id="drilldownBreadcrumb" class="drilldown-breadcrumb hidden"></div>
           <div id="shorePointsList"></div>
         </div>
         <div id="cutTableView" class="hidden" role="tabpanel"></div>
+        </div><!-- /op-views -->
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>

@@ -1558,7 +1558,105 @@ body {
     grid-row: 2;
     min-width: 0;
   }
+
+  /* v3.14.0 — OPERATIONS — side-by-side: drilldown sidebar left, shore points right */
+  :root:not(.force-mobile-view) #activeOp {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  :root:not(.force-mobile-view) #activeOp > .op-card { grid-column: 1 / -1; grid-row: 1; }
+  :root:not(.force-mobile-view) #activeOp > #roleSuggestBanner { grid-column: 1 / -1; grid-row: 2; }
+  :root:not(.force-mobile-view) #activeOp > .op-shell {
+    display: block;
+    grid-column: 1;
+    grid-row: 3;
+    position: sticky;
+    top: 12px;
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  :root:not(.force-mobile-view) #activeOp > .op-views {
+    grid-column: 2;
+    grid-row: 3;
+    min-width: 0;
+  }
+  :root:not(.force-mobile-view) #activeOp .view-switcher { justify-content: center; }
+  :root:not(.force-mobile-view) #activeOp .ops-shore-points-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  :root:not(.force-mobile-view) #activeOp .ops-shore-points-header .section-title {
+    text-align: center;
+  }
+  :root:not(.force-mobile-view) #activeOp .ops-add-sp-btn {
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  /* On desktop, the sidebar tree replaces the inline breadcrumb AND
+     the inline drilldown-list rows (sidebar already navigates the hierarchy) */
+  :root:not(.force-mobile-view) #activeOp #drilldownBreadcrumb { display: none !important; }
+  :root:not(.force-mobile-view) #activeOp .drilldown-item { display: none; }
 }
+
+/* v3.14.0 — Operations drilldown sidebar (hidden on mobile, shown via the
+   @media (min-width: 1024px) block above). The .op-shell wrapper inside the
+   Operations tab is desktop-only; the Command tab's .op-shell stays visible
+   on mobile (different content, different use case). */
+#activeOp > .op-shell { display: none; }
+.ops-drilldown-search-row { padding: 0 4px 10px; }
+.ops-drilldown-search-row input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.ops-drilldown-search-row input:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+.ops-drilldown-tree { display: flex; flex-direction: column; gap: 2px; padding: 0 4px; }
+.ops-tree-node {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text);
+  background: transparent;
+  transition: background 0.1s;
+}
+.ops-tree-node:hover { background: var(--surface-alt); }
+.ops-tree-node.active { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+.ops-tree-node:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.ops-tree-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ops-tree-counts { display: flex; gap: 3px; flex-shrink: 0; }
+.ops-tree-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  background: var(--text-disabled);
+  color: #fff;
+}
+.tree-count-process { background: var(--blue); }
+.tree-count-strutplaced { background: #7b61ff; }
+.tree-count-cutting { background: var(--orange-dark); }
+.tree-count-runner { background: var(--orange-dark); }
+.tree-count-secured { background: var(--green); }
+.tree-count-returned { background: var(--text-disabled); }
+.ops-tree-empty { padding: 12px; text-align: center; color: var(--text-secondary); font-size: 13px; }
 
 /* Theme toggle — segmented control */
 .theme-toggle { display: flex; gap: 4px; background: var(--surface-alt); border-radius: var(--radius); padding: 4px; }

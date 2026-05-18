@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.13.1';
+const APP_VERSION = '3.14.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -657,6 +657,7 @@ let editingShorePointId = null;
 let assigningToPendingId = null;
 let currentView = 'ops';
 let drilldownPath = []; // [{level:'building',value:'A'}, {level:'division',value:'C'}, ...]
+let drilldownSearch = ''; // v3.14.0: free-text search filter (lowercased, trimmed)
 let myRole = null; // This device's self-assigned role
 let roleViewDismissed = false; // Whether user dismissed the view suggestion banner
 let editingExternalId = null;
@@ -3896,6 +3897,8 @@ function renderOperations() {
   if (allPoints.length === 0) {
     spList.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg><p>No shore points yet.<br>Tap &ldquo;+ Shore Point&rdquo; to add one.</p></div>';
     document.getElementById('drilldownBreadcrumb').style.display = 'none';
+    const tree = document.getElementById('drilldownTree');
+    if (tree) tree.innerHTML = renderDrilldownTree();
     updateQuickViewFab();
     renderArchivedOps();
     return;
@@ -3918,6 +3921,11 @@ function renderOperations() {
     // At the bottom level — render shore point cards with status lanes
     spList.innerHTML = renderShorePointCards(filtered);
   }
+
+  // v3.14.0 — render desktop sidebar tree (hidden on mobile via CSS)
+  const tree = document.getElementById('drilldownTree');
+  if (tree) tree.innerHTML = renderDrilldownTree();
+
   updateQuickViewFab();
   renderArchivedOps();
 }
@@ -5011,7 +5019,7 @@ function getFilteredPoints() {
   if (!activeOperation) return [];
   const points = getShorePoints();
   // Filter by current drilldown path
-  return points.filter(sp => {
+  let filtered = points.filter(sp => {
     for (const seg of drilldownPath) {
       // v3.12.0 N2: 'group' lookup uses the dual-write fallback chain so
       // drilldown stays consistent regardless of which key the SP record uses.
@@ -5024,12 +5032,138 @@ function getFilteredPoints() {
     }
     return true;
   });
+  // v3.14.0 desktop search filter
+  if (drilldownSearch) {
+    filtered = filtered.filter(sp => {
+      const hay = [sp.label, sp.building, sp.division, sp.area].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(drilldownSearch);
+    });
+  }
+  return filtered;
 }
 
 function getNextDrillLevel() {
   const levels = getHierarchyLevels();
   const usedLevels = drilldownPath.map(s => s.level);
   return levels.find(l => !usedLevels.includes(l)) || null;
+}
+
+// v3.14.0 — desktop sidebar tree.
+// Renders the full Building→Division→Area hierarchy as a clickable indented list
+// with per-node status counts. The tree is navigation only — clicking sets
+// drilldownPath; search lives elsewhere (right-pane scoped).
+function renderDrilldownTree() {
+  if (!activeOperation) return '';
+  const all = getShorePoints();
+  if (all.length === 0) return '<div class="ops-tree-empty">No shore points yet.</div>';
+
+  const levels = getHierarchyLevels(); // ['division', 'area'] or ['building', 'division', 'area']
+
+  // Build nested tree of nodes
+  const root = { _children: {}, _points: all.slice() };
+  for (const sp of all) {
+    let node = root;
+    for (const level of levels) {
+      const val = sp[level] || null;
+      const key = val == null ? '__none__' : String(val);
+      if (!node._children[key]) {
+        node._children[key] = { _level: level, _value: val, _children: {}, _points: [] };
+      }
+      node = node._children[key];
+      node._points.push(sp);
+    }
+  }
+
+  const isPathActive = (path) => {
+    if (drilldownPath.length !== path.length) return false;
+    for (let i = 0; i < path.length; i++) {
+      if (drilldownPath[i].level !== path[i].level) return false;
+      if (drilldownPath[i].value !== path[i].value) return false;
+    }
+    return true;
+  };
+
+  const labelPrefix = { building: 'Bldg', division: 'Div', area: 'Area' };
+
+  function renderCounts(points) {
+    const counts = {};
+    for (const sp of points) {
+      const st = normalizeStatus(sp.status);
+      counts[st] = (counts[st] || 0) + 1;
+    }
+    // Only show non-zero, prioritized in workflow order
+    const out = [];
+    for (const st of STATUS_ORDER) {
+      if (counts[st]) out.push(`<span class="ops-tree-count tree-count-${st}" title="${escapeAttr(STATUS_LABELS[st])}">${counts[st]}</span>`);
+    }
+    return out.length ? `<span class="ops-tree-counts">${out.join('')}</span>` : '';
+  }
+
+  function renderNodes(nodeMap, parentPath, depth) {
+    let html = '';
+    // Sort keys: numeric-ish first, then alpha; "__none__" last
+    const keys = Object.keys(nodeMap).sort((a, b) => {
+      if (a === '__none__') return 1;
+      if (b === '__none__') return -1;
+      const na = parseInt(a, 10), nb = parseInt(b, 10);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b);
+    });
+    for (const key of keys) {
+      const node = nodeMap[key];
+      const newPath = parentPath.concat([{ level: node._level, value: node._value }]);
+      const active = isPathActive(newPath);
+      const displayLabel = node._value == null
+        ? `(no ${node._level})`
+        : (String(node._value).toLowerCase().startsWith(labelPrefix[node._level].toLowerCase())
+            ? String(node._value)
+            : `${labelPrefix[node._level]} ${node._value}`);
+      const pathJson = escapeAttr(JSON.stringify(newPath));
+      html += `<div class="ops-tree-node${active ? ' active' : ''}" style="padding-left:${depth * 16 + 8}px" role="button" tabindex="0" data-path="${pathJson}" onclick="drilldownToPath(this)">`;
+      html += `<span class="ops-tree-label">${escapeHtml(displayLabel)}</span>`;
+      html += renderCounts(node._points);
+      html += `</div>`;
+      const childKeys = Object.keys(node._children);
+      if (childKeys.length > 0) {
+        html += renderNodes(node._children, newPath, depth + 1);
+      }
+    }
+    return html;
+  }
+
+  let html = `<div class="ops-tree-node${drilldownPath.length === 0 ? ' active' : ''}" role="button" tabindex="0" onclick="drillTo(-1)">`;
+  html += `<span class="ops-tree-label">All</span>`;
+  html += renderCounts(all);
+  html += `</div>`;
+  html += renderNodes(root._children, [], 1);
+  return html;
+}
+
+// Set the drilldown path from a tree-node click. `el` is the .ops-tree-node element.
+function drilldownToPath(el) {
+  try {
+    const path = JSON.parse(el.getAttribute('data-path') || '[]');
+    drilldownPath = path;
+    renderOperations();
+  } catch (e) { console.warn('drilldownToPath parse failed', e); }
+}
+
+// Desktop search input handler — only re-renders the right pane (cards),
+// not the tree (which would steal focus from the search input).
+function applyDrilldownSearch() {
+  const input = document.getElementById('drilldownSearchInput');
+  if (!input) return;
+  drilldownSearch = (input.value || '').toLowerCase().trim();
+  const spList = document.getElementById('shorePointsList');
+  if (!spList) return;
+  const allPoints = getShorePoints();
+  const filtered = getFilteredPoints().map(sp => ({ ...sp, num: allPoints.indexOf(sp) + 1 }));
+  if (filtered.length === 0) {
+    spList.innerHTML = '<div class="empty-state"><p>No matching shore points.</p></div>';
+    return;
+  }
+  const drillHtml = renderDrilldownList(filtered);
+  spList.innerHTML = (drillHtml || '') + renderShorePointCards(filtered);
 }
 
 function renderBreadcrumb() {

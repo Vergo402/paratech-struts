@@ -1,6 +1,6 @@
 # FieldShore User Manual
 
-**Version:** 3.13  
+**Version:** 3.14  
 **Last updated:** 2026-05-18  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
@@ -53,6 +53,7 @@ FieldShore is mobile-first, but it adapts to laptops and command-post screens. W
 - **Top nav bar.** The five tabs (Quick Find, Operations, Command, Inventory, Settings) move from the bottom of the screen to a horizontal bar at the top.
 - **Wider canvas.** The app expands to 1200px wide instead of the phone-width 600px column.
 - **Split Command tab.** Your roster (Apparatus, External Equipment, Individuals, My Role, Hazards) stays pinned on the left while the Dashboard, ICS Organization (org chart), and Layout fill the right pane. The op title bar spans across the top.
+- **Split Operations tab.** A drilldown sidebar on the left shows your Buildings → Divisions → Areas as a clickable tree, with live status counts on each node (e.g., a yellow `3` next to a division means 3 shore points are currently at Strut Placed). A search box above the tree filters shore points by label, building, division, or area in real time. The right column shows the filtered shore points, with the **+ Shore Point** button centered above the status groups. Mobile uses the inline breadcrumb instead.
 
 **Switching to mobile view on a desktop.** A small toggle button sits in the upper-right corner of the viewport. Click it to flip the app back to the familiar phone layout (centered narrow column, bottom nav). The toggle icon swaps between a phone glyph and a monitor glyph depending on the current mode. Your choice is remembered — the next time you load FieldShore on the same browser, it opens in the layout you last chose.
 
@@ -393,6 +394,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.14** | 2026-05-18 | Operations tab on desktop now splits into two columns. Left sidebar (sticky) shows a drilldown tree of Buildings → Divisions → Areas with live status counts on each node, and a search input above the tree filters by label / building / division / area. Right column shows the filtered shore points with the **+ Shore Point** button centered above the status groups. Mobile is unchanged (inline breadcrumb stays). |
 | **v3.13** | 2026-05-18 | Desktop view. On screens 1024px wide and up the app now uses a horizontal top nav bar and widens the container to 1200px. The Command tab splits into two columns on desktop — roster (Apparatus, External, Individuals, My Role, Hazards) on the left (sticky), Dashboard / ICS Organization / Layout on the right. A small toggle in the upper-right of the viewport flips between desktop view and mobile view; the choice is remembered. Phones and iPad portrait are unchanged. |
 | **v3.12** | 2026-05-18 | Command tab promoted to top-level navigation (apparatus, individuals, org chart, hazard log separated from shore-point workflow). Hazard Log (ICS-208 style) with severity tiers, mitigate/reopen, and archived op persistence. End Operation now requires typing "END" to confirm (glove-safe gate). Force-update overlay for critical fixes (data preserved). Yellow span-of-control warning tier at 6–7 direct reports. Offline banner shows queued write count. Settings → Check for Updates button. |
 | **v3.11** | 2026-05-17 | Field-feedback round-up. Quick Find plate picker selection fixed (tap on a connector now actually selects it). Header scrolls away with content instead of locking real estate at the top. Edit Apparatus modal no longer shows the Add form simultaneously. Quick-add inventory list preserves scroll position when adding items near the bottom. Pending shore-point length edits now keep effective length in sync when deductions are toggled off, with success toast. Comprehensive dark-mode contrast pass — buttons, plate pickers, apparatus tabs, qty controls, and small action buttons are all theme-aware (no more black-on-dark text). |
