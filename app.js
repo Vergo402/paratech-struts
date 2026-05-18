@@ -647,6 +647,8 @@ let localApparatus = [];
 let selectedApparatus = null;
 let spQuantity = 1;
 let archivedOperations = [];
+// v3.12.0 R1-12: cap initial archived-ops fetch. "Load older" doubles this.
+let archivedOpsLimit = 50;
 let laneCollapsedState = {};
 let editingShorePointId = null;
 // F-1C-7 (v3.10.0): pending-SP upgrade mode. Set by assignEquipmentToPending;
@@ -1038,6 +1040,7 @@ function firebaseSave(ref, method, data) {
       op.data = data;
       pendingWrites.push(op);
       safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+      refreshOfflineBanner(); // v3.12.0 R7-04: update count in banner
     } else {
       logSyncEvent('transaction_failed', { path: ref.toString().replace(/.*firebaseio\.com/, ''), error: err.message || String(err) });
     }
@@ -1235,6 +1238,7 @@ function flushPendingWrites() {
         _lastFailToastTs = nowTs;
       }
     }
+    refreshOfflineBanner(); // v3.12.0 R7-04: reflect new queue count if still offline
   });
 }
 
@@ -1640,6 +1644,19 @@ function initFirebase() {
   }
 }
 
+// v3.12.0 R7-04: IC asks "is my data safe?" not "am I online?" — show the
+// pending-write count in the offline banner so they have a concrete answer.
+// Called from setupConnListener (offline branch), firebaseSave queueing path,
+// and flushPendingWrites so the banner reflects the live queue length.
+function refreshOfflineBanner() {
+  const el = document.getElementById('connStatus');
+  if (!el || !el.classList.contains('offline')) return;
+  const n = (typeof pendingWrites !== 'undefined' && pendingWrites && pendingWrites.length) || 0;
+  el.textContent = n > 0
+    ? `Offline — ${n} change${n === 1 ? '' : 's'} queued, will sync when reconnected`
+    : 'Offline — changes will sync when reconnected';
+}
+
 // F-1B-01 + F-1E-3 + F-1E-4 (v3.10.0): module-scoped connRef setup so
 // teardownListeners can detach it; null-guards on snap + el; error
 // callback wired to the persistent banner path.
@@ -1667,7 +1684,7 @@ function setupConnListener() {
     } else {
       isOnline = false;
       el.className = 'conn-status offline';
-      el.textContent = 'Offline — changes will sync when reconnected';
+      refreshOfflineBanner(); // v3.12.0 R7-04: shows pending-write count
     }
   };
   // F-1E-4: error callback (was missing — listener failures went silent)
@@ -1773,6 +1790,20 @@ function handleLogin() {
 function connectDepartment() {
   const id = document.getElementById('settingsDeptId').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
   if (!id) return;
+  // v3.12.0 R1-11: filter out queued writes targeted at a previous department.
+  // Without this, dept-switch carries stale writes that would either get denied
+  // by security rules (different membership) or worse, leak data to a dept the
+  // user no longer intends to write to. Feedback writes (path: 'feedback/...')
+  // don't contain '/departments/' so they're preserved.
+  const stale = pendingWrites.filter(w => w.path && w.path.indexOf('/departments/') !== -1 && w.path.indexOf('/departments/' + id + '/') === -1);
+  if (stale.length > 0) {
+    const keep = pendingWrites.filter(w => !stale.includes(w));
+    pendingWrites = keep;
+    if (pendingWrites.length > 0) safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+    else localStorage.removeItem('fieldshore_pendingWrites');
+    showToast(`Discarded ${stale.length} queued change${stale.length === 1 ? '' : 's'} for previous department`, 'warning');
+    refreshOfflineBanner();
+  }
   deptId = id;
   safeSetItem('fieldshore_deptId', deptId);
   setupListeners();
@@ -1838,6 +1869,7 @@ function setupListeners() {
   let inventoryFirstFire = true;
   let apparatusFirstFire = true;
   let customTypesFirstFire = true;
+  let activeOpsFirstFire = true; // v3.12.0 R1-08: same pattern, applied to active-ops listener
 
   inventoryRef.on('value', (snap) => {
     if (inventoryFirstFire && !snap.exists() && localInventory.length > 0) {
@@ -1861,6 +1893,17 @@ function setupListeners() {
 
   activeOpsQuery = operationsRef.orderByChild('status').equalTo('active');
   activeOpsQuery.on('value', (snap) => {
+    // v3.12.0 R1-08: first-fire guard. If the server has no active op but we
+    // already have one in memory (offline build-up, dept-switch race), push
+    // ours up instead of wiping. After the first fire, treat Firebase as source
+    // of truth — subsequent empties DO clear (e.g. peer ended the op).
+    if (activeOpsFirstFire && !snap.exists() && activeOperation && activeOperation.id) {
+      activeOpsFirstFire = false;
+      const { id, ...payload } = activeOperation;
+      firebaseSave(operationsRef.child(id), 'set', payload);
+      return;
+    }
+    activeOpsFirstFire = false;
     const data = snap.val() || {};
     const ops = Object.entries(data).map(([id, op]) => ({ id, ...op }));
     activeOperation = ops.length > 0 ? ops[0] : null;
@@ -1877,7 +1920,10 @@ function setupListeners() {
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
   }, (err) => onListenerError('operations', err));
 
-  archivedOpsQuery = operationsRef.orderByChild('status').equalTo('archived');
+  // v3.12.0 R1-12: cap archived-ops listener at the most recent N records to
+  // avoid an unbounded read at dept-switch. Operator can tap "Load older" to
+  // double the cap (handler: loadMoreArchivedOps below).
+  archivedOpsQuery = operationsRef.orderByChild('status').equalTo('archived').limitToLast(archivedOpsLimit);
   archivedOpsQuery.on('value', (snap) => {
     const data = snap.val() || {};
     archivedOperations = Object.entries(data).map(([id, op]) => {
@@ -2631,6 +2677,7 @@ function submitFeedback() {
     // No db — queue for later via pending writes
     pendingWrites.push({ path: 'feedback/' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), method: 'set', data: entry, timestamp: Date.now(), retries: 0 }); // R1-10 (v3.11.3): jitter prevents same-ms offline feedback collisions
     safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
+    refreshOfflineBanner(); // v3.12.0 R7-04
     alert('Feedback saved — will submit when online.');
     closeFeedbackModal();
   }
@@ -4058,7 +4105,20 @@ function renderArchivedOps() {
       </div>
     </div>`;
   }
+  // v3.12.0 R1-12: pagination — if we received exactly `archivedOpsLimit`
+  // records the server likely has more. Offer to load the next page.
+  if (archivedOperations.length >= archivedOpsLimit) {
+    html += `<button class="btn btn-outline btn-sm btn-block" onclick="loadMoreArchivedOps()" style="margin-top:8px">Load older archived ops (showing ${archivedOperations.length})</button>`;
+  }
   container.innerHTML = html;
+}
+
+// v3.12.0 R1-12: double the archive page size and re-attach the listener.
+function loadMoreArchivedOps() {
+  archivedOpsLimit = Math.min(archivedOpsLimit * 2, 1000);
+  showToast(`Loading up to ${archivedOpsLimit} archived ops…`);
+  if (archivedOpsQuery) try { archivedOpsQuery.off(); } catch (e) { /* ignore */ }
+  setupListeners(); // re-attaches all listeners with the new limit
 }
 
 function viewArchivedOp(opId) {
@@ -5194,9 +5254,14 @@ function renderOrgChart(roleAssignments, shorePoints) {
         : '<span class="status-dot status-staged" title="Staged"></span>';
     }
 
-    // Span of control warning
+    // v3.12.0 R6-04/N9: Span-of-control caution tier. NIMS doctrine targets 1:5
+    // (optimal range 1:3 – 1:7). 6–7 reports = yellow caution; >7 = red exceeded.
     const directReports = opRoles.filter(x => x.parentId === roleId).length;
-    const spanWarning = directReports > 7 ? '<span class="span-warning" title="Span of control exceeded (>7)">⚠</span>' : '';
+    const spanWarning = directReports > 7
+      ? '<span class="span-warning span-red" title="Span of control EXCEEDED (>7) — split this branch">⚠</span>'
+      : (directReports >= 6
+        ? '<span class="span-warning span-yellow" title="Approaching span-of-control limit (6–7) — NIMS optimal is 1:5">⚠</span>'
+        : '');
 
     // Collapse chevron
     const chevron = hasChildren ? `<span class="org-collapse-btn" role="button" tabindex="0" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
@@ -6216,6 +6281,21 @@ async function applyImportData(data) {
   alert('Inventory imported successfully');
 }
 
+// v3.12.0 R3-03: manual override for the SW update check. The 5-min interval
+// is best-effort; this button gives the operator a way to force a check now
+// (e.g. after seeing a hotfix announcement in dispatch chatter).
+function manualCheckForUpdates() {
+  if (!('serviceWorker' in navigator)) { showToast('Service worker unavailable', 'warning'); return; }
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) { showToast('No service worker registration', 'info'); return; }
+    showToast('Checking for updates…', 'info');
+    reg.update().catch(err => {
+      console.warn('manual SW update failed:', err && err.message);
+      showToast('Update check failed: ' + (err && err.message || 'unknown'), 'error');
+    });
+  });
+}
+
 function logOut() {
   if (!confirm('Log out? Local data will be cleared.')) return;
   const appKeys = Object.keys(localStorage).filter(k => k.startsWith('fieldshore_'));
@@ -6563,8 +6643,10 @@ function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js')
       .then(reg => {
-        // Check for updates every 30 minutes
-        setInterval(() => reg.update(), 30 * 60 * 1000);
+        // v3.12.0 R3-03: drop from 30→5 min. GitHub Pages + Fastly cache adds
+        // ~10 min worst case; a 5-min cadence keeps total hotfix delivery
+        // under ~15 min. Settings → "Check for updates" gives manual override.
+        setInterval(() => reg.update(), 5 * 60 * 1000);
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (!newWorker) return;

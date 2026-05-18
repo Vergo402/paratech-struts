@@ -33,7 +33,7 @@
   <h1 class="login-title">FieldShore</h1>
   <p class="login-subtitle">Enter your Department ID to continue</p>
   <div class="login-form">
-    <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false">
+    <input type="text" id="loginDeptId" placeholder="e.g. engine42" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="Department ID">
     <button class="btn btn-primary w-full" onclick="handleLogin()">Enter</button>
   </div>
   <p class="login-hint">Your Department ID connects you to shared inventory and operations</p>
@@ -72,15 +72,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfFeetHint">
+            <input type="number" id="qfFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfFeetHint" aria-label="Opening height feet">
             <div class="input-hint" id="qfFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfInchesHint">
+            <input type="number" id="qfInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('qf')" aria-describedby="qfInchesHint" aria-label="Opening height inches">
             <div class="input-hint" id="qfInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')" aria-describedby="qfFractionHint">
+            <select id="qfFraction" class="select-compact" onchange="updateDeductionSummary('qf')" aria-describedby="qfFractionHint" aria-label="Opening height fractional inch">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -105,7 +105,7 @@
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
-          <input type="checkbox" id="qfDeductionToggle" onchange="toggleDeductions('qf')">
+          <input type="checkbox" id="qfDeductionToggle" onchange="toggleDeductions('qf')" aria-label="Include deductions in calculation">
           <span class="toggle-slider"></span>
         </label>
         <label for="qfDeductionToggle">Include Deductions (header, footer, plates)</label>
@@ -113,7 +113,7 @@
       <div class="deduction-panel hidden" id="qfDeductionPanel">
         <div class="deduction-row">
           <label>Header</label>
-          <select id="qfHeader" onchange="updateDeductionSummary('qf')">
+          <select id="qfHeader" onchange="updateDeductionSummary('qf')" aria-label="Header lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -121,7 +121,7 @@
         </div>
         <div class="deduction-row">
           <label>Footer</label>
-          <select id="qfSole" onchange="updateDeductionSummary('qf')">
+          <select id="qfSole" onchange="updateDeductionSummary('qf')" aria-label="Footer lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -152,7 +152,7 @@
       </div>
       <div class="form-group">
         <label>Estimated Load (lbs) — optional</label>
-        <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
+        <input type="number" id="inputLoad" inputmode="numeric" placeholder="e.g. 15000" min="0" aria-label="Estimated load in pounds">
       </div>
       <div class="system-toggles">
         <button class="system-toggle gold" id="toggleGold" onclick="toggleSystem('gold')" aria-pressed="false">
@@ -288,13 +288,13 @@
       <div class="form-group">
         <label>Department ID</label>
         <div class="d-flex gap-md">
-          <input type="text" id="settingsDeptId" placeholder="e.g. engine42">
+          <input type="text" id="settingsDeptId" placeholder="e.g. engine42" aria-label="Department ID">
           <button class="btn btn-sm btn-primary nowrap" onclick="connectDepartment()">Connect</button>
         </div>
       </div>
       <div class="form-group">
         <label>Department Name</label>
-        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100">
+        <input type="text" id="settingsDeptName" placeholder="e.g. Engine 42 - FDNY" maxlength="100" aria-label="Department name">
       </div>
       <button class="btn btn-primary mt-16" onclick="guardClick(this,saveSettings)">Save Settings</button>
       <div class="section-title">Appearance</div>
@@ -309,6 +309,8 @@
       <div class="section-title">Apparatus Types</div>
       <div id="apparatusTypesList"></div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="addCustomApparatusType()">+ Add Type</button>
+      <div class="section-title">App Updates</div>
+      <button class="btn btn-outline btn-sm btn-block mb-8" onclick="manualCheckForUpdates()">Check for Updates</button>
       <div class="section-title">Data Management</div>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="exportInventory()">Export Inventory (Excel)</button>
       <button class="btn btn-outline btn-sm btn-block mb-8" onclick="importInventory()">Import Inventory (Excel)</button>
@@ -352,11 +354,11 @@
       <div id="addApparatusForm">
         <div class="form-group">
           <label>Apparatus Name</label>
-          <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100">
+          <input type="text" id="newApparatusName" placeholder="e.g. Engine 42, Rescue 1, Ladder 7" maxlength="100" aria-label="Apparatus name">
         </div>
         <div class="form-group">
           <label>Type</label>
-          <select id="newApparatusType">
+          <select id="newApparatusType" aria-label="Apparatus type">
             <option value="engine">Engine</option>
             <option value="ladder">Ladder</option>
             <option value="rescue">Rescue</option>
@@ -397,7 +399,7 @@
       <h2 class="modal-title" id="shorePointTitle">Add Shore Point</h2>
       <div class="form-group">
         <label>Shore Type</label>
-        <select id="spShoreType" onchange="onShoreTypeChange()">
+        <select id="spShoreType" onchange="onShoreTypeChange()" aria-label="Shore type">
           <option value="t-shore">Vertical T-Shore</option>
           <option value="double-t">Double-T Vertical Shore</option>
           <option value="3-post">3-Post Vertical Shore</option>
@@ -405,24 +407,24 @@
       </div>
       <div class="form-group">
         <label>Label</label>
-        <input type="text" id="spLabel" placeholder="e.g. West Wall Window" maxlength="100">
+        <input type="text" id="spLabel" placeholder="e.g. West Wall Window" maxlength="100" aria-label="Shore point label">
       </div>
       <div class="form-group hidden" id="spBuildingGroup">
         <label>Building</label>
-        <input type="text" id="spBuilding" placeholder="e.g. Building A">
+        <input type="text" id="spBuilding" placeholder="e.g. Building A" aria-label="Building">
       </div>
       <div class="form-row-3">
         <div class="form-group flex-1">
           <label>Division</label>
-          <input type="text" id="spDivision" placeholder="e.g. A">
+          <input type="text" id="spDivision" placeholder="e.g. A" aria-label="Division">
         </div>
         <div class="form-group flex-1">
           <label>Area / Room</label>
-          <input type="text" id="spArea" placeholder="e.g. 2">
+          <input type="text" id="spArea" placeholder="e.g. 2" aria-label="Area">
         </div>
         <div class="form-group flex-1">
           <label>Group</label>
-          <select id="spGroup">
+          <select id="spGroup" aria-label="Assigned apparatus group">
             <option value="">— None —</option>
           </select>
         </div>
@@ -431,15 +433,15 @@
         <label>Opening Measurement</label>
         <div class="measurement-row">
           <div class="measurement-field">
-            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spFeetHint">
+            <input type="number" id="spFeet" inputmode="numeric" placeholder="ft" min="0" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spFeetHint" aria-label="Opening height feet">
             <div class="input-hint" id="spFeetHint">feet</div>
           </div>
           <div class="measurement-field">
-            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spInchesHint">
+            <input type="number" id="spInches" inputmode="numeric" placeholder="in" min="0" max="11" class="w-full" oninput="updateDeductionSummary('sp')" aria-describedby="spInchesHint" aria-label="Opening height inches">
             <div class="input-hint" id="spInchesHint">inches</div>
           </div>
           <div class="measurement-field-wide">
-            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')" aria-describedby="spFractionHint">
+            <select id="spFraction" class="select-compact" onchange="updateDeductionSummary('sp')" aria-describedby="spFractionHint" aria-label="Opening height fractional inch">
               <option value="0">0</option>
               <option value="0.0625">1/16</option>
               <option value="0.125">1/8</option>
@@ -464,7 +466,7 @@
       </div>
       <div class="deduction-toggle">
         <label class="toggle-switch">
-          <input type="checkbox" id="spDeductionToggle" onchange="toggleDeductions('sp')">
+          <input type="checkbox" id="spDeductionToggle" onchange="toggleDeductions('sp')" aria-label="Include deductions in calculation">
           <span class="toggle-slider"></span>
         </label>
         <label for="spDeductionToggle">Include Deductions</label>
@@ -472,7 +474,7 @@
       <div class="deduction-panel hidden" id="spDeductionPanel">
         <div class="deduction-row">
           <label>Header</label>
-          <select id="spHeader" onchange="updateDeductionSummary('sp')">
+          <select id="spHeader" onchange="updateDeductionSummary('sp')" aria-label="Header lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -480,7 +482,7 @@
         </div>
         <div class="deduction-row">
           <label>Footer</label>
-          <select id="spSole" onchange="updateDeductionSummary('sp')">
+          <select id="spSole" onchange="updateDeductionSummary('sp')" aria-label="Footer lumber size">
             <option value="0">None</option>
             <option value="3.5">4×4 (3.5")</option>
             <option value="5.5">6×6 (5.5")</option>
@@ -511,7 +513,7 @@
       </div>
       <div class="form-group">
         <label>Estimated Load (lbs) — optional</label>
-        <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0">
+        <input type="number" id="spLoad" inputmode="numeric" placeholder="e.g. 15000" min="0" aria-label="Estimated load in pounds">
         <small class="form-hint" style="display:block;margin-top:4px;color:var(--text-secondary);font-size:12px">Enter load in pounds (lbs) — numeric only. Leave blank if unknown.</small>
       </div>
       <div class="form-group" id="spQtyGroup">
@@ -537,15 +539,15 @@
       <h2 class="modal-title" id="startOpTitle">Start New Operation</h2>
       <div class="form-group">
         <label>Operation Name / Location</label>
-        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100">
+        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100" aria-label="Operation name">
       </div>
       <div class="form-group">
         <label>Task Force Name <span class="label-hint">(optional)</span></label>
-        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1">
+        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1" aria-label="Task force designation">
       </div>
       <div class="deduction-toggle my-12">
         <label class="toggle-switch">
-          <input type="checkbox" id="opMultiBuilding">
+          <input type="checkbox" id="opMultiBuilding" aria-label="Operation spans multiple buildings">
           <span class="toggle-slider"></span>
         </label>
         <label for="opMultiBuilding">Multi-building operation</label>
@@ -566,20 +568,20 @@
       <h2 class="modal-title" id="addExternalTitle">Add External Equipment</h2>
       <div class="form-group">
         <label>Department</label>
-        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100">
+        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100" aria-label="External department name">
       </div>
       <div class="form-group">
         <label>Apparatus</label>
-        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100">
+        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100" aria-label="External apparatus designation">
       </div>
       <div class="form-group">
         <label>Strut Model</label>
-        <select id="extStrutModel" class="hidden"></select>
+        <select id="extStrutModel" class="hidden" aria-label="External strut model"></select>
         <div id="extStrutGrid" class="ext-strut-grid"></div>
       </div>
       <div class="form-group">
         <label>Quantity</label>
-        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric">
+        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric" aria-label="Quantity">
       </div>
       <button class="btn btn-primary" onclick="guardClick(this,confirmAddExternal)">Add</button>
       <div class="spacer-sm"></div>
@@ -594,7 +596,7 @@
       <p class="modal-subtitle" id="roleModalSubtitle">Select an ICS role</p>
       <div id="roleNameGroup" class="role-name-group hidden">
         <label class="label-sm">Assigned To</label>
-        <input type="text" id="rolePersonName" placeholder="e.g. FF Jones" class="mt-4">
+        <input type="text" id="rolePersonName" placeholder="e.g. FF Jones" class="mt-4" aria-label="Person name for this role">
       </div>
       <div class="role-grid" id="roleGrid"></div>
       <button class="btn btn-outline btn-block mb-8" onclick="clearRole()">Clear Role</button>
@@ -608,7 +610,7 @@
       <h2 class="modal-title" id="addIndividualTitle">Add Individual</h2>
       <div class="form-group">
         <label>Name</label>
-        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith" maxlength="100">
+        <input type="text" id="individualName" placeholder="e.g. FF Jones, Lt. Smith" maxlength="100" aria-label="Individual name">
       </div>
       <button class="btn btn-primary" onclick="guardClick(this,confirmAddIndividual)">Add</button>
       <div class="spacer-sm"></div>
@@ -658,7 +660,7 @@
       <h2 class="modal-title" id="feedbackTitle">Report Issue / Suggestion</h2>
       <div class="form-group">
         <label>Category</label>
-        <select id="feedbackCategory">
+        <select id="feedbackCategory" aria-label="Feedback category">
           <option value="bug">Bug Report</option>
           <option value="feature">Feature Request</option>
           <option value="other">Other</option>
@@ -666,7 +668,7 @@
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." maxlength="2000" class="textarea"></textarea>
+        <textarea id="feedbackText" rows="4" placeholder="Describe the issue or suggestion..." maxlength="2000" class="textarea" aria-label="Feedback details"></textarea>
       </div>
       <!-- H6 (v3.11.3): photo-attachment feature removed. See submitFeedback() comment in app.js. -->
       <div class="d-flex gap-md">
@@ -677,7 +679,7 @@
   </div>
 
   <!-- Hidden file input for import -->
-  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" class="hidden" onchange="handleImport(event)">
+  <input type="file" id="importFile" accept=".xlsx,.xls,.csv,.json" class="hidden" onchange="handleImport(event)" aria-label="Inventory file to import">
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"

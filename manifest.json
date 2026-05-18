@@ -12,6 +12,17 @@
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231565C0' width='192' height='192' rx='32'/><text x='96' y='130' text-anchor='middle' fill='white' font-size='100' font-family='sans-serif' font-weight='bold'>P</text></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%231565C0' width='512' height='512' rx='80'/><text x='256' y='346' text-anchor='middle' fill='white' font-size='280' font-family='sans-serif' font-weight='bold'>P</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%231565C0' width='512' height='512'/><text x='256' y='320' text-anchor='middle' fill='white' font-size='180' font-family='sans-serif' font-weight='bold'>P</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ]
 }

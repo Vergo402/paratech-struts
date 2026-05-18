@@ -1359,7 +1359,9 @@ select { padding-right: 40px; }
 .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
 .status-active { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.3); }
 .status-staged { background: #eab308; border-radius: 2px; box-shadow: 0 0 0 2px rgba(234,179,8,0.3); }
-.span-warning { color: var(--orange-dark); font-size: 11px; margin-left: 4px; cursor: help; }
+.span-warning { font-size: 11px; margin-left: 4px; cursor: help; color: var(--orange-dark); }
+.span-warning.span-yellow { color: var(--orange-dark); }
+.span-warning.span-red { color: var(--red); }
 .status-key { display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary); align-items: center; margin-bottom: 8px; }
 .status-key-item { display: flex; align-items: center; gap: 4px; }
 

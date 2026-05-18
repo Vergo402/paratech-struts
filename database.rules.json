@@ -75,10 +75,7 @@
       ".read": "auth != null",
       "$feedbackId": {
         ".write": "auth != null",
-        ".validate": "newData.hasChildren(['category', 'text', 'timestamp'])",
-        "image": {
-          ".validate": "newData.isString() && newData.val().length < 500000"
-        }
+        ".validate": "newData.hasChildren(['category', 'text', 'timestamp'])"
       }
     },
     "diagnostics": {
