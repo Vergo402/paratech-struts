@@ -4474,6 +4474,92 @@ function deployPendingShorePoint(reason) {
 // user must explicitly choose Cancel or Acknowledge. Escape cancels (safe
 // default). Captures who acknowledged + when on the deployed SP for
 // after-action review and liability traceability.
+// v3.12.0 R7-05: generic custom-confirm helper modeled on confirmUnratedDeploy.
+// Used by endOperation() and any other destructive action that needs a stronger
+// gate than native confirm() — including a typed-string requirement to defeat
+// gloved-finger mistaps. Returns a Promise<boolean>.
+//
+// Options:
+//   title         — heading text (required)
+//   body          — body paragraph (required)
+//   confirmLabel  — confirm button text (default: 'Confirm')
+//   cancelLabel   — cancel button text (default: 'Cancel')
+//   confirmStyle  — 'danger' | 'warning' | 'primary' (default: 'primary')
+//   requireType   — optional string the user must type before the confirm
+//                   button unlocks (case-sensitive, gloves-resistance)
+function customConfirm(opts) {
+  opts = opts || {};
+  const title = opts.title || 'Confirm';
+  const body = opts.body || '';
+  const confirmLabel = opts.confirmLabel || 'Confirm';
+  const cancelLabel = opts.cancelLabel || 'Cancel';
+  const confirmStyle = opts.confirmStyle || 'primary';
+  const requireType = opts.requireType || null;
+  const styleColors = {
+    danger:  { border: 'var(--red)',         heading: 'var(--red)',         bg: 'var(--red-bg)',    btnBg: 'var(--red)' },
+    warning: { border: 'var(--orange-dark)', heading: 'var(--orange-dark)', bg: 'var(--orange-bg)', btnBg: 'var(--orange-dark)' },
+    primary: { border: 'var(--blue)',        heading: 'var(--blue)',        bg: 'var(--blue-light)', btnBg: 'var(--blue)' }
+  };
+  const c = styleColors[confirmStyle] || styleColors.primary;
+  return new Promise((resolve) => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay active custom-confirm-overlay';
+    overlay.style.zIndex = '400';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    const titleId = 'cc-' + Date.now();
+    overlay.setAttribute('aria-labelledby', titleId);
+    const typeFieldHtml = requireType
+      ? `<div style="margin-bottom:16px">
+           <label for="${titleId}-type" style="display:block;font-size:13px;font-weight:600;margin-bottom:6px">Type <strong>${escapeHtml(requireType)}</strong> to confirm</label>
+           <input type="text" id="${titleId}-type" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Type confirmation phrase" style="width:100%;padding:10px 12px;font-size:16px;border:1px solid var(--border);border-radius:6px">
+         </div>`
+      : '';
+    overlay.innerHTML = `<div class="modal" style="max-width:480px;padding:24px;border:2px solid ${c.border}">
+      <h2 id="${titleId}" style="font-size:18px;margin-bottom:12px;color:${c.heading};font-weight:700">${escapeHtml(title)}</h2>
+      <div style="margin-bottom:16px;padding:12px;background:${c.bg};border-radius:6px;font-size:14px;line-height:1.5;color:var(--text)">
+        ${escapeHtml(body)}
+      </div>
+      ${typeFieldHtml}
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <button data-action="cancel" class="btn btn-outline" style="min-height:56px;font-weight:600">${escapeHtml(cancelLabel)}</button>
+        <button data-action="confirm" class="btn" style="min-height:56px;background:${c.btnBg};color:white;border:none;font-weight:700">${escapeHtml(confirmLabel)}</button>
+      </div>
+    </div>`;
+
+    const confirmBtn = overlay.querySelector('[data-action="confirm"]');
+    const typeInput = requireType ? overlay.querySelector(`#${titleId}-type`) : null;
+    const updateConfirmState = () => {
+      if (!requireType) return;
+      const ok = typeInput && typeInput.value === requireType;
+      confirmBtn.disabled = !ok;
+      confirmBtn.style.opacity = ok ? '1' : '0.5';
+    };
+    if (typeInput) {
+      typeInput.addEventListener('input', updateConfirmState);
+      updateConfirmState();
+    }
+
+    const cleanup = (val) => {
+      document.removeEventListener('keydown', onKey);
+      overlay.remove();
+      resolve(val);
+    };
+    overlay.addEventListener('click', (e) => {
+      const action = e.target.dataset && e.target.dataset.action;
+      if (action === 'cancel') cleanup(false);
+      else if (action === 'confirm' && !confirmBtn.disabled) cleanup(true);
+    });
+    const onKey = (e) => { if (e.key === 'Escape') cleanup(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    setTimeout(() => {
+      if (typeInput) { typeInput.focus(); }
+      else { const cancelBtn = overlay.querySelector('[data-action="cancel"]'); if (cancelBtn) cancelBtn.focus(); }
+    }, 50);
+  });
+}
+
 function confirmUnratedDeploy(result) {
   return new Promise((resolve) => {
     const overlay = document.createElement('div');
@@ -5705,7 +5791,20 @@ function returnEquipment(spId, skipRoleGate) {
 }
 
 async function endOperation() {
-  if (!confirm('End this operation? All equipment will be marked as returned.')) return;
+  // v3.12.0 R7-05: replace native confirm() with a custom sheet that requires
+  // the user to type "END" before the danger button unlocks. The v3.10.1 backup
+  // is the actual safety net for accidental ends; this gate is gloves-resistance
+  // against mistaps. Per audit: "v3.10.1 backup is the actual safety net; this
+  // is UI gating against gloved-finger mistaps."
+  const ok = await customConfirm({
+    title: 'End Operation?',
+    body: 'All equipment will be marked as returned. This cannot be undone (a backup is created automatically, but recovery requires admin support).',
+    confirmLabel: 'End Operation',
+    cancelLabel: 'Cancel',
+    confirmStyle: 'danger',
+    requireType: 'END'
+  });
+  if (!ok) return;
 
   // v3.10.1: take pre-destructive snapshots before the inventory blanket-reset
   // and the operation archive. If either backup fails, abort — we'd rather
