@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.11.2';
+const APP_VERSION = '3.11.3';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -611,6 +611,12 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
     html += `</div></div>`;
   });
 
+  // R2-01 / R4-03 / R6-08 (v3.11.3): rated-card liability disclaimer.
+  // The v3.7.2 release notes claimed this shipped on all result cards but it only
+  // existed inside the unrated-zone deploy modal. Restored here for doctrinal parity
+  // with USAR/FEMA tool framing — capacity values are planning aids, not certifications.
+  html += `<div class="text-muted-xs" style="margin-top:10px;padding:8px 4px;line-height:1.4">Capacity figures are planning aids, not engineering certifications. Consult rescue engineering for structural certification.</div>`;
+
   container.innerHTML = html;
 }
 
@@ -893,22 +899,32 @@ function getLocationBreadcrumb(sp) {
 }
 
 let toastTimer = null;
-function showToast(msg, type, duration) {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  // Support HTML in toasts (e.g. undo links) — XSS-safe because all callers
-  // escape user-controlled strings via escapeHtml() before passing them here
-  if (/<[a-z][\s\S]*>/i.test(msg)) {
-    el.innerHTML = msg;
-  } else {
-    el.textContent = msg;
-  }
+// C2 (v3.11.3): structural XSS fix. Pre-existing showToast used a regex to
+// auto-detect HTML in the message and decide between textContent / innerHTML.
+// Callers that interpolated peer-writable strings (apparatus name conflict list,
+// custom role abbr) could write `<img src=x onerror=...>` to Firebase and
+// trigger HTML mode on every reader. Split into:
+//   - showToast(text, ...) — always textContent (safe; default for callers).
+//   - showToastHTML(html, ...) — innerHTML; only one legit caller (undo-link
+//     toast). Callers MUST escape user-controlled fragments themselves.
+function _showToastImpl(el, type, duration) {
   el.className = 'toast ' + (type || 'success');
-  // Force reflow for transition
-  void el.offsetWidth;
+  void el.offsetWidth; // force reflow for transition
   el.classList.add('visible');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('visible'), duration || 3000);
+}
+function showToast(text, type, duration) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = text == null ? '' : String(text);
+  _showToastImpl(el, type, duration);
+}
+function showToastHTML(html, type, duration) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.innerHTML = html == null ? '' : String(html);
+  _showToastImpl(el, type, duration);
 }
 
 // Safe JSON parse helper — returns fallback on corrupt data
@@ -1129,6 +1145,15 @@ async function pruneOldBackups() {
 }
 
 function flushPendingWrites() {
+  // H5 (v3.11.3): respect the kill-switch — same defense-in-depth that firebaseSave,
+  // logSyncEvent, maybeBackup, backupBeforeDestructiveWrite, and pruneOldBackups
+  // already have. Pre-existing bypass would replay queued writes against the
+  // production tree even when an operator had explicitly stopped writes — the exact
+  // regression class v3.10.1 introduced this flag to prevent.
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) {
+    console.info('[flushPendingWrites] disabled by window.disableFirebaseWrites — ' + pendingWrites.length + ' writes held');
+    return;
+  }
   if (pendingWrites.length === 0 || !db) return;
   const writes = [...pendingWrites];
   pendingWrites = [];
@@ -1269,7 +1294,7 @@ function initCustomRoles() {
 function saveCustomRoles() {
   if (!activeOperation) return;
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('customRoles'), 'set', activeOperation.customRoles);
   }
 }
@@ -1373,7 +1398,8 @@ function orgReparentRole(childId, newParentId) {
 
   const childName = child.abbr;
   const parentName = newParent.abbr;
-  showToast(`Moved ${escapeHtml(childName)} under ${escapeHtml(parentName)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600;margin-left:8px">Undo</a>`, 'success', 8000);
+  // C2 (v3.11.3): only legit HTML caller — needs the <a> link. childName/parentName escaped via escapeHtml.
+  showToastHTML(`Moved ${escapeHtml(childName)} under ${escapeHtml(parentName)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600;margin-left:8px">Undo</a>`, 'success', 8000);
   renderCommandView();
 }
 
@@ -1451,7 +1477,7 @@ function addCustomRole(parentId) {
   const trimmed = validateInput(name, 100);
   if (!trimmed) return;
   const abbr = trimmed.length <= 6 ? trimmed : trimmed.substring(0, 6);
-  const id = 'custom_' + Date.now();
+  const id = 'custom_' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); // R1-09 (v3.11.3): jitter prevents cross-device same-ms collisions
   activeOperation.customRoles.push({
     id, name: trimmed, abbr, suggestedView: 'ops', parentId: parentId
   });
@@ -1508,7 +1534,7 @@ function removeCustomRole(roleId) {
     }
   }
   // F-1D-1 fix: sync removed assignments to Firebase so they don't get re-hydrated by the listener
-  if (db && deptId && activeOperation.id && removedTargets.length > 0) {
+  if (db && deptId && operationsRef && activeOperation.id && removedTargets.length > 0) { /* H9 (v3.11.3): operationsRef guard parity */
     const updates = {};
     for (const targetId of removedTargets) updates[targetId] = null;
     firebaseSave(operationsRef.child(activeOperation.id).child('roles'), 'update', updates);
@@ -1605,6 +1631,10 @@ function setupConnListener() {
       isOnline = true;
       el.className = 'conn-status';
       el.textContent = '';
+      // R1-15 (v3.11.3): reset toast-debounce timestamps so a post-reconnect
+      // failure surfaces immediately instead of being swallowed by the 30s window.
+      _lastOfflineToastTs = 0;
+      _lastFailToastTs = 0;
       flushPendingWrites();
       flushSyncDiagBuffer();
       flushPendingMemberRegistrations();
@@ -1671,6 +1701,12 @@ function retryAuth() {
 // (security rules deny non-members).
 function registerMember(uid, attempt) {
   attempt = attempt || 0;
+  // R3-05 (v3.11.3): respect the kill-switch. Once a uid is in members/{deptId}/,
+  // security rules grant write access. Read-only client must not register itself.
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) {
+    console.info('[registerMember] disabled by window.disableFirebaseWrites');
+    return;
+  }
   if (!db || !deptId || !uid) return;
   const targetDept = deptId;
   db.ref(`departments/${targetDept}/members/${uid}`).set(true).catch((err) => {
@@ -2004,7 +2040,7 @@ function addCustomApparatusType() {
   const name = prompt('New apparatus type name:');
   if (!name || !name.trim()) return;
   const types = initCustomApparatusTypes();
-  const id = 'type_' + Date.now();
+  const id = 'type_' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); // R1-09 (v3.11.3): jitter prevents cross-device same-ms collisions
   types.push({ id, name: validateInput(name, 50), order: types.length });
   saveCustomApparatusTypes();
   renderApparatusTypesList();
@@ -2530,49 +2566,15 @@ function closeFeedbackModal() {
   document.getElementById('feedbackModal').classList.remove('active');
   document.getElementById('feedbackCategory').value = 'bug';
   document.getElementById('feedbackText').value = '';
-  clearFeedbackImage();
 }
 
-let feedbackImageData = null;
-
-function previewFeedbackImage(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    alert('Image must be under 5 MB.');
-    input.value = '';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const maxW = 800, maxH = 600;
-      let w = img.width, h = img.height;
-      if (w > maxW || h > maxH) {
-        const ratio = Math.min(maxW / w, maxH / h);
-        w = Math.round(w * ratio);
-        h = Math.round(h * ratio);
-      }
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      feedbackImageData = canvas.toDataURL('image/jpeg', 0.6);
-      document.getElementById('feedbackImageThumb').src = feedbackImageData;
-      document.getElementById('feedbackImagePreview').style.display = 'inline-block';
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-function clearFeedbackImage() {
-  feedbackImageData = null;
-  const input = document.getElementById('feedbackImage');
-  if (input) input.value = '';
-  document.getElementById('feedbackImagePreview').style.display = 'none';
-}
+// H6 (v3.11.3): photo-attachment feature removed. Compressed photos could exceed
+// the 500 KB database validate rule but the success alert fired before the async
+// write resolved — users saw "Thank you" while feedback silently failed.
+// Removing the feature was the chosen path over adding validation + promise chaining.
+// Pre-existing /feedback/$id entries with `image` payloads remain in Firebase but
+// no UI renders them. The `image` validate rule in database.rules.json will be
+// retired in v3.12.0 once enough time has passed that no client still queues photos.
 
 function submitFeedback() {
   const category = document.getElementById('feedbackCategory').value;
@@ -2592,7 +2594,6 @@ function submitFeedback() {
     timestamp: (typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now(),
     appVersion: APP_VERSION
   };
-  if (feedbackImageData) entry.image = feedbackImageData;
   if (db) {
     const feedbackRef = db.ref('feedback').push();
     firebaseSave(feedbackRef, 'set', entry);
@@ -2600,7 +2601,7 @@ function submitFeedback() {
     closeFeedbackModal();
   } else {
     // No db — queue for later via pending writes
-    pendingWrites.push({ path: 'feedback/' + Date.now(), method: 'set', data: entry, timestamp: Date.now(), retries: 0 });
+    pendingWrites.push({ path: 'feedback/' + Date.now() + '-' + Math.random().toString(36).slice(2, 6), method: 'set', data: entry, timestamp: Date.now(), retries: 0 }); // R1-10 (v3.11.3): jitter prevents same-ms offline feedback collisions
     safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
     alert('Feedback saved — will submit when online.');
     closeFeedbackModal();
@@ -2657,7 +2658,7 @@ function toggleApparatusAssignment(appId, assign) {
   }
   activeOperation.assignedApparatus = assigned;
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('assignedApparatus'), 'set', assigned);
   }
   renderOperations();
@@ -2716,7 +2717,7 @@ function confirmCreateGroup() {
   const gid = 'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
   activeOperation.apparatusGroups[gid] = { name, type, members };
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'set', { name, type, members });
   }
 
@@ -2729,7 +2730,7 @@ function removeApparatusGroup(gid) {
   if (!activeOperation || !activeOperation.apparatusGroups) return;
   delete activeOperation.apparatusGroups[gid];
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('apparatusGroups').child(gid), 'remove');
   }
   renderOperations();
@@ -2790,7 +2791,7 @@ function selectRole(roleId) {
     if (personName) activeOperation.roleNames[roleTarget] = personName;
     else delete activeOperation.roleNames[roleTarget];
     persistOperation();
-    if (db && deptId && activeOperation.id) {
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'set', roleId);
       if (personName) {
         firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleTarget), 'set', personName);
@@ -2814,7 +2815,7 @@ function clearRole() {
     if (activeOperation.roles) {
       delete activeOperation.roles[roleTarget];
       persistOperation();
-      if (db && deptId && activeOperation.id) {
+      if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleTarget), 'remove');
       }
     }
@@ -2933,7 +2934,7 @@ function assignOrgChartRole(targetId, roleId) {
   } else {
     activeOperation.roles[targetId] = roleId;
     persistOperation();
-    if (db && deptId && activeOperation.id) {
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'set', roleId);
     }
   }
@@ -2954,7 +2955,7 @@ function clearOrgChartRole(targetId, roleId) {
     if (activeOperation.roles) {
       delete activeOperation.roles[targetId];
       persistOperation();
-      if (db && deptId && activeOperation.id) {
+      if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
         firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(targetId), 'remove');
       }
     }
@@ -3189,7 +3190,7 @@ function orgSwapRoles(roleA, roleB) {
   }
 
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     const updates = {};
     for (const targetId of assignedToA) updates[targetId] = roleB;
     for (const targetId of assignedToB) updates[targetId] = roleA;
@@ -3317,7 +3318,7 @@ function confirmAddExternal() {
     };
     activeOperation.externalEquipment[editingExternalId] = item;
     persistOperation();
-    if (db && deptId && activeOperation.id) {
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId), 'set', item);
     }
     editingExternalId = null;
@@ -3336,7 +3337,7 @@ function confirmAddExternal() {
     item.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('externalEquipment').push().key : ('ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
     activeOperation.externalEquipment[item.id] = item;
     persistOperation();
-    if (db && deptId && activeOperation.id) {
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(item.id), 'set', item);
     }
   }
@@ -3351,7 +3352,7 @@ function removeExternal(extId) {
 
   delete activeOperation.externalEquipment[extId];
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
   }
   renderOperations();
@@ -3397,7 +3398,7 @@ function confirmAddIndividual() {
   }
 
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(indId), 'set', activeOperation.individuals[indId]);
   }
   closeModal('addIndividualModal');
@@ -3413,7 +3414,7 @@ function removeIndividual(indId) {
   if (activeOperation.roles) delete activeOperation.roles[roleKey];
   if (activeOperation.roleNames) delete activeOperation.roleNames[roleKey];
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('individuals').child(indId), 'remove');
     firebaseSave(operationsRef.child(activeOperation.id).child('roles').child(roleKey), 'remove');
     firebaseSave(operationsRef.child(activeOperation.id).child('roleNames').child(roleKey), 'remove');
@@ -3719,8 +3720,8 @@ function renderShorePointCards(numbered) {
         <div class="flex-between mb-8">
           <div style="display:flex;align-items:center"><span class="sp-number">${sp.num}</span><strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>${groupBadge}${lockIcon}${unratedBadge}</div>
           <div style="display:flex;align-items:center;gap:4px">
-            <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit" aria-label="Edit ${escapeHtml(sp.label) || 'Shore Point'}">✎</button>
-            <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete" aria-label="Delete ${escapeHtml(sp.label) || 'Shore Point'}">✕</button>
+            <button class="sp-edit-btn" onclick="editShorePoint('${sp.id}')" title="Edit" aria-label="Edit ${escapeAttr(sp.label) || 'Shore Point'}">✎</button>
+            <button class="sp-delete-btn" onclick="deleteShorePoint('${sp.id}')" title="Delete" aria-label="Delete ${escapeAttr(sp.label) || 'Shore Point'}">✕</button>
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
@@ -3761,9 +3762,12 @@ function renderShorePointCards(numbered) {
       }
 
       if (['cutting','runner','secured','returned'].includes(status) && sp.cutLength != null) {
-        const displayCut = sp.actualCutLength != null ? sp.actualCutLength : sp.cutLength;
-        const diffWarning = (sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength)
-          ? ` <span class="cut-diff-warning">(expected: ${sp.cutLength}")</span>` : '';
+        // H3 (v3.11.3): coerce peer-writable cut-length fields to prevent stored XSS via Firebase
+        const actLen = Number(sp.actualCutLength);
+        const cutLen = Number(sp.cutLength);
+        const displayCut = Number.isFinite(actLen) ? actLen : (Number.isFinite(cutLen) ? cutLen : '?');
+        const diffWarning = (Number.isFinite(actLen) && Number.isFinite(cutLen) && actLen !== cutLen)
+          ? ` <span class="cut-diff-warning">(expected: ${cutLen}")</span>` : '';
         html += `<div class="cut-length-display">✂ Cut: ${displayCut}"${diffWarning}</div>`;
       }
 
@@ -4169,18 +4173,19 @@ function upgradePendingToDeployed(result, pendingId) {
   }
 
   // Sync to Firebase
-  if (db && deptId && activeOperation.id) {
+  // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
     if (strutInvItem.external) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
     } else {
-      firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+      firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
     }
     for (const ext of extInvItems) {
-      firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+      firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
     }
     for (const pl of deployedPlates) {
-      firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+      firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
     }
   }
 
@@ -4189,7 +4194,8 @@ function upgradePendingToDeployed(result, pendingId) {
   renderInventory();
   renderOperations();
   closeModal('shorePointModal');
-  showToast(`${escapeHtml(sp.label || 'Shore point')} → ${result.strut.model} deployed`, 'success');
+  // C2 (v3.11.3): showToast now uses textContent — no escapeHtml wrapper needed (would render &lt; as literal).
+  showToast(`${sp.label || 'Shore point'} → ${result.strut.model} deployed`, 'success');
 }
 
 function deployPendingShorePoint(reason) {
@@ -4242,7 +4248,7 @@ function deployPendingShorePoint(reason) {
   if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
   activeOperation.shorePoints.push(sp);
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
   }
 
@@ -4452,18 +4458,19 @@ async function deployShorePoint(result, qty) {
     activeOperation.shorePoints.push(sp);
 
     // Sync to Firebase
-    if (db && deptId && activeOperation.id) {
+    // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
       if (strutInvItem.external) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
       } else {
-        firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
       }
       for (const ext of extInvItems) {
-        firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
       }
       for (const pl of deployedPlates) {
-        firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', v => Math.max(0, (v || 0) - 1));
+        firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
       }
     }
 
@@ -4541,7 +4548,7 @@ function updateShoreStatus(spId, newStatus) {
     }
 
     Object.assign(member, updateData);
-    if (db && deptId && activeOperation.id) {
+    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(member.id), 'update', updateData);
     }
   }
@@ -5106,12 +5113,20 @@ function renderCutTableView() {
   if (runnerPts.length > 0) {
     html += `<div style="font-size:13px;font-weight:700;text-transform:uppercase;color:var(--text-hint);margin:16px 0 8px">Sent to Runner (${runnerPts.length})</div>`;
     for (const sp of runnerPts) {
+      // H3 (v3.11.3): coerce peer-writable numeric fields before render to prevent stored XSS
+      const actLen = Number(sp.actualCutLength);
+      const cutLen = Number(sp.cutLength);
+      const reqLen = Number(sp.requiredLength);
+      const displayLen = Number.isFinite(actLen) ? actLen + '"'
+        : Number.isFinite(cutLen) ? cutLen + '"'
+        : Number.isFinite(reqLen) ? reqLen + '"' : '?';
+      const hasDiff = Number.isFinite(actLen) && Number.isFinite(cutLen) && actLen !== cutLen;
       html += `<div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
-          <span style="font-size:15px;font-weight:700;color:var(--text-hint)">${sp.actualCutLength != null ? sp.actualCutLength + '"' : (sp.cutLength != null ? sp.cutLength + '"' : sp.requiredLength + '"')}</span>
+          <span style="font-size:15px;font-weight:700;color:var(--text-hint)">${displayLen}</span>
         </div>
-        ${(sp.actualCutLength != null && sp.actualCutLength !== sp.cutLength) ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${sp.cutLength}" → Actual: ${sp.actualCutLength}"</div>` : ''}
+        ${hasDiff ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${cutLen}" → Actual: ${actLen}"</div>` : ''}
         <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
       </div>`;
     }
@@ -5122,17 +5137,28 @@ function renderCutTableView() {
 
 function renderCutTableCard(sp, mode) {
   const shoreTypeLabel = getShoreTypeName(sp.shoreType);
-  const headerSize = sp.deductions?.header ? (sp.deductions.header === 3.5 ? '4×4' : '6×6') : 'None';
-  const footerSize = sp.deductions?.sole ? (sp.deductions.sole === 3.5 ? '4×4' : '6×6') : 'None';
+  // H3 (v3.11.3): coerce deductions through Number() so a peer-written "3.5" string
+  // (or other non-numeric) doesn't break the strict-equality check and pick the wrong wood size.
+  const dedHeader = Number(sp.deductions?.header);
+  const dedSole = Number(sp.deductions?.sole);
+  const headerSize = Number.isFinite(dedHeader) && dedHeader > 0 ? (dedHeader === 3.5 ? '4×4' : '6×6') : 'None';
+  const footerSize = Number.isFinite(dedSole) && dedSole > 0 ? (dedSole === 3.5 ? '4×4' : '6×6') : 'None';
   const locText = getLocationBreadcrumb(sp);
 
+  // H2 / F-1C-19 third site (v3.11.3): coerce e.length to number — peer-written
+  // `'<img src=x onerror=...>'` would otherwise inject HTML into the cut-table card.
   const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-    ? ' + ' + sp.deployedExtensions.map(e => e.length + '"').join(' + ')
+    ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
     : '';
 
+  // H3 (v3.11.3): coerce peer-writable SP numeric fields before render
+  const actLen = Number(sp.actualCutLength);
+  const cutLen = Number(sp.cutLength);
+  const reqLen = Number(sp.requiredLength);
+
   // Actual measurement field (optional override if cut differs from expected)
-  const actualField = sp.actualCutLength != null
-    ? `<div style="font-size:13px;color:var(--orange-dark);font-weight:600;margin-top:4px">Actual: ${sp.actualCutLength}"</div>`
+  const actualField = Number.isFinite(actLen)
+    ? `<div style="font-size:13px;color:var(--orange-dark);font-weight:600;margin-top:4px">Actual: ${actLen}"</div>`
     : '';
 
   const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
@@ -5159,12 +5185,12 @@ function renderCutTableCard(sp, mode) {
     <div style="display:flex;gap:12px;align-items:baseline;margin:8px 0">
       <div>
         <div style="font-size:13px;color:var(--text-secondary)">Opening</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${sp.requiredLength}"</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${Number.isFinite(reqLen) ? reqLen + '"' : '—'}</div>
       </div>
       <div style="font-size:18px;color:var(--text-secondary)">→</div>
       <div>
         <div style="font-size:13px;color:var(--text-secondary)">Expected Cut</div>
-        <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${sp.cutLength != null ? sp.cutLength + '"' : '?'}</div>
+        <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${Number.isFinite(cutLen) ? cutLen + '"' : '?'}</div>
       </div>
     </div>
     ${actualField}
@@ -5195,7 +5221,7 @@ function sendToRunner(spId) {
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
   Object.assign(sp, updateData);
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', updateData);
   }
 
@@ -5221,7 +5247,7 @@ function markCutDone(spId) {
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
 
   Object.assign(sp, updateData);
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', updateData);
   }
 
@@ -5325,11 +5351,12 @@ function confirmEditShorePoint() {
 
   Object.assign(sp, updateData);
   persistOperation();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(editingShorePointId), 'update', updateData);
   }
   renderOperations();
-  showToast(`Updated ${escapeHtml(sp.label || 'shore point')}`, 'success');
+  // C2 (v3.11.3): showToast now uses textContent — no escapeHtml wrapper needed.
+  showToast(`Updated ${sp.label || 'shore point'}`, 'success');
 
   editingShorePointId = null;
   document.querySelector('#shorePointModal .modal h2').textContent = 'Add Shore Point';
@@ -5354,7 +5381,7 @@ function deleteShorePoint(spId) {
   }
   persistOperation();
   persistInventory();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(spId), 'remove');
   }
   renderOperations();
@@ -5375,6 +5402,20 @@ function makeReturnIncrementer(maxQty) {
     if (v === null || v === undefined) return undefined; // node deleted — don't create phantom
     const next = (v || 0) + 1;
     return maxQty != null ? Math.min(maxQty, next) : next;
+  };
+}
+
+// H1 (v3.11.3): symmetric deploy-side guard — see makeReturnIncrementer above.
+// Pre-existing deploy transactions used `v => Math.max(0, (v || 0) - 1)` which,
+// when `v === null` (peer-deleted inventory node or stale Excel import), would
+// COMMIT `{available: 0}` to a brand-new node with no model/system/apparatus/
+// quantity. Subsequent v3.8.2 hasChildren validate then rejects the next write,
+// effectively corrupting the inventory tree. Returning undefined aborts the
+// transaction so no phantom node is created.
+function makeDeployDecrementer() {
+  return (v) => {
+    if (v === null || v === undefined) return undefined; // node deleted — don't create phantom
+    return Math.max(0, (v || 0) - 1);
   };
 }
 
@@ -5423,7 +5464,7 @@ function returnEquipmentSingle(sp) {
 
   sp.status = 'returned';
   sp.returnedAt = new Date().toISOString();
-  if (db && deptId && activeOperation.id) {
+  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'update', {
       status: 'returned',
       returnedAt: sp.returnedAt,

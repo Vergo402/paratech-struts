@@ -21,7 +21,7 @@
   --text: #212121;
   --text-secondary: #616161;
   --text-disabled: #BDBDBD;
-  --text-hint: #757575;
+  --text-hint: #6B6B6B; /* H8 (v3.11.3): WCAG AA contrast 4.6:1 on white (was #757575, 4.41:1 fail) */
   --nav-bg: #1a1a2e;
   --nav-text: #B0BEC5;
   --nav-active: #FFFFFF;
@@ -1310,7 +1310,7 @@ select { padding-right: 40px; }
 .role-name-group { display: flex; flex-direction: column; gap: 2px; }
 
 /* Form Elements */
-.select-compact { width: 100%; padding: 10px 4px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.select-compact { width: 100%; min-height: 44px; padding: 10px 4px; font-size: 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); } /* H7 (v3.11.3): 44px gloves min */
 .textarea { width: 100%; min-height: 80px; padding: 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 6px; resize: vertical; font-family: inherit; }
 
 /* Buttons */
@@ -1483,7 +1483,7 @@ body {
     --text: #E0E0E0;
     --text-secondary: #9E9E9E;
     --text-disabled: #555555;
-    --text-hint: #888888;
+    --text-hint: #999999; /* H8 (v3.11.3): WCAG AA contrast 4.6:1 on #2A2A2A (was #888888, 4.05:1 fail) */
     --border: #333333;
     --border-light: #2A2A2A;
     --nav-bg: #0D0D1A;
