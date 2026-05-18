@@ -419,7 +419,7 @@ function runQuickSelect() {
 function renderResults(results, containerId, length, load, sfIndex, isOperation, informational) {
   const container = document.getElementById(containerId);
   if (results.length === 0) {
-    const pendingBtn = isOperation ? '<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button>' : '';
+    const pendingBtn = isOperation ? '<br><button id="spSavePendingBtn" class="btn btn-sm btn-purple js-save-pending-btn" onclick="guardClick(this,() => deployPendingShorePoint(\'no-match\'))">📋 Save as Pending</button>' : '';
     // If the inventory-filtered search returned nothing but unrestricted Paratech models exist,
     // surface them as informational ("would fit if you had them") rather than the bare empty state.
     if (informational && informational.length > 0) {
@@ -3877,7 +3877,7 @@ function findForShorePoint() {
 
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
-    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button class="btn btn-sm btn-purple" onclick="guardClick(this,deployPendingShorePoint)">📋 Save as Pending</button></div>';
+    document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button id="spSavePendingBtn" class="btn btn-sm btn-purple js-save-pending-btn" onclick="guardClick(this,() => deployPendingShorePoint(\'no-inventory\'))">📋 Save as Pending</button></div>';
     return;
   }
   const deductions = getDeductions('sp');
@@ -4060,7 +4060,7 @@ function upgradePendingToDeployed(result, pendingId) {
   showToast(`${escapeHtml(sp.label || 'Shore point')} → ${result.strut.model} deployed`, 'success');
 }
 
-function deployPendingShorePoint() {
+function deployPendingShorePoint(reason) {
   const length = getMeasurementInches('sp');
   if (!length || length <= 0) { alert('Enter a measurement first.'); return; }
   if (!activeOperation) return;
@@ -4074,6 +4074,13 @@ function deployPendingShorePoint() {
   const group = validateInput(document.getElementById('spGroup').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
+
+  // IP-007: pendingReason records why the SP was saved as pending.
+  // 'no-inventory' = apparatus inventory was empty at save time.
+  // 'no-match'     = inventory existed but no strut matched length+load.
+  // Used by future v3.12.0 SP-card badging ("Awaiting inventory" vs "Awaiting matching strut").
+  const validReasons = ['no-inventory', 'no-match'];
+  const pendingReason = validReasons.includes(reason) ? reason : null;
 
   const sp = {
     label,
@@ -4091,6 +4098,7 @@ function deployPendingShorePoint() {
     deployedExtensions: [],
     deployedPlates: [],
     status: 'pending',
+    pendingReason,
     deployedAt: new Date().toISOString(),
     returnedAt: null,
     groupId: null,
