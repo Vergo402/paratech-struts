@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>FieldShore — Strut Algorithm Smoke Deck</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; padding: 24px; max-width: 880px; margin: 0 auto; color: #1a1a1a; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    .lede { color: #555; margin: 0 0 24px; font-size: 14px; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { background: #f6f7f8; font-weight: 600; }
+    .pass { color: #047857; font-weight: 700; }
+    .fail { color: #b91c1c; font-weight: 700; }
+    .summary { margin: 24px 0; padding: 16px; border-radius: 8px; font-weight: 600; }
+    .summary.all-pass { background: #d1fae5; color: #047857; }
+    .summary.any-fail { background: #fee2e2; color: #b91c1c; }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>FieldShore — Strut Algorithm Smoke Deck</h1>
+  <p class="lede">
+    Five fixed cases that lock in the v3.5.2 ACME load-table corrections and the
+    v3.7.2 conservative-floor interpolation. Open this page on every release
+    before tagging — any red row means a regression in life-safety load math.
+  </p>
+  <div id="summary" class="summary">Running…</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Case</th>
+        <th>Inputs</th>
+        <th>Expected</th>
+        <th>Actual</th>
+        <th>Result</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <!-- Load app.js so its constants + functions are available globally.
+       The smoke deck only exercises pure functions (getLoadCapacity); we
+       don't need Firebase or DOM-side init. -->
+  <script>
+    // Stub the bits app.js touches at module-load time before any UI render.
+    // findStrutCombinations / getLoadCapacity are pure; we run them after
+    // app.js loads.
+    window.firebase = window.firebase || { initializeApp: () => ({}), database: () => null, auth: () => ({ onAuthStateChanged: () => {}, signInAnonymously: () => Promise.resolve() }) };
+  </script>
+  <script src="app.js"></script>
+  <script>
+    // Five fixed cases. Each asserts getLoadCapacity returns the exact
+    // datasheet value at a known length+SF. See begin-release-1-fluffy-duckling.md
+    // for derivation rationale.
+    const CASES = [
+      { id: 1, name: 'ACME 11 ft @ 4:1',         system: 'AcmeThread', length: 132, sfIndex: 2, expected: 3932,  locks: 'v3.5.2 fix to 11-ft over-reporting (was 4595 via linear interp)' },
+      { id: 2, name: 'ACME 2 ft @ 2:1',          system: 'AcmeThread', length: 24,  sfIndex: 0, expected: 40000, locks: 'v3.5.2 fix to 2-ft over-reporting (was 21750 via linear interp)' },
+      { id: 3, name: 'LongShore 13 ft @ 4:1',    system: 'LongShore',  length: 156, sfIndex: 2, expected: 7000,  locks: 'LongShore 13-ft explicit table row' },
+      { id: 4, name: 'LongShore 16 ft @ 3:1',    system: 'LongShore',  length: 192, sfIndex: 1, expected: 4000,  locks: 'LongShore rated-maximum boundary' },
+      { id: 5, name: 'ACME 100" (8.33 ft) @ 4:1', system: 'AcmeThread', length: 100, sfIndex: 2, expected: 9138,  locks: 'v3.7.2 conservative-floor interpolation (returns 108" row, not interp between 96 and 108)' },
+    ];
+
+    function run() {
+      const rows = document.getElementById('rows');
+      let allPass = true;
+      for (const c of CASES) {
+        const actual = getLoadCapacity(c.system, c.length, c.sfIndex);
+        const passed = actual === c.expected;
+        if (!passed) allPass = false;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${c.id}</td>
+          <td>${c.name}<br><small style="color:#666">${c.locks}</small></td>
+          <td><code>getLoadCapacity('${c.system}', ${c.length}, ${c.sfIndex})</code></td>
+          <td><code>${c.expected.toLocaleString()} lbs</code></td>
+          <td><code>${actual === undefined ? '(undefined)' : actual.toLocaleString() + ' lbs'}</code></td>
+          <td class="${passed ? 'pass' : 'fail'}">${passed ? '✓ PASS' : '✗ FAIL'}</td>
+        `;
+        rows.appendChild(tr);
+        if (passed) {
+          console.log(`✓ Case ${c.id} (${c.name}): ${actual} lbs`);
+        } else {
+          console.error(`✗ Case ${c.id} (${c.name}): expected ${c.expected}, got ${actual}`);
+        }
+      }
+      const summary = document.getElementById('summary');
+      const passCount = CASES.filter(c => getLoadCapacity(c.system, c.length, c.sfIndex) === c.expected).length;
+      summary.textContent = allPass
+        ? `✓ All ${CASES.length} cases passed — strut algorithm matches expected datasheet values.`
+        : `✗ ${CASES.length - passCount} of ${CASES.length} cases FAILED — investigate before releasing.`;
+      summary.className = 'summary ' + (allPass ? 'all-pass' : 'any-fail');
+    }
+
+    // Wait for app.js to define globals
+    if (typeof getLoadCapacity === 'function') {
+      run();
+    } else {
+      window.addEventListener('load', run);
+    }
+  </script>
+</body>
+</html>
