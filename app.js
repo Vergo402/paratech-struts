@@ -889,13 +889,24 @@ function renderStatusPills(points) {
     .join('');
 }
 
+// v3.12.0 N2: SP "group" field is a NIMS-terminology misnomer (NIMS Group is a
+// functional command unit, not a resource ID). The field is being renamed to
+// "assignedResource" with a dual-write window through the v3.12.x train; full
+// cutover at v4.0.0. This helper centralizes the read fallback chain so callers
+// don't have to spell it out. `sp.team` is the v3.5.0-and-earlier legacy name.
+function getSPGroup(sp) {
+  if (!sp) return null;
+  return sp.assignedResource ?? sp.group ?? sp.team ?? null;
+}
+
 // Build location breadcrumb string from a shore point
 function getLocationBreadcrumb(sp) {
   const parts = [];
   if (sp.building) parts.push(escapeHtml(sp.building));
   if (sp.division) parts.push(escapeHtml(sp.division));
   if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
-  if (sp.group || sp.team) parts.push(escapeHtml(getGroupDisplayName(sp.group || sp.team)));
+  const grp = getSPGroup(sp);
+  if (grp) parts.push(escapeHtml(getGroupDisplayName(grp)));
   return parts.length > 0 ? parts.join(' › ') : '';
 }
 
@@ -1844,6 +1855,7 @@ function setupListeners() {
         // Migrate legacy field names: floor→area, team→group
         if (sp.floor && !sp.area) sp.area = sp.floor;
         if (sp.team && !sp.group) sp.group = sp.team;
+        if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
         return { id, ...sp };
       });
     }
@@ -1860,6 +1872,7 @@ function setupListeners() {
           // Migrate legacy field names: floor→area, team→group
           if (sp.floor && !sp.area) sp.area = sp.floor;
           if (sp.team && !sp.group) sp.group = sp.team;
+          if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
           return { id: spId, ...sp };
         });
       }
@@ -3777,7 +3790,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${(sp.group || sp.team) ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(sp.group || sp.team))}</div>` : ''}
+        ${(() => { const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -4100,7 +4113,7 @@ function assignEquipmentToPending(spId) {
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  populateGroupDropdown(sp.group || sp.team || '');
+  populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -4277,7 +4290,8 @@ function deployPendingShorePoint(reason) {
     building,
     area,
     division,
-    group,
+    group,                          // v3.12.0 N2 dual-write: legacy key (read-fallback)
+    assignedResource: group,        // v3.12.0 N2 dual-write: new NIMS-correct key
     shoreType,
     requiredLength: length,
     effectiveLength,
@@ -4452,7 +4466,8 @@ async function deployShorePoint(result, qty) {
       building,
       area,
       division,
-      group,
+      group,                          // v3.12.0 N2 dual-write: legacy key
+      assignedResource: group,        // v3.12.0 N2 dual-write: new key
       shoreType,
       requiredLength: length,
       effectiveLength,
@@ -4682,7 +4697,9 @@ function getFilteredPoints() {
   // Filter by current drilldown path
   return points.filter(sp => {
     for (const seg of drilldownPath) {
-      const val = sp[seg.level] || null;
+      // v3.12.0 N2: 'group' lookup uses the dual-write fallback chain so
+      // drilldown stays consistent regardless of which key the SP record uses.
+      const val = seg.level === 'group' ? getSPGroup(sp) : (sp[seg.level] || null);
       if (seg.value === '__none__') {
         if (val !== null) return false;
       } else {
@@ -5318,7 +5335,7 @@ function editShorePoint(spId) {
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
   document.getElementById('spDivision').value = sp.division || '';
-  populateGroupDropdown(sp.group || sp.team || '');
+  populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
   document.getElementById('spLength').value = sp.requiredLength || '';
@@ -5381,12 +5398,14 @@ function confirmEditShorePoint() {
     : 0;
   const effectiveLength = Math.round((requiredLength - totalDed) * 10) / 10;
 
+  const editGroup = validateInput(document.getElementById('spGroup').value, 100) || null;
   const updateData = {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
     area: validateInput(document.getElementById('spArea').value, 100) || null,
     division: validateInput(document.getElementById('spDivision').value, 100) || null,
-    group: validateInput(document.getElementById('spGroup').value, 100) || null,
+    group: editGroup,                      // v3.12.0 N2 dual-write: legacy key
+    assignedResource: editGroup,           // v3.12.0 N2 dual-write: new key
     shoreType: document.getElementById('spShoreType').value,
     requiredLength,
     effectiveLength,

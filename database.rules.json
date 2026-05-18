@@ -40,6 +40,12 @@
                 },
                 "label": {
                   ".validate": "newData.isString() && newData.val().length <= 200"
+                },
+                "group": {
+                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
+                },
+                "assignedResource": {
+                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
                 }
               }
             },
