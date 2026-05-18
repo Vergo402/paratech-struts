@@ -1,7 +1,7 @@
 # FieldShore User Manual
 
-**Version:** 3.11  
-**Last updated:** 2026-05-17  
+**Version:** 3.12  
+**Last updated:** 2026-05-18  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -14,12 +14,13 @@ FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratec
 2. [Quick Find](#2-quick-find)
 3. [Operations](#3-operations)
 4. [Shore Points](#4-shore-points)
-5. [ICS Command](#5-ics-command)
+5. [Command](#5-command)
 6. [Cut Table](#6-cut-table)
 7. [Inventory](#7-inventory)
 8. [Settings](#8-settings)
-9. [Offline Use](#9-offline-use)
-10. [Version History](#10-version-history)
+9. [Safety & Updates](#9-safety--updates)
+10. [Offline Use](#10-offline-use)
+11. [Version History](#11-version-history)
 
 ---
 
@@ -84,7 +85,7 @@ Tap the **cube icon** (bottom-right floating button) anytime to see your current
 
 ## 3. Operations
 
-The **Operations** tab manages active shoring operations.
+The **Operations** tab is focused on the shore-point workflow — adding shore points and moving them through the status sequence. Apparatus, personnel, and org chart are on the **Command** tab (see Section 5).
 
 ### Starting an Operation
 
@@ -95,23 +96,11 @@ The **Operations** tab manages active shoring operations.
 5. Select which **apparatus** to assign (all are checked by default).
 6. Tap **Start Operation**.
 
-### Operation Layout
-
-Once an operation is active, the Operations tab shows:
-
-- **Assigned Apparatus** — Which apparatus are part of this operation. Tap **Assign** to add/remove, or **Group** to organize apparatus into named groups.
-- **External Equipment** — Equipment borrowed from other departments or agencies. Tap **+ Add** to log external struts by department name, apparatus, and model.
-- **Individuals** — Named personnel assigned to the operation. Tap **+ Add** to enter a name.
-- **My Role** — Set your device's ICS role. This determines which view you see by default.
-- **Operations / Command / Cut Table** — Three sub-views (see sections below).
-
-### Collapsible Sections
-
-Tap any section header (Assigned Apparatus, External Equipment, Individuals, My Role) to collapse or expand it. Keeps the screen clean when focused on shore points.
-
 ### Ending an Operation
 
-Tap **End** to archive the operation. It moves to the **Archived Operations** list at the bottom of the tab, where you can view or delete it.
+Tap **End**. A confirmation sheet opens. Type **END** (all caps) and tap the now-unlocked End Operation button. This two-step gate prevents accidental end-of-op from a stray tap — especially with gloves on.
+
+The operation moves to the **Archived Operations** list at the bottom of the tab, where you can view or delete it. The app automatically backs up the operation before ending it.
 
 ---
 
@@ -168,11 +157,24 @@ Shore points are organized by hierarchy: **Building > Division > Area > Group**.
 
 ---
 
-## 5. ICS Command
+## 5. Command
 
-The **Command** sub-tab shows the ICS/NIMS organizational chart for the operation.
+The **Command** tab is the Incident Commander's dedicated screen. It holds everything needed to manage the command structure — apparatus, personnel, the org chart, dashboard stats, and the hazard log.
 
-### Default Roles
+A runner working shore-point status works in the **Operations** tab. The IC reviewing staffing and hazards works here. Each role gets a focused surface.
+
+### What's on the Command Tab
+
+- **Assigned Apparatus** — Which apparatus are part of this operation. Tap **Assign** to add/remove, or **Group** to organize apparatus into named groups.
+- **External Equipment** — Equipment borrowed from other departments or agencies. Tap **+ Add** to log external struts by department name, apparatus, and model.
+- **Individuals** — Named personnel assigned to the operation. Tap **+ Add** to enter a name.
+- **My Role** — Set your device's ICS role. This determines which view your device defaults to.
+- **ICS Organization** — The full org chart (see below).
+- **Hazard Log** — Log and track scene hazards (see below).
+
+### ICS Organization Chart
+
+#### Default Roles
 
 The default ICS hierarchy is:
 
@@ -188,13 +190,13 @@ Incident Commander (IC)
     └── Wood Shoring
 ```
 
-### Assigning Roles
+#### Assigning Roles
 
 - Tap any node to open the role management modal.
 - Assign available apparatus or individuals to a role.
 - Each role shows who's assigned and their status.
 
-### Status Indicators
+#### Status Indicators
 
 Filled roles display a status dot:
 
@@ -202,21 +204,24 @@ Filled roles display a status dot:
 - **Amber (square)** — Staged: role has assignees but no active shore points (crew assigned, waiting).
 - A **legend** below the org chart header explains the dot meanings.
 
-### Headcount Badge
+#### Headcount Badge
 
 The header shows a resource count (e.g., "3/5 resources assigned") so you can see staffing at a glance.
 
-### Span of Control
+#### Span of Control
 
-A **warning badge** appears on any role with more than 7 direct reports, per NIMS guidelines (optimal is 3-7).
+Two warning tiers, per NIMS guidelines (optimal span of control is 3–7):
 
-### Custom Roles
+- **Yellow ⚠** — Approaching limit: 6–7 direct reports. Keep an eye on it.
+- **Red ⚠** — Exceeded: more than 7 direct reports. Split this branch.
+
+#### Custom Roles
 
 - Tap any node → **Sub-Role** to add a child role underneath it.
 - Tap any node → **Rename** to change its display name.
 - Custom roles can be **removed** (along with any sub-roles) via the node modal.
 
-### Reparenting Roles
+#### Reparenting Roles
 
 Restructure the org chart hierarchy (not just swap personnel):
 
@@ -229,17 +234,38 @@ After reparenting, a toast notification appears with an **Undo** link.
 
 **Access control:** Only devices assigned the IC or Safety role can reparent.
 
-### Swapping Roles
+#### Swapping Roles
 
 A short drag (not a long-press) between two roles swaps their personnel assignments, not the hierarchy. This is useful for crew rotations.
 
 ### My Role
 
-Set your device's ICS role from the **My Role** section. This determines which view your device defaults to:
+Set your device's ICS role from the **My Role** section. Your role controls your default view on launch:
 
-- **IC / Safety** → Command view
-- **Operations roles** → Operations view
+- **IC / Safety** → Command tab
+- **Operations roles** → Operations tab
 - **Cutting Table** → Cut Table view
+
+### Hazard Log
+
+The **Hazard Log** section lets you document scene hazards during the operation. It supports your Incident Action Plan and post-incident review. It is not a substitute for radio communication — critical hazards still need to go over the air to all crews.
+
+#### Logging a Hazard
+
+1. Tap **+ Add Hazard** in the Hazard Log section.
+2. Select a **Type:** Structural Instability, Utility, Atmospheric, Fall, or Other.
+3. Enter a **Location** — describe it in plain words (e.g., "North wall, second floor").
+4. Set **Severity:** Low, Medium, or High.
+5. Add any **Notes** (optional).
+6. Tap **Save**. The hazard is recorded with your name and the time.
+
+Open hazards appear at the top of the list, sorted high-to-low severity.
+
+#### Mitigating a Hazard
+
+Tap **Mitigate** on a hazard card when the condition is controlled. The log records who mitigated it and when. Tap **Reopen** if the hazard returns.
+
+Hazards stay with the operation record. They appear in the archived op after end-of-op.
 
 ---
 
@@ -299,35 +325,63 @@ The **Settings** tab includes:
 - **Department ID** — Your current connection ID. Tap **Log Out** to disconnect and enter a different ID.
 - **Appearance** — Choose System (follows your device), Light, or Dark theme.
 - **Apparatus Types** — Customize the apparatus type list for your department.
-- **Feedback** — Submit bug reports or feature requests with an optional photo attachment. Photos are compressed automatically (800x600 max).
+- **Check for Updates** — Manually tells the app to look for a new version right now. Useful if dispatch announces a hotfix and you don't want to wait. The app normally checks every 5 minutes in the background, so this is rarely needed.
+- **Feedback** — Submit bug reports or feature requests.
 - **Data Management** — Options for managing local and synced data.
 
 ---
 
-## 9. Offline Use
+## 9. Safety & Updates
+
+### Ending an Operation — Confirmation Gate
+
+Ending an operation requires you to type **END** before the button unlocks. This prevents an accidental end-of-op from a stray tap when you're reaching for something else on the screen — a real risk with gloves on.
+
+The app still creates an automatic backup of the operation before ending it. The type-gate is an extra layer at the tap, not the recovery net.
+
+### Force Update
+
+If a critical fix ships, a non-dismissible **"Update Required"** screen appears when you launch the app. There is one button: **Reload Now**.
+
+- Tap it. The update takes about 3 seconds.
+- Your local data — inventory, settings, any active operation — is preserved across the reload.
+- You cannot use the app until the update is applied.
+
+This screen only appears when an administrator has flagged a version as no longer safe to run. It is not a routine update prompt.
+
+### Routine Updates
+
+For normal updates, see Section 10 (Offline Use / Updating the App).
+
+---
+
+## 10. Offline Use
 
 FieldShore is designed for field use where connectivity is unreliable.
 
-- The app caches all assets via a service worker and works fully offline after the first load.
-- All data changes write to local storage first, then sync to Firebase when a connection is available.
+- The app caches all assets locally and works fully offline after the first load.
+- All data changes save to your device first, then sync to your team when a connection is available.
 - If you lose connection mid-operation, keep working normally. Changes queue up and sync automatically when connectivity returns.
-- A connection status indicator in the header shows your current sync state.
+- The offline banner shows exactly how many changes are waiting to sync (e.g., "Offline — 5 changes queued, will sync when reconnected"). This tells you your data is safe even without a connection.
 
 ### Updating the App
 
-When a new version is pushed, the service worker caches it in the background. To activate the update:
+When a new version is available, the app downloads it in the background. To activate the update:
 
 - **Close and reopen** the app, or
 - **Refresh twice** — the first refresh downloads the new version, the second activates it.
 
+To check immediately, go to **Settings → Check for Updates**.
+
 ---
 
-## 10. Version History
+## 11. Version History
 
 Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.12** | 2026-05-18 | Command tab promoted to top-level navigation (apparatus, individuals, org chart, hazard log separated from shore-point workflow). Hazard Log (ICS-208 style) with severity tiers, mitigate/reopen, and archived op persistence. End Operation now requires typing "END" to confirm (glove-safe gate). Force-update overlay for critical fixes (data preserved). Yellow span-of-control warning tier at 6–7 direct reports. Offline banner shows queued write count. Settings → Check for Updates button. |
 | **v3.11** | 2026-05-17 | Field-feedback round-up. Quick Find plate picker selection fixed (tap on a connector now actually selects it). Header scrolls away with content instead of locking real estate at the top. Edit Apparatus modal no longer shows the Add form simultaneously. Quick-add inventory list preserves scroll position when adding items near the bottom. Pending shore-point length edits now keep effective length in sync when deductions are toggled off, with success toast. Comprehensive dark-mode contrast pass — buttons, plate pickers, apparatus tabs, qty controls, and small action buttons are all theme-aware (no more black-on-dark text). |
 | **v3.10** | 2026-05-16 | LongShore unrated-zone deploys now require an explicit acknowledgement modal (audit trail captures who/when). Pending shore points have a real "Assign Equipment" deploy flow. Locked-card status buttons are role-gated (Cutting / Runner / Entry-Rescue-Shoring, with IC / Safety override). Excel imports warn before orphaning deployed equipment references. Persistent banner on auth-failure / sync degradation with manual retry. SheetJS bundled into the service worker for offline import/export. Fully-extended boundary warning on strut results. |
 | **v3.9** | 2026-05-16 | Group status guard — sending one shore point back through the workflow no longer drags advanced group-mates with it. Excel imports support extensions and connector plates (not just struts). Firebase scripts pinned with Subresource Integrity. Stored XSS hardening on shore point card rendering. |
