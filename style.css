@@ -1532,21 +1532,32 @@ body {
     padding-bottom: 20px;
   }
 
-  /* OPERATIONS — side-by-side: shell left (sticky roster), views right */
-  :root:not(.force-mobile-view) #activeOp {
+  /* COMMAND — side-by-side: roster left (sticky), org chart + dashboard right.
+     DOM order is op-card → op-views → op-shell so mobile reads top-down
+     (dashboard before apparatus); grid placement reorders on desktop. */
+  :root:not(.force-mobile-view) #activeOpCommand {
     display: grid;
     grid-template-columns: 360px 1fr;
     gap: 20px;
     align-items: start;
   }
-  :root:not(.force-mobile-view) .op-shell {
+  :root:not(.force-mobile-view) #activeOpCommand > .op-card {
+    grid-column: 1 / -1;
+  }
+  :root:not(.force-mobile-view) #activeOpCommand > .op-shell {
+    grid-column: 1;
+    grid-row: 2;
     position: sticky;
     top: 12px;
     max-height: calc(100vh - 140px);
     overflow-y: auto;
     padding-right: 8px;
   }
-  :root:not(.force-mobile-view) .op-views { min-width: 0; }
+  :root:not(.force-mobile-view) #activeOpCommand > .op-views {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
 }
 
 /* Theme toggle — segmented control */

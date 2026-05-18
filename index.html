@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.13.0</div>
+      <div class="version-label">v3.13.1</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -223,7 +223,6 @@
         <button class="btn btn-primary mt-16" onclick="startOperation()">Start New Operation</button>
       </div>
       <div id="activeOp" class="hidden">
-        <div class="op-shell">
         <div class="op-card">
           <div class="flex-between">
             <div>
@@ -234,8 +233,6 @@
           </div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
-        </div><!-- /op-shell -->
-        <div class="op-views">
         <div class="view-switcher" id="viewSwitcher" role="tablist">
           <button class="active" onclick="switchView('ops')" role="tab" aria-selected="true" aria-controls="opsView">📋 Operations</button>
           <button onclick="switchView('cuttable')" role="tab" aria-selected="false" aria-controls="cutTableView">✂️ Cut Table</button>
@@ -249,7 +246,6 @@
           <div id="shorePointsList"></div>
         </div>
         <div id="cutTableView" class="hidden" role="tabpanel"></div>
-        </div><!-- /op-views -->
       </div>
       <div class="section-title mt-16">Archived Operations</div>
       <div id="archivedOpsList"></div>
@@ -269,12 +265,15 @@
           <div class="op-name" id="cmdOpName"></div>
           <div class="op-time" id="cmdOpTime"></div>
         </div>
+        <div class="op-views">
         <div id="cmdDashboard"></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdOrgchart')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdOrgchart">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdOrgchart">▼</span> ICS Organization</span>
         </div>
         <div id="sectionCmdOrgchart"><div id="orgChartContainer"></div></div>
         <div id="cmdLayout"></div>
+        </div><!-- /op-views -->
+        <div class="op-shell">
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdApparatus')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdApparatus">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdApparatus">▶</span> Assigned Apparatus</span>
           <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
@@ -302,6 +301,7 @@
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
         </div>
         <div id="sectionCmdHazards"><div id="hazardLogList"></div></div>
+        </div><!-- /op-shell -->
       </div>
     </section>
 

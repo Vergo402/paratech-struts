@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.13.0';
+const APP_VERSION = '3.13.1';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -3848,7 +3848,8 @@ function renderCommand() {
     return;
   }
   noOp.style.display = 'none';
-  active.style.display = 'block';
+  active.style.display = '';
+  active.classList.remove('hidden');
   populateOpHeader('cmd');
   const points = getShorePoints();
   const dashboardEl = document.getElementById('cmdDashboard');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fieldshore-v3.13.0';
+const CACHE_NAME = 'fieldshore-v3.13.1';
 const ASSETS = [
   './',
   './index.html',
