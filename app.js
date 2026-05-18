@@ -598,7 +598,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
       }
       const deployQty = Math.max(spQuantity, r.recommendedQty || 1);
       const qtyLabel = deployQty > 1 ? ` (${deployQty}x)` : '';
-      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="this.disabled=true;setTimeout(()=>this.disabled=false,2000);deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty})">Deploy${qtyLabel}</button></div>`;
+      html += `<div style="margin-top:8px"><button class="btn btn-sm btn-primary" onclick="guardClick(this,()=>deployShorePoint(${JSON.stringify(r).replace(/"/g, '&quot;')}, ${deployQty}))">Deploy${qtyLabel}</button></div>`;
     }
 
     html += `</div></div>`;
@@ -1109,26 +1109,41 @@ function flushPendingWrites() {
   });
 }
 
-// Guard against double-clicks on buttons
+// Guard against double-clicks on buttons.
+// IP-010 (v3.11.2): surface user-visible feedback on EVERY click — including the
+// early-return path when the button is already disabled. The Surfside hotwash
+// found the previous early-return swallowed the first click silently, costing
+// ~90 seconds of OP1 time before the participant discovered a double-click
+// workaround. Now: toast on early return, btn-loading class + appended " …" on
+// happy path, console.log for diagnostic visibility.
 function guardClick(btn, fn) {
-  if (btn.disabled) return;
+  if (btn.disabled) {
+    showToast('Working — please wait', 'info');
+    return;
+  }
+  console.log('guardClick fired', btn.id || btn.textContent.trim().slice(0, 40));
   btn.disabled = true;
   btn.classList.add('btn-loading');
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = originalHTML + ' …';
+  const restore = () => {
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = originalHTML;
+    }, 1000);
+  };
   try {
     Promise.resolve(fn()).catch(err => {
       console.error('Action failed:', err);
       showToast('Something went wrong', 'error');
-    }).finally(() => {
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.classList.remove('btn-loading');
-      }, 1000);
-    });
+    }).finally(restore);
   } catch (err) {
     console.error('Action failed:', err);
     showToast('Something went wrong', 'error');
     btn.disabled = false;
     btn.classList.remove('btn-loading');
+    btn.innerHTML = originalHTML;
   }
 }
 
