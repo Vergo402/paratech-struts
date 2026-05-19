@@ -6,9 +6,9 @@
 
 ---
 
-## What shipped (v3.5.2 → v3.14.3)
+## What shipped (v3.5.2 → v3.16.2)
 
-Everything from the two-round audit is implemented through v3.11.3. Post-audit local-first work runs through v3.14.3:
+Everything from the two-round audit is implemented through v3.11.3. Post-audit local-first work runs through v3.16.2:
 
 | Version | What shipped |
 |---|---|
@@ -49,29 +49,17 @@ Everything from the two-round audit is implemented through v3.11.3. Post-audit l
 
 **Strategic decision (2026-05-17):** v4.0 anchors on everyday municipal fire department use (Type IV/V incidents). Federal/USAR/FEMA Type I/II scope deferred to v5.x+.
 
-Both v3.11.2 and v3.12.0 (originally scoped as "local-first defaults") have shipped, though v3.12.0 absorbed the Command-tab split + dual-write + hazard log rather than the scenario presets. Those presets are recycled into v3.16.0 below.
+Both v3.11.2 and v3.12.0 (originally scoped as "local-first defaults") have shipped, though v3.12.0 absorbed the Command-tab split + dual-write + hazard log rather than the scenario presets. Those presets are recycled into v3.17.0 below.
 
-### Release 1 — v3.15.0 (MINOR, ~7–10 days) ⏳ planned
+### Release 1 — v3.15.0 (MINOR) ✅ shipped 2026-05-19
 
-**Goal:** Numbered divisions feature + offline inventory hardening.
+Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offlineTouchedInventory` flush-pass, #80 partial via `makeAllocateDecrementer`).
 
-- **#93 Numbered divisions with vertical anchoring** (HEADLINE — feedback from hfd217, 2026-05-18). Replace free-text division field with a numbered selector + vertical-anchored dropdown (Division 1 center, +N above, +N sub-divisions below). Append-only via `[+]` controls; no manual entry. `formatDivision()` helper centralizes breadcrumb display. Schema migration with `divisionLegacyLabel` fallback.
-- **#71 Offline-touched-inventory tracking + flush-pass.** Track inventoryIds touched offline; on reconnect, push only those items' local `available` value to Firebase BEFORE the listener overwrites. Solves the architectural root cause of the v3.8.2 inventory bug.
-- **#80 Short-term transaction race guard (v=0 case).** v3.11.3's `makeDeployDecrementer()` handles `v == null` (peer-deleted); add a second guard for `v === 0` (last unit already taken) → reject companion SP write + toast.
+### Release 2 — v3.16.x (MINOR + 2 PATCH) ✅ shipped 2026-05-19
 
-Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandatory MINOR) + architect + devops-resilience + migration-specialist (scope) + qa-driver + release-manager.
-
-**User manual update required** (MINOR — new feature).
-
-### Release 2 — v3.16.0 (MINOR) ✅ shipped 2026-05-19
-
-**Goal:** SmartArt ICS org chart — interactive hierarchy tree with per-node controls.
-
-**Plan file:** [v3.16.0-smartart-org-chart.md](v3.16.0-smartart-org-chart.md)
-
-- **#95** SmartArt interactive org chart (headline — already implemented on `feature/smartart-org-chart`)
-- **#96** 12 must/should-fix items from 5-agent review: `canReparent()` IC-only + runtime guard, 44px touch targets with mobile toolbar→modal rework, granular `moveRoleUp/Down` updates, 19-site `escapeAttr()` hardening, `renderSubtree` crash fix + cycle guard, aria-labels, clearTimeout debounce, iOS `touch-action`, disabled opacity fix, role-assignment toast
-- User manual update (MINOR)
+- **v3.16.0** — SmartArt ICS org chart (#95) + 12 must-fix items (#96) + lock-by-default + ↑↓←→ arrows + modal close repositioned + ICS-doctrine role hierarchy (Operations left of Safety, Runner under Cutting Table) + 44px touch targets. Plan file: [v3.16.0-smartart-org-chart.md](v3.16.0-smartart-org-chart.md)
+- **v3.16.1** — Permanent inventory right rail on desktop Operations (fixes the floating panel overlapping shore-point cards)
+- **v3.16.2** — Operations legend (card colors + per-action role permissions) + remove buggy drilldown search
 
 **Deferred from original v3.16.0 scope → v3.17.0:**
 - 3 scenario presets, first-due solo IC mode, Quick-start FAB
@@ -80,7 +68,7 @@ Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandat
 
 ### Release 3 — v3.17.0 (MINOR, TBD) ⏳ planned
 
-**Goal:** Local-first defaults + pre-v4 schema dual-write window.
+**Goal:** Local-first defaults + pre-v4 schema dual-write window + carry-over fixes from v3.16.x field feedback.
 
 - 3 scenario presets: "Car into building", "Residential partial collapse", "Light commercial partial collapse"
 - First-due solo IC mode (progressive disclosure — single apparatus auto-selects)
@@ -89,6 +77,11 @@ Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandat
 - `customRoles` array → keyed object dual-write
 - `assignedApparatus` array → keyed object (#79)
 - Remaining schema migration prep for v4.0 cutover
+
+**Carry-over from v3.16.x field feedback:**
+- **One-shot role-hierarchy migration** — detect operations whose `customRoles` have Entry/Cutting reparented to IC or Runner missing under Cutting (legacy from pre-v3.16.0 defaults). Snap back to canonical or surface a one-tap "Reset to NIMS doctrine" toast for the IC. Closes Open Decision #6.
+- **Drilldown search v2** — debounced filter that doesn't fight the drilldown tree state. Closes Open Decision #7 (was removed in v3.16.2).
+- **#71 architectural full-fix** — current `offlineTouchedInventory` flush-pass mitigates the symptom; the `transaction`-skip in `firebaseSave()` at line 1482 still drops failed transactions from `pendingWrites`. Either queue a value-resync write or move `available` server-side.
 
 ### Release 4 — v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned
 
@@ -118,6 +111,8 @@ Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandat
 | 3 | Per-device UID — auto-generate or prompt? | **Auto-generate + prompt for display name on first write** (e.g., "BC Alex") |
 | 4 | NIMS terminology cutover — atomic or staggered? | **Atomic** — dual-write in v3.12.0–v3.17.0, cut over in v4.0.0 |
 | 5 | `_review-to-delete/` folder — safe to nuke? | **Yes** — stale worktrees + browser "Save As" artifacts |
+| 6 | Existing operations with broken role hierarchy (Entry/Cutting reparented to IC, Runner missing under Cutting) | **One-shot data migration in v3.17.0** — detect canonical-deviation `parentId`s and snap back. Until then: end + restart the operation OR have the IC manually rearrange via the new lock toggle |
+| 7 | Should drilldown search return? | **Yes, eventually** — was removed in v3.16.2 as too buggy. Re-introduce in v3.17.0 with a debounced filter that doesn't fight the drilldown tree state |
 
 ---
 
@@ -169,5 +164,5 @@ All completed or superseded: v1.8.1, v1.9.0, v2.1.0, v2.3.0, v3.4.1, v3.5.2, v3.
 
 - [ ] `_review-to-delete/` — nuke once Alex confirms
 - [ ] `git worktree prune` — run locally from Terminal to clean stale refs
-- [ ] CLAUDE.md — add v3.10.0 through v3.11.1 shipped tables (currently stops at v3.9.1)
-- [ ] MEMORY.md — update production version from v3.7.3 to v3.11.1
+- [ ] CLAUDE.md — "Known still pending" list stops at v3.9.1; pull the per-release detail forward to v3.16.x or fold it into the CONSOLIDATED-STATUS pointer
+- [ ] Reconcile #71 status across docs — issue body and v3.15.0 row say "partial"; the underlying `firebaseSave` transaction-skip is still present (see v3.17.0 carry-over)
