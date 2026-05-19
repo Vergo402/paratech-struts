@@ -890,12 +890,44 @@ async function maybePreMigrationSnapshot() {
   }
 }
 
-// showRenumberBanner — stub. Real implementation in v3.15.0 step 7 (mobile-ux
-// #4 + migration-specialist Q4: inline banner, NOT modal; gate on active-op
-// state). For now, log the need so the migration flow can flag without
-// blocking on UI infrastructure that doesn't exist yet.
+// showRenumberBanner — inline banner (NOT modal per mobile-ux #4 +
+// migration-specialist Q4) shown above the shore-point list when an op has
+// SPs with unparseable legacy division labels (e.g., 'A', 'Mezzanine B').
+// Dismissible per session; reappears on next op-load if there are still
+// legacy SPs unresolved. Gating happens at the caller (opIsInRapidActivity
+// check in the operations listener).
+let _renumberBannerDismissedFor = null; // opId for which the banner is hidden this session
 function showRenumberBanner(opId, legacyCount) {
-  console.info('[v3.15.0 migration] op ' + opId + ' has ' + legacyCount + ' shore-point(s) with unparseable legacy division labels; renumber banner deferred to step 7.');
+  const banner = document.getElementById('renumberBanner');
+  if (!banner) return;
+  if (legacyCount <= 0) { banner.classList.add('hidden'); return; }
+  if (_renumberBannerDismissedFor === opId) return; // session-dismissed
+  banner.classList.remove('hidden');
+  banner.innerHTML = '<div class="renumber-banner-text"><strong>' + legacyCount +
+    '</strong> shore point' + (legacyCount === 1 ? '' : 's') +
+    ' use a legacy division label (e.g. "A", "Alpha"). Open each one to renumber to the new numeric system.</div>' +
+    '<div class="renumber-banner-actions">' +
+    '<button type="button" class="btn btn-sm btn-outline" onclick="showLegacyDivisionSPs()" aria-label="Show shore points with legacy division labels">Show legacy SPs</button>' +
+    '<button type="button" class="renumber-banner-dismiss" onclick="dismissRenumberBanner()" aria-label="Dismiss renumber prompt">&times;</button>' +
+    '</div>';
+}
+
+function dismissRenumberBanner() {
+  const banner = document.getElementById('renumberBanner');
+  if (!banner) return;
+  banner.classList.add('hidden');
+  _renumberBannerDismissedFor = activeOperation ? activeOperation.id : null;
+}
+
+// showLegacyDivisionSPs — filters the shore-point list to only SPs with
+// divisionLegacyLabel set. Uses a synthetic drilldownPath segment so the
+// existing breadcrumb / clear-drill UX picks it up naturally.
+function showLegacyDivisionSPs() {
+  // Push a synthetic segment that filters by legacy-label presence.
+  // The filter site (renderDrilldownList) will need to recognize this
+  // marker; we use a sentinel value so it doesn't collide with real div numbers.
+  drilldownPath = [{ level: 'division', value: '__legacy__' }];
+  renderOperations();
 }
 
 // opIsInRapidActivity — gate for migration prompts (battalion-chief #2 +
@@ -5388,6 +5420,12 @@ function getFilteredPoints() {
       // v3.12.0 N2: 'group' lookup uses the dual-write fallback chain so
       // drilldown stays consistent regardless of which key the SP record uses.
       const val = seg.level === 'group' ? getSPGroup(sp) : (sp[seg.level] || null);
+      // v3.15.0 #93: __legacy__ sentinel filters to SPs with unparseable
+      // legacy division labels (renumber banner "Show legacy SPs" path).
+      if (seg.level === 'division' && seg.value === '__legacy__') {
+        if (!sp.divisionLegacyLabel) return false;
+        continue;
+      }
       if (seg.value === '__none__') {
         if (val !== null) return false;
       } else {
