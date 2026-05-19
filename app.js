@@ -935,6 +935,111 @@ function showLegacyDivisionSPs() {
 // transition in the last 30 minutes — i.e. an IC is actively working it.
 // In that state we do NOT surface a renumber prompt; we wait until the
 // op is quieter or ended.
+// #71 (v3.15.0): offline-touched-inventory tracking. The architectural root
+// cause of the v3.8.2 inventory bug is that firebaseSave at ~L1099 skips
+// queueing failed transactions (`if (method !== 'transaction')`). Every
+// offline deploy/return desyncs `available` counters because the transaction
+// never queues; on reconnect, the inventory listener overwrites our local
+// state with stale Firebase values.
+//
+// Per devops-resilience top-concern, "flush before listener" isn't
+// architecturally achievable — Firebase RTDB listeners fire synchronously on
+// reconnect and there's no API to pause them. The fix is to invert the model:
+// the listener consults the offline-touched set on each snapshot and SKIPS
+// overwriting `available` for items still in the set. Per-item, the flush-pass
+// then fires a transaction with our local value as source-of-truth; on commit
+// the item leaves the touched set and subsequent listener snapshots flow
+// through unchanged.
+//
+// Storage: dept-namespaced localStorage object
+//   fieldshore_offlineTouchedInventory_{deptId} → { [invId]: { localAvail, touchedAt } }
+// Devops-resilience Q2 — dept-namespacing prevents replaying Dept A's offline
+// writes into Dept B's tree after a dept-switch.
+function getOfflineTouchedKey() {
+  return 'fieldshore_offlineTouchedInventory_' + (deptId || 'unknown');
+}
+function getOfflineTouched() {
+  try {
+    const raw = localStorage.getItem(getOfflineTouchedKey());
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) { return {}; }
+}
+function setOfflineTouched(obj) {
+  try {
+    safeSetItem(getOfflineTouchedKey(), JSON.stringify(obj));
+  } catch (e) { /* non-fatal — quota / unavailable storage */ }
+}
+function markOfflineTouched(inventoryId, localAvail) {
+  if (!inventoryId) return;
+  const touched = getOfflineTouched();
+  touched[inventoryId] = { localAvail: localAvail, touchedAt: Date.now() };
+  setOfflineTouched(touched);
+}
+function clearOfflineTouched(inventoryId) {
+  if (!inventoryId) return;
+  const touched = getOfflineTouched();
+  if (touched[inventoryId]) {
+    delete touched[inventoryId];
+    setOfflineTouched(touched);
+  }
+}
+
+// Applies the listener-consults-touched-set inversion. For each item in the
+// snapshot, if it's in the offline-touched set, preserve our local `available`
+// value. All other fields fall through normally.
+function applyOfflineTouchedFilter(items) {
+  const touched = getOfflineTouched();
+  if (Object.keys(touched).length === 0) return items;
+  return items.map(item => {
+    if (touched[item.id]) {
+      return Object.assign({}, item, { available: touched[item.id].localAvail });
+    }
+    return item;
+  });
+}
+
+// Flush-pass: on reconnect, push each touched item's local `available` value
+// back to Firebase via a transaction. Use transaction (not set) per devops-
+// resilience Q3 — preserves the null-guard (don't materialize phantom nodes)
+// and respects optimistic locking against concurrent peer edits.
+// 24h age filter per devops-resilience additional finding — stale entries
+// are discarded rather than replayed against fresher peer state.
+async function flushOfflineTouchedInventory() {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId || !inventoryRef) return;
+  const touched = getOfflineTouched();
+  const ids = Object.keys(touched);
+  if (ids.length === 0) return;
+  const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  for (const id of ids) {
+    const entry = touched[id];
+    if (!entry || typeof entry.touchedAt !== 'number' || now - entry.touchedAt > MAX_AGE_MS) {
+      console.warn('[offline-touched] discarding stale entry >24h:', id);
+      clearOfflineTouched(id);
+      continue;
+    }
+    const localAvail = entry.localAvail;
+    try {
+      const result = await inventoryRef.child(id).child('available').transaction((v) => {
+        if (v === null || v === undefined) return undefined; // peer-deleted; don't materialize
+        return localAvail;
+      });
+      // Clear regardless of commit — if it didn't commit (peer-deleted node),
+      // the local state will also be cleaned up by the next listener snapshot.
+      clearOfflineTouched(id);
+      if (!result || !result.committed) {
+        console.info('[offline-touched] flush aborted for', id, '— node missing or peer-deleted');
+      }
+    } catch (e) {
+      console.warn('[offline-touched] flush failed for', id, e && e.message);
+      // Keep in touched set; next reconnect will retry.
+    }
+  }
+}
+
 function opIsInRapidActivity(op) {
   if (!op) return false;
   const ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
@@ -2021,6 +2126,11 @@ function setupConnListener() {
       flushPendingWrites();
       flushSyncDiagBuffer();
       flushPendingMemberRegistrations();
+      // #71 (v3.15.0): on reconnect, push local inventory `available` values
+      // for items mutated offline. The listener-consults-touched-set inversion
+      // above ensures the listener doesn't overwrite local until each item's
+      // flush settles.
+      flushOfflineTouchedInventory().catch(err => console.warn('[offline-touched] flush error:', err && err.message));
     } else {
       isOnline = false;
       el.className = 'conn-status offline';
@@ -2225,7 +2335,11 @@ function setupListeners() {
     }
     inventoryFirstFire = false;
     const data = snap.val() || {};
-    localInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    // #71 (v3.15.0): listener-consults-touched-set inversion. Items in the
+    // offline-touched set keep their local `available` value until the
+    // flush-pass settles them.
+    const rawInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    localInventory = applyOfflineTouchedFilter(rawInventory);
     persistInventory();
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
     if (document.getElementById('addEquipModal').classList.contains('active')) showAddEquipment();
@@ -4868,11 +4982,20 @@ async function upgradePendingToDeployed(result, pendingId) {
     activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
   } else {
     strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+    // #71 (v3.15.0): if we mutated locally without a Firebase transaction
+    // (txResult.offline === true), mark for flush-pass on reconnect.
+    if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
   }
-  for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+  for (const ext of extInvItems) {
+    ext.available = Math.max(0, ext.available - 1);
+    if (txResult.offline) markOfflineTouched(ext.id, ext.available);
+  }
   for (const pl of deployedPlates) {
     const plInv = localInventory.find(i => i.id === pl.inventoryId);
-    if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    if (plInv) {
+      plInv.available = Math.max(0, plInv.available - 1);
+      if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+    }
   }
 
   // SP companion write (transactions already committed by runDeployTransactions)
@@ -5239,16 +5362,24 @@ async function deployShorePoint(result, qty) {
     }
 
     // Transactions committed (or offline). Apply local optimistic decrement and
-    // fire the SP companion write.
+    // fire the SP companion write. #71 (v3.15.0): if offline, mark each
+    // mutated item for the reconnect flush-pass.
     if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
       activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
     } else {
       strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+      if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
     }
-    for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+    for (const ext of extInvItems) {
+      ext.available = Math.max(0, ext.available - 1);
+      if (txResult.offline) markOfflineTouched(ext.id, ext.available);
+    }
     for (const pl of deployedPlates) {
       const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+      if (plInv) {
+        plInv.available = Math.max(0, plInv.available - 1);
+        if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+      }
     }
 
     if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
@@ -6513,6 +6644,10 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
 }
 
 function returnInventoryItems(sp) {
+  // #71 (v3.15.0): when offline, mark each incremented item for the
+  // reconnect flush-pass. When online, the transaction fires and the
+  // listener echo will reconcile.
+  const isOnline = !!(db && deptId && inventoryRef);
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
@@ -6523,8 +6658,10 @@ function returnInventoryItems(sp) {
     } else {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
       if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-      if (db && deptId && inventoryRef) {
+      if (isOnline) {
         firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+      } else if (inv) {
+        markOfflineTouched(inv.id, inv.available);
       }
     }
   }
@@ -6533,8 +6670,10 @@ function returnInventoryItems(sp) {
       if (ext.inventoryId) {
         const inv = localInventory.find(i => i.id === ext.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId && inventoryRef) {
+        if (isOnline) {
           firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+        } else if (inv) {
+          markOfflineTouched(inv.id, inv.available);
         }
       }
     }
@@ -6544,8 +6683,10 @@ function returnInventoryItems(sp) {
       if (pl.inventoryId) {
         const inv = localInventory.find(i => i.id === pl.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId && inventoryRef) {
+        if (isOnline) {
           firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+        } else if (inv) {
+          markOfflineTouched(inv.id, inv.available);
         }
       }
     }
