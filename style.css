@@ -1751,6 +1751,23 @@ body {
      the inline drilldown-list rows (sidebar already navigates the hierarchy) */
   :root:not(.force-mobile-view) #activeOp #drilldownBreadcrumb { display: none !important; }
   :root:not(.force-mobile-view) #activeOp .drilldown-item { display: none; }
+
+  /* Desktop Operations — permanent inventory right rail (replaces the
+     floating FAB + slide-in panel pattern used on mobile). Pins the
+     existing #qvPanel to the viewport right edge and reserves matching
+     right space on the app shell so shore-point cards aren't covered. */
+  :root:not(.force-mobile-view) body.ops-active .inv-quickview-btn { display: none !important; }
+  :root:not(.force-mobile-view) body.ops-active .inv-qv-overlay { display: none !important; }
+  :root:not(.force-mobile-view) body.ops-active #mainApp { padding-right: 340px; }
+  :root:not(.force-mobile-view) body.ops-active .inv-quickview-panel {
+    right: 0;
+    width: 320px;
+    top: 56px;
+    box-shadow: -1px 0 0 var(--border);
+    transition: none;
+    z-index: 40;
+  }
+  :root:not(.force-mobile-view) body.ops-active .inv-qv-close { display: none; }
 }
 
 /* v3.14.0 — Operations drilldown sidebar (hidden on mobile, shown via the

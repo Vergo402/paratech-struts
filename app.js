@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.16.0';
+const APP_VERSION = '3.16.1';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -2967,6 +2967,9 @@ function setMeasurementFromInches(prefix, totalInches) {
 // INVENTORY MANAGEMENT
 // ============================================================
 function renderInventory() {
+  if (document.body.classList.contains('ops-active') && document.getElementById('qvPanel').classList.contains('open')) {
+    renderQuickViewInventory();
+  }
   const container = document.getElementById('inventoryList');
   const empty = document.getElementById('invEmpty');
   renderApparatusTabs();
@@ -7540,8 +7543,21 @@ function renderQuickViewInventory() {
 
 function updateQuickViewFab() {
   const fab = document.getElementById('qvFab');
+  const panel = document.getElementById('qvPanel');
+  const overlay = document.getElementById('qvOverlay');
   const opsActive = document.getElementById('screenOps').classList.contains('active');
-  fab.style.display = (opsActive && activeOperation) ? 'flex' : 'none';
+  const shouldShow = opsActive && activeOperation;
+  const isDesktopOps = shouldShow && !document.documentElement.classList.contains('force-mobile-view') && window.matchMedia('(min-width: 1024px)').matches;
+  fab.style.display = (shouldShow && !isDesktopOps) ? 'flex' : 'none';
+  document.body.classList.toggle('ops-active', !!shouldShow);
+  if (isDesktopOps) {
+    panel.classList.add('open');
+    overlay.classList.remove('open');
+    renderQuickViewInventory();
+  } else {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+  }
 }
 
 // ============================================================
@@ -7797,7 +7813,10 @@ function toggleViewMode() {
   const next = current === 'mobile' ? 'desktop' : 'mobile';
   safeSetItem(VIEW_MODE_KEY, next);
   applyViewMode();
+  updateQuickViewFab();
 }
+
+window.addEventListener('resize', () => updateQuickViewFab());
 
 // ============================================================
 // INIT
