@@ -81,6 +81,7 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 **Carry-over from v3.16.x field feedback:**
 - **One-shot role-hierarchy migration** — detect operations whose `customRoles` have Entry/Cutting reparented to IC or Runner missing under Cutting (legacy from pre-v3.16.0 defaults). Snap back to canonical or surface a one-tap "Reset to NIMS doctrine" toast for the IC. Closes Open Decision #6.
 - **Drilldown search v2** — debounced filter that doesn't fight the drilldown tree state. Closes Open Decision #7 (was removed in v3.16.2).
+- **Move Operations legend to top of left column** — the collapsible "Legend — colors & permissions" block currently sits inline above the shore-points list (between the SHORE POINTS header and the cards). On desktop it should move to the top of the left sidebar column (above the drilldown tree) so it doesn't shove the cards down and is visible alongside whatever the user has drilled into. Mobile pattern can stay inline or move to a top-of-page collapsed accordion — decide during implementation.
 - **#71 architectural full-fix** — current `offlineTouchedInventory` flush-pass mitigates the symptom; the `transaction`-skip in `firebaseSave()` at line 1482 still drops failed transactions from `pendingWrites`. Either queue a value-resync write or move `available` server-side.
 
 ### Release 4 — v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned
