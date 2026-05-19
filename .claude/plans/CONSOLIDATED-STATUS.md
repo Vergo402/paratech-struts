@@ -39,21 +39,19 @@ Two-round audit (v3.5.1) catalogued ~100 unique findings. Closed across v3.5.2 (
 
 ## Pipeline
 
-### v3.17.0 (MINOR) ⏳ next — 6 items scoped in Project
+### v3.17.0 (MINOR) ⏳ next — 12 items scoped in Project
 
-Local-first defaults + carry-over fixes from v3.16.x field feedback + pre-v4 schema dual-write.
+Local-first defaults + role/permission cleanup + pre-v4 schema dual-write + #107 follow-up. Bundled per the 2026-05-19 /plan pass after 7-agent review (code-auditor, battalion-chief, mobile-ux, devops-resilience, nims-compliance, release-manager, qa-driver) folded 9 architectural decisions into the plan.
 
-**Already scoped** (set in Project on 2026-05-19):
-- [#79](https://github.com/Vergo402/paratech-struts/issues/79) — `assignedApparatus` array → keyed object
-- [#102](https://github.com/Vergo402/paratech-struts/issues/102) — Add External Equipment should match full inventory list flow
-- [#104](https://github.com/Vergo402/paratech-struts/issues/104) — Role permissions: Mark Secured open to all; Runner limited
-- [#105](https://github.com/Vergo402/paratech-struts/issues/105) — Remove End Operation from Operations tab — IC-only via Command
-- [#106](https://github.com/Vergo402/paratech-struts/issues/106) — Verify "Setup actions IC-only" legend wording
-- [#107](https://github.com/Vergo402/paratech-struts/issues/107) — External-equipment transaction failures on RETURN (v3.16.4 F1 follow-up)
+**Already scoped** (Release field set 2026-05-19):
+- **Local-first defaults** — [#108](https://github.com/Vergo402/paratech-struts/issues/108) Scenario presets · [#109](https://github.com/Vergo402/paratech-struts/issues/109) Solo-IC mode (count + IC override) · [#110](https://github.com/Vergo402/paratech-struts/issues/110) Quick-start FAB (hold-to-confirm, auto-create op skipping Start Op modal)
+- **Schema dual-write (pre-v4)** — [#79](https://github.com/Vergo402/paratech-struts/issues/79) `assignedApparatus`→keyed · [#111](https://github.com/Vergo402/paratech-struts/issues/111) `'Strut Placed'`→`'Strut Installed'` (FEMA US&R FOG) · [#112](https://github.com/Vergo402/paratech-struts/issues/112) `customRoles`→keyed · [#113](https://github.com/Vergo402/paratech-struts/issues/113) One-shot role-hierarchy migration
+- **Role & permission cleanup** — [#102](https://github.com/Vergo402/paratech-struts/issues/102) Add External Equipment full form · [#104](https://github.com/Vergo402/paratech-struts/issues/104) Mark Secured = IC+Safety+Shoring group; Runner limited · [#105](https://github.com/Vergo402/paratech-struts/issues/105) End Op IC-only via Command · [#106](https://github.com/Vergo402/paratech-struts/issues/106) Legend audit
+- **Bug** — [#107](https://github.com/Vergo402/paratech-struts/issues/107) External-equipment return resync (v3.16.4 F1 follow-up)
 
-**Carry-over items still in Backlog** (decide on next `/plan` run): scenario presets, solo-IC mode, Quick-start FAB, `Strut Placed` → `Strut Set` dual-write, `customRoles` keyed-object dual-write, one-shot role-hierarchy migration, drilldown search v2.
+**Deferred** (drilldown search v2 punted; revisit in v3.18.0+ or never).
 
-Live query: [Release=v3.17.0 in the Project](https://github.com/users/Vergo402/projects/1).
+Plan: [v3.17.0-pre-v4-bundle.md](v3.17.0-pre-v4-bundle.md). Live query: [Release=v3.17.0 in the Project](https://github.com/users/Vergo402/projects/1).
 
 ### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 2 items scoped in Project
 

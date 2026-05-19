@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.16.4</div>
+      <div class="version-label">v3.17.0</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -229,7 +229,7 @@
               <div class="op-name" id="opName"></div>
               <div class="op-time" id="opTime"></div>
             </div>
-            <button class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End</button>
+            <!-- v3.17.0 #105: End Op moved to Command tab, IC-only gate. -->
           </div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
@@ -275,8 +275,14 @@
       </div>
       <div id="activeOpCommand" class="hidden">
         <div class="op-card">
-          <div class="op-name" id="cmdOpName"></div>
-          <div class="op-time" id="cmdOpTime"></div>
+          <div class="flex-between">
+            <div>
+              <div class="op-name" id="cmdOpName"></div>
+              <div class="op-time" id="cmdOpTime"></div>
+            </div>
+            <!-- v3.17.0 #105: End Op IC-only gate. Disabled state set live in renderCommand() based on myRole === 'ic'. -->
+            <button id="cmdEndOpBtn" class="btn btn-sm btn-danger" onclick="guardClick(this,endOperation)">End Op</button>
+          </div>
         </div>
         <div class="op-views">
         <div id="cmdDashboard"></div>

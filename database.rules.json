@@ -32,6 +32,11 @@
           ".indexOn": ["status"],
           "$opId": {
             ".validate": "newData.hasChild('name') && newData.hasChild('status')",
+            "_meta": {
+              "roleHierarchyMigratedAt": {
+                ".validate": "newData.isNumber()"
+              }
+            },
             "shorePoints": {
               "$spId": {
                 "status": {
@@ -68,6 +73,25 @@
             "customRoles": {
               "$idx": {
                 ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8"
+              }
+            },
+            "customRolesById": {
+              "$roleId": {
+                ".validate": "newData.hasChildren(['name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8",
+                "assignedApparatusById": {
+                  "$appId": {
+                    ".validate": "newData.isBoolean()"
+                  }
+                }
+              }
+            },
+            "externalEquipment": {
+              "$itemId": {
+                "_meta": {
+                  "lastVerifiedAt": {
+                    ".validate": "newData.isNumber()"
+                  }
+                }
               }
             },
             "hazards": {

@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.16.4';
+const APP_VERSION = '3.17.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -714,7 +714,7 @@ const STATUS_ORDER = ['pending', 'process', 'strutplaced', 'cutting', 'runner', 
 const STATUS_LABELS = {
   pending: 'Pending — No Equipment',
   process: 'In Process',
-  strutplaced: 'Strut Placed',
+  strutplaced: 'Strut Installed',
   cutting: 'Cutting',
   runner: 'Runner',
   secured: 'Secured',
@@ -1884,25 +1884,188 @@ function initCustomRoles() {
   }
 }
 
-// v3.12.0 H4: granular per-index writes by default to avoid whole-array clobber
-// on concurrent peer reparent/edit. Deletion still uses full-array set because
-// Firebase .update() with sparse indices does NOT shrink an array. Schema
-// migration to keyed-by-roleId object is deferred to v4.0.0 (see roadmap R4)
-// so this stays array-shape on disk and keeps v3.11.3 peers functional.
-function saveCustomRoles(opts) {
+// v3.17.0 #112: merge customRoles array shape with customRolesById keyed shape.
+// Per A1: keyed is canonical for concurrent-write safety; array provides
+// sibling display order when present. Roles only in keyed (concurrent-add
+// winners that lost the array race) append at end so neither device's role
+// is lost from the rendered view.
+function mergeCustomRolesShapes(byId, arr) {
+  if (!byId || typeof byId !== 'object' || Object.keys(byId).length === 0) {
+    return Array.isArray(arr) ? arr : [];
+  }
+  const arrIds = Array.isArray(arr) ? arr.map(r => r && r.id).filter(Boolean) : [];
+  const seen = new Set();
+  const ordered = [];
+  for (const id of arrIds) {
+    if (byId[id]) {
+      ordered.push({ id, ...byId[id] });
+      seen.add(id);
+    }
+  }
+  for (const id of Object.keys(byId)) {
+    if (!seen.has(id)) {
+      ordered.push({ id, ...byId[id] });
+    }
+  }
+  return ordered;
+}
+
+// v3.17.0 #79: same merge pattern for op-level assignedApparatus.
+function mergeAssignedApparatusShapes(byId, arr) {
+  if (!byId || typeof byId !== 'object' || Object.keys(byId).length === 0) {
+    return Array.isArray(arr) ? arr : [];
+  }
+  const arrIds = Array.isArray(arr) ? arr : [];
+  const seen = new Set();
+  const ordered = [];
+  for (const id of arrIds) {
+    if (byId[id] === true && !seen.has(id)) {
+      ordered.push(id);
+      seen.add(id);
+    }
+  }
+  for (const [id, val] of Object.entries(byId)) {
+    if (val === true && !seen.has(id)) {
+      ordered.push(id);
+    }
+  }
+  return ordered;
+}
+
+// v3.17.0 #112 dual-write helper. Per A1: SINGLE multi-path update writes both
+// shapes atomically — if validate rule rejects either shape, neither lands.
+// Replaces the v3.12.0 saveCustomRoles direct write to customRoles only.
+// On deletion, full-set both shapes (sparse array indices and stale keyed
+// roleIds both need clearing). On non-deletion, granular updates on both.
+function writeCustomRolesDual(opts) {
   if (!activeOperation) return;
   persistOperation();
-  if (!(db && deptId && operationsRef && activeOperation.id)) return; // H9 (v3.11.3) operationsRef guard parity
-  const ref = operationsRef.child(activeOperation.id).child('customRoles');
+  if (!(db && deptId && operationsRef && activeOperation.id)) return;
+  const opRef = operationsRef.child(activeOperation.id);
+  const roles = activeOperation.customRoles || [];
+  const byId = {};
+  for (const r of roles) {
+    if (!r || !r.id) continue;
+    const { id, ...rest } = r;
+    byId[id] = rest;
+  }
   if (opts && opts.deletion) {
-    // Full-array set is required to shrink the on-disk array (.update with sparse
-    // indices leaves stale entries behind).
-    firebaseSave(ref, 'set', activeOperation.customRoles);
+    firebaseSave(opRef, 'update', {
+      customRoles: roles,
+      customRolesById: byId,
+    });
     return;
   }
   const updates = {};
-  activeOperation.customRoles.forEach((role, idx) => { updates[idx] = role; });
-  firebaseSave(ref, 'update', updates);
+  roles.forEach((role, idx) => {
+    updates['customRoles/' + idx] = role;
+    if (role && role.id) {
+      const { id, ...rest } = role;
+      updates['customRolesById/' + role.id] = rest;
+    }
+  });
+  firebaseSave(opRef, 'update', updates);
+}
+
+// v3.17.0 #79 dual-write helper for op-level assignedApparatus. Full-set both
+// shapes inside a single atomic update per A1.
+function writeAssignedApparatusDual() {
+  if (!activeOperation) return;
+  persistOperation();
+  if (!(db && deptId && operationsRef && activeOperation.id)) return;
+  const opRef = operationsRef.child(activeOperation.id);
+  const assigned = activeOperation.assignedApparatus || [];
+  const byId = {};
+  for (const id of assigned) {
+    if (id) byId[id] = true;
+  }
+  firebaseSave(opRef, 'update', {
+    assignedApparatus: assigned,
+    assignedApparatusById: byId,
+  });
+}
+
+// v3.17.0 #113: one-shot role-hierarchy migration. Backfills parentId on
+// legacy pre-v3.16 customRoles using ICS_ROLES_DEFAULT mapping. Per A5:
+//   - module-level _roleHierarchyMigrationInFlight Set guard (prevents
+//     double-run when setupListeners() re-fires during auth or dept switch)
+//   - field-level idempotency (skip if parentId !== undefined)
+//   - dept-switch capture (abort if currentDeptId changes mid-call)
+//   - meta flag in same multi-path update as parentId backfills (atomic)
+const _roleHierarchyMigrationInFlight = new Set();
+
+function migrateRoleHierarchy(capturedDeptId, capturedOpId) {
+  if (!activeOperation || activeOperation.id !== capturedOpId) return;
+  if (capturedDeptId !== deptId) return;
+  const flagPath = capturedOpId + ':' + capturedDeptId;
+  if (_roleHierarchyMigrationInFlight.has(flagPath)) return;
+  const op = activeOperation;
+  const alreadyMigrated = op._meta && typeof op._meta.roleHierarchyMigratedAt === 'number';
+  if (alreadyMigrated) return;
+
+  const setFlagOnly = () => {
+    if (!(db && deptId && operationsRef && op.id)) return;
+    const opRef = operationsRef.child(op.id);
+    firebaseSave(opRef, 'update', { '_meta/roleHierarchyMigratedAt': Date.now() })
+      .catch(err => console.warn('[migration] flag-only write failed:', err && err.message));
+  };
+
+  const roles = op.customRoles || [];
+  if (roles.length === 0) {
+    setFlagOnly();
+    return;
+  }
+
+  const defaultsById = {};
+  ICS_ROLES_DEFAULT.forEach(r => { defaultsById[r.id] = r; });
+
+  const needsMigration = roles.some(r => r && r.id && r.parentId === undefined && defaultsById[r.id]);
+  if (!needsMigration) {
+    setFlagOnly();
+    return;
+  }
+
+  _roleHierarchyMigrationInFlight.add(flagPath);
+
+  const updates = { '_meta/roleHierarchyMigratedAt': Date.now() };
+  let migrationCount = 0;
+  roles.forEach((role, idx) => {
+    if (!role || !role.id) return;
+    if (role.parentId !== undefined) return; // field-level idempotency
+    const def = defaultsById[role.id];
+    if (!def) return; // custom role not in defaults — leave parentId unset
+    role.parentId = def.parentId;
+    updates['customRoles/' + idx + '/parentId'] = def.parentId;
+    updates['customRolesById/' + role.id + '/parentId'] = def.parentId;
+    migrationCount++;
+  });
+
+  if (migrationCount === 0) {
+    _roleHierarchyMigrationInFlight.delete(flagPath);
+    setFlagOnly();
+    return;
+  }
+
+  console.info('[migration] role-hierarchy: backfilling parentId on', migrationCount, 'roles in op', capturedOpId);
+
+  if (db && deptId && operationsRef && op.id) {
+    const opRef = operationsRef.child(op.id);
+    firebaseSave(opRef, 'update', updates)
+      .catch(err => console.warn('[migration] role-hierarchy backfill failed:', err && err.message))
+      .finally(() => { _roleHierarchyMigrationInFlight.delete(flagPath); });
+  } else {
+    persistOperation();
+    _roleHierarchyMigrationInFlight.delete(flagPath);
+  }
+}
+
+// v3.12.0 H4: granular per-index writes by default to avoid whole-array clobber
+// on concurrent peer reparent/edit. v3.17.0 #112: now dual-writes both
+// customRoles (array, v3.16.x readers) and customRolesById (keyed object,
+// v4.0+ readers + concurrent-write safety) via writeCustomRolesDual. v4.0
+// cuts the array.
+function saveCustomRoles(opts) {
+  writeCustomRolesDual(opts);
 }
 
 function toggleOrgCollapse(roleId) {
@@ -1954,16 +2117,24 @@ function canReparent() {
 // Returns { allowed, reason } so callers can render greyed buttons + tooltips.
 // Doctrine:
 //   • mark-cut-done / send-to-runner — Cutting role owns the cut station
-//   • mark-secured                    — Runner owns the handoff & final placement
-//   • return-equipment                — Entry/Rescue/Shoring own the equipment recovery
+//   • mark-secured                    — Shoring Group Supervisor functional
+//                                       authority (FEMA ICSSCI SM-0322). Per
+//                                       v3.17.0 #104 / D2 (2026-05-19): IC +
+//                                       Safety + Initial Shoring + Wood Shoring.
+//                                       Runner role NO LONGER marks secured
+//                                       (was incorrect — shoring confirmation
+//                                       belongs to the Shoring group).
+//   • return-equipment                — Entry/Rescue/Shoring own the equipment
+//                                       recovery. Runner explicitly excluded.
 // IC and Safety always override (command authority + life-safety stop work).
 // If no role is set on the device, the gate is open (don't block field crews
 // who haven't set up roles yet).
 const SHORE_ACTION_ALLOWED_ROLES = {
   'mark-cut-done':    ['cutting', 'ic', 'safety'],
-  'send-to-runner':   ['cutting', 'ic', 'safety'],
-  'mark-secured':     ['runner', 'ic', 'safety'],
+  'send-to-runner':   ['cutting', 'runner', 'ic', 'safety'],
+  'mark-secured':     ['ic', 'safety', 'shoring', 'wood'],
   'return-equipment': ['entry', 'rescue', 'shoring', 'ic', 'safety'],
+  'deploy-equipment': ['ic', 'safety', 'operations', 'entry', 'rescue', 'shoring', 'wood', 'cutting'],
 };
 
 function canPerformShoreAction(action) {
@@ -2177,14 +2348,10 @@ function moveRoleUp(roleId) {
   }
   if (prevIdx < 0) return;
   [roles[idx], roles[prevIdx]] = [roles[prevIdx], roles[idx]];
-  persistOperation();
-  if (db && deptId && activeOperation.id) {
-    const ref = firebase.database().ref(`departments/${deptId}/operations/${activeOperation.id}`);
-    const updates = {};
-    updates['customRoles/' + idx] = roles[idx];
-    updates['customRoles/' + prevIdx] = roles[prevIdx];
-    firebaseSave(ref, 'update', updates);
-  }
+  // v3.17.0 #112: dual-write helper writes BOTH shapes atomically. Array-only
+  // updates left customRolesById out of sync on prior moves; v4.0 will read
+  // from keyed, so move ops must keep both shapes consistent.
+  writeCustomRolesDual();
   renderCommandView();
 }
 
@@ -2202,14 +2369,7 @@ function moveRoleDown(roleId) {
   }
   if (nextIdx < 0) return;
   [roles[idx], roles[nextIdx]] = [roles[nextIdx], roles[idx]];
-  persistOperation();
-  if (db && deptId && activeOperation.id) {
-    const ref = firebase.database().ref(`departments/${deptId}/operations/${activeOperation.id}`);
-    const updates = {};
-    updates['customRoles/' + idx] = roles[idx];
-    updates['customRoles/' + nextIdx] = roles[nextIdx];
-    firebaseSave(ref, 'update', updates);
-  }
+  writeCustomRolesDual();
   renderCommandView();
 }
 
@@ -2604,6 +2764,26 @@ function setupListeners() {
     const data = snap.val() || {};
     const ops = Object.entries(data).map(([id, op]) => ({ id, ...op }));
     activeOperation = ops.length > 0 ? ops[0] : null;
+    // v3.17.0 #112 + #79 dual-write hydrate: when both array and keyed shapes
+    // exist, merge so concurrent-add winners that lost the array race still
+    // render. Per A1 keyed is canonical; array provides display order.
+    if (activeOperation) {
+      activeOperation.customRoles = mergeCustomRolesShapes(
+        activeOperation.customRolesById,
+        activeOperation.customRoles
+      );
+      activeOperation.assignedApparatus = mergeAssignedApparatusShapes(
+        activeOperation.assignedApparatusById,
+        activeOperation.assignedApparatus
+      );
+      // v3.17.0 #113: schedule one-shot role-hierarchy migration. Idempotent
+      // via _meta.roleHierarchyMigratedAt; in-flight guard prevents double-run
+      // when listener re-fires before flag persists. Defer to next tick so
+      // hydration completes before migration writes back.
+      const capturedDeptId = deptId;
+      const capturedOpId = activeOperation.id;
+      setTimeout(() => { migrateRoleHierarchy(capturedDeptId, capturedOpId); }, 0);
+    }
     if (activeOperation && activeOperation.shorePoints) {
       activeOperation.shorePoints = Object.entries(activeOperation.shorePoints).map(([id, sp]) => {
         // Migrate legacy field names: floor→area, team→group
@@ -3465,10 +3645,10 @@ function toggleApparatusAssignment(appId, assign) {
     assigned = assigned.filter(id => id !== appId);
   }
   activeOperation.assignedApparatus = assigned;
-  persistOperation();
-  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
-    firebaseSave(operationsRef.child(activeOperation.id).child('assignedApparatus'), 'set', assigned);
-  }
+  // v3.17.0 #79: dual-write helper writes both assignedApparatus (array) +
+  // assignedApparatusById (keyed) atomically per A1. Replaces the prior
+  // array-only set() which was the concurrent-toggle clobber path.
+  writeAssignedApparatusDual();
   renderOperations();
 }
 
@@ -4607,6 +4787,17 @@ function renderCommand() {
   active.style.display = '';
   active.classList.remove('hidden');
   populateOpHeader('cmd');
+  // v3.17.0 #105: End Op gate resolves against LIVE myRole each render
+  // (per battalion-chief #3 — gate must reflect post-transfer state, not cached).
+  const endBtn = document.getElementById('cmdEndOpBtn');
+  if (endBtn) {
+    const isIc = myRole === 'ic';
+    endBtn.disabled = !isIc;
+    endBtn.setAttribute('aria-disabled', String(!isIc));
+    endBtn.title = isIc ? 'End the operation' : 'Only the Incident Commander can end the operation';
+    endBtn.style.opacity = isIc ? '' : '0.5';
+    endBtn.style.cursor = isIc ? '' : 'not-allowed';
+  }
   const points = getShorePoints();
   const dashboardEl = document.getElementById('cmdDashboard');
   if (dashboardEl) dashboardEl.innerHTML = renderDashboardStats(points);
@@ -4651,7 +4842,7 @@ function renderOpsLegend() {
   const colors = [
     { cls: 'pending',     label: 'Pending — awaiting strut' },
     { cls: 'process',     label: 'In Process — placing strut' },
-    { cls: 'strutplaced', label: 'Strut Placed — awaiting cutting' },
+    { cls: 'strutplaced', label: 'Strut Installed — awaiting cutting' },
     { cls: 'cutting',     label: 'Cutting — cuts in progress' },
     { cls: 'runner',      label: 'Runner — transporting cut wood' },
     { cls: 'secured',     label: 'Secured — installation complete' },
@@ -4684,7 +4875,8 @@ function renderOpsLegend() {
       <ul class="legend-list">
         ${perms.map(p => `<li><span class="legend-action">${escapeHtml(p.action)}</span><span class="legend-roles">${p.roles}</span></li>`).join('')}
         <li class="legend-note">IC and Safety can perform any action (command override).</li>
-        <li class="legend-note">Setup actions (add/edit/delete shore points, rearrange chart) are IC-only.</li>
+        <li class="legend-note">Rearranging the ICS chart (move/promote roles, add/remove roles) is IC-only.</li>
+        <li class="legend-note">Ending the operation is IC-only (Command tab).</li>
       </ul>
     </div>
   `;
@@ -4910,7 +5102,7 @@ function renderShorePointCards(numbered) {
       // Status transition buttons
       if (status === 'process') {
         html += `<div class="action-row">
-          <button class="btn btn-sm" style="flex:1;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)" onclick="updateShoreStatus('${sp.id}','strutplaced')">→ Strut Placed</button>
+          <button class="btn btn-sm" style="flex:1;background:var(--blue-light);color:var(--blue);border:1px solid var(--blue-border)" onclick="updateShoreStatus('${sp.id}','strutplaced')">→ Strut Installed</button>
         </div>`;
       }
       if (status === 'strutplaced') {
@@ -5056,6 +5248,10 @@ function confirmStartOp() {
   }
 
   const assignedApparatus = getStartOpSelectedApparatus();
+  // v3.17.0 #79: dual-write keyed shape from the start so v4.0+ readers see
+  // assignment from op creation, not just from first toggle.
+  const assignedApparatusById = {};
+  for (const aid of assignedApparatus) { if (aid) assignedApparatusById[aid] = true; }
   const multiBuilding = document.getElementById('opMultiBuilding').checked;
   const taskForce = validateInput(document.getElementById('newOpTaskForce').value, 100);
 
@@ -5065,6 +5261,7 @@ function confirmStartOp() {
     startTime: new Date().toISOString(),
     endTime: null,
     assignedApparatus,
+    assignedApparatusById,
     multiBuilding,
   };
   if (taskForce) op.taskForce = taskForce;
@@ -5583,6 +5780,13 @@ function confirmUnratedDeploy(result) {
 }
 
 async function deployShorePoint(result, qty) {
+  // v3.17.0 #104: deploy-equipment gate excludes Runner role (per plan
+  // "Runner limited to Send To Runner only — no Deploy, no Return Equipment").
+  const deployGate = canPerformShoreAction('deploy-equipment');
+  if (!deployGate.allowed) {
+    showToast(deployGate.reason || 'Your role cannot deploy equipment', 'warning');
+    return;
+  }
   if (typeof result === 'string') {
     try { result = JSON.parse(result); }
     catch (e) { showToast('Invalid shore point data', 'error'); return; }
@@ -6237,7 +6441,7 @@ function renderDashboardStats(points) {
   const statusCards = [
     { key: 'pending', bg: 'var(--pending-bg)', color: 'var(--pending)', label: 'Pending', conditional: true },
     { key: 'process', bg: 'var(--red-bg)', color: 'var(--red)', label: 'In Process' },
-    { key: 'strutplaced', bg: 'var(--blue-light)', color: 'var(--blue)', label: 'Strut Placed' },
+    { key: 'strutplaced', bg: 'var(--blue-light)', color: 'var(--blue)', label: 'Strut Installed' },
     { key: 'cutting', bg: 'var(--cutting-bg)', color: 'var(--cutting-text)', label: 'Cutting' },
     { key: 'runner', bg: 'var(--runner-bg)', color: 'var(--runner-text)', label: 'Runner' },
     { key: 'secured', bg: 'var(--green-bg)', color: 'var(--green)', label: 'Secured' },
