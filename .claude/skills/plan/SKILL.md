@@ -117,15 +117,18 @@ Read first ~40 lines of each active plan for canonical-source declarations.
 
 ```bash
 # Open items only (Status != Done)
-gh project item-list 1 --owner Vergo402 --limit 200 --format json | \
-  jq '.items[] | select(.["status"] != "Done")'
+gh project item-list 1 --owner Vergo402 --limit 200 --format json --jq \
+  '.items[] | select(.status != "Done")'
 ```
 
 For ship-bugs mode, filter further:
 - `Source` in {bug, feedback}
-- `Release` = "Backlog" OR matches next-release pointer
+- `Release` = "Backlog" OR matches next-release pointer (the next PATCH version)
 
-For plan-release mode, include everything not Done.
+For plan-release mode, candidate set = everything not Done. Within the candidates:
+- `Release = Backlog` items are unassigned and eligible to scope into the current target version.
+- `Release = v{X.Y.Z}` items where v{X.Y.Z} **matches** the target version are already-scoped (re-confirm with Alex).
+- `Release = v{X.Y.Z}` items where v{X.Y.Z} **doesn't match** the target are pre-committed elsewhere — **surface, do NOT silently re-scope**. Ask: "Item #N is scoped to v3.18.0. Move to v{target}?"
 
 ### Severity & priority
 
@@ -335,14 +338,20 @@ Derive semver per `release-manager` criteria:
 
 #### B4. Present scope → **GATE 1**
 
+For each in-scope item, the table must show its **current Release field value** so re-scopes are visible:
+
 ```
 ## Proposed Scope — v{X.Y.Z}
 
 **Bump:** {PATCH/MINOR/MAJOR} — {reasoning}
 
 ### In scope (N items)
-| # | Source | Item | Why now |
-|---|---|---|---|
+| # | Issue | Title | Source | Current Release | Action |
+|---|---|---|---|---|---|
+| 1 | #79 | assignedApparatus keyed object | audit | Backlog | scope into v{X.Y.Z} |
+| 2 | #107 | external eq return path | audit | v3.17.0 | already scoped (no change) |
+| 3 | #200 | newly-discovered listener leak | audit | (none — new) | create issue + scope |
+| 4 | #150 | NIMS cutover prep | feedback | v3.18.0 | **MOVE FROM v3.18.0** — confirm? |
 
 ### Deferred (M items → v{X.Y+1.0})
 
@@ -355,20 +364,33 @@ Derive semver per `release-manager` criteria:
 Approve, redirect, or cancel?
 ```
 
-**GATE 1: no `.claude/plans/` files written yet.** If redirected, loop back to B2.
+Cross-release moves (the `**MOVE FROM**` row above) require explicit Alex confirmation per item — never silently re-scope a pre-committed item.
 
-#### B5. Draft plan file
+**GATE 1: no `.claude/plans/` files written, no Project field writes yet.** If redirected, loop back to B2.
 
-Once GATE 1 approved:
+#### B5. Draft plan file + scope items in Project
 
-For any in-scope item lacking a GitHub issue (e.g., audit findings still in the ledger):
+Once GATE 1 approved, perform **both** actions:
+
+**(a) Create issues for items that don't have one** (audit findings still in the ledger, etc.):
 
 ```bash
 gh issue create --repo Vergo402/paratech-struts \
   --title "{title}" --label "{label}" --body "..."
+gh project item-add 1 --owner Vergo402 --url <new-issue-url>
 ```
 
-Add to the Project, set `Release = v{VERSION}` + `Status = Todo` + `Severity` + `Component` + `Source = audit` (or whichever applies).
+**(b) For every in-scope item — both newly-created AND existing Project items at Backlog (or being moved per B4 confirmation):**
+
+```bash
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5j0 \
+  --single-select-option-id <release-option-id-for-v{VERSION}>
+```
+
+Also set `Severity` + `Component` + `Source` if missing. Status stays as it was (Todo for new, In Progress if already underway).
+
+**This is the critical step the user explicitly flagged: items don't drift back to Backlog because the Release field is set HERE, at scope-in, not after ship.**
 
 Save plan to `.claude/plans/v{VERSION}-{theme}.md` (theme is 2-3 word kebab-case slug).
 
@@ -415,13 +437,12 @@ Order matters (each step independently reversible until the next runs):
 
 1. **Archive superseded plans** — `mv .claude/plans/v{X.Y.Z}-*.md .claude/plans/archive/` (except the new one). Idempotent.
 
-2. **Project field-fill** — for each in-scope item:
+2. **Verify Project field-fill** — Release was set in B5 at scope-in. Verify all in-scope items have `Release = v{VERSION}`:
    ```bash
-   gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
-     --field-id <release-field-id> \
-     --single-select-option-id <release-option-id-for-vX.Y.Z>
+   gh project item-list 1 --owner Vergo402 --format json --limit 200 --jq \
+     ".items[] | select(.release == \"v{VERSION}\") | {number: .content.number, title: .content.title}"
    ```
-   Status stays Todo until execution; Release = v{VERSION} marks it scoped.
+   If any in-scope item is missing the field (e.g., a B6 agent fold-in added a new item), set it now via `gh project item-edit`. Status stays Todo until execution.
 
 3. **CONSOLIDATED-STATUS narrative update** — append a per-release narrative paragraph. No item bullets (Project owns those).
 
