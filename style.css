@@ -1500,9 +1500,22 @@ body {
   .view-mode-toggle:hover { background: rgba(255,255,255,0.22); }
   .view-mode-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
-  /* SHELL — wider container, nav becomes horizontal top bar */
+  /* SHELL — fills viewport in desktop view (#94, v3.14.3). The 1200px cap
+     in v3.13.0 wasted ~240px on a 1440-wide laptop; on 1920+ it looked
+     like the app failed to render. Inner panels self-constrain via their
+     own grid templates and content max-widths. */
   :root:not(.force-mobile-view) .app {
-    max-width: 1200px;
+    max-width: none;
+  }
+
+  /* Form-heavy screens self-cap so inputs don't stretch to absurd widths.
+     Split-view screens (Operations, Command) and Inventory list keep the
+     full viewport since their layouts adapt to the available space. */
+  :root:not(.force-mobile-view) #screenSelect > *,
+  :root:not(.force-mobile-view) #screenSettings > * {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
   }
   :root:not(.force-mobile-view) .nav {
     order: -1;

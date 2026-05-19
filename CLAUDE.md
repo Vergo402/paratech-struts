@@ -240,6 +240,10 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 |---|---|
 | **Revert F-1A-11 deduction auto-fill** | v3.9.0 auto-populated header/footer wood deductions for all shore types, defaulting T-Shore and Double-T to 4x4 (3.5"). That was wrong — T-Shore and Double-T can be built with either 4x4 or 6x6 lumber depending on load and span; operator must make explicit choice. 3-Post still auto-fills 6x6 (USACE/FEMA spec). |
 
+### v3.9.2 → v3.14.3 — see `.claude/plans/CONSOLIDATED-STATUS.md`
+
+The per-release "What shipped" view from v3.9.2 onward (XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill) lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0.
+
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
 - **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department.
