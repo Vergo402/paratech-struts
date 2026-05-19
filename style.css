@@ -1989,7 +1989,7 @@ body {
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: center;
-  transition: stroke-dashoffset 0.5s linear;
+  transition: stroke-dashoffset 3.5s linear;
 }
 .quick-start-fab.holding .fab-arc-fill { stroke-dashoffset: 0; }
 .quick-start-fab .fab-label {
