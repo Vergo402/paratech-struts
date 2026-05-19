@@ -1079,7 +1079,7 @@ function flushSyncDiagBuffer() {
   }
 }
 
-function firebaseSave(ref, method, data) {
+function firebaseSave(ref, method, data, opts) {
   if (!ref) return Promise.resolve();
   // v3.10.1 SAFETY: explicit kill-switch for tests / DevTools sessions.
   // Set `window.disableFirebaseWrites = true` to make every Firebase write a
@@ -1103,7 +1103,16 @@ function firebaseSave(ref, method, data) {
     // For transactions, check if committed
     if (method === 'transaction' && result && !result.committed) {
       console.warn('Transaction not committed:', ref.toString());
-      showToast('Sync conflict — verify the change', 'warning');
+      // v3.15.0 #80: `opts.silent` lets callers using makeAllocateDecrementer
+      // suppress the generic toast — they surface their own reason-specific
+      // message ("Another user took the last ...") after inspecting the guard
+      // state.
+      if (!(opts && opts.silent)) {
+        showToast('Sync conflict — verify the change', 'warning');
+      }
+    }
+    if (method === 'transaction' && result && result.committed) {
+      return result; // expose committed result for callers that need it
     }
     // v3.10.1: trigger a throttled dept-wide snapshot after every successful
     // non-backup write. maybeBackup is internally rate-limited and
@@ -4470,7 +4479,7 @@ function assignEquipmentToPending(spId) {
 // but updates the existing SP instead of creating new ones. Qty is always 1
 // for a single pending SP — additional struts (e.g., t-shore pair) are
 // handled by creating additional pending SPs and deploying each in turn.
-function upgradePendingToDeployed(result, pendingId) {
+async function upgradePendingToDeployed(result, pendingId) {
   if (!activeOperation) return;
   const points = getShorePoints();
   const sp = points.find(p => p.id === pendingId);
@@ -4542,7 +4551,31 @@ function upgradePendingToDeployed(result, pendingId) {
     ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
     : null;
 
-  // Decrement local inventory counts
+  // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
+  // v=null guard. If any abort, restore the pending SP's pre-upgrade state
+  // and surface a reason-specific toast (companion-write rejection per R-03).
+  const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
+  if (!txResult.ok) {
+    // Restore the pending SP — clear the deployedStrut/extensions/plates we
+    // optimistically attached above, and revert status back to 'pending'.
+    sp.deployedStrut = null;
+    sp.deployedExtensions = [];
+    sp.deployedPlates = [];
+    sp.status = 'pending';
+    sp.deployedAt = null;
+    const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
+    const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
+    if (anyExhausted) {
+      showToast(`Another user took the last ${labels} — try again`, 'error');
+    } else {
+      showToast(`${labels} no longer in inventory — refresh and try again`, 'error');
+    }
+    closeModal('shorePointModal');
+    return;
+  }
+
+  // Transactions committed (or offline) — apply local optimistic decrement
+  // and fire the SP companion write.
   if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
     activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
   } else {
@@ -4554,21 +4587,9 @@ function upgradePendingToDeployed(result, pendingId) {
     if (plInv) plInv.available = Math.max(0, plInv.available - 1);
   }
 
-  // Sync to Firebase
-  // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+  // SP companion write (transactions already committed by runDeployTransactions)
   if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
-    if (strutInvItem.external) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-    } else {
-      firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-    }
-    for (const ext of extInvItems) {
-      firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
-    }
-    for (const pl of deployedPlates) {
-      firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
-    }
   }
 
   persistOperation();
@@ -4803,7 +4824,7 @@ async function deployShorePoint(result, qty) {
   if (assigningToPendingId) {
     const pendingId = assigningToPendingId;
     assigningToPendingId = null;
-    upgradePendingToDeployed(result, pendingId);
+    await upgradePendingToDeployed(result, pendingId);
     return;
   }
 
@@ -4912,7 +4933,25 @@ async function deployShorePoint(result, qty) {
 
     sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now() + '-' + n);
 
-    // Always update local inventory counts
+    // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
+    // v=null guard. If any abort, we surface a reason-specific toast and skip
+    // this iteration without touching local state (companion-write rejection
+    // per code-auditor R-03). Compensating increments fire on transactions
+    // that did commit so the Firebase tree ends up where it started.
+    const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
+    if (!txResult.ok) {
+      const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
+      const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
+      if (anyExhausted) {
+        showToast(`Another user took the last ${labels} — try again`, 'error');
+      } else {
+        showToast(`${labels} no longer in inventory — refresh and try again`, 'error');
+      }
+      break; // stop the qty loop — don't try further iterations under contention
+    }
+
+    // Transactions committed (or offline). Apply local optimistic decrement and
+    // fire the SP companion write.
     if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
       activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
     } else {
@@ -4927,21 +4966,9 @@ async function deployShorePoint(result, qty) {
     if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
     activeOperation.shorePoints.push(sp);
 
-    // Sync to Firebase
-    // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+    // SP companion write (transactions already committed above by runDeployTransactions)
     if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
-      if (strutInvItem.external) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-      } else {
-        firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-      }
-      for (const ext of extInvItems) {
-        firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
-      }
-      for (const pl of deployedPlates) {
-        firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
-      }
     }
 
     deployed.push(sp);
@@ -6065,6 +6092,64 @@ function makeAllocateDecrementer() {
     return Math.max(0, v - 1);
   };
   return { decrementer, state };
+}
+
+// #80 (v3.15.0): runs the deploy-side transactions (strut + extensions + plates)
+// with the v=0 / v=null guards in parallel, then inspects the guard states.
+// Returns:
+//   { ok: true, offline: true }    — offline (no transactions ran; caller proceeds locally)
+//   { ok: true, offline: false }   — all transactions committed
+//   { ok: false, aborted: [...] }  — at least one transaction aborted; compensating
+//                                    increments fire on the ones that committed so the
+//                                    Firebase inventory ends up where it started.
+//                                    Caller must NOT mutate local state and must NOT fire
+//                                    the SP write (companion-write rejection per R-03).
+//
+// Each `aborted` entry: { label, reason } where reason ∈ {'exhausted','missing'}.
+async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) {
+  if (!db || !deptId || !operationsRef || !activeOperation || !activeOperation.id) {
+    return { ok: true, offline: true };
+  }
+
+  const guards = [];
+
+  // Strut transaction
+  const strutRef = strutInvItem.external
+    ? operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available')
+    : inventoryRef.child(strutInvItem.id).child('available');
+  const strutGuard = makeAllocateDecrementer();
+  guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut' });
+
+  // Extension transactions
+  for (const ext of (extInvItems || [])) {
+    const g = makeAllocateDecrementer();
+    guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension' });
+  }
+
+  // Plate transactions
+  for (const pl of (deployedPlates || [])) {
+    const g = makeAllocateDecrementer();
+    guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate') });
+  }
+
+  // Fire all in parallel — `silent: true` so the generic 'Sync conflict' toast
+  // is suppressed; we surface a reason-specific toast at the call site.
+  await Promise.all(guards.map(g => firebaseSave(g.ref, 'transaction', g.guard.decrementer, { silent: true })));
+
+  const aborted = guards.filter(g => g.guard.state.aborted);
+  if (aborted.length === 0) return { ok: true, offline: false };
+
+  // Compensate the transactions that DID commit so we don't leave partial state
+  // in Firebase. Fire-and-forget — the listener will reconcile local on arrival.
+  const committed = guards.filter(g => !g.guard.state.aborted);
+  for (const c of committed) {
+    firebaseSave(c.ref, 'transaction', (v) => (v === null || v === undefined) ? undefined : v + 1);
+  }
+
+  return {
+    ok: false,
+    aborted: aborted.map(a => ({ label: a.label, reason: a.guard.state.reason })),
+  };
 }
 
 function returnInventoryItems(sp) {
