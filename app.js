@@ -6012,11 +6012,59 @@ function makeReturnIncrementer(maxQty) {
 // quantity. Subsequent v3.8.2 hasChildren validate then rejects the next write,
 // effectively corrupting the inventory tree. Returning undefined aborts the
 // transaction so no phantom node is created.
+//
+// SUPERSEDED in v3.15.0 by makeAllocateDecrementer (below), which also guards
+// against the v === 0 case (#80 — another device took the last unit first,
+// `Math.max(0, -1) = 0` looks like success). Kept here only because legacy
+// call-sites still reference it; call new code through makeAllocateDecrementer.
 function makeDeployDecrementer() {
   return (v) => {
     if (v === null || v === undefined) return undefined; // node deleted — don't create phantom
     return Math.max(0, (v || 0) - 1);
   };
+}
+
+// #80 (v3.15.0): unified allocate-decrementer factory. Replaces v3.11.3's
+// makeDeployDecrementer. Guards both classes of race:
+//   - `v === null/undefined`: peer-deleted inventory node (v3.11.3 case)
+//   - `v === 0`: another device just took the last unit. The transaction
+//     callback runs inside Firebase's optimistic-locking loop; checking
+//     v INSIDE the callback (not result.snapshot.val() after) is the
+//     correct inspection point per code-auditor R-02.
+//
+// Returns an object with `decrementer` (pass to firebaseSave 'transaction')
+// and a mutable `state` object so the caller can inspect `state.aborted`
+// and `state.reason` AFTER the transaction settles. The caller is then
+// responsible for: rolling back local optimistic decrement, removing the
+// companion SP-write (code-auditor R-03), and surfacing the toast.
+//
+// Companion-write rejection pattern (R-03) — the caller MUST:
+//   const guard = makeAllocateDecrementer();
+//   const tx = firebaseSave(invRef, 'transaction', guard.decrementer);
+//   // ... fire SP write OPTIMISTICALLY (mirrors local state)
+//   await tx;
+//   if (guard.state.aborted) {
+//     // 1. roll back local inventory.available
+//     // 2. firebaseSave(spRef, 'remove') to undo the optimistic SP write
+//     // 3. remove inventoryId from fieldshore_offlineTouchedInventory (#71)
+//     // 4. showToast with reason-specific message
+//   }
+function makeAllocateDecrementer() {
+  const state = { aborted: false, reason: null };
+  const decrementer = (v) => {
+    if (v === null || v === undefined) {
+      state.aborted = true;
+      state.reason = 'missing';
+      return undefined;
+    }
+    if (v === 0) {
+      state.aborted = true;
+      state.reason = 'exhausted';
+      return undefined;
+    }
+    return Math.max(0, v - 1);
+  };
+  return { decrementer, state };
 }
 
 function returnInventoryItems(sp) {
