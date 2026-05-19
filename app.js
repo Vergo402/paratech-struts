@@ -845,6 +845,78 @@ function compareDivision(a, b) {
   return an - bn;
 }
 
+// migrateOpDivisions — in-memory transform from legacy string division shape
+// to numbered { division: number|null, divisionLegacyLabel: string|null }.
+// Idempotent (per migration-specialist Q5): skips SPs that already have a
+// non-string division. Returns { changedSps: [...], hasLegacy } so the
+// caller can write the changes back atomically and decide whether to
+// surface the renumber prompt.
+function migrateOpDivisions(op) {
+  const result = { changedSps: [], hasLegacy: false };
+  if (!op || !op.shorePoints) return result;
+  const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints);
+  for (const sp of points) {
+    if (typeof sp.division !== 'string' || sp.division === '') continue;
+    const parsed = parseLegacyDivision(sp.division);
+    sp.division = parsed.number;
+    if (parsed.legacy !== null) {
+      sp.divisionLegacyLabel = parsed.legacy;
+      result.hasLegacy = true;
+    }
+    result.changedSps.push(sp);
+  }
+  return result;
+}
+
+// maybePreMigrationSnapshot — fires the named pre-v3.15.0 backup via the
+// existing v3.10.1 backup infrastructure (migration-specialist Q2). One-shot
+// per device per dept: tracked via localStorage so a single dept connected
+// across multiple devices each takes ONE snapshot before its first migration
+// (which is intentional — each device has independent rollback capability).
+async function maybePreMigrationSnapshot() {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId) return;
+  const key = 'fieldshore_preMigrationDone_v3.15.0_' + deptId;
+  try {
+    if (localStorage.getItem(key) === '1') return; // already done
+  } catch (e) { /* localStorage unavailable — skip the marker check, fire anyway */ }
+  try {
+    await backupBeforeDestructiveWrite('operations', 'v3.15.0 division-migration snapshot');
+    try { localStorage.setItem(key, '1'); } catch (e) { /* non-fatal */ }
+  } catch (e) {
+    // Backup failed — don't proceed with migration. The next attempt will retry.
+    console.warn('[v3.15.0 migration] pre-migration snapshot failed:', e && e.message);
+    throw e;
+  }
+}
+
+// showRenumberBanner — stub. Real implementation in v3.15.0 step 7 (mobile-ux
+// #4 + migration-specialist Q4: inline banner, NOT modal; gate on active-op
+// state). For now, log the need so the migration flow can flag without
+// blocking on UI infrastructure that doesn't exist yet.
+function showRenumberBanner(opId, legacyCount) {
+  console.info('[v3.15.0 migration] op ' + opId + ' has ' + legacyCount + ' shore-point(s) with unparseable legacy division labels; renumber banner deferred to step 7.');
+}
+
+// opIsInRapidActivity — gate for migration prompts (battalion-chief #2 +
+// migration-specialist Q4). Returns true if the op has had any status
+// transition in the last 30 minutes — i.e. an IC is actively working it.
+// In that state we do NOT surface a renumber prompt; we wait until the
+// op is quieter or ended.
+function opIsInRapidActivity(op) {
+  if (!op) return false;
+  const ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
+  const now = Date.now();
+  const points = op.shorePoints ? (Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints)) : [];
+  for (const sp of points) {
+    const ts = sp.deployedAt || sp.cutDoneAt || sp.runnerSentAt || sp.securedAt || sp.returnedAt || null;
+    if (!ts) continue;
+    const ms = typeof ts === 'number' ? ts : Date.parse(ts);
+    if (Number.isFinite(ms) && (now - ms) < ACTIVITY_WINDOW_MS) return true;
+  }
+  return false;
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
@@ -2010,6 +2082,39 @@ function setupListeners() {
         if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
         return { id, ...sp };
       });
+
+      // v3.15.0 #93: division string → number migration. Skips if op already
+      // has _meta.schemaVersion >= 2 (idempotency per migration-specialist Q5).
+      const currentSchema = (activeOperation._meta && activeOperation._meta.schemaVersion) || 1;
+      if (currentSchema < 2) {
+        const migration = migrateOpDivisions(activeOperation);
+        if (migration.changedSps.length > 0) {
+          // Pre-migration snapshot — one-shot per dept per device. Awaited so
+          // we don't write back until the safety net is in place.
+          maybePreMigrationSnapshot().then(() => {
+            if (db && deptId && operationsRef && activeOperation && activeOperation.id) {
+              const updates = { '_meta/schemaVersion': 2 };
+              migration.changedSps.forEach(sp => {
+                updates['shorePoints/' + sp.id + '/division'] = sp.division;
+                if (sp.divisionLegacyLabel !== undefined) {
+                  updates['shorePoints/' + sp.id + '/divisionLegacyLabel'] = sp.divisionLegacyLabel;
+                }
+              });
+              firebaseSave(operationsRef.child(activeOperation.id), 'update', updates);
+            }
+            activeOperation._meta = activeOperation._meta || {};
+            activeOperation._meta.schemaVersion = 2;
+          }).catch(err => {
+            console.warn('[v3.15.0] division migration skipped — snapshot failed:', err && err.message);
+          });
+          // Renumber banner: only if any SP has an unparseable legacy label
+          // AND the op is not in rapid-activity state (battalion-chief #2 +
+          // migration-specialist Q4 — never surface mid-incident).
+          if (migration.hasLegacy && !opIsInRapidActivity(activeOperation)) {
+            showRenumberBanner(activeOperation.id, migration.changedSps.filter(sp => sp.divisionLegacyLabel).length);
+          }
+        }
+      }
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
