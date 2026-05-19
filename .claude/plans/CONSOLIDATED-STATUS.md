@@ -72,20 +72,27 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 - `TOUCH_PRIMARY = matchMedia('(pointer: coarse)').matches` gates `draggable` AND all drag/touch handlers in one ternary (code-auditor R-drag-5)
 - Plan file: [v3.16.3-desktop-ui-hotfix.md](v3.16.3-desktop-ui-hotfix.md). Agent-reviewed pre-merge. #71 split into v3.16.4.
 
-### Release 4 — v3.16.4 (PATCH, planned) ⏳ next
+### Release 4 — v3.16.4 (PATCH, shipped 2026-05-19) ✅
 
 **#71 architectural full-fix — extend v3.15.0 `offlineTouchedInventory` to cover non-offline transaction failures + 4 safety guards.**
 
-The first plan draft proposed a parallel `pendingResyncs` queue; code-auditor C1 flagged it would race v3.15.0's mark/filter/flush trio. Architecture rewritten to extend the existing system.
+**Shipped:**
+- Component A: `firebaseSave` routes inventory-available failures to `markOfflineTouched` on BOTH thrown errors AND resolved-but-uncommitted results (Flow B exposed a gap — Firebase's 25-retry abort lands in `.then`, not `.catch`; fix in app.js:1538–1561 covers both branches).
+- Component B: `_itemEpoch` Map + `bumpEpoch` at 6 transaction call sites. Flush drops entries whose epoch advanced.
+- Component C: peer-write guard inside flush transaction body.
+- Component D: `_meta.lastVerifiedAt` audit signal on commit (best-effort, non-fatal). `database.rules.json` deployed with leaf validate.
+- Component E: `MAX_RESYNC_RETRIES = 3` + 5 diagnostic event types.
 
-- Cover non-offline failures: `firebaseSave` catch routes inventory-`available` transaction failures into `markOfflineTouched()` (today it only fires when `txResult.offline === true`)
-- Mutation-epoch guard — flush drops entries whose epoch advanced after enqueue (prevents stale-overwrite when a newer local write succeeded normally)
-- Peer-write guard inside the flush transaction body — refuses to clobber a peer device's lower `available` (resync only writes if Firebase is stale-HIGH relative to local)
-- `_meta.lastVerifiedAt` audit signal — validate scoped to the LEAF, not the wrapper (avoids v3.8.2 redux)
-- Bounded retries (`MAX_RESYNC_RETRIES = 3`) + diagnostics events: `resync_enqueued_via_failure`, `resync_applied`, `resync_dropped` (with `reason`), `resync_failed`
-- Failure-injection driver flow with tightened `/\/inventory\/[^/]+\/available$/` regex (DevTools offline-throttle does NOT exercise the non-offline-failure path)
-- 13 verification flows A–M (happy path, failure injection, epoch dedup, concurrent-newer-write drop, listener race via existing filter, peer-advanced drop, no-`_meta` rule sanity, kill-switch, max-retries, Excel import non-regression, strut algorithm smoke, mobile, feedback modal canary)
-- Plan file: [v3.16.4-transaction-resync.md](v3.16.4-transaction-resync.md). Agent-reviewed (code-auditor + devops-resilience + qa-driver + release-manager — all 25 findings resolved in the plan rewrite; `_syncedItemIds` persistence deferred to v3.17.0 as the only conscious deferral).
+**Post-implementation code-auditor pass folded in (4 of 5 audit findings handled in v3.16.4 — not deferred):**
+- **C4:** Diagnostic now distinguishes `peer_deleted` / `peer_converged` / `peer_advanced`.
+- **C5/C13:** `_itemEpoch.clear()` in `teardownListeners` — no cross-dept leak, bounds memory.
+- **C6:** `_isFlushingTouched` mutex — three concurrent reconnect flushes coalesce to retries=1 (verified).
+- **C12:** User-visible toast on `stale_24h` and `max_retries` drops — field crews no longer lose resyncs silently.
+- **F1 (deferred to v3.17.0):** External-equipment transaction failures on RETURN still go through `pendingWrites` only; different Firebase path requires broader regex or parallel touched-set. Not a one-liner.
+
+**Verification:** 13 driver flows A–M all PASS; post-audit regression of A/C/D/E/H/I all PASS. Console clean. `database.rules.json` deployed to `paratech-c3ab4` before merge.
+
+Plan file: [v3.16.4-transaction-resync.md](v3.16.4-transaction-resync.md). Agent-reviewed pre-implementation (code-auditor + devops-resilience + qa-driver + release-manager). The first plan draft proposed a parallel `pendingResyncs` queue; code-auditor C1 flagged it would race v3.15.0's mark/filter/flush trio. Architecture rewritten to extend the existing system.
 
 **Deferred from original v3.16.0 scope → v3.17.0:**
 - 3 scenario presets, first-due solo IC mode, Quick-start FAB
