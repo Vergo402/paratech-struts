@@ -186,6 +186,11 @@
       </div>
       <button class="btn btn-primary" onclick="runQuickSelect()">Find Struts</button>
       <div class="results-container" id="quickResults"></div>
+      <div id="quickStartFab" class="quick-start-fab" role="button" tabindex="0" aria-label="Hold to start operation">
+        <svg class="fab-arc" viewBox="0 0 56 56"><circle class="fab-arc-track" cx="28" cy="28" r="25"/><circle class="fab-arc-fill" cx="28" cy="28" r="25"/></svg>
+        <span class="fab-icon">+</span>
+        <span class="fab-label">Hold to start</span>
+      </div>
     </section>
 
     <!-- Screen 2: Inventory -->
@@ -315,6 +320,7 @@
           </div>
           <div id="sectionCmdMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
         </div>
+        <div id="soloIcControls"></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdHazards">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▼</span> Hazards (ICS-208)</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
@@ -474,7 +480,7 @@
           <label>Area / Room</label>
           <input type="text" id="spArea" placeholder="e.g. 2" aria-label="Area">
         </div>
-        <div class="form-group flex-1">
+        <div class="form-group flex-1" id="spGroupWrapper">
           <label>Group</label>
           <select id="spGroup" aria-label="Assigned apparatus group">
             <option value="">— None —</option>
@@ -589,57 +595,70 @@
 
   <!-- Start Operation Modal -->
   <div class="modal-overlay" id="startOpModal" role="dialog" aria-modal="true" aria-labelledby="startOpTitle">
-    <div class="modal">
-      <h2 class="modal-title" id="startOpTitle">Start New Operation</h2>
-      <div class="form-group">
-        <label>Operation Name / Location</label>
-        <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100" aria-label="Operation name">
+    <div class="modal modal-scrollbody">
+      <div class="modal-header">
+        <h2 class="modal-title" id="startOpTitle">Start New Operation</h2>
       </div>
-      <div class="form-group">
-        <label>Task Force Name <span class="label-hint">(optional)</span></label>
-        <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1" aria-label="Task force designation">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Scenario <span class="label-hint">(optional — sets defaults)</span></label>
+          <div id="presetCards" class="preset-cards"></div>
+        </div>
+        <div class="form-group">
+          <label>Operation Name / Location</label>
+          <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100" aria-label="Operation name">
+        </div>
+        <div class="form-group">
+          <label>Task Force Name <span class="label-hint">(optional)</span></label>
+          <input type="text" id="newOpTaskForce" placeholder="e.g. TF-1" aria-label="Task force designation">
+        </div>
+        <div class="deduction-toggle my-12">
+          <label class="toggle-switch">
+            <input type="checkbox" id="opMultiBuilding" aria-label="Operation spans multiple buildings">
+            <span class="toggle-slider"></span>
+          </label>
+          <label for="opMultiBuilding">Multi-building operation</label>
+        </div>
+        <div class="form-group">
+          <label>Assign Apparatus</label>
+          <div id="startOpApparatusList" class="apparatus-checklist"></div>
+        </div>
+        <div id="presetOrgNote" class="preset-org-note" style="display:none"></div>
       </div>
-      <div class="deduction-toggle my-12">
-        <label class="toggle-switch">
-          <input type="checkbox" id="opMultiBuilding" aria-label="Operation spans multiple buildings">
-          <span class="toggle-slider"></span>
-        </label>
-        <label for="opMultiBuilding">Multi-building operation</label>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="guardClick(this,confirmStartOp)">Start Operation</button>
+        <button class="btn btn-outline" onclick="closeModal('startOpModal')">Cancel</button>
       </div>
-      <div class="form-group">
-        <label>Assign Apparatus</label>
-        <div id="startOpApparatusList" class="apparatus-checklist"></div>
-      </div>
-      <button class="btn btn-primary" onclick="guardClick(this,confirmStartOp)">Start Operation</button>
-      <div class="spacer-sm"></div>
-      <button class="btn btn-outline" onclick="closeModal('startOpModal')">Cancel</button>
     </div>
   </div>
 
   <!-- Add External Equipment Modal -->
   <div class="modal-overlay" id="addExternalModal" role="dialog" aria-modal="true" aria-labelledby="addExternalTitle">
-    <div class="modal">
-      <h2 class="modal-title" id="addExternalTitle">Add External Equipment</h2>
-      <div class="form-group">
-        <label>Department</label>
-        <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100" aria-label="External department name">
+    <div class="modal modal-scrollbody">
+      <div class="modal-header">
+        <h2 class="modal-title" id="addExternalTitle">Add External Equipment</h2>
+        <button class="modal-close" aria-label="Close" onclick="closeModal('addExternalModal')">&times;</button>
       </div>
-      <div class="form-group">
-        <label>Apparatus</label>
-        <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100" aria-label="External apparatus designation">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Source Department</label>
+          <input type="text" id="extDeptName" placeholder="e.g. Greenburgh FD" maxlength="100" aria-label="External department name">
+        </div>
+        <div class="form-group">
+          <label>Source Apparatus</label>
+          <input type="text" id="extApparatus" placeholder="e.g. Engine 99" maxlength="100" aria-label="External apparatus designation">
+        </div>
+        <div class="quick-add-summary hidden" id="extQuickAddSummary"></div>
+        <div class="section-title">Struts</div>
+        <div class="quick-add-grid" id="extQuickAddStruts"></div>
+        <div class="section-title">Extensions</div>
+        <div class="quick-add-grid" id="extQuickAddExts"></div>
+        <div class="section-title">Connector Plates</div>
+        <div class="quick-add-plate-grid" id="extQuickAddPlates"></div>
       </div>
-      <div class="form-group">
-        <label>Strut Model</label>
-        <select id="extStrutModel" class="hidden" aria-label="External strut model"></select>
-        <div id="extStrutGrid" class="ext-strut-grid"></div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('addExternalModal');renderOperations()">Done</button>
       </div>
-      <div class="form-group">
-        <label>Quantity</label>
-        <input type="number" id="extQuantity" value="1" min="1" inputmode="numeric" aria-label="Quantity">
-      </div>
-      <button class="btn btn-primary" onclick="guardClick(this,confirmAddExternal)">Add</button>
-      <div class="spacer-sm"></div>
-      <button class="btn btn-outline" onclick="closeModal('addExternalModal')">Cancel</button>
     </div>
   </div>
 

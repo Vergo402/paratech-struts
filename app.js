@@ -395,6 +395,7 @@ function showTab(tab) {
   if (tab === 'command') renderCommand();
   if (tab === 'settings') renderApparatusTypesList();
   updateQuickViewFab();
+  updateQuickStartFab();
 }
 
 // ============================================================
@@ -1000,6 +1001,45 @@ function bumpEpoch(itemId) {
 // from causing an unbounded retry loop on every reconnect tick.
 const MAX_RESYNC_RETRIES = 3;
 
+// v3.17.0 #107 / A3: parallel touched-set for external equipment.
+// Keyed by `opId.itemId` to avoid collision with inventory touched-set.
+function getExtTouchedKey() {
+  return 'fieldshore_offlineTouchedExternalEquipment_' + (deptId || 'unknown');
+}
+function getExtTouched() {
+  try {
+    const raw = localStorage.getItem(getExtTouchedKey());
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) { return {}; }
+}
+function setExtTouched(obj) {
+  try { safeSetItem(getExtTouchedKey(), JSON.stringify(obj)); } catch (e) { /* non-fatal */ }
+}
+function markOfflineTouchedExternal(opId, itemId, localAvail) {
+  if (!opId || !itemId) return;
+  const key = opId + '.' + itemId;
+  // A2: namespaced epoch key prevents collision with inventory epochs
+  const epochKey = 'ext:' + key;
+  const touched = getExtTouched();
+  const prev = touched[key] || {};
+  touched[key] = {
+    opId,
+    itemId,
+    localAvail,
+    touchedAt: Date.now(),
+    epoch: _itemEpoch.get(epochKey) || 0,
+    retries: typeof prev.retries === 'number' ? prev.retries : 0
+  };
+  setExtTouched(touched);
+}
+function clearExtTouched(key) {
+  if (!key) return;
+  const touched = getExtTouched();
+  if (touched[key]) { delete touched[key]; setExtTouched(touched); }
+}
+
 function markOfflineTouched(inventoryId, localAvail) {
   if (!inventoryId) return;
   const touched = getOfflineTouched();
@@ -1143,6 +1183,72 @@ async function flushOfflineTouchedInventory() {
   }
   } finally {
     _isFlushingTouched = false;
+  }
+}
+
+// v3.17.0 #107 / A3: flush external-equipment touched-set on reconnect.
+// Mirrors flushOfflineTouchedInventory one-to-one but writes to
+// /departments/{deptId}/operations/{opId}/externalEquipment/{itemId}/available.
+let _isFlushingExtTouched = false;
+async function flushOfflineTouchedExternal() {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId || !operationsRef) return;
+  if (_isFlushingExtTouched) return;
+  _isFlushingExtTouched = true;
+  try {
+    const touched = getExtTouched();
+    const keys = Object.keys(touched);
+    if (keys.length === 0) return;
+    const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    for (const key of keys) {
+      const entry = touched[key];
+      if (!entry || typeof entry.touchedAt !== 'number' || now - entry.touchedAt > MAX_AGE_MS) {
+        logSyncEvent('resync_dropped', { path: 'externalEquipment', key, reason: 'stale_24h' });
+        showToast('External equipment sync expired (>24h) — please verify available count', 'warning');
+        clearExtTouched(key);
+        continue;
+      }
+      const epochKey = 'ext:' + key;
+      const currentEpoch = _itemEpoch.get(epochKey) || 0;
+      if (typeof entry.epoch === 'number' && entry.epoch !== currentEpoch) {
+        logSyncEvent('resync_dropped', { path: 'externalEquipment', key, reason: 'epoch_advanced' });
+        clearExtTouched(key);
+        continue;
+      }
+      const { opId, itemId, localAvail } = entry;
+      if (!opId || !itemId) { clearExtTouched(key); continue; }
+      const ref = operationsRef.child(opId).child('externalEquipment').child(itemId).child('available');
+      try {
+        const result = await ref.transaction((v) => {
+          if (v === null || v === undefined) return undefined;
+          if (v <= localAvail) return undefined;
+          return localAvail;
+        });
+        if (result && result.committed) {
+          logSyncEvent('resync_applied', { path: 'externalEquipment', key, drift: localAvail - (result.snapshot ? result.snapshot.val() : null) });
+          clearExtTouched(key);
+        } else {
+          const snapVal = result && result.snapshot ? result.snapshot.val() : null;
+          const reason = snapVal === null ? 'peer_deleted' : snapVal === localAvail ? 'peer_converged' : 'peer_advanced';
+          logSyncEvent('resync_dropped', { path: 'externalEquipment', key, reason, firebaseAvail: snapVal, localAvail });
+          clearExtTouched(key);
+        }
+      } catch (e) {
+        const nextRetries = (typeof entry.retries === 'number' ? entry.retries : 0) + 1;
+        logSyncEvent('resync_failed', { path: 'externalEquipment', key, error: e?.message || String(e), retries: nextRetries });
+        if (nextRetries >= MAX_RESYNC_RETRIES) {
+          logSyncEvent('resync_dropped', { path: 'externalEquipment', key, reason: 'max_retries' });
+          showToast('External equipment sync failed after retries — please verify available count', 'error');
+          clearExtTouched(key);
+        } else {
+          const cur = getExtTouched();
+          if (cur[key]) { cur[key] = Object.assign({}, cur[key], { retries: nextRetries }); setExtTouched(cur); }
+        }
+      }
+    }
+  } finally {
+    _isFlushingExtTouched = false;
   }
 }
 
@@ -1540,6 +1646,7 @@ function flushSyncDiagBuffer() {
 // the local decrement. Tight regex (anchored to /available leaf) prevents
 // matching unrelated inventory subkeys like _meta or model.
 const RESYNC_INV_PATH_RE = /^\/departments\/[^/]+\/inventory\/([^/]+)\/available$/;
+const RESYNC_EXT_PATH_RE = /^\/departments\/[^/]+\/operations\/([^/]+)\/externalEquipment\/([^/]+)\/available$/;
 
 function firebaseSave(ref, method, data, opts) {
   if (!ref) return Promise.resolve();
@@ -1576,6 +1683,11 @@ function firebaseSave(ref, method, data, opts) {
         if (invMatch) {
           markOfflineTouched(invMatch[1], opts.localAvail);
           logSyncEvent('resync_enqueued_via_failure', { itemId: invMatch[1], localAvail: opts.localAvail, reason: 'uncommitted' });
+        }
+        const extMatch = path.match(RESYNC_EXT_PATH_RE);
+        if (extMatch) {
+          markOfflineTouchedExternal(extMatch[1], extMatch[2], opts.localAvail);
+          logSyncEvent('resync_enqueued_via_failure', { path: 'externalEquipment', opId: extMatch[1], itemId: extMatch[2], localAvail: opts.localAvail, reason: 'uncommitted' });
         }
       }
       // v3.15.0 #80: `opts.silent` lets callers using makeAllocateDecrementer
@@ -1619,6 +1731,11 @@ function firebaseSave(ref, method, data, opts) {
       if (invMatch && opts && typeof opts.localAvail === 'number') {
         markOfflineTouched(invMatch[1], opts.localAvail);
         logSyncEvent('resync_enqueued_via_failure', { itemId: invMatch[1], localAvail: opts.localAvail });
+      }
+      const extMatch = path.match(RESYNC_EXT_PATH_RE);
+      if (extMatch && opts && typeof opts.localAvail === 'number') {
+        markOfflineTouchedExternal(extMatch[1], extMatch[2], opts.localAvail);
+        logSyncEvent('resync_enqueued_via_failure', { path: 'externalEquipment', opId: extMatch[1], itemId: extMatch[2], localAvail: opts.localAvail });
       }
     }
     // Debounce — the conn-status banner already shows persistent state; the
@@ -2113,6 +2230,30 @@ function canReparent() {
   return myRole === 'ic';
 }
 
+// v3.17.0 #109: Solo-IC progressive disclosure.
+// Derived from apparatus count + activeOperation.icOverrideMode.
+// Solo mode hides group picker, multi-apparatus admin, "My Role" picker.
+// Solo mode KEEPS: IC slot, Safety Officer slot, Command Staff (collapsed).
+function isSoloMode() {
+  if (!activeOperation) return false;
+  const override = activeOperation.icOverrideMode || 'auto';
+  if (override === 'force-solo') return true;
+  if (override === 'force-standard') return false;
+  const count = (activeOperation.assignedApparatus || []).length;
+  return count <= 1;
+}
+
+function setIcOverrideMode(mode) {
+  if (!activeOperation) return;
+  activeOperation.icOverrideMode = mode;
+  persistOperation();
+  if (db && deptId && operationsRef && activeOperation.id) {
+    firebaseSave(operationsRef.child(activeOperation.id).child('icOverrideMode'), 'set', mode);
+  }
+  renderCommand();
+  renderOperations();
+}
+
 // F-1C-10 (v3.10.0): role-gate matrix for locked-card status transitions.
 // Returns { allowed, reason } so callers can render greyed buttons + tooltips.
 // Doctrine:
@@ -2528,6 +2669,7 @@ function setupConnListener() {
       // above ensures the listener doesn't overwrite local until each item's
       // flush settles.
       flushOfflineTouchedInventory().catch(err => console.warn('[offline-touched] flush error:', err && err.message));
+      flushOfflineTouchedExternal().catch(err => console.warn('[offline-touched-ext] flush error:', err && err.message));
     } else {
       isOnline = false;
       el.className = 'conn-status offline';
@@ -2776,6 +2918,20 @@ function setupListeners() {
         activeOperation.assignedApparatusById,
         activeOperation.assignedApparatus
       );
+      // #107: listener-consults-touched-set for external equipment. Mirror the
+      // inventory pattern — preserve local `available` for items in the ext
+      // touched set so the listener snapshot doesn't overwrite pending resyncs.
+      if (activeOperation.externalEquipment) {
+        const extTouched = getExtTouched();
+        if (Object.keys(extTouched).length > 0) {
+          for (const [itemId, item] of Object.entries(activeOperation.externalEquipment)) {
+            const touchKey = activeOperation.id + '.' + itemId;
+            if (extTouched[touchKey]) {
+              item.available = extTouched[touchKey].localAvail;
+            }
+          }
+        }
+      }
       // v3.17.0 #113: schedule one-shot role-hierarchy migration. Idempotent
       // via _meta.roleHierarchyMigratedAt; in-flight guard prevents double-run
       // when listener re-fires before flag persists. Defer to next tick so
@@ -3404,6 +3560,47 @@ function updateQty(itemId, delta) {
   renderInventory();
 }
 
+function buildStrutGridHTML(itemLookup, clickFn) {
+  let html = '';
+  let count = 0;
+  for (const s of STRUTS) {
+    const qty = itemLookup('strut', s.model, s.system, 0);
+    if (qty > 0) count += qty;
+    html += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="${clickFn}('strut','${s.system}','${escapeAttr(s.model)}',0)">${escapeHtml(s.model)}<br><span style="font-size:13px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+  }
+  return { html, count };
+}
+
+function buildExtGridHTML(itemLookup, clickFn) {
+  let html = '';
+  let count = 0;
+  const extSets = [
+    { system: 'AcmeThread', label: 'Acme (Grey)', sizes: EXTENSIONS.AcmeThread },
+    { system: 'LockStroke', label: 'Lock (Grey)', sizes: EXTENSIONS.LockStroke },
+    { system: 'LongShore', label: 'LongShore (Gold)', sizes: EXTENSIONS.LongShore },
+  ];
+  for (const es of extSets) {
+    for (const size of es.sizes) {
+      const qty = itemLookup('extension', '', es.system, size);
+      if (qty > 0) count += qty;
+      html += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="${clickFn}('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:13px;color:var(--text-secondary)">${es.label}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+    }
+  }
+  return { html, count };
+}
+
+function buildPlateGridHTML(itemLookup, clickFn) {
+  let html = '';
+  let count = 0;
+  const sortedPlates = [...BASE_PLATES].filter(p => p.id !== 'none').sort((a, b) => a.name.localeCompare(b.name));
+  for (const plate of sortedPlates) {
+    const qty = itemLookup('plate', plate.id, '', 0);
+    if (qty > 0) count += qty;
+    html += `<button class="quick-add-plate ${qty > 0 ? 'added' : ''}" onclick="${clickFn}('plate','','${escapeAttr(plate.id)}',0)"><img src="${plate.img}" alt="${escapeAttr(plate.name)}" loading="lazy"><span class="plate-label">${escapeHtml(plate.name)}</span><span class="plate-ht">${plate.height > 0 ? '+' + plate.height + '" ht' : '0"'}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
+  }
+  return { html, count };
+}
+
 function showAddEquipment() {
   if (!selectedApparatus) {
     alert('Create an apparatus first before adding equipment.');
@@ -3421,54 +3618,28 @@ function showAddEquipment() {
   const appName = getApparatusName(selectedApparatus);
   document.getElementById('addEquipTitle').textContent = 'Add Equipment — ' + appName;
 
-  const strutsGrid = document.getElementById('quickAddStruts');
-  const extsGrid = document.getElementById('quickAddExts');
+  const invLookup = (type, model, system, length) => {
+    const item = localInventory.find(i => {
+      if (type === 'strut') return i.type === 'strut' && i.model === model && i.apparatus === selectedApparatus;
+      if (type === 'plate') return i.type === 'plate' && i.plateId === model && i.apparatus === selectedApparatus;
+      return i.type === 'extension' && i.system === system && i.length === length && i.apparatus === selectedApparatus;
+    });
+    return item ? item.quantity : 0;
+  };
 
-  let sh = '';
-  let strutCount = 0, extCount = 0;
-  for (const s of STRUTS) {
-    const item = localInventory.find(i => i.type === 'strut' && i.model === s.model && i.apparatus === selectedApparatus);
-    const qty = item ? item.quantity : 0;
-    if (qty > 0) strutCount += qty;
-    sh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('strut','${s.system}','${s.model}',0)">${s.model}<br><span style="font-size:13px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
-  }
-  strutsGrid.innerHTML = sh;
-
-  let eh = '';
-  const extSets = [
-    { system: 'AcmeThread', label: 'Acme (Grey)', sizes: EXTENSIONS.AcmeThread },
-    { system: 'LockStroke', label: 'Lock (Grey)', sizes: EXTENSIONS.LockStroke },
-    { system: 'LongShore', label: 'LongShore (Gold)', sizes: EXTENSIONS.LongShore },
-  ];
-  for (const es of extSets) {
-    for (const size of es.sizes) {
-      const item = localInventory.find(i => i.type === 'extension' && i.system === es.system && i.length === size && i.apparatus === selectedApparatus);
-      const qty = item ? item.quantity : 0;
-      if (qty > 0) extCount += qty;
-      eh += `<button class="quick-add-btn ${qty > 0 ? 'added' : ''}" onclick="quickAdd('extension','${es.system}','',${size})">${size}" Ext<br><span style="font-size:13px;color:var(--text-secondary)">${es.label}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
-    }
-  }
-  extsGrid.innerHTML = eh;
-
-  // Connector plates (sorted alphabetically)
-  const platesGrid = document.getElementById('quickAddPlates');
-  let ph = '';
-  let plateCount = 0;
-  const sortedPlates = [...BASE_PLATES].filter(p => p.id !== 'none').sort((a, b) => a.name.localeCompare(b.name));
-  for (const plate of sortedPlates) {
-    const item = localInventory.find(i => i.type === 'plate' && i.plateId === plate.id && i.apparatus === selectedApparatus);
-    const qty = item ? item.quantity : 0;
-    if (qty > 0) plateCount += qty;
-    ph += `<button class="quick-add-plate ${qty > 0 ? 'added' : ''}" onclick="quickAdd('plate','','${plate.id}',0)"><img src="${plate.img}" alt="${plate.name}" loading="lazy"><span class="plate-label">${plate.name}</span><span class="plate-ht">${plate.height > 0 ? '+' + plate.height + '" ht' : '0"'}</span>${qty > 0 ? `<span class="quick-add-qty">${qty}</span>` : ''}</button>`;
-  }
-  platesGrid.innerHTML = ph;
+  const struts = buildStrutGridHTML(invLookup, 'quickAdd');
+  document.getElementById('quickAddStruts').innerHTML = struts.html;
+  const exts = buildExtGridHTML(invLookup, 'quickAdd');
+  document.getElementById('quickAddExts').innerHTML = exts.html;
+  const plates = buildPlateGridHTML(invLookup, 'quickAdd');
+  document.getElementById('quickAddPlates').innerHTML = plates.html;
 
   const summary = document.getElementById('quickAddSummary');
-  if (strutCount > 0 || extCount > 0 || plateCount > 0) {
+  if (struts.count > 0 || exts.count > 0 || plates.count > 0) {
     const parts = [];
-    if (strutCount > 0) parts.push(`${strutCount} strut${strutCount !== 1 ? 's' : ''}`);
-    if (extCount > 0) parts.push(`${extCount} extension${extCount !== 1 ? 's' : ''}`);
-    if (plateCount > 0) parts.push(`${plateCount} plate${plateCount !== 1 ? 's' : ''}`);
+    if (struts.count > 0) parts.push(`${struts.count} strut${struts.count !== 1 ? 's' : ''}`);
+    if (exts.count > 0) parts.push(`${exts.count} extension${exts.count !== 1 ? 's' : ''}`);
+    if (plates.count > 0) parts.push(`${plates.count} plate${plates.count !== 1 ? 's' : ''}`);
     summary.textContent = parts.join(', ');
     summary.style.display = 'block';
   } else {
@@ -3527,6 +3698,7 @@ function openModal(id) {
   const modal = document.getElementById(id);
   const focusable = modal.querySelector('input:not([type="hidden"]), select, textarea, button:not([disabled])');
   if (focusable) requestAnimationFrame(() => focusable.focus());
+  updateQuickStartFab();
 }
 
 function closeModal(id) {
@@ -3540,6 +3712,7 @@ function closeModal(id) {
     _lastFocusedElement.focus();
     _lastFocusedElement = null;
   }
+  updateQuickStartFab();
 }
 
 // ============================================================
@@ -3638,6 +3811,7 @@ function showAssignApparatus() {
 
 function toggleApparatusAssignment(appId, assign) {
   if (!activeOperation) return;
+  const wasSolo = isSoloMode();
   let assigned = activeOperation.assignedApparatus || [];
   if (assign && !assigned.includes(appId)) {
     assigned.push(appId);
@@ -3649,7 +3823,12 @@ function toggleApparatusAssignment(appId, assign) {
   // assignedApparatusById (keyed) atomically per A1. Replaces the prior
   // array-only set() which was the concurrent-toggle clobber path.
   writeAssignedApparatusDual();
+  // v3.17.0 #109 / A9: toast on solo → standard promotion
+  if (wasSolo && !isSoloMode()) {
+    showToast('2nd apparatus added — full command structure now available', 'info');
+  }
   renderOperations();
+  renderCommand();
 }
 
 function removeApparatusFromOp(appId) {
@@ -4230,6 +4409,34 @@ function renderMyRoleDisplay() {
   }
 }
 
+function renderSoloIcControls() {
+  const el = document.getElementById('soloIcControls');
+  if (!el || !activeOperation) { if (el) el.style.display = 'none'; return; }
+  el.style.display = '';
+  const mode = activeOperation.icOverrideMode || 'auto';
+  const count = (activeOperation.assignedApparatus || []).length;
+  const solo = isSoloMode();
+  const autoLabel = count <= 1 ? 'Solo mode (1 apparatus)' : `Standard mode (${count} apparatus)`;
+  el.innerHTML = `
+    <div class="solo-ic-panel">
+      <div class="solo-ic-status">${solo ? 'Solo IC mode' : 'Standard mode'}</div>
+      <div class="solo-ic-options">
+        <label class="solo-ic-option${mode === 'auto' ? ' selected' : ''}">
+          <input type="radio" name="icOverride" value="auto" ${mode === 'auto' ? 'checked' : ''} onchange="setIcOverrideMode('auto')">
+          <span>Auto — ${autoLabel}</span>
+        </label>
+        <label class="solo-ic-option${mode === 'force-solo' ? ' selected' : ''}">
+          <input type="radio" name="icOverride" value="force-solo" ${mode === 'force-solo' ? 'checked' : ''} onchange="setIcOverrideMode('force-solo')">
+          <span>Stay in solo mode</span>
+        </label>
+        <label class="solo-ic-option${mode === 'force-standard' ? ' selected' : ''}">
+          <input type="radio" name="icOverride" value="force-standard" ${mode === 'force-standard' ? 'checked' : ''} onchange="setIcOverrideMode('force-standard')">
+          <span>Promote to full mode</span>
+        </label>
+      </div>
+    </div>`;
+}
+
 function renderRoleSuggestion() {
   const banner = document.getElementById('roleSuggestBanner');
   if (!banner) return; // banner lives on Operations tab only — Command tab has no banner
@@ -4265,104 +4472,100 @@ function dismissRoleSuggestion() {
 
 function showAddExternal() {
   if (!activeOperation) return;
-  editingExternalId = null; // Clear edit state — this is a new add
-  populateExtStrutGrid();
-  document.getElementById('extDeptName').value = '';
-  document.getElementById('extApparatus').value = '';
-  document.getElementById('extQuantity').value = '1';
+  if (!activeOperation.externalEquipment) activeOperation.externalEquipment = {};
+  document.getElementById('extDeptName').value = _extSourceDept || '';
+  document.getElementById('extApparatus').value = _extSourceApp || '';
+  renderExtGrids();
   openModal('addExternalModal');
 }
 
-function populateExtStrutGrid(selectedModel) {
-  const grid = document.getElementById('extStrutGrid');
-  const select = document.getElementById('extStrutModel');
-  let gh = '';
-  let sh = '';
-  for (const s of STRUTS) {
-    const isSelected = s.model === selectedModel;
-    const color = s.system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-    gh += `<button type="button" class="quick-add-btn ${isSelected ? 'added' : ''}" onclick="selectExtStrut('${s.model}','${s.system}',event)" style="padding:8px 4px;font-size:13px;min-height:56px;border-color:${isSelected ? color : 'var(--border)'}">${s.model}<br><span style="font-size:12px;color:var(--text-secondary)">${s.collapsed}–${s.extended}"</span></button>`;
-    sh += `<option value="${s.model}" data-system="${s.system}">${s.model}</option>`;
+let _extSourceDept = '';
+let _extSourceApp = '';
+
+function renderExtGrids() {
+  const extEquip = (activeOperation && activeOperation.externalEquipment) ? activeOperation.externalEquipment : {};
+  const extLookup = (type, model, system, length) => {
+    for (const item of Object.values(extEquip)) {
+      if (type === 'strut' && item.type === 'strut' && item.model === model) return item.quantity || 0;
+      if (type === 'plate' && item.type === 'plate' && item.plateId === model) return item.quantity || 0;
+      if (type === 'extension' && item.type === 'extension' && item.system === system && item.length === length) return item.quantity || 0;
+    }
+    return 0;
+  };
+
+  const struts = buildStrutGridHTML(extLookup, 'extQuickAdd');
+  document.getElementById('extQuickAddStruts').innerHTML = struts.html;
+  const exts = buildExtGridHTML(extLookup, 'extQuickAdd');
+  document.getElementById('extQuickAddExts').innerHTML = exts.html;
+  const plates = buildPlateGridHTML(extLookup, 'extQuickAdd');
+  document.getElementById('extQuickAddPlates').innerHTML = plates.html;
+
+  const summary = document.getElementById('extQuickAddSummary');
+  if (struts.count > 0 || exts.count > 0 || plates.count > 0) {
+    const parts = [];
+    if (struts.count > 0) parts.push(`${struts.count} strut${struts.count !== 1 ? 's' : ''}`);
+    if (exts.count > 0) parts.push(`${exts.count} ext${exts.count !== 1 ? 's' : ''}`);
+    if (plates.count > 0) parts.push(`${plates.count} plate${plates.count !== 1 ? 's' : ''}`);
+    summary.textContent = parts.join(', ');
+    summary.classList.remove('hidden');
+  } else {
+    summary.classList.add('hidden');
   }
-  grid.innerHTML = gh;
-  select.innerHTML = sh;
-  if (selectedModel) select.value = selectedModel;
 }
 
-function selectExtStrut(model, system, event) {
-  document.getElementById('extStrutModel').value = model;
-  // Update visual selection
-  document.querySelectorAll('#extStrutGrid .quick-add-btn').forEach(btn => {
-    btn.classList.remove('added');
-    btn.style.borderColor = '#E0E0E0';
-  });
-  if (event && event.currentTarget) {
-    event.currentTarget.classList.add('added');
-    const color = system === 'LongShore' ? 'var(--gold)' : '#9E9E9E';
-    event.currentTarget.style.borderColor = color;
-  }
-}
-
-function confirmAddExternal() {
-  const deptName = validateInput(document.getElementById('extDeptName').value, 100);
-  const apparatus = validateInput(document.getElementById('extApparatus').value, 100);
-  const select = document.getElementById('extStrutModel');
-  const model = select.value;
-  const system = select.options[select.selectedIndex].dataset.system;
-  const qty = parseInt(document.getElementById('extQuantity').value) || 1;
-  if (qty < 1 || qty > 999) { alert('Quantity must be between 1 and 999.'); return; }
-
-  if (!deptName && !apparatus) { alert('Please enter a department name or apparatus.'); return; }
-  if (!model) { alert('Please select a strut model.'); return; }
-
-  const strut = STRUTS.find(s => s.model === model);
-  if (!strut) return;
-
+function extQuickAdd(type, system, model, length) {
+  if (!activeOperation) return;
   if (!activeOperation.externalEquipment) activeOperation.externalEquipment = {};
 
-  if (editingExternalId) {
-    // Editing existing — preserve deployed count
-    const existing = activeOperation.externalEquipment[editingExternalId];
-    const deployed = existing ? Math.max(0, existing.quantity - existing.available) : 0;
-    const item = {
-      id: editingExternalId,
-      deptName: deptName || apparatus,
-      apparatus: apparatus || deptName,
-      model,
-      system: strut.system,
-      type: 'strut',
-      quantity: qty,
-      available: Math.max(0, qty - deployed),
-      external: true,
-    };
-    activeOperation.externalEquipment[editingExternalId] = item;
+  const deptName = validateInput(document.getElementById('extDeptName').value, 100);
+  const apparatus = validateInput(document.getElementById('extApparatus').value, 100);
+  if (!deptName && !apparatus) {
+    showToast('Enter a department or apparatus first', 'warning');
+    document.getElementById('extDeptName').focus();
+    return;
+  }
+  _extSourceDept = deptName;
+  _extSourceApp = apparatus;
+
+  const existing = Object.values(activeOperation.externalEquipment).find(i => {
+    if (type === 'strut') return i.type === 'strut' && i.model === model;
+    if (type === 'plate') return i.type === 'plate' && i.plateId === model;
+    return i.type === 'extension' && i.system === system && i.length === length;
+  });
+
+  if (existing) {
+    existing.quantity = (existing.quantity || 0) + 1;
+    existing.available = (existing.available || 0) + 1;
+    existing.deptName = deptName || apparatus;
+    existing.apparatus = apparatus || deptName;
     persistOperation();
-    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
-      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(editingExternalId), 'set', item);
+    if (db && deptId && operationsRef && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(existing.id), 'set', existing);
     }
-    editingExternalId = null;
   } else {
-    // Adding new
+    const strutInfo = type === 'strut' ? STRUTS.find(s => s.model === model) : null;
+    const plateInfo = type === 'plate' ? BASE_PLATES.find(p => p.id === model) : null;
     const item = {
       deptName: deptName || apparatus,
       apparatus: apparatus || deptName,
-      model,
-      system: strut.system,
-      type: 'strut',
-      quantity: qty,
-      available: qty,
+      type,
+      system: type === 'strut' ? (strutInfo ? strutInfo.system : '') : (type === 'extension' ? system : ''),
+      model: type === 'strut' ? model : (type === 'plate' ? (plateInfo ? plateInfo.name : model) : ''),
+      length: type === 'extension' ? length : 0,
+      quantity: 1,
+      available: 1,
       external: true,
     };
+    if (type === 'plate') item.plateId = model;
     item.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('externalEquipment').push().key : ('ext-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
     activeOperation.externalEquipment[item.id] = item;
     persistOperation();
-    if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
+    if (db && deptId && operationsRef && activeOperation.id) {
       firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(item.id), 'set', item);
     }
   }
 
-  closeModal('addExternalModal');
-  renderOperations();
+  renderExtGrids();
 }
 
 function removeExternal(extId) {
@@ -4371,7 +4574,7 @@ function removeExternal(extId) {
 
   delete activeOperation.externalEquipment[extId];
   persistOperation();
-  if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
+  if (db && deptId && operationsRef && activeOperation.id) {
     firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
   }
   renderOperations();
@@ -4381,13 +4584,9 @@ function editExternal(extId) {
   if (!activeOperation || !activeOperation.externalEquipment) return;
   const ext = activeOperation.externalEquipment[extId];
   if (!ext) return;
-
-  editingExternalId = extId;
-  populateExtStrutGrid(ext.model);
-  document.getElementById('extDeptName').value = ext.deptName || '';
-  document.getElementById('extApparatus').value = ext.apparatus || '';
-  document.getElementById('extQuantity').value = ext.quantity || 1;
-  openModal('addExternalModal');
+  _extSourceDept = ext.deptName || '';
+  _extSourceApp = ext.apparatus || '';
+  showAddExternal();
 }
 
 // ============================================================
@@ -4623,16 +4822,16 @@ function getOperationInventory() {
     inv = localInventory.filter(i => i.apparatus);
   }
 
-  // Merge external equipment
   if (activeOperation && activeOperation.externalEquipment) {
-    const extItems = Object.values(activeOperation.externalEquipment);
-    for (const ext of extItems) {
+    for (const ext of Object.values(activeOperation.externalEquipment)) {
       if (ext.available > 0) {
         inv.push({
           id: ext.id,
-          type: 'strut',
-          model: ext.model,
-          system: ext.system,
+          type: ext.type || 'strut',
+          model: ext.model || '',
+          system: ext.system || '',
+          length: ext.length || 0,
+          plateId: ext.plateId || '',
           quantity: ext.quantity,
           available: ext.available,
           apparatus: 'external-' + ext.id,
@@ -4735,13 +4934,20 @@ function renderAssignedApparatus() {
 }
 
 // v3.12.0: extracted helper — external equipment list. Host-agnostic.
+function getExtItemLabel(ext) {
+  if (ext.type === 'strut') return ext.model || 'Strut';
+  if (ext.type === 'extension') return (ext.length || '?') + '" ' + (ext.system || '') + ' Ext';
+  if (ext.type === 'plate') return ext.model || ext.plateId || 'Plate';
+  return ext.model || 'Unknown';
+}
+
 function renderExternalEquipmentList() {
   const extList = document.getElementById('externalEquipmentList');
   if (!extList) return;
   const extEquip = activeOperation.externalEquipment ? Object.values(activeOperation.externalEquipment) : [];
   if (extEquip.length > 0) {
     extList.innerHTML = extEquip.map(ext => `<div class="ext-item">
-      <div><span class="ext-info">${escapeHtml(ext.model)}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
+      <div><span class="ext-info">${escapeHtml(getExtItemLabel(ext))}</span> <span class="ext-badge">External</span><br><span class="ext-dept">${escapeHtml(ext.deptName)} — ${escapeHtml(ext.apparatus)} (${ext.available}/${ext.quantity} avail)</span></div>
       <div style="display:flex;align-items:center;gap:8px">
         <span role="button" tabindex="0" onclick="editExternal('${escapeAttr(ext.id)}')" style="font-size:16px;cursor:pointer;color:var(--blue)" title="Edit">✎</span>
         <span class="chip-x" role="button" tabindex="0" onclick="removeExternal('${escapeAttr(ext.id)}')" style="font-size:18px;cursor:pointer;color:var(--text-secondary)">&times;</span>
@@ -4832,6 +5038,19 @@ function renderCommand() {
   renderIndividualsList();
   renderMyRoleDisplay();
   if (typeof renderHazardLog === 'function') renderHazardLog(); // Phase 4 — may not exist yet
+
+  // v3.17.0 #109: solo-IC progressive disclosure
+  const solo = isSoloMode();
+  // Hide multi-apparatus admin sections in solo mode
+  const apparatusToggle = document.querySelector('[aria-controls="sectionCmdApparatus"]');
+  const apparatusSection = document.getElementById('sectionCmdApparatus');
+  if (apparatusToggle) apparatusToggle.style.display = solo ? 'none' : '';
+  if (apparatusSection) apparatusSection.style.display = solo ? 'none' : '';
+  // Hide "My Role" section — auto-set to IC in solo mode
+  const myRoleSec = document.getElementById('myRoleSection');
+  if (myRoleSec) myRoleSec.style.display = solo ? 'none' : '';
+  // Render IC override controls
+  renderSoloIcControls();
 }
 
 // (renderCommandView shim defined below at the old function's site for clarity.)
@@ -4982,6 +5201,7 @@ function normalizeStatus(status) {
 function renderShorePointCards(numbered) {
   // Uses global STATUS_ORDER and STATUS_LABELS
   const strutCache = {};
+  const solo = isSoloMode();
   let opInv = null;
 
   const byStatus = {};
@@ -5053,7 +5273,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${(() => { const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
+        ${(() => { if (solo) return ''; const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -5234,8 +5454,68 @@ function deleteArchivedOp(opId) {
   renderArchivedOps();
 }
 
+const SCENARIO_PRESETS = [
+  {
+    id: 'car-into-building',
+    name: 'Car into building',
+    desc: '1–4 shores, single structure, minimal command',
+    multiBuilding: false,
+  },
+  {
+    id: 'residential-collapse',
+    name: 'Residential partial collapse',
+    desc: '4–8 shores, wood-frame, may need cutting',
+    multiBuilding: false,
+  },
+  {
+    id: 'commercial-collapse',
+    name: 'Light commercial partial collapse',
+    desc: '6–12+ shores, multi-room, possible multi-division',
+    multiBuilding: false,
+  },
+];
+
+let selectedPresetId = null;
+
+function renderPresetCards() {
+  const container = document.getElementById('presetCards');
+  if (!container) return;
+  let html = '';
+  for (const p of SCENARIO_PRESETS) {
+    const sel = selectedPresetId === p.id ? ' selected' : '';
+    html += `<div class="preset-card${sel}" role="button" tabindex="0" onclick="selectPreset('${p.id}')" data-preset="${p.id}">
+      <div class="preset-card-name">${escapeHtml(p.name)}</div>
+      <div class="preset-card-desc">${escapeHtml(p.desc)}</div>
+    </div>`;
+  }
+  html += `<div class="preset-card${selectedPresetId === null ? ' selected' : ''}" role="button" tabindex="0" onclick="selectPreset(null)">
+    <div class="preset-card-name">Custom</div>
+    <div class="preset-card-desc">No defaults — configure everything manually</div>
+  </div>`;
+  container.innerHTML = html;
+}
+
+function selectPreset(presetId) {
+  selectedPresetId = presetId;
+  renderPresetCards();
+  const note = document.getElementById('presetOrgNote');
+  if (presetId) {
+    if (note) {
+      note.style.display = '';
+      note.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);background:var(--surface-alt);border-radius:6px;padding:8px;margin-top:4px">' +
+        '<strong style="color:var(--blue)">Minimum Command Staff:</strong> IC + Safety Officer will be set automatically. ' +
+        '<span style="font-size:12px;color:var(--text-hint)">Designate a Liaison Officer when multiple agencies are present.</span></div>';
+    }
+  } else {
+    if (note) note.style.display = 'none';
+  }
+}
+
 function startOperation() {
+  selectedPresetId = null;
   populateStartOpApparatus();
+  renderPresetCards();
+  document.getElementById('presetOrgNote').style.display = 'none';
   openModal('startOpModal');
 }
 
@@ -5263,28 +5543,51 @@ function confirmStartOp() {
     assignedApparatus,
     assignedApparatusById,
     multiBuilding,
+    icOverrideMode: 'auto',
   };
   if (taskForce) op.taskForce = taskForce;
 
-  // Reset device role for new operation
-  myRole = null;
+  // Reset device role for new operation — auto-set IC in solo mode
   roleViewDismissed = false;
-  localStorage.removeItem('fieldshore_myRole');
+  if (assignedApparatus.length <= 1) {
+    myRole = 'ic';
+    safeSetItem('fieldshore_myRole', 'ic');
+  } else {
+    myRole = null;
+    localStorage.removeItem('fieldshore_myRole');
+  }
 
   op.id = (db && operationsRef) ? operationsRef.push().key : ('local-op-' + Date.now());
   op.shorePoints = [];
+  if (selectedPresetId) op.preset = selectedPresetId;
   activeOperation = op;
+
+  // v3.17.0 #108: scaffold IC + Safety when a preset is selected
+  if (selectedPresetId) {
+    initCustomRoles();
+    const roles = activeOperation.roles || {};
+    roles['self'] = 'ic';
+    activeOperation.roles = roles;
+  }
+
   persistOperation();
   if (db && deptId && operationsRef) {
     const {id, shorePoints, ...firebaseOp} = op;
     firebaseSave(operationsRef.child(op.id), 'set', firebaseOp);
   }
-  renderOperations();
 
   closeModal('startOpModal');
   document.getElementById('newOpName').value = '';
   document.getElementById('newOpTaskForce').value = '';
   document.getElementById('opMultiBuilding').checked = false;
+
+  // v3.17.0 #108: preset path — land on Operations with Add SP pre-staged (≤2 taps)
+  showTab('ops');
+  renderOperations();
+  if (selectedPresetId) {
+    setTimeout(() => showAddShorePoint(), 100);
+  }
+  selectedPresetId = null;
 }
 
 function showAddShorePoint() {
@@ -5305,6 +5608,9 @@ function showAddShorePoint() {
   // Show/hide building field based on operation setting
   const isMulti = activeOperation && activeOperation.multiBuilding;
   document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
+  // v3.17.0 #109: hide group dropdown in solo-IC mode (only 1 apparatus)
+  const groupWrap = document.getElementById('spGroupWrapper');
+  if (groupWrap) groupWrap.style.display = isSoloMode() ? 'none' : '';
 
   // Pre-fill from drilldown position
   for (const seg of drilldownPath) {
@@ -7007,6 +7313,9 @@ function editShorePoint(spId) {
   // Show/hide building field
   const isMulti = activeOperation && activeOperation.multiBuilding;
   document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
+  // v3.17.0 #109: hide group dropdown in solo-IC mode
+  const groupWrap = document.getElementById('spGroupWrapper');
+  if (groupWrap) groupWrap.style.display = isSoloMode() ? 'none' : '';
 
   // Populate modal with existing data
   document.getElementById('spLabel').value = sp.label || '';
@@ -7237,13 +7546,12 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
     ? operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available')
     : inventoryRef.child(strutInvItem.id).child('available');
   const strutGuard = makeAllocateDecrementer();
-  // v3.16.4 #71: external-equipment paths are out of scope for Component A
-  // (different Firebase path; see master plan v3.17.0 follow-up). Skip localAvail
-  // for externals so firebaseSave's catch falls through to log-only.
-  const strutLocalAvail = strutInvItem.external ? undefined : Math.max(0, (strutInvItem.available || 0) - 1);
-  // v3.16.4 #71 Component B: bump epoch at the call site (NOT inside the
-  // transaction's updateFunction, which Firebase retries internally).
-  if (!strutInvItem.external) bumpEpoch(strutInvItem.id);
+  const strutLocalAvail = Math.max(0, (strutInvItem.available || 0) - 1);
+  if (strutInvItem.external) {
+    bumpEpoch('ext:' + activeOperation.id + ':' + strutInvItem.id);
+  } else {
+    bumpEpoch(strutInvItem.id);
+  }
   guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut', localAvail: strutLocalAvail });
 
   // Extension transactions
@@ -7293,8 +7601,12 @@ function returnInventoryItems(sp) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
       extItem.available = Math.min(extItem.quantity, extItem.available + 1);
+      const extEpochKey = 'ext:' + activeOperation.id + ':' + sp.deployedStrut.inventoryId;
       if (db && deptId && operationsRef) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity));
+        bumpEpoch(extEpochKey);
+        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available });
+      } else {
+        markOfflineTouchedExternal(activeOperation.id, sp.deployedStrut.inventoryId, extItem.available);
       }
     } else {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
@@ -7995,6 +8307,102 @@ function updateQuickViewFab() {
 }
 
 // ============================================================
+// QUICK-START FAB (#110)
+// ============================================================
+let _fabHoldTimer = null;
+
+function initQuickStartFab() {
+  const fab = document.getElementById('quickStartFab');
+  if (!fab) return;
+
+  function startHold() {
+    if (_fabHoldTimer) return;
+    fab.classList.add('holding');
+    _fabHoldTimer = setTimeout(() => {
+      _fabHoldTimer = null;
+      fab.classList.remove('holding');
+      fireQuickStart();
+    }, 500);
+  }
+
+  function cancelHold() {
+    if (_fabHoldTimer) {
+      clearTimeout(_fabHoldTimer);
+      _fabHoldTimer = null;
+    }
+    fab.classList.remove('holding');
+  }
+
+  fab.addEventListener('pointerdown', (e) => { e.preventDefault(); startHold(); });
+  fab.addEventListener('pointerup', cancelHold);
+  fab.addEventListener('pointercancel', cancelHold);
+  fab.addEventListener('pointerleave', cancelHold);
+  fab.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fireQuickStart(); }
+  });
+}
+
+function fireQuickStart() {
+  if (activeOperation) {
+    showToast('An operation is already active', 'warning');
+    return;
+  }
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const name = `${pad(now.getMonth() + 1)}/${pad(now.getDate())}/${String(now.getFullYear()).slice(2)} @ ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const op = {
+    name,
+    status: 'active',
+    startTime: now.toISOString(),
+    endTime: null,
+    assignedApparatus: [],
+    assignedApparatusById: {},
+    multiBuilding: false,
+    icOverrideMode: 'auto',
+  };
+
+  myRole = 'ic';
+  safeSetItem('fieldshore_myRole', 'ic');
+  roleViewDismissed = false;
+
+  op.id = (db && operationsRef) ? operationsRef.push().key : ('local-op-' + Date.now());
+  op.shorePoints = [];
+  activeOperation = op;
+  persistOperation();
+  if (db && deptId && operationsRef) {
+    const {id, shorePoints, ...firebaseOp} = op;
+    firebaseSave(operationsRef.child(op.id), 'set', firebaseOp);
+  }
+
+  showTab('ops');
+  renderOperations();
+
+  // Pre-fill Add SP from Quick Find measurement if available
+  setTimeout(() => {
+    showAddShorePoint();
+    const qfLen = document.getElementById('inputLength')?.value;
+    const qfLoad = document.getElementById('inputLoad')?.value;
+    if (qfLen && Number(qfLen) > 0) {
+      setMeasurementFromInches('sp', Number(qfLen));
+      document.getElementById('spLength').value = qfLen;
+    }
+    if (qfLoad && Number(qfLoad) > 0) {
+      document.getElementById('spLoad').value = qfLoad;
+    }
+  }, 100);
+}
+
+function updateQuickStartFab() {
+  const fab = document.getElementById('quickStartFab');
+  if (!fab) return;
+  const onQF = document.getElementById('screenSelect')?.classList.contains('active');
+  const hasOp = !!activeOperation;
+  const modalOpen = document.querySelector('.modal-overlay.active');
+  fab.style.display = (onQF && !hasOp && !modalOpen) ? 'flex' : 'none';
+}
+
+// ============================================================
 // DEDUCTIONS & PLATE PICKER
 // ============================================================
 function toggleDeductions(prefix) {
@@ -8290,6 +8698,8 @@ function init() {
   if (deptId && db) setupListeners();
 
   updateQuickViewFab();
+  initQuickStartFab();
+  updateQuickStartFab();
 
   // Initialize plate pickers and restore deduction preferences
   initPlatePickers();

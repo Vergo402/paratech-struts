@@ -1940,6 +1940,95 @@ body {
 .force-update-card .version-meta { font-size: 12px; color: var(--text-secondary); margin-top: 16px; text-align: center; }
 
 /* ========================================
+   QUICK-START FAB (#110)
+   ======================================== */
+.quick-start-fab {
+  position: fixed;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0));
+  right: 16px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+.quick-start-fab .fab-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+.quick-start-fab .fab-arc {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+}
+.fab-arc-track { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 3; }
+.fab-arc-fill {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-dasharray: 157;
+  stroke-dashoffset: 157;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 0.5s linear;
+}
+.quick-start-fab.holding .fab-arc-fill { stroke-dashoffset: 0; }
+.quick-start-fab .fab-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ========================================
+   SCENARIO PRESET CARDS (#108)
+   ======================================== */
+.preset-cards { display: flex; flex-direction: column; gap: 6px; }
+.preset-card {
+  background: var(--surface-alt, #F5F5F5);
+  border: 2px solid transparent;
+  border-left: 4px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 56px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.preset-card:hover { border-color: var(--blue-border, #90CAF9); }
+.preset-card.selected { border-left-color: var(--blue); background: var(--blue-light, #BBDEFB); }
+.preset-card-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.preset-card-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ========================================
+   SOLO-IC MODE CONTROLS (#109)
+   ======================================== */
+.solo-ic-panel { background: var(--surface-alt, #F5F5F5); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.solo-ic-status { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 8px; }
+.solo-ic-options { display: flex; flex-direction: column; gap: 6px; }
+.solo-ic-option { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid transparent; }
+.solo-ic-option.selected { background: var(--blue-light, #BBDEFB); border-color: var(--blue-border, #90CAF9); }
+.solo-ic-option input[type="radio"] { width: 16px; height: 16px; accent-color: var(--blue); }
+
+/* ========================================
    DARK MODE
    Applied via [data-theme="dark"] on <html>. JavaScript resolves the user's
    preference ('system' | 'light' | 'dark') and sets the attribute on load
@@ -2071,6 +2160,14 @@ body {
 
   /* Plate unavailable */
   .plate-unavailable { opacity: 0.25; }
+
+  /* Preset cards dark */
+  .preset-card { background: var(--card-secondary-bg, #1A1A1A); }
+  .preset-card.selected { background: #1A3A5C; border-left-color: var(--blue); }
+  .preset-card:hover { border-color: #2A5A8C; }
+
+  /* Solo-IC panel dark */
+  .solo-ic-option.selected { background: #1A3A5C; border-color: #2A5A8C; }
 
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }
