@@ -46,6 +46,12 @@
                 },
                 "assignedResource": {
                   ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
+                },
+                "division": {
+                  ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= -50 && newData.val() <= 200) || (newData.isString() && newData.val().length <= 100)"
+                },
+                "divisionLegacyLabel": {
+                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
                 }
               }
             },
