@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.16.1</div>
+      <div class="version-label">v3.16.2</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -236,9 +236,6 @@
         <!-- v3.15.0 #93: renumber-divisions inline banner (non-modal, dismissable) -->
         <div id="renumberBanner" class="renumber-banner hidden" role="region" aria-label="Division renumber prompt"></div>
         <div class="op-shell">
-          <div class="ops-drilldown-search-row">
-            <input id="drilldownSearchInput" type="search" placeholder="Search shore points…" oninput="applyDrilldownSearch()" autocomplete="off" aria-label="Search shore points">
-          </div>
           <div id="drilldownTree" class="ops-drilldown-tree" role="navigation" aria-label="Drilldown navigation"></div>
         </div>
         <div class="op-views">
@@ -252,6 +249,10 @@
             <button class="btn btn-sm btn-primary ops-add-sp-btn" onclick="showAddShorePoint()">+ Shore Point</button>
           </div>
           <div id="drilldownBreadcrumb" class="drilldown-breadcrumb hidden"></div>
+          <details class="ops-legend" id="opsLegend">
+            <summary>Legend — colors &amp; permissions</summary>
+            <div id="opsLegendBody"></div>
+          </details>
           <div id="shorePointsList"></div>
         </div>
         <div id="cutTableView" class="hidden" role="tabpanel"></div>
