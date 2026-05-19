@@ -917,6 +917,98 @@ function opIsInRapidActivity(op) {
   return false;
 }
 
+// getOpDivisions(op) — returns sorted, deduped list of division numbers
+// available in the operation. Combines the explicit `op.divisions` array
+// (extended by [+] Add Floor controls) with any division numbers already
+// in use by existing SPs. Always includes 1 (Ground level). Sorted
+// descending so the dropdown reads top-to-bottom matching the building
+// cross-section (high floors first, basement last).
+function getOpDivisions(op) {
+  const set = new Set([1]); // always include Ground
+  if (op && Array.isArray(op.divisions)) {
+    op.divisions.forEach(n => { if (typeof n === 'number' && Number.isInteger(n) && n !== 0) set.add(n); });
+  }
+  if (op && op.shorePoints) {
+    const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints);
+    for (const sp of points) {
+      if (typeof sp.division === 'number' && Number.isInteger(sp.division) && sp.division !== 0) set.add(sp.division);
+    }
+  }
+  return Array.from(set).sort((a, b) => b - a); // descending — highest floor at top
+}
+
+// renderDivisionPicker(selectedNumber) — populates <select id="spDivision">
+// with options from getOpDivisions(activeOperation). Selects the given
+// number (or 1 = Ground if not provided / not present). Called when the
+// SP modal opens (Add or Edit).
+function renderDivisionPicker(selectedNumber) {
+  const select = document.getElementById('spDivision');
+  if (!select) return;
+  const divisions = getOpDivisions(activeOperation);
+  const current = (typeof selectedNumber === 'number' && Number.isInteger(selectedNumber)) ? selectedNumber : 1;
+  // Build options
+  let html = '';
+  for (const n of divisions) {
+    const label = formatDivision({ division: n });
+    html += '<option value="' + n + '"' + (n === current ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+  }
+  select.innerHTML = html;
+  // If current value isn't in the options, default to 1
+  if (!divisions.includes(current)) {
+    select.value = '1';
+  } else {
+    select.value = String(current);
+  }
+}
+
+// addFloorAbove() — adds the next Division N+1 to activeOperation.divisions,
+// re-renders the picker, and selects the new floor. Persists.
+function addFloorAbove() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  if (!Array.isArray(activeOperation.divisions)) activeOperation.divisions = [];
+  const existing = getOpDivisions(activeOperation);
+  const maxPositive = existing.filter(n => n > 0).reduce((a, b) => Math.max(a, b), 0);
+  const next = maxPositive + 1;
+  if (!activeOperation.divisions.includes(next)) {
+    activeOperation.divisions.push(next);
+    persistOperation();
+    if (db && deptId && operationsRef && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('divisions'), 'set', activeOperation.divisions);
+    }
+  }
+  renderDivisionPicker(next);
+}
+
+// addFloorBelow() — adds the next Sub Division (-N) to activeOperation.divisions,
+// re-renders the picker, and selects it. Persists.
+function addFloorBelow() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  if (!Array.isArray(activeOperation.divisions)) activeOperation.divisions = [];
+  const existing = getOpDivisions(activeOperation);
+  const minNegative = existing.filter(n => n < 0).reduce((a, b) => Math.min(a, b), 0);
+  const next = minNegative - 1;
+  if (!activeOperation.divisions.includes(next)) {
+    activeOperation.divisions.push(next);
+    persistOperation();
+    if (db && deptId && operationsRef && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('divisions'), 'set', activeOperation.divisions);
+    }
+  }
+  renderDivisionPicker(next);
+}
+
+// readDivisionFromPicker() — reads the current <select id="spDivision"> value
+// and returns it as a number (or null if not parseable). Replaces the
+// validateInput(value, 100) || null pattern at the save/deploy sites.
+function readDivisionFromPicker() {
+  const select = document.getElementById('spDivision');
+  if (!select) return null;
+  const v = select.value;
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && Number.isInteger(n) ? n : null;
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
@@ -4447,7 +4539,8 @@ function showAddShorePoint() {
   document.getElementById('spLabel').value = '';
   document.getElementById('spBuilding').value = '';
   document.getElementById('spArea').value = '';
-  document.getElementById('spDivision').value = '';
+  // v3.15.0 #93: numbered division picker. Default to Division 1 (Ground level).
+  renderDivisionPicker(1);
   // Populate Group dropdown from operation's assigned apparatus
   populateGroupDropdown('');
 
@@ -4458,7 +4551,13 @@ function showAddShorePoint() {
   // Pre-fill from drilldown position
   for (const seg of drilldownPath) {
     if (seg.level === 'building') document.getElementById('spBuilding').value = seg.value;
-    if (seg.level === 'division') document.getElementById('spDivision').value = seg.value;
+    if (seg.level === 'division') {
+      // v3.15.0 #93: drilldown segment values are numeric (post-migration) or
+      // legacy strings (pre-migration / migrated to legacyLabel). Try numeric
+      // first; fall back silently if not available in the picker.
+      const segNum = parseInt(seg.value, 10);
+      if (Number.isFinite(segNum)) renderDivisionPicker(segNum);
+    }
     if (seg.level === 'area') document.getElementById('spArea').value = seg.value;
     if (seg.level === 'group') populateGroupDropdown(seg.value);
   }
@@ -4543,7 +4642,10 @@ function assignEquipmentToPending(spId) {
   document.getElementById('spLabel').value = sp.label || '';
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
-  document.getElementById('spDivision').value = sp.division || '';
+  // v3.15.0 #93: numeric division picker. If sp.division is a number, select
+  // it; otherwise default to Ground. Legacy labels stay on the SP until the
+  // IC renumbers via the inline banner (step 7).
+  renderDivisionPicker(typeof sp.division === 'number' ? sp.division : 1);
   populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
@@ -4716,7 +4818,7 @@ function deployPendingShorePoint(reason) {
   const shoreType = document.getElementById('spShoreType').value;
   const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
   const area = validateInput(document.getElementById('spArea').value, 100) || null;
-  const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+  const division = readDivisionFromPicker(); // v3.15.0 #93: numeric division
   const group = validateInput(document.getElementById('spGroup').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
@@ -4971,7 +5073,7 @@ async function deployShorePoint(result, qty) {
     const shoreType = document.getElementById('spShoreType').value;
     const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
     const area = validateInput(document.getElementById('spArea').value, 100) || null;
-    const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+    const division = readDivisionFromPicker(); // v3.15.0 #93: numeric division
     const group = validateInput(document.getElementById('spGroup').value, 100) || null;
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
@@ -6002,7 +6104,10 @@ function editShorePoint(spId) {
   document.getElementById('spLabel').value = sp.label || '';
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
-  document.getElementById('spDivision').value = sp.division || '';
+  // v3.15.0 #93: numeric division picker. If sp.division is a number, select
+  // it; otherwise default to Ground. Legacy labels stay on the SP until the
+  // IC renumbers via the inline banner (step 7).
+  renderDivisionPicker(typeof sp.division === 'number' ? sp.division : 1);
   populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
@@ -6071,7 +6176,8 @@ function confirmEditShorePoint() {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
     area: validateInput(document.getElementById('spArea').value, 100) || null,
-    division: validateInput(document.getElementById('spDivision').value, 100) || null,
+    division: readDivisionFromPicker(), // v3.15.0 #93: numeric division
+    divisionLegacyLabel: null,             // v3.15.0 #93: clear legacy label — IC explicitly picked a division
     group: editGroup,                      // v3.12.0 N2 dual-write: legacy key
     assignedResource: editGroup,           // v3.12.0 N2 dual-write: new key
     shoreType: document.getElementById('spShoreType').value,

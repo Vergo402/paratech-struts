@@ -216,6 +216,30 @@ select { padding-right: 40px; }
 }
 .btn-sm { min-height: 44px; padding: 10px 16px; font-size: 14px; }
 
+/* v3.15.0 #93: Add Floor Above / Add Sub Div Below controls under the numbered
+   division picker. Distinct visual tier from the select itself (mobile-ux #1):
+   smaller, lower contrast, and clearly grouped as add-actions. 44px min height
+   keeps gloved tap targets honest. */
+.division-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.division-controls .division-add-btn {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+.division-controls .division-add-btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  opacity: 1;
+}
+
 /* --- Section Headers --- */
 .section-header {
   font-size: 13px;
