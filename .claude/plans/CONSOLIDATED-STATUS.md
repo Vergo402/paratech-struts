@@ -74,14 +74,18 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 
 ### Release 4 — v3.16.4 (PATCH, planned) ⏳ next
 
-**#71 architectural full-fix — failed-transaction value-resync (split out of v3.16.3 due to blast radius).**
-- Scoped-field allowlist (only `inventory/{id}.available`, `.quantity`), not whole-subtree
-- Mutation-epoch versioning to prevent resync clobbering concurrent local writes
-- Separate `pendingResyncs` queue (de-duped by path)
-- `_meta.lastVerifiedAt` schema field added (free signal for v3.18.0 dual-write)
-- Diagnostics: `logSyncEvent('resync_enqueued' | 'resync_applied', {path, drift})`
-- Explicit failure-injection driver flow (override `updateFunction` to return `undefined`; offline-throttle alone insufficient)
-- Plan file: to be drafted (next `/plan` run)
+**#71 architectural full-fix — extend v3.15.0 `offlineTouchedInventory` to cover non-offline transaction failures + 4 safety guards.**
+
+The first plan draft proposed a parallel `pendingResyncs` queue; code-auditor C1 flagged it would race v3.15.0's mark/filter/flush trio. Architecture rewritten to extend the existing system.
+
+- Cover non-offline failures: `firebaseSave` catch routes inventory-`available` transaction failures into `markOfflineTouched()` (today it only fires when `txResult.offline === true`)
+- Mutation-epoch guard — flush drops entries whose epoch advanced after enqueue (prevents stale-overwrite when a newer local write succeeded normally)
+- Peer-write guard inside the flush transaction body — refuses to clobber a peer device's lower `available` (resync only writes if Firebase is stale-HIGH relative to local)
+- `_meta.lastVerifiedAt` audit signal — validate scoped to the LEAF, not the wrapper (avoids v3.8.2 redux)
+- Bounded retries (`MAX_RESYNC_RETRIES = 3`) + diagnostics events: `resync_enqueued_via_failure`, `resync_applied`, `resync_dropped` (with `reason`), `resync_failed`
+- Failure-injection driver flow with tightened `/\/inventory\/[^/]+\/available$/` regex (DevTools offline-throttle does NOT exercise the non-offline-failure path)
+- 13 verification flows A–M (happy path, failure injection, epoch dedup, concurrent-newer-write drop, listener race via existing filter, peer-advanced drop, no-`_meta` rule sanity, kill-switch, max-retries, Excel import non-regression, strut algorithm smoke, mobile, feedback modal canary)
+- Plan file: [v3.16.4-transaction-resync.md](v3.16.4-transaction-resync.md). Agent-reviewed (code-auditor + devops-resilience + qa-driver + release-manager — all 25 findings resolved in the plan rewrite; `_syncedItemIds` persistence deferred to v3.17.0 as the only conscious deferral).
 
 **Deferred from original v3.16.0 scope → v3.17.0:**
 - 3 scenario presets, first-due solo IC mode, Quick-start FAB
@@ -203,3 +207,22 @@ All completed or superseded: v1.8.1, v1.9.0, v2.1.0, v2.3.0, v3.4.1, v3.5.2, v3.
 - **GitHub issues created via /feedbackreview:** #97, #98, #99, #100, #101 (Firebase queue cleared)
 - **Agent review (5):** code-auditor, mobile-ux, devops-resilience, qa-driver, release-manager — all APPROVE for the revised v3.16.3 scope; key changes folded in (scoped CSS selector, `(pointer: coarse)` media query, modal Option C, explicit driver flows with `getBoundingClientRect()` capture + feedback-modal canary)
 - **Resolved decisions:** Open Decisions #6 and #7 stay in v3.17.0 (NIMS doctrine reset + drilldown search v2); legend, phone DnD, and #71 promoted forward.
+
+---
+
+## Planning Session — 2026-05-19 (afternoon, v3.16.4)
+
+- **Target release:** v3.16.4 (PATCH)
+- **Plan file:** [v3.16.4-transaction-resync.md](v3.16.4-transaction-resync.md)
+- **In scope:** 1 item, 5 design components — #71 architectural full-fix by EXTENDING v3.15.0's `offlineTouchedInventory` (not building a parallel queue)
+- **Deferred:** `_syncedItemIds` per-dept persistence → v3.17.0 (only finding not folded into v3.16.4 design); all hfd217 v3.16.3 feedback bundled into v3.17.0 / v4.0
+- **/feedbackreview ran:** 5 new hfd217 entries against v3.16.3 → issues #102–#106 filed. Firebase queue cleanup NOT yet performed (awaiting explicit delete approval per `permissions.md`).
+- **Agent review (4):** code-auditor (9 findings), devops-resilience (7 findings), qa-driver (6 findings), release-manager (3 findings) — all CONCERNS. After review, the plan was substantially rewritten:
+  - Architecture pivot: extend v3.15.0 system rather than parallel queue (code-auditor C1)
+  - `_meta` rule scoped to leaf, not wrapper (devops-resilience + release-manager)
+  - Listener-race resolved by the existing `applyOfflineTouchedFilter` (code-auditor C2 moot under new architecture)
+  - Peer-write guard inside flush transaction (code-auditor C3 + devops-resilience #5)
+  - Bounded retries `MAX_RESYNC_RETRIES = 3` (code-auditor C6)
+  - Bump-epoch call sites named explicitly (code-auditor C9)
+  - 13 verification flows A–M including failure injection, mobile, strut smoke, Excel import, feedback canary
+- **Resolved decisions:** v3.16.4 is single-item; v3.17.0 absorbs the 4 new hfd217 v3.16.3 feedback items (#102, #104, #105, #106); v4.0.0 absorbs #103 (header/footer beams in inventory).
