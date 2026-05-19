@@ -1,7 +1,7 @@
 # FieldShore — Consolidated Status & Next Steps
 
 > **Date:** 2026-05-19
-> **Production:** v3.15.0
+> **Production:** v3.16.0
 > **Live:** https://vergo402.github.io/paratech-struts/
 
 ---
@@ -39,6 +39,7 @@ Everything from the two-round audit is implemented through v3.11.3. Post-audit l
 | v3.14.2 | Hotfix — Wayback URL format, distinct status pill colors, 44px hit targets |
 | v3.14.3 | Desktop view fills viewport (#94 from hfd217 feedback) + planning-doc drift cleanup |
 | v3.15.0 | Numbered divisions (#93) + offline inventory hardening (#71, #80 partial) |
+| v3.16.0 | SmartArt ICS org chart (#95) + 12 must-fix items (#96) + lock-by-default + ↑↓←→ arrows + modal close repositioned + ICS-doctrine role hierarchy (Operations left of Safety, Runner under Cutting Table) + 44px touch targets + post-audit refinements |
 
 ---
 
@@ -60,7 +61,7 @@ Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandat
 
 **User manual update required** (MINOR — new feature).
 
-### Release 2 — v3.16.0 (MINOR) ⏳ in progress
+### Release 2 — v3.16.0 (MINOR) ✅ shipped 2026-05-19
 
 **Goal:** SmartArt ICS org chart — interactive hierarchy tree with per-node controls.
 
