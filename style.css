@@ -816,6 +816,39 @@ select { padding-right: 40px; }
 }
 .modal h3 { margin-bottom: 16px; }
 
+/* v3.16.3 #101: opt-in pinned-header/footer pattern. Default .modal keeps
+   single-scroll behavior so other modals don't regress. Modals that adopt
+   `modal-scrollbody` must wrap their content in `.modal-body` and actions
+   in `.modal-footer`; the body becomes the scroll container while header
+   and footer stay pinned. Critical for tall forms on desktop where the
+   85vh cap would otherwise hide the action buttons below the fold. */
+.modal.modal-scrollbody {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.modal.modal-scrollbody > .modal-header,
+.modal.modal-scrollbody > .modal-footer {
+  flex: 0 0 auto;
+  background: var(--surface);
+  padding: 16px;
+}
+.modal.modal-scrollbody > .modal-header { border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.modal.modal-scrollbody > .modal-footer {
+  border-top: 1px solid var(--border);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.modal.modal-scrollbody > .modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+  min-height: 0;
+}
+
 /* --- Misc --- */
 .section-title {
   font-size: 14px;
@@ -1614,7 +1647,24 @@ body {
   .quick-add-plate-grid { grid-template-columns: repeat(4, 1fr); }
   .ext-strut-grid { grid-template-columns: 1fr 1fr 1fr; }
   .inv-quickview-btn { right: calc(50vw - 350px + 12px); }
-  .btn-primary { max-width: 480px; }
+  /* v3.16.3 #98 #99 #100: scope the 480px cap to screen-level primary
+     buttons (Find Struts / Start New Operation / Save Settings) so the
+     button centers within its container. Broad `.btn-primary` rule
+     would break modal flex rows and inline form buttons. ID anchors
+     used to outrank the `#screen* > *` 1000px wrapper rule at 1024px. */
+  :root:not(.force-mobile-view) #screenSelect > .btn.btn-primary,
+  :root:not(.force-mobile-view) #screenSettings > .btn.btn-primary,
+  :root:not(.force-mobile-view) #screenOps > * > .btn.btn-primary,
+  :root:not(.force-mobile-view) #screenCommand > * > .btn.btn-primary,
+  :root.force-mobile-view #screenSelect > .btn.btn-primary,
+  :root.force-mobile-view #screenSettings > .btn.btn-primary,
+  :root.force-mobile-view #screenOps > * > .btn.btn-primary,
+  :root.force-mobile-view #screenCommand > * > .btn.btn-primary {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+  }
 }
 
 @media (min-width: 1024px) {
