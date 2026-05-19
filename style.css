@@ -1978,6 +1978,7 @@ body {
   width: 56px;
   height: 56px;
   pointer-events: none;
+  z-index: 1;
 }
 .fab-arc-track { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 3; }
 .fab-arc-fill {
