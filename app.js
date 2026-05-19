@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.15.0';
+const APP_VERSION = '3.16.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -664,6 +664,8 @@ let editingExternalId = null;
 let editingIndividualId = null;
 let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
 let orgReparentMode = false; // True when long-press drag triggers reparent instead of swap
+let orgChartLocked = true;
+let renderCommandScrollTimer = null;
 let orgLongPressTimer = null; // Timer for long-press detection
 let lastReparentUndo = null; // Most recent undo state: { roleId, oldParentId }
 // S4 (fixed v3.5.2): guard sessionStorage parse so a corrupt 'orgCollapsed' value can't break
@@ -1723,13 +1725,13 @@ function guardClick(btn, fn) {
 
 const ICS_ROLES_DEFAULT = [
   { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command', parentId: null },
-  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
   { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops', parentId: 'ic' },
+  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
   { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops', parentId: 'operations' },
   { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops', parentId: 'operations' },
   { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops', parentId: 'operations' },
-  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'operations' },
   { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable', parentId: 'operations' },
+  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'cutting' },
   { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'operations' },
 ];
 
@@ -1804,14 +1806,14 @@ function getSubtreeIds(roleId) {
   while (queue.length) {
     const id = queue.shift();
     ids.add(id);
-    roles.filter(r => r.parentId === id).forEach(r => queue.push(r.id));
+    roles.filter(r => r.parentId === id).forEach(r => { if (!ids.has(r.id)) queue.push(r.id); });
   }
   return ids;
 }
 
 function canReparent() {
   if (!myRole) return false;
-  return myRole === 'ic' || myRole === 'safety';
+  return myRole === 'ic';
 }
 
 // F-1C-10 (v3.10.0): role-gate matrix for locked-card status transitions.
@@ -1918,7 +1920,7 @@ function showMoveRoleModal(roleId) {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">Move Role</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -1941,6 +1943,7 @@ function confirmReparent(childId, newParentId) {
 
 function addCustomRole(parentId) {
   if (!activeOperation) return;
+  if (!canReparent()) { showToast('Only the IC can modify the chart', 'warning'); return; }
   initCustomRoles();
   const name = prompt('Role name:');
   if (!name || !name.trim()) return;
@@ -2023,14 +2026,114 @@ function removeCustomRole(roleId) {
   renderCommandView();
 }
 
+// v3.16.0: SmartArt-style per-node hierarchy controls. These mutate customRoles
+// (array order = sibling order; parentId = hierarchy). saveCustomRoles() persists
+// granular updates on reorder and a full-array set on parentId changes.
+function moveRoleUp(roleId) {
+  if (!canReparent()) { showToast('Only the IC can reorder the chart', 'warning'); return; }
+  if (!activeOperation) return;
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const idx = roles.findIndex(r => r.id === roleId);
+  if (idx < 0) return;
+  const me = roles[idx];
+  let prevIdx = -1;
+  for (let i = idx - 1; i >= 0; i--) {
+    if (roles[i].parentId === me.parentId) { prevIdx = i; break; }
+  }
+  if (prevIdx < 0) return;
+  [roles[idx], roles[prevIdx]] = [roles[prevIdx], roles[idx]];
+  persistOperation();
+  if (db && deptId && activeOperation.id) {
+    const ref = firebase.database().ref(`departments/${deptId}/operations/${activeOperation.id}`);
+    const updates = {};
+    updates['customRoles/' + idx] = roles[idx];
+    updates['customRoles/' + prevIdx] = roles[prevIdx];
+    firebaseSave(ref, 'update', updates);
+  }
+  renderCommandView();
+}
+
+function moveRoleDown(roleId) {
+  if (!canReparent()) { showToast('Only the IC can reorder the chart', 'warning'); return; }
+  if (!activeOperation) return;
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const idx = roles.findIndex(r => r.id === roleId);
+  if (idx < 0) return;
+  const me = roles[idx];
+  let nextIdx = -1;
+  for (let i = idx + 1; i < roles.length; i++) {
+    if (roles[i].parentId === me.parentId) { nextIdx = i; break; }
+  }
+  if (nextIdx < 0) return;
+  [roles[idx], roles[nextIdx]] = [roles[nextIdx], roles[idx]];
+  persistOperation();
+  if (db && deptId && activeOperation.id) {
+    const ref = firebase.database().ref(`departments/${deptId}/operations/${activeOperation.id}`);
+    const updates = {};
+    updates['customRoles/' + idx] = roles[idx];
+    updates['customRoles/' + nextIdx] = roles[nextIdx];
+    firebaseSave(ref, 'update', updates);
+  }
+  renderCommandView();
+}
+
+function promoteRoleLevel(roleId) {
+  if (!canReparent()) { showToast('Only the IC can reorder the chart', 'warning'); return; }
+  if (!activeOperation) return;
+  if (roleId === 'safety') { showToast('Safety stays under IC (NIMS)', 'warning'); return; }
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const me = roles.find(r => r.id === roleId);
+  if (!me || !me.parentId) return;
+  const parent = roles.find(r => r.id === me.parentId);
+  if (!parent) return;
+  if (!parent.parentId) {
+    showToast('Only one role can sit at the top of the chart', 'warning');
+    return;
+  }
+  lastReparentUndo = { roleId, oldParentId: me.parentId };
+  me.parentId = parent.parentId;
+  saveCustomRoles();
+  showToastHTML(`Promoted ${escapeHtml(me.abbr)} under ${escapeHtml(getRoleAbbr(me.parentId))} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600;margin-left:8px">Undo</a>`, 'success', 8000);
+  renderCommandView();
+}
+
+function demoteRoleLevel(roleId) {
+  if (!canReparent()) { showToast('Only the IC can reorder the chart', 'warning'); return; }
+  if (!activeOperation) return;
+  if (roleId === 'safety') { showToast('Safety stays under IC (NIMS)', 'warning'); return; }
+  initCustomRoles();
+  const roles = activeOperation.customRoles;
+  const idx = roles.findIndex(r => r.id === roleId);
+  if (idx < 0) return;
+  const me = roles[idx];
+  if (!me.parentId) { showToast('Top-of-chart role cannot be demoted', 'warning'); return; }
+  let prevIdx = -1;
+  for (let i = idx - 1; i >= 0; i--) {
+    if (roles[i].parentId === me.parentId) { prevIdx = i; break; }
+  }
+  if (prevIdx < 0) {
+    showToast('Need a sibling above to demote under', 'warning');
+    return;
+  }
+  lastReparentUndo = { roleId, oldParentId: me.parentId };
+  me.parentId = roles[prevIdx].id;
+  saveCustomRoles();
+  showToastHTML(`Demoted ${escapeHtml(me.abbr)} under ${escapeHtml(roles[prevIdx].abbr)} <a href="#" onclick="event.preventDefault();undoReparent()" style="color:var(--blue);font-weight:600;margin-left:8px">Undo</a>`, 'success', 8000);
+  renderCommandView();
+}
+
 function showAddRoleMenu() {
   if (!activeOperation) return;
+  if (!canReparent()) { showToast('Only the IC can modify the chart', 'warning'); return; }
   const opRoles = getOperationRoles();
   let listHtml = `<div class="modal-section">
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">Add New Role</div>
     <div class="text-muted-xs mb-12">Select a parent position</div>`;
   for (const r of opRoles) {
-    listHtml += `<div class="list-item-row" role="button" tabindex="0" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${r.id}')">
+    listHtml += `<div class="list-item-row" role="button" tabindex="0" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${escapeAttr(r.id)}')">
       <span style="font-weight:600">${escapeHtml(r.name)}</span>
       <span style="font-size:14px;color:var(--blue);font-weight:600">Add under →</span>
     </div>`;
@@ -2041,7 +2144,7 @@ function showAddRoleMenu() {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">Add Role</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -3263,7 +3366,7 @@ function showCreateGroupModal() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay active';
   overlay.id = 'createGroupModal';
-  overlay.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><span class="modal-title">Create Apparatus Group</span><button class="modal-close" onclick="document.getElementById('createGroupModal').remove()">&times;</button></div>${html}</div>`;
+  overlay.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><span class="modal-title">Create Apparatus Group</span><button class="modal-close" aria-label="Close" onclick="document.getElementById('createGroupModal').remove()">&times;</button></div>${html}</div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
@@ -3345,6 +3448,8 @@ function selectRole(roleId) {
     if (personName) safeSetItem('fieldshore_myRoleName', personName);
     else localStorage.removeItem('fieldshore_myRoleName');
     roleViewDismissed = false;
+    const roleDef = getOperationRoles().find(r => r.id === roleId);
+    showToast('You are now ' + escapeHtml(roleDef ? roleDef.name : roleId), 'success');
   } else {
     // Assign role to apparatus/individual
     if (!activeOperation.roles) activeOperation.roles = {};
@@ -3462,13 +3567,30 @@ function openOrgChartNode(roleId) {
   }
 
   // Role management actions
+  const eid = escapeAttr(roleId);
+  const isLocked = !roleDef.parentId || roleDef.id === 'safety';
   const canMove = canReparent() && roleDef.parentId && roleDef.id !== 'safety';
   listHtml += `<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${roleId}')" style="font-size:13px">+ Sub-Role</button>
-    ${canMove ? `<button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();showMoveRoleModal('${roleId}')" style="font-size:13px">Move to…</button>` : ''}
-    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${roleId}')" style="font-size:13px">Rename</button>
-    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${roleId}')" style="font-size:13px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
+    ${canReparent() ? `<button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();addCustomRole('${eid}')" style="font-size:13px">+ Sub-Role</button>` : ''}
+    ${canMove ? `<button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();showMoveRoleModal('${eid}')" style="font-size:13px">Move to…</button>` : ''}
+    <button class="btn btn-sm btn-outline" onclick="document.getElementById('orgChartModal').remove();editCustomRole('${eid}')" style="font-size:13px">Rename</button>
+    ${roleDef.id.startsWith('custom_') ? `<button class="btn btn-sm" onclick="document.getElementById('orgChartModal').remove();removeCustomRole('${eid}')" style="font-size:13px;background:var(--red-bg);color:var(--red);border:1px solid var(--red)">Remove</button>` : ''}
   </div>`;
+  // Reorder controls — always in modal (primary on mobile where inline toolbar is hidden)
+  if (canReparent() && !isLocked) {
+    const opRoles = getOperationRoles();
+    const siblings = opRoles.filter(r => r.parentId === roleDef.parentId);
+    const sibIdx = siblings.findIndex(r => r.id === roleId);
+    const parentRole = opRoles.find(r => r.id === roleDef.parentId);
+    const canPromote = !!(parentRole && parentRole.parentId);
+    const canDemote = sibIdx > 0;
+    listHtml += `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;justify-items:center">
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canPromote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();promoteRoleLevel('${eid}')">↑ Promote</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canDemote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();demoteRoleLevel('${eid}')">↓ Demote</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx <= 0 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleUp('${eid}')">← Left</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx >= siblings.length - 1 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleDown('${eid}')">→ Right</button>
+    </div>`;
+  }
 
   listHtml += `</div>`;
 
@@ -3478,7 +3600,7 @@ function openOrgChartNode(roleId) {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">${escapeHtml(roleDef.abbr)} Assignment</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -3493,6 +3615,8 @@ function assignOrgChartRole(targetId, roleId) {
     myRole = roleId;
     safeSetItem('fieldshore_myRole', roleId);
     roleViewDismissed = false;
+    const roleDef = getOperationRoles().find(r => r.id === roleId);
+    showToast('You are now ' + escapeHtml(roleDef ? roleDef.name : roleId), 'success');
   } else {
     activeOperation.roles[targetId] = roleId;
     persistOperation();
@@ -3717,6 +3841,11 @@ function orgTouchEnd(event, roleId) {
       orgChartNodeClick(roleId);
     }
   }
+}
+
+function toggleOrgChartLock() {
+  orgChartLocked = !orgChartLocked;
+  renderCommandView();
 }
 
 function cancelOrgMove() {
@@ -4322,6 +4451,7 @@ function renderIndividualsList() {
 // now live on the Command screen per issue #90. Dashboard stats and command-layout view
 // are preserved from the old #commandView (which used to be an internal sub-tab of Operations).
 function renderCommand() {
+  if (renderCommandScrollTimer) { clearTimeout(renderCommandScrollTimer); renderCommandScrollTimer = null; }
   const noOp = document.getElementById('noActiveOpCommand');
   const active = document.getElementById('activeOpCommand');
   if (!noOp || !active) return; // Defensive — screen may not exist (legacy index.html)
@@ -4338,7 +4468,29 @@ function renderCommand() {
   const dashboardEl = document.getElementById('cmdDashboard');
   if (dashboardEl) dashboardEl.innerHTML = renderDashboardStats(points);
   const orgEl = document.getElementById('orgChartContainer');
-  if (orgEl) orgEl.innerHTML = renderOrgChart(getRoleAssignments(), points);
+  if (orgEl) {
+    orgEl.innerHTML = renderOrgChart(getRoleAssignments(), points);
+    // v3.16.0: SmartArt tree can be wider than the canvas viewport. After paint,
+    // center the canvas scroll on the root so users see a balanced chart, not
+    // a flush-left tree with the root pushed off the right edge.
+    // Use setTimeout(0) — runs after the current layout/paint cycle so
+    // scrollWidth and getBoundingClientRect reflect the new tree, not the
+    // mid-layout state. requestAnimationFrame fires before paint and can read
+    // pre-layout dimensions.
+    renderCommandScrollTimer = setTimeout(() => {
+      renderCommandScrollTimer = null;
+      const canvas = orgEl.querySelector('.org-tree-canvas');
+      const root = orgEl.querySelector('.org-node-wrap.is-root > .org-node');
+      if (!canvas || !root) return;
+      const overflow = canvas.scrollWidth - canvas.clientWidth;
+      if (overflow <= 0) return; // tree fits, no need to scroll
+      const canvasRect = canvas.getBoundingClientRect();
+      const rootRect = root.getBoundingClientRect();
+      const rootCenterInCanvas = (rootRect.left - canvasRect.left) + canvas.scrollLeft + root.offsetWidth / 2;
+      const target = rootCenterInCanvas - canvas.clientWidth / 2;
+      canvas.scrollLeft = Math.max(0, Math.min(overflow, target));
+    }, 0);
+  }
   const layoutEl = document.getElementById('cmdLayout');
   if (layoutEl) layoutEl.innerHTML = renderCommandLayout(points);
   renderAssignedApparatus();
@@ -5934,11 +6086,15 @@ function getRoleAssignments() {
   return assignments;
 }
 
+// v3.16.0: SmartArt-style ICS org chart. Each card carries inline hierarchy
+// controls (+, ↑, ↓, ↰, ↳, ×). Connectors are CSS-pseudo-element L-shapes drawn
+// across the children row — no flex-wrap, so the tree never wraps mid-branch.
 function renderOrgChart(roleAssignments, shorePoints) {
   roleAssignments = roleAssignments || {};
   let html = '';
   const opRoles = getOperationRoles();
   const roles = activeOperation.roles || {};
+  const reparentOK = canReparent();
 
   // Build set of apparatus with active shore points for status indicators
   const activeApparatus = new Set();
@@ -5957,15 +6113,31 @@ function renderOrgChart(roleAssignments, shorePoints) {
     }
   }
 
+  // Sibling-position lookup so up/down chevrons can disable at ends.
+  const siblingPos = {}; // roleId → { idx, count }
+  const byParent = {};
+  for (const r of opRoles) {
+    const p = r.parentId || '__root__';
+    if (!byParent[p]) byParent[p] = [];
+    byParent[p].push(r.id);
+  }
+  for (const [, ids] of Object.entries(byParent)) {
+    ids.forEach((id, i) => { siblingPos[id] = { idx: i, count: ids.length }; });
+  }
+
   const renderNode = (roleId) => {
     const r = opRoles.find(x => x.id === roleId);
     if (!r) return '';
     const people = roleAssignments[roleId] || [];
     const filled = people.length > 0;
     const nameList = people.map(p => escapeHtml(p.name)).join(', ');
-    const isLocked = !r.parentId || r.id === 'safety'; // IC and Safety are immovable
+    const isRoot = !r.parentId;
+    const isLocked = isRoot || r.id === 'safety';
     const hasChildren = opRoles.some(x => x.parentId === roleId);
     const collapsed = orgCollapsedNodes.has(roleId);
+    const sibling = siblingPos[roleId] || { idx: 0, count: 1 };
+    const isFirstSibling = sibling.idx === 0;
+    const isLastSibling = sibling.idx === sibling.count - 1;
 
     // Picked/drop-target classes
     let pickedClass = '';
@@ -5984,8 +6156,7 @@ function renderOrgChart(roleAssignments, shorePoints) {
         : '<span class="status-dot status-staged" title="Staged"></span>';
     }
 
-    // v3.12.0 R6-04/N9: Span-of-control caution tier. NIMS doctrine targets 1:5
-    // (optimal range 1:3 – 1:7). 6–7 reports = yellow caution; >7 = red exceeded.
+    // NIMS span-of-control caution (1:5 optimal, 6–7 caution, >7 exceeded)
     const directReports = opRoles.filter(x => x.parentId === roleId).length;
     const spanWarning = directReports > 7
       ? '<span class="span-warning span-red" title="Span of control EXCEEDED (>7) — split this branch">⚠</span>'
@@ -5993,8 +6164,33 @@ function renderOrgChart(roleAssignments, shorePoints) {
         ? '<span class="span-warning span-yellow" title="Approaching span-of-control limit (6–7) — NIMS optimal is 1:5">⚠</span>'
         : '');
 
-    // Collapse chevron
-    const chevron = hasChildren ? `<span class="org-collapse-btn" role="button" tabindex="0" onclick="event.stopPropagation();toggleOrgCollapse('${roleId}')">${collapsed ? '▶' : '▼'}</span>` : '';
+    // Collapse chevron (only when children exist)
+    const eid = escapeAttr(roleId);
+    const collapseBtn = hasChildren
+      ? `<button type="button" class="org-card-btn org-card-collapse" title="${collapsed ? 'Expand' : 'Collapse'} branch" aria-label="${collapsed ? 'Expand' : 'Collapse'} branch" onclick="event.stopPropagation();toggleOrgCollapse('${eid}')">${collapsed ? '▸' : '▾'}</button>`
+      : '';
+
+    // Delete × (custom roles only, unlocked only)
+    const deleteBtn = !orgChartLocked && r.id.startsWith('custom_')
+      ? `<button type="button" class="org-card-btn org-card-delete" title="Remove role" aria-label="Remove role" onclick="event.stopPropagation();removeCustomRole('${eid}')">×</button>`
+      : '';
+
+    // Hierarchy toolbar — only shown when chart is unlocked
+    const tb = [];
+    if (!orgChartLocked) {
+      if (reparentOK && !isLocked) {
+        const parent = opRoles.find(x => x.id === r.parentId);
+        const canPromote = !!(parent && parent.parentId);
+        const canDemote = !isFirstSibling;
+        tb.push(`<button type="button" class="org-tool${canPromote ? '' : ' is-disabled'}" title="Promote one level up" aria-label="Promote" ${canPromote ? '' : 'disabled'} onclick="event.stopPropagation();promoteRoleLevel('${eid}')"><span class="org-tool-glyph">↑ Up</span></button>`);
+        tb.push(`<button type="button" class="org-tool${canDemote ? '' : ' is-disabled'}" title="Demote under previous sibling" aria-label="Demote" ${canDemote ? '' : 'disabled'} onclick="event.stopPropagation();demoteRoleLevel('${eid}')"><span class="org-tool-glyph">↓ Dn</span></button>`);
+        tb.push(`<button type="button" class="org-tool${isFirstSibling ? ' is-disabled' : ''}" title="Move left among siblings" aria-label="Move left" ${isFirstSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleUp('${eid}')"><span class="org-tool-glyph">← L</span></button>`);
+        tb.push(`<button type="button" class="org-tool${isLastSibling ? ' is-disabled' : ''}" title="Move right among siblings" aria-label="Move right" ${isLastSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleDown('${eid}')"><span class="org-tool-glyph">→ R</span></button>`);
+      }
+      if (reparentOK) {
+        tb.push(`<button type="button" class="org-tool org-tool-add" title="Add sub-role" aria-label="Add sub-role" onclick="event.stopPropagation();addCustomRole('${eid}')"><span class="org-tool-glyph">＋</span></button>`);
+      }
+    }
 
     // Drop target helper text
     const dropText = orgChartPickedRole
@@ -6003,19 +6199,22 @@ function renderOrgChart(roleAssignments, shorePoints) {
 
     // Draggable unless locked (IC/Safety)
     const dragAttrs = isLocked ? 'draggable="false"' : `draggable="true"
-        ondragstart="orgDragStart(event,'${roleId}')"
+        ondragstart="orgDragStart(event,'${eid}')"
         ondragend="orgDragEnd(event)"`;
 
-    return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${roleId}"
-        role="button" tabindex="0" onclick="orgChartNodeClick('${roleId}')"
+    return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${eid}"
+        role="button" tabindex="0" onclick="orgChartNodeClick('${eid}')"
         ${dragAttrs}
         ondragover="event.preventDefault()"
-        ondrop="orgDrop(event,'${roleId}')"
-        ontouchstart="orgTouchStart(event,'${roleId}')"
+        ondrop="orgDrop(event,'${eid}')"
+        ontouchstart="orgTouchStart(event,'${eid}')"
         ontouchmove="orgTouchMove(event)"
-        ontouchend="orgTouchEnd(event,'${roleId}')">
-        <div style="font-size:13px;font-weight:700;color:${filled ? 'var(--blue)' : 'var(--text-secondary)'};text-transform:uppercase">${statusDot}${escapeHtml(r.abbr)}${spanWarning}${chevron}</div>
-        ${filled ? `<div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-top:2px">${nameList}</div>` : `<div style="font-size:13px;color:var(--text-disabled);margin-top:2px">${dropText}</div>`}
+        ontouchend="orgTouchEnd(event,'${eid}')">
+        <div class="org-card-corner">${collapseBtn}${deleteBtn}</div>
+        <div class="org-card-title">${statusDot}${escapeHtml(r.abbr)}${spanWarning}</div>
+        <div class="org-card-name">${escapeHtml(r.name)}</div>
+        ${filled ? `<div class="org-card-people">${nameList}</div>` : `<div class="org-card-empty">${dropText}</div>`}
+        ${tb.length ? `<div class="org-toolbar" onclick="event.stopPropagation()">${tb.join('')}</div>` : ''}
       </div>`;
   };
 
@@ -6030,39 +6229,47 @@ function renderOrgChart(roleAssignments, shorePoints) {
     ? `<span style="font-size:13px;color:${orgReparentMode ? 'var(--orange-dark)' : 'var(--blue)'};font-weight:400;text-transform:none;margin-left:8px">${orgReparentMode ? 'Reparenting' : 'Moving'} ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>`
     : '';
 
+  if (!reparentOK) orgChartLocked = true;
+
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
     <span class="section-header" style="margin-bottom:0">ICS Organization${headcount}${modeLabel}</span>
-    <button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      ${!orgChartLocked && reparentOK ? '<button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px">+ Role</button>' : ''}
+      ${reparentOK ? `<button class="btn btn-sm btn-outline" onclick="toggleOrgChartLock()" style="font-size:13px" aria-label="${orgChartLocked ? 'Unlock chart to edit' : 'Lock chart'}" title="${orgChartLocked ? 'Unlock chart to rearrange' : 'Lock chart'}">${orgChartLocked ? '🔒 Edit' : '🔓 Lock'}</button>` : ''}
+    </div>
   </div>`;
 
   html += `<div class="status-key">
     <span class="status-key-item"><span class="status-dot status-active"></span> Active</span>
     <span class="status-key-item"><span class="status-dot status-staged"></span> Staged</span>
+    ${!orgChartLocked && reparentOK ? `<span class="status-key-item" title="You can reorder the chart using the per-card arrows" style="margin-left:auto;color:var(--blue)">↑↓←→ rearrange</span>` : ''}
   </div>`;
 
-  // Render org chart with column-per-subtree layout
-  const renderTree = (parentId) => {
-    if (orgCollapsedNodes.has(parentId)) return '';
-    const children = opRoles.filter(r => r.parentId === parentId);
-    if (children.length === 0) return '';
-    let h = '<div class="org-divider"><div class="divider-dot"></div></div>';
-    h += '<div class="org-children-row">';
-    for (const child of children) {
-      h += '<div class="org-subtree">';
-      h += renderNode(child.id);
-      h += renderTree(child.id);
-      h += '</div>';
+  // SmartArt tree: scrollable canvas, every parent emits a children-row with L-connectors.
+  const subtreeVisited = new Set();
+  const renderSubtree = (roleId) => {
+    if (subtreeVisited.has(roleId)) return '';
+    subtreeVisited.add(roleId);
+    const self = opRoles.find(r => r.id === roleId);
+    if (!self) return '';
+    let h = `<div class="org-node-wrap${!self.parentId ? ' is-root' : ''}">`;
+    h += renderNode(roleId);
+    if (!orgCollapsedNodes.has(roleId)) {
+      const kids = opRoles.filter(r => r.parentId === roleId);
+      if (kids.length > 0) {
+        h += `<div class="org-children-row${kids.length === 1 ? ' single-child' : ''}">`;
+        for (const k of kids) h += renderSubtree(k.id);
+        h += `</div>`;
+      }
     }
-    h += '</div>';
+    h += `</div>`;
     return h;
   };
 
-  // Root nodes (no parent)
   const roots = opRoles.filter(r => !r.parentId);
-  for (const root of roots) {
-    html += `<div style="display:flex;justify-content:center;margin-bottom:4px">${renderNode(root.id)}</div>`;
-    html += renderTree(root.id);
-  }
+  html += `<div class="org-tree-canvas"><div class="org-tree">`;
+  for (const root of roots) html += renderSubtree(root.id);
+  html += `</div></div>`;
   html += `<div style="margin-bottom:16px"></div>`;
   return html;
 }

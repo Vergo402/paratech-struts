@@ -1,7 +1,7 @@
 # FieldShore — Consolidated Status & Next Steps
 
-> **Date:** 2026-05-18
-> **Production:** v3.14.3
+> **Date:** 2026-05-19
+> **Production:** v3.15.0
 > **Live:** https://vergo402.github.io/paratech-struts/
 
 ---
@@ -38,6 +38,7 @@ Everything from the two-round audit is implemented through v3.11.3. Post-audit l
 | v3.14.1 | Settings link fix — broken USAR FOG URL → Wayback + FEMA index (#92) |
 | v3.14.2 | Hotfix — Wayback URL format, distinct status pill colors, 44px hit targets |
 | v3.14.3 | Desktop view fills viewport (#94 from hfd217 feedback) + planning-doc drift cleanup |
+| v3.15.0 | Numbered divisions (#93) + offline inventory hardening (#71, #80 partial) |
 
 ---
 
@@ -59,20 +60,32 @@ Agent gate (per memory rule): code-auditor + battalion-chief + mobile-ux (mandat
 
 **User manual update required** (MINOR — new feature).
 
-### Release 2 — v3.16.0 (MINOR, TBD) ⏳ planned
+### Release 2 — v3.16.0 (MINOR) ⏳ in progress
 
-**Goal:** Local-first defaults — the v3.12.0 scope that was crowded out by Command-tab work.
+**Goal:** SmartArt ICS org chart — interactive hierarchy tree with per-node controls.
 
-- Type IV/V default org chart preset (IC + Safety, optional Ops)
-- 3 scenario presets: "Car into building", "Residential partial collapse", "Light commercial partial collapse"
-- First-due solo IC mode (progressive disclosure — single apparatus auto-selects)
-- Quick-start FAB on Quick Find tab
+**Plan file:** [v3.16.0-smartart-org-chart.md](v3.16.0-smartart-org-chart.md)
+
+- **#95** SmartArt interactive org chart (headline — already implemented on `feature/smartart-org-chart`)
+- **#96** 12 must/should-fix items from 5-agent review: `canReparent()` IC-only + runtime guard, 44px touch targets with mobile toolbar→modal rework, granular `moveRoleUp/Down` updates, 19-site `escapeAttr()` hardening, `renderSubtree` crash fix + cycle guard, aria-labels, clearTimeout debounce, iOS `touch-action`, disabled opacity fix, role-assignment toast
+- User manual update (MINOR)
+
+**Deferred from original v3.16.0 scope → v3.17.0:**
+- 3 scenario presets, first-due solo IC mode, Quick-start FAB
 - `Strut Placed` → `Strut Set` rename dual-write
 - `customRoles` array → keyed object dual-write
 
 ### Release 3 — v3.17.0 (MINOR, TBD) ⏳ planned
 
-**Goal:** Pre-v4 schema dual-write window for the renames v4.0 will cut over (per #79 triage). Closes any remaining schema migration prep work.
+**Goal:** Local-first defaults + pre-v4 schema dual-write window.
+
+- 3 scenario presets: "Car into building", "Residential partial collapse", "Light commercial partial collapse"
+- First-due solo IC mode (progressive disclosure — single apparatus auto-selects)
+- Quick-start FAB on Quick Find tab
+- `Strut Placed` → `Strut Set` rename dual-write
+- `customRoles` array → keyed object dual-write
+- `assignedApparatus` array → keyed object (#79)
+- Remaining schema migration prep for v4.0 cutover
 
 ### Release 4 — v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned
 
