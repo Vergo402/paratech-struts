@@ -1401,23 +1401,91 @@ select { padding-right: 40px; }
 .text-danger { color: var(--red); }
 .divider-dot { width: 2px; height: 12px; background: var(--text-disabled); }
 
-/* ICS Org Chart Nodes */
-.org-node { padding: 10px 14px; border-radius: var(--radius); min-width: 90px; text-align: center; cursor: pointer; transition: all 0.15s; border: 1.5px solid transparent; }
-.org-node:active { transform: scale(0.97); }
+/* ============================================================
+   ICS Org Chart — v3.16.0 SmartArt-style tree
+   Each node is a card with inline hierarchy controls; connectors
+   are CSS L-shapes drawn from children rows. Horizontal scroll
+   on overflow so wide branches don't wrap mid-tree.
+   ============================================================ */
+
+/* Canvas: horizontally scrollable, centered-tree default */
+.org-tree-canvas { overflow-x: auto; overflow-y: hidden; padding: 4px 4px 12px; -webkit-overflow-scrolling: touch; }
+.org-tree { display: inline-flex; flex-direction: column; align-items: center; min-width: 100%; padding: 0 8px; }
+
+/* Wrap: a node + (optionally) its children row stacked vertically */
+.org-node-wrap { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 6px; }
+
+/* Card */
+.org-node { position: relative; padding: 8px 12px 8px; border-radius: var(--radius); width: 132px; box-sizing: border-box; text-align: center; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s; border: 1.5px solid transparent; background: var(--surface); }
+.org-node:active { transform: scale(0.98); }
 .org-node-filled { background: var(--blue-light); border-color: var(--blue); }
-.org-node-filled:hover { border-color: var(--blue); }
+.org-node-filled:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(33,150,243,0.18); }
 .org-node-empty { background: var(--card-secondary-bg); border: 1.5px dashed var(--text-disabled); }
 .org-node-empty:hover { border-color: var(--blue); background: var(--surface-alt); }
-.org-node-picked { box-shadow: 0 0 0 3px var(--blue); transform: scale(1.05); border-color: var(--blue) !important; }
+.org-node-picked { box-shadow: 0 0 0 3px var(--blue); transform: scale(1.04); border-color: var(--blue) !important; }
 .org-node-drop-target { border-color: var(--blue) !important; border-style: dashed !important; background: var(--blue-light); box-shadow: 0 0 0 3px rgba(33,150,243,0.3); }
-.org-node-reparent-picked { box-shadow: 0 0 0 3px var(--orange-dark); transform: scale(1.05); border-color: var(--orange-dark) !important; }
+.org-node-reparent-picked { box-shadow: 0 0 0 3px var(--orange-dark); transform: scale(1.04); border-color: var(--orange-dark) !important; }
 
-/* Org Chart Tree Layout */
-.org-children-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-bottom: 4px; }
-.org-subtree { display: flex; flex-direction: column; align-items: center; }
-.org-divider { display: flex; justify-content: center; }
-.org-collapse-btn { font-size: 10px; color: var(--text-secondary); cursor: pointer; margin-left: 2px; user-select: none; display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin: -14px -12px -14px 0; padding: 0; }
-.org-collapse-btn:hover { color: var(--blue); }
+/* Card content stack */
+.org-card-title { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.2; }
+.org-node-empty .org-card-title { color: var(--text-secondary); }
+.org-card-name { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.2; }
+.org-card-people { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px; line-height: 1.25; word-break: break-word; }
+.org-card-empty { font-size: 12px; color: var(--text-disabled); font-style: italic; margin-top: 4px; }
+
+/* Corner buttons (collapse + delete) */
+.org-card-corner { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; z-index: 2; }
+.org-card-btn { width: 22px; height: 22px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; line-height: 1; cursor: pointer; border-radius: 3px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.org-card-btn:hover { background: rgba(0,0,0,0.08); color: var(--text-primary); }
+.org-card-delete:hover { background: var(--red-bg); color: var(--red); }
+.org-card-collapse { font-size: 12px; }
+
+/* Inline hierarchy toolbar at the bottom of each card */
+.org-toolbar { display: flex; justify-content: center; align-items: center; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.06); }
+.org-tool { width: 26px; height: 26px; border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: background 0.1s, border-color 0.1s, color 0.1s; }
+.org-tool:hover:not(.is-disabled) { background: var(--surface-alt); border-color: var(--border); color: var(--blue); }
+.org-tool:active:not(.is-disabled) { transform: scale(0.9); }
+.org-tool.is-disabled, .org-tool[disabled] { opacity: 0.28; cursor: not-allowed; }
+.org-tool-glyph { font-size: 14px; line-height: 1; font-weight: 600; }
+
+/* ---- Connectors (L-shapes via pseudo-elements) ---------------- */
+/* Children row: 24px padding-top hosts both the parent-down line and
+   the horizontal bar that fans out to each child. */
+.org-children-row { display: flex; justify-content: center; align-items: flex-start; gap: 0; position: relative; padding: 24px 0 4px; }
+
+/* Vertical line from parent down to horizontal bar */
+.org-children-row::before { content: ''; position: absolute; top: 0; left: 50%; width: 1.5px; height: 12px; background: var(--border); transform: translateX(-50%); }
+
+/* Horizontal bar across children — each wrap contributes its width */
+.org-children-row > .org-node-wrap { padding: 24px 6px 0; position: relative; }
+.org-children-row > .org-node-wrap::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px; background: var(--border); }
+.org-children-row > .org-node-wrap:first-child::after { left: 50%; }
+.org-children-row > .org-node-wrap:last-child::after { right: 50%; }
+.org-children-row > .org-node-wrap:only-child::after { display: none; }
+
+/* Vertical line from horizontal bar down into the child card */
+.org-children-row > .org-node-wrap::before { content: ''; position: absolute; top: 0; left: 50%; width: 1.5px; height: 12px; background: var(--border); transform: translateX(-50%); }
+.org-children-row > .org-node-wrap:only-child::before { height: 12px; }
+
+/* Single-child rows still need the vertical drop. The row::before draws the
+   first 12px, the child wrap::before draws the second 12px — they fuse. */
+.org-children-row.single-child { padding-top: 24px; }
+
+/* Root node — no incoming connector */
+.org-node-wrap.is-root { padding-top: 0; }
+.org-node-wrap.is-root::before, .org-node-wrap.is-root::after { display: none; }
+
+/* Narrow phone: shrink cards so 3+ siblings can fit */
+@media (max-width: 480px) {
+  .org-node { width: 110px; padding: 6px 8px; }
+  .org-card-title { font-size: 11px; }
+  .org-card-name { font-size: 10px; }
+  .org-card-people { font-size: 12px; }
+  .org-tool { width: 24px; height: 24px; }
+  .org-tool-glyph { font-size: 13px; }
+  .org-children-row > .org-node-wrap { padding: 24px 3px 0; }
+  .org-node-wrap { padding: 0 3px; }
+}
 
 /* Role Status Indicators */
 .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
@@ -1842,13 +1910,21 @@ body {
   .system-toggle.active.lockstroke .toggle-dot { background: #78909C; border-color: #78909C; }
 
   /* Org chart */
+  .org-node { background: #181818; }
   .org-node-filled { background: #1A2A3A; border-color: #42A5F5; }
   .org-node-empty { background: #1A1A1A; border-color: #555555; }
   .org-node-empty:hover { background: #2A2A2A; }
   .org-node-drop-target { background: #1A2A3A; }
   .org-node-reparent-picked { box-shadow: 0 0 0 3px #F57C00; border-color: #F57C00 !important; }
-  .org-collapse-btn { color: #999; }
-  .org-collapse-btn:hover { color: #42A5F5; }
+  .org-card-btn { color: #BBB; }
+  .org-card-btn:hover { background: rgba(255,255,255,0.08); color: #FFF; }
+  .org-card-delete:hover { background: rgba(244,67,54,0.18); color: #EF5350; }
+  .org-toolbar { border-top-color: rgba(255,255,255,0.08); }
+  .org-tool { color: #999; }
+  .org-tool:hover:not(.is-disabled) { background: #1F1F1F; border-color: #333; color: #42A5F5; }
+  .org-children-row::before,
+  .org-children-row > .org-node-wrap::before,
+  .org-children-row > .org-node-wrap::after { background: #555; }
 
   /* Modal */
   .modal-overlay { background: rgba(0,0,0,0.7); }
