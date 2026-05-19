@@ -15,7 +15,12 @@
         },
         "inventory": {
           "$itemId": {
-            ".validate": "newData.hasChildren(['model', 'quantity', 'available'])"
+            ".validate": "newData.hasChildren(['model', 'quantity', 'available'])",
+            "_meta": {
+              "lastVerifiedAt": {
+                ".validate": "newData.isNumber()"
+              }
+            }
           }
         },
         "apparatus": {

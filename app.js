@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.16.3';
+const APP_VERSION = '3.16.4';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -983,10 +983,33 @@ function setOfflineTouched(obj) {
     safeSetItem(getOfflineTouchedKey(), JSON.stringify(obj));
   } catch (e) { /* non-fatal — quota / unavailable storage */ }
 }
+// v3.16.4 #71: per-item mutation epoch. Bumped at every transaction call site
+// before the transaction runs. A flush-pass drops a touched entry whose epoch
+// does not match the current epoch — guarantees we never resync a value that
+// has since been superseded by a newer local mutation.
+const _itemEpoch = new Map();
+function bumpEpoch(itemId) {
+  if (!itemId) return 0;
+  const next = (_itemEpoch.get(itemId) || 0) + 1;
+  _itemEpoch.set(itemId, next);
+  return next;
+}
+
+// v3.16.4 #71: cap on flush retries before a touched entry is dropped with
+// diagnostic. Prevents misconfigured rules or permanent permission errors
+// from causing an unbounded retry loop on every reconnect tick.
+const MAX_RESYNC_RETRIES = 3;
+
 function markOfflineTouched(inventoryId, localAvail) {
   if (!inventoryId) return;
   const touched = getOfflineTouched();
-  touched[inventoryId] = { localAvail: localAvail, touchedAt: Date.now() };
+  const prev = touched[inventoryId] || {};
+  touched[inventoryId] = {
+    localAvail: localAvail,
+    touchedAt: Date.now(),
+    epoch: _itemEpoch.get(inventoryId) || 0,
+    retries: typeof prev.retries === 'number' ? prev.retries : 0
+  };
   setOfflineTouched(touched);
 }
 function clearOfflineTouched(inventoryId) {
@@ -1018,9 +1041,16 @@ function applyOfflineTouchedFilter(items) {
 // and respects optimistic locking against concurrent peer edits.
 // 24h age filter per devops-resilience additional finding — stale entries
 // are discarded rather than replayed against fresher peer state.
+// v3.16.4 (audit C6): single-flight guard. Two concurrent reconnect ticks
+// would both read the same entry.retries and increment racily, halving the
+// effective retry budget. Module-scope flag covers the entire async loop.
+let _isFlushingTouched = false;
 async function flushOfflineTouchedInventory() {
   if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
   if (!db || !deptId || !inventoryRef) return;
+  if (_isFlushingTouched) return;
+  _isFlushingTouched = true;
+  try {
   const touched = getOfflineTouched();
   const ids = Object.keys(touched);
   if (ids.length === 0) return;
@@ -1030,25 +1060,89 @@ async function flushOfflineTouchedInventory() {
     const entry = touched[id];
     if (!entry || typeof entry.touchedAt !== 'number' || now - entry.touchedAt > MAX_AGE_MS) {
       console.warn('[offline-touched] discarding stale entry >24h:', id);
+      logSyncEvent('resync_dropped', { itemId: id, reason: 'stale_24h' });
+      // v3.16.4 (audit C12): surface to user — field crews who go >24h offline
+      // shouldn't silently lose inventory resyncs. Item model in the toast for
+      // post-hoc reconciliation.
+      const itemModel = (localInventory.find(i => i.id === id) || {}).model || id;
+      showToast(`Inventory sync expired (>24h) for ${itemModel} — please verify available count`, 'warning');
+      clearOfflineTouched(id);
+      continue;
+    }
+    // v3.16.4 #71 Component B: drop entries whose epoch has been superseded
+    // by a newer local mutation (a successful in-between transaction that
+    // didn't go through the failure path).
+    const currentEpoch = _itemEpoch.get(id) || 0;
+    if (typeof entry.epoch === 'number' && entry.epoch !== currentEpoch) {
+      logSyncEvent('resync_dropped', { itemId: id, reason: 'epoch_advanced', entryEpoch: entry.epoch, currentEpoch });
       clearOfflineTouched(id);
       continue;
     }
     const localAvail = entry.localAvail;
+    const startedAt = Date.now();
+    let prevFirebaseAvail = null;
     try {
       const result = await inventoryRef.child(id).child('available').transaction((v) => {
         if (v === null || v === undefined) return undefined; // peer-deleted; don't materialize
+        prevFirebaseAvail = v;
+        // v3.16.4 #71 Component C: don't clobber a peer's lower value. We
+        // resync only when the server is stale-HIGH relative to our local
+        // count (i.e., a peer hasn't already converged us downward). If the
+        // server is at or below our local count, peer activity is authoritative.
+        if (v <= localAvail) return undefined;
         return localAvail;
       });
-      // Clear regardless of commit — if it didn't commit (peer-deleted node),
-      // the local state will also be cleaned up by the next listener snapshot.
-      clearOfflineTouched(id);
-      if (!result || !result.committed) {
-        console.info('[offline-touched] flush aborted for', id, '— node missing or peer-deleted');
+      if (result && result.committed) {
+        logSyncEvent('resync_applied', {
+          itemId: id,
+          drift: typeof prevFirebaseAvail === 'number' ? localAvail - prevFirebaseAvail : null,
+          durationMs: Date.now() - startedAt,
+          fromEpoch: entry.epoch
+        });
+        clearOfflineTouched(id);
+        // v3.16.4 #71 Component D: best-effort audit signal. Non-fatal on failure;
+        // no reader requires it. Validated by database.rules.json as isNumber().
+        try {
+          await inventoryRef.child(id).child('_meta').update({ lastVerifiedAt: Date.now() });
+        } catch (mErr) {
+          console.warn('[offline-touched] _meta write failed (non-fatal):', mErr && mErr.message);
+        }
+      } else {
+        // Not committed — distinguish three cases. v3.16.4 (audit C4):
+        //   peer_deleted   — node disappeared; nothing to resync to
+        //   peer_converged — server already equals our local count (no-op)
+        //   peer_advanced  — server is below our local count (peer authoritative)
+        const snapVal = result && result.snapshot ? result.snapshot.val() : null;
+        let reason;
+        if (snapVal === null || snapVal === undefined) reason = 'peer_deleted';
+        else if (snapVal === localAvail) reason = 'peer_converged';
+        else reason = 'peer_advanced';
+        logSyncEvent('resync_dropped', { itemId: id, reason, firebaseAvail: snapVal, localAvail });
+        clearOfflineTouched(id);
       }
     } catch (e) {
-      console.warn('[offline-touched] flush failed for', id, e && e.message);
-      // Keep in touched set; next reconnect will retry.
+      // v3.16.4 #71 Component E: bounded retries. Increment retries; drop at MAX.
+      const nextRetries = (typeof entry.retries === 'number' ? entry.retries : 0) + 1;
+      logSyncEvent('resync_failed', { itemId: id, error: e && e.message ? e.message : String(e), retries: nextRetries });
+      if (nextRetries >= MAX_RESYNC_RETRIES) {
+        logSyncEvent('resync_dropped', { itemId: id, reason: 'max_retries' });
+        // v3.16.4 (audit C12): surface to user. After 3 failed flush attempts
+        // this is a real sync problem (permission, validate rule, etc.) and
+        // silently dropping it leaves the local count diverged from Firebase.
+        const itemModel = (localInventory.find(i => i.id === id) || {}).model || id;
+        showToast(`Inventory sync failed after retries for ${itemModel} — please verify available count`, 'error');
+        clearOfflineTouched(id);
+      } else {
+        const cur = getOfflineTouched();
+        if (cur[id]) {
+          cur[id] = Object.assign({}, cur[id], { retries: nextRetries });
+          setOfflineTouched(cur);
+        }
+      }
     }
+  }
+  } finally {
+    _isFlushingTouched = false;
   }
 }
 
@@ -1441,6 +1535,12 @@ function flushSyncDiagBuffer() {
   }
 }
 
+// v3.16.4 #71: inventory-available transaction failures route through the
+// v3.15.0 offlineTouched pipe so the flush-pass on reconnect can recover
+// the local decrement. Tight regex (anchored to /available leaf) prevents
+// matching unrelated inventory subkeys like _meta or model.
+const RESYNC_INV_PATH_RE = /^\/departments\/[^/]+\/inventory\/([^/]+)\/available$/;
+
 function firebaseSave(ref, method, data, opts) {
   if (!ref) return Promise.resolve();
   // v3.10.1 SAFETY: explicit kill-switch for tests / DevTools sessions.
@@ -1465,6 +1565,19 @@ function firebaseSave(ref, method, data, opts) {
     // For transactions, check if committed
     if (method === 'transaction' && result && !result.committed) {
       console.warn('Transaction not committed:', ref.toString());
+      // v3.16.4 #71 (post-Flow B fix): a resolved-but-uncommitted result is
+      // also a failure mode Component A must cover. Firebase's 25-retry
+      // abort, and any updateFn returning undefined for a non-null node,
+      // land here — NOT in the catch block below. Route inventory-available
+      // cases through markOfflineTouched the same way thrown failures do.
+      if (opts && typeof opts.localAvail === 'number') {
+        const path = ref.toString().replace(/.*firebaseio\.com/, '');
+        const invMatch = path.match(RESYNC_INV_PATH_RE);
+        if (invMatch) {
+          markOfflineTouched(invMatch[1], opts.localAvail);
+          logSyncEvent('resync_enqueued_via_failure', { itemId: invMatch[1], localAvail: opts.localAvail, reason: 'uncommitted' });
+        }
+      }
       // v3.15.0 #80: `opts.silent` lets callers using makeAllocateDecrementer
       // suppress the generic toast — they surface their own reason-specific
       // message ("Another user took the last ...") after inspecting the guard
@@ -1495,7 +1608,18 @@ function firebaseSave(ref, method, data, opts) {
       safeSetItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
       refreshOfflineBanner(); // v3.12.0 R7-04: update count in banner
     } else {
-      logSyncEvent('transaction_failed', { path: ref.toString().replace(/.*firebaseio\.com/, ''), error: err.message || String(err) });
+      const path = ref.toString().replace(/.*firebaseio\.com/, '');
+      logSyncEvent('transaction_failed', { path, error: err.message || String(err) });
+      // v3.16.4 #71: if this was an inventory-available transaction AND the
+      // caller passed opts.localAvail, route into the v3.15.0 offlineTouched
+      // pipe so the local decrement survives the next listener snapshot and
+      // gets flushed back on reconnect. Non-inventory transaction failures
+      // continue to log-and-drop as today.
+      const invMatch = path.match(RESYNC_INV_PATH_RE);
+      if (invMatch && opts && typeof opts.localAvail === 'number') {
+        markOfflineTouched(invMatch[1], opts.localAvail);
+        logSyncEvent('resync_enqueued_via_failure', { itemId: invMatch[1], localAvail: opts.localAvail });
+      }
     }
     // Debounce — the conn-status banner already shows persistent state; the
     // toast is for transient awareness, not per-mutation spam.
@@ -2391,6 +2515,12 @@ function teardownListeners() {
   if (connRef && connRefCallback) {
     try { connRef.off('value', connRefCallback); } catch (e) { /* ignore */ }
   }
+  // v3.16.4 (audit C5/C13): clear per-item mutation epoch on dept-switch.
+  // _itemEpoch is module-level and would otherwise leak cross-dept, mis-
+  // dropping legitimate touched entries as `epoch_advanced` when the same
+  // itemId exists in the new dept (rare but possible via deterministic
+  // Excel-imported ids). Also bounds the Map's growth across long sessions.
+  _itemEpoch.clear();
 }
 
 function setupListeners() {
@@ -6903,23 +7033,36 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
     ? operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available')
     : inventoryRef.child(strutInvItem.id).child('available');
   const strutGuard = makeAllocateDecrementer();
-  guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut' });
+  // v3.16.4 #71: external-equipment paths are out of scope for Component A
+  // (different Firebase path; see master plan v3.17.0 follow-up). Skip localAvail
+  // for externals so firebaseSave's catch falls through to log-only.
+  const strutLocalAvail = strutInvItem.external ? undefined : Math.max(0, (strutInvItem.available || 0) - 1);
+  // v3.16.4 #71 Component B: bump epoch at the call site (NOT inside the
+  // transaction's updateFunction, which Firebase retries internally).
+  if (!strutInvItem.external) bumpEpoch(strutInvItem.id);
+  guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut', localAvail: strutLocalAvail });
 
   // Extension transactions
   for (const ext of (extInvItems || [])) {
     const g = makeAllocateDecrementer();
-    guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension' });
+    const extLocalAvail = Math.max(0, (ext.available || 0) - 1);
+    bumpEpoch(ext.id);
+    guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension', localAvail: extLocalAvail });
   }
 
   // Plate transactions
   for (const pl of (deployedPlates || [])) {
     const g = makeAllocateDecrementer();
-    guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate') });
+    const plInv = localInventory.find(i => i.id === pl.inventoryId);
+    const plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - 1) : undefined;
+    bumpEpoch(pl.inventoryId);
+    guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate'), localAvail: plLocalAvail });
   }
 
   // Fire all in parallel — `silent: true` so the generic 'Sync conflict' toast
   // is suppressed; we surface a reason-specific toast at the call site.
-  await Promise.all(guards.map(g => firebaseSave(g.ref, 'transaction', g.guard.decrementer, { silent: true })));
+  // `localAvail` enables v3.16.4 #71 catch-path recovery via markOfflineTouched.
+  await Promise.all(guards.map(g => firebaseSave(g.ref, 'transaction', g.guard.decrementer, { silent: true, localAvail: g.localAvail })));
 
   const aborted = guards.filter(g => g.guard.state.aborted);
   if (aborted.length === 0) return { ok: true, offline: false };
@@ -6953,7 +7096,8 @@ function returnInventoryItems(sp) {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
       if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
       if (isOnline) {
-        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+        bumpEpoch(sp.deployedStrut.inventoryId);
+        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
       } else if (inv) {
         markOfflineTouched(inv.id, inv.available);
       }
@@ -6965,7 +7109,8 @@ function returnInventoryItems(sp) {
         const inv = localInventory.find(i => i.id === ext.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         if (isOnline) {
-          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+          bumpEpoch(ext.inventoryId);
+          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
         } else if (inv) {
           markOfflineTouched(inv.id, inv.available);
         }
@@ -6978,7 +7123,8 @@ function returnInventoryItems(sp) {
         const inv = localInventory.find(i => i.id === pl.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
         if (isOnline) {
-          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+          bumpEpoch(pl.inventoryId);
+          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
         } else if (inv) {
           markOfflineTouched(inv.id, inv.available);
         }
