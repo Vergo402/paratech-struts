@@ -764,6 +764,87 @@ function fmtDate(ts) {
   return new Date(ts).toLocaleDateString(TIMESTAMP_LOCALE);
 }
 
+// #93 (v3.15.0): Numbered divisions with vertical anchoring.
+// Storage: { division: number | null, divisionLegacyLabel: string | null }.
+//   - division > 0 = above ground (1 = Ground, 2 = first floor up, ...)
+//   - division < 0 = below ground (-1 = Sub Div 1 / Basement, -2 = Sub Div 2, ...)
+//   - division === null + divisionLegacyLabel = unparseable legacy string (alpha
+//     divisions, foreign-language labels, mezzanines, etc.). Kept opaque until
+//     IC renumbers via the post-incident renumber prompt.
+//
+// parseLegacyDivision(s) — explicit allowlist (per migration-specialist Q3,
+// no regex fishing). Returns { number, legacy }. number is null for any
+// unparseable input; legacy is the original string in that case.
+//
+// In: '1'-'99' (numeric), '1st'-'99th' ordinals, 'Ground'/'G' (case-insensitive),
+//     'Basement' (case-insensitive, full word — 'B' alone is alpha-ambiguous).
+// Out: 'A', 'B', 'B-Wing', 'Planta Baja', 'PB', 'second', 'Mezz', 'Roof',
+//      anything with spaces or non-ASCII letters. → divisionLegacyLabel.
+function parseLegacyDivision(s) {
+  if (s === null || s === undefined || s === '') return { number: null, legacy: null };
+  if (typeof s === 'number') {
+    if (Number.isFinite(s) && Number.isInteger(s)) return { number: s, legacy: null };
+    return { number: null, legacy: String(s) };
+  }
+  const raw = String(s);
+  const trimmed = raw.trim();
+  if (!trimmed) return { number: null, legacy: null };
+  if (/^-?\d{1,3}$/.test(trimmed)) {
+    const n = parseInt(trimmed, 10);
+    if (n >= -50 && n <= 200 && n !== 0) return { number: n, legacy: null };
+  }
+  const ord = trimmed.match(/^(\d{1,3})(st|nd|rd|th)$/i);
+  if (ord) {
+    const n = parseInt(ord[1], 10);
+    if (n >= 1 && n <= 200) return { number: n, legacy: null };
+  }
+  const lower = trimmed.toLowerCase();
+  if (lower === 'ground' || lower === 'g') return { number: 1, legacy: null };
+  if (lower === 'basement') return { number: -1, legacy: null };
+  return { number: null, legacy: raw };
+}
+
+// formatDivision(sp) — accepts the full SP object so it can fall back to
+// divisionLegacyLabel without forcing every caller to know about the migration
+// (per architect #3). Returns plain text — callers must escapeHtml() / escapeAttr()
+// at their interpolation site (X-02). Never inject this directly into innerHTML.
+function formatDivision(sp) {
+  if (!sp) return '';
+  const n = sp.division;
+  if (n === null || n === undefined) {
+    if (sp.divisionLegacyLabel) return String(sp.divisionLegacyLabel);
+    return '';
+  }
+  if (typeof n !== 'number' || !Number.isInteger(n)) {
+    return sp.divisionLegacyLabel ? String(sp.divisionLegacyLabel) : '';
+  }
+  if (n > 0) {
+    let paren;
+    if (n === 1) paren = 'Ground level';
+    else if (n === 2) paren = '+1 floor up';
+    else paren = '+' + (n - 1) + ' floors up';
+    return 'Div ' + n + ' (' + paren + ')';
+  }
+  if (n < 0) {
+    const sub = -n;
+    let paren;
+    if (sub === 1) paren = 'Basement';
+    else paren = '+' + (sub - 1) + ' below';
+    return 'Sub Div ' + sub + ' (' + paren + ')';
+  }
+  return '';
+}
+
+// Comparator for sorting divisions in filter pills / drilldown grouping
+// (architect #7 — position-sorted ascending). Sub Div 1 sorts before Div 1
+// because basement is below ground in the building cross-section.
+// Tied unparseables sort last; null treated as zero so it surfaces between.
+function compareDivision(a, b) {
+  const an = (a && a.division !== undefined && a.division !== null) ? a.division : 0;
+  const bn = (b && b.division !== undefined && b.division !== null) ? b.division : 0;
+  return an - bn;
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
