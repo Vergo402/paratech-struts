@@ -1,7 +1,7 @@
 # FieldShore — Consolidated Status & Next Steps
 
 > **Date:** 2026-05-19
-> **Production:** v3.16.1
+> **Production:** v3.16.2
 > **Live:** https://vergo402.github.io/paratech-struts/
 
 ---
@@ -41,6 +41,7 @@ Everything from the two-round audit is implemented through v3.11.3. Post-audit l
 | v3.15.0 | Numbered divisions (#93) + offline inventory hardening (#71, #80 partial) |
 | v3.16.0 | SmartArt ICS org chart (#95) + 12 must-fix items (#96) + lock-by-default + ↑↓←→ arrows + modal close repositioned + ICS-doctrine role hierarchy (Operations left of Safety, Runner under Cutting Table) + 44px touch targets + post-audit refinements |
 | v3.16.1 | Permanent inventory right rail on desktop Operations (fixes floater overlapping shore-point cards) |
+| v3.16.2 | Operations legend (card colors + per-action role permissions) + remove buggy drilldown search |
 
 ---
 
