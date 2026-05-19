@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.14.3';
+const APP_VERSION = '3.15.0';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -764,6 +764,433 @@ function fmtDate(ts) {
   return new Date(ts).toLocaleDateString(TIMESTAMP_LOCALE);
 }
 
+// #93 (v3.15.0): Numbered divisions with vertical anchoring.
+// Storage: { division: number | null, divisionLegacyLabel: string | null }.
+//   - division > 0 = above ground (1 = Ground, 2 = first floor up, ...)
+//   - division < 0 = below ground (-1 = Sub Div 1 / Basement, -2 = Sub Div 2, ...)
+//   - division === null + divisionLegacyLabel = unparseable legacy string (alpha
+//     divisions, foreign-language labels, mezzanines, etc.). Kept opaque until
+//     IC renumbers via the post-incident renumber prompt.
+//
+// parseLegacyDivision(s) — explicit allowlist (per migration-specialist Q3,
+// no regex fishing). Returns { number, legacy }. number is null for any
+// unparseable input; legacy is the original string in that case.
+//
+// In: '1'-'99' (numeric), '1st'-'99th' ordinals, 'Ground'/'G' (case-insensitive),
+//     'Basement' (case-insensitive, full word — 'B' alone is alpha-ambiguous).
+// Out: 'A', 'B', 'B-Wing', 'Planta Baja', 'PB', 'second', 'Mezz', 'Roof',
+//      anything with spaces or non-ASCII letters. → divisionLegacyLabel.
+function parseLegacyDivision(s) {
+  if (s === null || s === undefined || s === '') return { number: null, legacy: null };
+  if (typeof s === 'number') {
+    if (Number.isFinite(s) && Number.isInteger(s)) return { number: s, legacy: null };
+    return { number: null, legacy: String(s) };
+  }
+  const raw = String(s);
+  const trimmed = raw.trim();
+  if (!trimmed) return { number: null, legacy: null };
+  if (/^-?\d{1,3}$/.test(trimmed)) {
+    const n = parseInt(trimmed, 10);
+    if (n >= -50 && n <= 200 && n !== 0) return { number: n, legacy: null };
+  }
+  const ord = trimmed.match(/^(\d{1,3})(st|nd|rd|th)$/i);
+  if (ord) {
+    const n = parseInt(ord[1], 10);
+    if (n >= 1 && n <= 200) return { number: n, legacy: null };
+  }
+  const lower = trimmed.toLowerCase();
+  if (lower === 'ground' || lower === 'g') return { number: 1, legacy: null };
+  if (lower === 'basement') return { number: -1, legacy: null };
+  return { number: null, legacy: raw };
+}
+
+// formatDivision(sp) — accepts the full SP object so it can fall back to
+// divisionLegacyLabel without forcing every caller to know about the migration
+// (per architect #3). Returns plain text — callers must escapeHtml() / escapeAttr()
+// at their interpolation site (X-02). Never inject this directly into innerHTML.
+function formatDivision(sp) {
+  if (!sp) return '';
+  const n = sp.division;
+  if (n === null || n === undefined) {
+    if (sp.divisionLegacyLabel) return String(sp.divisionLegacyLabel);
+    return '';
+  }
+  if (typeof n !== 'number' || !Number.isInteger(n)) {
+    return sp.divisionLegacyLabel ? String(sp.divisionLegacyLabel) : '';
+  }
+  if (n > 0) {
+    let paren;
+    if (n === 1) paren = 'Ground level';
+    else if (n === 2) paren = '+1 floor up';
+    else paren = '+' + (n - 1) + ' floors up';
+    return 'Div ' + n + ' (' + paren + ')';
+  }
+  if (n < 0) {
+    const sub = -n;
+    let paren;
+    if (sub === 1) paren = 'Basement';
+    else paren = '+' + (sub - 1) + ' below';
+    return 'Sub Div ' + sub + ' (' + paren + ')';
+  }
+  return '';
+}
+
+// Comparator for sorting divisions in filter pills / drilldown grouping
+// (architect #7 — position-sorted ascending). Sub Div 1 sorts before Div 1
+// because basement is below ground in the building cross-section.
+// Tied unparseables sort last; null treated as zero so it surfaces between.
+function compareDivision(a, b) {
+  const an = (a && a.division !== undefined && a.division !== null) ? a.division : 0;
+  const bn = (b && b.division !== undefined && b.division !== null) ? b.division : 0;
+  return an - bn;
+}
+
+// migrateOpDivisions — in-memory transform from legacy string division shape
+// to numbered { division: number|null, divisionLegacyLabel: string|null }.
+// Idempotent (per migration-specialist Q5): skips SPs that already have a
+// non-string division. Returns { changedSps: [...], hasLegacy } so the
+// caller can write the changes back atomically and decide whether to
+// surface the renumber prompt.
+function migrateOpDivisions(op) {
+  const result = { changedSps: [], hasLegacy: false };
+  if (!op || !op.shorePoints) return result;
+  const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints);
+  for (const sp of points) {
+    if (typeof sp.division !== 'string' || sp.division === '') continue;
+    const parsed = parseLegacyDivision(sp.division);
+    sp.division = parsed.number;
+    if (parsed.legacy !== null) {
+      sp.divisionLegacyLabel = parsed.legacy;
+      result.hasLegacy = true;
+    }
+    result.changedSps.push(sp);
+  }
+  return result;
+}
+
+// maybePreMigrationSnapshot — fires the named pre-v3.15.0 backup via the
+// existing v3.10.1 backup infrastructure (migration-specialist Q2). One-shot
+// per device per dept: tracked via localStorage so a single dept connected
+// across multiple devices each takes ONE snapshot before its first migration
+// (which is intentional — each device has independent rollback capability).
+async function maybePreMigrationSnapshot() {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId) return;
+  const key = 'fieldshore_preMigrationDone_v3.15.0_' + deptId;
+  try {
+    if (localStorage.getItem(key) === '1') return; // already done
+  } catch (e) { /* localStorage unavailable — skip the marker check, fire anyway */ }
+  try {
+    await backupBeforeDestructiveWrite('operations', 'v3.15.0 division-migration snapshot');
+    try { localStorage.setItem(key, '1'); } catch (e) { /* non-fatal */ }
+  } catch (e) {
+    // Backup failed — don't proceed with migration. The next attempt will retry.
+    console.warn('[v3.15.0 migration] pre-migration snapshot failed:', e && e.message);
+    throw e;
+  }
+}
+
+// showRenumberBanner — inline banner (NOT modal per mobile-ux #4 +
+// migration-specialist Q4) shown above the shore-point list when an op has
+// SPs with unparseable legacy division labels (e.g., 'A', 'Mezzanine B').
+// Dismissible per session; reappears on next op-load if there are still
+// legacy SPs unresolved. Gating happens at the caller (opIsInRapidActivity
+// check in the operations listener).
+let _renumberBannerDismissedFor = null; // opId for which the banner is hidden this session
+function showRenumberBanner(opId, legacyCount) {
+  const banner = document.getElementById('renumberBanner');
+  if (!banner) return;
+  if (legacyCount <= 0) { banner.classList.add('hidden'); return; }
+  if (_renumberBannerDismissedFor === opId) return; // session-dismissed
+  banner.classList.remove('hidden');
+  banner.innerHTML = '<div class="renumber-banner-text"><strong>' + legacyCount +
+    '</strong> shore point' + (legacyCount === 1 ? '' : 's') +
+    ' use a legacy division label (e.g. "A", "Alpha"). Open each one to renumber to the new numeric system.</div>' +
+    '<div class="renumber-banner-actions">' +
+    '<button type="button" class="btn btn-sm btn-outline" onclick="showLegacyDivisionSPs()" aria-label="Show shore points with legacy division labels">Show legacy SPs</button>' +
+    '<button type="button" class="renumber-banner-dismiss" onclick="dismissRenumberBanner()" aria-label="Dismiss renumber prompt">&times;</button>' +
+    '</div>';
+}
+
+function dismissRenumberBanner() {
+  const banner = document.getElementById('renumberBanner');
+  if (!banner) return;
+  banner.classList.add('hidden');
+  _renumberBannerDismissedFor = activeOperation ? activeOperation.id : null;
+}
+
+// showLegacyDivisionSPs — filters the shore-point list to only SPs with
+// divisionLegacyLabel set. Uses a synthetic drilldownPath segment so the
+// existing breadcrumb / clear-drill UX picks it up naturally.
+function showLegacyDivisionSPs() {
+  // Push a synthetic segment that filters by legacy-label presence.
+  // The filter site (renderDrilldownList) will need to recognize this
+  // marker; we use a sentinel value so it doesn't collide with real div numbers.
+  drilldownPath = [{ level: 'division', value: '__legacy__' }];
+  renderOperations();
+}
+
+// opIsInRapidActivity — gate for migration prompts (battalion-chief #2 +
+// migration-specialist Q4). Returns true if the op has had any status
+// transition in the last 30 minutes — i.e. an IC is actively working it.
+// In that state we do NOT surface a renumber prompt; we wait until the
+// op is quieter or ended.
+// #71 (v3.15.0): offline-touched-inventory tracking. The architectural root
+// cause of the v3.8.2 inventory bug is that firebaseSave at ~L1099 skips
+// queueing failed transactions (`if (method !== 'transaction')`). Every
+// offline deploy/return desyncs `available` counters because the transaction
+// never queues; on reconnect, the inventory listener overwrites our local
+// state with stale Firebase values.
+//
+// Per devops-resilience top-concern, "flush before listener" isn't
+// architecturally achievable — Firebase RTDB listeners fire synchronously on
+// reconnect and there's no API to pause them. The fix is to invert the model:
+// the listener consults the offline-touched set on each snapshot and SKIPS
+// overwriting `available` for items still in the set. Per-item, the flush-pass
+// then fires a transaction with our local value as source-of-truth; on commit
+// the item leaves the touched set and subsequent listener snapshots flow
+// through unchanged.
+//
+// Storage: dept-namespaced localStorage object
+//   fieldshore_offlineTouchedInventory_{deptId} → { [invId]: { localAvail, touchedAt } }
+// Devops-resilience Q2 — dept-namespacing prevents replaying Dept A's offline
+// writes into Dept B's tree after a dept-switch.
+function getOfflineTouchedKey() {
+  return 'fieldshore_offlineTouchedInventory_' + (deptId || 'unknown');
+}
+function getOfflineTouched() {
+  try {
+    const raw = localStorage.getItem(getOfflineTouchedKey());
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (e) { return {}; }
+}
+function setOfflineTouched(obj) {
+  try {
+    safeSetItem(getOfflineTouchedKey(), JSON.stringify(obj));
+  } catch (e) { /* non-fatal — quota / unavailable storage */ }
+}
+function markOfflineTouched(inventoryId, localAvail) {
+  if (!inventoryId) return;
+  const touched = getOfflineTouched();
+  touched[inventoryId] = { localAvail: localAvail, touchedAt: Date.now() };
+  setOfflineTouched(touched);
+}
+function clearOfflineTouched(inventoryId) {
+  if (!inventoryId) return;
+  const touched = getOfflineTouched();
+  if (touched[inventoryId]) {
+    delete touched[inventoryId];
+    setOfflineTouched(touched);
+  }
+}
+
+// Applies the listener-consults-touched-set inversion. For each item in the
+// snapshot, if it's in the offline-touched set, preserve our local `available`
+// value. All other fields fall through normally.
+function applyOfflineTouchedFilter(items) {
+  const touched = getOfflineTouched();
+  if (Object.keys(touched).length === 0) return items;
+  return items.map(item => {
+    if (touched[item.id]) {
+      return Object.assign({}, item, { available: touched[item.id].localAvail });
+    }
+    return item;
+  });
+}
+
+// Flush-pass: on reconnect, push each touched item's local `available` value
+// back to Firebase via a transaction. Use transaction (not set) per devops-
+// resilience Q3 — preserves the null-guard (don't materialize phantom nodes)
+// and respects optimistic locking against concurrent peer edits.
+// 24h age filter per devops-resilience additional finding — stale entries
+// are discarded rather than replayed against fresher peer state.
+async function flushOfflineTouchedInventory() {
+  if (typeof window !== 'undefined' && window.disableFirebaseWrites === true) return;
+  if (!db || !deptId || !inventoryRef) return;
+  const touched = getOfflineTouched();
+  const ids = Object.keys(touched);
+  if (ids.length === 0) return;
+  const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  for (const id of ids) {
+    const entry = touched[id];
+    if (!entry || typeof entry.touchedAt !== 'number' || now - entry.touchedAt > MAX_AGE_MS) {
+      console.warn('[offline-touched] discarding stale entry >24h:', id);
+      clearOfflineTouched(id);
+      continue;
+    }
+    const localAvail = entry.localAvail;
+    try {
+      const result = await inventoryRef.child(id).child('available').transaction((v) => {
+        if (v === null || v === undefined) return undefined; // peer-deleted; don't materialize
+        return localAvail;
+      });
+      // Clear regardless of commit — if it didn't commit (peer-deleted node),
+      // the local state will also be cleaned up by the next listener snapshot.
+      clearOfflineTouched(id);
+      if (!result || !result.committed) {
+        console.info('[offline-touched] flush aborted for', id, '— node missing or peer-deleted');
+      }
+    } catch (e) {
+      console.warn('[offline-touched] flush failed for', id, e && e.message);
+      // Keep in touched set; next reconnect will retry.
+    }
+  }
+}
+
+function opIsInRapidActivity(op) {
+  if (!op) return false;
+  const ACTIVITY_WINDOW_MS = 30 * 60 * 1000;
+  const now = Date.now();
+  const points = op.shorePoints ? (Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints)) : [];
+  for (const sp of points) {
+    const ts = sp.deployedAt || sp.cutDoneAt || sp.runnerSentAt || sp.securedAt || sp.returnedAt || null;
+    if (!ts) continue;
+    const ms = typeof ts === 'number' ? ts : Date.parse(ts);
+    if (Number.isFinite(ms) && (now - ms) < ACTIVITY_WINDOW_MS) return true;
+  }
+  return false;
+}
+
+// getOpDivisions(op) — returns sorted, deduped list of division numbers
+// available in the operation. Combines the explicit `op.divisions` array
+// (extended by [+] Add Floor controls) with any division numbers already
+// in use by existing SPs. Always includes 1 (Ground level). Sorted
+// descending so the dropdown reads top-to-bottom matching the building
+// cross-section (high floors first, basement last).
+function getOpDivisions(op) {
+  const set = new Set([1]); // always include Ground
+  if (op && Array.isArray(op.divisions)) {
+    op.divisions.forEach(n => { if (typeof n === 'number' && Number.isInteger(n) && n !== 0) set.add(n); });
+  }
+  if (op && op.shorePoints) {
+    const points = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints);
+    for (const sp of points) {
+      if (typeof sp.division === 'number' && Number.isInteger(sp.division) && sp.division !== 0) set.add(sp.division);
+    }
+  }
+  return Array.from(set).sort((a, b) => b - a); // descending — highest floor at top
+}
+
+// renderDivisionPicker(selectedNumber) — populates <select id="spDivision">
+// with options from getOpDivisions(activeOperation). Selects the given
+// number (or 1 = Ground if not provided / not present). Called when the
+// SP modal opens (Add or Edit).
+function renderDivisionPicker(selectedNumber) {
+  const select = document.getElementById('spDivision');
+  if (!select) return;
+  const divisions = getOpDivisions(activeOperation);
+  const current = (typeof selectedNumber === 'number' && Number.isInteger(selectedNumber)) ? selectedNumber : 1;
+  // Build options
+  let html = '';
+  for (const n of divisions) {
+    const label = formatDivision({ division: n });
+    html += '<option value="' + n + '"' + (n === current ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+  }
+  select.innerHTML = html;
+  // If current value isn't in the options, default to 1
+  if (!divisions.includes(current)) {
+    select.value = '1';
+  } else {
+    select.value = String(current);
+  }
+}
+
+// addFloorAbove() — adds the next Division N+1 to activeOperation.divisions,
+// re-renders the picker, and selects the new floor. Persists.
+function addFloorAbove() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  if (!Array.isArray(activeOperation.divisions)) activeOperation.divisions = [];
+  const existing = getOpDivisions(activeOperation);
+  const maxPositive = existing.filter(n => n > 0).reduce((a, b) => Math.max(a, b), 0);
+  const next = maxPositive + 1;
+  if (!activeOperation.divisions.includes(next)) {
+    activeOperation.divisions.push(next);
+    persistOperation();
+    if (db && deptId && operationsRef && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('divisions'), 'set', activeOperation.divisions);
+    }
+  }
+  renderDivisionPicker(next);
+}
+
+// addFloorBelow() — adds the next Sub Division (-N) to activeOperation.divisions,
+// re-renders the picker, and selects it. Persists.
+function addFloorBelow() {
+  if (!activeOperation) { showToast('Start an operation first', 'warning'); return; }
+  if (!Array.isArray(activeOperation.divisions)) activeOperation.divisions = [];
+  const existing = getOpDivisions(activeOperation);
+  const minNegative = existing.filter(n => n < 0).reduce((a, b) => Math.min(a, b), 0);
+  const next = minNegative - 1;
+  if (!activeOperation.divisions.includes(next)) {
+    activeOperation.divisions.push(next);
+    persistOperation();
+    if (db && deptId && operationsRef && activeOperation.id) {
+      firebaseSave(operationsRef.child(activeOperation.id).child('divisions'), 'set', activeOperation.divisions);
+    }
+  }
+  renderDivisionPicker(next);
+}
+
+// readDivisionFromPicker() — reads the current <select id="spDivision"> value
+// and returns it as a number (or null if not parseable). Replaces the
+// validateInput(value, 100) || null pattern at the save/deploy sites.
+function readDivisionFromPicker() {
+  const select = document.getElementById('spDivision');
+  if (!select) return null;
+  const v = select.value;
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && Number.isInteger(n) ? n : null;
+}
+
+// v3.15.0 #93: Centralized display formatter for hierarchy-level tree/breadcrumb
+// labels. Division gets special handling because it's stored as a number — the
+// existing `Div ${value}` interpolation pattern would render "Div 1", but the
+// IC reads "Div 1 (Ground level)" everywhere else. Use this helper at every
+// hierarchy-level render site (drilldown tree, drilldown list, breadcrumb).
+// Returns plain text — callers must escapeHtml at interpolation.
+function getLevelDisplayLabel(level, value) {
+  if (value === null || value === undefined || value === '__none__') {
+    return '(no ' + level + ')';
+  }
+  if (level === 'division') {
+    // Numeric (post-migration) — render with parenthetical
+    if (typeof value === 'number' && Number.isInteger(value)) {
+      return formatDivision({ division: value });
+    }
+    // Legacy string — render as-is (it's the unparseable original)
+    return String(value);
+  }
+  const prefix = { building: 'Bldg', division: 'Div', area: 'Area', group: 'Group' }[level] || level;
+  const vstr = String(value);
+  if (vstr.toLowerCase().startsWith(prefix.toLowerCase())) return vstr;
+  return prefix + ' ' + vstr;
+}
+
+// v3.15.0 #93: Hierarchy-level value comparator. For division, numeric
+// descending so the tree reads top-to-bottom matching the building cross-
+// section (highest floor first, basement last). For other levels, lexical.
+function compareLevelValues(level, a, b) {
+  if (a == null || a === '__none__') return 1;
+  if (b == null || b === '__none__') return -1;
+  if (level === 'division') {
+    const na = typeof a === 'number' ? a : parseInt(a, 10);
+    const nb = typeof b === 'number' ? b : parseInt(b, 10);
+    const aIsNum = Number.isFinite(na);
+    const bIsNum = Number.isFinite(nb);
+    if (aIsNum && bIsNum) return nb - na; // descending: Div 3, Div 2, Div 1, Sub Div 1
+    if (aIsNum && !bIsNum) return -1;       // numbers before legacy strings
+    if (!aIsNum && bIsNum) return 1;
+    return String(a).localeCompare(String(b));
+  }
+  const na = parseInt(a, 10), nb = parseInt(b, 10);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  return String(a).localeCompare(String(b));
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
@@ -906,7 +1333,11 @@ function getSPGroup(sp) {
 function getLocationBreadcrumb(sp) {
   const parts = [];
   if (sp.building) parts.push(escapeHtml(sp.building));
-  if (sp.division) parts.push(escapeHtml(sp.division));
+  // v3.15.0 #93: division can be a number (post-migration) or null + legacy
+  // label. formatDivision(sp) handles both shapes; escapeHtml protects the
+  // legacy-label path against peer-written XSS (code-auditor X-02).
+  const divText = formatDivision(sp);
+  if (divText) parts.push(escapeHtml(divText));
   if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
   const grp = getSPGroup(sp);
   if (grp) parts.push(escapeHtml(getGroupDisplayName(grp)));
@@ -998,7 +1429,7 @@ function flushSyncDiagBuffer() {
   }
 }
 
-function firebaseSave(ref, method, data) {
+function firebaseSave(ref, method, data, opts) {
   if (!ref) return Promise.resolve();
   // v3.10.1 SAFETY: explicit kill-switch for tests / DevTools sessions.
   // Set `window.disableFirebaseWrites = true` to make every Firebase write a
@@ -1022,7 +1453,16 @@ function firebaseSave(ref, method, data) {
     // For transactions, check if committed
     if (method === 'transaction' && result && !result.committed) {
       console.warn('Transaction not committed:', ref.toString());
-      showToast('Sync conflict — verify the change', 'warning');
+      // v3.15.0 #80: `opts.silent` lets callers using makeAllocateDecrementer
+      // suppress the generic toast — they surface their own reason-specific
+      // message ("Another user took the last ...") after inspecting the guard
+      // state.
+      if (!(opts && opts.silent)) {
+        showToast('Sync conflict — verify the change', 'warning');
+      }
+    }
+    if (method === 'transaction' && result && result.committed) {
+      return result; // expose committed result for callers that need it
     }
     // v3.10.1: trigger a throttled dept-wide snapshot after every successful
     // non-backup write. maybeBackup is internally rate-limited and
@@ -1686,6 +2126,11 @@ function setupConnListener() {
       flushPendingWrites();
       flushSyncDiagBuffer();
       flushPendingMemberRegistrations();
+      // #71 (v3.15.0): on reconnect, push local inventory `available` values
+      // for items mutated offline. The listener-consults-touched-set inversion
+      // above ensures the listener doesn't overwrite local until each item's
+      // flush settles.
+      flushOfflineTouchedInventory().catch(err => console.warn('[offline-touched] flush error:', err && err.message));
     } else {
       isOnline = false;
       el.className = 'conn-status offline';
@@ -1890,7 +2335,11 @@ function setupListeners() {
     }
     inventoryFirstFire = false;
     const data = snap.val() || {};
-    localInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    // #71 (v3.15.0): listener-consults-touched-set inversion. Items in the
+    // offline-touched set keep their local `available` value until the
+    // flush-pass settles them.
+    const rawInventory = Object.entries(data).map(([id, item]) => ({ id, ...item }));
+    localInventory = applyOfflineTouchedFilter(rawInventory);
     persistInventory();
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
     if (document.getElementById('addEquipModal').classList.contains('active')) showAddEquipment();
@@ -1920,6 +2369,39 @@ function setupListeners() {
         if (sp.group && !sp.assignedResource) sp.assignedResource = sp.group; // v3.12.0 N2 dual-write hydrate
         return { id, ...sp };
       });
+
+      // v3.15.0 #93: division string → number migration. Skips if op already
+      // has _meta.schemaVersion >= 2 (idempotency per migration-specialist Q5).
+      const currentSchema = (activeOperation._meta && activeOperation._meta.schemaVersion) || 1;
+      if (currentSchema < 2) {
+        const migration = migrateOpDivisions(activeOperation);
+        if (migration.changedSps.length > 0) {
+          // Pre-migration snapshot — one-shot per dept per device. Awaited so
+          // we don't write back until the safety net is in place.
+          maybePreMigrationSnapshot().then(() => {
+            if (db && deptId && operationsRef && activeOperation && activeOperation.id) {
+              const updates = { '_meta/schemaVersion': 2 };
+              migration.changedSps.forEach(sp => {
+                updates['shorePoints/' + sp.id + '/division'] = sp.division;
+                if (sp.divisionLegacyLabel !== undefined) {
+                  updates['shorePoints/' + sp.id + '/divisionLegacyLabel'] = sp.divisionLegacyLabel;
+                }
+              });
+              firebaseSave(operationsRef.child(activeOperation.id), 'update', updates);
+            }
+            activeOperation._meta = activeOperation._meta || {};
+            activeOperation._meta.schemaVersion = 2;
+          }).catch(err => {
+            console.warn('[v3.15.0] division migration skipped — snapshot failed:', err && err.message);
+          });
+          // Renumber banner: only if any SP has an unparseable legacy label
+          // AND the op is not in rapid-activity state (battalion-chief #2 +
+          // migration-specialist Q4 — never surface mid-incident).
+          if (migration.hasLegacy && !opIsInRapidActivity(activeOperation)) {
+            showRenumberBanner(activeOperation.id, migration.changedSps.filter(sp => sp.divisionLegacyLabel).length);
+          }
+        }
+      }
     }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
@@ -4252,7 +4734,8 @@ function showAddShorePoint() {
   document.getElementById('spLabel').value = '';
   document.getElementById('spBuilding').value = '';
   document.getElementById('spArea').value = '';
-  document.getElementById('spDivision').value = '';
+  // v3.15.0 #93: numbered division picker. Default to Division 1 (Ground level).
+  renderDivisionPicker(1);
   // Populate Group dropdown from operation's assigned apparatus
   populateGroupDropdown('');
 
@@ -4263,7 +4746,13 @@ function showAddShorePoint() {
   // Pre-fill from drilldown position
   for (const seg of drilldownPath) {
     if (seg.level === 'building') document.getElementById('spBuilding').value = seg.value;
-    if (seg.level === 'division') document.getElementById('spDivision').value = seg.value;
+    if (seg.level === 'division') {
+      // v3.15.0 #93: drilldown segment values are numeric (post-migration) or
+      // legacy strings (pre-migration / migrated to legacyLabel). Try numeric
+      // first; fall back silently if not available in the picker.
+      const segNum = parseInt(seg.value, 10);
+      if (Number.isFinite(segNum)) renderDivisionPicker(segNum);
+    }
     if (seg.level === 'area') document.getElementById('spArea').value = seg.value;
     if (seg.level === 'group') populateGroupDropdown(seg.value);
   }
@@ -4348,7 +4837,10 @@ function assignEquipmentToPending(spId) {
   document.getElementById('spLabel').value = sp.label || '';
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
-  document.getElementById('spDivision').value = sp.division || '';
+  // v3.15.0 #93: numeric division picker. If sp.division is a number, select
+  // it; otherwise default to Ground. Legacy labels stay on the SP until the
+  // IC renumbers via the inline banner (step 7).
+  renderDivisionPicker(typeof sp.division === 'number' ? sp.division : 1);
   populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
@@ -4389,7 +4881,7 @@ function assignEquipmentToPending(spId) {
 // but updates the existing SP instead of creating new ones. Qty is always 1
 // for a single pending SP — additional struts (e.g., t-shore pair) are
 // handled by creating additional pending SPs and deploying each in turn.
-function upgradePendingToDeployed(result, pendingId) {
+async function upgradePendingToDeployed(result, pendingId) {
   if (!activeOperation) return;
   const points = getShorePoints();
   const sp = points.find(p => p.id === pendingId);
@@ -4461,33 +4953,54 @@ function upgradePendingToDeployed(result, pendingId) {
     ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
     : null;
 
-  // Decrement local inventory counts
+  // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
+  // v=null guard. If any abort, restore the pending SP's pre-upgrade state
+  // and surface a reason-specific toast (companion-write rejection per R-03).
+  const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
+  if (!txResult.ok) {
+    // Restore the pending SP — clear the deployedStrut/extensions/plates we
+    // optimistically attached above, and revert status back to 'pending'.
+    sp.deployedStrut = null;
+    sp.deployedExtensions = [];
+    sp.deployedPlates = [];
+    sp.status = 'pending';
+    sp.deployedAt = null;
+    const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
+    const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
+    if (anyExhausted) {
+      showToast(`Another user took the last ${labels} — try again`, 'error');
+    } else {
+      showToast(`${labels} no longer in inventory — refresh and try again`, 'error');
+    }
+    closeModal('shorePointModal');
+    return;
+  }
+
+  // Transactions committed (or offline) — apply local optimistic decrement
+  // and fire the SP companion write.
   if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
     activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
   } else {
     strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+    // #71 (v3.15.0): if we mutated locally without a Firebase transaction
+    // (txResult.offline === true), mark for flush-pass on reconnect.
+    if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
   }
-  for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+  for (const ext of extInvItems) {
+    ext.available = Math.max(0, ext.available - 1);
+    if (txResult.offline) markOfflineTouched(ext.id, ext.available);
+  }
   for (const pl of deployedPlates) {
     const plInv = localInventory.find(i => i.id === pl.inventoryId);
-    if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    if (plInv) {
+      plInv.available = Math.max(0, plInv.available - 1);
+      if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+    }
   }
 
-  // Sync to Firebase
-  // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+  // SP companion write (transactions already committed by runDeployTransactions)
   if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
     firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
-    if (strutInvItem.external) {
-      firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-    } else {
-      firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-    }
-    for (const ext of extInvItems) {
-      firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
-    }
-    for (const pl of deployedPlates) {
-      firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
-    }
   }
 
   persistOperation();
@@ -4509,7 +5022,7 @@ function deployPendingShorePoint(reason) {
   const shoreType = document.getElementById('spShoreType').value;
   const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
   const area = validateInput(document.getElementById('spArea').value, 100) || null;
-  const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+  const division = readDivisionFromPicker(); // v3.15.0 #93: numeric division
   const group = validateInput(document.getElementById('spGroup').value, 100) || null;
   const deductions = getDeductions('sp');
   const effectiveLength = deductions ? length - ((deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)) : length;
@@ -4722,7 +5235,7 @@ async function deployShorePoint(result, qty) {
   if (assigningToPendingId) {
     const pendingId = assigningToPendingId;
     assigningToPendingId = null;
-    upgradePendingToDeployed(result, pendingId);
+    await upgradePendingToDeployed(result, pendingId);
     return;
   }
 
@@ -4764,7 +5277,7 @@ async function deployShorePoint(result, qty) {
     const shoreType = document.getElementById('spShoreType').value;
     const building = validateInput(document.getElementById('spBuilding').value, 100) || null;
     const area = validateInput(document.getElementById('spArea').value, 100) || null;
-    const division = validateInput(document.getElementById('spDivision').value, 100) || null;
+    const division = readDivisionFromPicker(); // v3.15.0 #93: numeric division
     const group = validateInput(document.getElementById('spGroup').value, 100) || null;
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
@@ -4831,36 +5344,50 @@ async function deployShorePoint(result, qty) {
 
     sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now() + '-' + n);
 
-    // Always update local inventory counts
+    // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
+    // v=null guard. If any abort, we surface a reason-specific toast and skip
+    // this iteration without touching local state (companion-write rejection
+    // per code-auditor R-03). Compensating increments fire on transactions
+    // that did commit so the Firebase tree ends up where it started.
+    const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
+    if (!txResult.ok) {
+      const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
+      const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
+      if (anyExhausted) {
+        showToast(`Another user took the last ${labels} — try again`, 'error');
+      } else {
+        showToast(`${labels} no longer in inventory — refresh and try again`, 'error');
+      }
+      break; // stop the qty loop — don't try further iterations under contention
+    }
+
+    // Transactions committed (or offline). Apply local optimistic decrement and
+    // fire the SP companion write. #71 (v3.15.0): if offline, mark each
+    // mutated item for the reconnect flush-pass.
     if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
       activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
     } else {
       strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+      if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
     }
-    for (const ext of extInvItems) ext.available = Math.max(0, ext.available - 1);
+    for (const ext of extInvItems) {
+      ext.available = Math.max(0, ext.available - 1);
+      if (txResult.offline) markOfflineTouched(ext.id, ext.available);
+    }
     for (const pl of deployedPlates) {
       const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+      if (plInv) {
+        plInv.available = Math.max(0, plInv.available - 1);
+        if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+      }
     }
 
     if (!activeOperation.shorePoints) activeOperation.shorePoints = [];
     activeOperation.shorePoints.push(sp);
 
-    // Sync to Firebase
-    // H1 (v3.11.3): all deploy transactions use makeDeployDecrementer for null-node safety
+    // SP companion write (transactions already committed above by runDeployTransactions)
     if (db && deptId && operationsRef && activeOperation.id) { /* H9 (v3.11.3): operationsRef guard parity — prevents NPE on .child() during teardown / pre-auth race */
       firebaseSave(operationsRef.child(activeOperation.id).child('shorePoints').child(sp.id), 'set', sp);
-      if (strutInvItem.external) {
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-      } else {
-        firebaseSave(inventoryRef.child(strutInvItem.id).child('available'), 'transaction', makeDeployDecrementer());
-      }
-      for (const ext of extInvItems) {
-        firebaseSave(inventoryRef.child(ext.id).child('available'), 'transaction', makeDeployDecrementer());
-      }
-      for (const pl of deployedPlates) {
-        firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeDeployDecrementer());
-      }
     }
 
     deployed.push(sp);
@@ -5024,18 +5551,40 @@ function getFilteredPoints() {
       // v3.12.0 N2: 'group' lookup uses the dual-write fallback chain so
       // drilldown stays consistent regardless of which key the SP record uses.
       const val = seg.level === 'group' ? getSPGroup(sp) : (sp[seg.level] || null);
+      // v3.15.0 #93: __legacy__ sentinel filters to SPs with unparseable
+      // legacy division labels (renumber banner "Show legacy SPs" path).
+      if (seg.level === 'division' && seg.value === '__legacy__') {
+        if (!sp.divisionLegacyLabel) return false;
+        continue;
+      }
       if (seg.value === '__none__') {
         if (val !== null) return false;
       } else {
-        if (val !== seg.value) return false;
+        // v3.15.0 #93: division is numeric on SPs but seg.value may be a
+        // string (from drillInto onclick) or number (from drilldownToPath
+        // JSON). Compare loosely after coercion so 2 matches "2".
+        if (seg.level === 'division') {
+          const segNum = typeof seg.value === 'number' ? seg.value : parseInt(seg.value, 10);
+          const valNum = typeof val === 'number' ? val : parseInt(val, 10);
+          if (Number.isFinite(segNum) && Number.isFinite(valNum)) {
+            if (valNum !== segNum) return false;
+          } else if (String(val) !== String(seg.value)) {
+            return false;
+          }
+        } else if (val !== seg.value) {
+          return false;
+        }
       }
     }
     return true;
   });
   // v3.14.0 desktop search filter
+  // v3.15.0 #93: include formatDivision output in the haystack so the IC can
+  // search by 'Ground', 'Basement', 'Sub Div', etc. — not only the bare number.
   if (drilldownSearch) {
     filtered = filtered.filter(sp => {
-      const hay = [sp.label, sp.building, sp.division, sp.area].filter(Boolean).join(' ').toLowerCase();
+      const divText = formatDivision(sp);
+      const hay = [sp.label, sp.building, divText, sp.divisionLegacyLabel, sp.area].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(drilldownSearch);
     });
   }
@@ -5101,23 +5650,20 @@ function renderDrilldownTree() {
 
   function renderNodes(nodeMap, parentPath, depth) {
     let html = '';
-    // Sort keys: numeric-ish first, then alpha; "__none__" last
-    const keys = Object.keys(nodeMap).sort((a, b) => {
-      if (a === '__none__') return 1;
-      if (b === '__none__') return -1;
-      const na = parseInt(a, 10), nb = parseInt(b, 10);
-      if (!isNaN(na) && !isNaN(nb)) return na - nb;
-      return a.localeCompare(b);
+    // v3.15.0 #93: sort uses level-aware comparator — division is numeric
+    // descending (top floor first), everything else stays lexical/numeric.
+    const entries = Object.entries(nodeMap);
+    entries.sort((a, b) => {
+      const nodeA = a[1], nodeB = b[1];
+      return compareLevelValues(nodeA._level, nodeA._value, nodeB._value);
     });
-    for (const key of keys) {
-      const node = nodeMap[key];
+    for (const [key, node] of entries) {
       const newPath = parentPath.concat([{ level: node._level, value: node._value }]);
       const active = isPathActive(newPath);
-      const displayLabel = node._value == null
-        ? `(no ${node._level})`
-        : (String(node._value).toLowerCase().startsWith(labelPrefix[node._level].toLowerCase())
-            ? String(node._value)
-            : `${labelPrefix[node._level]} ${node._value}`);
+      // v3.15.0 #93: getLevelDisplayLabel handles numeric divisions →
+      // 'Div 2 (+1 floor up)' / 'Sub Div 1 (Basement)'. escapeHtml at the
+      // interpolation site below guards against peer-written legacy labels.
+      const displayLabel = getLevelDisplayLabel(node._level, node._value);
       const pathJson = escapeAttr(JSON.stringify(newPath));
       html += `<div class="ops-tree-node${active ? ' active' : ''}" style="padding-left:${depth * 16 + 8}px" role="button" tabindex="0" data-path="${pathJson}" onclick="drilldownToPath(this)">`;
       html += `<span class="ops-tree-label">${escapeHtml(displayLabel)}</span>`;
@@ -5178,10 +5724,17 @@ function renderBreadcrumb() {
   drilldownPath.forEach((seg, i) => {
     const isLast = i === drilldownPath.length - 1;
     html += `<span class="bc-sep">›</span>`;
-    const lbl = levelLabels[seg.level];
-    // Resolve apparatus IDs to names when crumb is a Group level
-    const resolvedVal = seg.level === 'group' ? getGroupDisplayName(seg.value) : seg.value;
-    const display = resolvedVal.toLowerCase().startsWith(lbl.toLowerCase()) ? resolvedVal : `${lbl} ${resolvedVal}`;
+    // v3.15.0 #93: division can be a number — getLevelDisplayLabel handles
+    // it. Group resolves apparatus IDs to names; everything else falls
+    // through to the standard prefix-plus-value pattern.
+    let display;
+    if (seg.level === 'group') {
+      const resolvedVal = getGroupDisplayName(seg.value);
+      const lbl = levelLabels.group;
+      display = String(resolvedVal).toLowerCase().startsWith(lbl.toLowerCase()) ? resolvedVal : `${lbl} ${resolvedVal}`;
+    } else {
+      display = getLevelDisplayLabel(seg.level, seg.value);
+    }
     html += `<button class="${isLast ? 'current' : ''}" onclick="drillTo(${i})">${escapeHtml(display)}</button>`;
   });
   bc.innerHTML = html;
@@ -5227,32 +5780,50 @@ function renderDrilldownList(points) {
 }
 
 function renderDrilldownForLevel(points, level) {
-  const groups = {};
+  // v3.15.0 #93: keys are stored with their native type so numeric divisions
+  // stay numeric (compareLevelValues distinguishes 'Div 2' from 'Div 10').
+  // Group by raw value; preserve typed value for display + drill segment.
+  const groups = new Map(); // key string → { value: any, points: [] }
   for (const sp of points) {
-    const val = sp[level] || null;
-    const key = val || '__ungrouped__';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sp);
+    let raw = sp[level];
+    if (raw === undefined || raw === '') raw = null;
+    const isUngrouped = raw === null;
+    const keyStr = isUngrouped ? '__ungrouped__' : String(raw);
+    if (!groups.has(keyStr)) groups.set(keyStr, { value: isUngrouped ? null : raw, points: [] });
+    groups.get(keyStr).points.push(sp);
   }
 
-  const levelLabels = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' };
-  // Uses global STATUS_ORDER
   let html = '';
-
-  // Sort: named groups first (alphabetical), ungrouped last
-  const keys = Object.keys(groups).sort((a, b) => {
-    if (a === '__ungrouped__') return 1;
-    if (b === '__ungrouped__') return -1;
-    return a.localeCompare(b);
+  // v3.15.0 #93: level-aware sort. Division descending; everything else
+  // numeric-then-lexical. Ungrouped always last.
+  const entries = Array.from(groups.entries());
+  entries.sort((a, b) => {
+    const va = a[1].value, vb = b[1].value;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return compareLevelValues(level, va, vb);
   });
 
-  for (const key of keys) {
-    const groupPts = groups[key];
-    const prefix = levelLabels[level];
+  for (const [keyStr, group] of entries) {
+    const groupPts = group.points;
     // For the group level, resolve apparatus IDs to apparatus names so the
-    // drilldown shows e.g. "Rescue 56" instead of the raw ID
-    const resolvedKey = level === 'group' ? getGroupDisplayName(key) : key;
-    const displayName = key === '__ungrouped__' ? 'Unassigned' : (resolvedKey.toLowerCase().startsWith(prefix.toLowerCase()) ? resolvedKey : `${prefix} ${resolvedKey}`);
+    // drilldown shows e.g. "Rescue 56" instead of the raw ID.
+    const isUngrouped = keyStr === '__ungrouped__';
+    let displayName;
+    if (isUngrouped) {
+      displayName = 'Unassigned';
+    } else if (level === 'group') {
+      const resolvedKey = getGroupDisplayName(group.value);
+      const prefix = 'Group';
+      displayName = String(resolvedKey).toLowerCase().startsWith(prefix.toLowerCase()) ? String(resolvedKey) : (prefix + ' ' + resolvedKey);
+    } else {
+      displayName = getLevelDisplayLabel(level, group.value);
+    }
+    // For the drillInto onclick, use a stable serializable value: number stays
+    // a number on the JS side, but the data-attribute must be string. We pass
+    // the JSON value so it round-trips through drillInto.
+    const drillVal = isUngrouped ? '__none__' : String(group.value);
+    const key = keyStr;
 
     const pills = renderStatusPills(groupPts);
 
@@ -5514,22 +6085,46 @@ function commandLayoutClick(el) {
 function renderCommandLayout(points) {
   const levels = getHierarchyLevels();
   const topLevel = levels[0] || 'area';
-  const groups = {};
+  // v3.15.0 #93: preserve the typed value for division so numeric divisions
+  // render via getLevelDisplayLabel ('Div 2 (+1 floor up)') and sort
+  // numerically descending via compareLevelValues.
+  const groups = new Map();
   for (const sp of points) {
-    const key = sp[topLevel] || 'Unassigned';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sp);
+    let raw = sp[topLevel];
+    if (raw === undefined || raw === '') raw = null;
+    const isUngrouped = raw === null;
+    const keyStr = isUngrouped ? 'Unassigned' : String(raw);
+    if (!groups.has(keyStr)) groups.set(keyStr, { value: isUngrouped ? null : raw, points: [] });
+    groups.get(keyStr).points.push(sp);
   }
 
   let html = `<div class="section-header">Layout</div>`;
-  for (const [name, pts] of Object.entries(groups)) {
+  const entries = Array.from(groups.entries());
+  entries.sort((a, b) => {
+    const va = a[1].value, vb = b[1].value;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return compareLevelValues(topLevel, va, vb);
+  });
+
+  for (const [keyStr, group] of entries) {
+    const pts = group.points;
     const pills = renderStatusPills(pts);
-    const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
-    // Resolve apparatus IDs to names when top level is Group
-    const resolvedName = (topLevel === 'group' && name !== 'Unassigned') ? getGroupDisplayName(name) : name;
-    const safeName = escapeHtml(resolvedName);
-    html += `<div class="layout-card" role="button" tabindex="0" data-level="${escapeAttr(topLevel)}" data-value="${escapeAttr(name)}" onclick="commandLayoutClick(this)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
-      <span style="font-weight:600">${name === 'Unassigned' ? 'Unassigned' : (resolvedName.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
+    const isUngrouped = keyStr === 'Unassigned';
+    let displayName;
+    if (isUngrouped) {
+      displayName = 'Unassigned';
+    } else if (topLevel === 'group') {
+      const resolvedKey = getGroupDisplayName(group.value);
+      const prefix = 'Group';
+      displayName = String(resolvedKey).toLowerCase().startsWith(prefix.toLowerCase()) ? String(resolvedKey) : (prefix + ' ' + resolvedKey);
+    } else {
+      displayName = getLevelDisplayLabel(topLevel, group.value);
+    }
+    // data-value: numbers must round-trip as strings to data-attributes
+    const dataVal = isUngrouped ? 'Unassigned' : String(group.value);
+    html += `<div class="layout-card" role="button" tabindex="0" data-level="${escapeAttr(topLevel)}" data-value="${escapeAttr(dataVal)}" onclick="commandLayoutClick(this)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <span style="font-weight:600">${escapeHtml(displayName)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
@@ -5789,7 +6384,10 @@ function editShorePoint(spId) {
   document.getElementById('spLabel').value = sp.label || '';
   document.getElementById('spBuilding').value = sp.building || '';
   document.getElementById('spArea').value = sp.area || sp.floor || '';
-  document.getElementById('spDivision').value = sp.division || '';
+  // v3.15.0 #93: numeric division picker. If sp.division is a number, select
+  // it; otherwise default to Ground. Legacy labels stay on the SP until the
+  // IC renumbers via the inline banner (step 7).
+  renderDivisionPicker(typeof sp.division === 'number' ? sp.division : 1);
   populateGroupDropdown(getSPGroup(sp) || '');
   document.getElementById('spShoreType').value = sp.shoreType || 't-shore';
   setMeasurementFromInches('sp', sp.requiredLength || 0);
@@ -5858,7 +6456,8 @@ function confirmEditShorePoint() {
     label: validateInput(document.getElementById('spLabel').value, 100) || 'Shore Point',
     building: validateInput(document.getElementById('spBuilding').value, 100) || null,
     area: validateInput(document.getElementById('spArea').value, 100) || null,
-    division: validateInput(document.getElementById('spDivision').value, 100) || null,
+    division: readDivisionFromPicker(), // v3.15.0 #93: numeric division
+    divisionLegacyLabel: null,             // v3.15.0 #93: clear legacy label — IC explicitly picked a division
     group: editGroup,                      // v3.12.0 N2 dual-write: legacy key
     assignedResource: editGroup,           // v3.12.0 N2 dual-write: new key
     shoreType: document.getElementById('spShoreType').value,
@@ -5931,6 +6530,11 @@ function makeReturnIncrementer(maxQty) {
 // quantity. Subsequent v3.8.2 hasChildren validate then rejects the next write,
 // effectively corrupting the inventory tree. Returning undefined aborts the
 // transaction so no phantom node is created.
+//
+// SUPERSEDED in v3.15.0 by makeAllocateDecrementer (below), which also guards
+// against the v === 0 case (#80 — another device took the last unit first,
+// `Math.max(0, -1) = 0` looks like success). Kept here only because legacy
+// call-sites still reference it; call new code through makeAllocateDecrementer.
 function makeDeployDecrementer() {
   return (v) => {
     if (v === null || v === undefined) return undefined; // node deleted — don't create phantom
@@ -5938,7 +6542,112 @@ function makeDeployDecrementer() {
   };
 }
 
+// #80 (v3.15.0): unified allocate-decrementer factory. Replaces v3.11.3's
+// makeDeployDecrementer. Guards both classes of race:
+//   - `v === null/undefined`: peer-deleted inventory node (v3.11.3 case)
+//   - `v === 0`: another device just took the last unit. The transaction
+//     callback runs inside Firebase's optimistic-locking loop; checking
+//     v INSIDE the callback (not result.snapshot.val() after) is the
+//     correct inspection point per code-auditor R-02.
+//
+// Returns an object with `decrementer` (pass to firebaseSave 'transaction')
+// and a mutable `state` object so the caller can inspect `state.aborted`
+// and `state.reason` AFTER the transaction settles. The caller is then
+// responsible for: rolling back local optimistic decrement, removing the
+// companion SP-write (code-auditor R-03), and surfacing the toast.
+//
+// Companion-write rejection pattern (R-03) — the caller MUST:
+//   const guard = makeAllocateDecrementer();
+//   const tx = firebaseSave(invRef, 'transaction', guard.decrementer);
+//   // ... fire SP write OPTIMISTICALLY (mirrors local state)
+//   await tx;
+//   if (guard.state.aborted) {
+//     // 1. roll back local inventory.available
+//     // 2. firebaseSave(spRef, 'remove') to undo the optimistic SP write
+//     // 3. remove inventoryId from fieldshore_offlineTouchedInventory (#71)
+//     // 4. showToast with reason-specific message
+//   }
+function makeAllocateDecrementer() {
+  const state = { aborted: false, reason: null };
+  const decrementer = (v) => {
+    if (v === null || v === undefined) {
+      state.aborted = true;
+      state.reason = 'missing';
+      return undefined;
+    }
+    if (v === 0) {
+      state.aborted = true;
+      state.reason = 'exhausted';
+      return undefined;
+    }
+    return Math.max(0, v - 1);
+  };
+  return { decrementer, state };
+}
+
+// #80 (v3.15.0): runs the deploy-side transactions (strut + extensions + plates)
+// with the v=0 / v=null guards in parallel, then inspects the guard states.
+// Returns:
+//   { ok: true, offline: true }    — offline (no transactions ran; caller proceeds locally)
+//   { ok: true, offline: false }   — all transactions committed
+//   { ok: false, aborted: [...] }  — at least one transaction aborted; compensating
+//                                    increments fire on the ones that committed so the
+//                                    Firebase inventory ends up where it started.
+//                                    Caller must NOT mutate local state and must NOT fire
+//                                    the SP write (companion-write rejection per R-03).
+//
+// Each `aborted` entry: { label, reason } where reason ∈ {'exhausted','missing'}.
+async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) {
+  if (!db || !deptId || !operationsRef || !activeOperation || !activeOperation.id) {
+    return { ok: true, offline: true };
+  }
+
+  const guards = [];
+
+  // Strut transaction
+  const strutRef = strutInvItem.external
+    ? operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available')
+    : inventoryRef.child(strutInvItem.id).child('available');
+  const strutGuard = makeAllocateDecrementer();
+  guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut' });
+
+  // Extension transactions
+  for (const ext of (extInvItems || [])) {
+    const g = makeAllocateDecrementer();
+    guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension' });
+  }
+
+  // Plate transactions
+  for (const pl of (deployedPlates || [])) {
+    const g = makeAllocateDecrementer();
+    guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate') });
+  }
+
+  // Fire all in parallel — `silent: true` so the generic 'Sync conflict' toast
+  // is suppressed; we surface a reason-specific toast at the call site.
+  await Promise.all(guards.map(g => firebaseSave(g.ref, 'transaction', g.guard.decrementer, { silent: true })));
+
+  const aborted = guards.filter(g => g.guard.state.aborted);
+  if (aborted.length === 0) return { ok: true, offline: false };
+
+  // Compensate the transactions that DID commit so we don't leave partial state
+  // in Firebase. Fire-and-forget — the listener will reconcile local on arrival.
+  const committed = guards.filter(g => !g.guard.state.aborted);
+  for (const c of committed) {
+    firebaseSave(c.ref, 'transaction', (v) => (v === null || v === undefined) ? undefined : v + 1);
+  }
+
+  return {
+    ok: false,
+    aborted: aborted.map(a => ({ label: a.label, reason: a.guard.state.reason })),
+  };
+}
+
 function returnInventoryItems(sp) {
+  // #71 (v3.15.0): when offline, mark each incremented item for the
+  // reconnect flush-pass. When online, the transaction fires and the
+  // listener echo will reconcile.
+  const isOnline = !!(db && deptId && inventoryRef);
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
     if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
       const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
@@ -5949,8 +6658,10 @@ function returnInventoryItems(sp) {
     } else {
       const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
       if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-      if (db && deptId && inventoryRef) {
+      if (isOnline) {
         firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+      } else if (inv) {
+        markOfflineTouched(inv.id, inv.available);
       }
     }
   }
@@ -5959,8 +6670,10 @@ function returnInventoryItems(sp) {
       if (ext.inventoryId) {
         const inv = localInventory.find(i => i.id === ext.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId && inventoryRef) {
+        if (isOnline) {
           firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+        } else if (inv) {
+          markOfflineTouched(inv.id, inv.available);
         }
       }
     }
@@ -5970,8 +6683,10 @@ function returnInventoryItems(sp) {
       if (pl.inventoryId) {
         const inv = localInventory.find(i => i.id === pl.inventoryId);
         if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (db && deptId && inventoryRef) {
+        if (isOnline) {
           firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null));
+        } else if (inv) {
+          markOfflineTouched(inv.id, inv.available);
         }
       }
     }

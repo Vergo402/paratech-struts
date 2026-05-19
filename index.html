@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.14.3</div>
+      <div class="version-label">v3.15.0</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -233,6 +233,8 @@
           </div>
         </div>
         <div id="roleSuggestBanner" class="hidden"></div>
+        <!-- v3.15.0 #93: renumber-divisions inline banner (non-modal, dismissable) -->
+        <div id="renumberBanner" class="renumber-banner hidden" role="region" aria-label="Division renumber prompt"></div>
         <div class="op-shell">
           <div class="ops-drilldown-search-row">
             <input id="drilldownSearchInput" type="search" placeholder="Search shore points…" oninput="applyDrilldownSearch()" autocomplete="off" aria-label="Search shore points">
@@ -448,7 +450,13 @@
       <div class="form-row-3">
         <div class="form-group flex-1">
           <label>Division</label>
-          <input type="text" id="spDivision" placeholder="e.g. A" aria-label="Division">
+          <select id="spDivision" aria-label="Division">
+            <option value="1">Div 1 (Ground level)</option>
+          </select>
+          <div class="division-controls">
+            <button type="button" class="btn btn-sm btn-outline division-add-btn" id="addFloorAboveBtn" onclick="addFloorAbove()" aria-label="Add floor above">+ Floor Above</button>
+            <button type="button" class="btn btn-sm btn-outline division-add-btn" id="addFloorBelowBtn" onclick="addFloorBelow()" aria-label="Add sub-division below">+ Sub Div Below</button>
+          </div>
         </div>
         <div class="form-group flex-1">
           <label>Area / Room</label>

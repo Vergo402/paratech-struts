@@ -1,7 +1,7 @@
 # FieldShore User Manual
 
-**Version:** 3.14  
-**Last updated:** 2026-05-18  
+**Version:** 3.15  
+**Last updated:** 2026-05-19  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -126,7 +126,7 @@ Shore points are the core of an operation — each one represents a location tha
 1. Tap **+ Shore Point**.
 2. Enter a **Label** (e.g., "SP-1", "Kitchen Wall").
 3. If multi-building is enabled, enter a **Building** name.
-4. Enter **Division** (geographic area) and **Area** (specific location).
+4. Pick the **Division** from the numbered dropdown — see [Numbered Divisions](#numbered-divisions) below. Enter the **Area** (specific location).
 5. Select the **Group** (which apparatus is responsible).
 6. Choose a **Shore Type:**
    - **Vertical T-Shore** — Single strut with header and footer
@@ -167,6 +167,34 @@ Shore types with quantity > 1 (e.g., a 3-strut T-shore) create grouped shore poi
 ### Drill-Down Navigation
 
 Shore points are organized by hierarchy: **Building > Division > Area > Group**. Tap into each level to filter, with breadcrumb navigation and a back button at each step.
+
+### Numbered Divisions
+
+As of v3.15, division is a numbered dropdown instead of a free-text field. This keeps your shore-point labels consistent across the whole crew and removes radio ambiguity ("Bsmt" vs "Basement" vs "B-Level" → all the same).
+
+**Reading the picker.** The dropdown reads top-to-bottom matching the building cross-section:
+
+- **Div 3 (+2 floors up)**, **Div 2 (+1 floor up)** — higher floors at the top
+- **Div 1 (Ground level)** — anchor row, always present
+- **Sub Div 1 (Basement)**, **Sub Div 2 (+1 below)** — basement and sub-basements at the bottom
+
+**Adding floors.** Use the two buttons below the dropdown:
+
+- **+ Floor Above** — adds the next Division (Div 2, then Div 3, etc.)
+- **+ Sub Div Below** — adds the next Sub Division (Sub Div 1 = Basement, then Sub Div 2, etc.)
+
+There is no manual text entry. The list is shared across the operation — every shore point on the same op picks from the same set.
+
+**Upgrading from older operations.** If your operation was created on v3.14 or earlier, the app automatically converts existing division labels:
+
+- Numeric labels (`'1'`, `'2'`) become Div 1, Div 2, etc.
+- `'Ground'`, `'G'` becomes Div 1.
+- `'Basement'` becomes Sub Div 1.
+- Anything else (`'A'`, `'Alpha'`, `'Mezzanine B'`) is preserved as a legacy label on each shore point.
+
+When legacy labels are present, an orange banner appears above the shore-point list with a **Show legacy SPs** button. Open each of those shore points and re-pick a numbered division — saving clears the legacy label.
+
+The renumber prompt only appears when the operation has been quiet for 30+ minutes; it never interrupts an active incident.
 
 ---
 
@@ -394,6 +422,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.15** | 2026-05-19 | Numbered divisions with vertical anchoring. Division is now a top-to-bottom picker — Div 3 / Div 2 / Div 1 (Ground) / Sub Div 1 (Basement) — with **+ Floor Above** and **+ Sub Div Below** buttons. No manual text entry; the division list is shared across the operation so labels stay consistent. Existing operations migrate automatically (numeric and 'Ground'/'Basement' labels convert in place; anything else is preserved as a legacy label with a non-blocking review banner). Offline inventory hardening: deploys and returns made while offline now reconcile correctly with Firebase on reconnect via a per-item touched-set flush-pass (closes the v3.8.2 architectural root cause). Concurrent-deploy race guard — when another device takes the last unit, the second device sees "Another user took the last X — try again" and the orphaned shore-point write is rejected. |
 | **v3.14** | 2026-05-18 | Operations tab on desktop now splits into two columns. Left sidebar (sticky) shows a drilldown tree of Buildings → Divisions → Areas with live status counts on each node, and a search input above the tree filters by label / building / division / area. Right column shows the filtered shore points with the **+ Shore Point** button centered above the status groups. Mobile is unchanged (inline breadcrumb stays). |
 | **v3.13** | 2026-05-18 | Desktop view. On screens 1024px wide and up the app now uses a horizontal top nav bar and widens the container to 1200px. The Command tab splits into two columns on desktop — roster (Apparatus, External, Individuals, My Role, Hazards) on the left (sticky), Dashboard / ICS Organization / Layout on the right. A small toggle in the upper-right of the viewport flips between desktop view and mobile view; the choice is remembered. Phones and iPad portrait are unchanged. |
 | **v3.12** | 2026-05-18 | Command tab promoted to top-level navigation (apparatus, individuals, org chart, hazard log separated from shore-point workflow). Hazard Log (ICS-208 style) with severity tiers, mitigate/reopen, and archived op persistence. End Operation now requires typing "END" to confirm (glove-safe gate). Force-update overlay for critical fixes (data preserved). Yellow span-of-control warning tier at 6–7 direct reports. Offline banner shows queued write count. Settings → Check for Updates button. |
