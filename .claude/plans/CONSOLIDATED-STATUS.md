@@ -61,12 +61,34 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 - **v3.16.1** — Permanent inventory right rail on desktop Operations (fixes the floating panel overlapping shore-point cards)
 - **v3.16.2** — Operations legend (card colors + per-action role permissions) + remove buggy drilldown search
 
+### Release 3 — v3.16.3 (PATCH, planned) ⏳ planned 2026-05-19
+
+**Desktop UI hotfix from Hartsdale (hfd217) in-app feedback + v3.16.x carry-over fixes.**
+- #97 app width investigation (likely stale SW / persisted `forceMobileView`)
+- #98 #99 #100 — `.btn-primary` desktop centering via scoped `.screen > .btn-primary` selector
+- #101 — Add Shore Point modal: Option C (pin header/footer, scroll body)
+- Operations legend → top of left column on desktop
+- Disable ICS org-chart drag-and-drop on phones (`(pointer: coarse)` gate; tap-place + arrow toolbar remain)
+- Plan file: [v3.16.3-desktop-ui-hotfix.md](v3.16.3-desktop-ui-hotfix.md)
+- Agent-reviewed (code-auditor, mobile-ux, devops-resilience, qa-driver, release-manager). #71 split into v3.16.4.
+
+### Release 4 — v3.16.4 (PATCH, planned) ⏳ next after v3.16.3
+
+**#71 architectural full-fix — failed-transaction value-resync (split out of v3.16.3 due to blast radius).**
+- Scoped-field allowlist (only `inventory/{id}.available`, `.quantity`), not whole-subtree
+- Mutation-epoch versioning to prevent resync clobbering concurrent local writes
+- Separate `pendingResyncs` queue (de-duped by path)
+- `_meta.lastVerifiedAt` schema field added (free signal for v3.18.0 dual-write)
+- Diagnostics: `logSyncEvent('resync_enqueued' | 'resync_applied', {path, drift})`
+- Explicit failure-injection driver flow (override `updateFunction` to return `undefined`; offline-throttle alone insufficient)
+- Plan file: to be drafted (next `/plan` run)
+
 **Deferred from original v3.16.0 scope → v3.17.0:**
 - 3 scenario presets, first-due solo IC mode, Quick-start FAB
 - `Strut Placed` → `Strut Set` rename dual-write
 - `customRoles` array → keyed object dual-write
 
-### Release 3 — v3.17.0 (MINOR, TBD) ⏳ planned
+### Release 5 — v3.17.0 (MINOR, TBD) ⏳ planned
 
 **Goal:** Local-first defaults + pre-v4 schema dual-write window + carry-over fixes from v3.16.x field feedback.
 
@@ -81,9 +103,8 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 **Carry-over from v3.16.x field feedback:**
 - **One-shot role-hierarchy migration** — detect operations whose `customRoles` have Entry/Cutting reparented to IC or Runner missing under Cutting (legacy from pre-v3.16.0 defaults). Snap back to canonical or surface a one-tap "Reset to NIMS doctrine" toast for the IC. Closes Open Decision #6.
 - **Drilldown search v2** — debounced filter that doesn't fight the drilldown tree state. Closes Open Decision #7 (was removed in v3.16.2).
-- **Move Operations legend to top of left column** — the collapsible "Legend — colors & permissions" block currently sits inline above the shore-points list (between the SHORE POINTS header and the cards). On desktop it should move to the top of the left sidebar column (above the drilldown tree) so it doesn't shove the cards down and is visible alongside whatever the user has drilled into. Mobile pattern can stay inline or move to a top-of-page collapsed accordion — decide during implementation.
-- **Disable drag-and-drop on the ICS org chart on phones — manual input only.** The chart currently supports three input methods (tap-to-pick-and-place, HTML5 drag, touch drag with floating clone). Touch drag is unreliable on phones — accidental triggers during scroll, hard to target with gloves, and the floating clone obscures drop targets. On phone-width viewports, gate to manual input only: the per-card toolbar (↑↓←→ arrows, +) and the per-node modal (Move to… / Promote / Demote / Left / Right buttons). Keep drag-and-drop available on tablet/desktop. Disable via `pointer: coarse` + `(max-width: 768px)` media query on the `draggable`/touch handlers.
-- **#71 architectural full-fix** — current `offlineTouchedInventory` flush-pass mitigates the symptom; the `transaction`-skip in `firebaseSave()` at line 1482 still drops failed transactions from `pendingWrites`. Either queue a value-resync write or move `available` server-side.
+
+_(Legend reposition, phone DnD disable, and #71 architectural fix were pulled forward into v3.16.3 / v3.16.4 on 2026-05-19 — see Release 3 and 4 above.)_
 
 ### Release 4 — v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned
 
@@ -167,4 +188,18 @@ All completed or superseded: v1.8.1, v1.9.0, v2.1.0, v2.3.0, v3.4.1, v3.5.2, v3.
 - [ ] `_review-to-delete/` — nuke once Alex confirms
 - [ ] `git worktree prune` — run locally from Terminal to clean stale refs
 - [ ] CLAUDE.md — "Known still pending" list stops at v3.9.1; pull the per-release detail forward to v3.16.x or fold it into the CONSOLIDATED-STATUS pointer
-- [ ] Reconcile #71 status across docs — issue body and v3.15.0 row say "partial"; the underlying `firebaseSave` transaction-skip is still present (see v3.17.0 carry-over)
+- [ ] Reconcile #71 status across docs — issue body and v3.15.0 row say "partial"; the underlying `firebaseSave` transaction-skip is still present (slated for v3.16.4)
+- [ ] CLAUDE.md line-number drift — says `index.html ~line 60` for the version label; actual is line 74. Refresh on the next docs pass.
+
+---
+
+## Planning Session — 2026-05-19
+
+- **Target release:** v3.16.3 (PATCH)
+- **Plan file:** [v3.16.3-desktop-ui-hotfix.md](v3.16.3-desktop-ui-hotfix.md)
+- **In scope:** 7 items (5 feedback bugs #97–#101 + legend reposition + phone DnD gate)
+- **Split out:** #71 architectural transaction-resync fix → v3.16.4 PATCH (own plan to be drafted) due to blast-radius and verification complexity
+- **Slate confirmed:** v3.16.3 → v3.16.4 → v3.17.0 (local-first defaults + carry-overs) → v3.18.0 (schema dual-write) → v4.0.0 (per-device UID + NIMS cutover + Cloud Function)
+- **GitHub issues created via /feedbackreview:** #97, #98, #99, #100, #101 (Firebase queue cleared)
+- **Agent review (5):** code-auditor, mobile-ux, devops-resilience, qa-driver, release-manager — all APPROVE for the revised v3.16.3 scope; key changes folded in (scoped CSS selector, `(pointer: coarse)` media query, modal Option C, explicit driver flows with `getBoundingClientRect()` capture + feedback-modal canary)
+- **Resolved decisions:** Open Decisions #6 and #7 stay in v3.17.0 (NIMS doctrine reset + drilldown search v2); legend, phone DnD, and #71 promoted forward.

@@ -129,7 +129,17 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.16.2';
+const APP_VERSION = '3.16.3';
+
+// v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
+// devices (phones, tablets). HTML5 drag events are flaky on touch; the
+// floating-clone touch handlers leak motion as accidental gestures with
+// gloves on. Tap-to-pick-and-place + arrow toolbar + per-node modal
+// remain functional. Pointer capability is the right discriminant —
+// (max-width: 768px) misses iPhone 15 Pro Max in landscape (932px).
+// Evaluated once at boot; pointer capability doesn't change at runtime.
+const TOUCH_PRIMARY = typeof window !== 'undefined' && window.matchMedia
+  && window.matchMedia('(pointer: coarse)').matches;
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -4548,6 +4558,31 @@ function renderOpsLegend() {
       </ul>
     </div>
   `;
+  placeOpsLegend();
+}
+
+// v3.16.3 #carry-over: legend lives inside #opsView (right column on
+// desktop). On desktop view active, relocate to top of left column
+// (#opsLegendSlot inside .op-shell) so it sits above the drilldown tree.
+// Mobile / force-mobile-view: keep inline before #shorePointsList.
+function placeOpsLegend() {
+  const legend = document.getElementById('opsLegend');
+  if (!legend) return;
+  const isDesktop = window.matchMedia && window.matchMedia('(min-width: 1024px)').matches
+    && !document.documentElement.classList.contains('force-mobile-view');
+  if (isDesktop) {
+    const slot = document.getElementById('opsLegendSlot');
+    if (slot && legend.parentElement !== slot) slot.appendChild(legend);
+  } else {
+    const list = document.getElementById('shorePointsList');
+    if (list && legend.nextElementSibling !== list) {
+      list.parentElement.insertBefore(legend, list);
+    }
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => { if (typeof placeOpsLegend === 'function') placeOpsLegend(); });
 }
 
 function renderOperations() {
@@ -6246,19 +6281,22 @@ function renderOrgChart(roleAssignments, shorePoints) {
       ? (orgReparentMode ? 'Add as child' : 'Drop here')
       : 'Tap to assign';
 
-    // Draggable unless locked (IC/Safety)
-    const dragAttrs = isLocked ? 'draggable="false"' : `draggable="true"
+    // Draggable unless locked (IC/Safety) — and never on touch-primary devices.
+    // Gate both `draggable` AND touch handlers behind TOUCH_PRIMARY so the bug
+    // isn't half-fixed (HTML5 dnd disabled but floating-clone touch drag still
+    // firing). Tap-to-pick-and-place + arrow toolbar remain on touch.
+    const dragAttrs = (isLocked || TOUCH_PRIMARY) ? 'draggable="false"' : `draggable="true"
         ondragstart="orgDragStart(event,'${eid}')"
-        ondragend="orgDragEnd(event)"`;
-
-    return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${eid}"
-        role="button" tabindex="0" onclick="orgChartNodeClick('${eid}')"
-        ${dragAttrs}
+        ondragend="orgDragEnd(event)"
         ondragover="event.preventDefault()"
         ondrop="orgDrop(event,'${eid}')"
         ontouchstart="orgTouchStart(event,'${eid}')"
         ontouchmove="orgTouchMove(event)"
-        ontouchend="orgTouchEnd(event,'${eid}')">
+        ontouchend="orgTouchEnd(event,'${eid}')"`;
+
+    return `<div class="org-node ${filled ? 'org-node-filled' : 'org-node-empty'}${pickedClass}${dropTarget}" data-role="${eid}"
+        role="button" tabindex="0" onclick="orgChartNodeClick('${eid}')"
+        ${dragAttrs}>
         <div class="org-card-corner">${collapseBtn}${deleteBtn}</div>
         <div class="org-card-title">${statusDot}${escapeHtml(r.abbr)}${spanWarning}</div>
         <div class="org-card-name">${escapeHtml(r.name)}</div>
@@ -7860,6 +7898,7 @@ function toggleViewMode() {
   safeSetItem(VIEW_MODE_KEY, next);
   applyViewMode();
   updateQuickViewFab();
+  if (typeof placeOpsLegend === 'function') placeOpsLegend();
 }
 
 window.addEventListener('resize', () => updateQuickViewFab());

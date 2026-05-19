@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.16.2</div>
+      <div class="version-label">v3.16.3</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -236,6 +236,8 @@
         <!-- v3.15.0 #93: renumber-divisions inline banner (non-modal, dismissable) -->
         <div id="renumberBanner" class="renumber-banner hidden" role="region" aria-label="Division renumber prompt"></div>
         <div class="op-shell">
+          <!-- v3.16.3: desktop legend slot — JS relocates #opsLegend here on desktop -->
+          <div id="opsLegendSlot"></div>
           <div id="drilldownTree" class="ops-drilldown-tree" role="navigation" aria-label="Drilldown navigation"></div>
         </div>
         <div class="op-views">
@@ -430,8 +432,11 @@
 
   <!-- Add Shore Point Modal -->
   <div class="modal-overlay" id="shorePointModal" role="dialog" aria-modal="true" aria-labelledby="shorePointTitle">
-    <div class="modal">
-      <h2 class="modal-title" id="shorePointTitle">Add Shore Point</h2>
+    <div class="modal modal-scrollbody">
+      <div class="modal-header">
+        <h2 class="modal-title" id="shorePointTitle">Add Shore Point</h2>
+      </div>
+      <div class="modal-body">
       <div class="form-group">
         <label>Shore Type</label>
         <select id="spShoreType" onchange="onShoreTypeChange()" aria-label="Shore type">
@@ -566,11 +571,13 @@
           <button class="btn btn-sm qty-btn" onclick="setSpQty(4)" data-qty="4" role="radio" aria-checked="false">4x</button>
         </div>
       </div>
-      <button class="btn btn-primary" id="spFindBtn" onclick="findForShorePoint()">Find Available Struts</button>
-      <button class="btn btn-success hidden" id="spSaveEditBtn" onclick="guardClick(this,confirmEditShorePoint)">Save Changes</button>
       <div id="spResults" class="results-container"></div>
-      <div class="divider"></div>
-      <button class="btn btn-outline" onclick="closeModal('shorePointModal')">Cancel</button>
+      </div><!-- /modal-body -->
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="spFindBtn" onclick="findForShorePoint()">Find Available Struts</button>
+        <button class="btn btn-success hidden" id="spSaveEditBtn" onclick="guardClick(this,confirmEditShorePoint)">Save Changes</button>
+        <button class="btn btn-outline" onclick="closeModal('shorePointModal')">Cancel</button>
+      </div>
     </div>
   </div>
 
