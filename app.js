@@ -1009,6 +1009,51 @@ function readDivisionFromPicker() {
   return Number.isFinite(n) && Number.isInteger(n) ? n : null;
 }
 
+// v3.15.0 #93: Centralized display formatter for hierarchy-level tree/breadcrumb
+// labels. Division gets special handling because it's stored as a number — the
+// existing `Div ${value}` interpolation pattern would render "Div 1", but the
+// IC reads "Div 1 (Ground level)" everywhere else. Use this helper at every
+// hierarchy-level render site (drilldown tree, drilldown list, breadcrumb).
+// Returns plain text — callers must escapeHtml at interpolation.
+function getLevelDisplayLabel(level, value) {
+  if (value === null || value === undefined || value === '__none__') {
+    return '(no ' + level + ')';
+  }
+  if (level === 'division') {
+    // Numeric (post-migration) — render with parenthetical
+    if (typeof value === 'number' && Number.isInteger(value)) {
+      return formatDivision({ division: value });
+    }
+    // Legacy string — render as-is (it's the unparseable original)
+    return String(value);
+  }
+  const prefix = { building: 'Bldg', division: 'Div', area: 'Area', group: 'Group' }[level] || level;
+  const vstr = String(value);
+  if (vstr.toLowerCase().startsWith(prefix.toLowerCase())) return vstr;
+  return prefix + ' ' + vstr;
+}
+
+// v3.15.0 #93: Hierarchy-level value comparator. For division, numeric
+// descending so the tree reads top-to-bottom matching the building cross-
+// section (highest floor first, basement last). For other levels, lexical.
+function compareLevelValues(level, a, b) {
+  if (a == null || a === '__none__') return 1;
+  if (b == null || b === '__none__') return -1;
+  if (level === 'division') {
+    const na = typeof a === 'number' ? a : parseInt(a, 10);
+    const nb = typeof b === 'number' ? b : parseInt(b, 10);
+    const aIsNum = Number.isFinite(na);
+    const bIsNum = Number.isFinite(nb);
+    if (aIsNum && bIsNum) return nb - na; // descending: Div 3, Div 2, Div 1, Sub Div 1
+    if (aIsNum && !bIsNum) return -1;       // numbers before legacy strings
+    if (!aIsNum && bIsNum) return 1;
+    return String(a).localeCompare(String(b));
+  }
+  const na = parseInt(a, 10), nb = parseInt(b, 10);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  return String(a).localeCompare(String(b));
+}
+
 // IP-033 (v3.11.2): Apparatus naming uniqueness. Two apparatus that resolve to
 // the same canonical radio designator within a department create life-safety
 // radio ambiguity ("Engine 1 respond" → which one?). The validator runs on add
@@ -1151,7 +1196,11 @@ function getSPGroup(sp) {
 function getLocationBreadcrumb(sp) {
   const parts = [];
   if (sp.building) parts.push(escapeHtml(sp.building));
-  if (sp.division) parts.push(escapeHtml(sp.division));
+  // v3.15.0 #93: division can be a number (post-migration) or null + legacy
+  // label. formatDivision(sp) handles both shapes; escapeHtml protects the
+  // legacy-label path against peer-written XSS (code-auditor X-02).
+  const divText = formatDivision(sp);
+  if (divText) parts.push(escapeHtml(divText));
   if (sp.area || sp.floor) parts.push(escapeHtml(sp.area || sp.floor));
   const grp = getSPGroup(sp);
   if (grp) parts.push(escapeHtml(getGroupDisplayName(grp)));
@@ -5342,15 +5391,31 @@ function getFilteredPoints() {
       if (seg.value === '__none__') {
         if (val !== null) return false;
       } else {
-        if (val !== seg.value) return false;
+        // v3.15.0 #93: division is numeric on SPs but seg.value may be a
+        // string (from drillInto onclick) or number (from drilldownToPath
+        // JSON). Compare loosely after coercion so 2 matches "2".
+        if (seg.level === 'division') {
+          const segNum = typeof seg.value === 'number' ? seg.value : parseInt(seg.value, 10);
+          const valNum = typeof val === 'number' ? val : parseInt(val, 10);
+          if (Number.isFinite(segNum) && Number.isFinite(valNum)) {
+            if (valNum !== segNum) return false;
+          } else if (String(val) !== String(seg.value)) {
+            return false;
+          }
+        } else if (val !== seg.value) {
+          return false;
+        }
       }
     }
     return true;
   });
   // v3.14.0 desktop search filter
+  // v3.15.0 #93: include formatDivision output in the haystack so the IC can
+  // search by 'Ground', 'Basement', 'Sub Div', etc. — not only the bare number.
   if (drilldownSearch) {
     filtered = filtered.filter(sp => {
-      const hay = [sp.label, sp.building, sp.division, sp.area].filter(Boolean).join(' ').toLowerCase();
+      const divText = formatDivision(sp);
+      const hay = [sp.label, sp.building, divText, sp.divisionLegacyLabel, sp.area].filter(Boolean).join(' ').toLowerCase();
       return hay.includes(drilldownSearch);
     });
   }
@@ -5416,23 +5481,20 @@ function renderDrilldownTree() {
 
   function renderNodes(nodeMap, parentPath, depth) {
     let html = '';
-    // Sort keys: numeric-ish first, then alpha; "__none__" last
-    const keys = Object.keys(nodeMap).sort((a, b) => {
-      if (a === '__none__') return 1;
-      if (b === '__none__') return -1;
-      const na = parseInt(a, 10), nb = parseInt(b, 10);
-      if (!isNaN(na) && !isNaN(nb)) return na - nb;
-      return a.localeCompare(b);
+    // v3.15.0 #93: sort uses level-aware comparator — division is numeric
+    // descending (top floor first), everything else stays lexical/numeric.
+    const entries = Object.entries(nodeMap);
+    entries.sort((a, b) => {
+      const nodeA = a[1], nodeB = b[1];
+      return compareLevelValues(nodeA._level, nodeA._value, nodeB._value);
     });
-    for (const key of keys) {
-      const node = nodeMap[key];
+    for (const [key, node] of entries) {
       const newPath = parentPath.concat([{ level: node._level, value: node._value }]);
       const active = isPathActive(newPath);
-      const displayLabel = node._value == null
-        ? `(no ${node._level})`
-        : (String(node._value).toLowerCase().startsWith(labelPrefix[node._level].toLowerCase())
-            ? String(node._value)
-            : `${labelPrefix[node._level]} ${node._value}`);
+      // v3.15.0 #93: getLevelDisplayLabel handles numeric divisions →
+      // 'Div 2 (+1 floor up)' / 'Sub Div 1 (Basement)'. escapeHtml at the
+      // interpolation site below guards against peer-written legacy labels.
+      const displayLabel = getLevelDisplayLabel(node._level, node._value);
       const pathJson = escapeAttr(JSON.stringify(newPath));
       html += `<div class="ops-tree-node${active ? ' active' : ''}" style="padding-left:${depth * 16 + 8}px" role="button" tabindex="0" data-path="${pathJson}" onclick="drilldownToPath(this)">`;
       html += `<span class="ops-tree-label">${escapeHtml(displayLabel)}</span>`;
@@ -5493,10 +5555,17 @@ function renderBreadcrumb() {
   drilldownPath.forEach((seg, i) => {
     const isLast = i === drilldownPath.length - 1;
     html += `<span class="bc-sep">›</span>`;
-    const lbl = levelLabels[seg.level];
-    // Resolve apparatus IDs to names when crumb is a Group level
-    const resolvedVal = seg.level === 'group' ? getGroupDisplayName(seg.value) : seg.value;
-    const display = resolvedVal.toLowerCase().startsWith(lbl.toLowerCase()) ? resolvedVal : `${lbl} ${resolvedVal}`;
+    // v3.15.0 #93: division can be a number — getLevelDisplayLabel handles
+    // it. Group resolves apparatus IDs to names; everything else falls
+    // through to the standard prefix-plus-value pattern.
+    let display;
+    if (seg.level === 'group') {
+      const resolvedVal = getGroupDisplayName(seg.value);
+      const lbl = levelLabels.group;
+      display = String(resolvedVal).toLowerCase().startsWith(lbl.toLowerCase()) ? resolvedVal : `${lbl} ${resolvedVal}`;
+    } else {
+      display = getLevelDisplayLabel(seg.level, seg.value);
+    }
     html += `<button class="${isLast ? 'current' : ''}" onclick="drillTo(${i})">${escapeHtml(display)}</button>`;
   });
   bc.innerHTML = html;
@@ -5542,32 +5611,50 @@ function renderDrilldownList(points) {
 }
 
 function renderDrilldownForLevel(points, level) {
-  const groups = {};
+  // v3.15.0 #93: keys are stored with their native type so numeric divisions
+  // stay numeric (compareLevelValues distinguishes 'Div 2' from 'Div 10').
+  // Group by raw value; preserve typed value for display + drill segment.
+  const groups = new Map(); // key string → { value: any, points: [] }
   for (const sp of points) {
-    const val = sp[level] || null;
-    const key = val || '__ungrouped__';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sp);
+    let raw = sp[level];
+    if (raw === undefined || raw === '') raw = null;
+    const isUngrouped = raw === null;
+    const keyStr = isUngrouped ? '__ungrouped__' : String(raw);
+    if (!groups.has(keyStr)) groups.set(keyStr, { value: isUngrouped ? null : raw, points: [] });
+    groups.get(keyStr).points.push(sp);
   }
 
-  const levelLabels = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' };
-  // Uses global STATUS_ORDER
   let html = '';
-
-  // Sort: named groups first (alphabetical), ungrouped last
-  const keys = Object.keys(groups).sort((a, b) => {
-    if (a === '__ungrouped__') return 1;
-    if (b === '__ungrouped__') return -1;
-    return a.localeCompare(b);
+  // v3.15.0 #93: level-aware sort. Division descending; everything else
+  // numeric-then-lexical. Ungrouped always last.
+  const entries = Array.from(groups.entries());
+  entries.sort((a, b) => {
+    const va = a[1].value, vb = b[1].value;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return compareLevelValues(level, va, vb);
   });
 
-  for (const key of keys) {
-    const groupPts = groups[key];
-    const prefix = levelLabels[level];
+  for (const [keyStr, group] of entries) {
+    const groupPts = group.points;
     // For the group level, resolve apparatus IDs to apparatus names so the
-    // drilldown shows e.g. "Rescue 56" instead of the raw ID
-    const resolvedKey = level === 'group' ? getGroupDisplayName(key) : key;
-    const displayName = key === '__ungrouped__' ? 'Unassigned' : (resolvedKey.toLowerCase().startsWith(prefix.toLowerCase()) ? resolvedKey : `${prefix} ${resolvedKey}`);
+    // drilldown shows e.g. "Rescue 56" instead of the raw ID.
+    const isUngrouped = keyStr === '__ungrouped__';
+    let displayName;
+    if (isUngrouped) {
+      displayName = 'Unassigned';
+    } else if (level === 'group') {
+      const resolvedKey = getGroupDisplayName(group.value);
+      const prefix = 'Group';
+      displayName = String(resolvedKey).toLowerCase().startsWith(prefix.toLowerCase()) ? String(resolvedKey) : (prefix + ' ' + resolvedKey);
+    } else {
+      displayName = getLevelDisplayLabel(level, group.value);
+    }
+    // For the drillInto onclick, use a stable serializable value: number stays
+    // a number on the JS side, but the data-attribute must be string. We pass
+    // the JSON value so it round-trips through drillInto.
+    const drillVal = isUngrouped ? '__none__' : String(group.value);
+    const key = keyStr;
 
     const pills = renderStatusPills(groupPts);
 
@@ -5829,22 +5916,46 @@ function commandLayoutClick(el) {
 function renderCommandLayout(points) {
   const levels = getHierarchyLevels();
   const topLevel = levels[0] || 'area';
-  const groups = {};
+  // v3.15.0 #93: preserve the typed value for division so numeric divisions
+  // render via getLevelDisplayLabel ('Div 2 (+1 floor up)') and sort
+  // numerically descending via compareLevelValues.
+  const groups = new Map();
   for (const sp of points) {
-    const key = sp[topLevel] || 'Unassigned';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(sp);
+    let raw = sp[topLevel];
+    if (raw === undefined || raw === '') raw = null;
+    const isUngrouped = raw === null;
+    const keyStr = isUngrouped ? 'Unassigned' : String(raw);
+    if (!groups.has(keyStr)) groups.set(keyStr, { value: isUngrouped ? null : raw, points: [] });
+    groups.get(keyStr).points.push(sp);
   }
 
   let html = `<div class="section-header">Layout</div>`;
-  for (const [name, pts] of Object.entries(groups)) {
+  const entries = Array.from(groups.entries());
+  entries.sort((a, b) => {
+    const va = a[1].value, vb = b[1].value;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return compareLevelValues(topLevel, va, vb);
+  });
+
+  for (const [keyStr, group] of entries) {
+    const pts = group.points;
     const pills = renderStatusPills(pts);
-    const levelLabel = { building: 'Building', division: 'Div', area: 'Area', group: 'Group' }[topLevel] || '';
-    // Resolve apparatus IDs to names when top level is Group
-    const resolvedName = (topLevel === 'group' && name !== 'Unassigned') ? getGroupDisplayName(name) : name;
-    const safeName = escapeHtml(resolvedName);
-    html += `<div class="layout-card" role="button" tabindex="0" data-level="${escapeAttr(topLevel)}" data-value="${escapeAttr(name)}" onclick="commandLayoutClick(this)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
-      <span style="font-weight:600">${name === 'Unassigned' ? 'Unassigned' : (resolvedName.toLowerCase().startsWith(levelLabel.toLowerCase()) ? safeName : levelLabel + ' ' + safeName)}</span>
+    const isUngrouped = keyStr === 'Unassigned';
+    let displayName;
+    if (isUngrouped) {
+      displayName = 'Unassigned';
+    } else if (topLevel === 'group') {
+      const resolvedKey = getGroupDisplayName(group.value);
+      const prefix = 'Group';
+      displayName = String(resolvedKey).toLowerCase().startsWith(prefix.toLowerCase()) ? String(resolvedKey) : (prefix + ' ' + resolvedKey);
+    } else {
+      displayName = getLevelDisplayLabel(topLevel, group.value);
+    }
+    // data-value: numbers must round-trip as strings to data-attributes
+    const dataVal = isUngrouped ? 'Unassigned' : String(group.value);
+    html += `<div class="layout-card" role="button" tabindex="0" data-level="${escapeAttr(topLevel)}" data-value="${escapeAttr(dataVal)}" onclick="commandLayoutClick(this)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <span style="font-weight:600">${escapeHtml(displayName)}</span>
       <div style="display:flex;align-items:center;gap:8px"><div class="di-status-pills">${pills}</div><span style="font-size:12px;color:var(--text-secondary)">${pts.length}</span></div>
     </div>`;
   }
