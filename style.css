@@ -1409,14 +1409,14 @@ select { padding-right: 40px; }
    ============================================================ */
 
 /* Canvas: horizontally scrollable, centered-tree default */
-.org-tree-canvas { overflow-x: auto; overflow-y: hidden; padding: 4px 4px 12px; -webkit-overflow-scrolling: touch; }
+.org-tree-canvas { overflow-x: auto; overflow-y: hidden; padding: 4px 4px 12px; -webkit-overflow-scrolling: touch; touch-action: pan-x; }
 .org-tree { display: inline-flex; flex-direction: column; align-items: center; min-width: 100%; padding: 0 8px; }
 
 /* Wrap: a node + (optionally) its children row stacked vertically */
 .org-node-wrap { display: flex; flex-direction: column; align-items: center; position: relative; padding: 0 6px; }
 
 /* Card */
-.org-node { position: relative; padding: 8px 12px 8px; border-radius: var(--radius); width: 132px; box-sizing: border-box; text-align: center; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s; border: 1.5px solid transparent; background: var(--surface); }
+.org-node { position: relative; padding: 8px 12px 8px; border-radius: var(--radius); width: 160px; box-sizing: border-box; text-align: center; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s; border: 1.5px solid transparent; background: var(--surface); }
 .org-node:active { transform: scale(0.98); }
 .org-node-filled { background: var(--blue-light); border-color: var(--blue); }
 .org-node-filled:hover { border-color: var(--blue); box-shadow: 0 2px 8px rgba(33,150,243,0.18); }
@@ -1435,17 +1435,17 @@ select { padding-right: 40px; }
 
 /* Corner buttons (collapse + delete) */
 .org-card-corner { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; z-index: 2; }
-.org-card-btn { width: 22px; height: 22px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; line-height: 1; cursor: pointer; border-radius: 3px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.org-card-btn { min-width: 44px; min-height: 44px; border: none; background: transparent; color: var(--text-secondary); font-size: 14px; line-height: 1; cursor: pointer; border-radius: 3px; padding: 11px; display: inline-flex; align-items: center; justify-content: center; }
 .org-card-btn:hover { background: rgba(0,0,0,0.08); color: var(--text-primary); }
 .org-card-delete:hover { background: var(--red-bg); color: var(--red); }
 .org-card-collapse { font-size: 12px; }
 
 /* Inline hierarchy toolbar at the bottom of each card */
-.org-toolbar { display: flex; justify-content: center; align-items: center; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.06); }
-.org-tool { width: 26px; height: 26px; border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: background 0.1s, border-color 0.1s, color 0.1s; }
+.org-toolbar { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,0,0,0.06); }
+.org-tool { min-width: 44px; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid transparent; background: transparent; border-radius: 4px; padding: 10px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; color: var(--text-secondary); transition: background 0.1s, border-color 0.1s, color 0.1s; }
 .org-tool:hover:not(.is-disabled) { background: var(--surface-alt); border-color: var(--border); color: var(--blue); }
 .org-tool:active:not(.is-disabled) { transform: scale(0.9); }
-.org-tool.is-disabled, .org-tool[disabled] { opacity: 0.28; cursor: not-allowed; }
+.org-tool.is-disabled, .org-tool[disabled] { color: var(--text-disabled); opacity: 1; cursor: not-allowed; }
 .org-tool-glyph { font-size: 14px; line-height: 1; font-weight: 600; }
 
 /* ---- Connectors (L-shapes via pseudo-elements) ---------------- */
@@ -1475,14 +1475,13 @@ select { padding-right: 40px; }
 .org-node-wrap.is-root { padding-top: 0; }
 .org-node-wrap.is-root::before, .org-node-wrap.is-root::after { display: none; }
 
-/* Narrow phone: shrink cards so 3+ siblings can fit */
+/* Narrow phone: shrink cards, hide inline toolbar (reorder controls move to node-tap modal) */
 @media (max-width: 480px) {
-  .org-node { width: 110px; padding: 6px 8px; }
+  .org-node { width: 132px; padding: 6px 8px; }
   .org-card-title { font-size: 11px; }
   .org-card-name { font-size: 10px; }
   .org-card-people { font-size: 12px; }
-  .org-tool { width: 24px; height: 24px; }
-  .org-tool-glyph { font-size: 13px; }
+  .org-toolbar { display: none; }
   .org-children-row > .org-node-wrap { padding: 24px 3px 0; }
   .org-node-wrap { padding: 0 3px; }
 }

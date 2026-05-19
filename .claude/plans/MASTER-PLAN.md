@@ -20,9 +20,9 @@
 | **v3.11.3** | PATCH — 2 Critical XSS + 7 High from v3.11.2 audit + photo feature removal | 1 week | Low | Security & correctness | ✅ Shipped |
 | **v3.12.0** | MINOR — Command tab separation + group dual-write + hazard log + 9 audit-medium fixes | 1-2 weeks | Low | Operations tab decomposition (v4.0 prep) | ✅ Shipped |
 | **v3.13.0–v3.14.3** | MINOR/PATCH — desktop view (top nav + Operations split, Command split, drilldown sidebar, viewport-fill) + Wayback link + 44px hit target hotfix | 3-5 days | Low | Desktop-class field deployment surface | ✅ Shipped |
-| **v3.15.0** | MINOR — numbered divisions (#93) + offline inventory hardening (#71, #80 partial) | 7-10 days | Low | Feature + architectural infra | ⏳ Planned |
-| **v3.16.0** | MINOR — local-first defaults (Type IV/V org chart preset + scenario presets + solo-IC mode + Quick-start FAB) | 1-2 weeks | Low | Onboarding ergonomics | ⏳ Planned |
-| **v3.17.0** | MINOR — pre-v4 dual-write window (per #79 triage); `Strut Placed`→`Strut Set`, `customRoles`→keyed, `assignedApparatus`→keyed | 3-5 days | Low | Schema migration prep | ⏳ Planned |
+| **v3.15.0** | MINOR — numbered divisions (#93) + offline inventory hardening (#71, #80 partial) | 7-10 days | Low | Feature + architectural infra | ✅ Shipped |
+| **v3.16.0** | MINOR — SmartArt ICS org chart (#95) + 12 must/should-fix items (#96) from 5-agent review | 3-5 days | Low | Interactive hierarchy tree with per-node controls | ⏳ In progress |
+| **v3.17.0** | MINOR — local-first defaults (scenario presets, solo-IC, Quick-start FAB) + pre-v4 dual-write window (`Strut Placed`→`Strut Set`, `customRoles`→keyed, `assignedApparatus`→keyed) | 1-2 weeks | Low | Onboarding ergonomics + schema migration prep | ⏳ Planned |
 | **v4.0.0** | MAJOR — NIMS doctrine corrections + per-device UID + schema cutover + Cloud Function for atomic allocate+create | 2-3 weeks | Medium | Local persona reframe; federal-scope deferred | ⏳ Planned (see `.claude/plans/v4.0.0-plan.md`) |
 | **v4.1+** | Federal Future folding-in + deferred polish | TBD | — | Multi-agency, IC[], full FEMA Type I/II, bulk-deploy, etc. | ⏳ Planned |
 
