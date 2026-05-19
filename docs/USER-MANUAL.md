@@ -1,6 +1,6 @@
 # FieldShore User Manual
 
-**Version:** 3.15  
+**Version:** 3.16  
 **Last updated:** 2026-05-19  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
@@ -215,6 +215,8 @@ A runner working shore-point status works in the **Operations** tab. The IC revi
 
 ### ICS Organization Chart
 
+The org chart renders as an interactive tree with L-shaped connector lines showing the command hierarchy at a glance.
+
 #### Default Roles
 
 The default ICS hierarchy is:
@@ -236,6 +238,7 @@ Incident Commander (IC)
 - Tap any node to open the role management modal.
 - Assign available apparatus or individuals to a role.
 - Each role shows who's assigned and their status.
+- When you assign yourself to a role, a confirmation toast appears (e.g., "You are now Incident Commander").
 
 #### Status Indicators
 
@@ -258,13 +261,22 @@ Two warning tiers, per NIMS guidelines (optimal span of control is 3–7):
 
 #### Custom Roles
 
-- Tap any node → **Sub-Role** to add a child role underneath it.
+- Tap any node → **+ Sub-Role** to add a child role underneath it.
 - Tap any node → **Rename** to change its display name.
 - Custom roles can be **removed** (along with any sub-roles) via the node modal.
+- The **+ Role** button in the org chart header adds a new role under IC.
 
-#### Reparenting Roles
+#### Reordering and Reparenting
 
-Restructure the org chart hierarchy (not just swap personnel):
+Each card has an inline toolbar with controls to rearrange the hierarchy:
+
+- **↑ Up / ↓ Down** — Move a role earlier or later among its siblings.
+- **↰ Promote** — Move a role up one level in the hierarchy (closer to IC).
+- **↳ Demote** — Nest a role under its previous sibling.
+
+On phones (under 480px wide), the inline toolbar is hidden to save space. The same controls appear in the modal when you tap a node.
+
+Other reparenting options:
 
 - **Long-press drag (mobile):** Hold a role for 500ms. An orange highlight and haptic feedback confirm reparent mode. Drag to the new parent and drop.
 - **"Move to..." menu (all devices):** Tap a role → **Move to...** → select the new parent from the list → confirm.
@@ -273,7 +285,7 @@ After reparenting, a toast notification appears with an **Undo** link.
 
 **Locked roles:** Incident Commander and Safety Officer cannot be moved. IC is always the root; Safety always reports directly to IC (NIMS requirement).
 
-**Access control:** Only devices assigned the IC or Safety role can reparent.
+**Access control:** Only the device assigned as IC can add, remove, or rearrange roles.
 
 #### Swapping Roles
 
@@ -422,6 +434,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.16** | 2026-05-19 | SmartArt-style ICS org chart. The command hierarchy now renders as a visual tree with L-shaped connector lines between parent and child roles. Each card has an inline toolbar with reorder controls (Up, Down, Promote, Demote) so you can restructure the hierarchy without drag-and-drop. On phones the toolbar is hidden and the same controls appear in the node-tap modal. Only the IC can add, remove, or rearrange roles (changed from IC+Safety per NIMS SM-0322). Role assignment now shows a confirmation toast. All org chart buttons meet 44px minimum touch targets for gloved use. |
 | **v3.15** | 2026-05-19 | Numbered divisions with vertical anchoring. Division is now a top-to-bottom picker — Div 3 / Div 2 / Div 1 (Ground) / Sub Div 1 (Basement) — with **+ Floor Above** and **+ Sub Div Below** buttons. No manual text entry; the division list is shared across the operation so labels stay consistent. Existing operations migrate automatically (numeric and 'Ground'/'Basement' labels convert in place; anything else is preserved as a legacy label with a non-blocking review banner). Offline inventory hardening: deploys and returns made while offline now reconcile correctly with Firebase on reconnect via a per-item touched-set flush-pass (closes the v3.8.2 architectural root cause). Concurrent-deploy race guard — when another device takes the last unit, the second device sees "Another user took the last X — try again" and the orphaned shore-point write is rejected. |
 | **v3.14** | 2026-05-18 | Operations tab on desktop now splits into two columns. Left sidebar (sticky) shows a drilldown tree of Buildings → Divisions → Areas with live status counts on each node, and a search input above the tree filters by label / building / division / area. Right column shows the filtered shore points with the **+ Shore Point** button centered above the status groups. Mobile is unchanged (inline breadcrumb stays). |
 | **v3.13** | 2026-05-18 | Desktop view. On screens 1024px wide and up the app now uses a horizontal top nav bar and widens the container to 1200px. The Command tab splits into two columns on desktop — roster (Apparatus, External, Individuals, My Role, Hazards) on the left (sticky), Dashboard / ICS Organization / Layout on the right. A small toggle in the upper-right of the viewport flips between desktop view and mobile view; the choice is remembered. Phones and iPad portrait are unchanged. |
