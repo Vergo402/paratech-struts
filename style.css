@@ -921,6 +921,30 @@ select { padding-right: 40px; }
   text-align: center;
 }
 
+/* --- Operations Legend (collapsible) --- */
+.ops-legend { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
+.ops-legend > summary { padding: 10px 14px; font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; user-select: none; min-height: 44px; }
+.ops-legend > summary::-webkit-details-marker { display: none; }
+.ops-legend > summary::before { content: '▸'; font-size: 11px; transition: transform 0.15s; }
+.ops-legend[open] > summary::before { transform: rotate(90deg); }
+.ops-legend > div { padding: 0 14px 12px; }
+.legend-section { margin-top: 8px; }
+.legend-section + .legend-section { padding-top: 10px; border-top: 1px solid var(--border-light); }
+.legend-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 6px; }
+.legend-list { list-style: none; padding: 0; margin: 0; }
+.legend-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.legend-swatch { display: inline-block; width: 18px; height: 18px; border-radius: 3px; border: 1px solid var(--border); flex-shrink: 0; }
+.legend-sw-pending     { background: var(--pending-bg);        border-color: var(--pending-border); }
+.legend-sw-process     { background: var(--red-bg);            border-color: var(--red); }
+.legend-sw-strutplaced { background: var(--blue-light);        border-color: var(--blue); }
+.legend-sw-cutting     { background: var(--cutting-bg);        border-color: var(--cutting-border); }
+.legend-sw-runner      { background: var(--runner-bg);         border-color: var(--runner-border); }
+.legend-sw-secured     { background: var(--green-bg);          border-color: var(--green); }
+.legend-sw-returned    { background: var(--card-secondary-bg); border-color: var(--grey-border); }
+.legend-action { font-weight: 600; min-width: 140px; }
+.legend-roles { color: var(--text-secondary); }
+.legend-note { color: var(--text-secondary); font-style: italic; font-size: 12px; padding-top: 4px !important; }
+
 /* --- Inventory Quick View --- */
 .inv-quickview-btn {
   position: fixed;

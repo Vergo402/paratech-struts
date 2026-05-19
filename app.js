@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.16.1';
+const APP_VERSION = '3.16.2';
 
 // Deduction state
 let plateSelections = { qfTopPlate: 'none', qfBottomPlate: 'none', spTopPlate: 'none', spBottomPlate: 'none' };
@@ -4505,6 +4505,51 @@ function renderCommand() {
 
 // (renderCommandView shim defined below at the old function's site for clarity.)
 
+function renderOpsLegend() {
+  const body = document.getElementById('opsLegendBody');
+  if (!body) return;
+  const colors = [
+    { cls: 'pending',     label: 'Pending — awaiting strut' },
+    { cls: 'process',     label: 'In Process — placing strut' },
+    { cls: 'strutplaced', label: 'Strut Placed — awaiting cutting' },
+    { cls: 'cutting',     label: 'Cutting — cuts in progress' },
+    { cls: 'runner',      label: 'Runner — transporting cut wood' },
+    { cls: 'secured',     label: 'Secured — installation complete' },
+    { cls: 'returned',    label: 'Returned — equipment back on apparatus' },
+  ];
+  const opRoles = (typeof getOperationRoles === 'function' ? getOperationRoles() : ICS_ROLES_DEFAULT);
+  const roleName = (id) => {
+    const def = opRoles.find(r => r.id === id);
+    return def ? escapeHtml(def.name) : escapeHtml(id);
+  };
+  const perms = Object.entries(SHORE_ACTION_ALLOWED_ROLES).map(([action, roles]) => {
+    const fieldRoles = roles.filter(r => r !== 'ic' && r !== 'safety').map(roleName).join(', ');
+    const labels = {
+      'mark-cut-done':    'Mark Cut Done',
+      'send-to-runner':   'Send to Runner',
+      'mark-secured':     'Mark Secured',
+      'return-equipment': 'Return Equipment',
+    };
+    return { action: labels[action] || action, roles: fieldRoles };
+  });
+  body.innerHTML = `
+    <div class="legend-section">
+      <div class="legend-title">Card colors</div>
+      <ul class="legend-list">
+        ${colors.map(c => `<li><span class="legend-swatch legend-sw-${c.cls}"></span>${escapeHtml(c.label)}</li>`).join('')}
+      </ul>
+    </div>
+    <div class="legend-section">
+      <div class="legend-title">Who can perform each action</div>
+      <ul class="legend-list">
+        ${perms.map(p => `<li><span class="legend-action">${escapeHtml(p.action)}</span><span class="legend-roles">${p.roles}</span></li>`).join('')}
+        <li class="legend-note">IC and Safety can perform any action (command override).</li>
+        <li class="legend-note">Setup actions (add/edit/delete shore points, rearrange chart) are IC-only.</li>
+      </ul>
+    </div>
+  `;
+}
+
 function renderOperations() {
   const noOp = document.getElementById('noActiveOp');
   const active = document.getElementById('activeOp');
@@ -4521,6 +4566,7 @@ function renderOperations() {
   active.style.display = '';
   active.classList.remove('hidden');
 
+  renderOpsLegend();
   populateOpHeader('');
   // v3.12.0: apparatus / external / individuals / my-role moved to Command tab (issue #90).
   // The DOM elements may still be missing here if the user is on Operations — that's fine,
