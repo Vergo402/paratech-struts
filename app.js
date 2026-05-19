@@ -664,6 +664,7 @@ let editingExternalId = null;
 let editingIndividualId = null;
 let orgChartPickedRole = null; // For tap-to-pick-and-place org chart reordering
 let orgReparentMode = false; // True when long-press drag triggers reparent instead of swap
+let orgChartLocked = true;
 let renderCommandScrollTimer = null;
 let orgLongPressTimer = null; // Timer for long-press detection
 let lastReparentUndo = null; // Most recent undo state: { roleId, oldParentId }
@@ -1724,13 +1725,13 @@ function guardClick(btn, fn) {
 
 const ICS_ROLES_DEFAULT = [
   { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command', parentId: null },
-  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
   { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops', parentId: 'ic' },
+  { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
   { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops', parentId: 'operations' },
   { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops', parentId: 'operations' },
   { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops', parentId: 'operations' },
-  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'operations' },
   { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable', parentId: 'operations' },
+  { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'cutting' },
   { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'operations' },
 ];
 
@@ -1919,7 +1920,7 @@ function showMoveRoleModal(roleId) {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">Move Role</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -2143,7 +2144,7 @@ function showAddRoleMenu() {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">Add Role</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -3365,7 +3366,7 @@ function showCreateGroupModal() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay active';
   overlay.id = 'createGroupModal';
-  overlay.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><span class="modal-title">Create Apparatus Group</span><button class="modal-close" onclick="document.getElementById('createGroupModal').remove()">&times;</button></div>${html}</div>`;
+  overlay.innerHTML = `<div class="modal" style="max-width:360px"><div class="modal-header"><span class="modal-title">Create Apparatus Group</span><button class="modal-close" aria-label="Close" onclick="document.getElementById('createGroupModal').remove()">&times;</button></div>${html}</div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
 }
@@ -3583,11 +3584,11 @@ function openOrgChartNode(roleId) {
     const parentRole = opRoles.find(r => r.id === roleDef.parentId);
     const canPromote = !!(parentRole && parentRole.parentId);
     const canDemote = sibIdx > 0;
-    listHtml += `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx <= 0 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleUp('${eid}')">↑ Up</button>
-      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx >= siblings.length - 1 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleDown('${eid}')">↓ Down</button>
-      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canPromote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();promoteRoleLevel('${eid}')">↰ Promote</button>
-      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canDemote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();demoteRoleLevel('${eid}')">↳ Demote</button>
+    listHtml += `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;justify-items:center">
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canPromote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();promoteRoleLevel('${eid}')">↑ Promote</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${!canDemote ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();demoteRoleLevel('${eid}')">↓ Demote</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx <= 0 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleUp('${eid}')">← Left</button>
+      <button class="btn btn-sm btn-outline" style="font-size:13px" ${sibIdx >= siblings.length - 1 ? 'disabled' : ''} onclick="document.getElementById('orgChartModal').remove();moveRoleDown('${eid}')">→ Right</button>
     </div>`;
   }
 
@@ -3599,7 +3600,7 @@ function openOrgChartNode(roleId) {
   overlay.id = 'orgChartModal';
   overlay.innerHTML = `<div class="modal" style="max-width:360px">
     <div class="modal-header"><span class="modal-title">${escapeHtml(roleDef.abbr)} Assignment</span>
-    <button class="modal-close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
+    <button class="modal-close" aria-label="Close" onclick="document.getElementById('orgChartModal').remove()">&times;</button></div>
     ${listHtml}
   </div>`;
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
@@ -3840,6 +3841,11 @@ function orgTouchEnd(event, roleId) {
       orgChartNodeClick(roleId);
     }
   }
+}
+
+function toggleOrgChartLock() {
+  orgChartLocked = !orgChartLocked;
+  renderCommandView();
 }
 
 function cancelOrgMove() {
@@ -6164,26 +6170,26 @@ function renderOrgChart(roleAssignments, shorePoints) {
       ? `<button type="button" class="org-card-btn org-card-collapse" title="${collapsed ? 'Expand' : 'Collapse'} branch" aria-label="${collapsed ? 'Expand' : 'Collapse'} branch" onclick="event.stopPropagation();toggleOrgCollapse('${eid}')">${collapsed ? '▸' : '▾'}</button>`
       : '';
 
-    // Delete × (custom roles only)
-    const deleteBtn = r.id.startsWith('custom_')
+    // Delete × (custom roles only, unlocked only)
+    const deleteBtn = !orgChartLocked && r.id.startsWith('custom_')
       ? `<button type="button" class="org-card-btn org-card-delete" title="Remove role" aria-label="Remove role" onclick="event.stopPropagation();removeCustomRole('${eid}')">×</button>`
       : '';
 
-    // Hierarchy toolbar
+    // Hierarchy toolbar — only shown when chart is unlocked
     const tb = [];
-    if (reparentOK) {
-      tb.push(`<button type="button" class="org-tool" title="Add sub-role" aria-label="Add sub-role" onclick="event.stopPropagation();addCustomRole('${eid}')"><span class="org-tool-glyph">＋</span></button>`);
-    }
-    if (reparentOK && !isLocked) {
-      tb.push(`<button type="button" class="org-tool${isFirstSibling ? ' is-disabled' : ''}" title="Move up among siblings" aria-label="Move up" ${isFirstSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleUp('${eid}')"><span class="org-tool-glyph">↑</span></button>`);
-      tb.push(`<button type="button" class="org-tool${isLastSibling ? ' is-disabled' : ''}" title="Move down among siblings" aria-label="Move down" ${isLastSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleDown('${eid}')"><span class="org-tool-glyph">↓</span></button>`);
-      // Promote — only if grandparent exists
-      const parent = opRoles.find(x => x.id === r.parentId);
-      const canPromote = !!(parent && parent.parentId);
-      tb.push(`<button type="button" class="org-tool${canPromote ? '' : ' is-disabled'}" title="Promote one level up" aria-label="Promote" ${canPromote ? '' : 'disabled'} onclick="event.stopPropagation();promoteRoleLevel('${eid}')"><span class="org-tool-glyph">↰</span></button>`);
-      // Demote — only if a sibling exists above to slide under
-      const canDemote = !isFirstSibling;
-      tb.push(`<button type="button" class="org-tool${canDemote ? '' : ' is-disabled'}" title="Demote under previous sibling" aria-label="Demote" ${canDemote ? '' : 'disabled'} onclick="event.stopPropagation();demoteRoleLevel('${eid}')"><span class="org-tool-glyph">↳</span></button>`);
+    if (!orgChartLocked) {
+      if (reparentOK && !isLocked) {
+        const parent = opRoles.find(x => x.id === r.parentId);
+        const canPromote = !!(parent && parent.parentId);
+        const canDemote = !isFirstSibling;
+        tb.push(`<button type="button" class="org-tool${canPromote ? '' : ' is-disabled'}" title="Promote one level up" aria-label="Promote" ${canPromote ? '' : 'disabled'} onclick="event.stopPropagation();promoteRoleLevel('${eid}')"><span class="org-tool-glyph">↑ Up</span></button>`);
+        tb.push(`<button type="button" class="org-tool${canDemote ? '' : ' is-disabled'}" title="Demote under previous sibling" aria-label="Demote" ${canDemote ? '' : 'disabled'} onclick="event.stopPropagation();demoteRoleLevel('${eid}')"><span class="org-tool-glyph">↓ Dn</span></button>`);
+        tb.push(`<button type="button" class="org-tool${isFirstSibling ? ' is-disabled' : ''}" title="Move left among siblings" aria-label="Move left" ${isFirstSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleUp('${eid}')"><span class="org-tool-glyph">← L</span></button>`);
+        tb.push(`<button type="button" class="org-tool${isLastSibling ? ' is-disabled' : ''}" title="Move right among siblings" aria-label="Move right" ${isLastSibling ? 'disabled' : ''} onclick="event.stopPropagation();moveRoleDown('${eid}')"><span class="org-tool-glyph">→ R</span></button>`);
+      }
+      if (reparentOK) {
+        tb.push(`<button type="button" class="org-tool org-tool-add" title="Add sub-role" aria-label="Add sub-role" onclick="event.stopPropagation();addCustomRole('${eid}')"><span class="org-tool-glyph">＋</span></button>`);
+      }
     }
 
     // Drop target helper text
@@ -6223,15 +6229,20 @@ function renderOrgChart(roleAssignments, shorePoints) {
     ? `<span style="font-size:13px;color:${orgReparentMode ? 'var(--orange-dark)' : 'var(--blue)'};font-weight:400;text-transform:none;margin-left:8px">${orgReparentMode ? 'Reparenting' : 'Moving'} ${escapeHtml(getRoleAbbr(orgChartPickedRole))}… tap destination or <a href="#" onclick="event.preventDefault();cancelOrgMove()" style="color:var(--red)">cancel</a></span>`
     : '';
 
+  if (!reparentOK) orgChartLocked = true;
+
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
     <span class="section-header" style="margin-bottom:0">ICS Organization${headcount}${modeLabel}</span>
-    ${reparentOK ? '<button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px;padding:6px 12px">+ Role</button>' : ''}
+    <div style="display:flex;gap:6px;align-items:center">
+      ${!orgChartLocked && reparentOK ? '<button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px">+ Role</button>' : ''}
+      ${reparentOK ? `<button class="btn btn-sm btn-outline" onclick="toggleOrgChartLock()" style="font-size:13px" aria-label="${orgChartLocked ? 'Unlock chart to edit' : 'Lock chart'}" title="${orgChartLocked ? 'Unlock chart to rearrange' : 'Lock chart'}">${orgChartLocked ? '🔒 Edit' : '🔓 Lock'}</button>` : ''}
+    </div>
   </div>`;
 
   html += `<div class="status-key">
     <span class="status-key-item"><span class="status-dot status-active"></span> Active</span>
     <span class="status-key-item"><span class="status-dot status-staged"></span> Staged</span>
-    ${reparentOK ? `<span class="status-key-item" title="You can reorder the chart using the per-card arrows" style="margin-left:auto;color:var(--blue)">↑↓↰↳ rearrange</span>` : ''}
+    ${!orgChartLocked && reparentOK ? `<span class="status-key-item" title="You can reorder the chart using the per-card arrows" style="margin-left:auto;color:var(--blue)">↑↓←→ rearrange</span>` : ''}
   </div>`;
 
   // SmartArt tree: scrollable canvas, every parent emits a children-row with L-connectors.
