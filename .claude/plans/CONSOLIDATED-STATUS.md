@@ -39,11 +39,31 @@ Two-round audit (v3.5.1) catalogued ~100 unique findings. Closed across v3.5.2 (
 
 ## Pipeline
 
-### v3.17.0 (MINOR) ⏳ next
-Local-first defaults + carry-over fixes from v3.16.x field feedback + pre-v4 schema dual-write. Open items in the Project filtered by `Release = v3.17.0` or `Release = Backlog` with bug/enhancement labels. Notable carry-overs: scenario presets, solo-IC mode, Quick-start FAB, `Strut Placed` → `Strut Set` dual-write, `customRoles` keyed-object dual-write, `assignedApparatus` keyed-object (#79), one-shot role-hierarchy migration, drilldown search v2, [#107](https://github.com/Vergo402/paratech-struts/issues/107) external-equipment return path.
+### v3.17.0 (MINOR) ⏳ next — 6 items scoped in Project
 
-### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned
-Per-device UID auth + NIMS doctrine corrections + schema cutover. Per-write `_meta: { byUid, at }` attribution, role-based write scope, schema dual-write window closes, Cloud Function for atomic allocate+create (#80 full fix). Local-scale TTX-3 alpha gate (car-into-building, ~6-8 SPs). User manual rewrite. Plan: [v4.0.0-plan.md](v4.0.0-plan.md) (canonical for v4.0 scope per MASTER-PLAN.md).
+Local-first defaults + carry-over fixes from v3.16.x field feedback + pre-v4 schema dual-write.
+
+**Already scoped** (set in Project on 2026-05-19):
+- [#79](https://github.com/Vergo402/paratech-struts/issues/79) — `assignedApparatus` array → keyed object
+- [#102](https://github.com/Vergo402/paratech-struts/issues/102) — Add External Equipment should match full inventory list flow
+- [#104](https://github.com/Vergo402/paratech-struts/issues/104) — Role permissions: Mark Secured open to all; Runner limited
+- [#105](https://github.com/Vergo402/paratech-struts/issues/105) — Remove End Operation from Operations tab — IC-only via Command
+- [#106](https://github.com/Vergo402/paratech-struts/issues/106) — Verify "Setup actions IC-only" legend wording
+- [#107](https://github.com/Vergo402/paratech-struts/issues/107) — External-equipment transaction failures on RETURN (v3.16.4 F1 follow-up)
+
+**Carry-over items still in Backlog** (decide on next `/plan` run): scenario presets, solo-IC mode, Quick-start FAB, `Strut Placed` → `Strut Set` dual-write, `customRoles` keyed-object dual-write, one-shot role-hierarchy migration, drilldown search v2.
+
+Live query: [Release=v3.17.0 in the Project](https://github.com/users/Vergo402/projects/1).
+
+### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 2 items scoped in Project
+
+Per-device UID auth + NIMS doctrine corrections + schema cutover. Per-write `_meta: { byUid, at }` attribution, role-based write scope, schema dual-write window closes. Local-scale TTX-3 alpha gate (car-into-building, ~6-8 SPs). User manual rewrite.
+
+**Already scoped:**
+- [#80](https://github.com/Vergo402/paratech-struts/issues/80) — Cloud Function for atomic allocate+create (architectural, depends on per-device UID auth landing first)
+- [#103](https://github.com/Vergo402/paratech-struts/issues/103) — Header/footer beams in inventory + deduct from cut lengths (hfd217-tagged "in v4")
+
+Plan: [v4.0.0-plan.md](v4.0.0-plan.md) (canonical for v4.0 scope per MASTER-PLAN.md). Live query: [Release=v4.0.0 in the Project](https://github.com/users/Vergo402/projects/1).
 
 ---
 
