@@ -1,6 +1,6 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.16.4 (shipped 2026-05-19) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Current:** v3.17.0 (shipped 2026-05-19) · **Live:** https://vergo402.github.io/paratech-struts/
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
@@ -16,6 +16,9 @@ v4.0 anchors on everyday municipal fire-department use (Type IV/V incidents) —
 ---
 
 ## Recent releases — what we learned
+
+### v3.17.0 (MINOR, 2026-05-19) — Pre-v4 bundle (12 items)
+Local-first defaults (scenario presets, solo-IC mode, quick-start FAB), pre-v4 schema dual-writes (`assignedApparatus`→keyed, `customRoles`→keyed, `'Strut Placed'`→`'Strut Installed'`, one-shot role-hierarchy migration), role/permission cleanup (IC-only End Op, Mark Secured restricted to IC+Safety+Shoring, legend audit, external-equipment full form rebuild), and the #107 external-equipment offline resync that v3.16.4 deferred. **Lesson:** the external-equipment form rebuild (#102) revealed that `getOperationInventory()` had been hardcoding `type: 'strut'` for all external items since the feature was introduced — extensions and plates were silently mistyped. The shared grid builder pattern (`buildStrutGridHTML`/`buildExtGridHTML`/`buildPlateGridHTML`) extracted from the regular inventory modal prevented duplicating that bug. The ext-equipment offline resync (#107) mirrored the v3.16.4 inventory pattern one-to-one with namespaced `_itemEpoch` keys (`'ext:' + opId + ':' + itemId`), confirming the touched-set architecture generalizes cleanly. Plan: [v3.17.0-pre-v4-bundle.md](v3.17.0-pre-v4-bundle.md).
 
 ### v3.16.4 (PATCH, 2026-05-19) — Transaction resync (#71)
 Extended v3.15.0's `offlineTouchedInventory` to cover non-offline transaction failures + 4 safety guards (epoch, peer-write, retry bound, `_meta` audit). **Lesson:** Flow B exposed a real implementation gap — Component A initially only caught *thrown* failures; Firebase's 25-retry abort resolves uncommitted, not thrown. Post-implementation audit folded 4 of 5 follow-ups into v3.16.4 itself (peer_converged diagnostic, dept-switch epoch clear, flush mutex, user-visible toast on max_retries). Only F1 (external-equipment return path, [#107](https://github.com/Vergo402/paratech-struts/issues/107)) deferred to v3.17.0. Plan: [v3.16.4-transaction-resync.md](v3.16.4-transaction-resync.md).
@@ -39,21 +42,9 @@ Two-round audit (v3.5.1) catalogued ~100 unique findings. Closed across v3.5.2 (
 
 ## Pipeline
 
-### v3.17.0 (MINOR) ⏳ next — 12 items scoped in Project
+### v3.17.0 ✅ shipped 2026-05-19 — see "Recent releases" above
 
-Local-first defaults + role/permission cleanup + pre-v4 schema dual-write + #107 follow-up. Bundled per the 2026-05-19 /plan pass after 7-agent review (code-auditor, battalion-chief, mobile-ux, devops-resilience, nims-compliance, release-manager, qa-driver) folded 9 architectural decisions into the plan.
-
-**Already scoped** (Release field set 2026-05-19):
-- **Local-first defaults** — [#108](https://github.com/Vergo402/paratech-struts/issues/108) Scenario presets · [#109](https://github.com/Vergo402/paratech-struts/issues/109) Solo-IC mode (count + IC override) · [#110](https://github.com/Vergo402/paratech-struts/issues/110) Quick-start FAB (hold-to-confirm, auto-create op skipping Start Op modal)
-- **Schema dual-write (pre-v4)** — [#79](https://github.com/Vergo402/paratech-struts/issues/79) `assignedApparatus`→keyed · [#111](https://github.com/Vergo402/paratech-struts/issues/111) `'Strut Placed'`→`'Strut Installed'` (FEMA US&R FOG) · [#112](https://github.com/Vergo402/paratech-struts/issues/112) `customRoles`→keyed · [#113](https://github.com/Vergo402/paratech-struts/issues/113) One-shot role-hierarchy migration
-- **Role & permission cleanup** — [#102](https://github.com/Vergo402/paratech-struts/issues/102) Add External Equipment full form · [#104](https://github.com/Vergo402/paratech-struts/issues/104) Mark Secured = IC+Safety+Shoring group; Runner limited · [#105](https://github.com/Vergo402/paratech-struts/issues/105) End Op IC-only via Command · [#106](https://github.com/Vergo402/paratech-struts/issues/106) Legend audit
-- **Bug** — [#107](https://github.com/Vergo402/paratech-struts/issues/107) External-equipment return resync (v3.16.4 F1 follow-up)
-
-**Deferred** (drilldown search v2 punted; revisit in v3.18.0+ or never).
-
-Plan: [v3.17.0-pre-v4-bundle.md](v3.17.0-pre-v4-bundle.md). Live query: [Release=v3.17.0 in the Project](https://github.com/users/Vergo402/projects/1).
-
-### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 2 items scoped in Project
+### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ next — 2 items scoped in Project
 
 Per-device UID auth + NIMS doctrine corrections + schema cutover. Per-write `_meta: { byUid, at }` attribution, role-based write scope, schema dual-write window closes. Local-scale TTX-3 alpha gate (car-into-building, ~6-8 SPs). User manual rewrite.
 
@@ -70,9 +61,9 @@ Plan: [v4.0.0-plan.md](v4.0.0-plan.md) (canonical for v4.0 scope per MASTER-PLAN
 | # | Decision | Recommendation |
 |---|---|---|
 | 1 | Minimum org chart for Type IV/V? | IC + Safety mandatory; Ops auto-suggested at >10 SPs or >3 apparatus |
-| 2 | Solo IC mode — full bypass or progressive disclosure? | Progressive disclosure — single apparatus auto-selects; adding 2nd promotes UI |
+| ~~2~~ | ~~Solo IC mode~~ | ✅ Resolved in v3.17.0 — progressive disclosure with count + IC override (#109) |
 | 3 | Per-device UID — auto-generate or prompt? | Auto-generate + prompt for display name on first write (e.g., "BC Alex") |
-| 4 | NIMS terminology cutover — atomic or staggered? | Atomic — dual-write in v3.12.0–v3.17.0, cut over in v4.0.0 |
+| 4 | NIMS terminology cutover — atomic or staggered? | Dual-write phase complete (v3.12.0–v3.17.0). Cutover in v4.0.0 |
 | 5 | `_review-to-delete/` folder — safe to nuke? | Yes — stale worktrees + browser "Save As" artifacts |
 
 ---
