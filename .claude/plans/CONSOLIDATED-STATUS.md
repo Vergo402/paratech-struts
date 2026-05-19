@@ -1,7 +1,7 @@
 # FieldShore — Consolidated Status & Next Steps
 
 > **Date:** 2026-05-19
-> **Production:** v3.16.2
+> **Production:** v3.16.3
 > **Live:** https://vergo402.github.io/paratech-struts/
 
 ---
@@ -42,6 +42,7 @@ Everything from the two-round audit is implemented through v3.11.3. Post-audit l
 | v3.16.0 | SmartArt ICS org chart (#95) + 12 must-fix items (#96) + lock-by-default + ↑↓←→ arrows + modal close repositioned + ICS-doctrine role hierarchy (Operations left of Safety, Runner under Cutting Table) + 44px touch targets + post-audit refinements |
 | v3.16.1 | Permanent inventory right rail on desktop Operations (fixes floater overlapping shore-point cards) |
 | v3.16.2 | Operations legend (card colors + per-action role permissions) + remove buggy drilldown search |
+| v3.16.3 | Desktop UI hotfix — primary-button centering (#98 #99 #100), Add SP modal pinned header/footer (#101), legend → top of left column on desktop, phone DnD gate via `(pointer: coarse)`, #97 cache-clear guidance |
 
 ---
 
@@ -61,18 +62,17 @@ Numbered divisions (#93) + offline inventory hardening (#71 mitigated via `offli
 - **v3.16.1** — Permanent inventory right rail on desktop Operations (fixes the floating panel overlapping shore-point cards)
 - **v3.16.2** — Operations legend (card colors + per-action role permissions) + remove buggy drilldown search
 
-### Release 3 — v3.16.3 (PATCH, planned) ⏳ planned 2026-05-19
+### Release 3 — v3.16.3 (PATCH) ✅ shipped 2026-05-19
 
 **Desktop UI hotfix from Hartsdale (hfd217) in-app feedback + v3.16.x carry-over fixes.**
-- #97 app width investigation (likely stale SW / persisted `forceMobileView`)
-- #98 #99 #100 — `.btn-primary` desktop centering via scoped `.screen > .btn-primary` selector
-- #101 — Add Shore Point modal: Option C (pin header/footer, scroll body)
-- Operations legend → top of left column on desktop
-- Disable ICS org-chart drag-and-drop on phones (`(pointer: coarse)` gate; tap-place + arrow toolbar remain)
-- Plan file: [v3.16.3-desktop-ui-hotfix.md](v3.16.3-desktop-ui-hotfix.md)
-- Agent-reviewed (code-auditor, mobile-ux, devops-resilience, qa-driver, release-manager). #71 split into v3.16.4.
+- #97 — clean install spans full viewport on v3.16.2+; release-note guidance for stale-SW reporters (hard-reload to clear)
+- #98 #99 #100 — scoped `#screen* > .btn.btn-primary` selector (with `:root:not(.force-mobile-view)` prefix to outrank the 1000px wrapper rule); broad `.btn-primary` rule removed
+- #101 — opt-in `.modal-scrollbody` class (`display: flex; flex-direction: column`); Add SP modal adopts it; header/footer `flex: 0 0 auto`, body `flex: 1 1 auto; overflow-y: auto`
+- Legend relocated to `#opsLegendSlot` inside `.op-shell` on desktop via `placeOpsLegend()` (re-runs on render + resize + view-mode toggle)
+- `TOUCH_PRIMARY = matchMedia('(pointer: coarse)').matches` gates `draggable` AND all drag/touch handlers in one ternary (code-auditor R-drag-5)
+- Plan file: [v3.16.3-desktop-ui-hotfix.md](v3.16.3-desktop-ui-hotfix.md). Agent-reviewed pre-merge. #71 split into v3.16.4.
 
-### Release 4 — v3.16.4 (PATCH, planned) ⏳ next after v3.16.3
+### Release 4 — v3.16.4 (PATCH, planned) ⏳ next
 
 **#71 architectural full-fix — failed-transaction value-resync (split out of v3.16.3 due to blast radius).**
 - Scoped-field allowlist (only `inventory/{id}.available`, `.quantity`), not whole-subtree
