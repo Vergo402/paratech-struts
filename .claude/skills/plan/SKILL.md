@@ -323,21 +323,11 @@ Deferred to next release: #N3 (reason)
 
 ### Mode B: Plan release
 
-#### B1. Run `/feedbackreview` (with recency soft-gate)
+#### B1. Run `/feedbackreview` (always)
 
-Find the most recent feedback-themed plan file:
+Invoke `/feedbackreview` via the Skill tool. No recency check, no soft-gate — every plan-release run starts by draining the Firebase feedback queue. If the queue is empty, the skill returns "No new feedback" in seconds and the cost is negligible. If the queue has items, they get triaged into the unified open-items matrix in B2 instead of being missed.
 
-```bash
-ls -t .claude/plans/v*-feedback*.md 2>/dev/null | head -1
-ls -t .claude/plans/archive/v*-feedback*.md 2>/dev/null | head -1
-stat -f "%m" .claude/plans/v3.12.0-feedback-command-tab.md
-```
-
-- < 60 min ago → skip by default
-- 1–24h → ask
-- > 24h or never → run by default
-
-Invoke `/feedbackreview` via the Skill tool. Capture: new issues created, plan filename, theme summary. The skill also pushes new items to the Project.
+Capture from the skill output: new issues created, plan filename, theme summary. The skill also pushes new items to the Project.
 
 If `/feedbackreview` errors (Firebase auth, etc.), surface verbatim and offer to continue without.
 

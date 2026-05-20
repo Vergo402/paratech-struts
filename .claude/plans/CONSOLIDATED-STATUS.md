@@ -1,7 +1,7 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.17.4 (shipped 2026-05-19) · **Live:** https://vergo402.github.io/paratech-struts/
-> **Next planned:** v3.18.0 (hfd217 field feedback — see `.claude/plans/v3.18.0-field-feedback.md`) · then v4.0.0 (doctrine cutover)
+> **Current:** v3.18.0 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Next planned:** v3.18.1 (inventory display patch — see `.claude/plans/v3.18.1-inventory-display-patch.md`) · then v4.0.0 (doctrine cutover)
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
@@ -48,13 +48,19 @@ Two-round audit (v3.5.1) catalogued ~100 unique findings. Closed across v3.5.2 (
 
 ### v3.17.0–v3.17.4 ✅ shipped 2026-05-19 — see "Recent releases" above
 
-### v3.18.0 (MINOR, ~1-2 weeks) ⏳ next — 9 items scoped, plan written 2026-05-20
+### v3.18.0 ✅ shipped 2026-05-20 — hfd217 field feedback (9 items)
 
 hfd217 field-feedback response. **Workflow blockers:** #120 (cutting → runner blocked), #118 (Ops permission narrowing per battalion-chief), #116 (ext-equip inventory display refresh). **Layout fixes:** #117 (Operations header push-left regression), #115 (Assigned Apparatus category grouping). **Reversals:** #122 (scenario presets — undoes v3.17.0 #108), #124 (auto/solo/promote — undoes v3.17.0 #109). **UX polish:** #125 (Command dashboard tiles — timer setInterval pattern), #121 (plate dropdown sort with section-label divider).
 
 B6 review: 7 reviewers, skeptical-senior-engineer added to the always-include set. **BLOCK partially honored** — #119 (all-measurements fractions) moved to v4.0.0 because it's data-model scope, not a bug fix. Plan: [v3.18.0-field-feedback.md](v3.18.0-field-feedback.md). Live query: [Release=v3.18.0 in the Project](https://github.com/users/Vergo402/projects/1).
 
 **Process callout:** the safety-defaults memory rule that's supposed to gate setup-default changes did not catch v3.17.0 #108/#109. Cause: n=1 — when the only user is also the only requester, treating the user's request as "explicit Alex confirmation" collapses the check. See plan's "Process notes" section for the recommended rule update (not in v3.18.0 scope).
+
+### v3.18.1 (PATCH) ⏳ next — Quick View inventory filter
+
+Two pieces of hfd217 feedback came in within hours of v3.18.0 deploying. **#126** ([renderQuickViewInventory at app.js:8354](app.js:8354) showed ALL department apparatus inventory regardless of which apparatus were assigned to the operation) is in scope — single-function PATCH fix with tri-state filter. **#127** (external equipment not registering as available equipment) deferred at GATE 2: skeptical-senior-engineer BLOCK on surface ambiguity — could be Quick View, Inventory tab, or deploy flow; adding to any new surface is additive (MINOR not PATCH). Awaiting hfd217 surface clarification; will refile under v3.19.0 or fold into v4.0.0. Plan: [v3.18.1-inventory-display-patch.md](v3.18.1-inventory-display-patch.md).
+
+**Process callout:** during this planning session a `gh api graphql updateProjectV2Field` mutation to add the v3.18.1 release option REPLACED the entire Release options list instead of appending — the API's `singleSelectOptions` field is set-and-replace, not append. Recovery: re-recreated all 41 options (new IDs) and re-set Release=v4.0.0 on the 4 v4.0.0 items + Release=v3.18.1 on #126. Backfill script [.claude/scripts/backfill-project.sh](.claude/scripts/backfill-project.sh) updated with new IDs. **Lesson for future planning sessions:** never use `updateProjectV2Field` to add a new Release option — read all current options first, then submit the full list including the new one. Or use the GitHub project web UI for one-off additions.
 
 ### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 4 items scoped in Project
 

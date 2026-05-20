@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.18.0';
+const APP_VERSION = '3.18.1';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -8353,10 +8353,21 @@ function toggleQuickView() {
 
 function renderQuickViewInventory() {
   const body = document.getElementById('qvBody');
-  const items = localInventory.filter(i => i.apparatus);
+  // v3.18.1 #126: gate filter on activeOperation existence, NOT on
+  // assignedApparatus.length. An active op with zero assigned apparatus is a
+  // deliberate empty state ("assign apparatus to this operation"), not the
+  // pre-op fall-back. Collapsing the two showed every dept apparatus inventory
+  // when an op was started without assignment (hfd217 case).
+  const assignedSet = activeOperation
+    ? new Set(activeOperation.assignedApparatus || [])
+    : null;
+  const items = localInventory.filter(i => i.apparatus && (!assignedSet || assignedSet.has(i.apparatus)));
 
   if (items.length === 0) {
-    body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-secondary)">No equipment assigned to apparatus</div>';
+    const msg = (assignedSet && assignedSet.size === 0)
+      ? 'No apparatus assigned to this operation. Assign apparatus from the Operations tab to see available inventory.'
+      : 'No equipment assigned to apparatus';
+    body.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text-secondary)">${msg}</div>`;
     return;
   }
 
