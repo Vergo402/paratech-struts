@@ -26,3 +26,6 @@ docs/*.docx
 
 # Manual screenshot sources (embedded in the Word file)
 docs/manual-screenshots/
+
+# Department operational data (real inventory — do not commit)
+*.csv
