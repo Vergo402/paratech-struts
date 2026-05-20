@@ -837,7 +837,7 @@ select { padding-right: 40px; }
 .view-switcher button.active { background: var(--surface); color: var(--blue); box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-bottom: 3px solid var(--blue); }
 
 /* --- Role Badges & Assignment --- */
-.role-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--blue-light); color: var(--blue); margin-left: 4px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.3px; }
+.role-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--blue-light); color: var(--blue); margin-left: 4px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.3px; max-width: 100%; overflow-wrap: break-word; word-break: break-word; }
 .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
 .role-card { padding: 12px; border: 2px solid var(--border); border-radius: var(--radius); text-align: center; cursor: pointer; transition: all 0.15s; }
 .role-card:active { transform: scale(0.97); }
@@ -1581,9 +1581,8 @@ select { padding-right: 40px; }
 .org-node-reparent-picked { box-shadow: 0 0 0 3px var(--orange-dark); transform: scale(1.04); border-color: var(--orange-dark) !important; }
 
 /* Card content stack */
-.org-card-title { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.2; }
+.org-card-title { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.2; word-wrap: break-word; }
 .org-node-empty .org-card-title { color: var(--text-secondary); }
-.org-card-name { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.2; }
 .org-card-people { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-top: 4px; line-height: 1.25; word-break: break-word; }
 .org-card-empty { font-size: 12px; color: var(--text-disabled); font-style: italic; margin-top: 4px; }
 
@@ -1634,7 +1633,6 @@ select { padding-right: 40px; }
 @media (max-width: 480px) {
   .org-node { width: 132px; padding: 6px 8px; }
   .org-card-title { font-size: 11px; }
-  .org-card-name { font-size: 10px; }
   .org-card-people { font-size: 12px; }
   .org-toolbar { display: none; }
   .org-children-row > .org-node-wrap { padding: 24px 3px 0; }

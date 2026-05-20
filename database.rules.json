@@ -72,12 +72,12 @@
             },
             "customRoles": {
               "$idx": {
-                ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8"
+                ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 30"
               }
             },
             "customRolesById": {
               "$roleId": {
-                ".validate": "newData.hasChildren(['name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 8",
+                ".validate": "newData.hasChildren(['name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 30",
                 "assignedApparatusById": {
                   "$appId": {
                     ".validate": "newData.isBoolean()"

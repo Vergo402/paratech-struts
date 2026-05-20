@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.18.1';
+const APP_VERSION = '3.18.2';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -2381,7 +2381,7 @@ function addCustomRole(parentId) {
   if (!name || !name.trim()) return;
   const trimmed = validateInput(name, 100);
   if (!trimmed) return;
-  const abbr = trimmed.length <= 6 ? trimmed : trimmed.substring(0, 6);
+  const abbr = trimmed.length <= 30 ? trimmed : trimmed.substring(0, 30);
   const id = 'custom_' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); // R1-09 (v3.11.3): jitter prevents cross-device same-ms collisions
   activeOperation.customRoles.push({
     id, name: trimmed, abbr, suggestedView: 'ops', parentId: parentId
@@ -2400,7 +2400,7 @@ function editCustomRole(roleId) {
   if (!newName || !newName.trim()) return;
   role.name = validateInput(newName, 100);
   if (!role.name) return;
-  role.abbr = role.name.length <= 6 ? role.name : role.name.substring(0, 6);
+  role.abbr = role.name.length <= 30 ? role.name : role.name.substring(0, 30);
   saveCustomRoles();
   renderCommandView();
 }
@@ -7035,7 +7035,6 @@ function renderOrgChart(roleAssignments, shorePoints) {
         ${dragAttrs}>
         <div class="org-card-corner">${collapseBtn}${deleteBtn}</div>
         <div class="org-card-title">${statusDot}${escapeHtml(r.abbr)}${spanWarning}</div>
-        <div class="org-card-name">${escapeHtml(r.name)}</div>
         ${filled ? `<div class="org-card-people">${nameList}</div>` : `<div class="org-card-empty">${dropText}</div>`}
         ${tb.length ? `<div class="org-toolbar" onclick="event.stopPropagation()">${tb.join('')}</div>` : ''}
       </div>`;
