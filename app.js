@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.17.2';
+const APP_VERSION = '3.17.3';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -5783,11 +5783,20 @@ async function upgradePendingToDeployed(result, pendingId) {
     const platesToDeploy = [];
     if (deductions.topPlateName && deductions.topPlateName !== 'none') platesToDeploy.push(deductions.topPlateName);
     if (deductions.bottomPlateName && deductions.bottomPlateName !== 'none') platesToDeploy.push(deductions.bottomPlateName);
+    const promisedCounts = {};
     for (const plateId of platesToDeploy) {
-      const plateInv = opInv.find(i => i.type === 'plate' && i.plateId === plateId && i.available > 0);
+      const plateInv = opInv.find(i => {
+        if (i.type !== 'plate' || i.plateId !== plateId) return false;
+        return (i.available - (promisedCounts[i.id] || 0)) > 0;
+      });
       if (plateInv) {
+        promisedCounts[plateInv.id] = (promisedCounts[plateInv.id] || 0) + 1;
         deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
       }
+    }
+    const expectedPlates = platesToDeploy.length;
+    if (expectedPlates > 0 && deployedPlates.length < expectedPlates) {
+      showToast(`${sp.label || 'Shore point'}: plate inventory exhausted — deployed without full plate deduction`, 'warning');
     }
   }
 
@@ -6158,17 +6167,29 @@ async function deployShorePoint(result, qty) {
     const deductions = getDeductions('sp');
     const effectiveLength = result.effectiveLength || length;
 
-    // Find plate inventory items to deploy
+    // Find plate inventory items to deploy.
+    // promisedCounts tracks how many of each inventory slot have already been
+    // promised within this iteration, so a same-model top+bottom pair doesn't
+    // see the same opInv item as "available" twice when only one unit is left.
     const deployedPlates = [];
     if (deductions) {
       const platesToDeploy = [];
       if (deductions.topPlateName && deductions.topPlateName !== 'none') platesToDeploy.push(deductions.topPlateName);
       if (deductions.bottomPlateName && deductions.bottomPlateName !== 'none') platesToDeploy.push(deductions.bottomPlateName);
+      const promisedCounts = {};
       for (const plateId of platesToDeploy) {
-        const plateInv = opInv.find(i => i.type === 'plate' && i.plateId === plateId && i.available > 0);
+        const plateInv = opInv.find(i => {
+          if (i.type !== 'plate' || i.plateId !== plateId) return false;
+          return (i.available - (promisedCounts[i.id] || 0)) > 0;
+        });
         if (plateInv) {
+          promisedCounts[plateInv.id] = (promisedCounts[plateInv.id] || 0) + 1;
           deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
         }
+      }
+      const expectedPlates = platesToDeploy.length;
+      if (expectedPlates > 0 && deployedPlates.length < expectedPlates) {
+        showToast(`${label || 'Shore point'}: plate inventory exhausted — deployed without full plate deduction`, 'warning');
       }
     }
 
@@ -7562,11 +7583,15 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
     guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension', localAvail: extLocalAvail });
   }
 
-  // Plate transactions
+  // Plate transactions. seenCounts tracks how many deductions have been
+  // promised for each inventory slot so plLocalAvail is correct when the
+  // same ID appears twice (same-model top+bottom plate).
+  const plSeenCounts = {};
   for (const pl of (deployedPlates || [])) {
     const g = makeAllocateDecrementer();
     const plInv = localInventory.find(i => i.id === pl.inventoryId);
-    const plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - 1) : undefined;
+    plSeenCounts[pl.inventoryId] = (plSeenCounts[pl.inventoryId] || 0) + 1;
+    const plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - plSeenCounts[pl.inventoryId]) : undefined;
     bumpEpoch(pl.inventoryId);
     guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate'), localAvail: plLocalAvail });
   }
