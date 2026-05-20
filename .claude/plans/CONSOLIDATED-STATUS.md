@@ -1,6 +1,6 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.18.2 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Current:** v3.19.0 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
 > **Next planned:** v4.0.0 (doctrine cutover — see `.claude/plans/v4.0.0-plan.md`)
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
@@ -65,6 +65,14 @@ Two pieces of hfd217 feedback came in within hours of v3.18.0 deploying. **#126*
 ### v3.18.2 ✅ shipped 2026-05-20 — Org chart title fix (PATCH)
 
 Custom role abbreviations were hard-truncated at 6 chars in JS (`substring(0,6)`), so "Staging Officer" displayed as "STAGIN". Fixed by raising the limit to 30 chars with word-wrap. Also removed the `org-card-name` subtitle row from org chart cards — abbreviated title now stands alone, centered and word-wrapped. Code-auditor caught two issues pre-ship: (1) Firebase `abbr` validate rule capped at 8 chars — bumped to 30 and deployed rules first to avoid PERMISSION_DENIED gap; (2) `.role-badge` (7 chip/banner surfaces) lacked word-wrap — added `word-break: break-word` to prevent overflow.
+
+### v3.19.0 ✅ shipped 2026-05-20 — Default ICS org chart restructure (MINOR)
+
+`ICS_ROLES_DEFAULT` ([app.js:1977](app.js:1977)) restructured to match the user's intended starting layout: added **Staging Area Manager** (under Operations per NIMS — "Officer" is reserved for Command Staff) and **Division 1** (under Operations, **collapsed by default** via [initCustomRoles()](app.js:1998) writing 'div1' to `orgCollapsedNodes`). Re-parented entry/rescue/shoring/wood from operations → div1. Cutting Table and Runner unchanged.
+
+GATE 1 ran 4 reviewers in parallel. **code-auditor:** no blockers — migration logic at app.js:2114 is idempotent on `parentId`, existing ops untouched. **battalion-chief:** recommended dropping DIV 1 entirely (phantom node for Type IV-V); **overridden by user preference** — they want it as a placeholder. **nims-compliance:** BLOCKED original "Staging Officer under IC" plan ("Officer" reserved for Command Staff; Staging Area Manager reports to OPS per NIMS 2017 / SM-0322); honored — renamed and re-parented. **mobile-ux:** WARNED horizontal scroll on 4-sibling DIV 1 row; mitigated by default-collapse.
+
+**Lesson:** the v3.18.2 PATCH that shipped just before this one fixed only the org chart title truncation — but the user's original ask ("this should be the standard opening ICS chart") was about the STRUCTURE, not just the labels. Half-honored the request. Caught when the user pushed back: "you didn't update the org chart like I asked." Then a second false alarm — user reported the move/drag controls were broken; turned out their device's `myRole !== 'ic'` so `canReparent()` gated everything. Existing behavior, not a regression. **Surfaces a UX concern for later:** when not-IC, the org chart looks broken / read-only. Could add a banner or message explaining the gate.
 
 ### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 4 items scoped in Project
 
