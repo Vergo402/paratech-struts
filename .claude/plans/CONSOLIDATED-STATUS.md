@@ -1,7 +1,7 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.18.0 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
-> **Next planned:** v3.18.1 (inventory display patch — see `.claude/plans/v3.18.1-inventory-display-patch.md`) · then v4.0.0 (doctrine cutover)
+> **Current:** v3.18.1 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Next planned:** v4.0.0 (doctrine cutover — see `.claude/plans/v4.0.0-plan.md`)
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
@@ -56,9 +56,9 @@ B6 review: 7 reviewers, skeptical-senior-engineer added to the always-include se
 
 **Process callout:** the safety-defaults memory rule that's supposed to gate setup-default changes did not catch v3.17.0 #108/#109. Cause: n=1 — when the only user is also the only requester, treating the user's request as "explicit Alex confirmation" collapses the check. See plan's "Process notes" section for the recommended rule update (not in v3.18.0 scope).
 
-### v3.18.1 (PATCH) ⏳ next — Quick View inventory filter
+### v3.18.1 ✅ shipped 2026-05-20 — Quick View inventory filter (single-fix PATCH)
 
-Two pieces of hfd217 feedback came in within hours of v3.18.0 deploying. **#126** ([renderQuickViewInventory at app.js:8354](app.js:8354) showed ALL department apparatus inventory regardless of which apparatus were assigned to the operation) is in scope — single-function PATCH fix with tri-state filter. **#127** (external equipment not registering as available equipment) deferred at GATE 2: skeptical-senior-engineer BLOCK on surface ambiguity — could be Quick View, Inventory tab, or deploy flow; adding to any new surface is additive (MINOR not PATCH). Awaiting hfd217 surface clarification; will refile under v3.19.0 or fold into v4.0.0. Plan: [v3.18.1-inventory-display-patch.md](v3.18.1-inventory-display-patch.md).
+Two pieces of hfd217 feedback came in within hours of v3.18.0 deploying. **#126** — [`renderQuickViewInventory()` at app.js:8354](app.js:8354) was showing ALL department apparatus inventory regardless of which apparatus were assigned to the operation. Fixed with tri-state filter: gate on `activeOperation` existence (not `assignedApparatus.length`), so an active op with zero assigned apparatus shows an empty state with "Assign apparatus..." prompt instead of the no-op fallback. Tri-state behavior verified through preview UI driver. **#127** (external equipment not registering as available equipment) **deferred at GATE 2** — skeptical-senior-engineer BLOCK on surface ambiguity; could be Quick View, Inventory tab, or deploy flow; adding to any new surface is additive (MINOR not PATCH). Awaiting hfd217 surface clarification; will refile under v3.19.0 or fold into v4.0.0. Plan: [v3.18.1-inventory-display-patch.md](v3.18.1-inventory-display-patch.md). **Lesson:** GATE 2 caught an inverted-condition bug in the original Fix 1 draft (`length > 0` collapsed two distinct states); both reviewers converged on the same finding independently — confirms the value of running both code-auditor AND skeptical-senior on PATCH releases when reasonable.
 
 **Process callout:** during this planning session a `gh api graphql updateProjectV2Field` mutation to add the v3.18.1 release option REPLACED the entire Release options list instead of appending — the API's `singleSelectOptions` field is set-and-replace, not append. Recovery: re-recreated all 41 options (new IDs) and re-set Release=v4.0.0 on the 4 v4.0.0 items + Release=v3.18.1 on #126. Backfill script [.claude/scripts/backfill-project.sh](.claude/scripts/backfill-project.sh) updated with new IDs. **Lesson for future planning sessions:** never use `updateProjectV2Field` to add a new Release option — read all current options first, then submit the full list including the new one. Or use the GitHub project web UI for one-off additions.
 
