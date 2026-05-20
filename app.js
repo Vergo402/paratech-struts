@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.17.3';
+const APP_VERSION = '3.17.4';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -2982,6 +2982,14 @@ function setupListeners() {
         }
       }
     }
+    // v3.17.4: silent one-shot repair for v3.17.2-era SPs with empty
+    // deployedPlates despite their deductions specifying plates. Idempotent
+    // via _meta.inventoryRepairV1DoneAt. No UI — just fixes the data so
+    // returns correctly restore plates to inventory.
+    if (activeOperation) {
+      try { repairCorruptedShorePoints(activeOperation); }
+      catch (e) { console.warn('[v3.17.4] auto-repair failed (non-fatal):', e && e.message); }
+    }
     if (document.getElementById('screenOps').classList.contains('active')) renderOperations();
     if (document.getElementById('screenCommand') && document.getElementById('screenCommand').classList.contains('active')) renderCommandView();
   }, (err) => onListenerError('operations', err));
@@ -4845,6 +4853,94 @@ function getOperationInventory() {
   return inv;
 }
 
+// v3.17.4: silent auto-repair for the v3.17.2-era plate-tracking bug.
+// Some shore points were deployed with `deductions` specifying top/bottom
+// plates but `deployedPlates` ended up empty because plate inventory was
+// exhausted at lookup time. Without the repair, returning those SPs would
+// not restore plates to inventory. Runs once per operation (gated by
+// _meta.inventoryRepairV1DoneAt) and silently — no UI, no toast, no banner.
+function repairCorruptedShorePoints(op) {
+  if (!op || !op.shorePoints) return;
+  if (op._meta && op._meta.inventoryRepairV1DoneAt) return;
+
+  const isActive = activeOperation === op;
+  const opInv = isActive ? getOperationInventory() : [];
+  const sps = Array.isArray(op.shorePoints) ? op.shorePoints : Object.values(op.shorePoints);
+  const fixed = [];
+
+  for (const sp of sps) {
+    if (!sp || !sp.deductions) continue;
+    if (sp.status === 'pending' || sp.status === 'returned' || sp.status === 'archived') continue;
+    const platesNeeded = [];
+    if (sp.deductions.topPlateName && sp.deductions.topPlateName !== 'none') platesNeeded.push(sp.deductions.topPlateName);
+    if (sp.deductions.bottomPlateName && sp.deductions.bottomPlateName !== 'none') platesNeeded.push(sp.deductions.bottomPlateName);
+    if (platesNeeded.length === 0) continue;
+    const current = sp.deployedPlates || [];
+    if (current.length >= platesNeeded.length) continue;
+
+    // Figure out which slots are still missing by subtracting allocated
+    // counts from needed counts (per plateId).
+    const need = {};
+    for (const p of platesNeeded) need[p] = (need[p] || 0) + 1;
+    for (const p of current) {
+      if (p && p.plateId && need[p.plateId]) need[p.plateId]--;
+    }
+
+    // Build the new entries using the same promisedCounts pattern as
+    // deployShorePoint, but accounting for items already in `current`.
+    const newPlates = current.slice();
+    const promisedCounts = {};
+    for (const p of current) {
+      if (p && p.inventoryId) promisedCounts[p.inventoryId] = (promisedCounts[p.inventoryId] || 0) + 1;
+    }
+
+    for (const plateId of Object.keys(need)) {
+      for (let i = 0; i < need[plateId]; i++) {
+        const plateInv = opInv.find(it => {
+          if (it.type !== 'plate' || it.plateId !== plateId) return false;
+          // For repair we don't gate on available — the entries are bookkeeping
+          // only; inventory.available already reflects the transactions that
+          // fired (or didn't) at deploy time. The return path's Math.min clamp
+          // handles any double-counting naturally.
+          return true;
+        });
+        // Match against the SP's assigned-resource apparatus when possible to
+        // mirror the original deploy intent
+        const matched = plateInv || null;
+        newPlates.push({
+          inventoryId: matched ? matched.id : null,
+          plateId: plateId,
+          apparatus: matched ? matched.apparatus : null,
+        });
+      }
+    }
+
+    sp.deployedPlates = newPlates;
+    fixed.push(sp);
+  }
+
+  if (fixed.length === 0) return;
+
+  // Persist silently. Per-SP set on deployedPlates + an op-level meta stamp.
+  if (db && deptId && operationsRef && op.id) {
+    const stampedAt = Date.now();
+    for (const sp of fixed) {
+      firebaseSave(operationsRef.child(op.id).child('shorePoints').child(sp.id).child('deployedPlates'), 'set', sp.deployedPlates);
+    }
+    firebaseSave(operationsRef.child(op.id).child('_meta').child('inventoryRepairV1DoneAt'), 'set', stampedAt);
+    if (!op._meta) op._meta = {};
+    op._meta.inventoryRepairV1DoneAt = stampedAt;
+  } else {
+    if (!op._meta) op._meta = {};
+    op._meta.inventoryRepairV1DoneAt = Date.now();
+  }
+
+  persistOperation();
+  if (document.getElementById('screenOperations') && document.getElementById('screenOperations').classList.contains('active')) {
+    renderOperations();
+  }
+}
+
 // ============================================================
 // OPERATIONS
 // ============================================================
@@ -5796,7 +5892,19 @@ async function upgradePendingToDeployed(result, pendingId) {
     }
     const expectedPlates = platesToDeploy.length;
     if (expectedPlates > 0 && deployedPlates.length < expectedPlates) {
-      showToast(`${sp.label || 'Shore point'}: plate inventory exhausted — deployed without full plate deduction`, 'warning');
+      // v3.17.4: ATOMIC DEPLOY — abort if we cannot satisfy the user's plate
+      // selection. The pending SP is preserved as-is.
+      const missing = [];
+      const allocated = {};
+      for (const p of deployedPlates) allocated[p.plateId] = (allocated[p.plateId] || 0) + 1;
+      for (const p of platesToDeploy) {
+        if ((allocated[p] || 0) > 0) { allocated[p]--; continue; }
+        const have = (opInv.find(i => i.type === 'plate' && i.plateId === p) || {}).available || 0;
+        missing.push(`${p} (need ${platesToDeploy.filter(x => x === p).length}, have ${have})`);
+      }
+      alert(`Cannot deploy: insufficient plate inventory — ${[...new Set(missing)].join('; ')}.\n\nRestock, adjust inventory, or set the plate dropdown to "None" to deploy without it.`);
+      closeModal('shorePointModal');
+      return;
     }
   }
 
@@ -5831,9 +5939,26 @@ async function upgradePendingToDeployed(result, pendingId) {
     ? ((typeof firebase !== 'undefined' && firebase.database) ? firebase.database.ServerValue.TIMESTAMP : Date.now())
     : null;
 
-  // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
-  // v=null guard. If any abort, restore the pending SP's pre-upgrade state
-  // and surface a reason-specific toast (companion-write rejection per R-03).
+  // v3.17.4: apply local optimistic decrement BEFORE the await so the
+  // Firebase listener can't double-count between the transactions committing
+  // and the decrement firing. Compensate below if transactions abort.
+  const isExternalStrut = strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id];
+  if (isExternalStrut) {
+    activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
+  } else {
+    strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+  }
+  for (const ext of extInvItems) {
+    ext.available = Math.max(0, ext.available - 1);
+  }
+  for (const pl of deployedPlates) {
+    const plInv = localInventory.find(i => i.id === pl.inventoryId);
+    if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+  }
+
+  // #80 (v3.15.0): run Firebase decrement transactions. If any abort, restore
+  // the pending SP's pre-upgrade state and compensate the optimistic local
+  // decrements above.
   const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
   if (!txResult.ok) {
     // Restore the pending SP — clear the deployedStrut/extensions/plates we
@@ -5843,6 +5968,18 @@ async function upgradePendingToDeployed(result, pendingId) {
     sp.deployedPlates = [];
     sp.status = 'pending';
     sp.deployedAt = null;
+    // Compensate the optimistic decrements (clamped to quantity)
+    if (isExternalStrut) {
+      const ext = activeOperation.externalEquipment[strutInvItem.id];
+      ext.available = Math.min(ext.quantity || Infinity, (ext.available || 0) + 1);
+    } else {
+      strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
+    }
+    for (const ext of extInvItems) ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+    for (const pl of deployedPlates) {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+    }
     const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
     const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
     if (anyExhausted) {
@@ -5854,25 +5991,14 @@ async function upgradePendingToDeployed(result, pendingId) {
     return;
   }
 
-  // Transactions committed (or offline) — apply local optimistic decrement
-  // and fire the SP companion write.
-  if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
-    activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
-  } else {
-    strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-    // #71 (v3.15.0): if we mutated locally without a Firebase transaction
-    // (txResult.offline === true), mark for flush-pass on reconnect.
-    if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
-  }
-  for (const ext of extInvItems) {
-    ext.available = Math.max(0, ext.available - 1);
-    if (txResult.offline) markOfflineTouched(ext.id, ext.available);
-  }
-  for (const pl of deployedPlates) {
-    const plInv = localInventory.find(i => i.id === pl.inventoryId);
-    if (plInv) {
-      plInv.available = Math.max(0, plInv.available - 1);
-      if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+  // Transactions committed. If offline, mark each mutated item for the
+  // reconnect flush-pass (#71 v3.15.0).
+  if (txResult.offline) {
+    if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available);
+    for (const ext of extInvItems) markOfflineTouched(ext.id, ext.available);
+    for (const pl of deployedPlates) {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      if (plInv) markOfflineTouched(plInv.id, plInv.available);
     }
   }
 
@@ -6189,7 +6315,22 @@ async function deployShorePoint(result, qty) {
       }
       const expectedPlates = platesToDeploy.length;
       if (expectedPlates > 0 && deployedPlates.length < expectedPlates) {
-        showToast(`${label || 'Shore point'}: plate inventory exhausted — deployed without full plate deduction`, 'warning');
+        // v3.17.4: ATOMIC DEPLOY — if the user selected plates and we cannot
+        // fully satisfy that selection, abort the entire deployment for this
+        // strut rather than silently deploying without the plate(s). The user
+        // can explicitly choose "None" in the picker to deploy without plates.
+        const missing = [];
+        const allocated = {};
+        for (const p of deployedPlates) allocated[p.plateId] = (allocated[p.plateId] || 0) + 1;
+        for (const p of platesToDeploy) {
+          if ((allocated[p] || 0) > 0) { allocated[p]--; continue; }
+          const have = (opInv.find(i => i.type === 'plate' && i.plateId === p) || {}).available || 0;
+          missing.push(`${p} (need ${platesToDeploy.filter(x => x === p).length}, have ${have})`);
+        }
+        const msg = `Cannot deploy: insufficient plate inventory — ${[...new Set(missing)].join('; ')}.\n\nRestock, adjust inventory, or set the plate dropdown to "None" to deploy without it.`;
+        if (n === 0) { alert(msg); return; }
+        alert(`Deployed ${n} of ${qty}. ${msg}`);
+        break;
       }
     }
 
@@ -6241,13 +6382,41 @@ async function deployShorePoint(result, qty) {
 
     sp.id = (db && operationsRef) ? operationsRef.child(activeOperation.id).child('shorePoints').push().key : ('sp-' + Date.now() + '-' + n);
 
-    // #80 (v3.15.0): run Firebase decrement transactions FIRST with the v=0 /
-    // v=null guard. If any abort, we surface a reason-specific toast and skip
-    // this iteration without touching local state (companion-write rejection
-    // per code-auditor R-03). Compensating increments fire on transactions
-    // that did commit so the Firebase tree ends up where it started.
+    // v3.17.4: apply local optimistic decrement BEFORE the await so the
+    // Firebase listener cannot fire between the await resolving and the
+    // decrement applying (which would double-count). If the transactions
+    // abort, we compensate by re-incrementing below.
+    const isExternalStrut = strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id];
+    if (isExternalStrut) {
+      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
+    } else {
+      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
+    }
+    for (const ext of extInvItems) {
+      ext.available = Math.max(0, ext.available - 1);
+    }
+    for (const pl of deployedPlates) {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    }
+
+    // #80 (v3.15.0): run Firebase decrement transactions with the v=0 / v=null
+    // guard. If any abort, compensate the local optimistic decrements above
+    // and break out of the qty loop.
     const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
     if (!txResult.ok) {
+      // Compensate the optimistic decrements (clamped to quantity)
+      if (isExternalStrut) {
+        const ext = activeOperation.externalEquipment[strutInvItem.id];
+        ext.available = Math.min(ext.quantity || Infinity, (ext.available || 0) + 1);
+      } else {
+        strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
+      }
+      for (const ext of extInvItems) ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+      for (const pl of deployedPlates) {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+      }
       const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
       const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
       if (anyExhausted) {
@@ -6258,24 +6427,14 @@ async function deployShorePoint(result, qty) {
       break; // stop the qty loop — don't try further iterations under contention
     }
 
-    // Transactions committed (or offline). Apply local optimistic decrement and
-    // fire the SP companion write. #71 (v3.15.0): if offline, mark each
-    // mutated item for the reconnect flush-pass.
-    if (strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id]) {
-      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
-    } else {
-      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-      if (txResult.offline) markOfflineTouched(strutInvItem.id, strutInvItem.available);
-    }
-    for (const ext of extInvItems) {
-      ext.available = Math.max(0, ext.available - 1);
-      if (txResult.offline) markOfflineTouched(ext.id, ext.available);
-    }
-    for (const pl of deployedPlates) {
-      const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) {
-        plInv.available = Math.max(0, plInv.available - 1);
-        if (txResult.offline) markOfflineTouched(plInv.id, plInv.available);
+    // Transactions committed. If offline, mark each mutated item for the
+    // reconnect flush-pass (#71 v3.15.0).
+    if (txResult.offline) {
+      if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available);
+      for (const ext of extInvItems) markOfflineTouched(ext.id, ext.available);
+      for (const pl of deployedPlates) {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) markOfflineTouched(plInv.id, plInv.available);
       }
     }
 
