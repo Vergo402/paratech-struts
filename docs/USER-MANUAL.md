@@ -1,6 +1,6 @@
 # FieldShore User Manual
 
-**Version:** 3.18  
+**Version:** 3.19  
 **Last updated:** 2026-05-20  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
@@ -258,13 +258,21 @@ The default ICS hierarchy is:
 Incident Commander (IC)
 ├── Safety Officer
 └── Operations
-    ├── Entry
-    ├── Rescue
-    ├── Initial Shoring
-    ├── Runner
-    ├── Cutting Table
-    └── Wood Shoring
+    ├── Staging Area Manager
+    ├── Division 1                          (collapsed by default)
+    │   ├── Entry
+    │   ├── Rescue
+    │   ├── Initial Shoring
+    │   └── Wood Shoring
+    └── Cutting Table
+        └── Runner
 ```
+
+**Division 1** is collapsed by default to fit the chart on a phone screen. Tap the chevron (▸) on the Division 1 card to expand the four tactical roles when you're ready to assign them.
+
+**Staging Area Manager** reports to the Operations Section Chief per NIMS doctrine — not as Command Staff. Use the org chart's rearrange controls (unlock with the 🔒 Edit button) if your incident structure requires Staging visible at IC level.
+
+**Card titles** can be up to 30 characters and word-wrap centered in the card. The smaller subtitle line was removed in v3.18.2 — the title now stands alone.
 
 #### Assigning Roles
 
@@ -469,6 +477,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.19** | 2026-05-20 | Default ICS org chart restructured for NIMS Type IV–V incidents. **Added** two new default roles: **Staging Area Manager** (under Operations per NIMS doctrine) and **Division 1** (under Operations, collapsed by default to fit phone screens). The four tactical roles — Entry, Rescue, Initial Shoring, Wood Shoring — now sit under Division 1 instead of directly under Operations. Cutting Table and Runner stay where they were. Card titles (v3.18.2 fix carried forward) accept up to 30 characters with word-wrap and no subtitle row. |
 | **v3.18** | 2026-05-20 | hfd217 field-feedback response. **Removed:** scenario presets in Start Operation (added cognitive load at incident-start) and the Solo-IC / Auto-promote mode block on Command (exposed implementation state as user concept). The Command tab now always renders the full view regardless of apparatus count. **Added:** three dashboard tiles at the top of Command — **Elapsed** (HH:MM:SS, ticks every second), **Apparatus** count, **Shore Points** count. **Fixed:** cutting table Send to Runner action restored (workflow blocker). Operations Section Chief role can now mark cut-done and send to runner (battalion-chief doctrine — Ops keeps physical-custody actions off the Command tab). Adding external equipment now updates the available inventory display immediately on both the Command and Inventory tabs. Operations tab header no longer shifts left when the inventory right-rail is on. Assigned Apparatus column now groups chips under per-category labels (Chief, Deputy Chief, Engine, Ladder, etc.) instead of running labels inline. Plate picker sorts in-stock plates to the top with "Available" / "Not in inventory" section labels. |
 | **v3.17** | 2026-05-19 | "Strut Placed" renamed to "Strut Installed" (FEMA US&R FOG) everywhere in the UI — badges, buttons, legend, drilldown counts. Quick Start FAB on the Quick Find tab: press and hold 500ms to instantly create an operation and jump to the first shore point, skipping the Start Operation modal entirely. End Operation moved to the Command tab header — IC only. Send to Runner now requires the Runner role (plus IC override). Mark Secured now requires IC, Safety, or a Shoring role (Initial Shoring, Wood Shoring). Add External Equipment form rebuilt to match the regular inventory-add layout — struts, extensions, and connector plates in one quick-add grid with Source Department and Source Apparatus fields at top. External equipment returns now reconcile automatically after offline use or connection failures. _(Scenario presets and Solo-IC mode shipped in v3.17 but were removed in v3.18 after field feedback — see v3.18 row.)_ |
 | **v3.16** | 2026-05-19 | SmartArt-style ICS org chart. The command hierarchy now renders as a visual tree with L-shaped connector lines between parent and child roles. Each card has an inline toolbar with reorder controls (Up, Down, Promote, Demote) so you can restructure the hierarchy without drag-and-drop. On phones the toolbar is hidden and the same controls appear in the node-tap modal. Only the IC can add, remove, or rearrange roles (changed from IC+Safety per NIMS SM-0322). Role assignment now shows a confirmation toast. All org chart buttons meet 44px minimum touch targets for gloved use. |

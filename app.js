@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.18.2';
+const APP_VERSION = '3.19.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -1976,14 +1976,16 @@ function guardClick(btn, fn) {
 
 const ICS_ROLES_DEFAULT = [
   { id: 'ic', name: 'Incident Commander', abbr: 'IC', suggestedView: 'command', parentId: null },
-  { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops', parentId: 'ic' },
   { id: 'safety', name: 'Safety Officer', abbr: 'Safety', suggestedView: 'command', parentId: 'ic' },
-  { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops', parentId: 'operations' },
-  { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops', parentId: 'operations' },
-  { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'operations', name: 'Operations', abbr: 'Ops', suggestedView: 'ops', parentId: 'ic' },
+  { id: 'staging', name: 'Staging Area Manager', abbr: 'Staging', suggestedView: 'ops', parentId: 'operations' },
+  { id: 'div1', name: 'Division 1', abbr: 'Div 1', suggestedView: 'ops', parentId: 'operations' },
   { id: 'cutting', name: 'Cutting Table', abbr: 'Cut', suggestedView: 'cuttable', parentId: 'operations' },
+  { id: 'entry', name: 'Entry', abbr: 'Entry', suggestedView: 'ops', parentId: 'div1' },
+  { id: 'rescue', name: 'Rescue', abbr: 'Rescue', suggestedView: 'ops', parentId: 'div1' },
+  { id: 'shoring', name: 'Initial Shoring', abbr: 'Shoring', suggestedView: 'ops', parentId: 'div1' },
+  { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'div1' },
   { id: 'runner', name: 'Runner', abbr: 'Run', suggestedView: 'ops', parentId: 'cutting' },
-  { id: 'wood', name: 'Wood Shoring', abbr: 'Wood', suggestedView: 'ops', parentId: 'operations' },
 ];
 
 function getOperationRoles() {
@@ -1998,6 +2000,10 @@ function initCustomRoles() {
   if (!activeOperation.customRoles || activeOperation.customRoles.length === 0) {
     activeOperation.customRoles = JSON.parse(JSON.stringify(ICS_ROLES_DEFAULT));
     saveCustomRoles();
+    // Default DIV 1 collapsed so the 4 tactical-role siblings don't force
+    // horizontal scroll on phones. IC expands when ready to assign.
+    orgCollapsedNodes.add('div1');
+    try { sessionStorage.setItem('orgCollapsed', JSON.stringify([...orgCollapsedNodes])); } catch {}
   }
 }
 
