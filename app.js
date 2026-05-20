@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.19.0';
+const APP_VERSION = '3.19.1';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -7063,7 +7063,9 @@ function renderOrgChart(roleAssignments, shorePoints) {
     <span class="section-header" style="margin-bottom:0">ICS Organization${headcount}${modeLabel}</span>
     <div style="display:flex;gap:6px;align-items:center">
       ${!orgChartLocked && reparentOK ? '<button class="btn btn-sm btn-outline" onclick="showAddRoleMenu()" style="font-size:13px">+ Role</button>' : ''}
-      ${reparentOK ? `<button class="btn btn-sm btn-outline" onclick="toggleOrgChartLock()" style="font-size:13px" aria-label="${orgChartLocked ? 'Unlock chart to edit' : 'Lock chart'}" title="${orgChartLocked ? 'Unlock chart to rearrange' : 'Lock chart'}">${orgChartLocked ? '🔒 Edit' : '🔓 Lock'}</button>` : ''}
+      ${reparentOK
+        ? `<button class="btn btn-sm btn-outline" onclick="toggleOrgChartLock()" style="font-size:13px" aria-label="${orgChartLocked ? 'Unlock chart to edit' : 'Lock chart'}" title="${orgChartLocked ? 'Unlock chart to rearrange' : 'Lock chart'}">${orgChartLocked ? '🔒 Edit' : '🔓 Lock'}</button>`
+        : '<span style="font-size:12px;color:var(--text-secondary);font-style:italic" title="Claim the IC role from the My Role section to edit the chart">Only the IC can edit the chart</span>'}
     </div>
   </div>`;
 
