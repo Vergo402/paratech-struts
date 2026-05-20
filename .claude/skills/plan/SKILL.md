@@ -216,6 +216,7 @@ Fixing in priority order; PATCH release.
 | `index.html` | version label → v{VERSION} |
 
 ## Release checklist
+- [ ] **Step 0 — `v{VERSION}` Release option exists in the Project** (web UI: settings → fields → Release → "+ Add option"). Never `updateProjectV2Field` for this — set-and-replace semantics wipe the field. See `feedback_project_field_mutations.md`.
 - [ ] Version bump in 3 places (sw.js, index.html, app.js APP_VERSION)
 - [ ] Each bug verified via preview UI driver
 - [ ] No regressions

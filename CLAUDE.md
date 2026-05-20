@@ -63,6 +63,7 @@ This applies to all work — /plan handles it automatically at scope-in (plan mo
 Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
 
 On every change:
+0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics). See `feedback_project_field_mutations.md` memory.
 1. Update version in **3 places:**
    - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
    - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
