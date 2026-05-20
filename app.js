@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.17.4';
+const APP_VERSION = '3.18.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -2230,49 +2230,35 @@ function canReparent() {
   return myRole === 'ic';
 }
 
-// v3.17.0 #109: Solo-IC progressive disclosure.
-// Derived from apparatus count + activeOperation.icOverrideMode.
-// Solo mode hides group picker, multi-apparatus admin, "My Role" picker.
-// Solo mode KEEPS: IC slot, Safety Officer slot, Command Staff (collapsed).
-function isSoloMode() {
-  if (!activeOperation) return false;
-  const override = activeOperation.icOverrideMode || 'auto';
-  if (override === 'force-solo') return true;
-  if (override === 'force-standard') return false;
-  const count = (activeOperation.assignedApparatus || []).length;
-  return count <= 1;
-}
-
-function setIcOverrideMode(mode) {
-  if (!activeOperation) return;
-  activeOperation.icOverrideMode = mode;
-  persistOperation();
-  if (db && deptId && operationsRef && activeOperation.id) {
-    firebaseSave(operationsRef.child(activeOperation.id).child('icOverrideMode'), 'set', mode);
-  }
-  renderCommand();
-  renderOperations();
-}
-
 // F-1C-10 (v3.10.0): role-gate matrix for locked-card status transitions.
 // Returns { allowed, reason } so callers can render greyed buttons + tooltips.
 // Doctrine:
-//   • mark-cut-done / send-to-runner — Cutting role owns the cut station
+//   • mark-cut-done / send-to-runner — Cutting role owns the cut station.
+//                                       Per v3.18.0 #118/#120 (battalion-chief
+//                                       2026-05-20): Operations Section Chief
+//                                       added — command authority extends
+//                                       through the cut + handoff workflow.
 //   • mark-secured                    — Shoring Group Supervisor functional
 //                                       authority (FEMA ICSSCI SM-0322). Per
 //                                       v3.17.0 #104 / D2 (2026-05-19): IC +
 //                                       Safety + Initial Shoring + Wood Shoring.
-//                                       Runner role NO LONGER marks secured
-//                                       (was incorrect — shoring confirmation
-//                                       belongs to the Shoring group).
+//                                       Runner role NO LONGER marks secured.
+//                                       Operations explicitly EXCLUDED — shoring
+//                                       confirmation is a physical-inspection
+//                                       call by the hands-on roles, not a
+//                                       command-tab action.
 //   • return-equipment                — Entry/Rescue/Shoring own the equipment
-//                                       recovery. Runner explicitly excluded.
+//                                       recovery. Runner + Operations explicitly
+//                                       excluded — physical custody must stay
+//                                       with the resource holding the equipment
+//                                       to preserve accountability at command
+//                                       transfer (phantom inventory risk).
 // IC and Safety always override (command authority + life-safety stop work).
 // If no role is set on the device, the gate is open (don't block field crews
 // who haven't set up roles yet).
 const SHORE_ACTION_ALLOWED_ROLES = {
-  'mark-cut-done':    ['cutting', 'ic', 'safety'],
-  'send-to-runner':   ['cutting', 'runner', 'ic', 'safety'],
+  'mark-cut-done':    ['cutting', 'ic', 'safety', 'operations'],
+  'send-to-runner':   ['cutting', 'runner', 'ic', 'safety', 'operations'],
   'mark-secured':     ['ic', 'safety', 'shoring', 'wood'],
   'return-equipment': ['entry', 'rescue', 'shoring', 'ic', 'safety'],
   'deploy-equipment': ['ic', 'safety', 'operations', 'entry', 'rescue', 'shoring', 'wood', 'cutting'],
@@ -3819,7 +3805,6 @@ function showAssignApparatus() {
 
 function toggleApparatusAssignment(appId, assign) {
   if (!activeOperation) return;
-  const wasSolo = isSoloMode();
   let assigned = activeOperation.assignedApparatus || [];
   if (assign && !assigned.includes(appId)) {
     assigned.push(appId);
@@ -3831,10 +3816,6 @@ function toggleApparatusAssignment(appId, assign) {
   // assignedApparatusById (keyed) atomically per A1. Replaces the prior
   // array-only set() which was the concurrent-toggle clobber path.
   writeAssignedApparatusDual();
-  // v3.17.0 #109 / A9: toast on solo → standard promotion
-  if (wasSolo && !isSoloMode()) {
-    showToast('2nd apparatus added — full command structure now available', 'info');
-  }
   renderOperations();
   renderCommand();
 }
@@ -4417,34 +4398,6 @@ function renderMyRoleDisplay() {
   }
 }
 
-function renderSoloIcControls() {
-  const el = document.getElementById('soloIcControls');
-  if (!el || !activeOperation) { if (el) el.style.display = 'none'; return; }
-  el.style.display = '';
-  const mode = activeOperation.icOverrideMode || 'auto';
-  const count = (activeOperation.assignedApparatus || []).length;
-  const solo = isSoloMode();
-  const autoLabel = count <= 1 ? 'Solo mode (1 apparatus)' : `Standard mode (${count} apparatus)`;
-  el.innerHTML = `
-    <div class="solo-ic-panel">
-      <div class="solo-ic-status">${solo ? 'Solo IC mode' : 'Standard mode'}</div>
-      <div class="solo-ic-options">
-        <label class="solo-ic-option${mode === 'auto' ? ' selected' : ''}">
-          <input type="radio" name="icOverride" value="auto" ${mode === 'auto' ? 'checked' : ''} onchange="setIcOverrideMode('auto')">
-          <span>Auto — ${autoLabel}</span>
-        </label>
-        <label class="solo-ic-option${mode === 'force-solo' ? ' selected' : ''}">
-          <input type="radio" name="icOverride" value="force-solo" ${mode === 'force-solo' ? 'checked' : ''} onchange="setIcOverrideMode('force-solo')">
-          <span>Stay in solo mode</span>
-        </label>
-        <label class="solo-ic-option${mode === 'force-standard' ? ' selected' : ''}">
-          <input type="radio" name="icOverride" value="force-standard" ${mode === 'force-standard' ? 'checked' : ''} onchange="setIcOverrideMode('force-standard')">
-          <span>Promote to full mode</span>
-        </label>
-      </div>
-    </div>`;
-}
-
 function renderRoleSuggestion() {
   const banner = document.getElementById('roleSuggestBanner');
   if (!banner) return; // banner lives on Operations tab only — Command tab has no banner
@@ -4573,7 +4526,13 @@ function extQuickAdd(type, system, model, length) {
     }
   }
 
+  // #116 (v3.18.0): refresh both surfaces that show external-equipment counts.
+  // Quick-add modal grid is the immediate caller; the Command-tab section and
+  // the Inventory tab were not refreshed before, so available counts looked
+  // stale until the user navigated away and back.
   renderExtGrids();
+  renderExternalEquipmentList();
+  renderInventory();
 }
 
 function removeExternal(extId) {
@@ -4586,6 +4545,8 @@ function removeExternal(extId) {
     firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(extId), 'remove');
   }
   renderOperations();
+  renderExternalEquipmentList();
+  renderInventory();
 }
 
 function editExternal(extId) {
@@ -4988,6 +4949,10 @@ function renderAssignedApparatus() {
     for (const g of Object.values(appGroups)) {
       for (const mid of (g.members || [])) groupedAppIds.add(mid);
     }
+    // #115 (v3.18.0): each category renders as a self-contained block — label
+    // on its own row, chips wrapped beneath. Previously the labels and chip
+    // groups were peer flex-children of the outer container, causing labels
+    // to land inline between chips at certain widths (see hfd217 feedback).
     let groupsHtml = '';
     for (const [gid, g] of Object.entries(appGroups)) {
       const memberChips = (g.members || []).filter(mid => assigned.includes(mid)).map(mid => {
@@ -4997,7 +4962,7 @@ function renderAssignedApparatus() {
         return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${mid}')" style="cursor:pointer">${name}${roleBadge}</span>`;
       }).join('');
       if (memberChips) {
-        groupsHtml += `<div style="margin-bottom:8px"><div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;margin-bottom:2px">${escapeHtml(g.name)} <span style="font-weight:400;color:var(--text-secondary);text-transform:none;font-size:12px">${escapeHtml(g.type || '')}</span> <span role="button" tabindex="0" style="cursor:pointer;font-size:12px;color:var(--text-secondary)" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="assigned-apparatus-chips">${memberChips}</div></div>`;
+        groupsHtml += `<section class="aa-section"><div class="aa-section-label aa-group-label">${escapeHtml(g.name)} <span class="aa-group-type">${escapeHtml(g.type || '')}</span> <span class="aa-group-disband" role="button" tabindex="0" onclick="removeApparatusGroup('${gid}')" title="Disband group">✕</span></div><div class="aa-section-chips">${memberChips}</div></section>`;
       }
     }
     const ungrouped = assigned.filter(id => !groupedAppIds.has(id));
@@ -5017,11 +4982,10 @@ function renderAssignedApparatus() {
         const roleNames = activeOperation.roleNames || {};
         const personName = roleNames[appId];
         const roleBadge = roleId ? `<span class="role-badge">${escapeHtml(getRoleAbbr(roleId))}</span>` : '';
-        const personBadge = personName ? `<span style="font-size:13px;color:var(--text-secondary);margin-left:2px">${escapeHtml(personName)}</span>` : '';
+        const personBadge = personName ? `<span class="aa-person-badge">${escapeHtml(personName)}</span>` : '';
         return `<span class="app-chip" role="button" tabindex="0" onclick="openApparatusRoleModal('${appId}')" style="cursor:pointer">${name}${roleBadge}${personBadge}<span class="chip-x" role="button" tabindex="0" onclick="event.stopPropagation();removeApparatusFromOp('${appId}')">&times;</span></span>`;
       }).join('');
-      const typeLabel = sortedTypes.length > 1 ? `<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin:4px 0 2px">${escapeHtml(getApparatusTypeName(typeId))}</div>` : '';
-      typeHtml += `${typeLabel}<div class="assigned-apparatus-chips">${chips}</div>`;
+      typeHtml += `<section class="aa-section"><div class="aa-section-label">${escapeHtml(getApparatusTypeName(typeId))}</div><div class="aa-section-chips">${chips}</div></section>`;
     }
     assignedList.innerHTML = groupsHtml + typeHtml;
   } else {
@@ -5103,6 +5067,9 @@ function renderCommand() {
   const points = getShorePoints();
   const dashboardEl = document.getElementById('cmdDashboard');
   if (dashboardEl) dashboardEl.innerHTML = renderDashboardStats(points);
+  // #125 (v3.18.0): start/refresh the dedicated HH:MM:SS timer interval so
+  // the Elapsed tile ticks every second without re-rendering the whole tab.
+  startOpTimerInterval();
   const orgEl = document.getElementById('orgChartContainer');
   if (orgEl) {
     orgEl.innerHTML = renderOrgChart(getRoleAssignments(), points);
@@ -5134,19 +5101,6 @@ function renderCommand() {
   renderIndividualsList();
   renderMyRoleDisplay();
   if (typeof renderHazardLog === 'function') renderHazardLog(); // Phase 4 — may not exist yet
-
-  // v3.17.0 #109: solo-IC progressive disclosure
-  const solo = isSoloMode();
-  // Hide multi-apparatus admin sections in solo mode
-  const apparatusToggle = document.querySelector('[aria-controls="sectionCmdApparatus"]');
-  const apparatusSection = document.getElementById('sectionCmdApparatus');
-  if (apparatusToggle) apparatusToggle.style.display = solo ? 'none' : '';
-  if (apparatusSection) apparatusSection.style.display = solo ? 'none' : '';
-  // Hide "My Role" section — auto-set to IC in solo mode
-  const myRoleSec = document.getElementById('myRoleSection');
-  if (myRoleSec) myRoleSec.style.display = solo ? 'none' : '';
-  // Render IC override controls
-  renderSoloIcControls();
 }
 
 // (renderCommandView shim defined below at the old function's site for clarity.)
@@ -5297,7 +5251,6 @@ function normalizeStatus(status) {
 function renderShorePointCards(numbered) {
   // Uses global STATUS_ORDER and STATUS_LABELS
   const strutCache = {};
-  const solo = isSoloMode();
   let opInv = null;
 
   const byStatus = {};
@@ -5369,7 +5322,7 @@ function renderShorePointCards(numbered) {
             <span class="status-badge ${status}">${STATUS_LABELS[status]}</span>
           </div>
         </div>
-        ${(() => { if (solo) return ''; const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
+        ${(() => { const g = getSPGroup(sp); return g ? `<div style="font-size:13px;font-weight:700;color:var(--blue);margin-bottom:4px">${escapeHtml(getGroupDisplayName(g))}</div>` : ''; })()}
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
@@ -5550,68 +5503,8 @@ function deleteArchivedOp(opId) {
   renderArchivedOps();
 }
 
-const SCENARIO_PRESETS = [
-  {
-    id: 'car-into-building',
-    name: 'Car into building',
-    desc: '1–4 shores, single structure, minimal command',
-    multiBuilding: false,
-  },
-  {
-    id: 'residential-collapse',
-    name: 'Residential partial collapse',
-    desc: '4–8 shores, wood-frame, may need cutting',
-    multiBuilding: false,
-  },
-  {
-    id: 'commercial-collapse',
-    name: 'Light commercial partial collapse',
-    desc: '6–12+ shores, multi-room, possible multi-division',
-    multiBuilding: false,
-  },
-];
-
-let selectedPresetId = null;
-
-function renderPresetCards() {
-  const container = document.getElementById('presetCards');
-  if (!container) return;
-  let html = '';
-  for (const p of SCENARIO_PRESETS) {
-    const sel = selectedPresetId === p.id ? ' selected' : '';
-    html += `<div class="preset-card${sel}" role="button" tabindex="0" onclick="selectPreset('${p.id}')" data-preset="${p.id}">
-      <div class="preset-card-name">${escapeHtml(p.name)}</div>
-      <div class="preset-card-desc">${escapeHtml(p.desc)}</div>
-    </div>`;
-  }
-  html += `<div class="preset-card${selectedPresetId === null ? ' selected' : ''}" role="button" tabindex="0" onclick="selectPreset(null)">
-    <div class="preset-card-name">Custom</div>
-    <div class="preset-card-desc">No defaults — configure everything manually</div>
-  </div>`;
-  container.innerHTML = html;
-}
-
-function selectPreset(presetId) {
-  selectedPresetId = presetId;
-  renderPresetCards();
-  const note = document.getElementById('presetOrgNote');
-  if (presetId) {
-    if (note) {
-      note.style.display = '';
-      note.innerHTML = '<div style="font-size:13px;color:var(--text-secondary);background:var(--surface-alt);border-radius:6px;padding:8px;margin-top:4px">' +
-        '<strong style="color:var(--blue)">Minimum Command Staff:</strong> IC + Safety Officer will be set automatically. ' +
-        '<span style="font-size:12px;color:var(--text-hint)">Designate a Liaison Officer when multiple agencies are present.</span></div>';
-    }
-  } else {
-    if (note) note.style.display = 'none';
-  }
-}
-
 function startOperation() {
-  selectedPresetId = null;
   populateStartOpApparatus();
-  renderPresetCards();
-  document.getElementById('presetOrgNote').style.display = 'none';
   openModal('startOpModal');
 }
 
@@ -5639,11 +5532,11 @@ function confirmStartOp() {
     assignedApparatus,
     assignedApparatusById,
     multiBuilding,
-    icOverrideMode: 'auto',
   };
   if (taskForce) op.taskForce = taskForce;
 
-  // Reset device role for new operation — auto-set IC in solo mode
+  // Reset device role for new operation. Single-apparatus convenience:
+  // auto-assign IC since there's no other resource to pick a role for.
   roleViewDismissed = false;
   if (assignedApparatus.length <= 1) {
     myRole = 'ic';
@@ -5655,16 +5548,7 @@ function confirmStartOp() {
 
   op.id = (db && operationsRef) ? operationsRef.push().key : ('local-op-' + Date.now());
   op.shorePoints = [];
-  if (selectedPresetId) op.preset = selectedPresetId;
   activeOperation = op;
-
-  // v3.17.0 #108: scaffold IC + Safety when a preset is selected
-  if (selectedPresetId) {
-    initCustomRoles();
-    const roles = activeOperation.roles || {};
-    roles['self'] = 'ic';
-    activeOperation.roles = roles;
-  }
 
   persistOperation();
   if (db && deptId && operationsRef) {
@@ -5677,13 +5561,8 @@ function confirmStartOp() {
   document.getElementById('newOpTaskForce').value = '';
   document.getElementById('opMultiBuilding').checked = false;
 
-  // v3.17.0 #108: preset path — land on Operations with Add SP pre-staged (≤2 taps)
   showTab('ops');
   renderOperations();
-  if (selectedPresetId) {
-    setTimeout(() => showAddShorePoint(), 100);
-  }
-  selectedPresetId = null;
 }
 
 function showAddShorePoint() {
@@ -5704,9 +5583,6 @@ function showAddShorePoint() {
   // Show/hide building field based on operation setting
   const isMulti = activeOperation && activeOperation.multiBuilding;
   document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
-  // v3.17.0 #109: hide group dropdown in solo-IC mode (only 1 apparatus)
-  const groupWrap = document.getElementById('spGroupWrapper');
-  if (groupWrap) groupWrap.style.display = isSoloMode() ? 'none' : '';
 
   // Pre-fill from drilldown position
   for (const seg of drilldownPath) {
@@ -6907,6 +6783,40 @@ function renderDrilldownForLevel(points, level) {
 // ============================================================
 // COMMAND VIEW
 // ============================================================
+// #125 (v3.18.0): formats elapsed milliseconds as HH:MM:SS for the timer tile.
+function formatElapsedHHMMSS(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = n => (n < 10 ? '0' + n : '' + n);
+  return pad(h) + ':' + pad(m) + ':' + pad(s);
+}
+
+// #125 (v3.18.0): dedicated setInterval drives the HH:MM:SS timer tile by
+// updating textContent on #dashTimer every second. Avoids re-rendering the
+// whole Command tab every tick (which would flicker and waste layout work).
+// The interval self-clears if the timer element disappears (op ended, tab
+// switch, dashboard re-rendered without the tile).
+let opTimerInterval = null;
+
+function tickOpTimer() {
+  const el = document.getElementById('dashTimer');
+  if (!el || !activeOperation || !activeOperation.startTime) {
+    if (opTimerInterval) { clearInterval(opTimerInterval); opTimerInterval = null; }
+    return;
+  }
+  const started = new Date(activeOperation.startTime).getTime();
+  el.textContent = formatElapsedHHMMSS(Date.now() - started);
+}
+
+function startOpTimerInterval() {
+  if (opTimerInterval) clearInterval(opTimerInterval);
+  tickOpTimer();
+  opTimerInterval = setInterval(tickOpTimer, 1000);
+}
+
 function renderDashboardStats(points) {
   const counts = { pending: 0, process: 0, strutplaced: 0, cutting: 0, runner: 0, secured: 0, returned: 0 };
   for (const sp of points) {
@@ -6917,11 +6827,8 @@ function renderDashboardStats(points) {
   const done = counts.secured + counts.returned;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
-  const started = activeOperation.startTime ? new Date(activeOperation.startTime) : new Date();
-  const elapsed = Math.floor((Date.now() - started.getTime()) / 60000);
-  const hrs = Math.floor(elapsed / 60);
-  const mins = elapsed % 60;
-  const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+  const started = activeOperation.startTime ? new Date(activeOperation.startTime).getTime() : Date.now();
+  const initialTimer = formatElapsedHHMMSS(Date.now() - started);
   const appCount = (activeOperation.assignedApparatus || []).length;
 
   const statusCards = [
@@ -6943,18 +6850,27 @@ function renderDashboardStats(points) {
 
   return `<div style="margin-bottom:16px">
     <div class="section-header">Dashboard</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">${cardsHtml}</div>
+    <div class="dash-tiles">
+      <div class="dash-tile dash-tile-timer">
+        <div class="dash-tile-label">Elapsed</div>
+        <div class="dash-tile-value" id="dashTimer">${initialTimer}</div>
+      </div>
+      <div class="dash-tile">
+        <div class="dash-tile-label">Apparatus</div>
+        <div class="dash-tile-value">${appCount}</div>
+      </div>
+      <div class="dash-tile">
+        <div class="dash-tile-label">Shore Points</div>
+        <div class="dash-tile-value">${total}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0">${cardsHtml}</div>
     <div style="background:var(--surface-alt);border-radius:var(--radius);padding:12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div><span style="font-size:13px;font-weight:600">Progress</span></div>
       <div style="font-size:15px;font-weight:700;color:var(--blue)">${pct}%</div>
     </div>
-    <div style="background:var(--blue-light);border-radius:8px;height:16px;overflow:hidden;margin-bottom:12px">
+    <div style="background:var(--blue-light);border-radius:8px;height:16px;overflow:hidden">
       <div style="background:var(--blue);height:100%;width:${pct}%;border-radius:8px;transition:width 0.3s"></div>
-    </div>
-    <div style="display:flex;gap:12px;font-size:13px;color:var(--text-secondary)">
-      <span>⏱ ${timeStr}</span>
-      <span>🚒 ${appCount} apparatus</span>
-      <span>📍 ${total} shore points</span>
     </div>
   </div>`;
 }
@@ -7493,9 +7409,6 @@ function editShorePoint(spId) {
   // Show/hide building field
   const isMulti = activeOperation && activeOperation.multiBuilding;
   document.getElementById('spBuildingGroup').style.display = isMulti ? '' : 'none';
-  // v3.17.0 #109: hide group dropdown in solo-IC mode
-  const groupWrap = document.getElementById('spGroupWrapper');
-  if (groupWrap) groupWrap.style.display = isSoloMode() ? 'none' : '';
 
   // Populate modal with existing data
   document.getElementById('spLabel').value = sp.label || '';
@@ -7919,6 +7832,9 @@ async function endOperation() {
   }
 
   activeOperation = null;
+  // #125 (v3.18.0): stop the elapsed-timer interval when the op ends so it
+  // doesn't keep firing against a null activeOperation.
+  if (opTimerInterval) { clearInterval(opTimerInterval); opTimerInterval = null; }
   localStorage.removeItem('fieldshore_operation');
   persistInventory();
   renderOperations();
@@ -8543,7 +8459,6 @@ function fireQuickStart() {
     assignedApparatus: [],
     assignedApparatusById: {},
     multiBuilding: false,
-    icOverrideMode: 'auto',
   };
 
   myRole = 'ic';
@@ -8646,6 +8561,11 @@ function initPlatePickers() {
     if (!grid) continue;
 
     let html = '';
+    // #121 (v3.18.0): "Available" / "Not in inventory" section labels.
+    // Always present in the DOM, default hidden — openPlatePicker reveals
+    // them when an ops-filter is active. Order class sits them between the
+    // available and unavailable groups via CSS `order`.
+    html += '<div class="picker-section-label picker-section-available" data-section="available">Available</div>';
     const pickerPlates = [...BASE_PLATES].sort((a, b) => {
       if (a.id === 'none') return -1; if (b.id === 'none') return 1;
       return a.name.localeCompare(b.name);
@@ -8660,6 +8580,7 @@ function initPlatePickers() {
         </div>
       </div>`;
     }
+    html += '<div class="picker-section-label picker-section-unavailable" data-section="unavailable">Not in inventory</div>';
     grid.innerHTML = html;
   }
 }
@@ -8692,17 +8613,27 @@ function openPlatePicker(pickerId) {
       availablePlateIds = new Set(opInv.filter(item => item.type === 'plate').map(item => item.plateId));
       availablePlateIds.add('none'); // "None" always available
     }
+    let availableCount = 0;
+    let unavailableCount = 0;
     grid.querySelectorAll('.plate-option').forEach(opt => {
       opt.classList.toggle('selected', opt.dataset.id === plateSelections[pickerId]);
       if (availablePlateIds) {
         const inStock = availablePlateIds.has(opt.dataset.id);
         opt.classList.toggle('plate-unavailable', !inStock);
         opt.style.pointerEvents = inStock ? '' : 'none';
+        if (inStock) availableCount++; else unavailableCount++;
       } else {
         opt.classList.remove('plate-unavailable');
         opt.style.pointerEvents = '';
       }
     });
+    // #121 (v3.18.0): show "Available" / "Not in inventory" section labels
+    // only when filtering by inventory AND each group is non-empty.
+    grid.classList.toggle('plate-grid--ops-filter', !!availablePlateIds);
+    const availLabel = grid.querySelector('.picker-section-available');
+    const unavailLabel = grid.querySelector('.picker-section-unavailable');
+    if (availLabel) availLabel.style.display = (availablePlateIds && availableCount > 0) ? '' : 'none';
+    if (unavailLabel) unavailLabel.style.display = (availablePlateIds && unavailableCount > 0) ? '' : 'none';
 
     // Show scrim behind grid
     let scrim = document.getElementById('plateScrim');
