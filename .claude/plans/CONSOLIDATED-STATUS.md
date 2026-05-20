@@ -1,6 +1,6 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.19.0 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Current:** v3.19.1 (shipped 2026-05-20) · **Live:** https://vergo402.github.io/paratech-struts/
 > **Next planned:** v4.0.0 (doctrine cutover — see `.claude/plans/v4.0.0-plan.md`)
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
@@ -73,6 +73,10 @@ Custom role abbreviations were hard-truncated at 6 chars in JS (`substring(0,6)`
 GATE 1 ran 4 reviewers in parallel. **code-auditor:** no blockers — migration logic at app.js:2114 is idempotent on `parentId`, existing ops untouched. **battalion-chief:** recommended dropping DIV 1 entirely (phantom node for Type IV-V); **overridden by user preference** — they want it as a placeholder. **nims-compliance:** BLOCKED original "Staging Officer under IC" plan ("Officer" reserved for Command Staff; Staging Area Manager reports to OPS per NIMS 2017 / SM-0322); honored — renamed and re-parented. **mobile-ux:** WARNED horizontal scroll on 4-sibling DIV 1 row; mitigated by default-collapse.
 
 **Lesson:** the v3.18.2 PATCH that shipped just before this one fixed only the org chart title truncation — but the user's original ask ("this should be the standard opening ICS chart") was about the STRUCTURE, not just the labels. Half-honored the request. Caught when the user pushed back: "you didn't update the org chart like I asked." Then a second false alarm — user reported the move/drag controls were broken; turned out their device's `myRole !== 'ic'` so `canReparent()` gated everything. Existing behavior, not a regression. **Surfaces a UX concern for later:** when not-IC, the org chart looks broken / read-only. Could add a banner or message explaining the gate.
+
+### v3.19.1 ✅ shipped 2026-05-20 — Note explaining IC-only chart editing (PATCH)
+
+The v3.19.0 cycle surfaced a long-standing UX gap: when a user's `myRole !== 'ic'`, `canReparent()` returns false → Edit button, toolbar arrows, drag-and-drop, and tap-modal reorder controls are ALL gated off. The corner of the ICS Organization section rendered empty, making the chart look broken / read-only. v3.19.1 fills that corner with **"Only the IC can edit the chart"** in italic muted text, with a tooltip explaining how to claim the IC role. Zero behavior change — just a label closing the UX seam.
 
 ### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 4 items scoped in Project
 
