@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "_note": "Training-only. External equipment pool — non-Paratech tools, lumber, and consumables that are tracked in the External Equipment screen rather than the strut/extension/plate inventory. Used to test the v3.8.x external-equipment workflows and the v4.0.0 multi-agency tagging.",
+  "deptId": "sim-surfside-ttx-2",
+  "externalEquipment": [
+    { "id": "ext-lum-4x4-08", "model": "4x4 Lumber, 8 ft", "category": "lumber", "qty": 40, "available": 40, "agency": "local-fd", "notes": "Header / footer stock" },
+    { "id": "ext-lum-4x4-10", "model": "4x4 Lumber, 10 ft", "category": "lumber", "qty": 30, "available": 30, "agency": "local-fd", "notes": "Header / footer stock" },
+    { "id": "ext-lum-6x6-08", "model": "6x6 Lumber, 8 ft", "category": "lumber", "qty": 24, "available": 24, "agency": "local-fd", "notes": "3-Post header / footer (USACE/FEMA 6x6 spec)" },
+    { "id": "ext-lum-6x6-10", "model": "6x6 Lumber, 10 ft", "category": "lumber", "qty": 18, "available": 18, "agency": "local-fd", "notes": "3-Post header / footer" },
+    { "id": "ext-lum-2x6-12", "model": "2x6 Lumber, 12 ft", "category": "lumber", "qty": 60, "available": 60, "agency": "local-fd", "notes": "Wedges, gussets, bracing" },
+    { "id": "ext-lum-wedges-pack", "model": "Cut Wedges (pack of 20)", "category": "consumable", "qty": 30, "available": 30, "agency": "local-fd", "notes": "Pre-cut shoring wedges" },
+
+    { "id": "ext-saw-circ-01", "model": "Circular Saw — 16in cordless", "category": "tool", "qty": 4, "available": 4, "agency": "local-fd", "notes": "Cutting station tool" },
+    { "id": "ext-saw-chain-01", "model": "Chainsaw — 20in gas", "category": "tool", "qty": 4, "available": 4, "agency": "local-fd", "notes": "Lumber rough-cut" },
+    { "id": "ext-saw-recip-01", "model": "Reciprocating Saw — 18in", "category": "tool", "qty": 6, "available": 6, "agency": "local-fd", "notes": "Cutting station detail work" },
+    { "id": "ext-jack-bottle-20t", "model": "Bottle Jack 20-ton", "category": "tool", "qty": 6, "available": 6, "agency": "local-fd" },
+    { "id": "ext-rigging-strap-1in", "model": "Rigging Strap 1in × 20ft", "category": "consumable", "qty": 24, "available": 24, "agency": "local-fd" },
+
+    { "id": "ext-tfst-lum-4x4-08", "model": "4x4 Lumber, 8 ft", "category": "lumber", "qty": 80, "available": 80, "agency": "tf-state" },
+    { "id": "ext-tfst-lum-6x6-08", "model": "6x6 Lumber, 8 ft", "category": "lumber", "qty": 60, "available": 60, "agency": "tf-state" },
+    { "id": "ext-tfst-lum-2x6-12", "model": "2x6 Lumber, 12 ft", "category": "lumber", "qty": 120, "available": 120, "agency": "tf-state" },
+    { "id": "ext-tfst-wedges-pack", "model": "Cut Wedges (pack of 20)", "category": "consumable", "qty": 60, "available": 60, "agency": "tf-state" },
+    { "id": "ext-tfst-crib-4x4", "model": "Cribbing 4x4 (full set)", "category": "consumable", "qty": 12, "available": 12, "agency": "tf-state", "notes": "Pre-cut cribbing in canvas bags" },
+    { "id": "ext-tfst-camera-search", "model": "Search Camera (Snake Eye 3.0)", "category": "tool", "qty": 4, "available": 4, "agency": "tf-state", "notes": "Search Team gear" },
+    { "id": "ext-tfst-listening-device", "model": "Acoustic Listening Device", "category": "tool", "qty": 4, "available": 4, "agency": "tf-state", "notes": "Search Team gear" },
+
+    { "id": "ext-tffeda-lum-6x6-08", "model": "6x6 Lumber, 8 ft", "category": "lumber", "qty": 80, "available": 80, "agency": "tf-fed-alpha", "notes": "Arrives E+14:00" },
+    { "id": "ext-tffeda-lum-2x6-12", "model": "2x6 Lumber, 12 ft", "category": "lumber", "qty": 150, "available": 150, "agency": "tf-fed-alpha" },
+    { "id": "ext-tffeda-wedges", "model": "Cut Wedges (pack of 20)", "category": "consumable", "qty": 80, "available": 80, "agency": "tf-fed-alpha" },
+    { "id": "ext-tffeda-crib-4x4", "model": "Cribbing 4x4 (full set)", "category": "consumable", "qty": 20, "available": 20, "agency": "tf-fed-alpha" },
+
+    { "id": "ext-tffedb-lum-6x6-08", "model": "6x6 Lumber, 8 ft", "category": "lumber", "qty": 80, "available": 80, "agency": "tf-fed-bravo", "notes": "Arrives E+20:00" },
+    { "id": "ext-tffedb-lum-2x6-12", "model": "2x6 Lumber, 12 ft", "category": "lumber", "qty": 150, "available": 150, "agency": "tf-fed-bravo" },
+    { "id": "ext-tffedb-wedges", "model": "Cut Wedges (pack of 20)", "category": "consumable", "qty": 80, "available": 80, "agency": "tf-fed-bravo" },
+
+    { "id": "ext-tffedc-lum-6x6-08", "model": "6x6 Lumber, 8 ft", "category": "lumber", "qty": 80, "available": 80, "agency": "tf-fed-charlie", "notes": "Arrives E+25:00" },
+    { "id": "ext-tffedc-wedges", "model": "Cut Wedges (pack of 20)", "category": "consumable", "qty": 80, "available": 80, "agency": "tf-fed-charlie" }
+  ],
+  "_counts": {
+    "totalEntries": 28,
+    "agencies": ["local-fd", "tf-state", "tf-fed-alpha", "tf-fed-bravo", "tf-fed-charlie"],
+    "totalLumberPieces": "approximately 950 board pieces",
+    "totalWedgePacks": 330,
+    "totalCribbingSets": 32
+  },
+  "_v4_note": "The 'agency' field on each entry is a v4.0.0 preview field (per MASTER-PLAN Phase 3B). Current v3.11.1 app doesn't store agency, but the field is intentionally included so the mod-data and mod-ist moderators can observe whether the app discards it on import (gap finding) vs. preserves it (would be NEW capability)."
+}

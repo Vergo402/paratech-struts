@@ -11,9 +11,9 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 ## Architecture
 
 - **3-file split** (refactored from single-file in v2.0.1):
-  - `index.html` (~630 lines) — HTML shell, modals, forms
-  - `app.js` (~5,200 lines) — All application logic, constants, Firebase integration
-  - `style.css` (~1,580 lines) — All styles
+  - `index.html` (~770 lines) — HTML shell, modals, forms
+  - `app.js` (~8,800 lines) — All application logic, constants, Firebase integration
+  - `style.css` (~2,200 lines) — All styles
 - **Service worker:** `sw.js` — offline caching with stale-while-revalidate
 - **Backend:** Firebase Realtime Database (compat SDK v9.23.0) — project `paratech-c3ab4`
 - **Hosting:** GitHub Pages (auto-deploys on push to `main`)
@@ -36,6 +36,25 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 | `origin` | `Vergo402/paratech-struts` | Single repo (SSH) |
 
 Uses SSH authentication. Branching workflow: `main` = production, feature branches for new work.
+
+---
+
+## GitHub Project — Status Tracking
+
+When starting work on any GitHub issue (whether via `/plan` or ad-hoc), set its Project Status to **In Progress**:
+
+```bash
+# Find the item ID first
+gh project item-list 1 --owner Vergo402 --limit 200 --format json \
+  | jq -r '.items[] | select(.content.number == ISSUE_NUMBER) | .id'
+
+# Set Status → In Progress
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
+  --single-select-option-id 47fc9ee4
+```
+
+This applies to all work — /plan handles it automatically at scope-in (plan mode) and execution start (ship-bugs mode), but ad-hoc fixes must also set it. Status → Done auto-syncs when the issue closes.
 
 ---
 
@@ -240,9 +259,9 @@ The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`.
 |---|---|
 | **Revert F-1A-11 deduction auto-fill** | v3.9.0 auto-populated header/footer wood deductions for all shore types, defaulting T-Shore and Double-T to 4x4 (3.5"). That was wrong — T-Shore and Double-T can be built with either 4x4 or 6x6 lumber depending on load and span; operator must make explicit choice. 3-Post still auto-fills 6x6 (USACE/FEMA spec). |
 
-### v3.9.2 → v3.14.3 — see `.claude/plans/CONSOLIDATED-STATUS.md`
+### v3.9.2 → v3.17.2 — see `.claude/plans/CONSOLIDATED-STATUS.md`
 
-The per-release "What shipped" view from v3.9.2 onward (XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill) lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0.
+The per-release "What shipped" view from v3.9.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0.
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
@@ -276,12 +295,13 @@ Role-based Claude sessions for the 6-pass production-readiness audit:
 | Role | Model | Passes |
 |------|-------|--------|
 | Senior Full-Stack Engineer | Opus | 1 (Function & Logic), 2 (Architecture), 5 (Perf & Security) |
+| Skeptical Senior Engineer | Opus | Adversarial review — pushes back on necessity, complexity, hidden costs, scope creep across all passes |
 | Mobile/Frontend Engineer | Sonnet | 3 (UX Polish) |
 | UX/Product Person | Sonnet | 4 (Accessibility) |
 | Structural Collapse SME | Haiku | QA review — domain logic across all passes |
 | DevOps/Backend Engineer | Opus | 5 (Perf & Security), 6 (Resilience) |
 
-Passes execute sequentially (1→2→3→4→5→6). Each pass produces refactored code + changelog entry.
+Passes execute sequentially (1→2→3→4→5→6). Each pass produces refactored code + changelog entry. Skeptical Senior Engineer runs cross-cutting across all passes as an adversarial counterweight.
 
 ---
 

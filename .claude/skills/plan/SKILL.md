@@ -204,6 +204,7 @@ Fixing in priority order; PATCH release.
 **Root cause:** {function, file:line, logic error}
 **Fix:** {exact change}
 **Verification:** {preview UI driver flow}
+**Agent:** {persona} · **Model:** {tier} · **Effort:** {sizing} · **Owner:** {github-login}
 
 ### P2: ...
 
@@ -228,6 +229,14 @@ Fixing in priority order; PATCH release.
 Present plan, get approval.
 
 #### A3. Execute
+
+Set every in-scope item to **In Progress** before starting code work:
+
+```bash
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
+  --single-select-option-id 47fc9ee4
+```
 
 ```bash
 git checkout -b bugfix/v{VERSION}
@@ -262,14 +271,35 @@ gh release create v{VERSION} --title "v{VERSION} — {summary}" --notes "{notes 
 
 #### A5. Project housekeeping
 
-For each in-scope item:
+For each in-scope item, set Release, Agent, Model, and Effort:
 ```bash
+# Release
 gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
   --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5j0 \
   --single-select-option-id <release-option-id-for-vX.Y.Z>
+
+# Agent
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVWwQ \
+  --single-select-option-id <agent-option-id>
+
+# Model
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVXlA \
+  --single-select-option-id <model-option-id>
+
+# Effort
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVXl4 \
+  --single-select-option-id <effort-option-id>
 ```
 
-Status auto-syncs to Done when issue closes (Project default rule).
+Assign the underlying issue to the responsible dev (Project surfaces it automatically):
+```bash
+gh issue edit <number> --repo Vergo402/paratech-struts --add-assignee <github-login>
+```
+
+Status auto-syncs to Done when issue closes (Project default rule). Status was already set to In Progress in A3.
 
 If any items lack a Severity or Component, set them now while context is fresh.
 
@@ -346,23 +376,25 @@ For each in-scope item, the table must show its **current Release field value** 
 **Bump:** {PATCH/MINOR/MAJOR} — {reasoning}
 
 ### In scope (N items)
-| # | Issue | Title | Source | Current Release | Action |
-|---|---|---|---|---|---|
-| 1 | #79 | assignedApparatus keyed object | audit | Backlog | scope into v{X.Y.Z} |
-| 2 | #107 | external eq return path | audit | v3.17.0 | already scoped (no change) |
-| 3 | #200 | newly-discovered listener leak | audit | (none — new) | create issue + scope |
-| 4 | #150 | NIMS cutover prep | feedback | v3.18.0 | **MOVE FROM v3.18.0** — confirm? |
+| # | Issue | Title | Source | Current Release | Agent | Model | Effort | Owner | Action |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | #79 | assignedApparatus keyed object | audit | Backlog | migration-specialist | Opus 4.7 | Extra high | Vergo402 | scope into v{X.Y.Z} |
+| 2 | #107 | external eq return path | audit | v3.17.0 | fullstack-engineer | Sonnet 4.6 | Medium | Vergo402 | already scoped (no change) |
+| 3 | #200 | newly-discovered listener leak | audit | (none — new) | devops-resilience | Sonnet 4.6 | Low | Vergo402 | create issue + scope |
+| 4 | #150 | NIMS cutover prep | feedback | v3.18.0 | nims-compliance + fullstack-engineer | Opus 4.7 1M | Max | Vergo402 | **MOVE FROM v3.18.0** — confirm? |
 
 ### Deferred (M items → v{X.Y+1.0})
 
 ### File impact
 - `app.js` — {…}
 
-### Agents to dispatch (auto-detected)
+### Agents to dispatch (auto-detected — Phase B6 review pass)
 - `devops-resilience`, `mobile-ux`, `qa-driver`, `release-manager`, …
 
 Approve, redirect, or cancel?
 ```
+
+The **Agent / Model / Effort / Owner** columns are auto-detected per the heuristics in the "Auto-detection" section below the field reference. If an item's dominant work changes (e.g., audit finding turns out to need a UI rebuild, not just a Firebase tweak), update the column before approving.
 
 Cross-release moves (the `**MOVE FROM**` row above) require explicit Alex confirmation per item — never silently re-scope a pre-committed item.
 
@@ -382,15 +414,46 @@ gh project item-add 1 --owner Vergo402 --url <new-issue-url>
 
 **(b) For every in-scope item — both newly-created AND existing Project items at Backlog (or being moved per B4 confirmation):**
 
+Set **Status (→ In Progress) + Release + Agent + Model + Effort** in one batch per item:
+
 ```bash
+# Status → In Progress
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
+  --single-select-option-id 47fc9ee4
+
+# Release
 gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
   --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5j0 \
   --single-select-option-id <release-option-id-for-v{VERSION}>
+
+# Agent (from B4 table)
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVWwQ \
+  --single-select-option-id <agent-option-id>
+
+# Model (from B4 table)
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVXlA \
+  --single-select-option-id <model-option-id>
+
+# Effort (from B4 table)
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTVXl4 \
+  --single-select-option-id <effort-option-id>
 ```
 
-Also set `Severity` + `Component` + `Source` if missing. Status stays as it was (Todo for new, In Progress if already underway).
+Assign the dev team member responsible via the GitHub Issue (Project surfaces it automatically):
 
-**This is the critical step the user explicitly flagged: items don't drift back to Backlog because the Release field is set HERE, at scope-in, not after ship.**
+```bash
+gh issue edit <number> --repo Vergo402/paratech-struts --add-assignee <github-login>
+```
+
+Default owner is `Vergo402` unless Alex specifies otherwise during B4. For pre-assigned issues, leave the assignee alone.
+
+Also set `Severity` + `Component` + `Source` if missing. Status is set to In Progress at scope-in (step b above) — items are committed to this release, so they're in progress.
+
+**This is the critical step the user explicitly flagged: items don't drift back to Backlog because the Release field is set HERE, at scope-in, not after ship. Agent / Model / Effort / Assignee follow the same rule — set them at scope-in so the Project shows a complete assignment view, not after execution.**
 
 Save plan to `.claude/plans/v{VERSION}-{theme}.md` (theme is 2-3 word kebab-case slug).
 
@@ -437,12 +500,12 @@ Order matters (each step independently reversible until the next runs):
 
 1. **Archive superseded plans** — `mv .claude/plans/v{X.Y.Z}-*.md .claude/plans/archive/` (except the new one). Idempotent.
 
-2. **Verify Project field-fill** — Release was set in B5 at scope-in. Verify all in-scope items have `Release = v{VERSION}`:
+2. **Verify Project field-fill** — Release, Agent, Model, Effort were set in B5 at scope-in. Verify every in-scope item has all four plus an assignee:
    ```bash
    gh project item-list 1 --owner Vergo402 --format json --limit 200 --jq \
-     ".items[] | select(.release == \"v{VERSION}\") | {number: .content.number, title: .content.title}"
+     ".items[] | select(.release == \"v{VERSION}\") | {number: .content.number, title: .content.title, agent: .agent, model: .model, effort: .effort, assignees: .content.assignees}"
    ```
-   If any in-scope item is missing the field (e.g., a B6 agent fold-in added a new item), set it now via `gh project item-edit`. Status stays Todo until execution.
+   Any item with a `null` Agent/Model/Effort or empty `assignees` is an oversight from B5 — fill it now via `gh project item-edit` / `gh issue edit`. Common gap: a B6 agent fold-in added a new item that didn't go through the B4 auto-detection pass. Status should already be In Progress from B5; verify and fix any that are still Todo.
 
 3. **CONSOLIDATED-STATUS narrative update** — append a per-release narrative paragraph. No item bullets (Project owns those).
 
@@ -452,7 +515,10 @@ Order matters (each step independently reversible until the next runs):
 
    Plan: .claude/plans/v{VERSION}-{theme}.md
    In scope: {N} items (see Project filter: Release=v{VERSION})
-   Agents: {N} approve, {M} concerns, {K} block
+   Assignment: {X} owned by Vergo402, {Y} by …
+   Model mix: {N1} Opus 4.7 1M · {N2} Opus 4.7 · {N3} Sonnet 4.6 · {N4} Haiku 4.5
+   Effort mix: {N1} Max · {N2} Extra high · {N3} High · {N4} Medium · {N5} Low
+   Review agents (B6): {N} approve, {M} concerns, {K} block
    New agents drafted: {0 or list}
 
    Next: run /plan in ship mode to execute (or `git checkout -b feature/v{VERSION}-{theme}`).
@@ -466,15 +532,124 @@ When editing Project items via `gh project item-edit`, you need the field IDs:
 
 | Field | Field ID | Type |
 |---|---|---|
-| Status | `PVTSSF_lAHODy7CN84BYNd6zhTU44c` | single-select (Todo/In Progress/Done — auto-syncs) |
+| Status | `PVTSSF_lAHODy7CN84BYNd6zhTU44c` | single-select — set to In Progress at scope-in/execution start; Done auto-syncs on issue close |
 | Release | `PVTSSF_lAHODy7CN84BYNd6zhTU5j0` | single-select |
 | Source | `PVTSSF_lAHODy7CN84BYNd6zhTU5G0` | single-select |
 | Severity | `PVTSSF_lAHODy7CN84BYNd6zhTU5G8` | single-select |
 | Component | `PVTSSF_lAHODy7CN84BYNd6zhTU5IU` | single-select |
+| **Agent** | `PVTSSF_lAHODy7CN84BYNd6zhTVWwQ` | single-select — primary subagent persona |
+| **Model** | `PVTSSF_lAHODy7CN84BYNd6zhTVXlA` | single-select — Claude model tier (matches the in-editor picker) |
+| **Effort** | `PVTSSF_lAHODy7CN84BYNd6zhTVXl4` | single-select — reasoning-effort tier (matches the in-editor picker) |
+| Assignees | `PVTF_lAHODy7CN84BYNd6zhTU44Y` | native GitHub field — dev team member responsible (set via `gh issue edit --add-assignee`) |
 
 Project ID: `PVT_kwHODy7CN84BYNd6` (number 1, owner Vergo402).
 
 Option IDs are listed in `.claude/scripts/backfill-project.sh` (or query via `gh project field-list 1 --owner Vergo402 --format json`).
+
+### Status option IDs
+
+**Status** (`PVTSSF_lAHODy7CN84BYNd6zhTU44c`):
+
+| Status | Option ID |
+|---|---|
+| Todo | `f75ad846` |
+| In Progress | `47fc9ee4` |
+| Done | `98236657` |
+
+### Assignment-field option IDs
+
+**Agent** (`PVTSSF_lAHODy7CN84BYNd6zhTVWwQ`):
+
+| Agent | Option ID |
+|---|---|
+| architect | `52c52e5f` |
+| battalion-chief | `38251cee` |
+| code-auditor | `c0038ac1` |
+| devops-resilience | `b86a4511` |
+| fullstack-engineer | `84c07f9b` |
+| manual-writer | `521627f8` |
+| migration-specialist | `4b4ee56b` |
+| mobile-ux | `81f49c4a` |
+| nims-compliance | `cb74b3d8` |
+| qa-driver | `351f199a` |
+| release-manager | `dc981981` |
+| rescue-specialist | `e51c7375` |
+| scenario-conductor | `99863371` |
+| structural-collapse-sme | `7b39d1dd` |
+| usar-task-force-leader | `94e40a39` |
+| general-purpose | `31d120c4` |
+
+**Model** (`PVTSSF_lAHODy7CN84BYNd6zhTVXlA`) — mirrors the Claude Code model picker (Models menu, ⇧⌘I):
+
+| Model | Option ID |
+|---|---|
+| Opus 4.7 | `3050dd5b` |
+| Opus 4.7 1M | `17993ea2` |
+| Sonnet 4.6 | `1e38b345` |
+| Haiku 4.5 | `1aacd747` |
+| Opus 4.6 Legacy | `1622589c` |
+
+**Effort** (`PVTSSF_lAHODy7CN84BYNd6zhTVXl4`) — mirrors the Claude Code effort picker (Effort menu, ⇧⌘E):
+
+| Effort | Option ID |
+|---|---|
+| Low | `e7e7fdf8` |
+| Medium | `f90a7518` |
+| High | `3b27edcd` |
+| Extra high | `aa236408` |
+| Max | `c708dbf5` |
+
+### Auto-detection — Agent / Model / Effort
+
+Infer at scope-in. Surface in the GATE 1 / plan table; Alex can override before commit.
+
+**Agent (primary implementer)** — pick the persona whose description best matches the dominant work:
+
+| Scope dominated by… | Agent |
+|---|---|
+| UI, CSS, touch targets, accessibility, visual polish | `mobile-ux` |
+| Schema cutover, dual-write, rollback, data migration | `migration-specialist` |
+| Firebase, service worker, offline, listener lifecycle | `devops-resilience` |
+| ICS roles, NIMS terms, apparatus, doctrine | `nims-compliance` (review) + `fullstack-engineer` (impl) |
+| Load tables, strut math, shore types, deductions | `structural-collapse-sme` (review) + `fullstack-engineer` (impl) |
+| Cross-file design, paradigm shift, modularization | `architect` (plan) + `fullstack-engineer` (impl) |
+| User manual updates | `manual-writer` |
+| Surfside-scale stress test | `scenario-conductor` |
+| IC workflow, command transfer, SitStat | `battalion-chief` (review) + `fullstack-engineer` (impl) |
+| Multi-agency / federal scope | `usar-task-force-leader` (review) |
+| Generic feature work, plain bug fix | `fullstack-engineer` (default) |
+
+If a review-only persona owns the item (e.g., `nims-compliance` for a doctrine change), set Agent to the implementer (usually `fullstack-engineer`) and capture the review persona in the plan-file "Agent review" section instead. Agent field tracks **who's doing the work**, not who's reviewing.
+
+**Model** — pick the smallest model that can do the job correctly. Options match the Claude Code picker:
+
+| Work shape | Model |
+|---|---|
+| Trivial copy/label/style change, single-line fix, mechanical | `Haiku 4.5` |
+| Standard feature work, well-understood, single-file or small multi-file | `Sonnet 4.6` |
+| Architecture work, multi-file refactor, doctrine cutover, safety-critical math, migrations | `Opus 4.7` |
+| Whole-codebase audits, planning sessions spanning many large files, anything that needs to hold the entire app.js + audits + plans in context | `Opus 4.7 1M` |
+| Avoid by default — only when reproducing pre-4.7 behavior matters | `Opus 4.6 Legacy` |
+
+**Effort** — reasoning-effort tier, matching the Claude Code picker. Pick by the depth of reasoning the work needs, not wall-clock time:
+
+| Work shape | Effort |
+|---|---|
+| Mechanical, well-specified, no judgment calls | `Low` |
+| Standard implementation, normal review depth | `Medium` |
+| Multi-file refactor, careful sequencing, real design judgment | `High` |
+| Paradigm shift, doctrine work, safety-critical math, large surface area | `Extra high` |
+| Release-defining or novel work where depth-of-reasoning trumps cost | `Max` |
+
+Effort doesn't have to match Model. A `Haiku 4.5 · Max` item is a mechanical change where every detail matters; an `Opus 4.7 · Medium` item is a complex domain but routine for that domain.
+
+**Assignees (dev team member)** — set via the GitHub Issue, not the Project field directly:
+
+```bash
+gh issue edit <number> --repo Vergo402/paratech-struts --add-assignee <github-login>
+```
+
+Default to `Vergo402` (Alex) unless he specifies otherwise. The Project surfaces issue assignees automatically. For unassigned items, leave blank rather than guessing.
 
 Adding a new issue to the Project:
 ```bash
@@ -496,6 +671,8 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - **Don't let agent recommendations recurse infinitely.** Cap at depth 1.
 - **Don't duplicate Project state in CONSOLIDATED-STATUS.** Item-level details live in the Project; status doc is narrative only.
 - **Don't ship a Mode-A bug fix without a preview UI driver flow.** Per `feedback_verification_standard`.
+- **Don't leave Agent / Model / Effort / Assignee blank.** Set all four at scope-in (B5 or A5). Blank fields make the Project's filter-by-owner / filter-by-model views useless. If genuinely unknown, default to `fullstack-engineer` / `Sonnet 4.6` / `Medium` / `Vergo402` and revise in B6.
+- **Don't leave Status as Todo once work begins.** Set to In Progress at scope-in (plan mode B5) or execution start (ship-bugs mode A3). Items sitting at Todo while being actively worked look stale on the board.
 
 ---
 

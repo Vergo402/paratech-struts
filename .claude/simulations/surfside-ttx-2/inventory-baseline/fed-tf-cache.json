@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "_note": "Training-only. Federal USAR TF cache TEMPLATE. Applied 3× during sim — TF-Fed-Alpha (arrives E+14:00), TF-Fed-Bravo (E+20:00), TF-Fed-Charlie (E+25:00). For each TF: clone this template, replace 'TEMPLATE' in IDs with 'alpha' / 'bravo' / 'charlie' and the apparatus name accordingly. Federal Type I TF caches are larger and deeper than state TF caches.",
+  "deptId": "sim-surfside-ttx-2",
+  "apparatus": [
+    { "id": "app-tf-fed-TEMPLATE-cache", "name": "TF-Fed-TEMPLATE Cache", "type": "taskforce" }
+  ],
+  "inventory": [
+    { "id": "inv-tffed-TEMPLATE-at1215", "type": "strut", "model": "AT 12-15", "system": "AcmeThread", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-at1925", "type": "strut", "model": "AT 19-25", "system": "AcmeThread", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tffed-TEMPLATE-at2536", "type": "strut", "model": "AT 25-36", "system": "AcmeThread", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 16, "available": 16 },
+    { "id": "inv-tffed-TEMPLATE-at3758", "type": "strut", "model": "AT 37-58", "system": "AcmeThread", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tffed-TEMPLATE-at5688", "type": "strut", "model": "AT 56-88", "system": "AcmeThread", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+
+    { "id": "inv-tffed-TEMPLATE-lk1925", "type": "strut", "model": "LK 19-25", "system": "LockStroke", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-lk2536", "type": "strut", "model": "LK 25-36", "system": "LockStroke", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-lk3758", "type": "strut", "model": "LK 37-58", "system": "LockStroke", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-lk5589", "type": "strut", "model": "LK 55-89", "system": "LockStroke", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+
+    { "id": "inv-tffed-TEMPLATE-ls203", "type": "strut", "model": "LS 203", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tffed-TEMPLATE-ls304", "type": "strut", "model": "LS 304", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-ls406", "type": "strut", "model": "LS 406", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-ls610", "type": "strut", "model": "LS 610", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-ls812", "type": "strut", "model": "LS 812", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-ls1016", "type": "strut", "model": "LS 1016", "system": "LongShore", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 4, "available": 4 },
+
+    { "id": "inv-tffed-TEMPLATE-ext-at-6", "type": "extension", "model": "", "system": "AcmeThread", "length": 6, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 16, "available": 16 },
+    { "id": "inv-tffed-TEMPLATE-ext-at-12", "type": "extension", "model": "", "system": "AcmeThread", "length": 12, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 20, "available": 20 },
+    { "id": "inv-tffed-TEMPLATE-ext-at-24", "type": "extension", "model": "", "system": "AcmeThread", "length": 24, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 14, "available": 14 },
+    { "id": "inv-tffed-TEMPLATE-ext-at-36", "type": "extension", "model": "", "system": "AcmeThread", "length": 36, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+
+    { "id": "inv-tffed-TEMPLATE-ext-lk-12", "type": "extension", "model": "", "system": "LockStroke", "length": 12, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 14, "available": 14 },
+    { "id": "inv-tffed-TEMPLATE-ext-lk-24", "type": "extension", "model": "", "system": "LockStroke", "length": 24, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-ext-lk-36", "type": "extension", "model": "", "system": "LockStroke", "length": 36, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+
+    { "id": "inv-tffed-TEMPLATE-ext-ls-12", "type": "extension", "model": "", "system": "LongShore", "length": 12, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 14, "available": 14 },
+    { "id": "inv-tffed-TEMPLATE-ext-ls-24", "type": "extension", "model": "", "system": "LongShore", "length": 24, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tffed-TEMPLATE-ext-ls-48", "type": "extension", "model": "", "system": "LongShore", "length": 48, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-ext-ls-67", "type": "extension", "model": "", "system": "LongShore", "length": 67, "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+
+    { "id": "inv-tffed-TEMPLATE-pl-hinged6", "type": "plate", "model": "", "plateId": "hinged6", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 20, "available": 20 },
+    { "id": "inv-tffed-TEMPLATE-pl-hinged12", "type": "plate", "model": "", "plateId": "hinged12", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 16, "available": 16 },
+    { "id": "inv-tffed-TEMPLATE-pl-hinged6ring", "type": "plate", "model": "", "plateId": "hinged6ring", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-hinged12ring", "type": "plate", "model": "", "plateId": "hinged12ring", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-rigid6", "type": "plate", "model": "", "plateId": "rigid6", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tffed-TEMPLATE-pl-rigid12", "type": "plate", "model": "", "plateId": "rigid12", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tffed-TEMPLATE-pl-swivel6", "type": "plate", "model": "", "plateId": "swivel6", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-swivel12", "type": "plate", "model": "", "plateId": "swivel12", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-multi", "type": "plate", "model": "", "plateId": "multi", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-vbase", "type": "plate", "model": "", "plateId": "vbase", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-base45", "type": "plate", "model": "", "plateId": "base45", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tffed-TEMPLATE-pl-channel6x6", "type": "plate", "model": "", "plateId": "channel6x6", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-pl-channel4x4", "type": "plate", "model": "", "plateId": "channel4x4", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tffed-TEMPLATE-pl-angle3x4", "type": "plate", "model": "", "plateId": "angle3x4", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-elevatorsupport", "type": "plate", "model": "", "plateId": "elevatorsupport", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tffed-TEMPLATE-pl-threadedconn", "type": "plate", "model": "", "plateId": "threadedconn", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-springloaded", "type": "plate", "model": "", "plateId": "springloaded", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tffed-TEMPLATE-pl-chainwedge", "type": "plate", "model": "", "plateId": "chainwedge", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-contour", "type": "plate", "model": "", "plateId": "contour", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-offsetcone", "type": "plate", "model": "", "plateId": "offsetcone", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-rubber4", "type": "plate", "model": "", "plateId": "rubber4", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tffed-TEMPLATE-pl-rubberangle", "type": "plate", "model": "", "plateId": "rubberangle", "apparatus": "app-tf-fed-TEMPLATE-cache", "quantity": 6, "available": 6 }
+  ],
+  "_counts": {
+    "apparatus": 1,
+    "inventoryStrutsPerTF": 120,
+    "inventoryExtensionsPerTF": 144,
+    "inventoryPlatesPerTF": 198,
+    "totalInventoryItemsPerTF": 49,
+    "appliedThreeTimes": "Alpha (E+14:00), Bravo (E+20:00), Charlie (E+25:00)"
+  }
+}

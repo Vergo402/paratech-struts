@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "_note": "Training-only. State USAR TF cache — arrives E+5:00 with main body (per personnel-roster.md). Inventory belongs to the TF, not a single apparatus; in the app this is loaded as a single 'TF-State Cache' apparatus.",
+  "deptId": "sim-surfside-ttx-2",
+  "apparatus": [
+    { "id": "app-tf-state-cache", "name": "TF-State Cache", "type": "taskforce" }
+  ],
+  "inventory": [
+    { "id": "inv-tfst-at1215", "type": "strut", "model": "AT 12-15", "system": "AcmeThread", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-at1925", "type": "strut", "model": "AT 19-25", "system": "AcmeThread", "apparatus": "app-tf-state-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tfst-at2536", "type": "strut", "model": "AT 25-36", "system": "AcmeThread", "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-at3758", "type": "strut", "model": "AT 37-58", "system": "AcmeThread", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-at5688", "type": "strut", "model": "AT 56-88", "system": "AcmeThread", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+
+    { "id": "inv-tfst-lk1925", "type": "strut", "model": "LK 19-25", "system": "LockStroke", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-lk2536", "type": "strut", "model": "LK 25-36", "system": "LockStroke", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-lk3758", "type": "strut", "model": "LK 37-58", "system": "LockStroke", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-lk5589", "type": "strut", "model": "LK 55-89", "system": "LockStroke", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+
+    { "id": "inv-tfst-ls203", "type": "strut", "model": "LS 203", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 2, "available": 2 },
+    { "id": "inv-tfst-ls304", "type": "strut", "model": "LS 304", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-ls406", "type": "strut", "model": "LS 406", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-ls610", "type": "strut", "model": "LS 610", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-ls812", "type": "strut", "model": "LS 812", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-ls1016", "type": "strut", "model": "LS 1016", "system": "LongShore", "apparatus": "app-tf-state-cache", "quantity": 2, "available": 2 },
+
+    { "id": "inv-tfst-ext-at-6", "type": "extension", "model": "", "system": "AcmeThread", "length": 6, "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-ext-at-12", "type": "extension", "model": "", "system": "AcmeThread", "length": 12, "apparatus": "app-tf-state-cache", "quantity": 16, "available": 16 },
+    { "id": "inv-tfst-ext-at-24", "type": "extension", "model": "", "system": "AcmeThread", "length": 24, "apparatus": "app-tf-state-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tfst-ext-at-36", "type": "extension", "model": "", "system": "AcmeThread", "length": 36, "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+
+    { "id": "inv-tfst-ext-lk-6", "type": "extension", "model": "", "system": "LockStroke", "length": 6, "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-ext-lk-12", "type": "extension", "model": "", "system": "LockStroke", "length": 12, "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-ext-lk-24", "type": "extension", "model": "", "system": "LockStroke", "length": 24, "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-ext-lk-36", "type": "extension", "model": "", "system": "LockStroke", "length": 36, "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+
+    { "id": "inv-tfst-ext-ls-12", "type": "extension", "model": "", "system": "LongShore", "length": 12, "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-ext-ls-24", "type": "extension", "model": "", "system": "LongShore", "length": 24, "apparatus": "app-tf-state-cache", "quantity": 10, "available": 10 },
+    { "id": "inv-tfst-ext-ls-48", "type": "extension", "model": "", "system": "LongShore", "length": 48, "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-ext-ls-67", "type": "extension", "model": "", "system": "LongShore", "length": 67, "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+
+    { "id": "inv-tfst-pl-hinged6", "type": "plate", "model": "", "plateId": "hinged6", "apparatus": "app-tf-state-cache", "quantity": 16, "available": 16 },
+    { "id": "inv-tfst-pl-hinged12", "type": "plate", "model": "", "plateId": "hinged12", "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-pl-hinged6ring", "type": "plate", "model": "", "plateId": "hinged6ring", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-hinged12ring", "type": "plate", "model": "", "plateId": "hinged12ring", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-rigid6", "type": "plate", "model": "", "plateId": "rigid6", "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-pl-rigid12", "type": "plate", "model": "", "plateId": "rigid12", "apparatus": "app-tf-state-cache", "quantity": 12, "available": 12 },
+    { "id": "inv-tfst-pl-swivel6", "type": "plate", "model": "", "plateId": "swivel6", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-swivel12", "type": "plate", "model": "", "plateId": "swivel12", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-multi", "type": "plate", "model": "", "plateId": "multi", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-vbase", "type": "plate", "model": "", "plateId": "vbase", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-base45", "type": "plate", "model": "", "plateId": "base45", "apparatus": "app-tf-state-cache", "quantity": 8, "available": 8 },
+    { "id": "inv-tfst-pl-channel4x4", "type": "plate", "model": "", "plateId": "channel4x4", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-pl-channel6x6", "type": "plate", "model": "", "plateId": "channel6x6", "apparatus": "app-tf-state-cache", "quantity": 6, "available": 6 },
+    { "id": "inv-tfst-pl-angle3x4", "type": "plate", "model": "", "plateId": "angle3x4", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-pl-rubberangle", "type": "plate", "model": "", "plateId": "rubberangle", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-pl-rubber4", "type": "plate", "model": "", "plateId": "rubber4", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-pl-contour", "type": "plate", "model": "", "plateId": "contour", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-pl-offsetcone", "type": "plate", "model": "", "plateId": "offsetcone", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 },
+    { "id": "inv-tfst-pl-chainwedge", "type": "plate", "model": "", "plateId": "chainwedge", "apparatus": "app-tf-state-cache", "quantity": 4, "available": 4 }
+  ],
+  "_counts": {
+    "apparatus": 1,
+    "inventoryStruts": 86,
+    "inventoryExtensions": 92,
+    "inventoryPlates": 144,
+    "totalInventoryItems": 47
+  }
+}
