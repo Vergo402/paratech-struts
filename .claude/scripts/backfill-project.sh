@@ -11,42 +11,52 @@ F_RELEASE_ID="PVTSSF_lAHODy7CN84BYNd6zhTU5j0"
 F_SOURCE_ID="PVTSSF_lAHODy7CN84BYNd6zhTU5G0"
 
 release_opt_id() {
+  # IDs regenerated 2026-05-20 after the Release options list was inadvertently
+  # replaced via updateProjectV2Field (the mutation replaces, doesn't append).
+  # If options are recreated again, regenerate these via:
+  #   gh project field-list 1 --owner Vergo402 --format json | jq '.fields[] | select(.name=="Release")'
   case "$1" in
-    Backlog) echo db9f03f8 ;;
-    v5.0.0) echo a9645c1d ;;
-    v4.0.0) echo 731c786c ;;
-    v3.17.0) echo 3448be54 ;;
-    v3.16.4) echo 11d19137 ;;
-    v3.16.3) echo 80509a6b ;;
-    v3.16.2) echo 2232a149 ;;
-    v3.16.1) echo ee87949c ;;
-    v3.16.0) echo 5f761a90 ;;
-    v3.15.0) echo 353e27cc ;;
-    v3.14.3) echo 122fbc2a ;;
-    v3.12.0) echo d3ef7bdd ;;
-    v3.11.3) echo d0244f02 ;;
-    v3.11.2) echo d528c780 ;;
-    v3.11.1) echo b640d9a6 ;;
-    v3.10.1) echo 8c63f9a9 ;;
-    v3.10.0) echo 128ae59d ;;
-    v3.9.2) echo dacffbf4 ;;
-    v3.9.1) echo cbe51fc8 ;;
-    v3.9.0) echo 32c447aa ;;
-    v3.8.3) echo ee9d04b5 ;;
-    v3.8.2) echo 9323c951 ;;
-    v3.8.1) echo e1ba85e6 ;;
-    v3.8.0) echo b9c7a086 ;;
-    v3.7.5) echo 30893182 ;;
-    v3.7.4) echo 8bd4e926 ;;
-    v3.7.3) echo 884a5fd2 ;;
-    v3.7.2) echo e1f21964 ;;
-    v3.7.0) echo 35c42931 ;;
-    v3.6.0) echo 9a050f86 ;;
-    v3.5.3) echo 9496862f ;;
-    v3.5.2) echo f24ca3c6 ;;
-    v3.5.1) echo 78565cb9 ;;
-    v3.5.0) echo c066ff45 ;;
-    pre-v3.5.0) echo 4d481215 ;;
+    Backlog) echo 9042c5c9 ;;
+    v5.0.0) echo 2f3938fc ;;
+    v4.0.0) echo 29df24c4 ;;
+    v3.18.1) echo 7b8713d3 ;;
+    v3.18.0) echo d39a6235 ;;
+    v3.17.4) echo f50045aa ;;
+    v3.17.3) echo 416e62ae ;;
+    v3.17.2) echo 97c84b14 ;;
+    v3.17.1) echo d9d91526 ;;
+    v3.17.0) echo 210788ac ;;
+    v3.16.4) echo b81fff06 ;;
+    v3.16.3) echo 555eab3d ;;
+    v3.16.2) echo 1cb29c75 ;;
+    v3.16.1) echo b400fee1 ;;
+    v3.16.0) echo e4d0da2f ;;
+    v3.15.0) echo a4e0d01e ;;
+    v3.14.3) echo aacae658 ;;
+    v3.12.0) echo 2809e6c8 ;;
+    v3.11.3) echo 52646f7e ;;
+    v3.11.2) echo 7b311a76 ;;
+    v3.11.1) echo a5781c85 ;;
+    v3.10.1) echo bb5b3c02 ;;
+    v3.10.0) echo e7a5e14a ;;
+    v3.9.2) echo e5d7a42d ;;
+    v3.9.1) echo 6851d9a5 ;;
+    v3.9.0) echo f37f79bf ;;
+    v3.8.3) echo 66d9ddd0 ;;
+    v3.8.2) echo 0faa1b90 ;;
+    v3.8.1) echo 6792994d ;;
+    v3.8.0) echo b67a6191 ;;
+    v3.7.5) echo 1b2f49a1 ;;
+    v3.7.4) echo 8ead5fb4 ;;
+    v3.7.3) echo f560e012 ;;
+    v3.7.2) echo c12c50d2 ;;
+    v3.7.0) echo 17b2fbbd ;;
+    v3.6.0) echo e6262eaa ;;
+    v3.5.3) echo 54467486 ;;
+    v3.5.2) echo 64e27a98 ;;
+    v3.5.1) echo 7861326c ;;
+    v3.5.0) echo 1a902637 ;;
+    pre-v3.5.0) echo c50a4a19 ;;
     *) echo "" ;;
   esac
 }
