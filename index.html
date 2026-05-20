@@ -71,7 +71,7 @@
     <header class="header">
       <h1>FieldShore</h1>
       <div class="subtitle" id="deptName"></div>
-      <div class="version-label">v3.17.4</div>
+      <div class="version-label">v3.18.0</div>
       <button id="viewModeToggle" class="view-mode-toggle" type="button" aria-label="Switch to mobile view" title="Switch to mobile view">
         <svg class="vm-icon vm-icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <rect x="7" y="2" width="10" height="20" rx="2"/>
@@ -85,7 +85,7 @@
       </button>
     </header>
 
-    <!-- Screen 1: Quick Select -->
+    <!-- Screen 1: Quick Find -->
     <section class="screen active" id="screenSelect">
       <div class="form-group">
         <label>Opening Measurement</label>
@@ -302,7 +302,7 @@
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdApparatus">▶</span> Assigned Apparatus</span>
           <div style="display:flex;gap:4px"><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showCreateGroupModal()">Group</button><button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAssignApparatus()">Assign</button></div>
         </div>
-        <div id="sectionCmdApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-chips"></div></div>
+        <div id="sectionCmdApparatus" style="display:none"><div id="assignedApparatusList" class="assigned-apparatus-stack"></div></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdExternal')" role="button" tabindex="0" aria-expanded="false" aria-controls="sectionCmdExternal">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdExternal">▶</span> External Equipment</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddExternal()">+ Add</button>
@@ -320,7 +320,6 @@
           </div>
           <div id="sectionCmdMyrole" style="display:none"><div id="myRoleDisplay" class="op-time mb-8">Not assigned — tap Change to pick a role</div></div>
         </div>
-        <div id="soloIcControls"></div>
         <div class="flex-between mb-8 section-toggle" onclick="toggleSection('cmdHazards')" role="button" tabindex="0" aria-expanded="true" aria-controls="sectionCmdHazards">
           <span class="section-title m-0"><span class="section-arrow" id="arrowCmdHazards">▼</span> Hazards (ICS-208)</span>
           <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();showAddHazard()">+ Add</button>
@@ -480,7 +479,7 @@
           <label>Area / Room</label>
           <input type="text" id="spArea" placeholder="e.g. 2" aria-label="Area">
         </div>
-        <div class="form-group flex-1" id="spGroupWrapper">
+        <div class="form-group flex-1">
           <label>Group</label>
           <select id="spGroup" aria-label="Assigned apparatus group">
             <option value="">— None —</option>
@@ -601,10 +600,6 @@
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>Scenario <span class="label-hint">(optional — sets defaults)</span></label>
-          <div id="presetCards" class="preset-cards"></div>
-        </div>
-        <div class="form-group">
           <label>Operation Name / Location</label>
           <input type="text" id="newOpName" placeholder="e.g. Building Collapse - 123 Main St" maxlength="100" aria-label="Operation name">
         </div>
@@ -623,7 +618,6 @@
           <label>Assign Apparatus</label>
           <div id="startOpApparatusList" class="apparatus-checklist"></div>
         </div>
-        <div id="presetOrgNote" class="preset-org-note" style="display:none"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="guardClick(this,confirmStartOp)">Start Operation</button>

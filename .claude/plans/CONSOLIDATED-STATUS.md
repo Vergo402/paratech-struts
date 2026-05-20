@@ -1,6 +1,7 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.17.0 (shipped 2026-05-19) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Current:** v3.17.4 (shipped 2026-05-19) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Next planned:** v3.18.0 (hfd217 field feedback — see `.claude/plans/v3.18.0-field-feedback.md`) · then v4.0.0 (doctrine cutover)
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
@@ -16,6 +17,9 @@ v4.0 anchors on everyday municipal fire-department use (Type IV/V incidents) —
 ---
 
 ## Recent releases — what we learned
+
+### v3.17.1 → v3.17.4 (PATCH series, 2026-05-19) — FAB polish + inventory atomicity
+Catch-up entry: v3.17.1 increased FAB hold duration 0.5s → 3.5s. v3.17.2 fixed FAB arc animation hidden behind icon on mobile. v3.17.3 + v3.17.4 ([commits f656b89, ed85e88](https://github.com/Vergo402/paratech-struts/commits/main)) closed remaining v3.17.0 carry-overs: plate double-deduction during group deploys, silent inventory exhaustion mid-group, atomic deploys, silent auto-repair, display race fix. **Lesson:** the v3.17.0 ship was correctly framed as a bundle but the plate-double-deduction and group-exhaustion paths weren't caught by the in-flight v3.17.0 audit — drove a same-day patch series. Project items were closed and bumped to Done; this narrative entry catches up the CONSOLIDATED-STATUS doc which had drifted to v3.17.0 only.
 
 ### v3.17.0 (MINOR, 2026-05-19) — Pre-v4 bundle (12 items)
 Local-first defaults (scenario presets, solo-IC mode, quick-start FAB), pre-v4 schema dual-writes (`assignedApparatus`→keyed, `customRoles`→keyed, `'Strut Placed'`→`'Strut Installed'`, one-shot role-hierarchy migration), role/permission cleanup (IC-only End Op, Mark Secured restricted to IC+Safety+Shoring, legend audit, external-equipment full form rebuild), and the #107 external-equipment offline resync that v3.16.4 deferred. **Lesson:** the external-equipment form rebuild (#102) revealed that `getOperationInventory()` had been hardcoding `type: 'strut'` for all external items since the feature was introduced — extensions and plates were silently mistyped. The shared grid builder pattern (`buildStrutGridHTML`/`buildExtGridHTML`/`buildPlateGridHTML`) extracted from the regular inventory modal prevented duplicating that bug. The ext-equipment offline resync (#107) mirrored the v3.16.4 inventory pattern one-to-one with namespaced `_itemEpoch` keys (`'ext:' + opId + ':' + itemId`), confirming the touched-set architecture generalizes cleanly. Plan: [v3.17.0-pre-v4-bundle.md](v3.17.0-pre-v4-bundle.md).
@@ -42,15 +46,25 @@ Two-round audit (v3.5.1) catalogued ~100 unique findings. Closed across v3.5.2 (
 
 ## Pipeline
 
-### v3.17.0 ✅ shipped 2026-05-19 — see "Recent releases" above
+### v3.17.0–v3.17.4 ✅ shipped 2026-05-19 — see "Recent releases" above
 
-### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ next — 2 items scoped in Project
+### v3.18.0 (MINOR, ~1-2 weeks) ⏳ next — 9 items scoped, plan written 2026-05-20
+
+hfd217 field-feedback response. **Workflow blockers:** #120 (cutting → runner blocked), #118 (Ops permission narrowing per battalion-chief), #116 (ext-equip inventory display refresh). **Layout fixes:** #117 (Operations header push-left regression), #115 (Assigned Apparatus category grouping). **Reversals:** #122 (scenario presets — undoes v3.17.0 #108), #124 (auto/solo/promote — undoes v3.17.0 #109). **UX polish:** #125 (Command dashboard tiles — timer setInterval pattern), #121 (plate dropdown sort with section-label divider).
+
+B6 review: 7 reviewers, skeptical-senior-engineer added to the always-include set. **BLOCK partially honored** — #119 (all-measurements fractions) moved to v4.0.0 because it's data-model scope, not a bug fix. Plan: [v3.18.0-field-feedback.md](v3.18.0-field-feedback.md). Live query: [Release=v3.18.0 in the Project](https://github.com/users/Vergo402/projects/1).
+
+**Process callout:** the safety-defaults memory rule that's supposed to gate setup-default changes did not catch v3.17.0 #108/#109. Cause: n=1 — when the only user is also the only requester, treating the user's request as "explicit Alex confirmation" collapses the check. See plan's "Process notes" section for the recommended rule update (not in v3.18.0 scope).
+
+### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 4 items scoped in Project
 
 Per-device UID auth + NIMS doctrine corrections + schema cutover. Per-write `_meta: { byUid, at }` attribution, role-based write scope, schema dual-write window closes. Local-scale TTX-3 alpha gate (car-into-building, ~6-8 SPs). User manual rewrite.
 
-**Already scoped:**
+**Scoped in Project:**
 - [#80](https://github.com/Vergo402/paratech-struts/issues/80) — Cloud Function for atomic allocate+create (architectural, depends on per-device UID auth landing first)
 - [#103](https://github.com/Vergo402/paratech-struts/issues/103) — Header/footer beams in inventory + deduct from cut lengths (hfd217-tagged "in v4")
+- [#119](https://github.com/Vergo402/paratech-struts/issues/119) — All measurements as fractions (moved from v3.18.0 per skeptical-senior-engineer BLOCK; data-model + Excel I/O + search-cache-key scope)
+- [#123](https://github.com/Vergo402/paratech-struts/issues/123) — Department → Apparatus → Equipment/Individuals breadcrumb hierarchy (single-dept piece in v4.0; multi-dept dropdown deferred to Federal Future)
 
 Plan: [v4.0.0-plan.md](v4.0.0-plan.md) (canonical for v4.0 scope per MASTER-PLAN.md). Live query: [Release=v4.0.0 in the Project](https://github.com/users/Vergo402/projects/1).
 

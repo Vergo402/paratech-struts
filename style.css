@@ -524,6 +524,78 @@ select { padding-right: 40px; }
 .apparatus-checklist label:has(input:checked) { border-color: var(--blue); background: var(--blue-light); }
 .apparatus-checklist input[type="checkbox"] { width: 16px; height: 16px; }
 .assigned-apparatus-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; min-height: 28px; }
+/* #125 (v3.18.0): Command-tab dashboard tiles. Three tiles total. On phone
+   stack vertically for vertical-thumb legibility; on desktop go three-column.
+   Timer tile is visually taller via padding (not custom height) and uses
+   monospace big-type so it reads from across the truck cab. */
+.dash-tiles {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+@media (min-width: 540px) {
+  .dash-tiles { grid-template-columns: 1.4fr 1fr 1fr; }
+}
+.dash-tile {
+  background: var(--surface-alt);
+  border-radius: var(--radius);
+  padding: 14px 12px;
+  text-align: center;
+}
+.dash-tile-timer { padding: 20px 16px; }
+.dash-tile-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+.dash-tile-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+}
+.dash-tile-timer .dash-tile-value {
+  font-size: 32px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+/* #115 (v3.18.0): Assigned Apparatus column — each category is a vertical
+   block (label on top, chips wrapped beneath), so labels stop landing inline
+   between chips. Container is a column-flow stack of these sections. */
+.assigned-apparatus-stack { display: flex; flex-direction: column; gap: 10px; }
+.aa-section { display: block; }
+.aa-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+.aa-section-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.aa-group-label { color: var(--blue); }
+.aa-group-type {
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-transform: none;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.aa-group-disband {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
+.aa-person-badge {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
 .app-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 4px; background: var(--blue-light); color: var(--blue); }
 .app-chip .chip-x { cursor: pointer; font-size: 16px; line-height: 1; opacity: 0.6; margin-left: 4px; padding: 4px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
 .app-chip .chip-x:hover { opacity: 1; }
@@ -1191,6 +1263,26 @@ select { padding-right: 40px; }
   transform: translateZ(0);
 }
 .plate-option-grid.open { visibility: visible; pointer-events: auto; }
+/* #121 (v3.18.0): plate picker sort — in ops mode, available plates rise to
+   the top (via `order`), section-label dividers sit between groups. Flex
+   column on the grid makes `order` actually reorder the visual stack while
+   preserving the existing scroll behavior. */
+.plate-option-grid { display: flex; flex-direction: column; }
+.plate-option { order: 1; }
+.plate-option.plate-unavailable { order: 3; }
+.picker-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-hint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 12px 4px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-light);
+  display: none;
+}
+.picker-section-available { order: 0; }
+.picker-section-unavailable { order: 2; }
 .plate-grid-scrim {
   display: none;
   position: fixed;
@@ -1833,6 +1925,15 @@ body {
   :root:not(.force-mobile-view) body.ops-active .inv-quickview-btn { display: none !important; }
   :root:not(.force-mobile-view) body.ops-active .inv-qv-overlay { display: none !important; }
   :root:not(.force-mobile-view) body.ops-active #mainApp { padding-right: 340px; }
+  /* #117 (v3.18.0): the right-rail padding above shrinks #mainApp's content
+     box, which pulls the header (sibling of the screens) inward and breaks
+     centered text. Restore header width to the full viewport via a +340px
+     width override matching the panel width — the inventory panel (fixed,
+     right:0) renders on top of the right-edge overflow, so visually nothing
+     is hidden that the user needs on this screen. */
+  :root:not(.force-mobile-view) body.ops-active .header {
+    width: calc(100% + 340px);
+  }
   :root:not(.force-mobile-view) body.ops-active .inv-quickview-panel {
     right: 0;
     width: 320px;
@@ -2001,35 +2102,6 @@ body {
 }
 
 /* ========================================
-   SCENARIO PRESET CARDS (#108)
-   ======================================== */
-.preset-cards { display: flex; flex-direction: column; gap: 6px; }
-.preset-card {
-  background: var(--surface-alt, #F5F5F5);
-  border: 2px solid transparent;
-  border-left: 4px solid transparent;
-  border-radius: 8px;
-  padding: 10px 12px;
-  min-height: 56px;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-.preset-card:hover { border-color: var(--blue-border, #90CAF9); }
-.preset-card.selected { border-left-color: var(--blue); background: var(--blue-light, #BBDEFB); }
-.preset-card-name { font-size: 14px; font-weight: 700; color: var(--text); }
-.preset-card-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-
-/* ========================================
-   SOLO-IC MODE CONTROLS (#109)
-   ======================================== */
-.solo-ic-panel { background: var(--surface-alt, #F5F5F5); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.solo-ic-status { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 8px; }
-.solo-ic-options { display: flex; flex-direction: column; gap: 6px; }
-.solo-ic-option { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid transparent; }
-.solo-ic-option.selected { background: var(--blue-light, #BBDEFB); border-color: var(--blue-border, #90CAF9); }
-.solo-ic-option input[type="radio"] { width: 16px; height: 16px; accent-color: var(--blue); }
-
-/* ========================================
    DARK MODE
    Applied via [data-theme="dark"] on <html>. JavaScript resolves the user's
    preference ('system' | 'light' | 'dark') and sets the attribute on load
@@ -2161,14 +2233,6 @@ body {
 
   /* Plate unavailable */
   .plate-unavailable { opacity: 0.25; }
-
-  /* Preset cards dark */
-  .preset-card { background: var(--card-secondary-bg, #1A1A1A); }
-  .preset-card.selected { background: #1A3A5C; border-left-color: var(--blue); }
-  .preset-card:hover { border-color: #2A5A8C; }
-
-  /* Solo-IC panel dark */
-  .solo-ic-option.selected { background: #1A3A5C; border-color: #2A5A8C; }
 
   /* Scrollbar */
   ::-webkit-scrollbar { width: 6px; }

@@ -461,7 +461,9 @@ Plan structure: same as Mode A, plus sections for `## Feedback triage`, `## Audi
 
 #### B6. Agent dispatch → **GATE 2**
 
-Per `feedback_agent_gate` memory: **every MINOR/MAJOR runs code-auditor + battalion-chief + mobile-ux BEFORE implementation**. PATCH gets code-auditor only (but we're in plan-release mode, so this is MINOR/MAJOR).
+Per `feedback_agent_gate` memory: **every MINOR/MAJOR runs code-auditor + battalion-chief + mobile-ux + skeptical-senior-engineer BEFORE implementation**. PATCH gets code-auditor + skeptical-senior-engineer only (but we're in plan-release mode, so this is MINOR/MAJOR).
+
+The `skeptical-senior-engineer` is the counterweight: it pushes back on necessity, complexity, hidden costs, and unstated assumptions in the plan. It runs alongside the other reviewers, never instead of one. Its job is to ask "why are we doing this?" while the others ask "are we doing this right?"
 
 Auto-detect additional agents from scope:
 
@@ -480,7 +482,7 @@ Auto-detect additional agents from scope:
 | Cross-file design, paradigm shifts | `architect` |
 | User manual updates | `manual-writer` |
 
-**Always include** `release-manager` and `qa-driver`. Cap typically ≤ 5 agents total.
+**Always include** `release-manager`, `qa-driver`, and `skeptical-senior-engineer`. Cap typically ≤ 7 agents total.
 
 Dispatch in parallel — single message with multiple `Agent` tool calls. Each agent receives: plan path, scope (1-2 sentences), asked to return APPROVE / CONCERNS / BLOCK + top concern + detailed findings.
 

@@ -1,7 +1,7 @@
 # FieldShore User Manual
 
-**Version:** 3.17  
-**Last updated:** 2026-05-19  
+**Version:** 3.18  
+**Last updated:** 2026-05-20  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -117,16 +117,11 @@ The **Operations** tab is focused on the shore-point workflow — adding shore p
 ### Starting an Operation
 
 1. Tap **Start New Operation**.
-2. Choose a **scenario preset** — or select **Custom** to fill everything in yourself:
-   - **Car into building** — vehicle intrusion, residential or light commercial structure
-   - **Residential collapse** — single-family or multi-family residential collapse
-   - **Commercial/industrial collapse** — commercial, warehouse, or industrial structure
-   - Selecting a preset fills in the operation name pattern and shows minimum Command Staff guidance. Presets are informational — they do not lock any settings.
-3. Enter or confirm the **Operation Name**.
-4. Optionally enter a **Task Force** name.
-5. Check **Multi-Building** if the operation spans more than one structure.
-6. Select which **apparatus** to assign (all are checked by default).
-7. Tap **Start Operation**. The app drops you directly onto the Operations tab, ready to add shore points.
+2. Enter the **Operation Name** (e.g., "Building Collapse — 123 Main St").
+3. Optionally enter a **Task Force** name.
+4. Check **Multi-Building** if the operation spans more than one structure.
+5. Select which **apparatus** to assign (all are checked by default).
+6. Tap **Start Operation**. The app drops you directly onto the Operations tab, ready to add shore points.
 
 ### Ending an Operation
 
@@ -234,13 +229,13 @@ A runner working shore-point status works in the **Operations** tab. The IC revi
 
 ### What's on the Command Tab
 
+- **Dashboard tiles** — Three at-a-glance tiles at the top: **Elapsed** (HH:MM:SS timer, counts up from operation start), **Apparatus** (count), and **Shore Points** (total). The timer ticks every second. Three-tile row on desktop; stacks vertically on phone.
 - **End Operation** — In the header, next to the operation name. Visible to IC only. Tap to end the operation (see [Ending an Operation](#ending-an-operation)).
-- **Assigned Apparatus** — Which apparatus are part of this operation. Tap **Assign** to add/remove, or **Group** to organize apparatus into named groups.
+- **Assigned Apparatus** — Which apparatus are part of this operation, grouped by category (Chief, Deputy Chief, Engine, Ladder, Rescue, Squad, etc.). Each category renders as a labeled block with its chips beneath. Tap **Assign** to add/remove, or **Group** to organize apparatus into named task-force groups.
 - **External Equipment** — Equipment borrowed from other departments or agencies. Tap **+ Add** to log borrowed gear (see below).
 - **Individuals** — Named personnel assigned to the operation. Tap **+ Add** to enter a name.
 - **My Role** — Set your device's ICS role. This determines which view your device defaults to.
 - **ICS Organization** — The full org chart (see below).
-- **Solo-IC controls** — If only one apparatus is assigned, the app enters Solo-IC mode automatically. These controls let the IC adjust that behavior (see below).
 - **Hazard Log** — Log and track scene hazards (see below).
 
 ### Adding External Equipment
@@ -250,30 +245,6 @@ Tap **+ Add** in the External Equipment section to log gear borrowed from anothe
 The form matches the regular inventory-add layout. At the top, enter the **Source Department** and **Source Apparatus**. Then use the quick-add grid to select struts, extensions, and connector plates — the same grid used in regular inventory. Tap any item to add it; the quantity badge increments as you tap. Tap **Done** when finished.
 
 External equipment added here tracks available vs. deployed quantities the same way regular inventory does. If a return fails while offline or when the connection drops, the change is queued and reconciled automatically when connectivity is restored.
-
-### Solo-IC Mode
-
-When an operation has only one apparatus assigned, the app enters **Solo-IC mode**. This simplifies the screen by hiding multi-apparatus controls that do not apply yet:
-
-- Group picker on shore points is hidden
-- Apparatus dropdowns auto-resolve to the one apparatus
-- Multi-apparatus roster admin is hidden
-
-The following are always visible regardless of mode, because they are needed from the first minute of any structural collapse incident:
-
-- IC slot
-- Safety Officer slot
-- Other Command Staff slots (one tap to expand)
-
-**When you add a second apparatus**, the app automatically switches to the full command structure and shows a toast: "2nd apparatus added — full command structure now available."
-
-**IC override controls** (visible on the Command tab in Solo-IC mode):
-
-- **Auto** (default) — the app switches between solo and full based on apparatus count.
-- **Stay in solo mode** — keeps the simplified view even when a second apparatus is added (useful when the second unit is only water supply and does not need to appear in the command structure).
-- **Promote to full mode** — switches to the full command structure immediately, even with only one apparatus (useful when a BC is en route and you want the org chart ready).
-
-You can return to Auto from the same control panel.
 
 ### ICS Organization Chart
 
@@ -498,7 +469,8 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| **v3.17** | 2026-05-19 | "Strut Placed" renamed to "Strut Installed" (FEMA US&R FOG) everywhere in the UI — badges, buttons, legend, drilldown counts. Quick Start FAB on the Quick Find tab: press and hold 500ms to instantly create an operation and jump to the first shore point, skipping the Start Operation modal entirely. Scenario presets in Start Operation (Car into building, Residential collapse, Commercial/industrial collapse) auto-fill the op name and show minimum Command Staff guidance. Solo-IC mode: with one apparatus assigned, group pickers and multi-apparatus admin are hidden; IC/Safety/Command Staff slots stay visible. IC override controls on the Command tab let you stay in solo mode, promote early, or return to auto. End Operation moved to the Command tab header — IC only. Send to Runner now requires the Runner role (plus IC override). Mark Secured now requires IC, Safety, or a Shoring role (Initial Shoring, Wood Shoring). Add External Equipment form rebuilt to match the regular inventory-add layout — struts, extensions, and connector plates in one quick-add grid with Source Department and Source Apparatus fields at top. External equipment returns now reconcile automatically after offline use or connection failures. |
+| **v3.18** | 2026-05-20 | hfd217 field-feedback response. **Removed:** scenario presets in Start Operation (added cognitive load at incident-start) and the Solo-IC / Auto-promote mode block on Command (exposed implementation state as user concept). The Command tab now always renders the full view regardless of apparatus count. **Added:** three dashboard tiles at the top of Command — **Elapsed** (HH:MM:SS, ticks every second), **Apparatus** count, **Shore Points** count. **Fixed:** cutting table Send to Runner action restored (workflow blocker). Operations Section Chief role can now mark cut-done and send to runner (battalion-chief doctrine — Ops keeps physical-custody actions off the Command tab). Adding external equipment now updates the available inventory display immediately on both the Command and Inventory tabs. Operations tab header no longer shifts left when the inventory right-rail is on. Assigned Apparatus column now groups chips under per-category labels (Chief, Deputy Chief, Engine, Ladder, etc.) instead of running labels inline. Plate picker sorts in-stock plates to the top with "Available" / "Not in inventory" section labels. |
+| **v3.17** | 2026-05-19 | "Strut Placed" renamed to "Strut Installed" (FEMA US&R FOG) everywhere in the UI — badges, buttons, legend, drilldown counts. Quick Start FAB on the Quick Find tab: press and hold 500ms to instantly create an operation and jump to the first shore point, skipping the Start Operation modal entirely. End Operation moved to the Command tab header — IC only. Send to Runner now requires the Runner role (plus IC override). Mark Secured now requires IC, Safety, or a Shoring role (Initial Shoring, Wood Shoring). Add External Equipment form rebuilt to match the regular inventory-add layout — struts, extensions, and connector plates in one quick-add grid with Source Department and Source Apparatus fields at top. External equipment returns now reconcile automatically after offline use or connection failures. _(Scenario presets and Solo-IC mode shipped in v3.17 but were removed in v3.18 after field feedback — see v3.18 row.)_ |
 | **v3.16** | 2026-05-19 | SmartArt-style ICS org chart. The command hierarchy now renders as a visual tree with L-shaped connector lines between parent and child roles. Each card has an inline toolbar with reorder controls (Up, Down, Promote, Demote) so you can restructure the hierarchy without drag-and-drop. On phones the toolbar is hidden and the same controls appear in the node-tap modal. Only the IC can add, remove, or rearrange roles (changed from IC+Safety per NIMS SM-0322). Role assignment now shows a confirmation toast. All org chart buttons meet 44px minimum touch targets for gloved use. |
 | **v3.15** | 2026-05-19 | Numbered divisions with vertical anchoring. Division is now a top-to-bottom picker — Div 3 / Div 2 / Div 1 (Ground) / Sub Div 1 (Basement) — with **+ Floor Above** and **+ Sub Div Below** buttons. No manual text entry; the division list is shared across the operation so labels stay consistent. Existing operations migrate automatically (numeric and 'Ground'/'Basement' labels convert in place; anything else is preserved as a legacy label with a non-blocking review banner). Offline inventory hardening: deploys and returns made while offline now reconcile correctly with Firebase on reconnect via a per-item touched-set flush-pass (closes the v3.8.2 architectural root cause). Concurrent-deploy race guard — when another device takes the last unit, the second device sees "Another user took the last X — try again" and the orphaned shore-point write is rejected. |
 | **v3.14** | 2026-05-18 | Operations tab on desktop now splits into two columns. Left sidebar (sticky) shows a drilldown tree of Buildings → Divisions → Areas with live status counts on each node, and a search input above the tree filters by label / building / division / area. Right column shows the filtered shore points with the **+ Shore Point** button centered above the status groups. Mobile is unchanged (inline breadcrumb stays). |
