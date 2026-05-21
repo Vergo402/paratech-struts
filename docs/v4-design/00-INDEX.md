@@ -21,7 +21,7 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129–#138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference-app teardowns (codenamed) + positioning doc | ⚪ Not started | Ready to begin — Alex provides codename mapping, agent dispatches teardowns. |
+| B | Reference-app teardowns (codenamed) + positioning doc | 🟡 In progress | Codename mapping received 2026-05-20. 6 agents dispatched in parallel for individual teardowns; positioning agent dispatched after. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + coverage matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
