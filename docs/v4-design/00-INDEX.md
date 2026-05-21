@@ -20,8 +20,8 @@
 
 | Phase | Description | Status | Notes |
 |---|---|---|---|
-| A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🟡 In progress | This commit |
-| B | Reference-app teardowns (codenamed) + positioning doc | ⚪ Not started | |
+| A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🚦 Gate ready | All seed files committed (4caa06a + 844e9db). v4 Project #2 created with 10 phase items. Awaiting Alex approval before Phase B. |
+| B | Reference-app teardowns (codenamed) + positioning doc | ⚪ Not started | Blocked by Phase A gate. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + coverage matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
