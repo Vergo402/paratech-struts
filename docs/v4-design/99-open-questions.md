@@ -34,4 +34,4 @@
 | 2 | v4.0 backend split (Section V). Confirm Bucket 1 → v3.x, Bucket 2 → v4. | **Confirmed.** Bucket 1 ships to v3.x (per-device UID, listener teardowns, customRoles migration, Surfside bugs, checklist v1, demo mode). Bucket 2 (renames only) defers to v4. | Phase A gate approval (2026-05-20) |
 | 3 | Checklist content licensing (D6). | **Paraphrase.** Alex reviews drafts before commit. Original source credited in-app. | Plan draft 3 annotation |
 | 4a | D7 scope. | **Option (b).** v4.0 ships auth/identity/roles/dept-ownership/audit. v4.5 ships local mutual-aid (2–5 neighboring depts). State/IST/federal not on roadmap. | Plan draft 4 annotation |
-| 17 | The mapping file (codename → real reference app) — where does it live? | **Alex's desktop.** Never committed to the repo. Alex maintains it. | Phase A gate approval (2026-05-20) |
+| 17 | The mapping file (codename → real reference app) — where does it live? | **Superseded by ADR-001 (2026-05-21).** Codename rule relaxed before Phase C; real names now used in teardowns under nominative fair use. Mapping file no longer needed. | Phase A gate approval (2026-05-20), then superseded |

@@ -50,20 +50,20 @@ That empty corner is where FieldShore lives.
                                      │
                                      │
                                      │
-   ◆ copper-burning-forge            │
+   ◆ RedNMX            │
      (records + NFIRS/NERIS          │
       fluent, dense Windows)         │
                                      │
-                                     │      ◆ brass-folding-compass
+                                     │      ◆ Tablet Command
                                      │        (tactical, NIMS-aware
                                      │         but configurable; iPad)
                                      │
-   ◆ iron-glowing-lantern            │
+   ◆ First Due            │
      (records-first suite,           │
      NIMS-aware-not-strict,          │
      command module bolted on)       │
                                      │
-   ◆ granite-standing-mantle ────────┼──────────────────────────────► TACTICAL
+   ◆ Fire Rescue Systems ────────┼──────────────────────────────► TACTICAL
      (dispatch + records,            │                      OPERATIONS
      legacy Windows-form,            │                      FOCUS
      LOSAP-shaped)                   │                          (active incident,
@@ -73,13 +73,13 @@ That empty corner is where FieldShore lives.
                                      │
    RECORDS / ADMIN ◄─────────────────┤
    FOCUS                             │
-   (closeout, scheduling,            │      ◆ steel-piercing-whistle
+   (closeout, scheduling,            │      ◆ IAMResponding
    compliance, between-              │        (notification + roster;
    incident life)                    │         dispatch-to-status, then
                                      │         silence; volunteer-fit)
                                      │
                                      │
-                                     │      ◆ bronze-sinking-anchor
+                                     │      ◆ RapidSOS
                                      │        (NG911 dispatcher console
                                      │         + responder app; pre-arrival
                                      │         data, not on-scene)
@@ -91,23 +91,23 @@ That empty corner is where FieldShore lives.
                               suite-breadth)
 ```
 
-FieldShore sits **upper-right**: tactical-operations focus, doctrine-fluent depth. No observed competitor occupies that quadrant. The tactical competitors (`brass-folding-compass`, `bronze-sinking-anchor`) stay agnostic-to-mildly-fluent and configurable. The doctrine-fluent competitor (`copper-burning-forge`) stays in records. The "everything" suites (`iron-glowing-lantern`, `granite-standing-mantle`) straddle records-and-tactical at moderate depth in either direction, ending up plotted near the center-low.
+FieldShore sits **upper-right**: tactical-operations focus, doctrine-fluent depth. No observed competitor occupies that quadrant. The tactical competitors (`Tablet Command`, `RapidSOS`) stay agnostic-to-mildly-fluent and configurable. The doctrine-fluent competitor (`RedNMX`) stays in records. The "everything" suites (`First Due`, `Fire Rescue Systems`) straddle records-and-tactical at moderate depth in either direction, ending up plotted near the center-low.
 
 ---
 
-## Per-codename placement justification
+## Per-product placement justification
 
-**brass-folding-compass** plots in the **tactical, lower-doctrine-fluency** zone — right of center on X, just below the horizontal midline on Y. It is the most tactical of the suite: drag-and-drop unit assignment, PAR timers, scene timer, one-tap benchmark logging, after-action export emailed off the truck. But its doctrine fluency is deliberately shallow — "tactical worksheet templates are per-department, per-incident-type." The schema is configurable; doctrine is a starting point, not a contract. NIMS terminology appears but the product would happily let a department rename "Group" to "Squad" because the buyer asked. It is iPad-first to a fault and offers no shoring / strut / USACE depth.
+**Tablet Command** plots in the **tactical, lower-doctrine-fluency** zone — right of center on X, just below the horizontal midline on Y. It is the most tactical of the suite: drag-and-drop unit assignment, PAR timers, scene timer, one-tap benchmark logging, after-action export emailed off the truck. But its doctrine fluency is deliberately shallow — "tactical worksheet templates are per-department, per-incident-type." The schema is configurable; doctrine is a starting point, not a contract. NIMS terminology appears but the product would happily let a department rename "Group" to "Squad" because the buyer asked. It is iPad-first to a fault and offers no shoring / strut / USACE depth.
 
-**iron-glowing-lantern** plots **records-leaning, mid-doctrine-aware** — left of center on X, near the horizontal midline on Y. The whole platform is engineered around the chief and the records officer: NFIRS / NERIS, scheduling, prevention, training, ePCR. The Command module is real but it is one of eighteen — a tactical bolt-on for what is structurally a system-of-record. "Configurable everything" lets doctrine drift; the platform is NIMS-*aware* but not NIMS-*strict*. Pre-incident plans surfacing on a phone during dispatch is genuinely good loop design, but the gravity is at the desk.
+**First Due** plots **records-leaning, mid-doctrine-aware** — left of center on X, near the horizontal midline on Y. The whole platform is engineered around the chief and the records officer: NFIRS / NERIS, scheduling, prevention, training, ePCR. The Command module is real but it is one of eighteen — a tactical bolt-on for what is structurally a system-of-record. "Configurable everything" lets doctrine drift; the platform is NIMS-*aware* but not NIMS-*strict*. Pre-incident plans surfacing on a phone during dispatch is genuinely good loop design, but the gravity is at the desk.
 
-**copper-burning-forge** plots **records-deep, high-doctrine-fluency** — far left on X, above the horizontal midline on Y. NFIRS / NERIS certified, LOSAP-native, 50+ named modules organized around the schema rather than the operator. The doctrine fluency is real (federal record schemas, volunteer-pension structures, NIMS-adjacent terminology) but it is fluency *in the records grammar*, not in the on-scene grammar. The product has nothing to say about an active incident; the radio takes over once the rig arrives. Visually it inherits Windows; design-language thinking is not present.
+**RedNMX** plots **records-deep, high-doctrine-fluency** — far left on X, above the horizontal midline on Y. NFIRS / NERIS certified, LOSAP-native, 50+ named modules organized around the schema rather than the operator. The doctrine fluency is real (federal record schemas, volunteer-pension structures, NIMS-adjacent terminology) but it is fluency *in the records grammar*, not in the on-scene grammar. The product has nothing to say about an active incident; the radio takes over once the rig arrives. Visually it inherits Windows; design-language thinking is not present.
 
-**steel-piercing-whistle** plots **records-and-admin-leaning, doctrine-agnostic** — left of center on X, well below the horizontal midline on Y. Its center of gravity is between-incident administrative life: calendar, scheduling, NFIRS, member-tracking. During-incident contribution is a single status tap. NIMS structure (Section / Branch / Division / Group) is not first-class — it is implicit in roster grouping. The vocabulary is generic public-safety, not USACE / Paratech. Its tactical surface ends the moment "responding to scene" is tapped, which is exactly where FieldShore's surface begins.
+**IAMResponding** plots **records-and-admin-leaning, doctrine-agnostic** — left of center on X, well below the horizontal midline on Y. Its center of gravity is between-incident administrative life: calendar, scheduling, NFIRS, member-tracking. During-incident contribution is a single status tap. NIMS structure (Section / Branch / Division / Group) is not first-class — it is implicit in roster grouping. The vocabulary is generic public-safety, not USACE / Paratech. Its tactical surface ends the moment "responding to scene" is tapped, which is exactly where FieldShore's surface begins.
 
-**bronze-sinking-anchor** plots **tactical-adjacent-but-pre-arrival, doctrine-agnostic** — slightly right of center on X (call it dispatch-tactical, not on-scene-tactical), well below the horizontal midline on Y. The product owns the gap between the 911 call landing and the unit arriving. Once the unit is on scene, the product's tooling is silent — the marketing copy concedes that the in-rubble role is not the design center. Vocabulary is NG911 jargon (ANI, ALI, what3words) rather than NIMS / USACE. It is the polished end of dispatcher-and-pre-arrival tooling and explicitly not the active-incident operations layer.
+**RapidSOS** plots **tactical-adjacent-but-pre-arrival, doctrine-agnostic** — slightly right of center on X (call it dispatch-tactical, not on-scene-tactical), well below the horizontal midline on Y. The product owns the gap between the 911 call landing and the unit arriving. Once the unit is on scene, the product's tooling is silent — the marketing copy concedes that the in-rubble role is not the design center. Vocabulary is NG911 jargon (ANI, ALI, what3words) rather than NIMS / USACE. It is the polished end of dispatcher-and-pre-arrival tooling and explicitly not the active-incident operations layer.
 
-**granite-standing-mantle** plots **records-and-dispatch, mid-low doctrine-fluency** — left of center on X, just below the horizontal midline on Y. The suite covers dispatcher CAD, MDT, responder phone, roster, LOSAP, NFIRS, inventory — fifteen-plus modules organized around the volunteer-or-combination municipal dept shape. Vocabulary is fluent in the small-dept buyer's language (run sheet, preplan, Knox box, LOSAP) but not in NIMS-correct ICS doctrine. There is no on-scene tactical layer, no shoring primitive, no ICS-201, no NIMS-correct org chart. The MRS phone app at 1.9 stars is a structural finding, not a stylistic one — the local-first contract is broken.
+**Fire Rescue Systems** plots **records-and-dispatch, mid-low doctrine-fluency** — left of center on X, just below the horizontal midline on Y. The suite covers dispatcher CAD, MDT, responder phone, roster, LOSAP, NFIRS, inventory — fifteen-plus modules organized around the volunteer-or-combination municipal dept shape. Vocabulary is fluent in the small-dept buyer's language (run sheet, preplan, Knox box, LOSAP) but not in NIMS-correct ICS doctrine. There is no on-scene tactical layer, no shoring primitive, no ICS-201, no NIMS-correct org chart. The MRS phone app at 1.9 stars is a structural finding, not a stylistic one — the local-first contract is broken.
 
 ---
 
@@ -115,31 +115,31 @@ FieldShore sits **upper-right**: tactical-operations focus, doctrine-fluent dept
 
 FieldShore plots in the **upper-right quadrant**: tactical-operations focus crossed with doctrine-fluent depth. The placement is not a competitive accident — it is the direct consequence of every Phase A decision. Principle 1 ("defer to doctrine, not invention") pins the Y position; the 2026-05-17 local-first pivot to Type IV–V incidents pins the X position. Every other principle (calm in chaos, one canonical action per state, visible safety, doubt-free defaults, designed for the role, local-first) is a consequence of those two commitments, not an independent dimension.
 
-The position is intentional in the strongest sense. The doctrine-fluent records vendors (`copper-burning-forge`) cannot extend rightward into tactical without abandoning the records gravity that funds them — their buyer signs a multi-year contract because the product owns NFIRS / NERIS / LOSAP, not because it owns the scene. The tactical SaaS vendors (`brass-folding-compass`) cannot extend upward into doctrine-fluency without sacrificing the horizontal "all-hazard" positioning their TAM depends on — a product that ships USACE shore-type taxonomy verbatim and refuses to default T-Shore lumber has narrowed its addressable market on purpose. The suite vendors (`iron-glowing-lantern`, `granite-standing-mantle`) cannot pivot into either deep doctrine or deep tactical without breaking the eighteen-module integration story they sell.
+The position is intentional in the strongest sense. The doctrine-fluent records vendors (`RedNMX`) cannot extend rightward into tactical without abandoning the records gravity that funds them — their buyer signs a multi-year contract because the product owns NFIRS / NERIS / LOSAP, not because it owns the scene. The tactical SaaS vendors (`Tablet Command`) cannot extend upward into doctrine-fluency without sacrificing the horizontal "all-hazard" positioning their TAM depends on — a product that ships USACE shore-type taxonomy verbatim and refuses to default T-Shore lumber has narrowed its addressable market on purpose. The suite vendors (`First Due`, `Fire Rescue Systems`) cannot pivot into either deep doctrine or deep tactical without breaking the eighteen-module integration story they sell.
 
-What is intentional vs. accidental about the position deserves naming. **Intentional:** the tactical-and-doctrine-fluent corner, the four-surface story (phone / tablet / laptop / broadcast TV), the local-first contract, the calm visual register, the refusal to carry life-safety communication. **Accidental but worth keeping:** the free-PWA economic posture, which is currently a v3 artifact but maps cleanly to `steel-piercing-whistle`'s flat-fee discipline and `bronze-sinking-anchor`'s free-base-tier conditioning, both of which volunteer departments are already trained to. **Accidental and worth fixing in v4:** the Phase A surface still looks like v3 — system fonts, default browser controls, generic gray cards — which puts FieldShore visually adjacent to `copper-burning-forge`'s Windows-inheritance even though strategically it is the polar opposite. The visual debt is the largest gap between the position FieldShore *holds* and the position it *looks like it holds*.
+What is intentional vs. accidental about the position deserves naming. **Intentional:** the tactical-and-doctrine-fluent corner, the four-surface story (phone / tablet / laptop / broadcast TV), the local-first contract, the calm visual register, the refusal to carry life-safety communication. **Accidental but worth keeping:** the free-PWA economic posture, which is currently a v3 artifact but maps cleanly to `IAMResponding`'s flat-fee discipline and `RapidSOS`'s free-base-tier conditioning, both of which volunteer departments are already trained to. **Accidental and worth fixing in v4:** the Phase A surface still looks like v3 — system fonts, default browser controls, generic gray cards — which puts FieldShore visually adjacent to `RedNMX`'s Windows-inheritance even though strategically it is the polar opposite. The visual debt is the largest gap between the position FieldShore *holds* and the position it *looks like it holds*.
 
 ---
 
 ## White space we own
 
 - **Tactical-and-doctrine-fluent (upper-right quadrant), single-purpose depth.** No competitor occupies this corner. The records-fluent vendors stay in records; the tactical vendors stay agnostic. A team officer running a Type IV partial collapse has no other tool that ships USACE shore-type taxonomy, Paratech load tables, and NIMS-correct org structure verbatim.
-- **The in-rubble role.** `bronze-sinking-anchor` explicitly concedes it; `steel-piercing-whistle` goes silent after the status tap; `brass-folding-compass` is iPad-first and the phone is read-only-ish. The team officer standing in structure gloves over a measurement is no one else's design center. (Axis: tactical-X, role.)
-- **Four-surface consistency from one picker doctrine.** The closest competitor (`steel-piercing-whistle`) has at least four distinct picker patterns across phone / dashboard / station-display for the same conceptual action. The picker doctrine in `03-primitives/picker.md` is itself a competitive moat — same primitives, same vocabulary, role-shaped adaptations. (Axis: design-language, cross-surface.)
-- **Local-first as design center, not as cached fallback.** `iron-glowing-lantern` and `bronze-sinking-anchor` are cloud-first with offline degradation; `granite-standing-mantle`'s MRS earns 1.9 stars on "Disconnected" / "Waiting for Server"; `brass-folding-compass` is "graceful but degraded" offline. A real local-first writable surface with quiet sync indicators is uncontested in the tactical-X half of the chart.
+- **The in-rubble role.** `RapidSOS` explicitly concedes it; `IAMResponding` goes silent after the status tap; `Tablet Command` is iPad-first and the phone is read-only-ish. The team officer standing in structure gloves over a measurement is no one else's design center. (Axis: tactical-X, role.)
+- **Four-surface consistency from one picker doctrine.** The closest competitor (`IAMResponding`) has at least four distinct picker patterns across phone / dashboard / station-display for the same conceptual action. The picker doctrine in `03-primitives/picker.md` is itself a competitive moat — same primitives, same vocabulary, role-shaped adaptations. (Axis: design-language, cross-surface.)
+- **Local-first as design center, not as cached fallback.** `First Due` and `RapidSOS` are cloud-first with offline degradation; `Fire Rescue Systems`'s MRS earns 1.9 stars on "Disconnected" / "Waiting for Server"; `Tablet Command` is "graceful but degraded" offline. A real local-first writable surface with quiet sync indicators is uncontested in the tactical-X half of the chart.
 - **Visible safety math.** Load capacity, deductions, qty>4 sentinels, unrated-zone warnings, conservative-floor interpolation, ACME load tables matched to the row. No competitor in any quadrant surfaces engineering-level load state — they surface command-level resource state at best. (Axis: doctrine-fluent-Y, safety-specific.)
-- **A real broadcast-TV surface designed for CP-wide legibility.** `steel-piercing-whistle`'s station-display is the only adjacent attempt and it is a passive "who's coming" board for the bay wall, not an operational read-only CP view. The other five competitors have no broadcast surface at all. (Axis: cross-surface, role.)
+- **A real broadcast-TV surface designed for CP-wide legibility.** `IAMResponding`'s station-display is the only adjacent attempt and it is a passive "who's coming" board for the bay wall, not an operational read-only CP view. The other five competitors have no broadcast surface at all. (Axis: cross-surface, role.)
 - **Doctrine-encoded defaults that refuse to guess.** T-Shore lumber stays manual; load tables match Paratech to the row; the app never defaults a safety decision in the name of convenience. Configurable-everything competitors actively undermine this; we win by refusing the feature. (Axis: doctrine-fluent-Y, principle 5.)
 
 ---
 
 ## Boundaries we will not cross
 
-- **No 50-module suite.** Principle 4 (one canonical action per state) and Principle 11 (earn its place quietly) make `copper-burning-forge` / `granite-standing-mantle` breadth a structural anti-goal. We will not bolt on scheduling, training, prevention, LOSAP, or NFIRS.
-- **No in-app life-safety communication.** Principle 10 is a hard contract. `granite-standing-mantle`'s MRS sells 1:1 + group texting; `bronze-sinking-anchor` ships push-notification urgency. We will not be a radio replacement, ever — no chat, no push during active operations, no "Evac Now" buttons.
-- **No "all-hazard" horizontal expansion.** Principle 1 (defer to doctrine) pins us to structural collapse. The temptation to broaden into wildland, hazmat, technical rescue, or generic IMS is the temptation that put `brass-folding-compass` at moderate depth across many domains. We stay vertical.
-- **No configurable doctrine.** Departments do not template their way out of USACE shore types, NIMS terminology, or Paratech load tables. Principle 5 (doubt-free defaults) means the safety call is never hidden behind a per-dept template. Configurable-everything is `iron-glowing-lantern`'s pitch; we explicitly refuse it.
-- **No office-buyer-first positioning.** The team officer is the design center; the chief is the second surface, not the first. `iron-glowing-lantern` and `copper-burning-forge` sell to the records officer or the chief; we design for the firefighter five minutes into a working incident.
+- **No 50-module suite.** Principle 4 (one canonical action per state) and Principle 11 (earn its place quietly) make `RedNMX` / `Fire Rescue Systems` breadth a structural anti-goal. We will not bolt on scheduling, training, prevention, LOSAP, or NFIRS.
+- **No in-app life-safety communication.** Principle 10 is a hard contract. `Fire Rescue Systems`'s MRS sells 1:1 + group texting; `RapidSOS` ships push-notification urgency. We will not be a radio replacement, ever — no chat, no push during active operations, no "Evac Now" buttons.
+- **No "all-hazard" horizontal expansion.** Principle 1 (defer to doctrine) pins us to structural collapse. The temptation to broaden into wildland, hazmat, technical rescue, or generic IMS is the temptation that put `Tablet Command` at moderate depth across many domains. We stay vertical.
+- **No configurable doctrine.** Departments do not template their way out of USACE shore types, NIMS terminology, or Paratech load tables. Principle 5 (doubt-free defaults) means the safety call is never hidden behind a per-dept template. Configurable-everything is `First Due`'s pitch; we explicitly refuse it.
+- **No office-buyer-first positioning.** The team officer is the design center; the chief is the second surface, not the first. `First Due` and `RedNMX` sell to the records officer or the chief; we design for the firefighter five minutes into a working incident.
 
 ---
 
@@ -161,7 +161,7 @@ Three candidates:
 
 ## Risks the map reveals
 
-- **Drift toward `brass-folding-compass`** — if Phase E starts optimizing the IC's tablet surface ahead of the team officer's phone surface, FieldShore slides downward and leftward toward the configurable-tactical iPad-first quadrant. Protection: Principle 2's "designed for the role, not the device" is enforced essay-by-essay; the phone surface for the team officer is *always* the first surface designed for any workflow, and the tablet is the second.
-- **Drift toward `iron-glowing-lantern` / `granite-standing-mantle`** — if v4.5+ scope creeps into NFIRS export, scheduling, LOSAP, or mutual-aid messaging, FieldShore slides leftward into records-suite territory. Protection: the 2026-05-17 local-first pivot is explicit that v4 is Type IV–V scene tooling only; federal / IST / records workflows are deferred to v5 or later. Every scope-add request gets tested against "does this make the in-rubble role better?"
-- **Drift toward `copper-burning-forge`** visually — the current v3 surface (system fonts, default controls, gray cards) reads as records-suite even though the architecture is tactical. Protection: Phase E ships a real designed type ramp, controlled palette, sunlight mode, and four-surface design system before any new feature lands.
-- **Drift toward `steel-piercing-whistle` / `bronze-sinking-anchor`** on notifications — push notification temptation is real because every competitor uses it. Protection: Principle 10 is the hardest contract in the system; no PR adds a push notification, ever, without an ADR that explicitly cites and overrides Principle 10. Default is "no."
+- **Drift toward `Tablet Command`** — if Phase E starts optimizing the IC's tablet surface ahead of the team officer's phone surface, FieldShore slides downward and leftward toward the configurable-tactical iPad-first quadrant. Protection: Principle 2's "designed for the role, not the device" is enforced essay-by-essay; the phone surface for the team officer is *always* the first surface designed for any workflow, and the tablet is the second.
+- **Drift toward `First Due` / `Fire Rescue Systems`** — if v4.5+ scope creeps into NFIRS export, scheduling, LOSAP, or mutual-aid messaging, FieldShore slides leftward into records-suite territory. Protection: the 2026-05-17 local-first pivot is explicit that v4 is Type IV–V scene tooling only; federal / IST / records workflows are deferred to v5 or later. Every scope-add request gets tested against "does this make the in-rubble role better?"
+- **Drift toward `RedNMX`** visually — the current v3 surface (system fonts, default controls, gray cards) reads as records-suite even though the architecture is tactical. Protection: Phase E ships a real designed type ramp, controlled palette, sunlight mode, and four-surface design system before any new feature lands.
+- **Drift toward `IAMResponding` / `RapidSOS`** on notifications — push notification temptation is real because every competitor uses it. Protection: Principle 10 is the hardest contract in the system; no PR adds a push notification, ever, without an ADR that explicitly cites and overrides Principle 10. Default is "no."

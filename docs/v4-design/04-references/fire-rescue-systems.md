@@ -1,12 +1,12 @@
-# granite-standing-mantle
+# Fire Rescue Systems
 
-> Competitive-reference teardown. Codename only — never write the real vendor or product name in this file. Source links are archive.org snapshots only.
+> Competitive-reference teardown. Public sources only (archive.org snapshots where possible). Comparative analysis under nominative fair use — see ADR-001.
 
 ---
 
 ## What it is
 
-granite-standing-mantle is a **modular fire-service operations suite** from a small US East-Coast vendor in market since the early 1980s. The suite is sold as discrete modules (15+ on the public site) but the operational spine is four products:
+Fire Rescue Systems is a **modular fire-service operations suite** from a small US East-Coast vendor in market since the early 1980s. The suite is sold as discrete modules (15+ on the public site) but the operational spine is four products:
 
 1. **CAD** — desktop dispatcher console: active / new / closed call queue, unit-availability board, preplan lookup, hydrant overlay, response reports. Per the SourceForge listing it handles "up to 20,000 alarms across multiple jurisdictions."
 2. **MDT** — in-cab Mobile Data Terminal on rugged hardware (Getac co-marketing partnership), surfacing CAD run record, preplans, turn-by-turn, hydrants, DOT hazmat database, unit messaging, and "call info stays even if you lose connection" caching.
@@ -29,7 +29,7 @@ Cues:
 
 The buying committee is the **chief, secretary/treasurer, and board of commissioners** — not a CTO. Decision criteria: price, references from neighboring depts, 24/7 phone support. End users split across three personas the suite handles unevenly: the county dispatcher (well-served), the rig/phone responder (functionally served, UI dated), and the back-office secretary doing LOSAP credits (the actual day-to-day power user).
 
-granite-standing-mantle is therefore the **incumbent** in a slice where FieldShore does not currently compete — but it is the software an IC has watched on her dispatcher's screen for fifteen years. It conditions her expectations.
+Fire Rescue Systems is therefore the **incumbent** in a slice where FieldShore does not currently compete — but it is the software an IC has watched on her dispatcher's screen for fifteen years. It conditions her expectations.
 
 ## Pricing tier
 

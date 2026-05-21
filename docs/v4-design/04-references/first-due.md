@@ -1,10 +1,10 @@
-# iron-glowing-lantern
+# First Due
 
-> Codename for a cloud-native, end-to-end Fire/EMS records-and-operations SaaS suite. Used here as a competitive reference for FieldShore v4. The real product name is intentionally omitted; in this teardown the company is referred to only by the codename.
+> Competitive-reference teardown of a cloud-native, end-to-end Fire/EMS records-and-operations SaaS suite. Used as a comparative reference for FieldShore v4. Public sources only.
 
 ## What it is
 
-iron-glowing-lantern is a multi-module SaaS platform positioning itself as "the entire operation in one platform" for fire and EMS agencies. The category is RMS + CAD-adjacent everything: NFIRS/NERIS incident documentation, ePCR (NEMSIS 3.4), scheduling and personnel management, fire prevention, pre-incident planning, hydrant management, training/LMS, assets and inventory, vehicle inspections, community engagement, and — most relevant to FieldShore — a real-time **Incident Command** module with a digital command board. The headline promise is consolidation: rip out five legacy single-purpose vendors and run everything from a single web login that ships with iOS/Android companion apps. The customer surface is web-first, with two native mobile apps (a Responder app and a separately-listed FedRAMP variant) acting as field arms of the same cloud database. The platform claims 2.8K+ agencies and 300K+ users.
+First Due is a multi-module SaaS platform positioning itself as "the entire operation in one platform" for fire and EMS agencies. The category is RMS + CAD-adjacent everything: NFIRS/NERIS incident documentation, ePCR (NEMSIS 3.4), scheduling and personnel management, fire prevention, pre-incident planning, hydrant management, training/LMS, assets and inventory, vehicle inspections, community engagement, and — most relevant to FieldShore — a real-time **Incident Command** module with a digital command board. The headline promise is consolidation: rip out five legacy single-purpose vendors and run everything from a single web login that ships with iOS/Android companion apps. The customer surface is web-first, with two native mobile apps (a Responder app and a separately-listed FedRAMP variant) acting as field arms of the same cloud database. The platform claims 2.8K+ agencies and 300K+ users.
 
 The overlap with FieldShore is narrow but real: their **Incident Command** module is the on-scene piece — a digital command board for the IC to assign units to tasks, run timers (Command, PAR, Task), and drive an AAR. They do not ship a structural-shoring engine, a strut/load-rated math layer, or USACE shore-type doctrine. That gap is FieldShore's defensible territory.
 

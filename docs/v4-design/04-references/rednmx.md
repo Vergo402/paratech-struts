@@ -1,12 +1,12 @@
-# copper-burning-forge
+# RedNMX
 
-> Codename teardown. This file deliberately omits the real product name, vendor name, and any founder names. Read the codename throughout; treat it as a generic stand-in for a long-running fire-department records-management vendor in the same competitive space as the other v4 reference products.
+> Competitive-reference teardown of a long-running fire-department records-management vendor in the same competitive space as the other v4 reference products. Public sources only.
 
 ---
 
 ## What it is
 
-copper-burning-forge is a long-tenured **fire-department records-management system (RMS)** from a small US software vendor. It is the polar opposite of the SaaS-native, design-led tools that bracket it in this teardown set. Its lineage goes back to a Windows client-server product from the early-to-mid 2000s; the modern incarnation is a cloud-hosted re-platform (Azure SQL over TLS) plus a constellation of mobile companion apps. The product's center of gravity is still the **desktop application** — a dense, modular Windows-style records front end — with mobile apps riding alongside rather than replacing it.
+RedNMX is a long-tenured **fire-department records-management system (RMS)** from a small US software vendor. It is the polar opposite of the SaaS-native, design-led tools that bracket it in this teardown set. Its lineage goes back to a Windows client-server product from the early-to-mid 2000s; the modern incarnation is a cloud-hosted re-platform (Azure SQL over TLS) plus a constellation of mobile companion apps. The product's center of gravity is still the **desktop application** — a dense, modular Windows-style records front end — with mobile apps riding alongside rather than replacing it.
 
 The marketing surface presents the product as a **suite of six components**: a desktop "command software," a field/responder mobile app, a tablet MDT/CAD viewer, a station kiosk for biometric and RFID duty-hour check-ins, a mobile inspections app, and a "bulletin" firehouse-dashboard display. Beneath that, the product advertises **50+ named modules** — Incident Reporting, Apparatus, Inspections, Preplanning, Scheduling, NFIRS Reporting, Training, Inventory, LOSAP. The phrase "50+ modules" is itself the headline marketing claim: the product positions *coverage* and *configurability* as its primary value, not interaction design.
 
@@ -28,7 +28,7 @@ Third-party reviews show **strongly polarized customer-service ratings**: ~4.5/5
 
 ## Visual language
 
-Honest disclaimer: copper-burning-forge has a **small public visual footprint**. The marketing site renders cleanly; very few application screenshots leak through case studies and PDF training docs. What follows is grounded in (a) the marketing site, (b) PDF training documentation, (c) review-site descriptions, and (d) the architectural fact that the application is a Windows desktop client (program-launcher `.exe` per VA TRM listing) re-platformed onto Azure SQL.
+Honest disclaimer: RedNMX has a **small public visual footprint**. The marketing site renders cleanly; very few application screenshots leak through case studies and PDF training docs. What follows is grounded in (a) the marketing site, (b) PDF training documentation, (c) review-site descriptions, and (d) the architectural fact that the application is a Windows desktop client (program-launcher `.exe` per VA TRM listing) re-platformed onto Azure SQL.
 
 ### Color palette
 
@@ -83,7 +83,7 @@ What you will **not** find: an incident-scene tactical workflow. No ICS-201 work
 - **No tactical surface.** The product has nothing to say about an active incident. A firefighter at a working incident closes the responder app and goes back to the radio.
 - **Customer-service polarization.** Multiple public reviews cite long response times and unresolved configuration issues. This is a small-vendor structural risk, not a product-design risk, but it shapes the user's relationship with the product over years.
 - **Cloud transition is in progress.** The vendor publishes blog content explaining on-prem versus cloud, which is a tell: a portion of the install base is still on on-prem Windows servers, and the cloud version is a re-platform of the same desktop client over Azure SQL rather than a ground-up SaaS rebuild. The application architecture is fighting its own history.
-- **No design-system thinking.** Every screen looks like its own screen. The "same conceptual action looks different in five places" problem that v4 is trying to fix in FieldShore is the steady state in copper-burning-forge.
+- **No design-system thinking.** Every screen looks like its own screen. The "same conceptual action looks different in five places" problem that v4 is trying to fix in FieldShore is the steady state in RedNMX.
 - **Mystery-meat-adjacent mobile.** The responder app's screens are not labeled defensively; published screenshots show icon-led controls without text labels in some places. Maps to a failure of **Principle 9**.
 
 ## What they assume about the user
@@ -107,15 +107,15 @@ What you will **not** find: an incident-scene tactical workflow. No ICS-201 work
 
 ## What we will deliberately differentiate on
 
-- **Tactical-first, records-second.** copper-burning-forge owns the records side; v4 owns the **active-incident side** and exports clean records when the incident closes. Different center of gravity, different design.
-- **Designed for the role, not the device** (Principle 2). copper-burning-forge has one desktop app and one phone app. v4 has four surfaces with explicit role mappings (team officer, IC, CP deep-data, broadcast TV).
-- **Calm in chaos** (Principle 3). copper-burning-forge's surface is busy by design. v4's is quiet by design.
-- **Designed type system, controlled palette, sunlight mode.** copper-burning-forge inherits Windows; v4 ships its own.
-- **Local-first sync realism** (Principle 8). copper-burning-forge is cloud-hosted with weak offline. v4 works fully offline and is honest about sync state.
-- **Doubt-free escapes** instead of confirmation modals (Principle 6). copper-burning-forge follows Windows modal conventions; v4 follows Apple's Mail-undo pattern.
-- **No mystery meat** (Principle 9). v4 labels every primary action. copper-burning-forge tolerates icon-only chrome.
-- **The app earns its place quietly** (Principle 11). copper-burning-forge advertises 50+ modules in the product. v4 advertises nothing in the product.
-- **Doctrine-true defaults** (Principle 5). copper-burning-forge defers to schema; v4 defers to safety. Closely related, not identical: schema-deference can produce auto-fills that hide a safety decision. v4 will not.
+- **Tactical-first, records-second.** RedNMX owns the records side; v4 owns the **active-incident side** and exports clean records when the incident closes. Different center of gravity, different design.
+- **Designed for the role, not the device** (Principle 2). RedNMX has one desktop app and one phone app. v4 has four surfaces with explicit role mappings (team officer, IC, CP deep-data, broadcast TV).
+- **Calm in chaos** (Principle 3). RedNMX's surface is busy by design. v4's is quiet by design.
+- **Designed type system, controlled palette, sunlight mode.** RedNMX inherits Windows; v4 ships its own.
+- **Local-first sync realism** (Principle 8). RedNMX is cloud-hosted with weak offline. v4 works fully offline and is honest about sync state.
+- **Doubt-free escapes** instead of confirmation modals (Principle 6). RedNMX follows Windows modal conventions; v4 follows Apple's Mail-undo pattern.
+- **No mystery meat** (Principle 9). v4 labels every primary action. RedNMX tolerates icon-only chrome.
+- **The app earns its place quietly** (Principle 11). RedNMX advertises 50+ modules in the product. v4 advertises nothing in the product.
+- **Doctrine-true defaults** (Principle 5). RedNMX defers to schema; v4 defers to safety. Closely related, not identical: schema-deference can produce auto-fills that hide a safety decision. v4 will not.
 
 ## Archive links
 

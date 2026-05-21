@@ -1,4 +1,4 @@
-# brass-folding-compass
+# Tablet Command
 
 ## What it is
 

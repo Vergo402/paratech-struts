@@ -1,8 +1,8 @@
-# steel-piercing-whistle
+# IAMResponding
 
 ## What it is
 
-steel-piercing-whistle is a long-running emergency-response notification and accountability platform aimed primarily at volunteer fire departments. Its core promise answers a single chief-level question — *who is coming, when, and where?* — by turning the dispatch tone into a structured roster moving through a small set of statuses ("responding to station," "responding to scene," "on scene," "off duty," "can't respond"). On top of that core it has accreted a wide suite: CAD or pager-audio dispatch, a station-mounted "now responding" display, in-app messaging, events calendar, training records, NFIRS 5.0 incident reporting, member-tracking map, mutual-aid coordination, third-party data integrations.
+IAMResponding is a long-running emergency-response notification and accountability platform aimed primarily at volunteer fire departments. Its core promise answers a single chief-level question — *who is coming, when, and where?* — by turning the dispatch tone into a structured roster moving through a small set of statuses ("responding to station," "responding to scene," "on scene," "off duty," "can't respond"). On top of that core it has accreted a wide suite: CAD or pager-audio dispatch, a station-mounted "now responding" display, in-app messaging, events calendar, training records, NFIRS 5.0 incident reporting, member-tracking map, mutual-aid coordination, third-party data integrations.
 
 Structurally multi-surface: phone app (iOS/Android), admin/chief web dashboard, station-display web view for a bay-wall TV (commonly off a Raspberry Pi), and a wearable companion. Phone is the daily driver for the member; dashboard is the chief's surface; station display is a passive "who's coming" board.
 

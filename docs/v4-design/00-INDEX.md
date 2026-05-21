@@ -21,7 +21,7 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129–#138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference-app teardowns (codenamed) + positioning doc | 🚦 Gate ready | All 6 teardowns + positioning.md committed 2026-05-21. ~17,400 words total. Awaiting Alex review. |
+| B | Reference-app teardowns + positioning doc | 🚦 Gate ready | All 6 teardowns + positioning.md committed 2026-05-21. ~17,400 words total. Codename rule relaxed to nominative-fair-use (ADR-001). Awaiting Alex review. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + coverage matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
@@ -61,14 +61,14 @@
 - `03-primitives/loading-state.md` ⚪
 - `03-primitives/nested-checklist.md` ⚪ (backs IC Command, Task Level, ORM screens — see plan D6)
 
-### Reference Teardowns (Phase B — codenames only, never real names)
+### Reference Teardowns (Phase B — real product names, comparative analysis under nominative fair use; see ADR-001)
 
-- `04-references/brass-folding-compass.md` 🚦 (2339w)
-- `04-references/iron-glowing-lantern.md` 🚦 (2637w)
-- `04-references/copper-burning-forge.md` 🚦 (2599w)
-- `04-references/steel-piercing-whistle.md` 🚦 (2498w)
-- `04-references/bronze-sinking-anchor.md` 🚦 (2347w)
-- `04-references/granite-standing-mantle.md` 🚦 (2435w)
+- `04-references/tablet-command.md` 🚦 (2339w)
+- `04-references/first-due.md` 🚦 (2637w)
+- `04-references/rednmx.md` 🚦 (2599w)
+- `04-references/iamresponding.md` 🚦 (2498w)
+- `04-references/rapidsos.md` 🚦 (2347w)
+- `04-references/fire-rescue-systems.md` 🚦 (2435w)
 - `04-references/positioning.md` 🚦 (2613w synthesis, 2-axis chart: tactical↔records × doctrine-fluent↔agnostic)
 
 ### Brainstorm Essays (Phase C — 5,000+ words each, 250-word exec summary + numbered recs)
@@ -131,7 +131,7 @@ ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 
 ## Strict Rules
 
-1. **No real names of reference apps anywhere in this folder.** Codenames only. The mapping lives in a private file Alex controls, never in this repo.
+1. **Real names are allowed under nominative fair use.** Describe behavior, not brand. Never disparage. Cite truth. No trademarked taglines presented as endorsements. See ADR-001. (Previous rule: codenames only — relaxed 2026-05-21.)
 2. **Nothing in here is committed to `main`.** Everything stays on the `v4-redesign` branch until Phase J cutover.
 3. **Every committed decision becomes an ADR.** No silent design changes.
 4. **The plan file (`keen-whistling-pancake.md`) is the constitution.** This folder is its execution.

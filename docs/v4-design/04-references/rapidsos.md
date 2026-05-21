@@ -1,4 +1,4 @@
-# bronze-sinking-anchor
+# RapidSOS
 
 > Adjacent competitor — a data-aggregation and situational-awareness platform for 911 communications centers and field responders, not a shoring-ops tool. In the corpus because it sets the bar for "data-rich emergency-services display" in the same broad market FieldShore lives in. Public surface is thin (no published pricing, demo-gated screenshots) — thin sections are flagged.
 
@@ -15,7 +15,7 @@ Three product layers matter to FieldShore:
 2. A **field module** for responders (delivered via an acquired mobile-app brand for fire/EMS) pushing CAD notes, unit-tracking, and pre-arrival data to a phone.
 3. An **AI assistant** doing transcription, translation, summarization, and protocol prompting.
 
-Category convention: "next-generation 911 (NG911)." bronze-sinking-anchor effectively defines the polished end of that category.
+Category convention: "next-generation 911 (NG911)." RapidSOS effectively defines the polished end of that category.
 
 ---
 

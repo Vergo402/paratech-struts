@@ -49,12 +49,12 @@ Look at INDEX status table. The active phase is the one marked 🟡 In progress,
 
 ### Phase B — Reference Teardown
 
-One general-purpose agent with WebFetch + WebSearch. Briefing packet:
+One general-purpose agent per product (parallelize) with WebFetch + WebSearch. Briefing packet:
 - Read `02-principles.md` and `03-primitives/picker.md` from this folder.
-- Codename mapping is provided privately (NEVER use real names).
+- Real product names used directly under nominative fair use (ADR-001). The discipline: describe behavior not brand, never disparage, cite public sources only, no trademarked taglines presented as endorsements, no implied sponsorship/partnership.
 - Fixed template per file (see D2 in the plan).
-- Output: one markdown file per codename in `04-references/`.
-- Archive links only (no live links).
+- Output: one markdown file per product in `04-references/` (slugs: `tablet-command.md`, `first-due.md`, `rednmx.md`, `iamresponding.md`, `rapidsos.md`, `fire-rescue-systems.md`).
+- Archive.org snapshots preferred for citations; live links acceptable when archive snapshot unavailable.
 
 After individual teardowns exist, dispatch second agent for `positioning.md` (2-axis chart + "FieldShore's place").
 
@@ -109,7 +109,7 @@ Alex is never waiting on a gate without knowing it's ready.
 ## Phase 4 — Continuous discipline
 
 - **No commits to `main` from this skill, ever.** Only `v4-redesign`.
-- **No real names of reference apps in any committed file.** Codenames only.
+- **Real names of reference apps are allowed under nominative fair use (ADR-001).** Describe behavior, never disparage, cite public sources, no trademarked taglines presented as endorsements, no implied sponsorship.
 - **Every committed design decision becomes an ADR** in `11-decisions/`.
 - **Every state-changing session updates the INDEX.** The INDEX is the truth.
 - **Every open question gets resolved or deferred before its phase gate.** No leaks across phases.
@@ -129,8 +129,8 @@ Alex is never waiting on a gate without knowing it's ready.
 
 ## Variables this skill expects
 
-- `PROJECT_ID` — GitHub Project ID for the v4 Roadmap view (set during Phase A).
-- Codename mapping file path — privately held by Alex, never committed.
+- `PROJECT_ID` — GitHub Project ID for the v4 Roadmap view (set during Phase A). v4 project is `PVT_kwHODy7CN84BYV37` (project #2).
+- Reference products list (real names): Tablet Command, First Due, RedNMX (Alpine Software), IAMResponding, RapidSOS, Fire Rescue Systems.
 
 ---
 
