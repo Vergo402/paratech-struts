@@ -30,6 +30,8 @@ After these run, you know exactly where v4 is.
 
 Look at INDEX status table. The active phase is the one marked 🟡 In progress, or the next ⚪ Not started after the most recent 🟢 Done.
 
+**Phase 1.5 — Surface the backlog when no phase is actively in progress.** If the most recent phase is 🟢 Done and the next phase is ⚪ Not started, check the INDEX's "Active Backlog" section and run `gh issue list --label v4 --state open --search "[Phase B]"` (or whichever phase is most-recently-Done). Show Alex the open follow-up issues and ask which single one to work next, unless Alex explicitly opts into a batch session (e.g., "work all of these today," "batch the next three"). Default rhythm is one issue per session — see [feedback_one_issue_per_session](~/.claude/projects/-Users-alex-Library-CloudStorage-OneDrive-Personal-Claude-OS-Field-Shore/memory/feedback_one_issue_per_session.md). Each issue's body (Goal / Function / How-to) is the durable record; load that with `gh issue view <number>` before planning.
+
 | Active phase | What this skill does next |
 |---|---|
 | **A — Foundation** | Verify branch + folder skeleton exist; seed any missing files; ensure GitHub Project is set up; create `/v4-plan` skill if not present. Fire gate notification when done. |

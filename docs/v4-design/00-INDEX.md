@@ -21,7 +21,7 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129–#138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference-app teardowns + positioning doc | 🚦 Gate ready | All 6 teardowns + positioning.md committed 2026-05-21. ~17,400 words total. Codename rule relaxed to nominative-fair-use (ADR-001). Awaiting Alex review. |
+| B | Reference-app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Gate review surfaced 11 follow-up corrections, each filed as its own issue (#269–#279) — see Active Backlog below. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + coverage matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
@@ -30,6 +30,26 @@
 | H | Vertical slice prototype | ⚪ Not started | Blocked by G |
 | I | Whole-app build (months) | ⚪ Not started | Blocked by H |
 | J | Cutover to main | ⚪ Not started | Blocked by I |
+
+---
+
+## Active Backlog — Phase B follow-ups
+
+Eleven open issues file by Alex's gate review of 2026-05-21. Work one per session by default (memory: [feedback_one_issue_per_session](../../.. /memory/feedback_one_issue_per_session.md) — explicit opt-in to batch). Pick any order; they are independent.
+
+| # | Title | Touches |
+|---|---|---|
+| [#269](https://github.com/Vergo402/paratech-struts/issues/269) | positioning: Replace The Sentence with Alex's rewrite | one line in `positioning.md` |
+| [#270](https://github.com/Vergo402/paratech-struts/issues/270) | positioning: Tone-down pass across the whole document | whole `positioning.md` |
+| [#271](https://github.com/Vergo402/paratech-struts/issues/271) | positioning: Fix First Due paragraph (modular purchase, not one-of-eighteen) | one paragraph in `positioning.md` |
+| [#272](https://github.com/Vergo402/paratech-struts/issues/272) | positioning: Fix Tablet Command paragraph (terminology vs universal safety doctrine) | one paragraph in `positioning.md` |
+| [#273](https://github.com/Vergo402/paratech-struts/issues/273) | positioning: Reframe defensibility — competitors can absolutely build into this space | one paragraph in `positioning.md` |
+| [#274](https://github.com/Vergo402/paratech-struts/issues/274) | positioning: Replace "Type IV–V only" with "everyday + expandable on demand" | one paragraph in `positioning.md` |
+| [#275](https://github.com/Vergo402/paratech-struts/issues/275) | positioning: Reclassify RapidSOS as a UX/UI reference | one paragraph + chart label in `positioning.md` |
+| [#276](https://github.com/Vergo402/paratech-struts/issues/276) | positioning: Add DRR Rescue acknowledgment in the in-rubble bullet | one sentence in `positioning.md` |
+| [#277](https://github.com/Vergo402/paratech-struts/issues/277) | ADR-002 — Principle 1 scope clarification (doctrine vs terminology) | new ADR file |
+| [#278](https://github.com/Vergo402/paratech-struts/issues/278) | ADR-003 — Scope: everyday plus expandable | new ADR file + cross-file sync |
+| [#279](https://github.com/Vergo402/paratech-struts/issues/279) | Plain-language cleanup of already-committed v4 artifacts (do last) | every Phase A + B file |
 
 ---
 
