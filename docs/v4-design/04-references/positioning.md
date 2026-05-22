@@ -149,13 +149,13 @@ Three candidates:
 
 1. *"FieldShore is the only tool built for the team officer in the rubble — verbatim USACE / NIMS / Paratech doctrine on a glove-friendly, local-first phone, with role-shaped tablet, laptop, and broadcast surfaces, and zero life-safety communication."*
 
-2. *"FieldShore lives in the empty corner of the fire-service software market: tactical-operations depth crossed with verbatim NIMS / USACE / Paratech doctrine, designed for the team officer in the building, not the records officer at the desk."*
+2. *"FieldShore lives in the empty corner of the fire service software market: structural collapse operations, designed for the rescuers inside the building and the technicians in the street — not the administrative officer at the desk."*
 
 3. *"FieldShore is the active-incident structural-collapse tool: one canonical action per state, four role-shaped surfaces, visible safety math, doctrine encoded verbatim — owning the on-scene work that the records suites abandon and the tactical SaaS vendors stay too generic to address."*
 
 **The Sentence** (#2 — most positional, fits in a pitch-deck header):
 
-> **FieldShore lives in the empty corner of the fire-service software market: tactical-operations depth crossed with verbatim NIMS / USACE / Paratech doctrine, designed for the team officer in the building, not the records officer at the desk.**
+> **FieldShore lives in the empty corner of the fire service software market: structural collapse operations, designed for the rescuers inside the building and the technicians in the street — not the administrative officer at the desk.**
 
 ---
 
