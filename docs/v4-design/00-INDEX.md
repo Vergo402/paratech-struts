@@ -21,7 +21,7 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation — branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129–#138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference-app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Gate review surfaced 11 follow-up corrections, each filed as its own issue (#269–#279) — see Active Backlog below. |
+| B | Reference-app teardowns + positioning doc | 🟡 In progress | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Gate review surfaced 11 follow-up corrections, filed as sub-issues #269–#279 under parent [#130](https://github.com/Vergo402/paratech-struts/issues/130). Phase B closes when all sub-issues close. See Active Backlog below. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + coverage matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
