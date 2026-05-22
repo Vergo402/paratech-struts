@@ -1,6 +1,6 @@
 # ADR-NNNN: [Short Title]
 
-> Architecture Decision Record. Every committed design choice gets one. The number (NNNN) is the next sequential ID — see other files in this folder.
+> Architecture Decision Record. Every committed design choice gets one. The number (NNNN) is the next sequential ID. See other files in this folder.
 
 ---
 
