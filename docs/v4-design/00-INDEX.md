@@ -21,7 +21,7 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation: branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129 through #138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference app teardowns + positioning doc | 🚦 Gate ready | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Sign off review surfaced 11 follow up corrections (#269 through #279); all 11 closed as of 2026-05-22. Plain language cleanup (#279) was the final pass. Ready for Phase B gate review. |
+| B | Reference app teardowns + positioning doc | 🚦 Gate ready | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Sign off review surfaced 11 follow up corrections (#269 through #279) plus one retroactive sub issue (#281, Type to Level rename); all 12 closed as of 2026-05-22. Plain language cleanup (#279) was the final pass. Ready for Phase B gate review. |
 | C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
 | D | Synthesis + decision tracking matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
@@ -35,7 +35,7 @@
 
 ## Resolved Backlog: Phase B follow ups
 
-Eleven issues filed from Alex's sign off review of 2026-05-21. All closed as of 2026-05-22.
+Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review day, one retroactive). All closed as of 2026-05-22.
 
 | # | Title | Closed |
 |---|---|---|
@@ -50,6 +50,7 @@ Eleven issues filed from Alex's sign off review of 2026-05-21. All closed as of 
 | [#277](https://github.com/Vergo402/paratech-struts/issues/277) | ADR-002: Principle 1 scope clarification | 2026-05-22 |
 | [#278](https://github.com/Vergo402/paratech-struts/issues/278) | ADR-003: Scope, everyday plus expandable | 2026-05-22 |
 | [#279](https://github.com/Vergo402/paratech-struts/issues/279) | Plain language cleanup of all v4 artifacts | 2026-05-22 |
+| [#281](https://github.com/Vergo402/paratech-struts/issues/281) | terminology: rename incident complexity from Type to Level (retroactive sub issue of #274) | 2026-05-22 |
 
 ---
 
