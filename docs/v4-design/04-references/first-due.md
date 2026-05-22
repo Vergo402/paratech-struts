@@ -15,7 +15,7 @@ The overlap with FieldShore is narrow but real: their **Incident Command** modul
 - **EMS agencies, state EMS, federal agencies (FedRAMP-authorized variant)** — meaningful enterprise customers; the logos page lists Charlotte FD, Fairfax County, Fort Worth.
 - **Department size: mid-to-large.** Implementation $3K–$20K plus $1K–$8K data migration plus integrations push the floor well above a 20-firefighter volunteer house. Sold by quote, not self-serve.
 - **Role in dept: chief / admin / training officer / records officer first**, then line crews as downstream mobile users. The system of record is for the office; the field is a read/append surface. Their Command product is the only piece designed primarily for an IC on scene.
-- **ICS scale: Type III–Type I.** The Command module's vocabulary — multi-unit, drag-and-drop assignment, configurable checklists per incident type — is built for working/extended-attack incidents through larger structures and mutual-aid scenarios. Not pitched at Type V (single-engine residential) and not at federal USAR scale either.
+- **ICS scale: Level III–Level I.** The Command module's vocabulary — multi-unit, drag-and-drop assignment, configurable checklists per incident type — is built for working/extended-attack incidents through larger structures and mutual-aid scenarios. Not pitched at Level V (single-engine residential) and not at federal USAR scale either.
 
 ## Pricing tier
 

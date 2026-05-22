@@ -139,7 +139,7 @@ Notable absences: **no on-scene tactical worksheet, no shoring or rescue primiti
 - **Doubt-free escapes, not "Are you sure?" modals** (Principle 6). Their lineage is full of confirmation dialogs; ours is brief reversibility windows.
 - **Self-serve evaluation.** Their product is gated behind a sales demo. We let a chief open FieldShore on his iPad without a call, no signup wall.
 - **Accessibility floor as a contract.** WCAG 2.1 AA baseline, AAA on primary picker affordances, documented per primitive. They publish nothing.
-- **Designed for the role, not the org chart.** Their org-shape assumption (LOSAP-volunteer-NY) is implicit. FieldShore's NIMS backbone is explicit and works from Type V to Type II.
+- **Designed for the role, not the org chart.** Their org-shape assumption (LOSAP-volunteer-NY) is implicit. FieldShore's NIMS backbone is explicit and works from Level V to Level II.
 
 ## Archive links
 

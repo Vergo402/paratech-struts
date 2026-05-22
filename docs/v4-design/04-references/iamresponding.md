@@ -19,7 +19,7 @@ Two distinct personas, served unevenly:
 
 Secondary users: dispatchers (in CAD-wired agencies), mutual-aid partner chiefs, EMS / police equivalents.
 
-What the target user is **not**: a USAR technician on a rope, a federal task-force leader, a county EOC. Sized for a typical volunteer dept — 20 to 80 members, two to four stations, one to ten apparatus, mostly Type IV/V traffic.
+What the target user is **not**: a USAR technician on a rope, a federal task-force leader, a county EOC. Sized for a typical volunteer dept — 20 to 80 members, two to four stations, one to ten apparatus, mostly Level IV/V traffic.
 
 ## Pricing tier
 
@@ -111,14 +111,14 @@ Generic glyph set from a common public-safety / general-purpose library. Truck f
 - The user is **on a phone**, not a tablet or a Toughbook. No first-class CP-on-a-tablet surface; the dashboard is browser-only.
 - The user **will tolerate a learning curve in the admin web app** but not in the phone app. Web complexity is tacitly accepted as "that's the chief's problem."
 - The user **wants more features, not fewer.** Two decades of additive product evolution have proven this at the buyer level, even as end-user reviews ask for the opposite.
-- The user is **a small-to-medium department.** No scaling story to Type I/II, IST, or federal response.
+- The user is **a small-to-medium department.** No scaling story to Level I/II, IST, or federal response.
 - The user **does not need NIMS doctrine surfaced.** "Group," "Division," "Branch," "Staging" are admin-config concepts, not first-class screen elements.
 
 ## What we will deliberately NOT copy
 
 - **The kitchen-sink IA.** Principles 4 and 11 are explicit rejections of the everything-tab pattern.
 - **The card-overlay home screen that added taps.** The competitor's most public regression is a cautionary tale. v4's home surface is a flat decision surface, not a carousel.
-- **The "every department gets every feature" model.** v4 is scope-locked to Type IV–V. We do not bundle calendar, NFIRS, training records, or messaging. Principle 10 — let other tools own communication.
+- **The "every department gets every feature" model.** v4 is scope-locked to Level IV–V as the everyday case, expanding on demand through Level I. We do not bundle calendar, NFIRS, training records, or messaging. Principle 10 — let other tools own communication.
 - **Light-only design.** Dark mode and sunlight mode are first-class, not afterthoughts.
 - **Generic public-safety red.** v4 commits to a distinctive palette that reads as professional-services software, not a public-safety logo kit.
 - **System-default typography across surfaces.** v4 commits to one type system across phone, tablet, laptop, and TV.

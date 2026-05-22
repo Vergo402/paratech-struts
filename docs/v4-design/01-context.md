@@ -18,7 +18,7 @@ This folder is the execution layer of `keen-whistling-pancake.md`, which is the 
 
 ## Scope (locked by the 2026-05-17 local-first pivot, expanded by D7)
 
-- **Type IV–V structural collapse incidents** — car into residence, residential/light commercial partial collapse, small-scale shoring.
+- **Level IV–V structural collapse incidents** — car into residence, residential/light commercial partial collapse, small-scale shoring.
 - **Local fire departments** working with one another at a single incident (mutual aid 2–5 neighboring depts at v4.5).
 - **NIMS doctrine** as the terminology backbone.
 - **NOT** state, IST, or federal scale. We don't have a single dept's buy-in yet — federal-scale planning is putting the cart before the horse. Revisit if/when several local depts use v4 in real incidents.

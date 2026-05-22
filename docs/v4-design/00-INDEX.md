@@ -44,7 +44,7 @@ Eleven open issues file by Alex's gate review of 2026-05-21. Work one per sessio
 | [#271](https://github.com/Vergo402/paratech-struts/issues/271) | positioning: Fix First Due paragraph (modular purchase, not one-of-eighteen) | one paragraph in `positioning.md` |
 | [#272](https://github.com/Vergo402/paratech-struts/issues/272) | positioning: Fix Tablet Command paragraph (terminology vs universal safety doctrine) | one paragraph in `positioning.md` |
 | [#273](https://github.com/Vergo402/paratech-struts/issues/273) | positioning: Reframe defensibility — competitors can absolutely build into this space | one paragraph in `positioning.md` |
-| [#274](https://github.com/Vergo402/paratech-struts/issues/274) | positioning: Replace "Type IV–V only" with "everyday + expandable on demand" | one paragraph in `positioning.md` |
+| [#274](https://github.com/Vergo402/paratech-struts/issues/274) | positioning: Replace "Level IV–V only" with "everyday + expandable on demand" | one paragraph in `positioning.md` |
 | [#275](https://github.com/Vergo402/paratech-struts/issues/275) | positioning: Reclassify RapidSOS as a UX/UI reference | one paragraph + chart label in `positioning.md` |
 | [#276](https://github.com/Vergo402/paratech-struts/issues/276) | positioning: Add DRR Rescue acknowledgment in the in-rubble bullet | one sentence in `positioning.md` |
 | [#277](https://github.com/Vergo402/paratech-struts/issues/277) | ADR-002 — Principle 1 scope clarification (doctrine vs terminology) | new ADR file |

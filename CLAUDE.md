@@ -268,7 +268,7 @@ The per-release "What shipped" view from v3.9.2 onward lives in **`.claude/plans
 
 - **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department.
 - **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — arrays need migration to keyed objects.
-- **NIMS doctrine overhaul** — Default ICS structure is not NIMS-compliant for Type I/II incidents. The `"Group"` field on shore points stores apparatus IDs but NIMS Group is a functional command unit — terminology violation.
+- **NIMS doctrine overhaul** — Default ICS structure is not NIMS-compliant for Level I/II incidents. The `"Group"` field on shore points stores apparatus IDs but NIMS Group is a functional command unit — terminology violation.
 - **3rd-party UX paradigm shifts** — Roster tab move (move Apparatus/External/Individuals/My-Role OFF Operations page), SP recommendation dedup (220 cards for 11 configs at TF scale), compact shore-point card mode, activity feed paradigm.
 
 ---

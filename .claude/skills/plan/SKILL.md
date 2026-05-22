@@ -169,6 +169,8 @@ The Project is the dedupe anchor, but a single issue might have audit findings A
 
 Wait for Alex to confirm the triage. He may re-prioritize, defer, or promote items.
 
+**Explicitly ask:** "Ready to continue? Reply **'continue'** to proceed to the plan (or give me redirects)."
+
 ---
 
 ## Phase 3 — Branch on intent
@@ -227,7 +229,7 @@ Fixing in priority order; PATCH release.
 - [ ] CONSOLIDATED-STATUS narrative updated
 ```
 
-Present plan, get approval.
+Present plan, then explicitly ask: "Ready to continue? Reply **'continue'** to start executing fixes (or give me redirects)."
 
 #### A3. Execute
 
@@ -252,6 +254,34 @@ Version bump:
 
 **Verification gate (per `feedback_verification_standard`):**
 Drive the real preview UI for every changed user flow. eval/spy tests are NOT sufficient.
+
+#### A3-GATE — Review before ship
+
+Present a pre-ship summary and wait for explicit approval before committing or merging:
+
+```
+## Ready to ship — v{VERSION}
+
+### Changes made
+| Bug | Issue | Fix summary | Verified |
+|---|---|---|---|
+| {title} | #{N} | {one-line description of what changed} | ✓ preview UI |
+
+### Files modified
+| File | Change |
+|---|---|
+| `app.js` | … |
+| `sw.js` | CACHE_NAME → v{VERSION} |
+| `index.html` | version label → v{VERSION} |
+
+### Version bump
+sw.js · index.html · app.js → v{VERSION}
+
+Reply **'continue'** to commit and merge to main, or describe what to fix.
+```
+
+If redirected: loop back into A3 to fix the issue, then re-present.
+**No commit, no merge, no push until explicitly approved.**
 
 #### A4. Ship
 
@@ -382,7 +412,7 @@ For each in-scope item, the table must show its **current Release field value** 
 ### Agents to dispatch (auto-detected — Phase B6 review pass)
 - `devops-resilience`, `mobile-ux`, `qa-driver`, `release-manager`, …
 
-Approve, redirect, or cancel?
+Reply **'continue'** to approve this scope, describe redirects, or say 'cancel'.
 ```
 
 The **Agent / Model / Effort / Owner** columns are auto-detected per the heuristics in the "Auto-detection" section below the field reference. If an item's dominant work changes (e.g., audit finding turns out to need a UI rebuild, not just a Firebase tweak), update the column before approving.
@@ -485,7 +515,7 @@ If an agent errors: report, offer retry/skip/abort, don't abort the whole phase.
 
 If an agent suggests a new persona: surface with 1-line rationale, draft only on explicit approval, save to `.claude/agents/{name}.md`.
 
-Present hybrid summary + final plan → **GATE 2**.
+Present hybrid summary + final plan, then explicitly ask: "Ready to continue? Reply **'continue'** to move to finalization (or give me redirects)." → **GATE 2**.
 
 #### B7. Finalize
 
@@ -691,6 +721,6 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - Work on feature branches, not directly on `main`.
 - Alex is a firefighter, not a developer — explanations clear, jargon-free.
 - Verification: drive the real preview UI per `feedback_verification_standard`.
-- v4.0 reframe (2026-05-17): scope pulled back from federal/USAR to local Type IV-V. Federal scope deferred to v5.x.
+- v4.0 reframe (2026-05-17): scope pulled back from federal/USAR to local Level IV-V. Federal scope deferred to v5.x.
 - Plan template reference: `.claude/plans/v3.12.0-feedback-command-tab.md` (most complete recent example).
 - Backfill script: `.claude/scripts/backfill-project.sh` (rerunnable; idempotent for already-added items).
