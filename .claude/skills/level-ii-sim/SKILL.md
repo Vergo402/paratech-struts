@@ -1,6 +1,6 @@
 ---
-name: type-ii-sim
-description: "Run the FEMA Level II structural collapse simulation — mid-rise residential partial floor collapse. Stress-tests FieldShore at regional-response scale: 20+ apparatus, state USAR TF, 60 shore points, 3 OP periods, full ICS General Staff. Use this skill whenever Alex says 'run level ii simulation', 'level 2 sim', 'riverside sim', 'run type ii simulation', 'type 2 sim', or '/type-ii-sim'."
+name: level-ii-sim
+description: "Run the FEMA Level II structural collapse simulation — mid-rise residential partial floor collapse. Stress-tests FieldShore at regional-response scale: 20+ apparatus, state USAR TF, 60 shore points, 3 OP periods, full ICS General Staff. Use this skill whenever Alex says 'run level ii simulation', 'level 2 sim', 'riverside sim', or '/level-ii-sim'."
 ---
 
 # Level II Simulation — Riverside Falls Mid-Rise (Partial Floor Collapse)
@@ -423,6 +423,6 @@ AAR from all 13 participants + 5 moderator findings. Synthesize Pearls & Pitfall
 - **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx` (base) + supplemental State USAR Alpha inventory added at E+8:00 through the UI
 - **App version baseline:** v3.17.2
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
-- **Runtime output:** `.claude/simulations/type-ii-sim/runtime/`
+- **Runtime output:** `.claude/simulations/level-ii-sim/runtime/`
 - **Key stress targets:** 60-SP rendering, IP-001 multi-tenancy, 3 OP periods, 2 command transfers, full General Staff org chart, State TF multi-agency integration, demob workflow absence, PSC/LSC capability gaps
-- **Related simulations:** `/type-iii-sim` (smaller), `/type-i-sim` (larger — Surfside scale)
+- **Related simulations:** `/level-iii-sim` (smaller), `/level-i-sim` (larger — Surfside scale)

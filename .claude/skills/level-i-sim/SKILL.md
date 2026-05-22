@@ -1,6 +1,6 @@
 ---
-name: type-i-sim
-description: "Run the FEMA Level I structural collapse simulation — Surfside-scale multi-agency federal response. Wraps and enhances the existing Surfside TTX-2 infrastructure. 250 shore points, 4 OP periods, 36 hours, federal USAR task forces, full ICS with UC. Use this skill whenever Alex says 'run level i simulation', 'level 1 sim', 'surfside sim', 'run type i simulation', 'type 1 sim', or '/type-i-sim'."
+name: level-i-sim
+description: "Run the FEMA Level I structural collapse simulation — Surfside-scale multi-agency federal response. Wraps and enhances the existing Surfside TTX-2 infrastructure. 250 shore points, 4 OP periods, 36 hours, federal USAR task forces, full ICS with UC. Use this skill whenever Alex says 'run level i simulation', 'level 1 sim', 'surfside sim', or '/level-i-sim'."
 ---
 
 # Level I Simulation — Surfside TTX-2 (Federal-Scale Collapse)
@@ -268,4 +268,4 @@ Note the additional **Prior IP** column — links each finding to its predecesso
 - **Runtime output:** `.claude/simulations/surfside-ttx-2/runtime-v2/` (separate from prior run's `runtime/`)
 - **Prior run reference:** `.claude/simulations/surfside-ttx-2/hotwash/` — 63 findings, 4 IAPs, 6 moderator note files
 - **Key stress targets:** 250-SP rendering, 36-hour continuous operation, federal USAR TF multi-agency, unified command, IST workflow, full ICS forms gap, concurrent 14-agent writes, IP regression testing
-- **Related simulations:** `/type-ii-sim` (smaller — 60 SPs, 24 hrs), and Types III/IV/V for escalating scale below this
+- **Related simulations:** `/level-ii-sim` (smaller — 60 SPs, 24 hrs), and Levels III/IV/V for escalating scale below this

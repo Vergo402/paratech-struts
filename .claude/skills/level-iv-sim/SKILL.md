@@ -1,6 +1,6 @@
 ---
-name: type-iv-sim
-description: "Run the FEMA Level IV structural collapse simulation — URM strip mall partial collapse. Stress-tests FieldShore at working-incident scale: 4 apparatus, 8 shore points (including grouped T-Shore), single OP period. Use this skill whenever Alex says 'run level iv simulation', 'level 4 sim', 'hamden sim', 'run type iv simulation', 'type 4 sim', or '/type-iv-sim'."
+name: level-iv-sim
+description: "Run the FEMA Level IV structural collapse simulation — URM strip mall partial collapse. Stress-tests FieldShore at working-incident scale: 4 apparatus, 8 shore points (including grouped T-Shore), single OP period. Use this skill whenever Alex says 'run level iv simulation', 'level 4 sim', 'hamden sim', or '/level-iv-sim'."
 ---
 
 # Level IV Simulation — Hamden Strip Mall (URM Partial Collapse)
@@ -331,6 +331,6 @@ Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `
 - **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx`
 - **App version baseline:** v3.17.2
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
-- **Runtime output:** `.claude/simulations/type-iv-sim/runtime/`
+- **Runtime output:** `.claude/simulations/level-iv-sim/runtime/`
 - **Key stress targets:** T-Shore grouped SP phase-split, command transfer, multi-apparatus inventory deduction, rain-condition UX
-- **Related simulations:** `/type-v-sim` (smaller), `/type-iii-sim` (larger)
+- **Related simulations:** `/level-v-sim` (smaller), `/level-iii-sim` (larger)

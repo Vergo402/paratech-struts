@@ -1,6 +1,6 @@
 ---
-name: type-iii-sim
-description: "Run the FEMA Level III structural collapse simulation — warehouse roof pancake. Stress-tests FieldShore at extended-attack scale: 10 apparatus, 25 shore points, 2 OP periods, command transfer, LongShore struts. Use this skill whenever Alex says 'run level iii simulation', 'level 3 sim', 'meadowville sim', 'run type iii simulation', 'type 3 sim', or '/type-iii-sim'."
+name: level-iii-sim
+description: "Run the FEMA Level III structural collapse simulation — warehouse roof pancake. Stress-tests FieldShore at extended-attack scale: 10 apparatus, 25 shore points, 2 OP periods, command transfer, LongShore struts. Use this skill whenever Alex says 'run level iii simulation', 'level 3 sim', 'meadowville sim', or '/level-iii-sim'."
 ---
 
 # Level III Simulation — Meadowville Warehouse (Roof Pancake)
@@ -362,6 +362,6 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 - **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx`
 - **App version baseline:** v3.17.2
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
-- **Runtime output:** `.claude/simulations/type-iii-sim/runtime/`
+- **Runtime output:** `.claude/simulations/level-iii-sim/runtime/`
 - **Key stress targets:** Command transfer + role history, OP period transition, concurrent writes, LongShore struts + unrated zone, 25-SP card density
-- **Related simulations:** `/type-iv-sim` (smaller), `/type-ii-sim` (larger)
+- **Related simulations:** `/level-iv-sim` (smaller), `/level-ii-sim` (larger)
