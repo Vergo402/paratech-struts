@@ -16,7 +16,7 @@ import string
 from copy import deepcopy
 from pathlib import Path
 
-ROOT = Path("/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore")
+ROOT = Path("/Users/alex/Developer/paratech-struts/fieldstruts")
 SIM = ROOT / ".claude/simulations/surfside-ttx-2"
 SNAP_IN = SIM / "runtime/firebase-snapshots/snap-E+16h.json"
 SNAP_OUT = SIM / "runtime/firebase-snapshots/snap-E+28h.json"
