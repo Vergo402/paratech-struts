@@ -1,4 +1,4 @@
-# Design Philosophy: Eleven Principles
+# Design Philosophy: Twelve Principles
 
 > Copied from Section I of `keen-whistling-pancake.md`. These are the constitution. Every downstream decision (component, screen, copy, color) is checked against them. Each principle has a "rejected alternative" so the trade-off is visible.
 
@@ -103,9 +103,17 @@ No splash screens longer than 400 ms. No marketing in the product. No "tip of th
 
 ---
 
+## 12. Built for a data problem nothing else is built for.
+
+Structural collapse does not share a data model with the rest of the fire service. Every measurement is unique, inputs land at the same time from different parts of the scene, and none of the operation matches the workflow of a house fire, a car accident, or a water rescue. A generic incident management tool works for those because the data is narrow and predictable. It does not work here. Wildland is the only other widespread incident type with the same breadth of scale, which is why wildland got dedicated tools decades ago. Structural collapse never did, because the call volume never made it worth a platform vendor's time.
+
+Every screen and workflow in v4 gets evaluated against the question this principle forces. Not "would this work for incident management generally," but "does this hold when every data point is unique, simultaneous, and spread across multiple work areas." Grouped shore points, phase based individual and team tracking, simultaneous multi area input, visible measurement and load math are not features stacked on top of a standard incident tool. They are what the operational model actually demands.
+
+---
+
 ## Invocation rules
 
 - **These principles are immutable after approval.** Changes require an ADR explaining what changed and why.
 - **Every essay (Phase C) starts from these.** Agents may push back but must explicitly cite which principle they are challenging.
-- **Every design decision (Phase E onward) must satisfy all 11.** If a design violates one, the design changes, not the principle.
+- **Every design decision (Phase E onward) must satisfy all 12.** If a design violates one, the design changes, not the principle.
 - **The constitution is short on purpose.** If we keep adding principles, we have rules, not principles.

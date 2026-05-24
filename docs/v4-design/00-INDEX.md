@@ -21,8 +21,8 @@
 | Phase | Description | Status | Notes |
 |---|---|---|---|
 | A | Foundation: branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129 through #138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
-| B | Reference app teardowns + positioning doc | 🚦 Gate ready | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md, ~17,400 words). Codename rule relaxed (ADR-001). Sign off review surfaced 11 follow up corrections (#269 through #279) plus one retroactive sub issue (#281, Type to Level rename); all 12 closed as of 2026-05-22. Plain language cleanup (#279) was the final pass. Ready for Phase B gate review. |
-| C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Blocked by B |
+| B | Reference app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md). Sign off review closed 12 follow ups by 2026-05-22. Positioning doc rewritten in Alex's voice and trimmed to ~1,450 words (commit e7f9bb3, 2026-05-23). Gate B passed 2026-05-23 after adding Principle 12 (ADR-004) out of #280, so Phase C briefing packet carries the data class framing. |
+| C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Ready to dispatch. Briefing packet: 12 principles, primitive doctrine (picker), all 6 reference teardowns + positioning, lens charter per agent. |
 | D | Synthesis + decision tracking matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
 | F | Information Architecture per screen × 4 surfaces | ⚪ Not started | Blocked by E |
@@ -51,6 +51,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 | [#278](https://github.com/Vergo402/paratech-struts/issues/278) | ADR-003: Scope, everyday plus expandable | 2026-05-22 |
 | [#279](https://github.com/Vergo402/paratech-struts/issues/279) | Plain language cleanup of all v4 artifacts | 2026-05-22 |
 | [#281](https://github.com/Vergo402/paratech-struts/issues/281) | terminology: rename incident complexity from Type to Level (retroactive sub issue of #274) | 2026-05-22 |
+| [#280](https://github.com/Vergo402/paratech-struts/issues/280) | Design Foundation: structural collapse is a different data problem (resolved at Gate B via Principle 12 + ADR-004) | 2026-05-23 |
 
 ---
 
@@ -59,7 +60,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 ### Foundation (Phase A)
 
 - `01-context.md` why this redesign exists 🟢
-- `02-principles.md` the 11 design principles 🟢
+- `02-principles.md` the 12 design principles 🟢 (Principle 12 added 2026-05-23 via ADR-004, out of #280)
 - `03-primitives/picker.md` UI picker doctrine (worked example of design depth) 🟢
 - `11-decisions/ADR-template.md` template for Architecture Decision Records 🟢
 - `99-open-questions.md` rolling list of unresolved questions 🟢
