@@ -54,9 +54,8 @@ This is the source of truth for tracked items. Returns items with fields: `Statu
 
 ```bash
 cat CLAUDE.md
-cat "/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/CLAUDE.md"
-cat /Users/alex/.claude/projects/-Users-alex-Library-CloudStorage-OneDrive-Personal-Claude-OS-Field-Shore/memory/MEMORY.md
-ls /Users/alex/.claude/projects/-Users-alex-Library-CloudStorage-OneDrive-Personal-Claude-OS-Field-Shore/memory/
+cat /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-fieldstruts/memory/MEMORY.md
+ls /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-fieldstruts/memory/
 ```
 
 Extract for the rest of the session:

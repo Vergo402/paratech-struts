@@ -4,7 +4,7 @@
     {
       "name": "fieldshore",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore\""],
+      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/fieldstruts\""],
       "autoPort": true
     }
   ]
