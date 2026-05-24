@@ -109,7 +109,7 @@ IDs are Firebase push keys or timestamp-based, cannot contain special chars. Acc
 **Severity:** Info (Pass)
 **Area:** `sw.js`
 
-Cache version matches (fieldstruts-v3.8.2), assets complete, Firebase/SheetJS excluded, stale-while-revalidate correct, old caches deleted, `skipWaiting()` + `clients.claim()` present.
+Cache version matches (fieldshore-v3.8.2), assets complete, Firebase/SheetJS excluded, stale-while-revalidate correct, old caches deleted, `skipWaiting()` + `clients.claim()` present.
 
 ### F-5B-3: Offline write queue robust
 **Severity:** Info (Pass)

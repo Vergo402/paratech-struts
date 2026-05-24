@@ -5,6 +5,7 @@
 .claude/worktrees/
 .claude/settings.local.json
 .claude/launch.json
+.claude/scheduled_tasks.lock
 
 # Review queue (pending manual delete)
 _review-to-delete/
@@ -22,7 +23,7 @@ MEMORY.md
 # Large binaries (reference docs kept locally)
 docs/*.pdf
 docs/*.docx
-!docs/FieldStruts-User-Manual.docx
+!docs/FieldShore-User-Manual.docx
 
 # Manual screenshot sources (embedded in the Word file)
 docs/manual-screenshots/

@@ -1,4 +1,4 @@
-# FieldStruts Findings Ledger
+# FieldShore Findings Ledger
 
 **Single source of truth for every finding from both rounds.**
 
@@ -56,7 +56,7 @@ Status:
 | ID | Severity | Status | Finding | File:Line | Fix Approach |
 |---|---|---|---|---|---|
 | S4 | CRITICAL | 🟡 v3.5.2 | App-bricking: `JSON.parse(sessionStorage.orgCollapsed)` top-level unguarded — corrupt sessionStorage stops app.js load | `app.js:415` | Wrap in try/catch with fallback |
-| S5 | CRITICAL | 🟡 v3.5.2 | `endOperation` online doesn't clear `fieldstruts_operation` localStorage — archived op resurrects as active on reload | `app.js:4221-4237` | Add `localStorage.removeItem` + optimistic local clear |
+| S5 | CRITICAL | 🟡 v3.5.2 | `endOperation` online doesn't clear `fieldshore_operation` localStorage — archived op resurrects as active on reload | `app.js:4221-4237` | Add `localStorage.removeItem` + optimistic local clear |
 | S6 | CRITICAL | 🟡 v3.5.2 | Online-only persistence: `persistOperation` skips localStorage when online. Offline reload reads stale state | `app.js:487` + many call sites | Always write to localStorage; remove the early return |
 | S7 | CRITICAL | 🟡 v3.5.2 | Firebase listener wipes local data on first-connect with empty Firebase response (e.g., deptId typo) | `app.js:993-999, 1037-1039` | First-fire guard: if snap empty AND local has data, push local to Firebase |
 | S8 | CRITICAL | 🟡 v3.5.2 | `confirmAddApparatus` online branch does Firebase-only write; no local mutation; modal stays open silently | `app.js:1252-1274` | Add local push BEFORE firebaseSave |
@@ -66,7 +66,7 @@ Status:
 | L3 | HIGH | 🟢 v3.6.0 | `pendingWrites` >24h silently dropped; offline >24h = data loss with only generic toast | `app.js:597` | Per-write notification on drop; export-to-clipboard recovery |
 | L4 | HIGH | 🟢 v3.6.0 | `pendingWrites` URL paths carry old deptId after switch — replays write to wrong dept | `app.js:606, 4479-4490` | Clear or rewrite pending paths on `connectDepartment` |
 | L5 | HIGH | 🟢 v3.6.0 | `archivedOperations` listener has no `limitTo` — unbounded growth in RAM | `app.js:1017` | Add `limitToLast(50)` or pagination |
-| L6 | MEDIUM | 🟢 v3.6.0 | `fieldstruts_deptName` read at 1683 but never written; feedback submissions always null | `app.js:1683` | Write key on connect/save |
+| L6 | MEDIUM | 🟢 v3.6.0 | `fieldshore_deptName` read at 1683 but never written; feedback submissions always null | `app.js:1683` | Write key on connect/save |
 | L7 | MEDIUM | 🟢 v3.6.0 | When customApparatusTypes Firebase data is null, localStorage key not removed; stale types persist | `app.js:1059-1061` | Always remove on null |
 | L8 | MEDIUM | 🟢 v3.6.0 | Device clock used for all timestamps — cross-device sort broken with clock drift | Many sites | Use Firebase `ServerValue.TIMESTAMP` where possible |
 | L9 | MEDIUM | 🟢 v3.6.0 | ID generation collisions on `Date.now()`-only IDs (`type_<ts>`, `grp-<ts>`, `i<ts>`, `local-op-<ts>`) | `app.js:1175, 1808, 2505, 3004, 3170` | Add jitter `+ Math.random().toString(36).slice(2,6)` |

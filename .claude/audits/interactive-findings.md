@@ -10,7 +10,7 @@
 
 ### F1 — Firebase listener overwrites local data with empty arrays (HIGH priority data-loss risk)
 **Symptom:** On first connection to a new (empty) Firebase department, the apparatus and inventory listeners fire with empty data and overwrite localStorage. Any local-only data is silently lost.
-**Reproduced by:** Setting `fieldstruts_deptId` to a new dept ID, putting apparatus/inventory in localStorage, then loading the app. After `setupListeners()` runs, localStorage contains empty arrays.
+**Reproduced by:** Setting `fieldshore_deptId` to a new dept ID, putting apparatus/inventory in localStorage, then loading the app. After `setupListeners()` runs, localStorage contains empty arrays.
 **Code:** `app.js` line ~1038 (`apparatusRef.on('value')`) and ~995 (`inventoryRef.on('value')`) — both unconditionally call `safeSetItem` with `data || {}` results.
 **Impact:** If a department first uses the app offline (puts in apparatus + inventory locally), then later connects to a new Firebase department for the first time, they lose all their offline work. This affects USAR task forces that may set up the app on the plane before they have department credentials.
 

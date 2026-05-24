@@ -61,13 +61,13 @@ Modal grid redraws via `showAddEquipment()` but Inventory tab body doesn't rende
 
 **Fix:** In `closeModal`, reset editing state per-modal. Also reset button visibility.
 
-### F-1D-7: `clearRole()` for self leaves stale `fieldstruts_myRoleName`
+### F-1D-7: `clearRole()` for self leaves stale `fieldshore_myRoleName`
 **Severity:** Low (privacy)
 **Area:** Role modal "Clear" → `clearRole()`
 
-Removes `fieldstruts_myRole` but not `fieldstruts_myRoleName`. Next user on shared device sees prior responder's name in modal.
+Removes `fieldshore_myRole` but not `fieldshore_myRoleName`. Next user on shared device sees prior responder's name in modal.
 
-**Fix:** Add `localStorage.removeItem('fieldstruts_myRoleName')` in self-branch. Also in `confirmStartOp`.
+**Fix:** Add `localStorage.removeItem('fieldshore_myRoleName')` in self-branch. Also in `confirmStartOp`.
 
 ### F-1D-8: `endOperation` doesn't call `renderInventory()` after wiping availability
 **Severity:** Medium
@@ -93,13 +93,13 @@ Member-set gates ALL reads/writes via security rules but fires raw — no offlin
 
 **Fix:** Wrap in `firebaseSave(...)` for queue + retry. Cross-ref F-1B-02, F-1E-2.
 
-### F-1D-11: `submitFeedback` reads `fieldstruts_deptName` which is never written
+### F-1D-11: `submitFeedback` reads `fieldshore_deptName` which is never written
 **Severity:** Low
 **Area:** Feedback Submit → `submitFeedback()` line 2100
 
-`saveSettings()` writes `fieldstruts_settings`, not `fieldstruts_deptName`. So `entry.deptName` always `null`. Feedback dashboard triage impaired.
+`saveSettings()` writes `fieldshore_settings`, not `fieldshore_deptName`. So `entry.deptName` always `null`. Feedback dashboard triage impaired.
 
-**Fix:** Read from parsed settings: `const settings = safeParse(localStorage.getItem('fieldstruts_settings'), {}); deptName: settings.name || null`.
+**Fix:** Read from parsed settings: `const settings = safeParse(localStorage.getItem('fieldshore_settings'), {}); deptName: settings.name || null`.
 
 ### F-1D-12: `submitFeedback` no-db branch leaves modal open
 **Severity:** Low

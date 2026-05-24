@@ -1,4 +1,4 @@
-# FieldStruts v3.8.2 — Full Audit Summary
+# FieldShore v3.8.2 — Full Audit Summary
 
 **Audit completed:** 2026-05-16
 **Version audited:** v3.8.2 (commit 65686d3)
@@ -142,8 +142,8 @@ Many error paths log to console only — no user-visible feedback. Field crews i
 6. **F-1C-6 / F-1D-4 / F-1D-8** — Add missing `renderInventory()` calls
 7. **F-1C-8** — Show error toast on empty operation name
 8. **F-1C-9** — Add random suffix to `groupId` to prevent collisions
-9. **F-1D-7** — Clear `fieldstruts_myRoleName` on role-clear
-10. **F-1D-11** — Read `deptName` from `fieldstruts_settings`, not separate key
+9. **F-1D-7** — Clear `fieldshore_myRoleName` on role-clear
+10. **F-1D-11** — Read `deptName` from `fieldshore_settings`, not separate key
 11. **F-1D-12** — Close feedback modal in no-db branch
 12. **F-1D-13** — Reset `opMultiBuilding` checkbox in `confirmStartOp`
 13. **F-BR-1** — Guard undefined interpolations in `renderShorePointCards`

@@ -82,7 +82,7 @@ The reviewers caught specific imprecisions and one false positive.
 
 **My audit said:** Firebase listener wipes local data including operation.
 
-**Engineer's correction:** The OPERATIONS listener (line 1001-1015) does NOT write to `fieldstruts_operation` localStorage — only updates `activeOperation` in memory. So localStorage stays intact for operations. The inventory + apparatus + customApparatusTypes listeners DO wipe localStorage. My audit conflated these.
+**Engineer's correction:** The OPERATIONS listener (line 1001-1015) does NOT write to `fieldshore_operation` localStorage — only updates `activeOperation` in memory. So localStorage stays intact for operations. The inventory + apparatus + customApparatusTypes listeners DO wipe localStorage. My audit conflated these.
 
 **Severity stays CRITICAL** for inventory/apparatus. For operations: the localStorage stays stale (from S6), in-memory wipes — same operational impact, different mechanism.
 

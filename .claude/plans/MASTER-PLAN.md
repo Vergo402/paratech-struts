@@ -79,7 +79,7 @@ if (db && deptId && opId) {
 Object.assign(target, data);
 
 // 2. Persist to localStorage as fallback
-safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+safeSetItem('fieldshore_operation', JSON.stringify(activeOperation));
 
 // 3. Fire-and-forget Firebase write (listener will reconcile)
 if (db && deptId && opId) {
@@ -168,7 +168,7 @@ function tryAutoTrimCache() {
     // Remove pendingWrites entries older than 1 hour
     const cutoff = Date.now() - 3600000;
     pendingWrites = pendingWrites.filter(p => p.timestamp > cutoff);
-    localStorage.setItem('fieldstruts_pendingWrites', JSON.stringify(pendingWrites));
+    localStorage.setItem('fieldshore_pendingWrites', JSON.stringify(pendingWrites));
   } catch {}
 }
 ```
@@ -179,13 +179,13 @@ Add a persistent yellow banner with "Cache full — [Clear archived data]" butto
 
 ```javascript
 window.addEventListener('storage', (e) => {
-  if (!e.key || !e.key.startsWith('fieldstruts_')) return;
-  if (e.key === 'fieldstruts_operation') {
+  if (!e.key || !e.key.startsWith('fieldshore_')) return;
+  if (e.key === 'fieldshore_operation') {
     // Another tab updated the op; reload it
-    const stored = localStorage.getItem('fieldstruts_operation');
+    const stored = localStorage.getItem('fieldshore_operation');
     if (stored) activeOperation = safeParse(stored, activeOperation);
     renderOperations();
-  } else if (e.key === 'fieldstruts_inventory') {
+  } else if (e.key === 'fieldshore_inventory') {
     loadLocalInventory();
     if (document.getElementById('screenInventory').classList.contains('active')) renderInventory();
   }
@@ -198,13 +198,13 @@ window.addEventListener('storage', (e) => {
 ```javascript
 window.addEventListener('beforeunload', () => {
   // Force-flush pending writes to localStorage one more time
-  if (activeOperation) safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  if (activeOperation) safeSetItem('fieldshore_operation', JSON.stringify(activeOperation));
 });
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     // Re-fire init logic for state recovery
-    const stored = localStorage.getItem('fieldstruts_operation');
+    const stored = localStorage.getItem('fieldshore_operation');
     if (stored) {
       const restored = safeParse(stored, null);
       if (restored && restored.id !== (activeOperation && activeOperation.id)) {
@@ -243,7 +243,7 @@ function saveSpDraft() {
       load: document.getElementById('spLoad').value,
       shoreType: document.getElementById('spShoreType').value
     };
-    safeSetItem('fieldstruts_spDraft', JSON.stringify(draft));
+    safeSetItem('fieldshore_spDraft', JSON.stringify(draft));
   }, 250);
 }
 
@@ -253,10 +253,10 @@ function saveSpDraft() {
 });
 
 // On successful save or close: clear draft
-function clearSpDraft() { localStorage.removeItem('fieldstruts_spDraft'); }
+function clearSpDraft() { localStorage.removeItem('fieldshore_spDraft'); }
 
 // On init, after activeOperation loaded:
-const draftRaw = localStorage.getItem('fieldstruts_spDraft');
+const draftRaw = localStorage.getItem('fieldshore_spDraft');
 if (draftRaw) {
   const draft = safeParse(draftRaw, null);
   if (draft && draft.opId === activeOperation.id && Date.now() - draft.ts < 24*3600000) {
@@ -391,7 +391,7 @@ function undoStatus() {
     if (sp) Object.assign(sp, snap);
   }
   lastStatusUndo = null;
-  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  safeSetItem('fieldshore_operation', JSON.stringify(activeOperation));
   renderOperations();
   showToast('Status undone');
 }
@@ -1358,7 +1358,7 @@ These are regression-class bugs that affect users at any scale. Ship as v3.11.2 
 | Virtualization on Operations SP list + Inventory apparatus selector + find-struts memoization cache invalidation | IP-056 | Medium | Premature at local scale. Revisit when single-op SP counts exceed ~100. |
 | Canonical chief-level apparatus roster bundle (app-ic-day/night, app-osc-2/3, app-psc-2, app-lsc-2, app-fasc-1, app-rescue-branch, app-search-group, app-shoring-group, app-heavy-rigging-group, app-medical-unit, app-demob-ul, app-doc-ul, app-eoc-liaison) | IP-039 | High | Federal task-force chief staffing. v4.0.0 ships local-apparatus bundles (Engine/Ladder/Rescue/Heavy/Squad). |
 | `/diagnostics/sync` admin-readable rule | IP-058 | Low | Federal multi-agency diagnostics surface. |
-| Stale `fieldstruts_*` localStorage cleanup during v3→v4 migration | IP-060 | Low | Belongs to the migration script regardless of scope. Can land in v4.0.0 if zero-cost. |
+| Stale `fieldshore_*` localStorage cleanup during v3→v4 migration | IP-060 | Low | Belongs to the migration script regardless of scope. Can land in v4.0.0 if zero-cost. |
 
 ### How Federal Future folds back in
 

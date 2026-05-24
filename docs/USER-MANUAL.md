@@ -493,7 +493,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 | **v3.6** | 2026-05-15 | Firebase listener cleanup (no more leak on department switch). Concurrent edit safety for org chart swaps. Keyboard accessibility for all interactive elements. Performance optimization for apparatus name lookups. |
 | **v3.5** | 2026-05-14 | Dark/light/system theme toggle. Shore point Group field changed to apparatus dropdown. Local-first write architecture across all mutation sites. |
 | **v3.4** | 2026-05-14 | Command page overhaul: role reparenting (long-press drag + "Move to..." menu), collapsible branches, status indicators (active/staged), headcount badge, span-of-control warnings. |
-| **v3.3** | 2026-05-14 | 6-pass production-readiness audit. App renamed from "Paratech Strut Selector" to FieldStruts. Extension rule fixes, error handling improvements, safety checks in selection algorithm. |
+| **v3.3** | 2026-05-14 | 6-pass production-readiness audit. App renamed from "Paratech Strut Selector" to FieldShore. Extension rule fixes, error handling improvements, safety checks in selection algorithm. |
 | **v3.2** | 2026-05-11 | Customizable apparatus types (add, rename, reorder, remove) from Settings. |
 | **v3.1** | 2026-05-11 | Dynamic ICS org chart: custom sub-roles, rename roles, remove roles, tree-based rendering at any depth. |
 | **v3.0** | 2026-05-11 | Drag-and-drop ICS org chart repositioning (tap-to-swap, desktop drag, touch drag). |

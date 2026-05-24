@@ -1,4 +1,4 @@
-# FieldStruts Audit Index
+# FieldShore Audit Index
 
 **Last updated:** 2026-05-14
 **Audit version covered:** v3.5.1 (production is now v3.7.0)
@@ -8,7 +8,7 @@
 
 ## What's in this audit
 
-Two-round comprehensive audit of FieldStruts under Surfside-scale incident simulation (12-story collapse, 41-200+ shore points, 21+ apparatus from 5 agencies, multi-day operation).
+Two-round comprehensive audit of FieldShore under Surfside-scale incident simulation (12-story collapse, 41-200+ shore points, 21+ apparatus from 5 agencies, multi-day operation).
 
 ### Round 1 — Eight role-based reviewers + interactive stress test
 

@@ -2,7 +2,7 @@
 
 **Auditor:** Structural Collapse SME (Haiku)
 **Date:** 2026-05-16
-**Scope:** Edge cases, boundary conditions, domain stress tests in FieldStruts v3.8.2
+**Scope:** Edge cases, boundary conditions, domain stress tests in FieldShore v3.8.2
 
 ---
 

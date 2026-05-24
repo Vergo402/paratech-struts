@@ -1,6 +1,6 @@
-# FieldStruts — Architecture Reference
+# FieldShore — Architecture Reference
 
-**Purpose:** Conventions, patterns, and constraints for working in the FieldStruts codebase.
+**Purpose:** Conventions, patterns, and constraints for working in the FieldShore codebase.
 
 Pairs with `CLAUDE.md` (project guide) and `.claude/audits/findings-ledger.md` (known issues).
 
@@ -38,17 +38,17 @@ No bundler. No transpiler. Everything ships as-written.
    - `/feedback/{pushId}/...` (global, write-only from clients)
 
 3. **localStorage** (offline fallback + UI prefs):
-   - `fieldstruts_deptId` — current department ID
-   - `fieldstruts_operation` — full active operation JSON (only written when offline; see `persistOperation` line 487)
-   - `fieldstruts_inventory` — overwritten on every Firebase listener fire
-   - `fieldstruts_apparatus` — same
-   - `fieldstruts_pendingWrites` — queued writes for replay on reconnect
-   - `fieldstruts_settings` — `{name}` (dept name)
-   - `fieldstruts_myRole` — current role
-   - `fieldstruts_myRoleName` — assigned person name
-   - `fieldstruts_theme` — `'system' | 'light' | 'dark'`
-   - `fieldstruts_deductionToggle` — Quick Find pref
-   - `fieldstruts_custom_apparatus_types`
+   - `fieldshore_deptId` — current department ID
+   - `fieldshore_operation` — full active operation JSON (only written when offline; see `persistOperation` line 487)
+   - `fieldshore_inventory` — overwritten on every Firebase listener fire
+   - `fieldshore_apparatus` — same
+   - `fieldshore_pendingWrites` — queued writes for replay on reconnect
+   - `fieldshore_settings` — `{name}` (dept name)
+   - `fieldshore_myRole` — current role
+   - `fieldshore_myRoleName` — assigned person name
+   - `fieldshore_theme` — `'system' | 'light' | 'dark'`
+   - `fieldshore_deductionToggle` — Quick Find pref
+   - `fieldshore_custom_apparatus_types`
 
 4. **sessionStorage:**
    - `orgCollapsed` — Set of collapsed org chart node IDs (⚠ unguarded parse at line 415)
@@ -140,7 +140,7 @@ function changeSomething(data) {
   // 1. Mutate local
   Object.assign(activeOperation.foo, data);
   // 2. Persist
-  safeSetItem('fieldstruts_operation', JSON.stringify(activeOperation));
+  safeSetItem('fieldshore_operation', JSON.stringify(activeOperation));
   // 3. Render
   renderOperations();
   // 4. Fire Firebase write (optional, reconciles via listener)
@@ -348,7 +348,7 @@ Target (v3.6.0):
 
 ### Update flow
 
-- Bump `CACHE_NAME` on every release (e.g. `fieldstruts-v3.5.1` → `fieldstruts-v3.5.2`)
+- Bump `CACHE_NAME` on every release (e.g. `fieldshore-v3.5.1` → `fieldshore-v3.5.2`)
 - Old caches are deleted on `activate`
 - `controllerchange` event triggers a reload on the client — but suppressed when on Ops screen with active op
 - v3.6.0 plan: re-check on screen change so users don't get stuck on old SW
@@ -371,7 +371,7 @@ git checkout -b feature/vX.X.X
 # Bump version in 3 places:
 #   - index.html: <div class="version-label">vX.X.X</div>
 #   - app.js: appVersion: 'X.X.X'
-#   - sw.js: CACHE_NAME = 'fieldstruts-vX.X.X'
+#   - sw.js: CACHE_NAME = 'fieldshore-vX.X.X'
 git add -p
 git commit -m "vX.X.X — ..."
 git checkout main

@@ -11,6 +11,32 @@
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
 <script>
+  // One-time migration: legacy "fieldstruts_*" / "fieldstruts-*" keys from v3.x.
+  // App was renamed FieldStruts -> FieldShore in v4. Any existing v3 user
+  // arriving on v4 gets their saved deptId, operation, inventory, settings,
+  // role name, theme, viewMode, etc. carried over. Idempotent: a marker key
+  // (`fieldshore_migration_v1`) prevents re-running. We do NOT delete the
+  // legacy keys so a user can still roll back to v3 without data loss.
+  (function() {
+    try {
+      if (localStorage.getItem('fieldshore_migration_v1') === '1') return;
+      var migrated = 0;
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k) continue;
+        var nk = null;
+        if (k.indexOf('fieldstruts_') === 0) nk = 'fieldshore_' + k.slice(12);
+        else if (k.indexOf('fieldstruts-') === 0) nk = 'fieldshore-' + k.slice(12);
+        if (nk && localStorage.getItem(nk) === null) {
+          localStorage.setItem(nk, localStorage.getItem(k));
+          migrated++;
+        }
+      }
+      localStorage.setItem('fieldshore_migration_v1', '1');
+      if (migrated > 0) console.info('[FieldShore] Migrated ' + migrated + ' legacy keys from FieldStruts (v3).');
+    } catch (e) { /* localStorage unavailable — nothing to migrate */ }
+  })();
+
   // Apply theme before stylesheets paint to prevent flash of wrong theme.
   // Stored preference values: 'system', 'light', 'dark'. Default = 'system'.
   // We always resolve to a concrete data-theme (light or dark) so CSS only

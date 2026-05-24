@@ -105,7 +105,7 @@
     "No pre-imported apparatus for Liaison/LSC/IC #4/OSC #2/OSC #3/PSC #2/Rescue Branch/Search/Medical chief positions (OP1 + OP2)",
     "Role history not preserved on apparatus or individual role transitions (v4.0.0 3C.5 gap confirmed in OP1 + 4x more in OP2 + 1 more in OP3 = 6 total)",
     "SP IDs dual-keyed: Object.keys vs push key — undocumented (OP1)",
-    "Stale fieldstruts_operation localStorage key (pre-v3.11.1 rename leftover) (OP1)",
+    "Stale fieldshore_operation localStorage key (pre-v3.11.1 rename leftover) (OP1)",
     "Modal Save Changes button hidden in Add path until find-struts flow runs (OP1 + bypassed in OP2 + OP3 via programmatic injection — 3 OPs running)",
     "Dashboard count cards do not refresh after programmatic mutation; ~30s debounce or full reload required (OP2)",
     "Branch/Group/Unit tier custom roles work data-side; UI render path at depth 4+ unverified (OP2)",

@@ -88,7 +88,7 @@ UX/OPS (U/O/V-series)     ██████████████████
 │                                                                    │
 │  Field timing:                                                     │
 │    Notepad + radio:   ~15-20 seconds  ▌▌▌▌                         │
-│    FieldStruts:       ~60-90 seconds  ▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌           │
+│    FieldShore:       ~60-90 seconds  ▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌▌           │
 │                                                                    │
 │  ⚠️  THE APP IS CURRENTLY SLOWER THAN ANALOG AT TF SCALE.          │
 └────────────────────────────────────────────────────────────────────┘

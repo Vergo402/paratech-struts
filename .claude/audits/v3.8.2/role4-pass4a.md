@@ -5,7 +5,7 @@
 
 ## Summary
 
-Comprehensive verification of FieldStruts v3.8.2 domain logic from a USAR/FEMA structural collapse perspective. **No critical findings.** All safety-critical data tables, algorithms, and configurations are correct and match Paratech manufacturer specifications and FEMA/USACE shoring doctrine.
+Comprehensive verification of FieldShore v3.8.2 domain logic from a USAR/FEMA structural collapse perspective. **No critical findings.** All safety-critical data tables, algorithms, and configurations are correct and match Paratech manufacturer specifications and FEMA/USACE shoring doctrine.
 
 ---
 

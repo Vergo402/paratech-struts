@@ -67,7 +67,7 @@ Findings tagged `gap` (15 after re-classification) plus highlights from `partial
 | IP-056 | Virtualization on SP list + apparatus selector uncalibrated | 3F.9 (new) — virtualization + find-struts memoization cache invalidation | 3F.9 | medium |
 | IP-057 | Dual-keyed SP IDs (Object.keys vs push-key) undocumented | 3C.7 — normalize SP ID indexing alongside group→assignedResource rename | 3C.7 | medium |
 | IP-015 | WCAG 1.4.3 contrast fails on 2/7 dark + 4/7 light status pills | 3F.4 (new) — WCAG AA audit across all 7 pills in both modes | 3F.4 | high |
-| IP-060 | Stale `fieldstruts_*` localStorage keys (pre-v3.11.1 rename leftover) | 3B.2 — clean stale keys during v3→v4 migration | 3B.2 | low |
+| IP-060 | Stale `fieldshore_*` localStorage keys (pre-v3.11.1 rename leftover) | 3B.2 — clean stale keys during v3→v4 migration | 3B.2 | low |
 
 ---
 
