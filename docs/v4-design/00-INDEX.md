@@ -22,7 +22,7 @@
 |---|---|---|---|
 | A | Foundation: branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129 through #138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
 | B | Reference app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md). Sign off review closed 12 follow ups by 2026-05-22. Positioning doc rewritten in Alex's voice and trimmed to ~1,450 words (commit e7f9bb3, 2026-05-23). Gate B passed 2026-05-23 after adding Principle 12 (ADR-004) out of #280, so Phase C briefing packet carries the data class framing. |
-| C | 12-agent brainstorm essays (5,000+ words each) | ⚪ Not started | Ready to dispatch. Briefing packet: 12 principles, primitive doctrine (picker), all 6 reference teardowns + positioning, lens charter per agent. |
+| C | 12-agent brainstorm essays | 🚦 Gate ready | All 12 essays committed 2026-05-23 (59,559 words total; target was 2,750–3,000 per essay, several came in higher because the lens earned it, no padding flagged). Each essay carries the 250-word executive summary and numbered recommendations Phase D copies verbatim into the coverage matrix. Notable: essay 8 (skeptical-review) dissents against ADR-003 and ADR-004 via numbered recs (permitted); essay 11 (scenario-stress) flags sibling-essay predictions that are likely to tear at Hamden/Meadowville scale; essay 4 surfaces 12 data-model schema fields that must be reserved in v4 to avoid v5 migration. |
 | D | Synthesis + decision tracking matrix | ⚪ Not started | Blocked by C |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
 | F | Information Architecture per screen × 4 surfaces | ⚪ Not started | Blocked by E |
@@ -93,20 +93,20 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 - `04-references/fire-rescue-systems.md` 🟢 (2435w)
 - `04-references/positioning.md` 🟢 (2613w synthesis, 2 axis chart: tactical vs records by doctrine fluent vs agnostic)
 
-### Brainstorm Essays (Phase C. 5,000+ words each, 250 word exec summary + numbered recs)
+### Brainstorm Essays (Phase C. Target was 2,750–3,000 words each, 250 word exec summary + numbered recs. Several came in over target where the lens earned it; no padding flagged.)
 
-- `05-essays/01-architecture.md` ⚪
-- `05-essays/02-visual-language.md` ⚪
-- `05-essays/03-ic-workflow.md` ⚪
-- `05-essays/04-future-scale.md` ⚪
-- `05-essays/05-nims-doctrine.md` ⚪
-- `05-essays/06-domain-ux.md` ⚪
-- `05-essays/07-field-conditions.md` ⚪
-- `05-essays/08-skeptical-review.md` ⚪
-- `05-essays/09-data-resilience.md` ⚪
-- `05-essays/10-implementation.md` ⚪
-- `05-essays/11-scenario-stress.md` ⚪
-- `05-essays/12-tech-debt.md` ⚪
+- `05-essays/01-architecture.md` 🟢 (5522w, 30 recs)
+- `05-essays/02-visual-language.md` 🟢 (5665w, 18 recs)
+- `05-essays/03-ic-workflow.md` 🟢 (3787w, 14 recs)
+- `05-essays/04-future-scale.md` 🟢 (3617w, 12 recs)
+- `05-essays/05-nims-doctrine.md` 🟢 (4417w, 22 recs)
+- `05-essays/06-domain-ux.md` 🟢 (4088w, 25 recs)
+- `05-essays/07-field-conditions.md` 🟢 (4610w, 18 recs)
+- `05-essays/08-skeptical-review.md` 🟢 (3204w, 15 recs)
+- `05-essays/09-data-resilience.md` 🟢 (6779w, 20 recs)
+- `05-essays/10-implementation.md` 🟢 (5732w, 25 recs)
+- `05-essays/11-scenario-stress.md` 🟢 (6026w, 18 recs)
+- `05-essays/12-tech-debt.md` 🟢 (6112w, 30 recs)
 
 ### Synthesis (Phase D)
 
