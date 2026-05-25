@@ -2,7 +2,48 @@
 
 > Every numbered recommendation from every Phase C essay, with a disposition. Status values: `accepted` (taken into the recommended path), `deferred` (good idea, Phase I or later), `rejected` (not doing this; reason in Notes), `merged-with-N` (same idea as another rec; canonical version named). Rec ID legend: A=01-architecture (30), B=02-visual-language (18), C=03-ic-workflow (14), D=04-future-scale (12), E=05-nims-doctrine (22), F=06-domain-ux (25), G=07-field-conditions (18), H=08-skeptical-review (15), I=09-data-resilience (20), J=10-implementation (25), K=11-scenario-stress (18), L=12-tech-debt (30).
 
-Total: 247 recommendations.
+Total: 247 recommendations. **231 accepted / 6 deferred / 8 rejected / 2 merged.**
+
+---
+
+## Review focus — controversial rows (16 of 247)
+
+The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to read linearly. These 16 are the ones that need discussion. Use **Cmd+F / Ctrl+F** in the GitHub diff view to jump to a row by its Rec # (e.g. `A-15`).
+
+### Rejected (8) — synthesis explicitly defends these against the essay that proposed them
+
+| Rec | Proposed | Why rejected (one-line) |
+|---|---|---|
+| `A-15` | Next.js App Router marketing site | Vite multi-page wins on schedule + dependency hygiene |
+| `H-3` | Cut 12 essays → 4 | Procedural; corpus is committed and produced load-bearing convergence |
+| `H-6` | Drop marketing site from v4 | 4-page brief at launch stands; positioning credibility argument wins |
+| `H-10` | Cut 15 primitives → ~7 | Convergence in §1 names each primitive's load-bearing role |
+| `H-12` | Preserve single-file architecture | Audit ledger names the capability gap (~30% of v3 findings are TS-class bugs) |
+| `H-14` | Reduce 12 principles → 9 | Principle 12 stands (ADR-004); Principle 11 cited 5× in other essays |
+| `H-15` | Ship design system to v3 first as visual refresh | Two design systems in parallel risks v3 regression during v4 build |
+| `J-18` | Inter Variable as v4.0 default typeface | Geist wins on substance (B-1); Inter is the fallback |
+
+### Deferred (6) — good idea, not v4.0
+
+| Rec | Proposed | Why deferred |
+|---|---|---|
+| `A-1` | pnpm + Turborepo monorepo at Phase H1 | Single package for v4.0; monorepo defers to v5.0 RN fork (ADR-005) |
+| `I-6` | Build C (CP hub) via WebRTC + mDNS + QR | v4.0 ships Build A only; WebRTC at v4.5+ |
+| `I-8` | Settings → "Sync health" admin UI | Path stays in v4.0 (L-25); UI surface at v4.1 |
+| `I-13` | Export/restore dept data; weekly auto-export | v4.0 ships backup-before-destructive-write only; full UI at v4.1 |
+| `I-14` | Department deletion with soft-delete + 60d cold storage | v4.0 = Owner confirm only; full lifecycle at v4.1 |
+| `I-20` | Hub + Build A coexistence with auto-fallback | Build A only in v4.0; coexistence at v4.5/v5.0 |
+
+### Merged (2) — same idea as another rec; canonical version named
+
+| Rec | Merged with | Canonical version |
+|---|---|---|
+| `A-16` | K-2 | Scripted seed via `?demo=1` URL flag (not a separate build) |
+| `A-24` | L-15 | React `useEffect` cleanups with `react-hooks/exhaustive-deps` lint |
+
+---
+
+## Full matrix (all 247 rows)
 
 | Essay | Rec # | Summary | Status | Notes |
 |-------|-------|---------|--------|-------|
@@ -258,10 +299,10 @@ Total: 247 recommendations.
 
 ## Summary by status
 
-- **accepted**: 213 recommendations (incl. partial accepts on H-9, L-25)
-- **deferred**: 5 (I-6, I-8, I-13, I-14, I-20 — primarily v4.1+ scope)
-- **rejected**: 9 (A-15 Next.js marketing, H-3 essay cut, H-6 marketing drop, H-10 primitive cut, H-12 single-file preservation, H-14 principle cut, H-15 v3.20.x design refresh, J-18 Inter default)
-- **merged**: 4 (A-16 with K-2, A-24 with L-15, C-10 with D-2, K-7 with C-2; E-21 with C-5 partial)
+- **accepted**: 231 recommendations (incl. partial accepts on H-9, L-25)
+- **deferred**: 6 (A-1, I-6, I-8, I-13, I-14, I-20 — primarily v4.1+ or v5.0 scope)
+- **rejected**: 8 (A-15 Next.js marketing, H-3 essay cut, H-6 marketing drop, H-10 primitive cut, H-12 single-file preservation, H-14 principle cut, H-15 v3.20.x design refresh, J-18 Inter default)
+- **merged**: 2 (A-16 with K-2, A-24 with L-15)
 
 Total accounted for: 247 ✓
 
