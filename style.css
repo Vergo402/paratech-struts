@@ -1128,6 +1128,11 @@ select { padding-right: 40px; }
   color: var(--blue);
   font-weight: 600;
 }
+/* v3.20.0 #127 Fix 2: truncation rules so long external dept/apparatus names don't push the count badge off-screen.
+   `min-width: 0` is required on the flex child for ellipsis to fire (default is min-content). */
+.inv-qv-item > div:first-child { min-width: 0; flex: 1; overflow: hidden; }
+.inv-qv-item .qv-name,
+.inv-qv-item .qv-app { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inv-qv-overlay {
   position: fixed;
   inset: 0;
