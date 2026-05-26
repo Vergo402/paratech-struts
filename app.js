@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.19.1';
+const APP_VERSION = '3.20.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -5744,7 +5744,9 @@ async function upgradePendingToDeployed(result, pendingId) {
 
   const extInvItems = [];
   for (const extSize of result.extensions) {
-    const ext = localInventory.find(i =>
+    // v3.20.0 #127 E6: use opInv (which includes external eq) instead of localInventory
+    // so external extensions are findable when upgrading a pending SP. Twin of E1.
+    const ext = opInv.find(i =>
       i.type === 'extension' &&
       i.length === extSize &&
       i.apparatus &&
@@ -5769,7 +5771,8 @@ async function upgradePendingToDeployed(result, pendingId) {
       });
       if (plateInv) {
         promisedCounts[plateInv.id] = (promisedCounts[plateInv.id] || 0) + 1;
-        deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
+        // v3.20.0 #127 P5: persist external + deptName so returnInventoryItems can branch
+        deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus, external: plateInv.external || false, deptName: plateInv.deptName || null });
       }
     }
     const expectedPlates = platesToDeploy.length;
@@ -5804,6 +5807,9 @@ async function upgradePendingToDeployed(result, pendingId) {
     length: e.length,
     system: e.system,
     apparatus: e.apparatus,
+    // v3.20.0 #127 E7: persist external + deptName (twin of E2)
+    external: e.external || false,
+    deptName: e.deptName || null,
   }));
   sp.deployedPlates = deployedPlates;
   sp.deductions = deductions || sp.deductions || null;
@@ -5831,11 +5837,23 @@ async function upgradePendingToDeployed(result, pendingId) {
     strutInvItem.available = Math.max(0, strutInvItem.available - 1);
   }
   for (const ext of extInvItems) {
-    ext.available = Math.max(0, ext.available - 1);
+    // v3.20.0 #127 E8: branch on external — synthetic copy from opInv won't mutate the source
+    if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
+      const e = activeOperation.externalEquipment[ext.id];
+      e.available = Math.max(0, (e.available || 0) - 1);
+    } else {
+      ext.available = Math.max(0, ext.available - 1);
+    }
   }
   for (const pl of deployedPlates) {
-    const plInv = localInventory.find(i => i.id === pl.inventoryId);
-    if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    // v3.20.0 #127 P6: branch on external — localInventory.find returns undefined for external plates
+    if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+      const e = activeOperation.externalEquipment[pl.inventoryId];
+      e.available = Math.max(0, (e.available || 0) - 1);
+    } else {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+    }
   }
 
   // #80 (v3.15.0): run Firebase decrement transactions. If any abort, restore
@@ -5857,10 +5875,24 @@ async function upgradePendingToDeployed(result, pendingId) {
     } else {
       strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
     }
-    for (const ext of extInvItems) ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+    for (const ext of extInvItems) {
+      // v3.20.0 #127 E9: compensate branch on external (mirror of E8)
+      if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
+        const e = activeOperation.externalEquipment[ext.id];
+        e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
+      } else {
+        ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+      }
+    }
     for (const pl of deployedPlates) {
-      const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+      // v3.20.0 #127 P7: compensate branch on external (mirror of P6)
+      if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+        const e = activeOperation.externalEquipment[pl.inventoryId];
+        e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
+      } else {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+      }
     }
     const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
     const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
@@ -5877,10 +5909,17 @@ async function upgradePendingToDeployed(result, pendingId) {
   // reconnect flush-pass (#71 v3.15.0).
   if (txResult.offline) {
     if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available);
-    for (const ext of extInvItems) markOfflineTouched(ext.id, ext.available);
+    // v3.20.0 #127 E10/P8: skip markOfflineTouched for external items — runDeployTransactions
+    // already bumped the ext: epoch key, which is what the offline flush pass uses.
+    // Matches the strut pattern at line above.
+    for (const ext of extInvItems) {
+      if (!ext.external) markOfflineTouched(ext.id, ext.available);
+    }
     for (const pl of deployedPlates) {
-      const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) markOfflineTouched(plInv.id, plInv.available);
+      if (!pl.external) {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) markOfflineTouched(plInv.id, plInv.available);
+      }
     }
   }
 
@@ -6154,7 +6193,9 @@ async function deployShorePoint(result, qty) {
 
     const extInvItems = [];
     for (const extSize of result.extensions) {
-      const ext = localInventory.find(i =>
+      // v3.20.0 #127 E1: use opInv (which includes external eq) instead of localInventory
+      // so external extensions are findable for deploy. Mirror site at upgradePendingToDeployed (E6).
+      const ext = opInv.find(i =>
         i.type === 'extension' &&
         i.length === extSize &&
         i.apparatus &&
@@ -6192,7 +6233,8 @@ async function deployShorePoint(result, qty) {
         });
         if (plateInv) {
           promisedCounts[plateInv.id] = (promisedCounts[plateInv.id] || 0) + 1;
-          deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus });
+          // v3.20.0 #127 P1: persist external + deptName so returnInventoryItems can branch
+          deployedPlates.push({ inventoryId: plateInv.id, plateId: plateId, apparatus: plateInv.apparatus, external: plateInv.external || false, deptName: plateInv.deptName || null });
         }
       }
       const expectedPlates = platesToDeploy.length;
@@ -6242,6 +6284,9 @@ async function deployShorePoint(result, qty) {
         length: e.length,
         system: e.system,
         apparatus: e.apparatus,
+        // v3.20.0 #127 E2: persist external + deptName so returnInventoryItems can branch correctly
+        external: e.external || false,
+        deptName: e.deptName || null,
       })),
       deployedPlates: deployedPlates,
       status: 'process',
@@ -6275,11 +6320,23 @@ async function deployShorePoint(result, qty) {
       strutInvItem.available = Math.max(0, strutInvItem.available - 1);
     }
     for (const ext of extInvItems) {
-      ext.available = Math.max(0, ext.available - 1);
+      // v3.20.0 #127 E3: branch on external — synthetic copy from opInv won't mutate the source
+      if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
+        const e = activeOperation.externalEquipment[ext.id];
+        e.available = Math.max(0, (e.available || 0) - 1);
+      } else {
+        ext.available = Math.max(0, ext.available - 1);
+      }
     }
     for (const pl of deployedPlates) {
-      const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+      // v3.20.0 #127 P2: branch on external — localInventory.find returns undefined for external plates
+      if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+        const e = activeOperation.externalEquipment[pl.inventoryId];
+        e.available = Math.max(0, (e.available || 0) - 1);
+      } else {
+        const plInv = localInventory.find(i => i.id === pl.inventoryId);
+        if (plInv) plInv.available = Math.max(0, plInv.available - 1);
+      }
     }
 
     // #80 (v3.15.0): run Firebase decrement transactions with the v=0 / v=null
@@ -6294,10 +6351,24 @@ async function deployShorePoint(result, qty) {
       } else {
         strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
       }
-      for (const ext of extInvItems) ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+      for (const ext of extInvItems) {
+        // v3.20.0 #127 E4: compensate branch on external (mirror of E3)
+        if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
+          const e = activeOperation.externalEquipment[ext.id];
+          e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
+        } else {
+          ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
+        }
+      }
       for (const pl of deployedPlates) {
-        const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+        // v3.20.0 #127 P3: compensate branch on external (mirror of P2)
+        if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+          const e = activeOperation.externalEquipment[pl.inventoryId];
+          e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
+        } else {
+          const plInv = localInventory.find(i => i.id === pl.inventoryId);
+          if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
+        }
       }
       const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
       const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
@@ -6313,10 +6384,15 @@ async function deployShorePoint(result, qty) {
     // reconnect flush-pass (#71 v3.15.0).
     if (txResult.offline) {
       if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available);
-      for (const ext of extInvItems) markOfflineTouched(ext.id, ext.available);
+      // v3.20.0 #127 E5/P4: skip markOfflineTouched for external items (matches strut pattern)
+      for (const ext of extInvItems) {
+        if (!ext.external) markOfflineTouched(ext.id, ext.available);
+      }
       for (const pl of deployedPlates) {
-        const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) markOfflineTouched(plInv.id, plInv.available);
+        if (!pl.external) {
+          const plInv = localInventory.find(i => i.id === pl.inventoryId);
+          if (plInv) markOfflineTouched(plInv.id, plInv.available);
+        }
       }
     }
 
@@ -7658,8 +7734,16 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
   for (const ext of (extInvItems || [])) {
     const g = makeAllocateDecrementer();
     const extLocalAvail = Math.max(0, (ext.available || 0) - 1);
-    bumpEpoch(ext.id);
-    guards.push({ ref: inventoryRef.child(ext.id).child('available'), guard: g, label: (ext.length || '') + '" extension', localAvail: extLocalAvail });
+    // v3.20.0 #127 E11: branch Firebase ref + epoch on external (mirror of strut path at line 7645-7654)
+    const extRef = ext.external
+      ? operationsRef.child(activeOperation.id).child('externalEquipment').child(ext.id).child('available')
+      : inventoryRef.child(ext.id).child('available');
+    if (ext.external) {
+      bumpEpoch('ext:' + activeOperation.id + ':' + ext.id);
+    } else {
+      bumpEpoch(ext.id);
+    }
+    guards.push({ ref: extRef, guard: g, label: (ext.length || '') + '" extension', localAvail: extLocalAvail });
   }
 
   // Plate transactions. seenCounts tracks how many deductions have been
@@ -7668,11 +7752,22 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
   const plSeenCounts = {};
   for (const pl of (deployedPlates || [])) {
     const g = makeAllocateDecrementer();
-    const plInv = localInventory.find(i => i.id === pl.inventoryId);
     plSeenCounts[pl.inventoryId] = (plSeenCounts[pl.inventoryId] || 0) + 1;
-    const plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - plSeenCounts[pl.inventoryId]) : undefined;
-    bumpEpoch(pl.inventoryId);
-    guards.push({ ref: inventoryRef.child(pl.inventoryId).child('available'), guard: g, label: (pl.plateId || 'plate'), localAvail: plLocalAvail });
+    // v3.20.0 #127 P9: branch Firebase ref + epoch + localAvail on external
+    let plLocalAvail;
+    let plRef;
+    if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+      const extItem = activeOperation.externalEquipment[pl.inventoryId];
+      plLocalAvail = Math.max(0, (extItem.available || 0) - plSeenCounts[pl.inventoryId]);
+      plRef = operationsRef.child(activeOperation.id).child('externalEquipment').child(pl.inventoryId).child('available');
+      bumpEpoch('ext:' + activeOperation.id + ':' + pl.inventoryId);
+    } else {
+      const plInv = localInventory.find(i => i.id === pl.inventoryId);
+      plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - plSeenCounts[pl.inventoryId]) : undefined;
+      plRef = inventoryRef.child(pl.inventoryId).child('available');
+      bumpEpoch(pl.inventoryId);
+    }
+    guards.push({ ref: plRef, guard: g, label: (pl.plateId || 'plate'), localAvail: plLocalAvail });
   }
 
   // Fire all in parallel — `silent: true` so the generic 'Sync conflict' toast
@@ -7726,13 +7821,26 @@ function returnInventoryItems(sp) {
   if (sp.deployedExtensions) {
     for (const ext of sp.deployedExtensions) {
       if (ext.inventoryId) {
-        const inv = localInventory.find(i => i.id === ext.inventoryId);
-        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (isOnline) {
-          bumpEpoch(ext.inventoryId);
-          firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
-        } else if (inv) {
-          markOfflineTouched(inv.id, inv.available);
+        // v3.20.0 #127 E12: external branch mirrors strut path at lines 7705-7714
+        if (ext.external && activeOperation && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.inventoryId]) {
+          const extItem = activeOperation.externalEquipment[ext.inventoryId];
+          extItem.available = Math.min(extItem.quantity, extItem.available + 1);
+          const extEpochKey = 'ext:' + activeOperation.id + ':' + ext.inventoryId;
+          if (db && deptId && operationsRef) {
+            bumpEpoch(extEpochKey);
+            firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available });
+          } else {
+            markOfflineTouchedExternal(activeOperation.id, ext.inventoryId, extItem.available);
+          }
+        } else {
+          const inv = localInventory.find(i => i.id === ext.inventoryId);
+          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+          if (isOnline) {
+            bumpEpoch(ext.inventoryId);
+            firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
+          } else if (inv) {
+            markOfflineTouched(inv.id, inv.available);
+          }
         }
       }
     }
@@ -7740,13 +7848,26 @@ function returnInventoryItems(sp) {
   if (sp.deployedPlates) {
     for (const pl of sp.deployedPlates) {
       if (pl.inventoryId) {
-        const inv = localInventory.find(i => i.id === pl.inventoryId);
-        if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-        if (isOnline) {
-          bumpEpoch(pl.inventoryId);
-          firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
-        } else if (inv) {
-          markOfflineTouched(inv.id, inv.available);
+        // v3.20.0 #127 P10: external branch (closes pre-existing prod bug for external plate return)
+        if (pl.external && activeOperation && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+          const extItem = activeOperation.externalEquipment[pl.inventoryId];
+          extItem.available = Math.min(extItem.quantity, extItem.available + 1);
+          const extEpochKey = 'ext:' + activeOperation.id + ':' + pl.inventoryId;
+          if (db && deptId && operationsRef) {
+            bumpEpoch(extEpochKey);
+            firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available });
+          } else {
+            markOfflineTouchedExternal(activeOperation.id, pl.inventoryId, extItem.available);
+          }
+        } else {
+          const inv = localInventory.find(i => i.id === pl.inventoryId);
+          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
+          if (isOnline) {
+            bumpEpoch(pl.inventoryId);
+            firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined });
+          } else if (inv) {
+            markOfflineTouched(inv.id, inv.available);
+          }
         }
       }
     }
@@ -8370,7 +8491,12 @@ function renderQuickViewInventory() {
     : null;
   const items = localInventory.filter(i => i.apparatus && (!assignedSet || assignedSet.has(i.apparatus)));
 
-  if (items.length === 0) {
+  // v3.20.0 #127 Fix 2: include external (visiting-dept) equipment in the merge
+  const externalItems = (activeOperation && activeOperation.externalEquipment)
+    ? Object.values(activeOperation.externalEquipment).filter(e => (e.available || 0) > 0)
+    : [];
+
+  if (items.length === 0 && externalItems.length === 0) {
     const msg = (assignedSet && assignedSet.size === 0)
       ? 'No apparatus assigned to this operation. Assign apparatus from the Operations tab to see available inventory.'
       : 'No equipment assigned to apparatus';
@@ -8402,6 +8528,34 @@ function renderQuickViewInventory() {
     });
     html += '</div>';
   });
+
+  // v3.20.0 #127 Fix 2: append "External Department Equipment" section last,
+  // grouping visiting-dept gear under its own header. Two-line row: item label
+  // on qv-name; deptName / apparatus subordinate on qv-app sub-label. No per-row
+  // badge — the section header alone signals these are external. title attr
+  // for desktop hover when text truncates. escapeHtml/escapeAttr on user input.
+  if (externalItems.length > 0) {
+    html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">External Department Equipment</div>`;
+    externalItems
+      .sort((a, b) => {
+        const dn = (a.deptName || '').localeCompare(b.deptName || '');
+        if (dn !== 0) return dn;
+        return (a.model || a.length || '').toString().localeCompare((b.model || b.length || '').toString());
+      })
+      .forEach(item => {
+        const rawName = item.type === 'strut' ? (item.model || '')
+          : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId || '')
+          : `${item.length}" Extension`;
+        const name = escapeHtml(rawName);
+        const avail = item.available != null ? item.available : item.quantity;
+        const total = item.quantity;
+        const countClass = avail === 0 ? 'zero' : avail <= 1 ? 'low' : '';
+        const provenance = `${item.deptName || ''} / ${item.apparatus || ''}`;
+        html += `<div class="inv-qv-item"><div><span class="qv-name">${name}</span><div class="qv-app" title="${escapeAttr(provenance)}">${escapeHtml(provenance)}</div></div><span class="qv-count ${countClass}">${avail}/${total}</span></div>`;
+      });
+    html += '</div>';
+  }
+
   body.innerHTML = html;
 }
 

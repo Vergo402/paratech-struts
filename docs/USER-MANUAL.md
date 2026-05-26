@@ -1,7 +1,7 @@
 # FieldShore User Manual
 
-**Version:** 3.19  
-**Last updated:** 2026-05-20  
+**Version:** 3.20  
+**Last updated:** 2026-05-25  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -246,6 +246,13 @@ The form matches the regular inventory-add layout. At the top, enter the **Sourc
 
 External equipment added here tracks available vs. deployed quantities the same way regular inventory does. If a return fails while offline or when the connection drops, the change is queued and reconciled automatically when connectivity is restored.
 
+**Where external equipment shows up (v3.20):**
+
+- **Quick View "Available Inventory" sidebar** — external items appear in a dedicated **External Department Equipment** section at the bottom of the sidebar. Below each item label, the source department and apparatus are shown on a 11px subordinate sub-label (e.g., "Yonkers FD / Engine 5"). Deployed items disappear from this view once their available count hits zero.
+- **Deploy flow** — external struts, extensions, and connector plates are all selectable when you deploy a shore point (v3.20 closed a bug where external extensions weren't findable in the deploy modal).
+- **Inventory tab** — external equipment **does NOT** appear here. The Inventory tab is for managing your department's owned gear (apparatus inventory, Excel import/export). Visiting-dept gear lives on **Command + Quick View only**.
+- **Demob accountability** — when a visiting dept demobs, deployed external items live on their shore-point cards and in the **Command tab External Equipment list**, not in Quick View (Quick View hides items with zero available count, which is correct for "what can I pull right now" but means it isn't a demob tally surface). Cross-reference the Command list against deployed shore points to confirm what to hand back.
+
 ### ICS Organization Chart
 
 The org chart renders as an interactive tree with L-shaped connector lines showing the command hierarchy at a glance.
@@ -477,6 +484,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.20** | 2026-05-25 | External equipment now flows into "available inventory" end-to-end (issue #127). Adding external struts, extensions, or plates on the Command tab now makes them deployable on shore points — previously external extensions were silently invisible to the deploy modal, and external plates had a pre-existing silent loss on return. External items also now appear in the Quick View "Available Inventory" sidebar in a dedicated **External Department Equipment** section, with the source dept and apparatus shown on a subordinate sub-label under each item. The Inventory tab is unchanged — it remains dept-owned-only by design (visiting-dept gear is op-scoped and lives on Command + Quick View). |
 | **v3.19** | 2026-05-20 | Default ICS org chart restructured for NIMS Type IV–V incidents. **Added** two new default roles: **Staging Area Manager** (under Operations per NIMS doctrine) and **Division 1** (under Operations, collapsed by default to fit phone screens). The four tactical roles — Entry, Rescue, Initial Shoring, Wood Shoring — now sit under Division 1 instead of directly under Operations. Cutting Table and Runner stay where they were. Card titles (v3.18.2 fix carried forward) accept up to 30 characters with word-wrap and no subtitle row. |
 | **v3.18** | 2026-05-20 | hfd217 field-feedback response. **Removed:** scenario presets in Start Operation (added cognitive load at incident-start) and the Solo-IC / Auto-promote mode block on Command (exposed implementation state as user concept). The Command tab now always renders the full view regardless of apparatus count. **Added:** three dashboard tiles at the top of Command — **Elapsed** (HH:MM:SS, ticks every second), **Apparatus** count, **Shore Points** count. **Fixed:** cutting table Send to Runner action restored (workflow blocker). Operations Section Chief role can now mark cut-done and send to runner (battalion-chief doctrine — Ops keeps physical-custody actions off the Command tab). Adding external equipment now updates the available inventory display immediately on both the Command and Inventory tabs. Operations tab header no longer shifts left when the inventory right-rail is on. Assigned Apparatus column now groups chips under per-category labels (Chief, Deputy Chief, Engine, Ladder, etc.) instead of running labels inline. Plate picker sorts in-stock plates to the top with "Available" / "Not in inventory" section labels. |
 | **v3.17** | 2026-05-19 | "Strut Placed" renamed to "Strut Installed" (FEMA US&R FOG) everywhere in the UI — badges, buttons, legend, drilldown counts. Quick Start FAB on the Quick Find tab: press and hold 500ms to instantly create an operation and jump to the first shore point, skipping the Start Operation modal entirely. End Operation moved to the Command tab header — IC only. Send to Runner now requires the Runner role (plus IC override). Mark Secured now requires IC, Safety, or a Shoring role (Initial Shoring, Wood Shoring). Add External Equipment form rebuilt to match the regular inventory-add layout — struts, extensions, and connector plates in one quick-add grid with Source Department and Source Apparatus fields at top. External equipment returns now reconcile automatically after offline use or connection failures. _(Scenario presets and Solo-IC mode shipped in v3.17 but were removed in v3.18 after field feedback — see v3.18 row.)_ |
