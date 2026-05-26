@@ -8529,30 +8529,37 @@ function renderQuickViewInventory() {
     html += '</div>';
   });
 
-  // v3.20.0 #127 Fix 2: append "External Department Equipment" section last,
-  // grouping visiting-dept gear under its own header. Two-line row: item label
-  // on qv-name; deptName / apparatus subordinate on qv-app sub-label. No per-row
-  // badge — the section header alone signals these are external. title attr
-  // for desktop hover when text truncates. escapeHtml/escapeAttr on user input.
+  // v3.20.0 #127 Fix 2: append the External Department Equipment mega-section
+  // last. Structure mirrors the dept-owned blocks above — each visiting
+  // apparatus gets its own header (deptName / apparatus), and items list with
+  // their system label (Grey/Gold/Plate) on the qv-app sub-label, same as
+  // dept-owned. The mega-section wrapper adds a stronger visual divider so
+  // operators can see at a glance where dept-owned gear ends and visiting-dept
+  // gear begins.
   if (externalItems.length > 0) {
-    html += `<div class="inv-section"><div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">External Department Equipment</div>`;
-    externalItems
-      .sort((a, b) => {
-        const dn = (a.deptName || '').localeCompare(b.deptName || '');
-        if (dn !== 0) return dn;
-        return (a.model || a.length || '').toString().localeCompare((b.model || b.length || '').toString());
-      })
-      .forEach(item => {
-        const rawName = item.type === 'strut' ? (item.model || '')
-          : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId || '')
-          : `${item.length}" Extension`;
-        const name = escapeHtml(rawName);
-        const avail = item.available != null ? item.available : item.quantity;
-        const total = item.quantity;
-        const countClass = avail === 0 ? 'zero' : avail <= 1 ? 'low' : '';
-        const provenance = `${item.deptName || ''} / ${item.apparatus || ''}`;
-        html += `<div class="inv-qv-item"><div><span class="qv-name">${name}</span><div class="qv-app" title="${escapeAttr(provenance)}">${escapeHtml(provenance)}</div></div><span class="qv-count ${countClass}">${avail}/${total}</span></div>`;
-      });
+    const externalByApparatus = {};
+    externalItems.forEach(item => {
+      const key = `${item.deptName || ''} / ${item.apparatus || ''}`;
+      if (!externalByApparatus[key]) externalByApparatus[key] = [];
+      externalByApparatus[key].push(item);
+    });
+    html += `<div class="inv-section inv-section-external"><div class="inv-mega-header">EXTERNAL DEPARTMENT EQUIPMENT</div>`;
+    Object.keys(externalByApparatus).sort().forEach(key => {
+      html += `<div class="inv-section-header" style="font-weight:700;color:var(--blue);border-bottom:2px solid var(--blue);margin-bottom:4px">${escapeHtml(key)}</div>`;
+      externalByApparatus[key]
+        .sort((a, b) => (a.model || a.length || '').toString().localeCompare((b.model || b.length || '').toString()))
+        .forEach(item => {
+          const rawName = item.type === 'strut' ? (item.model || '')
+            : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId || '')
+            : `${item.length}" Extension`;
+          const name = escapeHtml(rawName);
+          const avail = item.available != null ? item.available : item.quantity;
+          const total = item.quantity;
+          const countClass = avail === 0 ? 'zero' : avail <= 1 ? 'low' : '';
+          const sys = item.type === 'plate' ? 'Plate' : (item.system === 'LongShore' ? 'Gold' : 'Grey');
+          html += `<div class="inv-qv-item"><div><span class="qv-name">${name}</span><div class="qv-app">${sys}</div></div><span class="qv-count ${countClass}">${avail}/${total}</span></div>`;
+        });
+    });
     html += '</div>';
   }
 
