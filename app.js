@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.20.0';
+const APP_VERSION = '3.21.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -445,7 +445,7 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
       const deployable = informational.filter(r => !r.exceedsCapacity && !r.unrated);
       if (deployable.length > 0) {
         const items = deployable.slice(0, 6).map(r => {
-          const extStr = r.extensions.length > 0 ? ` + ${r.extensions.map(e => e + '"').join(' + ')}` : '';
+          const extStr = r.extensions.length > 0 ? ` + ${r.extensions.map(e => formatFractional(e)).join(' + ')}` : '';
           return `<li>${escapeHtml(r.strut.model)}${extStr}</li>`;
         }).join('');
         container.innerHTML = `<div class="no-results info-fallback">
@@ -488,16 +488,16 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
       const extDisplay = r.extensions.length > 0
         ? `<div class="ext-section">
             <span class="ext-label">Extensions:</span>
-            ${r.extensions.map(e => `<span class="ext-chip">${e}"</span>`).join('')}
+            ${r.extensions.map(e => `<span class="ext-chip">${formatFractional(e)}</span>`).join('')}
           </div>
-          <div class="total-reach">Strut alone: ${r.strut.collapsed}" – ${r.strut.extended}"</div>`
+          <div class="total-reach">Strut alone: ${formatFractional(r.strut.collapsed)} – ${formatFractional(r.strut.extended)}</div>`
         : `<div class="no-ext">No extensions needed</div>`;
 
       html += `<div class="result-card unrated-warning" style="border:2px solid var(--orange-dark);background:var(--orange-bg)">
         <div class="card-primary">
           <div class="system-label" style="color:var(--orange-dark);font-weight:700">⚠ UNRATED ZONE — ENGINEERING JUDGMENT REQUIRED</div>
           <div class="model-name">${escapeHtml(r.strut.model)} <span style="font-size:13px;font-weight:400;color:var(--text-secondary)">(${systemLabel})</span></div>
-          <div class="range">${r.adjCollapsed}" – ${r.adjExtended}" (physical reach)</div>
+          <div class="range">${formatFractional(r.adjCollapsed)} – ${formatFractional(r.adjExtended)} (physical reach)</div>
           ${extDisplay}
           <div style="margin-top:10px;padding:10px;background:var(--bg-primary);border-radius:6px;color:var(--text-primary);font-size:14px;line-height:1.4">
             ${escapeHtml(r.unratedReason)}
@@ -546,8 +546,8 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
     }
 
     const rangeText = r.extensions.length > 0
-      ? `${r.adjCollapsed}" – ${r.adjExtended}"`
-      : `${r.strut.collapsed}" – ${r.strut.extended}"`;
+      ? `${formatFractional(r.adjCollapsed)} – ${formatFractional(r.adjExtended)}`
+      : `${formatFractional(r.strut.collapsed)} – ${formatFractional(r.strut.extended)}`;
 
     html += `<div class="result-card ${colorClass}">
       <div class="card-primary">
@@ -558,9 +558,9 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
     if (r.extensions.length > 0) {
       html += `<div class="ext-section">
           <span class="ext-label">Extensions:</span>
-          ${r.extensions.map(e => `<span class="ext-chip">${e}"</span>`).join('')}
+          ${r.extensions.map(e => `<span class="ext-chip">${formatFractional(e)}</span>`).join('')}
         </div>`;
-      html += `<div class="total-reach">Strut alone: ${r.strut.collapsed}" – ${r.strut.extended}"</div>`;
+      html += `<div class="total-reach">Strut alone: ${formatFractional(r.strut.collapsed)} – ${formatFractional(r.strut.extended)}</div>`;
     } else {
       html += `<div class="no-ext">No extensions needed</div>`;
     }
@@ -570,15 +570,14 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
     // Deduction info
     if (r.deductions) {
       const d = r.deductions;
-      const totalDed = Math.round(((d.header || 0) + (d.sole || 0) + (d.topPlate || 0) + (d.bottomPlate || 0)) * 10) / 10;
-      const effLen = Math.round(r.effectiveLength * 10) / 10;
+      const totalDed = (d.header || 0) + (d.sole || 0) + (d.topPlate || 0) + (d.bottomPlate || 0);
       const parts = [];
-      if (d.header) parts.push(`Header ${d.header}"`);
-      if (d.sole) parts.push(`Footer ${d.sole}"`);
-      if (d.topPlate) { const p = BASE_PLATES.find(b => b.id === d.topPlateName) || BASE_PLATES.find(b => b.height === d.topPlate && b.id !== 'none'); parts.push(`Top: ${p ? p.name : d.topPlate + '"'}`); }
-      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.id === d.bottomPlateName) || BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : d.bottomPlate + '"'}`); }
+      if (d.header) parts.push(`Header ${formatFractional(d.header)}`);
+      if (d.sole) parts.push(`Footer ${formatFractional(d.sole)}`);
+      if (d.topPlate) { const p = BASE_PLATES.find(b => b.id === d.topPlateName) || BASE_PLATES.find(b => b.height === d.topPlate && b.id !== 'none'); parts.push(`Top: ${p ? p.name : formatFractional(d.topPlate)}`); }
+      if (d.bottomPlate) { const p = BASE_PLATES.find(b => b.id === d.bottomPlateName) || BASE_PLATES.find(b => b.height === d.bottomPlate && b.id !== 'none'); parts.push(`Sole Plate: ${p ? p.name : formatFractional(d.bottomPlate)}`); }
       html += `<div class="card-deductions">
-        <strong>Opening:</strong> ${r.openingLength}" → <strong>Effective:</strong> ${effLen}" <span style="color:var(--blue)">(−${totalDed}")</span><br>
+        <strong>Opening:</strong> ${formatFractional(r.openingLength)} → <strong>Effective:</strong> ${formatFractional(r.effectiveLength)} <span style="color:var(--blue)">(−${formatFractional(totalDed)})</span><br>
         <span style="font-size:13px">${parts.join(' · ')}</span>
       </div>`;
     }
@@ -3439,6 +3438,80 @@ function setMeasurementFromInches(prefix, totalInches) {
   document.getElementById(prefix + 'Fraction').value = String(closest);
 }
 
+// v3.21.0 — Fractional display (#119). Storage stays decimal; only display + cut-table input change.
+function formatFractional(decimalInches, opts) {
+  const precision = (opts && opts.precision) || 0.0625; // default 1/16"
+  if (decimalInches == null) return '—'; // null / undefined → em-dash (Number(null) === 0 would otherwise show "0\"")
+  const n = Number(decimalInches);
+  if (!Number.isFinite(n)) return '—';
+  const denom = Math.round(1 / precision);
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  const totalUnits = Math.round(abs * denom);
+  const whole = Math.floor(totalUnits / denom);
+  let num = totalUnits % denom;
+  let den = denom;
+  if (num > 0) {
+    const g = (function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); })(num, den);
+    num = num / g;
+    den = den / g;
+  }
+  if (num === 0) return `${sign}${whole}"`;
+  if (whole === 0) return `${sign}${num}/${den}"`;
+  return `${sign}${whole}-${num}/${den}"`;
+}
+
+function parseFractional(text) {
+  if (text == null) return NaN;
+  const s = String(text).trim().replace(/"$/, '').trim();
+  if (s === '') return NaN;
+  if (s.includes(',')) return NaN;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+  const fracOnly = s.match(/^(-?)(\d+)\s*\/\s*(\d+)$/);
+  if (fracOnly) {
+    const sign = fracOnly[1] === '-' ? -1 : 1;
+    const num = parseInt(fracOnly[2], 10);
+    const den = parseInt(fracOnly[3], 10);
+    if (den === 0) return NaN;
+    return sign * (num / den);
+  }
+  const mixed = s.match(/^(-?)(\d+)[\s-]+(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const sign = mixed[1] === '-' ? -1 : 1;
+    const whole = parseInt(mixed[2], 10);
+    const num = parseInt(mixed[3], 10);
+    const den = parseInt(mixed[4], 10);
+    if (den === 0) return NaN;
+    return sign * (whole + num / den);
+  }
+  return NaN;
+}
+
+const FRACTION_OPTIONS_HTML = [
+  [0, '0'], [0.0625, '1/16'], [0.125, '1/8'], [0.1875, '3/16'],
+  [0.25, '1/4'], [0.3125, '5/16'], [0.375, '3/8'], [0.4375, '7/16'],
+  [0.5, '1/2'], [0.5625, '9/16'], [0.625, '5/8'], [0.6875, '11/16'],
+  [0.75, '3/4'], [0.8125, '13/16'], [0.875, '7/8'], [0.9375, '15/16']
+].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+
+// Reads compound cut-table input. Returns NaN if blank/invalid so callers can preserve the
+// existing `if (val && !isNaN(val))` skip-on-empty pattern from sendToRunner / markCutDone.
+function readCutActualInches(spId) {
+  const feetEl = document.getElementById(`cut-${spId}-feet`);
+  const inchesEl = document.getElementById(`cut-${spId}-inches`);
+  const fracEl = document.getElementById(`cut-${spId}-fraction`);
+  if (!feetEl || !inchesEl || !fracEl) return NaN;
+  const allBlank = feetEl.value === '' && inchesEl.value === '' && (fracEl.value === '' || fracEl.value === '0');
+  if (allBlank) return NaN;
+  const feet = parseFloat(feetEl.value) || 0;
+  const inches = parseFloat(inchesEl.value) || 0;
+  const fraction = parseFloat(fracEl.value) || 0;
+  const total = (feet * 12) + inches + fraction;
+  if (total <= 0) return NaN;
+  if (total > MAX_MEASUREMENT_INCHES) return NaN;
+  return total;
+}
+
 // ============================================================
 // INVENTORY MANAGEMENT
 // ============================================================
@@ -3483,7 +3556,7 @@ function renderInventory() {
     for (const item of [...struts, ...exts]) {
       // X2 (v3.5.2): item.model is user-controlled (Excel import preserves it). Escape for
       // display; escape ID for the onclick handler attribute.
-      const name = item.type === 'strut' ? escapeHtml(item.model) : `${item.length}" Extension`;
+      const name = item.type === 'strut' ? escapeHtml(item.model) : `${formatFractional(item.length)} Extension`;
       const deployed = activeOperation ? Math.max(0, item.quantity - item.available) : 0;
       const statusText = deployed > 0 ? `${deployed} deployed` : '';
 
@@ -5002,7 +5075,7 @@ function renderAssignedApparatus() {
 // v3.12.0: extracted helper — external equipment list. Host-agnostic.
 function getExtItemLabel(ext) {
   if (ext.type === 'strut') return ext.model || 'Strut';
-  if (ext.type === 'extension') return (ext.length || '?') + '" ' + (ext.system || '') + ' Ext';
+  if (ext.type === 'extension') return (ext.length ? formatFractional(ext.length) : '?') + ' ' + (ext.system || '') + ' Ext';
   if (ext.type === 'plate') return ext.model || ext.plateId || 'Plate';
   return ext.model || 'Unknown';
 }
@@ -5286,15 +5359,15 @@ function renderShorePointCards(numbered) {
     for (const sp of sorted) {
       // F-1C-19 fix: coerce ext.length to number so a poisoned Firebase value can't inject HTML
       const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-        ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
+        ? ' + ' + sp.deployedExtensions.map(e => formatFractional(Number(e.length) || 0)).join(' + ')
         : '';
 
       const shoreTypeLabel = getShoreTypeName(sp.shoreType);
       const dedInfo = sp.deductions ? (() => {
         const d = sp.deductions;
-        const total = Math.round(((d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0)) * 10) / 10;
-        const eff = Math.round((sp.effectiveLength || (sp.requiredLength - total)) * 10) / 10;
-        return total > 0 ? ` → Eff: ${eff}" (−${total}")` : '';
+        const total = (d.header||0) + (d.sole||0) + (d.topPlate||0) + (d.bottomPlate||0);
+        const eff = sp.effectiveLength || (sp.requiredLength - total);
+        return total > 0 ? ` → Eff: ${formatFractional(eff)} (−${formatFractional(total)})` : '';
       })() : '';
 
       let groupClass = '';
@@ -5332,7 +5405,7 @@ function renderShorePointCards(numbered) {
         ${locText ? `<div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">${locText}</div>` : ''}
         ${shoreTypeLabel ? `<div style="font-size:14px;font-weight:700;color:var(--blue);margin-bottom:4px">${shoreTypeLabel}</div>` : ''}
         <div style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">
-          ${Number.isFinite(Number(sp.requiredLength)) ? `${Number(sp.requiredLength)}"` : '— no length —'}${dedInfo} @ ${Number.isFinite(Number(sp.estimatedLoad)) ? Number(sp.estimatedLoad).toLocaleString() + ' lbs' : 'no load specified'}
+          ${Number.isFinite(Number(sp.requiredLength)) ? formatFractional(Number(sp.requiredLength)) : '— no length —'}${dedInfo} @ ${Number.isFinite(Number(sp.estimatedLoad)) ? Number(sp.estimatedLoad).toLocaleString() + ' lbs' : 'no load specified'}
         </div>
         <div style="font-size:15px;font-weight:600">
           ${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : (status === 'pending' ? '<span style="color:var(--pending)">⏳ No equipment assigned</span>' : '?')}${extText}
@@ -5368,10 +5441,10 @@ function renderShorePointCards(numbered) {
         // H3 (v3.11.3): coerce peer-writable cut-length fields to prevent stored XSS via Firebase
         const actLen = Number(sp.actualCutLength);
         const cutLen = Number(sp.cutLength);
-        const displayCut = Number.isFinite(actLen) ? actLen : (Number.isFinite(cutLen) ? cutLen : '?');
+        const displayCut = Number.isFinite(actLen) ? formatFractional(actLen) : (Number.isFinite(cutLen) ? formatFractional(cutLen) : '?');
         const diffWarning = (Number.isFinite(actLen) && Number.isFinite(cutLen) && actLen !== cutLen)
-          ? ` <span class="cut-diff-warning">(expected: ${cutLen}")</span>` : '';
-        html += `<div class="cut-length-display">✂ Cut: ${displayCut}"${diffWarning}</div>`;
+          ? ` <span class="cut-diff-warning">(expected: ${formatFractional(cutLen)})</span>` : '';
+        html += `<div class="cut-length-display">✂ Cut: ${displayCut}${diffWarning}</div>`;
       }
 
       // Status transition buttons
@@ -5480,13 +5553,13 @@ function viewArchivedOp(opId) {
   for (const sp of points) {
     // F-1C-19 fix: coerce/escape Firebase-sourced fields to prevent stored XSS via peer write
     const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-      ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
+      ? ' + ' + sp.deployedExtensions.map(e => formatFractional(Number(e.length) || 0)).join(' + ')
       : '';
     const reqLen = Number(sp.requiredLength);
     const estLoad = Number(sp.estimatedLoad);
     detail += `<div class="shore-point returned" style="margin-bottom:8px">
       <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
-      <div style="font-size:14px;color:var(--text-secondary)">${Number.isFinite(reqLen) ? reqLen + '"' : '— no length —'} @ ${Number.isFinite(estLoad) && estLoad > 0 ? estLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
+      <div style="font-size:14px;color:var(--text-secondary)">${Number.isFinite(reqLen) ? formatFractional(reqLen) : '— no length —'} @ ${Number.isFinite(estLoad) && estLoad > 0 ? estLoad.toLocaleString() + ' lbs' : 'no load specified'}</div>
       <div style="font-size:15px;font-weight:600">${sp.deployedStrut ? escapeHtml(sp.deployedStrut.model) : '?'}${extText}</div>
       ${sp.deployedStrut && sp.deployedStrut.external ? `<span class="apparatus-source" style="background:var(--orange-bg);color:var(--orange-dark)">External equipment from: ${escapeHtml(sp.deployedStrut.deptName) || 'Unknown'}</span>` : sp.deployedStrut && sp.deployedStrut.apparatus ? `<span class="apparatus-source">Equipment from: ${escapeHtml(getApparatusName(sp.deployedStrut.apparatus))}</span>` : ''}
     </div>`;
@@ -7298,6 +7371,17 @@ function renderCutTableView() {
   const container = document.getElementById('cutTableView');
   if (!activeOperation) { container.innerHTML = ''; return; }
 
+  // v3.21.0 (#119): preserve partially-typed compound picker state across re-renders
+  // (Firebase pushes, peer status changes). Without this, every external mutation blows
+  // away the cutter's in-progress measurement.
+  const cutPickerSnapshot = new Map();
+  if (container) {
+    container.querySelectorAll('[id^="cut-"]').forEach(el => {
+      const v = el.tagName === 'SELECT' ? el.value : el.value;
+      if (v !== '' && v !== '0') cutPickerSnapshot.set(el.id, v);
+    });
+  }
+
   const allPts = getShorePoints();
 
   // "Ready to Cut" = cutting status, not yet marked done
@@ -7342,22 +7426,28 @@ function renderCutTableView() {
       const actLen = Number(sp.actualCutLength);
       const cutLen = Number(sp.cutLength);
       const reqLen = Number(sp.requiredLength);
-      const displayLen = Number.isFinite(actLen) ? actLen + '"'
-        : Number.isFinite(cutLen) ? cutLen + '"'
-        : Number.isFinite(reqLen) ? reqLen + '"' : '?';
+      const displayLen = Number.isFinite(actLen) ? formatFractional(actLen)
+        : Number.isFinite(cutLen) ? formatFractional(cutLen)
+        : Number.isFinite(reqLen) ? formatFractional(reqLen) : '?';
       const hasDiff = Number.isFinite(actLen) && Number.isFinite(cutLen) && actLen !== cutLen;
       html += `<div style="background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:6px;opacity:0.6">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <strong>${escapeHtml(sp.label) || 'Shore Point'}</strong>
           <span style="font-size:15px;font-weight:700;color:var(--text-hint)">${displayLen}</span>
         </div>
-        ${hasDiff ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${cutLen}" → Actual: ${actLen}"</div>` : ''}
+        ${hasDiff ? `<div class="cut-diff-warning" style="margin-top:2px">Expected: ${formatFractional(cutLen)} → Actual: ${formatFractional(actLen)}</div>` : ''}
         <div style="font-size:13px;color:var(--text-secondary);margin-top:4px">${getLocationBreadcrumb(sp)}</div>
       </div>`;
     }
   }
 
   container.innerHTML = html;
+
+  // Restore picker state captured before innerHTML replacement
+  cutPickerSnapshot.forEach((v, id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = v;
+  });
 }
 
 function renderCutTableCard(sp, mode) {
@@ -7373,7 +7463,7 @@ function renderCutTableCard(sp, mode) {
   // H2 / F-1C-19 third site (v3.11.3): coerce e.length to number — peer-written
   // `'<img src=x onerror=...>'` would otherwise inject HTML into the cut-table card.
   const extText = sp.deployedExtensions && sp.deployedExtensions.length > 0
-    ? ' + ' + sp.deployedExtensions.map(e => (Number(e.length) || 0) + '"').join(' + ')
+    ? ' + ' + sp.deployedExtensions.map(e => formatFractional(Number(e.length) || 0)).join(' + ')
     : '';
 
   // H3 (v3.11.3): coerce peer-writable SP numeric fields before render
@@ -7383,17 +7473,21 @@ function renderCutTableCard(sp, mode) {
 
   // Actual measurement field (optional override if cut differs from expected)
   const actualField = Number.isFinite(actLen)
-    ? `<div style="font-size:13px;color:var(--orange-dark);font-weight:600;margin-top:4px">Actual: ${actLen}"</div>`
+    ? `<div style="font-size:13px;color:var(--orange-dark);font-weight:600;margin-top:4px">Actual: ${formatFractional(actLen)}</div>`
     : '';
 
   const borderColor = mode === 'done' ? '#E65100' : '#F9A825';
   // F-1C-10: Cut-station actions gated to Cutting role (IC/Safety override)
   const cutGate = canPerformShoreAction(mode === 'active' ? 'mark-cut-done' : 'send-to-runner');
   const cutDisabledAttrs = cutGate.allowed ? '' : `disabled aria-disabled="true" title="${escapeAttr(cutGate.reason)}" style="opacity:0.5;cursor:not-allowed"`;
+  const inputDisabled = cutGate.allowed ? '' : ' disabled';
   const actionBtn = mode === 'active'
     ? `<div>
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <input type="number" inputmode="decimal" placeholder="Actual cut (optional)" id="actual-${sp.id}" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"${cutGate.allowed ? '' : ' disabled'}>
+        <div style="display:flex;gap:4px;margin-bottom:6px;align-items:center">
+          <span style="font-size:12px;color:var(--text-secondary);margin-right:2px">Actual:</span>
+          <input id="cut-${sp.id}-feet" type="number" inputmode="numeric" placeholder="ft" min="0" style="width:54px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"${inputDisabled}>
+          <input id="cut-${sp.id}-inches" type="number" inputmode="numeric" placeholder="in" min="0" max="11" style="width:54px;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"${inputDisabled}>
+          <select id="cut-${sp.id}-fraction" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px"${inputDisabled}>${FRACTION_OPTIONS_HTML}</select>
         </div>
         <button class="btn btn-sm" ${cutGate.allowed ? `style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px" onclick="markCutDone('${sp.id}')"` : `style="width:100%;background:var(--cutting-bg);color:var(--cutting-text);border:1px solid var(--cutting-border);font-weight:700;min-height:44px;font-size:15px;opacity:0.5;cursor:not-allowed" disabled aria-disabled="true" title="${escapeAttr(cutGate.reason)}"`}>✓ Mark Cut Complete</button>
       </div>`
@@ -7410,12 +7504,12 @@ function renderCutTableCard(sp, mode) {
     <div style="display:flex;gap:12px;align-items:baseline;margin:8px 0">
       <div>
         <div style="font-size:13px;color:var(--text-secondary)">Opening</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${Number.isFinite(reqLen) ? reqLen + '"' : '—'}</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text-primary)">${Number.isFinite(reqLen) ? formatFractional(reqLen) : '—'}</div>
       </div>
       <div style="font-size:18px;color:var(--text-secondary)">→</div>
       <div>
         <div style="font-size:13px;color:var(--text-secondary)">Expected Cut</div>
-        <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${Number.isFinite(cutLen) ? cutLen + '"' : '?'}</div>
+        <div style="font-size:36px;font-weight:800;color:var(--cutting-text);line-height:1">${Number.isFinite(cutLen) ? formatFractional(cutLen) : '?'}</div>
       </div>
     </div>
     ${actualField}
@@ -7439,8 +7533,7 @@ function sendToRunner(spId) {
   const sp = points.find(p => p.id === spId);
   if (!sp || normalizeStatus(sp.status) === 'runner') return;
 
-  const actualInput = document.getElementById('actual-' + spId);
-  const actualVal = actualInput ? parseFloat(actualInput.value) : null;
+  const actualVal = readCutActualInches(spId);
 
   const updateData = { status: 'runner', cutMarkedDone: false };
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
@@ -7465,8 +7558,7 @@ function markCutDone(spId) {
   const sp = points.find(p => p.id === spId);
   if (!sp || sp.cutMarkedDone) return;
 
-  const actualInput = document.getElementById('actual-' + spId);
-  const actualVal = actualInput ? parseFloat(actualInput.value) : null;
+  const actualVal = readCutActualInches(spId);
 
   const updateData = { cutMarkedDone: true };
   if (actualVal && !isNaN(actualVal)) updateData.actualCutLength = actualVal;
@@ -8142,7 +8234,10 @@ async function handleImport(event) {
       const rows = XLSX.utils.sheet_to_json(ws);
 
       const items = [];
+      const importErrors = []; // v3.21.0 (#119): capture invalid Extension Length rows
+      let rowNum = 1; // 1-based, header is row 1
       for (const row of rows) {
+        rowNum++;
         const qty = parseInt(row.Quantity) || 0;
         if (qty <= 0) continue;
 
@@ -8166,12 +8261,18 @@ async function handleImport(event) {
             quantity: qty,
             available: Math.min(avail, qty)
           });
-        } else if (type === 'extension' && row['Extension Length']) {
+        } else if (type === 'extension' && row['Extension Length'] != null && row['Extension Length'] !== '') {
+          // v3.21.0 (#119): accept fractional text like "48 1/2" — silent parseInt truncation was the prior bug
+          const len = parseFractional(String(row['Extension Length']));
+          if (!Number.isFinite(len) || len <= 0) {
+            importErrors.push(`Row ${rowNum}: Invalid Extension Length "${row['Extension Length']}"`);
+            continue;
+          }
           items.push({
             id: importedId,
             type: 'extension',
             model: '',
-            length: parseInt(row['Extension Length']),
+            length: len,
             system: row.System || 'LongShore',
             apparatus: row.Apparatus || '',
             quantity: qty,
@@ -8192,6 +8293,11 @@ async function handleImport(event) {
 
       if (items.length === 0) throw new Error('No valid inventory rows found');
       applyImportData(items);
+      if (importErrors.length > 0) {
+        const sample = importErrors.slice(0, 5).join('\n');
+        const more = importErrors.length > 5 ? `\n…and ${importErrors.length - 5} more` : '';
+        alert(`Imported ${items.length} items. ${importErrors.length} row(s) skipped:\n\n${sample}${more}`);
+      }
     } catch (err) {
       alert('Error importing: ' + err.message);
     }
@@ -8518,7 +8624,7 @@ function renderQuickViewInventory() {
       // X2 (v3.5.2): escape user-controlled item.model / item.plateId fallback for display.
       const rawName = item.type === 'strut' ? item.model
         : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId)
-        : `${item.length}" Extension`;
+        : `${formatFractional(item.length)} Extension`;
       const name = escapeHtml(rawName);
       const avail = item.available != null ? item.available : item.quantity;
       const total = item.quantity;
@@ -8551,7 +8657,7 @@ function renderQuickViewInventory() {
         .forEach(item => {
           const rawName = item.type === 'strut' ? (item.model || '')
             : item.type === 'plate' ? (item.model || (BASE_PLATES.find(p => p.id === item.plateId) || {}).name || item.plateId || '')
-            : `${item.length}" Extension`;
+            : `${formatFractional(item.length)} Extension`;
           const name = escapeHtml(rawName);
           const avail = item.available != null ? item.available : item.quantity;
           const total = item.quantity;
@@ -8722,15 +8828,15 @@ function updateDeductionSummary(prefix) {
   const length = getMeasurementInches(prefix === 'qf' ? 'qf' : 'sp');
 
   if (!deductions) {
-    summaryEl.innerHTML = `<span>Total deductions: <strong>0"</strong></span><span>Effective: <span class="eff-length">${length ? length + '"' : '—'}</span></span>`;
+    summaryEl.innerHTML = `<span>Total deductions: <strong>0"</strong></span><span>Effective: <span class="eff-length">${length ? formatFractional(length) : '—'}</span></span>`;
     return;
   }
 
   const total = (deductions.header || 0) + (deductions.sole || 0) + (deductions.topPlate || 0) + (deductions.bottomPlate || 0);
   const effective = length ? (length - total) : 0;
-  const effText = length ? (effective > 0 ? effective.toFixed(1) + '"' : '<span style="color:var(--red)">Invalid</span>') : '—';
+  const effText = length ? (effective > 0 ? formatFractional(effective) : '<span style="color:var(--red)">Invalid</span>') : '—';
 
-  summaryEl.innerHTML = `<span>Total deductions: <strong>${total.toFixed(1)}"</strong></span><span>Effective: <span class="eff-length">${effText}</span></span>`;
+  summaryEl.innerHTML = `<span>Total deductions: <strong>${formatFractional(total)}</strong></span><span>Effective: <span class="eff-length">${effText}</span></span>`;
 }
 
 function initPlatePickers() {
