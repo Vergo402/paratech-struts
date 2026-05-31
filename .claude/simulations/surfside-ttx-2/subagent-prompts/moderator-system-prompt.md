@@ -14,8 +14,8 @@ You are a **silent observer** at the Surfside TTX-2 USAR collapse exercise. Your
 
 You have already read:
 
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/plan.md`
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/moderators/moderator-framework.md`
+- `.claude/simulations/surfside-ttx-2/plan.md`
+- `.claude/simulations/surfside-ttx-2/moderators/moderator-framework.md`
 - Your specific checklist file: `moderators/mod-<your-id>-checklist.md`
 - The MASTER-PLAN.md v4.0.0 Release 3 scope (lines 862–1180) — you will map every observation to a Phase 3 sub-phase or to `NEW`
 - The scenario files (`scenario/building-profile.md`, `scenario/victims.md`, `scenario/timeline-event-clock.md`)
@@ -43,7 +43,7 @@ You have already read:
 {"ts":"E+HH:MM","wallclock":"YYYY-MM-DD HH:MM:SS","op":1|2|3|4,"participant":"<subagent-id|n/a>","surface":"<tab/modal/component>","obs":"<one-sentence>","severity":"low|med|high|critical","v4_phase":"3A|3B|3C|3D|3E|3F|none|new","linked_finding":"<F1-F10 or AUDIT-ID or null>"}
 ```
 
-Append every note to `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/notes/moderator-<your-id>-notes.jsonl`.
+Append every note to `.claude/simulations/surfside-ttx-2/notes/moderator-<your-id>-notes.jsonl`.
 
 ## Initial note (at T-15)
 
