@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.21.0';
+const APP_VERSION = '3.21.1';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -433,6 +433,7 @@ function runQuickSelect() {
   const deductions = getDeductions('qf');
   const results = findStrutCombinations(length, load, sfIndex, null, systemFilter, deductions);
   renderResults(results, 'quickResults', length, load, sfIndex, false);
+  scrollResultsIntoView('quickResults');
 }
 
 function renderResults(results, containerId, length, load, sfIndex, isOperation, informational) {
@@ -629,6 +630,18 @@ function renderResults(results, containerId, length, load, sfIndex, isOperation,
   html += `<div class="text-muted-xs" style="margin-top:10px;padding:8px 4px;line-height:1.4">Capacity figures are planning aids, not engineering certifications. Consult rescue engineering for structural certification.</div>`;
 
   container.innerHTML = html;
+}
+
+// v3.21.1 (#285): After results render, scroll them into view. #spResults (shore-point
+// modal body) and #quickResults (Quick Find tab) sit at the bottom of a scroll container,
+// so recommendations otherwise land below the fold with no cue that anything happened
+// (in-app feedback, hfd217). Mirrors the openPlatePicker scrollIntoView pattern.
+function scrollResultsIntoView(containerId) {
+  const el = document.getElementById(containerId);
+  // Instant, NOT behavior:'smooth' — smooth scrollIntoView no-ops inside the nested
+  // .screens / modal-body overflow containers (verified in-browser; iOS WebKit too).
+  // Matches the openPlatePicker pattern. setTimeout defers past the innerHTML paint.
+  if (el) setTimeout(() => el.scrollIntoView({ block: 'start' }), 50);
 }
 
 // ============================================================
@@ -5724,6 +5737,7 @@ function findForShorePoint() {
   const apparatusInventory = getOperationInventory();
   if (apparatusInventory.length === 0) {
     document.getElementById('spResults').innerHTML = '<div class="no-results">No equipment available.<br><button id="spSavePendingBtn" class="btn btn-sm btn-purple js-save-pending-btn" onclick="guardClick(this,() => deployPendingShorePoint(\'no-inventory\'))">📋 Save as Pending</button></div>';
+    scrollResultsIntoView('spResults');
     return;
   }
   const deductions = getDeductions('sp');
@@ -5734,6 +5748,7 @@ function findForShorePoint() {
     ? findStrutCombinations(length, load, sfIndex, null, null, deductions)
     : [];
   renderResults(results, 'spResults', length, load, sfIndex, true, informational);
+  scrollResultsIntoView('spResults');
 }
 
 // F-1C-7 (v3.10.0): Pending shore points now have a real deploy path.
