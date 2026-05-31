@@ -59,7 +59,7 @@ ls /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-main/memor
 ```
 
 Extract for the rest of the session:
-- **Release checklist** (CLAUDE.md) — 3-place version bump, user manual rule for MINOR/MAJOR
+- **Release checklist** (CLAUDE.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
 - **Architecture gotchas** (CLAUDE.md) — CSS stacking, plate picker, Firebase + SW, local-first writes, escapeHtml/escapeAttr
 - **Terminology rules** (CLAUDE.md) — Footer/Sole Plate/Header/Group conventions
 - **Code-quality** (`feedback_code_quality.md`) — lead with structural fix, not patch
@@ -470,7 +470,7 @@ Auto-detect additional agents from scope:
 | Field stress (gloves, sun, dropped phones) | `rescue-specialist` |
 | Schema cutover, dual-write, rollback | `migration-specialist` |
 | Cross-file design, paradigm shifts | `architect` |
-| User manual updates | `manual-writer` |
+| User manual updates (.md + .docx, MINOR/MAJOR) | `manual-writer` |
 
 **Always include** `release-manager`, `qa-driver`, and `skeptical-senior-engineer`. Cap typically ≤ 7 agents total.
 
@@ -605,7 +605,7 @@ Infer at scope-in. Surface in the GATE 1 / plan table; Alex can override before 
 | ICS roles, NIMS terms, apparatus, doctrine | `nims-compliance` (review) + `fullstack-engineer` (impl) |
 | Load tables, strut math, shore types, deductions | `structural-collapse-sme` (review) + `fullstack-engineer` (impl) |
 | Cross-file design, paradigm shift, modularization | `architect` (plan) + `fullstack-engineer` (impl) |
-| User manual updates | `manual-writer` |
+| User manual updates (.md + .docx, MINOR/MAJOR) | `manual-writer` |
 | Surfside-scale stress test | `scenario-conductor` |
 | IC workflow, command transfer, SitStat | `battalion-chief` (review) + `fullstack-engineer` (impl) |
 | Multi-agency / federal scope | `usar-task-force-leader` (review) |
