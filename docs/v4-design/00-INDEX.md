@@ -23,7 +23,7 @@
 | A | Foundation: branch, folder, seed files, Project setup, /v4-plan skill | 🟢 Done | All seed files committed. Project items converted from drafts to real Issues (#129 through #138). Open questions #1, #2, #17 resolved. Demo mode added to Bucket 1. |
 | B | Reference app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md). Sign off review closed 12 follow ups by 2026-05-22. Positioning doc rewritten in Alex's voice and trimmed to ~1,450 words (commit e7f9bb3, 2026-05-23). Gate B passed 2026-05-23 after adding Principle 12 (ADR-004) out of #280, so Phase C briefing packet carries the data class framing. |
 | C | 12-agent brainstorm essays | 🟢 Done | Gate C passed 2026-05-24. All 12 essays reviewed; no changes requested. Phase D dispatched. All 12 essays committed 2026-05-23 (59,559 words total; target was 2,750–3,000 per essay, several came in higher because the lens earned it, no padding flagged). Each essay carries the 250-word executive summary and numbered recommendations Phase D copies verbatim into the coverage matrix. Notable: essay 8 (skeptical-review) dissents against ADR-003 and ADR-004 via numbered recs (permitted); essay 11 (scenario-stress) flags sibling-essay predictions that are likely to tear at Hamden/Meadowville scale; essay 4 surfaces 12 data-model schema fields that must be reserved in v4 to avoid v5 migration. |
-| D | Synthesis + decision tracking matrix | 🚦 Gate ready | Synthesis + coverage matrix committed 2026-05-24. 12 convergent themes, 7 productive conflicts, 247-rec matrix (231 accepted / 6 deferred / 8 rejected / 2 merged). Awaiting Alex review via PR. |
+| D | Synthesis + decision tracking matrix | 🚦 Gate ready (review round 2) | Synthesis + coverage matrix committed 2026-05-24; revised 2026-05-31 after Alex's PR #282 review (18 comments folded in). Matrix now 218 accepted / 13 deferred / 15 rejected / 1 merged. Two research docs added for Alex's review: `04-references/nims-org-structure.md` (org structure → ADR) and `04-references/database-evaluation.md` (recommends staying on Firebase RTDB → ADR). NIMS role mapping + database choice are the held items; everything else folded in. |
 | E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Blocked by D |
 | F | Information Architecture per screen × 4 surfaces | ⚪ Not started | Blocked by E |
 | G | Workflow specs across all surfaces | ⚪ Not started | Blocked by F |
@@ -92,6 +92,8 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 - `04-references/rapidsos.md` 🟢 (2347w)
 - `04-references/fire-rescue-systems.md` 🟢 (2435w)
 - `04-references/positioning.md` 🟢 (2613w synthesis, 2 axis chart: tactical vs records by doctrine fluent vs agnostic)
+- `04-references/nims-org-structure.md` 🚦 (Phase D follow-up — NIMS Group/Division/Supervisor doctrine + v3→NIMS mapping; 7 open questions for Alex; outcome → ADR)
+- `04-references/database-evaluation.md` 🚦 (Phase D follow-up — backend evaluation; recommends staying on Firebase RTDB for v4.0 behind a `data/sync` seam; outcome → ADR)
 
 ### Brainstorm Essays (Phase C. Target was 2,750–3,000 words each, 250 word exec summary + numbered recs. Several came in over target where the lens earned it; no padding flagged.)
 
@@ -111,7 +113,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 ### Synthesis (Phase D)
 
 - `06-synthesis.md` 🚦 (12 convergent themes, 7 productive conflicts, 4 surprises, recommended path, 5 open questions for Alex)
-- `06-decision-tracking-matrix.md` 🚦 (247 recs from all 12 essays — 213 accepted / 5 deferred / 9 rejected / 4 merged)
+- `06-decision-tracking-matrix.md` 🚦 (247 recs from all 12 essays — 218 accepted / 13 deferred / 15 rejected / 1 merged after PR #282 review)
 
 ### Design System (Phase E)
 

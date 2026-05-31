@@ -2,44 +2,64 @@
 
 > Every numbered recommendation from every Phase C essay, with a disposition. Status values: `accepted` (taken into the recommended path), `deferred` (good idea, Phase I or later), `rejected` (not doing this; reason in Notes), `merged-with-N` (same idea as another rec; canonical version named). Rec ID legend: A=01-architecture (30), B=02-visual-language (18), C=03-ic-workflow (14), D=04-future-scale (12), E=05-nims-doctrine (22), F=06-domain-ux (25), G=07-field-conditions (18), H=08-skeptical-review (15), I=09-data-resilience (20), J=10-implementation (25), K=11-scenario-stress (18), L=12-tech-debt (30).
 
-Total: 247 recommendations. **231 accepted / 6 deferred / 8 rejected / 2 merged.**
+Total: 247 recommendations. **218 accepted / 13 deferred / 15 rejected / 1 merged.** (Updated 2026-05-31 after Alex's PR #282 review.)
 
 ---
 
-## Review focus — controversial rows (16 of 247)
+## Review focus — controversial rows (29 of 247)
 
-The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to read linearly. These 16 are the ones that need discussion. Use **Cmd+F / Ctrl+F** in the GitHub diff view to jump to a row by its Rec # (e.g. `A-15`).
+The 218 accepted rows are the "yes, ship it" pile — skim by status, no need to read linearly. These 29 are the ones that need discussion. Use **Cmd+F / Ctrl+F** in the GitHub diff view to jump to a row by its Rec # (e.g. `F-1`). **★ = changed by Alex's PR #282 review.**
 
-### Rejected (8) — synthesis explicitly defends these against the essay that proposed them
+### Rejected (15)
 
 | Rec | Proposed | Why rejected (one-line) |
 |---|---|---|
-| `A-15` | Next.js App Router marketing site | Vite multi-page wins on schedule + dependency hygiene |
-| `H-3` | Cut 12 essays → 4 | Procedural; corpus is committed and produced load-bearing convergence |
-| `H-6` | Drop marketing site from v4 | 4-page brief at launch stands; positioning credibility argument wins |
-| `H-10` | Cut 15 primitives → ~7 | Convergence in §1 names each primitive's load-bearing role |
+| `A-15` ★ | Next.js App Router marketing site | Marketing site dropped entirely (Alex) — no site at all |
+| `A-16` ★ | Demo mode as build artifact in marketing tour | Demo mode dropped entirely (Alex) |
+| `B-11` ★ | Timed undo toast (5s progress line) | Superseded by slide-to-advance + always-reversible status (Alex) |
+| `B-15` ★ | Marketing site shares app design tokens | Marketing site dropped entirely (Alex) |
+| `F-1` ★ | Rated capacity leads every result card at 28pt | Overturned (Alex): capacity is a vehicle-stabilization tool; demoted to secondary, engine unchanged |
+| `G-4` ★ | 8-second in-operation undo window | Superseded by always-reversible status model (Alex) |
+| `H-3` | Cut 12 essays → 4 | Procedural; corpus committed, produced load-bearing convergence |
+| `H-10` | Cut 15 primitives → ~7 | Convergence names each primitive's load-bearing role |
 | `H-12` | Preserve single-file architecture | Audit ledger names the capability gap (~30% of v3 findings are TS-class bugs) |
-| `H-14` | Reduce 12 principles → 9 | Principle 12 stands (ADR-004); Principle 11 cited 5× in other essays |
-| `H-15` | Ship design system to v3 first as visual refresh | Two design systems in parallel risks v3 regression during v4 build |
+| `H-14` | Reduce 12 principles → 9 | Principle 12 stands (ADR-004); Principle 11 cited 5× |
+| `H-15` | Ship design system to v3 first as visual refresh | Two design systems in parallel risks v3 regression |
+| `I-17` ★ | "How sync works" marketing page | Marketing site dropped; content → user manual |
 | `J-18` | Inter Variable as v4.0 default typeface | Geist wins on substance (B-1); Inter is the fallback |
+| `K-2` ★ | Demo dept doubles as cold-open | Demo dropped; cold-open is a plain guest state |
+| `K-8` ★ | Safety-Hold status blocks SP advancement | Q2 resolved no: no in-app comms (Principle 10) |
 
-### Deferred (6) — good idea, not v4.0
+### Deferred (13)
 
 | Rec | Proposed | Why deferred |
 |---|---|---|
 | `A-1` | pnpm + Turborepo monorepo at Phase H1 | Single package for v4.0; monorepo defers to v5.0 RN fork (ADR-005) |
+| `C-14` ★ | NIMS Level I–V preset selector | Level presets deferred — plan, don't build now (Alex) |
+| `E-6` ★ | Add PIO to Level IV+ preset defaults | Position stays available; preset auto-inclusion deferred with E-11 |
+| `E-7` ★ | Add Liaison to Level III+ presets | Position stays available; deferred with E-11 |
+| `E-8` ★ | Add Planning Section Chief to Level III+ presets | Position stays available; deferred with E-11 |
+| `E-9` ★ | Add Logistics Section Chief to Level II+ presets | Position stays available; deferred with E-11 |
+| `E-10` ★ | Add Finance/Admin Section Chief to Level II+ presets | Position stays available; deferred with E-11 |
+| `E-11` ★ | Ship five Level org-chart presets at op start | Level presets deferred — plan, don't build now (Alex) |
 | `I-6` | Build C (CP hub) via WebRTC + mDNS + QR | v4.0 ships Build A only; WebRTC at v4.5+ |
 | `I-8` | Settings → "Sync health" admin UI | Path stays in v4.0 (L-25); UI surface at v4.1 |
 | `I-13` | Export/restore dept data; weekly auto-export | v4.0 ships backup-before-destructive-write only; full UI at v4.1 |
 | `I-14` | Department deletion with soft-delete + 60d cold storage | v4.0 = Owner confirm only; full lifecycle at v4.1 |
 | `I-20` | Hub + Build A coexistence with auto-fallback | Build A only in v4.0; coexistence at v4.5/v5.0 |
 
-### Merged (2) — same idea as another rec; canonical version named
+### Merged (1) — same idea as another rec; canonical version named
 
 | Rec | Merged with | Canonical version |
 |---|---|---|
-| `A-16` | K-2 | Scripted seed via `?demo=1` URL flag (not a separate build) |
 | `A-24` | L-15 | React `useEffect` cleanups with `react-hooks/exhaustive-deps` lint |
+
+### Also held for Alex's review (not a status change — pending the two research docs)
+
+| Area | Rows | Note |
+|---|---|---|
+| NIMS org structure | E-2, E-4, E-5, E-22 (+ the rename rows) | Research recommends two functional Groups (Rescue + Shoring Supervisors) with Search/Medical added at Level III; Entry/Wood/Runner become tracked tasks/resources. 7 open questions for Alex in `04-references/nims-org-structure.md`. Outcome → ADR. |
+| Database / backend | A-7, A-8, A-9, I-1, the sync rows | Evaluation recommends staying on Firebase RTDB for v4.0 behind a `data/sync` seam (zero migration; event log neutralizes weak spots). See `04-references/database-evaluation.md`. Outcome → ADR. |
 
 ---
 
@@ -61,8 +81,8 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 01-architecture | A-12 | React Hook Form + Zod schemas; one schema for type, form validation, and Firebase write validation. | accepted | Tech-debt rec L-11 reinforces (rules generated from same schema). |
 | 01-architecture | A-13 | Component library in packages/ui; every primitive has a typed component; VisualGridPicker preserves plate behavior. | accepted | Phase E delivers the library. ShorePointCard vs. RecommendationCard split added per scenario-stress K-5. |
 | 01-architecture | A-14 | Generate tokens from TypeScript source with CSS variables for web, JS for RN, JSON for Figma. | accepted | Style Dictionary or thin custom generator. |
-| 01-architecture | A-15 | Marketing site as Next.js App Router using same tokens/ui/icons as app. | rejected | Essay 10's Vite multi-page approach wins on schedule and dependency hygiene. Marketing ships from same Vite config under `src/site/`. |
-| 01-architecture | A-16 | Demo mode as shared build artifact embedded in marketing product tour. | merged-with-K-2 | Resolved as scripted seed serving cold-open + tour via `?demo=1` URL flag, not separate build. See open Q4. |
+| 01-architecture | A-15 | Marketing site as Next.js App Router using same tokens/ui/icons as app. | rejected | Marketing site dropped entirely per Alex review — no Next.js, no site at all. |
+| 01-architecture | A-16 | Demo mode as shared build artifact embedded in marketing product tour. | rejected | Demo mode dropped entirely per Alex review (Q4). |
 | 01-architecture | A-17 | Replace hand-maintained sw.js with vite-plugin-pwa Workbox config; preserve Firebase WebSocket exclusion. | accepted | Data-resilience I-12 reinforces. |
 | 01-architecture | A-18 | Vitest unit, Playwright e2e on web, Maestro on mobile; CI runs simulation infrastructure. | accepted | Essay 10 rejects Playwright in favor of qa-driver MCP; the simulation-in-CI piece accepted. Note: e2e testing strategy clarified by essay 10 J-15 — qa-driver replaces Playwright. |
 | 01-architecture | A-19 | TanStack Query optimistic updates plus audit log event for every mutation. | accepted | Same data-resilience I-10. |
@@ -87,11 +107,11 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 02-visual-language | B-8 | Corner radius vocabulary: 12pt card, 16pt sheet top, 6pt badge, 12pt button, 8pt input. Five values, complete vocabulary. | accepted | Phase E delivers. |
 | 02-visual-language | B-9 | Card elevation: 1pt inner shadow at 6% opacity on top edge; no drop shadow. Sheets `0 -4pt 24pt rgba(0,0,0,0.18)` dark. | accepted | Phase E delivers. |
 | 02-visual-language | B-10 | Sheet open: 200ms cubic-bezier(0.25,0.1,0.25,1) translateY(100%) to 0; preserve v3.5.1 iOS fixes (`touch-action: pan-y`, `transform: translateZ(0)`). | accepted | Tech-debt L-29 confirms iOS fixes preserve. |
-| 02-visual-language | B-11 | Undo toast: 200ms ease-out in, 180ms ease-in out, 5s constant-rate progress line; max one toast visible. | accepted | Field-conditions G-4 extends the in-operation undo window to 8s. Toast geometry and styling unchanged. |
+| 02-visual-language | B-11 | Undo toast: 200ms ease-out in, 180ms ease-in out, 5s constant-rate progress line; max one toast visible. | rejected | Status undo toast superseded by slide-to-advance + always-reversible status (Alex). Toast styling may still apply to non-status transient messages. |
 | 02-visual-language | B-12 | Status badge text always includes status label as text, never color only. | accepted | Domain-UX F-22 reinforces with phase-split badge spec. |
 | 02-visual-language | B-13 | Custom SVG icons at 24px grid, 1.5pt stroke, 2px corner joins; USACE shore-type diagrams as priority commission. | accepted | Phase E commissions or authors. Implementation J-9 uses Lucide as the general set and custom shore-type icons in `packages/icons`. |
 | 02-visual-language | B-14 | "P" mark geometry refresh; 12pt container radius; two color variants only. | accepted | Phase E refresh. |
-| 02-visual-language | B-15 | Marketing site shares all design tokens with app (light theme); no marketing-exclusive color, size above display-2, or component outside app design system. | accepted | Per essay 09's "marketing tells the truth" insight. |
+| 02-visual-language | B-15 | Marketing site shares all design tokens with app (light theme); no marketing-exclusive color, size above display-2, or component outside app design system. | rejected | Marketing site dropped entirely per Alex review. |
 | 02-visual-language | B-16 | Primary button: 48pt height, 120pt minimum width, 12pt radius, body-medium font, 40% opacity disabled. | accepted | Field-conditions G-1 bumps to 56pt for primary actions in operations; B-16 stays the baseline for non-operational primary buttons (Settings, etc.). |
 | 02-visual-language | B-17 | Sync indicator: 8pt circle, three states mapped to status tokens; no animation. | accepted | Per-row sync state on roster screen adds to this per data-resilience I-7. |
 | 02-visual-language | B-18 | Skeleton loading shimmer at 1.5s linear; after 8s replace with error + retry. Never infinite spinner. | accepted | Phase E delivers. |
@@ -105,10 +125,10 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 03-ic-workflow | C-8 | Hazard log as first-class object reachable one tap from SitStat; ICS-208 export; per-area shore-point hazard badge; any role can add. | accepted | Phase F delivers. |
 | 03-ic-workflow | C-9 | Command palette on Toughbook (Cmd+K/Ctrl+K); every action reachable in <3 keystrokes. | accepted | Linear-style ergonomics. Phase F surface. |
 | 03-ic-workflow | C-10 | Replace singular IC field with IC collection supporting Unified Command. | accepted | Same as future-scale D-2. Canonical statement is D-2; this is the UI side. |
-| 03-ic-workflow | C-11 | Operation-level safety state: operating / paused-weather / paused-hazard / paused-PAR with persistent banner. | accepted | Open Q2 resolves: SO can set `safety-hold` on a SP; this is the operation-level analog. |
+| 03-ic-workflow | C-11 | Operation-level safety state: operating / paused-weather / paused-hazard / paused-PAR with persistent banner. | accepted | Operation-level pause banner stands. No `safety-hold` SP-gating (Q2 resolved no — the app carries no in-app comms, Principle 10). |
 | 03-ic-workflow | C-12 | Auto-generate one-line radio script suggestion at command transfer with copy-to-clipboard. | accepted | Future-scale D-7's 24-hour timestamp rule applies to the generated script. |
 | 03-ic-workflow | C-13 | Broadcast TV layout: left third org chart to Section Chief depth, center SP status board, persistent header; 48pt heading, 32pt body. | accepted | Per progressive-density principle K-9; TV gets the same projection at this density. |
-| 03-ic-workflow | C-14 | NIMS Level I–V preset selector on Start Operation modal. | accepted | Same as NIMS E-11. Canonical statement is E-11; this is the entry point. |
+| 03-ic-workflow | C-14 | NIMS Level I–V preset selector on Start Operation modal. | deferred | Level presets deferred per Alex (plan, don't build now); same as E-11. |
 | 04-future-scale | D-1 | Reserve `agencyId` first-class on every schema type; default to dept's own ID; record in ADR-005. | accepted | Becomes ADR-006 (ADR-005 reserved for single-package decision). |
 | 04-future-scale | D-2 | Replace singular `ic` role slot with IC collection supporting one or more co-equal IC assignments. | accepted | Schema change before v4 ships. UI per C-10. |
 | 04-future-scale | D-3 | Append-only roleHistory log under /operations/{opId}/roleHistory/{pushId}; current state is `departedAt == null`. | accepted | Canonical statement for the role-history theme. |
@@ -120,18 +140,18 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 04-future-scale | D-9 | Enforce apparatus naming uniqueness across combined agency namespace, not just within a department. | accepted | Surfside scenario validates. |
 | 04-future-scale | D-10 | Add opNumber tag on every write — shore points, status transitions, role assignments, inventory transactions. | accepted | Per-OP export depends on it. |
 | 04-future-scale | D-11 | Reserve linkedVictim field on shore point records; default null. | accepted | v5 Victim Locator filter dimension. |
-| 04-future-scale | D-12 | Document design ceiling claim with quantitative specifics in marketing site before v4 launch. | accepted | Phase G content brief covers (positioning + how-it-works pages). |
+| 04-future-scale | D-12 | Document design ceiling claim with quantitative specifics in marketing site before v4 launch. | accepted | Marketing site dropped; the design-ceiling claim is documented in the user manual / positioning doc instead. |
 | 05-nims-doctrine | E-1 | Complete sp.group → sp.assignedResource cutover; remove getSPGroup fallback chain. | accepted | Tech-debt L-19 confirms. Migration on first launch. |
-| 05-nims-doctrine | E-2 | Rename `Operations` position to `Operations Section Chief` (abbr OSC) per SM-0322. | accepted | Phase H1 schema work. |
+| 05-nims-doctrine | E-2 | Rename `Operations` position to `Operations Section Chief` per SM-0322. | accepted | Phase H1 schema work. Title spelled out as spoken — no acronym ("OSC") in the UI per Alex. |
 | 05-nims-doctrine | E-3 | Remove `Cutting Table` from ICS_ROLES_DEFAULT; model as workstation tag. Update SHORE_ACTION_ALLOWED_ROLES and suggestedView binding. | accepted | Phase H1 schema work. |
 | 05-nims-doctrine | E-4 | Replace `entry`, `rescue`, `shoring`, `wood` positions with `Rescue Group Supervisor` and `Shoring Group Supervisor` under Division 1. | accepted | Phase H1 schema work + permission matrix update. |
 | 05-nims-doctrine | E-5 | Remove `runner` from ICS_ROLES_DEFAULT; gate "Send to Runner" by workstation or functional task instead. | accepted | Phase H1 schema work. |
-| 05-nims-doctrine | E-6 | Add Public Information Officer to Level IV and above preset defaults. | accepted | Phase H1. |
-| 05-nims-doctrine | E-7 | Add Liaison Officer to Level III and above preset defaults. | accepted | Phase H1. |
-| 05-nims-doctrine | E-8 | Add Planning Section Chief to Level III and above preset defaults. | accepted | Phase H1. |
-| 05-nims-doctrine | E-9 | Add Logistics Section Chief to Level II and above preset defaults. | accepted | Phase H1. |
-| 05-nims-doctrine | E-10 | Add Finance and Administration Section Chief to Level II and above preset defaults. | accepted | Phase H1. |
-| 05-nims-doctrine | E-11 | Ship five Level-specific org chart presets at operation start. | accepted | Canonical statement for the preset selector theme. |
+| 05-nims-doctrine | E-6 | Add Public Information Officer to Level IV and above preset defaults. | deferred | Position remains available; auto-inclusion in level presets deferred with E-11. |
+| 05-nims-doctrine | E-7 | Add Liaison Officer to Level III and above preset defaults. | deferred | Position remains available; auto-inclusion in level presets deferred with E-11. |
+| 05-nims-doctrine | E-8 | Add Planning Section Chief to Level III and above preset defaults. | deferred | Position remains available; auto-inclusion in level presets deferred with E-11. |
+| 05-nims-doctrine | E-9 | Add Logistics Section Chief to Level II and above preset defaults. | deferred | Position remains available; auto-inclusion in level presets deferred with E-11. |
+| 05-nims-doctrine | E-10 | Add Finance and Administration Section Chief to Level II and above preset defaults. | deferred | Position remains available; auto-inclusion in level presets deferred with E-11. |
+| 05-nims-doctrine | E-11 | Ship five Level-specific org chart presets at operation start. | deferred | Level presets deferred per Alex (plan, don't build now). Canonical statement for the deferred preset theme. |
 | 05-nims-doctrine | E-12 | Remove `Task Force` from APPARATUS_TYPES_DEFAULT (it's a resource configuration). | accepted | Departments use existing apparatus group feature. |
 | 05-nims-doctrine | E-13 | Rename ICS_ROLES_DEFAULT → ICS_POSITIONS_DEFAULT; customRoles → positions (keyed object). | accepted | Tech-debt L-19 partial overlap; this is the constant rename. |
 | 05-nims-doctrine | E-14 | Rename status code `strutplaced` → `strutset`; display label "Strut Set". Update STATUS_ORDER and all consumers. | accepted | Phase H1. Tech-debt L-6 preserves the STATUS_ORDER discipline. |
@@ -140,12 +160,12 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 05-nims-doctrine | E-17 | Generate ICS-201 Incident Briefing on demand and automatically at command transfer; export as PDF. | accepted | Derived from role history log + objectives field. |
 | 05-nims-doctrine | E-18 | Generate ICS-203 Organization Assignment List on demand from current positions. | accepted | Phase F deliverable. |
 | 05-nims-doctrine | E-19 | Generate ICS-214 Unit Activity Log per apparatus or per Group; auto at operation close. | accepted | Phase F deliverable. |
-| 05-nims-doctrine | E-20 | Audit all marketing site copy + design docs for doctrine-correct Group/Division/Task Force/Strike Team/Level usage; correct picker.md "Type" → "Level". | accepted | Phase G content brief covers marketing; primitive docs corrected in Phase E. |
+| 05-nims-doctrine | E-20 | Audit all marketing site copy + design docs for doctrine-correct Group/Division/Task Force/Strike Team/Level usage; correct picker.md "Type" → "Level". | accepted | Design-doc/doctrine audit + picker.md "Type"→"Level" stand; the marketing-site portion is dropped (no site). |
 | 05-nims-doctrine | E-21 | Span-of-control soft warning at 6+ direct reports. | accepted | Merged-with-C-5 — resolution: 6 = subtle indicator, 7 = amber dot, 9 = red dot + Branch toast. |
 | 05-nims-doctrine | E-22 | Add Search Group Supervisor as optional position from Level IV and above. | accepted | Phase H1 schema work. |
-| 06-domain-ux | F-1 | Rated capacity at 28pt semibold at top of every result card, always visible. | accepted | Canonical statement for capacity-leads theme. |
-| 06-domain-ux | F-2 | "4:1 safety factor" label at 12pt regular below capacity. | accepted | Phase E spec. |
-| 06-domain-ux | F-3 | Margin row between capacity and model name when load entered; green/amber/red colored. | accepted | Phase E spec. |
+| 06-domain-ux | F-1 | Rated capacity at 28pt semibold at top of every result card, always visible. | rejected | Capacity-leads overturned (Alex): rated capacity / safety factors are a vehicle-stabilization tool, not the structural-shoring core. Demoted to a secondary, available field — not the card headline. Load engine unchanged. |
+| 06-domain-ux | F-2 | "4:1 safety factor" label at 12pt regular below capacity. | accepted | Shown only where capacity is shown; capacity demoted to secondary per F-1/Alex. |
+| 06-domain-ux | F-3 | Margin row between capacity and model name when load entered; green/amber/red colored. | accepted | Capacity demoted to secondary per F-1; margin shown when load relevant. Phase E spec. |
 | 06-domain-ux | F-4 | Deduction ledger as stacked labeled subtraction rows; no disclosure required. | accepted | Phase E spec. |
 | 06-domain-ux | F-5 | Separate deduction ledger visually and conceptually from cut length formula. | accepted | Different inputs (plates vs. wedge). |
 | 06-domain-ux | F-6 | Inline segmented control for lumber picker (None / 4×4 / 6×6). | accepted | Per picker doctrine for 3 mutually exclusive options. |
@@ -160,10 +180,10 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 06-domain-ux | F-15 | Derivation formula block on cut table card in same ledger format. | accepted | Phase E spec. |
 | 06-domain-ux | F-16 | Expected Cut number at 36pt / 800 weight in --cutting-text. | accepted | The dominant number stays dominant. |
 | 06-domain-ux | F-17 | Cut table card footnote: "Wood measurement only. Wedge (1.5") accounts for strut+plate assembly." | accepted | Phase E spec. |
-| 06-domain-ux | F-18 | Display rated capacity on deployed shore point card (sp.deployedStrut.system + sp.effectiveLength at 4:1). | accepted | Capacity in primary card area. |
-| 06-domain-ux | F-19 | Phone shore point card: status badge 17pt semibold, strut model 15pt semibold, rated capacity 20pt semibold. | accepted | Phase E + F spec. |
-| 06-domain-ux | F-20 | Broadcast TV shore point card: status badge 40pt, strut model 28pt, rated capacity 24pt, cut length 48pt when cutting; no interactive elements. | accepted | Phase F broadcast adapter. |
-| 06-domain-ux | F-21 | Pre-cutting group transitions: 2s toast "Advancing all N group members" + 5s undo (8s in active operation per G-4). | accepted | Per Principle 6. Undo window per field-conditions G-4. |
+| 06-domain-ux | F-18 | Display rated capacity on deployed shore point card (sp.deployedStrut.system + sp.effectiveLength at 4:1). | accepted | Capacity demoted to a secondary field per F-1/Alex (not the card headline); prominence re-specced in Phase E. |
+| 06-domain-ux | F-19 | Phone shore point card: status badge 17pt semibold, strut model 15pt semibold, rated capacity 20pt semibold. | accepted | Capacity demoted per F-1/Alex; exact prominence re-specced in Phase E. |
+| 06-domain-ux | F-20 | Broadcast TV shore point card: status badge 40pt, strut model 28pt, rated capacity 24pt, cut length 48pt when cutting; no interactive elements. | accepted | Capacity demoted per F-1/Alex; cut length stays dominant. Phase F broadcast adapter. |
+| 06-domain-ux | F-21 | Pre-cutting group transitions: 2s toast "Advancing all N group members" + 5s undo (8s in active operation per G-4). | accepted | Group-advance shows a brief confirmation, but the timed undo is replaced by slide-to-advance + always-reversible status (Alex). |
 | 06-domain-ux | F-22 | "Group of N" or "Individual tracking" badge in card header per phase. | accepted | Phase E primitive. |
 | 06-domain-ux | F-23 | Plate connector + wood size selectors carry forward verbatim as VisualGridPicker; visual polish only. | accepted | Tech-debt L-29 confirms iOS fixes preserve via createPortal. |
 | 06-domain-ux | F-24 | Formalize Quick Find result list as FullScreenListPicker variant; filter chips in header bar. | accepted | Phase F IA spec. |
@@ -171,7 +191,7 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 07-field-conditions | G-1 | Primary tap targets 56pt minimum height/width with 4pt CSS touch extension in all themes. | accepted | Overrides visual-language B-16 for operations actions; B-16 remains baseline for non-operation primary buttons. |
 | 07-field-conditions | G-2 | Status transition buttons 60pt minimum height. | accepted | The hard floor for the most-used action. |
 | 07-field-conditions | G-3 | Card left-edge status stripe is a secondary tap zone for the card's primary action (16pt wide full card height). | accepted | The surprise finding (synthesis §3.1). Phase E primitive. |
-| 07-field-conditions | G-4 | 8-second undo window during active operation; 5 seconds outside. | accepted | Overrides visual-language B-11 duration in active operation context. |
+| 07-field-conditions | G-4 | 8-second undo window during active operation; 5 seconds outside. | rejected | Timed undo window superseded by slide-to-advance + always-reversible status (Alex). No time-limited window. |
 | 07-field-conditions | G-5 | Sunlight mode auto-triggers at 10,000 lux via AmbientLightSensor or DeviceMotionEvent.illuminance; manual override priority. | accepted | Phase E spec. |
 | 07-field-conditions | G-6 | Sunlight mode minimum text contrast 7:1 (WCAG AAA); status pairs <7:1 communicate via label only. | accepted | Matches visual-language B-6. |
 | 07-field-conditions | G-7 | Minimum gap between adjacent tap targets 8pt dead zone; 64pt center-to-center. | accepted | Wet screen ghost-tap protection. |
@@ -183,15 +203,15 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 07-field-conditions | G-13 | Pocket lock: manual button + proximity sensor (5s covered trigger); swipe-up from bottom handle to dismiss. | accepted | Phase E primitive + Phase H wiring. |
 | 07-field-conditions | G-14 | Every state mutation writes to IndexedDB synchronously before UI updates; dropped phone produces zero loss. | accepted | Architecture A-7 confirms IndexedDB via Dexie. |
 | 07-field-conditions | G-15 | Tablet operations view: status summary bar with counts per active status above SP list. Phone does not show. | accepted | Progressive density (K-9). |
-| 07-field-conditions | G-16 | Cutting queue reorder is CP-only (tablet drag handles only); phone shows queue read-only. | accepted | Aligns with K-10 cutting-group screen. |
+| 07-field-conditions | G-16 | Cutting queue reorder is CP-only (tablet drag handles only); phone shows queue read-only. | accepted | Phone is fully functional for the queue (mark cut done, advance) per Alex's phone-as-floor; only drag-reorder is the larger-canvas enhancement. |
 | 07-field-conditions | G-17 | Minimum row height 56pt in operations view list + pickers accessed during active operation. | accepted | 44pt floor applies only to tertiary disclosure contexts. |
 | 07-field-conditions | G-18 | Sunlight mode: 2pt minimum borders + 2pt offset card shadow at 8% opacity. | accepted | Edge visibility in direct sun. |
 | 08-skeptical-review | H-1 | Reject the PWA/RN question at Phase H; defer until Phase I+ unless a specific capability gap surfaces. | accepted | Architecture A-2 already keeps PWA for v4.0/v4.5; RN at v5.0. Phase H does not relitigate. |
 | 08-skeptical-review | H-2 | Drop D5 dual architecture in v4.0; ship only Build A. | accepted | Build C deferred to v5 with RN per architecture A-9. The dual-architecture is still the ceiling design, just not the v4.0 implementation. |
 | 08-skeptical-review | H-3 | Cut twelve essay brainstorm to four essays. | rejected | Procedural; the 12-essay corpus is now committed and produced load-bearing convergence in §1 of synthesis. Phase D adopts the corpus as input. |
 | 08-skeptical-review | H-4 | Defer checklist feature from v3.20.0 until Hartsdale drill validates. | accepted | Open Q5 resolution: primitive ships v4.0; content seeding deferred to v4.1 after first drill. |
-| 08-skeptical-review | H-5 | Drop demo mode from v3.20.0; use scripted seed. | accepted | Open Q4 resolution: scripted seed in v4.0, doubles as cold-open placeholder. |
-| 08-skeptical-review | H-6 | Drop marketing site from v4 scope entirely. | rejected | Essay 09's "how-sync-works" credibility argument and the positioning doc's reasoning win. Compromise: 4-page brief at v4.0 launch per open Q6, not a full Stripe-quality site. |
+| 08-skeptical-review | H-5 | Drop demo mode from v3.20.0; use scripted seed. | accepted | Demo dropped entirely per Alex (Q4) — including the scripted-seed fallback; cold-open is a plain guest state. |
+| 08-skeptical-review | H-6 | Drop marketing site from v4 scope entirely. | accepted | Accepted per Alex review — the marketing site is dropped from v4 entirely. Any credibility content lives in the user manual. |
 | 08-skeptical-review | H-7 | Defer cross-dept mutual aid to v5, not v4.5. | accepted | Two facts not in evidence; deferral correct. |
 | 08-skeptical-review | H-8 | Contract admin user manager (D7.3) to "Firebase security rules + per-device UID." | accepted | v4.0 ships rules + UID; user management UI deferred. |
 | 08-skeptical-review | H-9 | Drop broadcast TV from first-class status. | accepted (partial) | The *surface* is treated as a projection (progressive-density adapter per K-9); the *theme tokens* (B-7) ship as authored. Roughly half-half between accept and reject. |
@@ -217,7 +237,7 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 09-data-resilience | I-14 | Department deletion: type name, checkbox acknowledgment, 30-second countdown; soft-delete with 30-day Restore; 60d cold storage; permanent delete after 90d. | deferred | v4.0 deletion is Owner-only with confirm; full soft-delete + cold storage deferred to v4.1. |
 | 09-data-resilience | I-15 | Cross-device handoff via per-device UIDs; command transfer moves role between UIDs with audit log entry. | accepted | Same as architecture A-19 + IC-workflow C-2. |
 | 09-data-resilience | I-16 | Listener scoping by role; lazy-load checklists, hazards, archived ops; listener fire-count instrumentation. | accepted | Phase H wiring. |
-| 09-data-resilience | I-17 | Ship "How sync works" page on v4 marketing site. | accepted | Open Q6 includes this as one of the 4 pages. |
+| 09-data-resilience | I-17 | Ship "How sync works" page on v4 marketing site. | rejected | Marketing site dropped (Q6); "how sync works" content lives in the user manual. |
 | 09-data-resilience | I-18 | Promote APP_VERSION + appVersion filter on pendingWrites to first-class resilience contract. | accepted | Carries verbatim from v3.8.2. |
 | 09-data-resilience | I-19 | Inventory available counts stay on v3.16.4 transaction + offlineTouched pattern; Cloud Function path for create only. | accepted | Both paths coexist; clients pick based on online state. |
 | 09-data-resilience | I-20 | Hub mode and Build A coexist; if hub unreachable >60s peers auto-fall-back to Firebase directly. | deferred | v4.0 ships Build A only; hub coexistence design at v4.5/v5.0 RN ramp. |
@@ -247,15 +267,15 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 10-implementation | J-24 | Plan cutover as single PR to main; archive v3 to v3-legacy branch for 6 months. | accepted | Same as architecture A-21 + A-28. |
 | 10-implementation | J-25 | Hold v4.0 timeline at 5-6 implementation weeks. | accepted (with caveat) | The v4 plan explicitly has no timeline pressure (ADR-003 + 01-context.md). This is the implementation lens's estimate after Phase E/F ship; not a commitment to 5-6 weeks for Phase H. |
 | 11-scenario-stress | K-1 | Guest mode is the default first-run; no auth at app open; auth registration in Settings. | accepted | Canonical statement for the guest-mode theme. Overrides any literal reading of architecture A-26. |
-| 11-scenario-stress | K-2 | Demo department doubles as cold-open placeholder; "Start your first operation" affordance. | accepted | Open Q4 resolution. |
+| 11-scenario-stress | K-2 | Demo department doubles as cold-open placeholder; "Start your first operation" affordance. | rejected | Demo mode dropped entirely per Alex (Q4); cold-open is a plain guest state. |
 | 11-scenario-stress | K-3 | Org chart primitive renders only populated roles by default; grows on demand; never asks IC to manage empty slots. | accepted | Phase E primitive spec, authored against single-name case first. |
 | 11-scenario-stress | K-4 | Empty-state primitive ships with at least two named variants: "no matching strut" and "no inventory". | accepted | Per Principle 7 (visible safety). Phase E primitive. |
 | 11-scenario-stress | K-5 | Operations tab card list groups by shore point at top level with alternatives nested; ShorePointCard vs. RecommendationCard primitives. | accepted | Closes the 220-card IA seam. Phase E + F. |
 | 11-scenario-stress | K-6 | Picker primitive specifies "apply to grouped siblings" semantic with inline note ("Applies to all 3 members of this T-Shore group"). | accepted | The surprise finding (synthesis §3.5). Phase E doctrine addition. |
 | 11-scenario-stress | K-7 | Command transfer is single drag-or-tap action at all scales; optional "Capture the brief" expansion using nested-checklist primitive. | accepted | Merged with IC-workflow C-2 (the choreography is the flow; the entry point is the single action). |
-| 11-scenario-stress | K-8 | Safety Officer surface: decorative or operational (Safety-Hold status blocks SP advancement until cleared). | accepted | Open Q2 resolution: operational. STATUS_ORDER grows by one entry (`safety-hold`). |
+| 11-scenario-stress | K-8 | Safety Officer surface: decorative or operational (Safety-Hold status blocks SP advancement until cleared). | rejected | Q2 resolved no: no `safety-hold` status. The app carries no in-app comms (Principle 10); the Safety Officer surfaces hazards visibly only. |
 | 11-scenario-stress | K-9 | Dashboard primitive uses progressive density across four surfaces, not one dashboard with smaller text. | accepted | Phase E + F. Same projection, four adapters. |
-| 11-scenario-stress | K-10 | Cutting Group screen as first-class on cutting-table tablet; FIFO queue with priority overrides; CuttingQueueRepo as projection. | accepted | Open Q7 resolution: v4.0. Phase F IA spec must name it. |
+| 11-scenario-stress | K-10 | Cutting Group screen as first-class on cutting-table tablet; FIFO queue with priority overrides; CuttingQueueRepo as projection. | accepted | Q7: v4.0. Renamed "Cutting Station" (under Operations). Must work phone-only — tablet is a larger-canvas enhancement, not an assumption (Alex). Off-queue regress shows the red-slash "Removed from cut list" state. |
 | 11-scenario-stress | K-11 | Phase E primitive set includes WarningGate primitive distinct from Toast and Modal. | accepted | One primitive, three uses (unrated zone, qty>4, liability disclaimer). |
 | 11-scenario-stress | K-12 | Org chart card primitive has max width so 7 cards across 2 levels fit on tablet portrait without horizontal scroll. | accepted | Meadowville OP2 is the binding constraint. Phase E spec. |
 | 11-scenario-stress | K-13 | Role history exposed as one-tap-from-chart-node affordance, not separate audit log screen. | accepted | Same data, different UI. |
@@ -269,7 +289,7 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 12-tech-debt | L-3 | Keep v3.9.0 escapeAttr discipline as historical reference in docs/v4-design/LESSONS.md. | accepted | Phase E delivers LESSONS.md. |
 | 12-tech-debt | L-4 | Move ACME_LOAD_TABLE + LONGSHORE_LOAD_TABLE to core/load/tables.ts as frozen typed arrays; snapshot test against PDF-extracted JSON fixture. | accepted | Phase H1. |
 | 12-tech-debt | L-5 | Move getLoadCapacity() + conservative floor doctrine to core/load/engine.ts; add property test. | accepted | Phase H1. |
-| 12-tech-debt | L-6 | Keep STATUS_ORDER verbatim in core/shorepoint/status.ts as discriminated union; v3.9.0 progression guard as reducer invariant. | accepted | Phase H1. With `safety-hold` added per K-8/Q2. |
+| 12-tech-debt | L-6 | Keep STATUS_ORDER verbatim in core/shorepoint/status.ts as discriminated union; v3.9.0 progression guard as reducer invariant. | accepted | Phase H1. No `safety-hold` entry (Q2 resolved no). Status is now bidirectional/always-reversible per the slide-to-advance model. |
 | 12-tech-debt | L-7 | Rename firebaseSave() → syncService.enqueue(); keep offline queue, version tag, retry counter, diagnostics behavior verbatim. | accepted | Lint rule: no UI component imports syncService directly. |
 | 12-tech-debt | L-8 | Rename persistOperation/persistInventory → operationStore.commit/inventoryStore.commit; local-first contract; CI assertion against direct syncService calls. | accepted | Phase H1. |
 | 12-tech-debt | L-9 | Keep flushPendingWrites + logSyncEvent behavior verbatim; 24h stale drop, version filter, error capture, 50-entry buffer. | accepted | Phase H1. |
@@ -277,7 +297,7 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 12-tech-debt | L-11 | Generate database.rules.json from single TypeScript schema (Zod); client validates against same schema; CI asserts generated rules match committed file. | accepted | Closes v3.8.2 silent-failure class permanently. |
 | 12-tech-debt | L-12 | Replace Date.now()+Math.random() ID pattern with crypto.randomUUID() at every site. | accepted | Phase H1. |
 | 12-tech-debt | L-13 | Replace 94 inline onclick= in app.js + 70+ in index.html with JSX event handlers. | accepted | Closes XSS surface entirely. |
-| 12-tech-debt | L-14 | Replace 10 confirm() + 19 alert() with toast-based undo pattern; no-alert lint as error. | accepted | Per Principle 6. |
+| 12-tech-debt | L-14 | Replace 10 confirm() + 19 alert() with toast-based undo pattern; no-alert lint as error. | accepted | confirm()/alert() removed; status uses slide-to-advance + always-reversible (not a timed undo). Toast for transient messages. |
 | 12-tech-debt | L-15 | Replace localStorage.getItem/safeParse scatter with single persistence/ module owning IndexedDB. | accepted | Same as architecture A-7. |
 | 12-tech-debt | L-16 | Delete capacityAll array from strut combination result type (S-L4 in findings ledger, dead since shipped). | accepted | Phase H1 cleanup. |
 | 12-tech-debt | L-17 | Delete debounce() helper (app.js:737); not called. | accepted | Phase H1 cleanup. |
@@ -299,11 +319,13 @@ The 231 accepted rows are the "yes, ship it" pile — skim by status, no need to
 
 ## Summary by status
 
-- **accepted**: 231 recommendations (incl. partial accepts on H-9, L-25)
-- **deferred**: 6 (A-1, I-6, I-8, I-13, I-14, I-20 — primarily v4.1+ or v5.0 scope)
-- **rejected**: 8 (A-15 Next.js marketing, H-3 essay cut, H-6 marketing drop, H-10 primitive cut, H-12 single-file preservation, H-14 principle cut, H-15 v3.20.x design refresh, J-18 Inter default)
-- **merged**: 2 (A-16 with K-2, A-24 with L-15)
+(Updated 2026-05-31 after Alex's PR #282 review.)
+
+- **accepted**: 218 recommendations (incl. partial accepts on H-9, L-25)
+- **deferred**: 13 (A-1, C-14, E-6–E-11 level presets, I-6, I-8, I-13, I-14, I-20)
+- **rejected**: 15 (A-15/B-15/I-17 marketing site, A-16/K-2 demo mode, B-11/G-4 timed undo, F-1 capacity-leads, K-8 safety-hold, H-3 essay cut, H-10 primitive cut, H-12 single-file, H-14 principle cut, H-15 v3 design refresh, J-18 Inter default)
+- **merged**: 1 (A-24 with L-15)
 
 Total accounted for: 247 ✓
 
-Each rejected recommendation has its rationale in the Notes column. The H-series rejections all explicitly address ADR-003 and ADR-004 standing per synthesis §2.2 and §2.3.
+Each rejected recommendation has its rationale in the Notes column. The H-series rejections address ADR-003/ADR-004 standing per synthesis §2.2/§2.3. The Alex-review changes (★ in the controversial-rows tables) reflect PR #282: marketing site and demo mode dropped; capacity demoted to a secondary field; timed undo replaced by slide-to-advance + always-reversible status; safety-hold rejected; level presets deferred.

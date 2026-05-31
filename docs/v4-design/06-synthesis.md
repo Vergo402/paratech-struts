@@ -12,7 +12,7 @@ Where six or more essays agreed, the design has to act. Each item below pins wha
 
 **Essays:** 01 (architecture), 03 (IC workflow), 04 (future scale), 05 (NIMS doctrine), 09 (data resilience), 11 (scenario stress), 12 (tech debt).
 
-The IC pointer in v3 is a single field that gets overwritten on every transfer. Five IC transitions and six OSC rotations across Surfside TTX-2 produced zero audit trail. Architecture sources it from the event log; IC workflow needs it for the ICS-201 brief at handoff; NIMS needs it for ICS-209 reconstruction; future-scale flags the v5 migration cost; scenario-stress drives Meadowville's two transfers through it; tech-debt names the v3 overwrite as a structural failure.
+The IC pointer in v3 is a single field that gets overwritten on every transfer. Five IC transitions and six Operations Section Chief rotations across Surfside TTX-2 produced zero audit trail. Architecture sources it from the event log; IC workflow needs it for the ICS-201 brief at handoff; NIMS needs it for ICS-209 reconstruction; future-scale flags the v5 migration cost; scenario-stress drives Meadowville's two transfers through it; tech-debt names the v3 overwrite as a structural failure.
 
 **Implication for E/F/G:** Every role assignment writes a new record under `/operations/{opId}/roleHistory/{pushId}` with `roleId`, `targetId`, `assignedAt`, `departedAt`, `byUid`, `agencyId`. Current org chart state is the projection where `departedAt` is null. The ICS-201 brief, the command-transfer handoff card, and the tap-the-chart-node history view are all reads against this log. No parallel persistence path.
 
@@ -28,7 +28,7 @@ The IC pointer in v3 is a single field that gets overwritten on every transfer. 
 
 **Essays:** 01, 04, 08, 09, 10, 11, 12.
 
-Shared anonymous auth is the v3 ceiling. Owner/Admin/Member/Observer roles, per-device Firebase UIDs persisted in IndexedDB, security rules that gate on role membership, and a one-time migration from the v3 shared UID land in v4. The skeptic and the scenario-stress essay both insist that none of this can sit between Captain Torres and her first shore point: guest mode is the default first-run, auth is a deferred prompt at end-of-operation or first-sync moment, and the demo department is the cold-open placeholder.
+Shared anonymous auth is the v3 ceiling. Owner/Admin/Member/Observer roles, per-device Firebase UIDs persisted in IndexedDB, security rules that gate on role membership, and a one-time migration from the v3 shared UID land in v4. The skeptic and the scenario-stress essay both insist that none of this can sit between Captain Torres and her first shore point: guest mode is the default first-run, and auth is a deferred prompt at the end-of-operation or first-sync moment. (No demo department — demo mode is dropped per Alex; the cold-open is a plain first-run guest state.)
 
 **Implication for E/F/G:** No auth gate at app open. Guest mode persists locally; the "Sign in to sync" banner is dismissible. Settings owns dept registration. The first user to migrate from a v3 install claims Owner explicitly via a one-time banner. The full admin user manager (D7.3) is deferred per the skeptic; the rules + per-device UID + role storage are v4.0 work.
 
@@ -38,23 +38,23 @@ Shared anonymous auth is the v3 ceiling. Owner/Admin/Member/Observer roles, per-
 
 The v3 org chart reads as if the developers had not read the manual. `Operations` is the section, not the position; `Cutting Table` is a workstation, not an ICS role; `Entry`, `Rescue`, `Initial Shoring`, `Wood Shoring`, `Runner` are not NIMS positions; `Task Force` is a resource configuration, not an apparatus type. The `group` field on shore points conflates a NIMS Group with an apparatus assignment. Every essay that touched doctrine flagged at least one of these.
 
-**Implication for E/F/G:** Rename `Operations` → `Operations Section Chief` (OSC); remove `Cutting Table` from the position constant; replace `Entry/Rescue/Shoring/Wood/Runner` with `Rescue Group Supervisor` and `Shoring Group Supervisor` under `Division 1`; finish the `group` → `assignedResource` cutover; remove `Task Force` from `APPARATUS_TYPES_DEFAULT`; rename `ICS_ROLES_DEFAULT` → `ICS_POSITIONS_DEFAULT` and `customRoles` → `positions`; rename status `strutplaced` → `strutset` with display "Strut Set". Add PIO, Liaison, Planning/Logistics/Finance Section Chiefs to Level-based presets. Ship five level presets (V/IV/III/II/I) at operation start.
+**Implication for E/F/G:** **Settled now —** rename `Operations` → "Operations Section Chief" (titles spelled out as spoken, **no acronyms** in the UI); `Cutting Table` → "Cutting Station," kept under Operations; finish the `group` → `assignedResource` cutover; remove `Task Force` from `APPARATUS_TYPES_DEFAULT`; rename `ICS_ROLES_DEFAULT` → `ICS_POSITIONS_DEFAULT` and `customRoles` → `positions`; rename status `strutplaced` → `strutset` (display "Strut Set"); allow longer position names (character-count + spacing) in the UI. **Level presets (V/IV/III/II/I) are deferred — plan for them, don't build now.** ⏳ **Held for NIMS research (Step 2):** the exact functional Group/Supervisor structure and how Entry / Rescue / Initial Shoring / Wood Shoring / Cutting / Runner map onto NIMS positions vs. tracked sub-assignments (Runner = a go-fer resource that hauls materials to the work point, **not** a supervisory position). Outcome → ADR; see `04-references/nims-org-structure.md`.
 
-### 1.5 Field conditions drive the tap geometry and the undo window
+### 1.5 Field conditions drive the tap geometry and the status-commit model
 
 **Essays:** 02, 06, 07, 11, plus implicit support in 03 and 09.
 
 Structural-glove fingertips contact at 18–22 mm. The 44 pt Apple floor has a 30 % miss rate in gloves. The 5-second undo window doesn't survive the team officer's eyes being on the rubble. Sunlight at 100 000 lux beats dark mode at 2 000 nits. Wet screens fire ghost taps. None of these are aesthetic choices — they're physics.
 
-**Implication for E/F/G:** 56 pt minimum tap target for primary actions, 60 pt for status transitions, in every theme (not just sunlight). 8 pt dead zone between adjacent targets. 8-second undo window during active operations (5 outside). Three themes authored from scratch (light, dark, sunlight) plus broadcast TV; sunlight is not an override of dark. Medium-impact haptic on every state commit. Card left-edge status stripe doubles as a secondary tap zone for the card's primary action. Pocket lock via proximity sensor and manual button.
+**Implication for E/F/G:** 56 pt minimum tap target for primary actions, 60 pt for status transitions, in every theme (not just sunlight). 8 pt dead zone between adjacent targets. **Status advances via a deliberate slide gesture (not a tap), and status is always reversible from the card** — an authorized user can step a shore point back at any time, so a stray advance self-heals (no time-limited undo toast). Heavier confirmation is reserved only for destructive/terminal actions (End Operation, an inventory-decrementing return). A card that regresses *off* an active work queue (e.g., the Cutting Station list) shows a passive on-screen removed state — **a red diagonal slash across the whole card with "Removed from cut list" stated over the slash** — never silently vanishing (Principle 10: visible state, not a push). Three themes authored from scratch (light, dark, sunlight) plus broadcast TV; sunlight is not an override of dark. Medium-impact haptic on every state commit. Card left-edge status stripe doubles as a secondary tap zone for the card's primary action. Pocket lock via proximity sensor and manual button.
 
-### 1.6 Capacity leads on every result card; deductions show inline
+### 1.6 Deductions show inline; capacity is computed but not the headline
 
-**Essays:** 02, 03, 06, 07, 11.
+**Essays:** 02, 03, 06, 07, 11 — **revised per Alex's review.**
 
-v3 shows rated capacity only when load is entered and margin is negative — capacity surfaces only when something is already wrong. The deduction ledger hides inside a disclosure. Both are safety-critical numbers buried behind a tap.
+The deduction math (required vs. effective length, cut length) is core to structural shoring and v3 buries it inside a disclosure — that ledger belongs inline. Capacity is a different story: **Alex's correction is that rated capacity and safety factors were conceived as an on-scene tool for large-vehicle stabilization, not the structural-shoring core.** The essays that wanted capacity to lead every card overweighted it.
 
-**Implication for E/F/G:** Rated capacity at 28 pt semibold at the top of every result card, always visible, labeled "4:1 safety factor" at 12 pt below. Deduction ledger displays inline as a stacked subtraction (Required, deduction rows in `--text-secondary`, Effective with thin top border). The conservative-floor footnote sits beneath. The cut-length formula uses the same ledger format but is visually separated from the search-result deduction (different inputs: plates vs. wedge).
+**Implication for E/F/G:** Deduction ledger displays inline as a stacked subtraction (Required, deduction rows in `--text-secondary`, Effective with thin top border); the conservative-floor footnote sits beneath. The cut-length formula uses the same ledger format but is visually separated from the search-result deduction (different inputs: plates vs. wedge). **Rated capacity is computed and available but demoted — not the dominant headline that drives the card hierarchy. This is a display-prominence change only: the load tables, conservative-floor `getLoadCapacity`, and strut-matching engine are unchanged.**
 
 ### 1.7 Local-first with sync realism; both Build A and Build C, but C ships later
 
@@ -70,7 +70,7 @@ The v3 local-first contract is the one thing every reference app gets wrong, and
 
 The four-surface model (phone, tablet, laptop, broadcast TV) is the right framing, but only progressive density actually works. The skeptic argues to drop broadcast TV from first-class status; scenario-stress shows that one dashboard with progressive density across surfaces is the right answer (phone shows the next decision; tablet adds the resource board; laptop adds the audit + IAP; TV adds the SP map). The dashboard primitive is one component reading one event-log projection through four presentation adapters.
 
-**Implication for E/F/G:** Phone and tablet are first-class with real screen-by-screen design. Laptop is the tablet at higher density with keyboard shortcuts (command palette). Broadcast TV is a read-only projection authored as a distinct theme but composed of the same primitives. No surface gets a unique IA; every workflow has a story across all four.
+**Implication for E/F/G:** **The phone is the floor — every workflow must be fully usable phone-only, assuming the tablet is unavailable. The tablet, laptop, and TV are enhancements, never assumptions.** Phone and tablet are first-class with real screen-by-screen design. Laptop is the tablet at higher density with keyboard shortcuts (command palette). Broadcast TV is a read-only projection authored as a distinct theme but composed of the same primitives. No surface gets a unique IA; every workflow has a story across all four.
 
 ### 1.9 Doctrine constants and audit history cross verbatim, with hardened comment discipline
 
@@ -86,7 +86,7 @@ The four-surface model (phone, tablet, laptop, broadcast TV) is the right framin
 
 The Safety Officer is the person the IC calls when the building makes a noise. In v3, the Safety role is decorative. The hazard log doesn't exist at all. Seven standing hazards lived in the moderator's notes through Surfside.
 
-**Implication for E/F/G:** Safety Officer name and status appear in the persistent header on every IC-facing screen (no nav required). Hazard log is one tap from the SitStat home screen, exportable to ICS-208, attribute-tagged with area + Safety Officer. Shore point cards display a hazard badge when their area has unmitigated hazards. Open question: does the Safety Officer get authority to set a `safety-hold` status that blocks SP advancement until cleared? (Section 5, Q3.)
+**Implication for E/F/G:** Safety Officer name and status appear in the persistent header on every IC-facing screen (no nav required). Hazard log is one tap from the SitStat home screen, exportable to ICS-208, attribute-tagged with area + Safety Officer. Shore point cards display a hazard badge when their area has unmitigated hazards. **No `safety-hold` status** — the app carries no messages or communication between users (Principle 10). The Safety Officer surfaces hazards visibly but does not gate shore-point advancement through the app; safety holds are a radio/face-to-face action, not an app state. (Resolves §5 Q2.)
 
 ### 1.11 Schema reservations for v5 (agencyId, IC collection, op period tag, status enum on inventory, arrivedAt/demobbedAt, nets[], resourceType, linkedVictim, 24-hour timestamps)
 
@@ -127,7 +127,7 @@ These are where the synthesis cannot duck — the essays took genuinely differen
 **Position B (skeptic, essay 08, recs H-1 through H-15):** Defer the dual D5 architecture, the broadcast TV surface, the cross-dept mutual aid, the admin user manager, the checklist feature, the demo mode, and the marketing site. Drop several primitives. Roll back to a v3.20.x design refresh on the existing screens.
 
 **Resolution:** ADR-003 stands. The skeptic is right about *implementation cost* — many of those features have no validated user and should not ship in v4.0 — but the ADR-003 frame is about *design ceiling*, not implementation schedule. The synthesis splits the skeptic's recs:
-- **Accept (cost-deferral):** Defer Build C to v5; defer mutual aid to v5; contract admin user manager to "rules + per-device UID only"; downgrade broadcast TV to "progressive density adapter, not first-class authored surface"; defer demo mode to a scripted seed instead of full sandbox; cut marketing site to a single about page.
+- **Accept (cost-deferral / cut):** Defer Build C to v5; defer mutual aid to v5; contract admin user manager to "rules + per-device UID only"; downgrade broadcast TV to "progressive density adapter, not first-class authored surface"; **drop demo mode entirely** (Alex); **drop the marketing site entirely** (Alex — the skeptic's H-6 is now accepted, not rejected).
 - **Reject (ceiling concern):** Refusing to design against the design ceiling, cutting the principles to 9, dropping NIMS terminology work, contracting the picker primitive set, rejecting TypeScript. The audit-driven structural work and the doctrine-driven NIMS work are not scope creep.
 
 **ADR needed:** No — ADR-003 stands as written. The skeptic's accepted items are scope-deferral, not ceiling changes.
@@ -208,21 +208,21 @@ The visual-language essay specified a 4 pt status-color left border on shore poi
 
 ### 3.2 Cutting queue is a tablet-primary screen, not a phone view (essay 11, scenario-stress)
 
-The v3 model collapses the cut-table foreman onto the same shore-point card the team officer sees. At Meadowville the foreman is managing 8–12 concurrent cuts with FIFO + priority overrides. Scenario-stress named this as a dedicated screen on the cutting-table tablet, surfaced when the operator is assigned the Cutting Group role. The CuttingQueueRepo is a filtered projection over the same event log the ShorePointRepo reads.
+The v3 model collapses the cutting-station lead onto the same shore-point card the team officer sees. At Meadowville the lead is managing 8–12 concurrent cuts with FIFO + priority overrides. Scenario-stress named this as a dedicated Cutting Station screen, surfaced when the operator is assigned to the Cutting Station. **It must be fully usable phone-only — assume the tablet is unavailable; the tablet is a larger-canvas enhancement, not a requirement.** The CuttingQueueRepo is a filtered projection over the same event log the ShorePointRepo reads.
 
-**Why it matters:** Phase F IA spec must name a Cutting Group screen as first-class. Drag-handle priority reorder is a CP-only affordance (field-conditions rec G-16).
+**Why it matters:** Phase F IA spec must name a first-class Cutting Station screen that works on phone. A card whose status regresses off the cut list shows the red-slash "Removed from cut list" state rather than vanishing. Drag-handle priority reorder is an enhancement on larger canvases.
 
-### 3.3 Marketing site as a trust artifact, not an acquisition channel (essay 09 + essay 01)
+### 3.3 ~~Marketing site as a trust artifact~~ — DROPPED (Alex)
 
-Two essays independently said the same thing: the marketing site exists to document how the data layer works (local-first, IndexedDB, hub mode, encryption, Owner data control, audit log retention) because the people who decide to adopt v4 (chiefs, USAR program managers, HIPAA-adjacent admins) need to read that page. Tablet Command and First Due both skip the offline question; v4's site tells the truth, in plain language, in two minutes. This reframes what the marketing site is for — it is not a hero-section funnel, it is the credibility document for a domain expert.
+Two essays argued the marketing site should exist as a credibility document (how the data layer works — local-first, offline, Owner data control, audit retention) for the chiefs and program managers who decide on adoption. **Alex's call: drop the whole marketing flow.** No marketing site at v4.0 — not a funnel, not a trust artifact. Any "how sync works" credibility content lives in the user manual, not a separate site. The skeptic's H-6 ("drop marketing site") is accepted.
 
-**Why it matters:** Phase G content brief for the marketing site is roughly four pages: pitch, how-sync-works, product tour (demo-mode iframe), changelog. Not a 12-page funnel.
+**Why it matters:** No Phase G marketing-site content brief. Removes a dependency on the (also-dropped) demo mode.
 
-### 3.4 Capacity inversion is a doctrine-correction, not a UX preference (essay 06)
+### 3.4 ~~Capacity inversion~~ — OVERTURNED: capacity is a vehicle-stabilization tool (Alex)
 
-Domain-UX framed the "capacity shows only when something is wrong" v3 pattern as backward — a safety tool that hides the safety number until danger is imminent has the hierarchy inverted. Putting rated capacity at the top of every result card at 28 pt is the most consequential single visual change in the corpus, and it is enforced by Principle 7 (visible safety).
+Domain-UX framed v3's "capacity shows only when something is wrong" as a backward safety hierarchy and wanted rated capacity to lead every card. **Alex's correction:** rated capacity and safety factors were conceived as an on-scene tool for large-vehicle stabilization, not the structural-shoring core. Capacity stays computed and available, but it is not the headline that drives the result-card hierarchy.
 
-**Why it matters:** Phase E's result-card primitive ships with capacity as the dominant field. Margin appears only when load is entered. Conservative-floor footnote is permanent.
+**Why it matters:** Phase E's result-card primitive leads with the shore/strut selection and the inline deduction ledger (the math that matters for shoring — see §1.6); capacity is a secondary, available field. The load engine is unchanged — display prominence only.
 
 ### 3.5 The picker doctrine needs an "apply to grouped siblings" semantic (essay 11)
 
@@ -256,31 +256,33 @@ The 10–15 decisions that settle the design questions if Alex agrees. This is t
 
 ### Visual language
 
-**Direction:** Geist (OFL variable, tabular numerals) at 14 pt body, minor-third scale. Three themes authored from scratch (light, dark, sunlight) plus broadcast TV. Dark surface `#1C1F23`, warm gold accent `#D4A017`. 4 pt base spacing, 12 pt card corner radius, 16 pt sheet top corners. 200 ms sheet open with `cubic-bezier(0.25, 0.1, 0.25, 1)`. Geometry-refresh the "P" mark, no rebrand. Custom 1.5 pt-stroke SVG icon set with USACE shore-type diagrams as the priority commission.
+**Direction:** Geist (OFL variable, tabular numerals) at 14 pt body, minor-third scale. Three themes authored from scratch (light, dark, sunlight) plus broadcast TV. Dark surface `#1C1F23`, warm gold accent `#D4A017`. 4 pt base spacing, 12 pt card corner radius, 16 pt sheet top corners. 200 ms sheet open with `cubic-bezier(0.25, 0.1, 0.25, 1)`. Geometry-refresh the "P" mark, no rebrand. Custom 1.5 pt-stroke SVG icon set with USACE shore-type diagrams as the priority commission. **Measurement fractions render typographically — the fraction set smaller than the whole number but at the same total cap height, giving a true ½ appearance (not same-size slashed numerals).**
 
-**Convergence:** Essay 02 specified; essays 06, 07 corroborated under field-conditions constraints (56 pt tap targets, 8-second undo). **Dissent:** Essay 08 skeptic wanted system default + type ramp only. Rejected — the visual signal is the work.
+**Convergence:** Essay 02 specified; essays 06, 07 corroborated under field-conditions constraints (56 pt tap targets, deliberate slide-to-advance). **Dissent:** Essay 08 skeptic wanted system default + type ramp only. Rejected — the visual signal is the work.
 
 ### Data model
 
 **Direction:** Event-sourced append-only log per operation under `/operations/{opId}/events/`. Current state is a projection. Repos (`DepartmentRepo`, `OperationRepo`, `ShorePointRepo`, `InventoryRepo`, `RoleRepo`, `ChecklistRepo`, `HazardRepo`, `AuditLogRepo`) own typed reads/writes. Schema reservations land in v4.0: `agencyId` on every record, IC as a collection, `roleHistory` log, inventory `status` enum, apparatus `arrivedAt`/`demobbedAt`/`resourceType`, role `nets: []`, shore-point `linkedVictim`, every write tagged with `opNumber`, all timestamps 24-hour via `{ hour12: false }`.
 
-**Convergence:** Essays 01, 04, 05, 09, 11. **Dissent:** Essay 08 wanted no schema reservations. Rejected — see conflict 2.4 and ADR-006.
+**Convergence:** Essays 01, 04, 05, 09, 11. **Dissent:** Essay 08 wanted no schema reservations. Rejected — see conflict 2.4 and ADR-006. ⏳ The concrete persistence paths assume Firebase RTDB; the **database evaluation (now landed, pending Alex review) recommends keeping RTDB for v4.0** behind a `data/sync` seam, so these paths stand. The event-sourced model, repos, and schema reservations are backend-agnostic regardless. See `04-references/database-evaluation.md`.
 
 ### Offline / sync
 
 **Direction:** v4.0 ships Build A (accept-and-reconcile) only. Per-device Firebase Anonymous UID persisted to IndexedDB at `fieldshore_auth_uid`, `LOCAL` Firebase persistence. The v3.5.3 local-first contract, the v3.9.0 status progression guard, the v3.16.4 offlineTouched pipe, the v3.8.1/v3.8.2 diagnostics ledger all cross verbatim. Storage moves from localStorage to IndexedDB via Dexie. Per-row sync state on the roster screen (PAR test case). Build C (CP hub) Settings toggle visible but disabled, labeled "Coming with mobile app." Build C ships at v5.0 with React Native because PWAs cannot host a local WebSocket relay.
 
-**Convergence:** Essays 01, 09, 11, 12. **Dissent:** Essay 09 wanted Build C in v4.0 via WebRTC + QR fallback. Deferred — see conflict 2.2 trade-offs; the WebRTC path is real but the iOS Safari mDNS limitations and the QR-exchange UX are not v4.0 work.
+**Convergence:** Essays 01, 09, 11, 12. **Dissent:** Essay 09 wanted Build C in v4.0 via WebRTC + QR fallback. Deferred — see conflict 2.2 trade-offs; the WebRTC path is real but the iOS Safari mDNS limitations and the QR-exchange UX are not v4.0 work. ⏳ **Database evaluation landed (pending Alex review):** recommends **staying on Firebase RTDB for v4.0** — the only candidate scoring A/B on all seven hard constraints with zero migration cost, and the event-sourced append-only log neutralizes RTDB's two weak spots (offline-queue reliance, path-level last-write-wins). Isolate behind a `data/sync` repository seam (no Firebase import outside `data/`) so any future swap is a transport change. Second choice: Supabase + PowerSync. See `04-references/database-evaluation.md`.
 
 ### NIMS compliance
 
-**Direction:** Complete the `group` → `assignedResource` cutover (drop the fallback chain after migration). Rename `Operations` → `Operations Section Chief` (OSC). Remove `Cutting Table`, `Entry`, `Rescue`, `Initial Shoring`, `Wood Shoring`, `Runner` as ICS positions; replace with `Rescue Group Supervisor` and `Shoring Group Supervisor` under `Division 1`. Rename `strutplaced` → `strutset` (display "Strut Set"). Remove `Task Force` from apparatus types (it's a resource configuration). Rename `ICS_ROLES_DEFAULT` → `ICS_POSITIONS_DEFAULT`, `customRoles` → `positions` (keyed object). Add PIO, Liaison, Planning/Logistics/Finance Section Chiefs to presets. Ship five level presets (V/IV/III/II/I) at operation start. Span-of-control soft warning at 6 reports, harder at 8, Branch-promotion sheet at 9. US&R tactical phase as a first-class operation field (Recon, Surface Rescue, Void Search, Selected Debris Removal, General Debris Removal). ICS-201, ICS-203, ICS-214 ship in v4.0; everything else deferred to v5.
+**Direction (settled):** Complete the `group` → `assignedResource` cutover (drop the fallback chain after migration). Rename `Operations` → "Operations Section Chief" (titles spelled out as spoken — **no acronyms** like "OSC" in the UI). `Cutting Table` → "Cutting Station," kept under Operations (a named workstation, not an ICS position). Rename `strutplaced` → `strutset` (display "Strut Set"). Remove `Task Force` from apparatus types (it's a resource configuration). Rename `ICS_ROLES_DEFAULT` → `ICS_POSITIONS_DEFAULT`, `customRoles` → `positions` (keyed object). Accommodate longer position names (character count + spacing). Span-of-control soft warning at 6 reports, harder at 8, Branch-promotion sheet at 9. ICS-201, ICS-203, ICS-214 ship in v4.0; everything else deferred to v5. **Level presets (V/IV/III/II/I) deferred — plan, don't build now.**
+
+⏳ **Held for NIMS research (Step 2 — now landed, pending Alex review):** the functional Group/Supervisor structure and the v3-role → NIMS mapping. The research recommends two functional Groups as the default — **"Rescue Group Supervisor"** and **"Shoring Group Supervisor"** under a Division Supervisor in the Operations Section — with **Search Group** and **Medical Group** Supervisors as additions. Entry / Initial Shoring / Wood Shoring / Runner are removed as positions and become tasks/resources tracked beneath the Groups (Runner = a go-fer resource, an attribute on a personnel/shore-point record, not an org node). Outcome → ADR; 7 open questions for Alex in `04-references/nims-org-structure.md`.
 
 **Convergence:** Essays 03, 04, 05, 06. **Dissent:** None.
 
 ### Field UX
 
-**Direction:** 56 pt primary tap target, 60 pt for status transitions, 8 pt dead zone between adjacent targets — in every theme. 8-second undo window during active operations (5 outside). Card left-edge status stripe is a secondary tap zone for the card's primary action. Sunlight theme is separately authored (not an override) and auto-activates at 10 000 lux via AmbientLightSensor. Medium-impact haptic on state commit; light haptic on tap-start and toast-appear. Custom numeric keypad at 56 × 56 pt for measurement input. Pocket lock via proximity sensor (5-second covered trigger) plus manual button. Wake lock requested during active operations.
+**Direction:** 56 pt primary tap target, 60 pt for status transitions, 8 pt dead zone between adjacent targets — in every theme. **Status advances via a deliberate slide gesture, not a tap; status is always reversible from the card (an authorized user can step it back anytime), so there is no time-limited undo toast.** Heavy confirmation only for destructive/terminal actions (End Operation, an inventory-decrementing return). A card regressed off an active work queue (the Cutting Station list) shows a red diagonal slash with "Removed from cut list" over it rather than vanishing. Card left-edge status stripe is a secondary tap zone for the card's primary action. Sunlight theme is separately authored (not an override) and auto-activates at 10 000 lux via AmbientLightSensor. Medium-impact haptic on state commit; light haptic on tap-start and toast-appear. Custom numeric keypad at 56 × 56 pt for measurement input. Pocket lock via proximity sensor (5-second covered trigger) plus manual button. Wake lock requested during active operations.
 
 **Convergence:** Essays 02, 06, 07, 11. **Dissent:** None.
 
@@ -298,7 +300,7 @@ The 10–15 decisions that settle the design questions if Alex agrees. This is t
 
 ### Auth / identity
 
-**Direction:** Guest mode is the default first-run. App opens to Operations with no auth prompt; data persists locally. Dismissible "Sign in to sync across devices" banner is the only auth surface. Auth registration lives in Settings, not on startup. Per-device Firebase Anonymous UID + Firebase `LOCAL` persistence. v3 → v4 migration runs once on first launch (captures localStorage, signs in anonymously, registers as Member of existing dept, merges local snapshot with remote, idempotent via `_meta/v4MigratedAt`). Owner is claimed once via a one-time banner ("Claim department ownership" rule allows the write only if `/departments/{deptId}/owner` does not exist). Security rules gate writes by role membership lookup. Admin user manager UI (D7.3) deferred to v4.1 or later — v4.0 ships rules + per-device UID + role storage only.
+**Direction:** Guest mode is the default first-run. App opens to Operations with no auth prompt; data persists locally. Dismissible "Sign in to sync across devices" banner is the only auth surface. Auth registration lives in Settings, not on startup. Per-device Firebase Anonymous UID + Firebase `LOCAL` persistence. v3 → v4 migration runs once on first launch (captures localStorage, signs in anonymously, registers as Member of existing dept, merges local snapshot with remote, idempotent via `_meta/v4MigratedAt`). Owner is claimed once via a one-time banner ("Claim department ownership" rule allows the write only if `/departments/{deptId}/owner` does not exist). Security rules gate writes by role membership lookup. Admin user manager UI (D7.3) deferred to v4.1 or later — v4.0 ships rules + per-device UID + role storage only. **On-scene QR sign-in (Alex's idea, §5 Q8):** a firefighter arriving on scene scans a code to sign in and pre-fill suggested info; feasibility depends on the backend choice (Step 2 database evaluation) and is not committed yet. ⏳ The "Firebase Anonymous UID" specifics are held for the database evaluation; the guest-mode-first, deferred-auth, role-storage commitments hold regardless of backend.
 
 **Convergence:** Essays 04, 09, 10, 11. **Dissent:** Essay 09 also wanted the full Sync Health surface + audit log UI in v4.0; deferred to v4.1 — diagnostics path stays, surface ships later.
 
@@ -320,11 +322,9 @@ Things the synthesis cannot resolve.
 
 **Recommended answer:** Ship Geist in v4.0. Do not commit budget for Söhne in v4.0. Reconsider at Phase I (whole-app build) if there's a specific Söhne-only signal needed for marketing/credibility. Tokens stay face-agnostic so the swap is one line at the root if revisited.
 
-### Q2. Safety-Hold status — decorative role or operational authority?
+### Q2. Safety-Hold status — RESOLVED: no
 
-**What the essays said:** Essay 11 framed it as an open Phase F call. Essay 03 implied authority (the SO badge is one tap to the hazard log; the SO can add hazards). Essay 06 stayed silent on whether the SO can block SP advancement.
-
-**Recommended answer:** Give the Safety Officer authority. Add `safety-hold` as a status that any role can set on a shore point but only the Safety Officer or IC can clear. The SP card shows the hold banner; status advancement is blocked until cleared. This is a one-entry addition to `STATUS_ORDER` and a one-rule addition to security. The doctrine fit is correct (the SO is the IC's deputy on safety calls per NIMS) and the operational value is clear (Hamden secondary collapse at E+2:30 needs this exact mechanism).
+**Alex's call:** No `safety-hold` status. The app carries no messages or communication between users (Principle 10). The Safety Officer surfaces hazards visibly (persistent header, hazard log, SP hazard badges) but does not gate shore-point advancement through the app. Safety holds are a radio / face-to-face action, not an app state.
 
 ### Q3. v4 / v3 dual-write window — 1 month, 3 months, or until cutover?
 
@@ -332,11 +332,9 @@ Things the synthesis cannot resolve.
 
 **Recommended answer:** Tie the dual-write window to the field-test schedule, not a calendar. v4 writes both `assignedResource` and `group` until Hartsdale has run two consecutive drills on v4 with no read-side regression. v3 reads either. Once the gate passes, v4 stops writing `group`; v3 patches to read only `assignedResource`. This is roughly 2–3 months but is event-driven, not calendar-driven.
 
-### Q4. Demo mode scope — full sandbox or scripted seed?
+### Q4. Demo mode — RESOLVED: dropped
 
-**What the essays said:** Essay 01 wanted full demo-mode build (in-memory data, no Firebase, embedded in marketing site as `/demo`). Essay 08 said scripted seed dept that Alex spins up on demand is sufficient. Essay 11 said the demo dept doubles as the cold-open placeholder for new users.
-
-**Recommended answer:** Scripted seed in v4.0. The "Start your first operation" affordance from essay 11 surfaces the seeded dept as a dimmed background on first run. The marketing-site product tour at v4.1+ embeds the same seed via a `?demo=1` URL flag, not a separate build. This satisfies the cold-open need in v4.0 without the sandbox-isolation engineering the full demo-mode build requires.
+**Alex's call:** Drop demo mode entirely. No sandbox, no scripted seed, no marketing-tour embed. The first-run cold-open is a plain guest state.
 
 ### Q5. Checklist content seeding — v4.0, v4.1, or v5?
 
@@ -344,22 +342,22 @@ Things the synthesis cannot resolve.
 
 **Recommended answer:** Primitive ships in v4.0 (Phase E). Content seeding ships in v4.1 behind a feature flag, after the first Hartsdale drill on v4 validates that the IC actually engages with a digital checklist mid-incident. The command-transfer briefing view ships in v4.0 using a doctrine-derived field set (current objectives, resource summary, Safety Officer ID, hazard log) — that is *not* checklist content, it is a structured form built on the same primitive. The line between "ICS-201 fields" (v4.0) and "IC Command Checklist content" (v4.1) is whether the content is doctrine-derived structure or content-paraphrase.
 
-### Q6. Marketing site scope at v4.0 — about-page or four-page brief?
+### Q6. Marketing site — RESOLVED: dropped
 
-**What the essays said:** Essay 01 wanted a full Stripe-quality marketing site at v4.0 cutover. Essay 09 wanted a "How sync works" page as a credibility document. Essay 08 said one about-page is sufficient through v5.
+**Alex's call:** Drop the whole marketing flow. No marketing site at v4.0 (not a funnel, not a trust artifact). Any "how sync works" credibility content lives in the user manual. The skeptic's H-6 is accepted.
 
-**Recommended answer:** Four pages at v4.0 launch: pitch (the positioning doc one-liner), how-it-works (the data resilience essay's recommended page), product tour (demo-mode iframe), changelog (auto-generated from GitHub Releases). No pricing page (free at v4.0). No press kit. No long-form documentation beyond the user manual port. This is a 4–6 day Phase G content brief, not a multi-week build. The site shares all tokens and primitives with the app per essay 02's discipline.
+### Q7. Cutting Station screen at v4.0 or v4.1?
 
-### Q7. Cutting Group screen at v4.0 or v4.1?
+**Recommended answer:** v4.0 — it is a dedicated screen for the cutting-station lead and Meadowville cannot run without it. **It must work phone-only** (the tablet is a larger-canvas enhancement, never an assumption). Phase F IA must name it. The CuttingQueueRepo is a filtered projection over the event log (no new persistence). A card whose status regresses off the cut list shows the red-slash "Removed from cut list" state rather than vanishing.
 
-**What the essays said:** Essay 11 named it as a tablet-primary screen on the cutting-table tablet. Essays 03 and 05 didn't name it explicitly. Essay 08 didn't address it.
+### Q8. On-scene QR sign-in (Alex's idea)
 
-**Recommended answer:** v4.0 — it is the primary screen on the cutting-table tablet and Meadowville cannot run without it. Phase F IA spec must name it. The CuttingQueueRepo is a filtered projection over the event log (no new persistence). The implementation cost is one screen with drag-handle reorder; the operational cost of *not* shipping it is that the cutting-table foreman manages 8–12 cuts on a phone view designed for individual SP cards.
+**What Alex said:** A firefighter arriving on scene scans a random QR code, which signs them in and lets them input suggested info. **Open:** does the QR encode a dept + incident join token? What info is pre-filled (name, role, agency)? Feasibility depends on the backend choice (the Step 2 database evaluation) — some backends make device-join-by-token trivial, others don't. Deferred to the auth workflow design (Phase G) once the database decision lands.
 
 ---
 
 ## Closing note
 
-The corpus is internally consistent on what FieldShore v4 must be. The disagreements are about timing (when to ship the monorepo, when to ship Build C, when to ship the checklist content) and scope (broadcast TV as first-class, demo mode as sandbox, marketing site as full Stripe-quality). The doctrine and field-condition arguments are unanimous; the schedule arguments are where the skeptic earns his keep and where Phase I (whole-app build) becomes the place several deferred items land.
+The corpus is internally consistent on what FieldShore v4 must be. **Alex's review (2026-05) resolved the scope disagreements:** demo mode and the marketing site are dropped entirely (not scoped down); capacity is demoted to a computed-but-not-headline field (a vehicle-stabilization tool, not the structural-shoring core); status uses slide-to-advance + always-reversible instead of a timed undo; the phone is the floor for every workflow; safety-hold is rejected (no in-app comms); level presets are deferred. Two items are held for research now landing for Alex's review: the NIMS org structure (`04-references/nims-org-structure.md`) and the database choice (`04-references/database-evaluation.md`).
 
-Phase E starts when this synthesis is approved. The primitives are docketed; the workflows are docketed; the tech debt is docketed; the ADRs to write are ADR-005 (single-package v4.0), ADR-006 (schema reservations), and ADR-007 (build system + TypeScript strict).
+Phase E starts when this synthesis is approved. The primitives are docketed; the workflows are docketed; the tech debt is docketed; the ADRs to write are ADR-005 (single-package v4.0), ADR-006 (schema reservations), ADR-007 (build system + TypeScript strict), plus a **NIMS org-structure ADR** and a **database-decision ADR** once the Step 2 research is reviewed.
