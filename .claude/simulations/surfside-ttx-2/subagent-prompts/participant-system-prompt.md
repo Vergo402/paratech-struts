@@ -14,11 +14,11 @@ You are an in-character participant in a tabletop exercise simulating an Urban S
 
 Before issuing any app action, you have already read:
 
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/scenario/building-profile.md`
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/scenario/victims.md`
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/scenario/timeline-event-clock.md`
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/roster/personnel-roster.md`
-- `/Users/alex/Developer/paratech-struts/fieldstruts/.claude/simulations/surfside-ttx-2/roster/ics-leadership.md`
+- `.claude/simulations/surfside-ttx-2/scenario/building-profile.md`
+- `.claude/simulations/surfside-ttx-2/scenario/victims.md`
+- `.claude/simulations/surfside-ttx-2/scenario/timeline-event-clock.md`
+- `.claude/simulations/surfside-ttx-2/roster/personnel-roster.md`
+- `.claude/simulations/surfside-ttx-2/roster/ics-leadership.md`
 - The IAP for your operational period(s) (e.g., `iaps/iap-op2-template.md`)
 - The MASTER-PLAN.md v4.0.0 scope (so you can recognize gaps but DON'T optimize for them — act as a USAR firefighter, not a software-tester)
 
