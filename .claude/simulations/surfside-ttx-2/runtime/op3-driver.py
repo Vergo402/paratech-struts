@@ -16,8 +16,10 @@ import string
 from copy import deepcopy
 from pathlib import Path
 
-ROOT = Path("/Users/alex/Developer/paratech-struts/fieldstruts")
-SIM = ROOT / ".claude/simulations/surfside-ttx-2"
+# Derived from this script's own location (<repo>/.claude/simulations/
+# surfside-ttx-2/runtime/op3-driver.py) so it survives repo moves/renames.
+SIM = Path(__file__).resolve().parent.parent
+ROOT = SIM.parents[2]
 SNAP_IN = SIM / "runtime/firebase-snapshots/snap-E+16h.json"
 SNAP_OUT = SIM / "runtime/firebase-snapshots/snap-E+28h.json"
 EVENT_LOG = SIM / "runtime/event-log.jsonl"

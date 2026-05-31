@@ -26,10 +26,14 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-ROOT = "/home/user/paratech-struts"
-SRC = f"{ROOT}/docs/USER-MANUAL.md"
-OUT = f"{ROOT}/docs/FieldStruts-User-Manual.docx"
-ASSETS = f"{ROOT}/docs/manual-assets"
+# Paths are derived from this script's own location (always <repo>/.claude/
+# scripts/build-user-manual-docx.py), so the build keeps working no matter where
+# the repo lives or how the directory taxonomy changes. Do NOT hardcode an
+# absolute repo path here.
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SRC = os.path.join(ROOT, "docs", "USER-MANUAL.md")
+OUT = os.path.join(ROOT, "docs", "FieldStruts-User-Manual.docx")
+ASSETS = os.path.join(ROOT, "docs", "manual-assets")
 
 NAVY = RGBColor(0x1F, 0x3A, 0x5F)
 ACCENT = RGBColor(0x2C, 0x5F, 0x8A)

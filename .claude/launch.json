@@ -4,7 +4,7 @@
     {
       "name": "paratech-struts main",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/main\""],
+      "runtimeArgs": ["-c", "cd \"$(git rev-parse --show-toplevel)\" && npx serve -l $PORT ."],
       "autoPort": true
     }
   ]

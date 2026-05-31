@@ -54,9 +54,19 @@ This is the source of truth for tracked items. Returns items with fields: `Statu
 
 ```bash
 cat CLAUDE.md
-cat /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-main/memory/MEMORY.md
-ls /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-main/memory/
+# Derive the per-project memory dir from the repo's current absolute path —
+# Claude Code names it by replacing every "/" in the repo path with "-".
+# This keeps working if the repo is moved/renamed (see the May-2026 path
+# migration that broke a hardcoded slug). Do NOT hardcode the slug.
+REPO="$(git rev-parse --show-toplevel)"
+MEM="$HOME/.claude/projects/$(echo "$REPO" | sed 's#/#-#g')/memory"
+cat "$MEM/MEMORY.md" 2>/dev/null || echo "(no MEMORY.md at $MEM — check repo path)"
+ls "$MEM" 2>/dev/null
 ```
+
+If `$MEM` is empty or missing, the repo was likely moved and the memory dir
+slug changed — list `~/.claude/projects/` for the directory whose name matches
+the current repo path, or re-point/re-create it there.
 
 Extract for the rest of the session:
 - **Release checklist** (CLAUDE.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
