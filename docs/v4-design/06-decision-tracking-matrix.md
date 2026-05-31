@@ -54,12 +54,12 @@ The 218 accepted rows are the "yes, ship it" pile — skim by status, no need to
 |---|---|---|
 | `A-24` | L-15 | React `useEffect` cleanups with `react-hooks/exhaustive-deps` lint |
 
-### Also held for Alex's review (not a status change — pending the two research docs)
+### Resolved 2026-05-31 (the two held research items)
 
-| Area | Rows | Note |
+| Area | Rows | Resolution |
 |---|---|---|
-| NIMS org structure | E-2, E-4, E-5, E-22 (+ the rename rows) | Research recommends two functional Groups (Rescue + Shoring Supervisors) with Search/Medical added at Level III; Entry/Wood/Runner become tracked tasks/resources. 7 open questions for Alex in `04-references/nims-org-structure.md`. Outcome → ADR. |
-| Database / backend | A-7, A-8, A-9, I-1, the sync rows | Evaluation recommends staying on Firebase RTDB for v4.0 behind a `data/sync` seam (zero migration; event log neutralizes weak spots). See `04-references/database-evaluation.md`. Outcome → ADR. |
+| NIMS org structure | E-2, E-4, E-5, E-22 (+ the rename rows) | **ADR-008.** Two functional Groups by default (Rescue + Shoring Supervisors); Search/Medical add-ons at Level III+. Entry/Wood/Cutting/Runner tracked as tasks/resources beneath; Cutting Station = workstation card under Operations; Divisions numbered by floor, sides A–D (IC sets A). All 7 questions answered in `04-references/nims-org-structure.md` §15. |
+| Database / backend | A-7, A-8, A-9, I-1, the sync rows | **ADR-009.** Stay on Firebase RTDB for v4.0 behind a `data/sync` seam (zero migration; event log neutralizes weak spots). Second choice Supabase + PowerSync. See `04-references/database-evaluation.md`. |
 
 ---
 

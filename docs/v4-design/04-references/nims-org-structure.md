@@ -70,9 +70,9 @@ This distinction is the most important for structural collapse, because both are
 
 A Division is defined by a physical boundary. The IC or OSC declares a Division when a specific geographic area needs to be commanded as a unit. At a structural collapse:
 
-- Building faces are labeled Alpha (the address side), Bravo (left when facing the address side), Charlie (rear), Delta (right), progressing clockwise. (SM-0322, Chapter 7.)
-- Building floors are labeled Division 1 (ground floor), Division 2 (second floor), and so on.
-- Below-grade areas are Sub-Division 1 and Sub-Division 2.
+- Building **floors are numbered Divisions**: Division 1 (ground floor), Division 2 (second floor), and so on. Below-grade areas are Sub-Division 1 and Sub-Division 2.
+- Building **sides are labeled A / B / C / D** (Alpha–Delta) — a separate building-face addressing convention, not Division names. Per Alex's practice (Q1), **the IC designates the A side** — typically the front, where the main entrance is — and B, C, D proceed clockwise from there.
+- The two schemes **combine**: a work area is addressed as, e.g., "Division 2, C side."
 
 The **Division Supervisor** commands all tactical operations within that geographic boundary, regardless of which functional groups are working there. Source: NIMS 2017, p. 25: "Divisions are used to divide an incident into geographic areas of operation."
 
@@ -90,9 +90,9 @@ The **Group Supervisor** is responsible for that function across whatever geogra
 
 **Using both simultaneously**
 
-At a significant collapse you will have both. A Division Supervisor for Division Alpha coordinates all activity on the building's front face; under that Division Supervisor you may have a Rescue Group Supervisor (extraction-focused resources) and a Shoring Group Supervisor (shoring-focused resources) both working Division Alpha. This is the NIMS-correct representation. (SM-0322, Chapter 3, illustrative figures 3-5 through 3-8.)
+At a significant collapse you will have both. A Division Supervisor for Division 2 (the second floor) coordinates all activity in that area; under that Division Supervisor you may have a Rescue Group Supervisor (extraction-focused resources) and a Shoring Group Supervisor (shoring-focused resources) both working it. This is the NIMS-correct representation. (SM-0322, Chapter 3, illustrative figures 3-5 through 3-8.)
 
-In FieldShore terms: a shore point has a geographic Division assignment ("Division Alpha, Level 1") and its assigned resources report to the Shoring Group Supervisor. Both are attributes of the same shore point.
+In FieldShore terms: a shore point has a geographic Division assignment plus a side ("Division 2, C side") and its assigned resources report to the Shoring Group Supervisor. Both are attributes of the same shore point.
 
 ### 2.4 Resources below Groups and Divisions
 
@@ -198,15 +198,15 @@ Incident Commander
     +-- Operations Section Chief
          |
          +-- Staging Area Manager
-         +-- Division 1 Supervisor  (or Division Alpha Supervisor — see note)
+         +-- Division 1 Supervisor  (floor-numbered; sides A–D are a separate locator — see note)
               |
               +-- Rescue Group Supervisor
               +-- Shoring Group Supervisor
 ```
 
-PIO and Liaison are typically added at Level IV when media arrives and mutual aid agencies check in. Recommend including them in the preset but marking them as "optional at Level IV" in the UI.
+PIO and Liaison are typically added at Level IV when media arrives and mutual aid agencies check in. Recommend including them in the preset but marking them as "optional at Level IV" in the UI. (Level presets themselves are deferred per Alex — "plan, don't build now" — so these defaults are design notes for the deferred preset spec, not v4.0 build work.)
 
-Division naming note: For above-grade interior operations, use floor numbers (Division 1, Division 2). For exterior perimeter command of building faces, use phonetic alphabet (Division Alpha, Division Bravo). Both are correct per SM-0322. FieldShore v3.15.0 added numbered Divisions. The phonetic labels should be an alternate option.
+Division naming note (Alex's call, Q1): Divisions are **numbered by floor** (Division 1 = ground/first, Division 2 = second; Sub-Division for below grade). Building **sides** are a *separate* addressing scheme — A / B / C / D, with the IC designating the A side (typically the front / main entrance) and B–D clockwise. The two combine (e.g., "Division 2, C side"). FieldShore v3.15.0 added numbered Divisions; v4 keeps numbered Divisions as the default and adds A–D as the building-face locator. Not "Division Alpha."
 
 ### Level III — Significant incident
 
@@ -407,30 +407,23 @@ One finding from the v3.11.2 audit (V3.11.2-R6-03) is worth preserving as doctri
 
 ---
 
-## 15. Open Doctrine Questions for Alex
+## 15. Open Doctrine Questions for Alex — RESOLVED 2026-05-31
 
-These cannot be resolved without operational input from Alex. Each should become a resolved question before the v4 org-chart IA spec is finalized.
+Alex resolved all seven on 2026-05-31. Answers below feed the org-structure ADR (ADR-008) and the deferred level-preset spec. (Q4/Q5/Q7 touch the level presets, which Alex deferred — "plan, don't build now" — so they are design notes for the deferred spec, not v4.0 build work.)
 
-**Q1 — Division naming default: floors or faces?**
-SM-0322 supports both floor numbers (Division 1, Division 2) and building-face phonetics (Division Alpha, Bravo, Charlie, Delta). V3.15.0 implemented numbered Divisions. Should the Level IV default org chart preset use floor numbers, face labels, or offer a picker at operation start? Which does Alex see in practice at local incidents?
+**Q1 — Division naming: floors *and* sides (two separate schemes).** → **Resolved.** Divisions are **numbered by floor** (Division 1, Division 2; Sub-Division below grade). Building **sides** are a *separate* addressing convention — A / B / C / D — with the **IC designating the A side** (typically the front / main entrance) and B–D proceeding clockwise. They combine ("Division 2, C side"). Not "Division Alpha." v4 keeps numbered Divisions as the default and adds A–D as the building-face locator. (Doc §2.3 and §6 corrected.)
 
-**Q2 — Cutting Station location in the UI**
-The brief locks Cutting Station under Operations, not inside the collapsed structure section. The open question is the visual representation: does it appear as a workstation card below the org chart but above the shore-point list? As a labeled row in the resource board? Alex should confirm the mental model he expects to see on the Command tab.
+**Q2 — Cutting Station representation.** → **Resolved: workstation card under Operations.** It stays under Operations (not detached) but is **not** a command/Supervisor box — rendered as a distinct *workstation card* hung under the Operations Section, the same way Staging appears. An IC sees it and who's on it at a chart glance without it reading as a command position. (Matches doc §9.)
 
-**Q3 — Runner task tracking granularity**
-The brief locks Runner as a task assignment, not an org-chart node. The question is how granular the tracking needs to be. Options: (a) a single checkbox on a shore-point card reading "Runner dispatched" (the simplest — essentially what v3 does already via the "Runner" status); (b) a named assignment linking a specific person to a specific shore point in runner status; (c) a runner-task queue visible to the person assigned runner duty. Which granularity does field practice require?
+**Q3 — Runner tracking granularity.** → **Resolved: option (a).** A simple "Runner dispatched" affordance on the shore-point card — essentially the v3 "Runner" status. No named-person link or separate runner queue in v4.0. (Matches doc §10.)
 
-**Q4 — Search Group at Level IV default**
-SM-0322 Figure 6-2 and the Surfside TTX show Search Group standing up early. But at a single residential structural collapse (Level IV, one Engine and one Rescue), a separate Search Group Supervisor is unrealistic — the Rescue Group does both search and rescue. Should the Level IV default include a Search Group Supervisor, or should it be available as an add-on? Operational input from Alex (and Hartsdale field partners) is needed.
+**Q4 — Search Group at Level IV.** → **Resolved: add-on, not in the Level IV default.** Auto-appears at Level III and above. At a one-Engine/one-Rescue residential collapse the Rescue Group does both search and rescue.
 
-**Q5 — Medical Group at Level IV default**
-Same question as Q4 for Medical. At a Level IV incident one EMS apparatus typically handles medical without a formal Group. Should Medical Group Supervisor be in the Level IV default chart or in the add-on picker?
+**Q5 — Medical Group at Level IV.** → **Resolved: add-on, not in the Level IV default.** Auto-appears at Level III and above. One EMS unit covers medical at Level IV without a formal Group.
 
-**Q6 — Staging Area Manager placement**
-SM-0322 shows the Staging Area Manager reporting to the Operations Section Chief. Some departments place Staging Area Manager directly under the IC at smaller incidents. Where does Alex's department and mutual aid practice put Staging? This affects the Level IV default preset.
+**Q6 — Staging Area Manager placement.** → **Resolved: under Operations** (per SM-0322), in all default charts.
 
-**Q7 — "Shoring Group" vs. department-specific terminology**
-Some departments use "Shore Group," "Prop Group," or informal labels. NIMS doctrine calls for "Shoring Group." The brief is clear that default labels follow doctrine. But departments may need to alias. Should FieldShore allow a department to display "Shore Group" while storing the canonical `shoring-gs` position ID? Or is the display name locked to doctrine in v4?
+**Q7 — "Shoring Group" vs. department aliases.** → **Resolved: display locked to doctrine in v4.0.** FieldShore shows "Shoring Group Supervisor"; department display-aliases ("Shore Group," "Prop Group") are not a v4.0 config surface. Revisit if a real department asks.
 
 ---
 
