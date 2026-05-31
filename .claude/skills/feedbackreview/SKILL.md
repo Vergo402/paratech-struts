@@ -63,7 +63,8 @@ For each feedback entry, create a GitHub issue.
 ```
 
 ```bash
-gh issue create --repo Vergo402/paratech-struts \
+# Create the issue and CAPTURE its URL (gh issue create prints the URL on success)
+url=$(gh issue create --repo Vergo402/paratech-struts \
   --title "Bug: short summary" \
   --label "bug" \
   --body "$(cat <<'EOF'
@@ -71,8 +72,28 @@ gh issue create --repo Vergo402/paratech-struts \
 
 **Description:** The full feedback text here
 EOF
-)"
+)")
 ```
+
+### Add every new issue to the roadmap board (REQUIRED — do not skip)
+
+Creating the issue is not enough — it must be logged on the **FieldShore Roadmap** board (#1)
+or it goes untracked. (This step's absence is exactly what let #285 slip through in May 2026.)
+For each issue created above, using the captured `$url`:
+
+```bash
+item=$(gh project item-add 1 --owner Vergo402 --url "$url" --format json | jq -r '.id')
+PROJ=PVT_kwHODy7CN84BYNd6
+gh project item-edit --id "$item" --project-id $PROJ \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5G0 --single-select-option-id a3d8760a   # Source = feedback
+gh project item-edit --id "$item" --project-id $PROJ \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c --single-select-option-id f75ad846   # Status = Todo
+```
+
+Set **Status = Todo** here; `/plan` flips it to In Progress at scope-in and Status → Done auto-syncs on
+close. Component/Severity/Effort/**Release** are assigned later during `/plan` — and remember new Release
+options (e.g. a new `vX.Y.Z`) are added via the **web UI only**, never the GraphQL field mutation (it
+set-and-replaces the entire option list). See the `feedback_project_field_mutations` memory.
 
 After creating issues, show what was created:
 
