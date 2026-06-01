@@ -188,19 +188,22 @@ img, svg { display: block; }
   background: var(--danger-bg); color: var(--danger-text);
   border: 1px solid color-mix(in srgb, var(--danger-text) 22%, transparent); }
 
-/* slide-to-advance affordance (rendered at rest) */
-.sg-slide { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+/* slide-to-advance affordance (rendered at rest).
+   Track is the prominent, full-width primary action — the next-status label is
+   always fully legible (never squeezed/truncated). "step back" is a secondary
+   control BELOW the track, not competing for its width (fixes phone truncation). */
+.sg-slide { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 12px; }
 .sg-slide .track {
-  flex: 1; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 6px;
+  display: flex; align-items: center; gap: 10px; width: 100%; max-width: 460px; height: 48px; padding: 0 8px;
   background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 999px; min-width: 0;
 }
-.sg-slide .handle { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+.sg-slide .handle { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%;
   background: var(--accent); display: grid; place-items: center; color: var(--surface-bg); font-weight: 700; }
-.sg-slide .track .lbl { font: var(--type-body-medium); color: var(--text-secondary); white-space: nowrap;
+.sg-slide .track .lbl { font: var(--type-body-medium); color: var(--text-primary); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
-.sg-slide .back { flex: 0 0 auto; font: var(--type-caption); color: var(--text-tertiary); cursor: default;
-  background: none; border: none; padding: 6px; }
+.sg-slide .back { font: var(--type-body-medium); color: var(--accent); cursor: default;
+  background: none; border: none; padding: 4px 2px; }
 
 /* red-slash "Removed from cut list" off-queue state */
 .sg-sp-card.is-removed { overflow: hidden; }   /* clip the slash to the card */
