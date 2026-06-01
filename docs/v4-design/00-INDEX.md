@@ -24,7 +24,7 @@
 | B | Reference app teardowns + positioning doc | 🟢 Done | Structural deliverables shipped 2026-05-21 (6 teardowns + positioning.md). Sign off review closed 12 follow ups by 2026-05-22. Positioning doc rewritten in Alex's voice and trimmed to ~1,450 words (commit e7f9bb3, 2026-05-23). Gate B passed 2026-05-23 after adding Principle 12 (ADR-004) out of #280, so Phase C briefing packet carries the data class framing. |
 | C | 12-agent brainstorm essays | 🟢 Done | Gate C passed 2026-05-24. All 12 essays reviewed; no changes requested. Phase D dispatched. All 12 essays committed 2026-05-23 (59,559 words total; target was 2,750–3,000 per essay, several came in higher because the lens earned it, no padding flagged). Each essay carries the 250-word executive summary and numbered recommendations Phase D copies verbatim into the coverage matrix. Notable: essay 8 (skeptical-review) dissents against ADR-003 and ADR-004 via numbered recs (permitted); essay 11 (scenario-stress) flags sibling-essay predictions that are likely to tear at Hamden/Meadowville scale; essay 4 surfaces 12 data-model schema fields that must be reserved in v4 to avoid v5 migration. |
 | D | Synthesis + decision tracking matrix | 🟢 Done | Synthesis + coverage matrix committed 2026-05-24; revised 2026-05-31 after Alex's PR #282 review (18 comments folded in). Matrix: 218 accepted / 13 deferred / 15 rejected / 1 merged. The two held research items resolved 2026-05-31: NIMS org structure → **ADR-008** (`04-references/nims-org-structure.md`, all 7 questions answered), database → **ADR-009** (`04-references/database-evaluation.md`, stay on Firebase RTDB). Gate D passed; squash-merged to `v4-redesign` via PR #282. Phase E unblocked. |
-| E | Design system (color, type, spacing, motion, primitives, etc.) | ⚪ Not started | Unblocked — ready to dispatch. |
+| E | Design system (color, type, spacing, motion, primitives, etc.) | 🚦 Gate ready | **Gate trio authored 2026-05-31:** `color.md` + `typography.md` + `03-primitives/card.md`, all four-theme contrast-verified via `wcag-contrast.mjs`, + **ADR-010** (status commit model, amends Principle 6) + **ADR-011** (color token system). Awaiting Alex sign-off ([#292](https://github.com/Vergo402/paratech-struts/issues/292)) before the ~19-file cascade (spacing → motion → primitives → cross-cutting). |
 | F | Information Architecture per screen × 4 surfaces | ⚪ Not started | Blocked by E |
 | G | Workflow specs across all surfaces | ⚪ Not started | Blocked by F |
 | H | Vertical slice prototype | ⚪ Not started | Blocked by G |
@@ -68,6 +68,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 ### Primitives (Phase E will fill these out)
 
 - `03-primitives/picker.md` 🟢 (seeded in Phase A)
+- `03-primitives/card.md` 🚦 (Phase E gate primitive — status-stripe tap zone, slide-to-advance, red-slash off-queue state, inline deduction ledger, capacity demoted)
 - `03-primitives/sheet.md` ⚪
 - `03-primitives/modal.md` ⚪
 - `03-primitives/card.md` ⚪
@@ -117,14 +118,15 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 
 ### Design System (Phase E)
 
-- `07-design-system/color.md` ⚪
-- `07-design-system/typography.md` ⚪
-- `07-design-system/spacing-grid.md` ⚪
-- `07-design-system/motion.md` ⚪
+- `07-design-system/color.md` 🚦 (gate trio — 4 themes light/dark/sunlight/broadcast, reconciled status palette, all ratios verified)
+- `07-design-system/typography.md` 🚦 (gate trio — Geist + Geist Mono ramp, tabular numerals, typographic fractions)
+- `07-design-system/wcag-contrast.mjs` 🟢 (reproducible WCAG verification — `node …/wcag-contrast.mjs`)
+- `07-design-system/spacing-grid.md` ⚪ (wave 1, post-gate)
+- `07-design-system/motion.md` ⚪ (wave 1, post-gate — drops the 5s undo line per ADR-010)
 - `07-design-system/voice-and-tone.md` ⚪
 - `07-design-system/iconography.md` ⚪
-- `07-design-system/logo-and-mark.md` ⚪
-- `07-design-system/accessibility.md` ⚪
+- `07-design-system/logo-and-mark.md` ⚪ (**new identity** per #10 / Alex — not a refresh)
+- `07-design-system/accessibility.md` ⚪ (authored last — consolidation point)
 
 ### Information Architecture (Phase F)
 
