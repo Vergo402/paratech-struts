@@ -202,8 +202,14 @@ img, svg { display: block; }
   background: var(--accent); display: grid; place-items: center; color: var(--surface-bg); font-weight: 700; }
 .sg-slide .track .lbl { font: var(--type-body-medium); color: var(--text-primary); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
-.sg-slide .back { font: var(--type-body-medium); color: var(--accent); cursor: default;
-  background: none; border: none; padding: 4px 2px; }
+/* reverse = a deliberate slide-BACK, secondary to the forward track (not a tap link).
+   Outline pill + handle so it reads as a slide, lower emphasis than the gold track. */
+.sg-slide .back { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px 0 6px;
+  background: transparent; border: 1px solid color-mix(in srgb, var(--text-secondary) 32%, transparent);
+  border-radius: 999px; color: var(--text-secondary); font: var(--type-body-medium); cursor: default; }
+.sg-slide .back .rhandle { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; display: grid;
+  place-items: center; border: 1px solid color-mix(in srgb, var(--text-secondary) 45%, transparent);
+  color: var(--text-secondary); font-weight: 700; }
 
 /* red-slash "Removed from cut list" off-queue state */
 .sg-sp-card.is-removed { overflow: hidden; }   /* clip the slash to the card */
