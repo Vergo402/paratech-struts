@@ -38,7 +38,7 @@ const THEMES = {
     ['accent        / surface-card', '#8C6700', '#FFFFFF', 'normal'],
     // status: status-text on status-tint
     ['status pending', '#4B5563', '#F3F4F6', 'normal'],
-    ['status active',  '#1D4ED8', '#EFF6FF', 'normal'],
+    ['status process',  '#1D4ED8', '#EFF6FF', 'normal'],
     ['status strutset','#5B21B6', '#F5F3FF', 'normal'],
     ['status cutting', '#92400E', '#FEF3C7', 'normal'],
     ['status runner',  '#9A3412', '#FFEDD5', 'normal'],
@@ -55,7 +55,7 @@ const THEMES = {
     ['accent        / surface-card',     '#D4A017', '#252930', 'normal'],
     // status: bright status-text on dark status-tint
     ['status pending', '#9CA3AF', '#2A2D31', 'normal'],
-    ['status active',  '#60A5FA', '#172033', 'normal'],
+    ['status process',  '#60A5FA', '#172033', 'normal'],
     ['status strutset','#A78BFA', '#221A38', 'normal'],
     ['status cutting', '#FBBF24', '#2A2410', 'normal'],
     ['status runner',  '#FB923C', '#2A1B0F', 'normal'],
@@ -68,7 +68,7 @@ const THEMES = {
     ['accent        / surface-bg', '#6E5000', '#FFFFFF', 'normal'],
     // status badges: white text on solid status fill (>=4.5 target; many clear 7)
     ['status pending  (white on)', '#FFFFFF', '#374151', 'normal'],
-    ['status active   (white on)', '#FFFFFF', '#1D4ED8', 'normal'],
+    ['status process   (white on)', '#FFFFFF', '#1D4ED8', 'normal'],
     ['status strutset (white on)', '#FFFFFF', '#5B21B6', 'normal'],
     ['status cutting  (white on)', '#FFFFFF', '#92400E', 'normal'],
     ['status runner   (white on)', '#FFFFFF', '#9A3412', 'normal'],
@@ -83,7 +83,7 @@ const THEMES = {
     ['accent        / bc-bg',   '#E5B53D', '#141618', 'normal'],
     // status as text/border accent on bc-bg (no fill)
     ['status pending', '#9CA3AF', '#141618', 'normal'],
-    ['status active',  '#60A5FA', '#141618', 'normal'],
+    ['status process',  '#60A5FA', '#141618', 'normal'],
     ['status strutset','#B9A7FC', '#141618', 'normal'],
     ['status cutting', '#FBBF24', '#141618', 'normal'],
     ['status runner',  '#FB923C', '#141618', 'normal'],

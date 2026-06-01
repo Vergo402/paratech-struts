@@ -154,8 +154,8 @@ img, svg { display: block; }
   padding: var(--space-3) var(--space-4);
   min-height: 60px;
 }
-/* focus/selected state — renamed from .is-active to avoid colliding with the
-   .is-active lifecycle STATUS modifier (a status card must not look focused). */
+/* focus/selected state — uses .is-focus (not a status class) so it never collides
+   with a lifecycle status modifier (a status card must not look focused). */
 .sg-card.is-focus { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--surface-card-hover); }
 
 /* ShorePointCard: status drives stripe + badge via --sp-* .
@@ -252,7 +252,7 @@ img, svg { display: block; }
 
 /* ---- status modifiers (drive stripe + badge) ------------------------------ */
 .is-pending  { --sp-text: var(--status-pending-text);  --sp-bg: var(--status-pending-bg); }
-.is-active   { --sp-text: var(--status-active-text);   --sp-bg: var(--status-active-bg); }
+.is-process  { --sp-text: var(--status-process-text);   --sp-bg: var(--status-process-bg); }
 .is-strutset { --sp-text: var(--status-strutset-text); --sp-bg: var(--status-strutset-bg); }
 .is-cutting  { --sp-text: var(--status-cutting-text);  --sp-bg: var(--status-cutting-bg); }
 .is-runner   { --sp-text: var(--status-runner-text);   --sp-bg: var(--status-runner-bg); }

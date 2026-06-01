@@ -43,7 +43,7 @@ All variants share the base shell; the table is which behaviors layer on.
 | Elevation (rest) | **no drop shadow** | 1pt top inner highlight at 6% (`inset 0 1pt 0 …`) — a lifted lip, not a shadow |
 | Touch target | full width tappable | **56pt** min height for any tappable card (60pt for `ShorePointCard`); 44pt is the never-below WCAG floor, not a design target; any in-card **primary action ≥56pt** |
 
-**Active / focus card:** border becomes `--accent` at 60% opacity, background `--surface-card-hover`. **No size change, no scale animation** — scale/zoom on cards during an operation is nauseating when the user is watching a live list. The active signal is border + fill only.
+**Focus card (selected state):** border becomes `--accent` at 60% opacity, background `--surface-card-hover`. **No size change, no scale animation** — scale/zoom on cards during an operation is nauseating when the user is watching a live list. The focus signal is border + fill only. (The styleguide class is `is-focus` — deliberately *not* `is-active`, to avoid colliding with the "In Process" lifecycle status.)
 
 Elevation discipline: **shadows are for sheets and modals, never cards.** A card that floats (rare) uses the 1pt top inner highlight to simulate a lifted lip. (Sunlight theme is the one exception — cards there gain a 2pt offset shadow because glare washes edges flat; see [`color.md`](../07-design-system/color.md).)
 
@@ -51,7 +51,7 @@ Elevation discipline: **shadows are for sheets and modals, never cards.** A card
 
 ## `ShorePointCard` — the lifecycle card
 
-The shore-point object moves through the seven v4 states (`pending → active → strutset → cutting → runner → secured → returned`; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
+The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending → In Process → Strut Set → Cutting → Runner → Shore Secured → Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
 
 ### The left-edge status stripe — and its hidden tap zone
 

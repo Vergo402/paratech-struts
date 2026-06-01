@@ -66,7 +66,7 @@
   --text-tertiary: #8A8A8A;   /* 3.19:1 — large/non-essential only */
 
   --status-pending-text: #4B5563;  --status-pending-bg: #F3F4F6;  /* 6.87 (was #6B7280=4.39) */
-  --status-active-text:  #1D4ED8;  --status-active-bg:  #EFF6FF;  /* 6.16 */
+  --status-process-text:  #1D4ED8;  --status-process-bg:  #EFF6FF;  /* 6.16 */
   --status-strutset-text:#5B21B6;  --status-strutset-bg:#F5F3FF;  /* 8.19 */
   --status-cutting-text: #92400E;  --status-cutting-bg: #FEF3C7;  /* 6.37 */
   --status-runner-text:  #9A3412;  --status-runner-bg:  #FFEDD5;  /* 6.38 */
@@ -98,7 +98,7 @@
   --text-tertiary: #8A8A86;   /* 4.21:1 (was #6B6A67 = 2.70 FAIL) */
 
   --status-pending-text: #9CA3AF;  --status-pending-bg: #2A2D31;  /* 5.45 */
-  --status-active-text:  #60A5FA;  --status-active-bg:  #172033;  /* 6.40 */
+  --status-process-text:  #60A5FA;  --status-process-bg:  #172033;  /* 6.40 */
   --status-strutset-text:#A78BFA;  --status-strutset-bg:#221A38;  /* 6.06 */
   --status-cutting-text: #FBBF24;  --status-cutting-bg: #2A2410;  /* 9.26 */
   --status-runner-text:  #FB923C;  --status-runner-bg:  #2A1B0F;  /* 7.35 */
@@ -132,7 +132,7 @@
 
   /* status = solid fill, white text (banner treatment) */
   --status-pending-text: #FFFFFF;  --status-pending-bg: #374151;  /* white 10.31 */
-  --status-active-text:  #FFFFFF;  --status-active-bg:  #1D4ED8;  /* 6.70 */
+  --status-process-text:  #FFFFFF;  --status-process-bg:  #1D4ED8;  /* 6.70 */
   --status-strutset-text:#FFFFFF;  --status-strutset-bg:#5B21B6;  /* 8.98 */
   --status-cutting-text: #FFFFFF;  --status-cutting-bg: #92400E;  /* 7.09 */
   --status-runner-text:  #FFFFFF;  --status-runner-bg:  #9A3412;  /* 7.31 */
@@ -166,7 +166,7 @@
 
   /* status = text + 4pt left-border accent, no bg fill */
   --status-pending-text: #9CA3AF;  --status-pending-bg: transparent;  /* 7.14 */
-  --status-active-text:  #60A5FA;  --status-active-bg:  transparent;  /* 7.13 */
+  --status-process-text:  #60A5FA;  --status-process-bg:  transparent;  /* 7.13 */
   --status-strutset-text:#B9A7FC;  --status-strutset-bg:transparent;  /* 8.63 */
   --status-cutting-text: #FBBF24;  --status-cutting-bg: transparent;  /* 10.87 */
   --status-runner-text:  #FB923C;  --status-runner-bg:  transparent;  /* 8.01 */

@@ -46,16 +46,16 @@
 
   /* ---- COLOR section: single source of truth for the palette reference ----
      Values mirror tokens.css / color.md exactly; ratios are from wcag-contrast.mjs. */
-  var STATUS = ['pending', 'active', 'strutset', 'cutting', 'runner', 'secured', 'returned', 'danger'];
-  var LABEL = { pending: 'Pending', active: 'Active', strutset: 'Strut Set', cutting: 'Cutting',
-    runner: 'Runner', secured: 'Secured', returned: 'Returned', danger: 'Danger' };
+  var STATUS = ['pending', 'process', 'strutset', 'cutting', 'runner', 'secured', 'returned', 'danger'];
+  var LABEL = { pending: 'Pending', process: 'In Process', strutset: 'Strut Set', cutting: 'Cutting',
+    runner: 'Runner', secured: 'Shore Secured', returned: 'Returned', danger: 'Danger' };
 
   var PALETTE = {
     light: {
       name: 'Light', tag: 'preplan, office', bg: '#F7F6F3', card: '#FFFFFF', elev: '#FFFFFF',
       text: { primary: ['#1A1A1A', '16.10'], secondary: ['#5C5C5C', '6.19'], tertiary: ['#8A8A8A', '3.19 · large only'] },
       accent: ['#8C6700', '4.79'], mode: 'tint',
-      status: { pending: ['#4B5563', '#F3F4F6', '6.87'], active: ['#1D4ED8', '#EFF6FF', '6.16'],
+      status: { pending: ['#4B5563', '#F3F4F6', '6.87'], process: ['#1D4ED8', '#EFF6FF', '6.16'],
         strutset: ['#5B21B6', '#F5F3FF', '8.19'], cutting: ['#92400E', '#FEF3C7', '6.37'],
         runner: ['#9A3412', '#FFEDD5', '6.38'], secured: ['#065F46', '#ECFDF5', '7.29'],
         returned: ['#57534E', '#F5F5F4', '6.99'], danger: ['#B91C1C', '#FEF2F2', '5.91'] }
@@ -64,7 +64,7 @@
       name: 'Dark', tag: 'incident operations · the differentiator', bg: '#1C1F23', card: '#252930', elev: '#2E333B',
       text: { primary: ['#F0EFEC', '12.70'], secondary: ['#9B9A97', '5.19'], tertiary: ['#8A8A86', '4.21'] },
       accent: ['#D4A017', '6.96'], mode: 'tint',
-      status: { pending: ['#9CA3AF', '#2A2D31', '5.45'], active: ['#60A5FA', '#172033', '6.40'],
+      status: { pending: ['#9CA3AF', '#2A2D31', '5.45'], process: ['#60A5FA', '#172033', '6.40'],
         strutset: ['#A78BFA', '#221A38', '6.06'], cutting: ['#FBBF24', '#2A2410', '9.26'],
         runner: ['#FB923C', '#2A1B0F', '7.35'], secured: ['#34D399', '#0F2620', '8.29'],
         returned: ['#A8A29E', '#26231F', '6.20'], danger: ['#F87171', '#2A1416', '6.27'] }
@@ -73,7 +73,7 @@
       name: 'Sunlight', tag: 'direct sun · black-on-white · status = solid banner', bg: '#FFFFFF', card: '#FFFFFF', elev: '#FFFFFF',
       text: { primary: ['#000000', '21.0 · only text color'] },
       accent: ['#6E5000', '7.47'], mode: 'banner',
-      status: { pending: ['#374151', '', '10.31'], active: ['#1D4ED8', '', '6.70'],
+      status: { pending: ['#374151', '', '10.31'], process: ['#1D4ED8', '', '6.70'],
         strutset: ['#5B21B6', '', '8.98'], cutting: ['#92400E', '', '7.09'],
         runner: ['#9A3412', '', '7.31'], secured: ['#065F46', '', '7.68'],
         returned: ['#44403C', '', '10.27'], danger: ['#B91C1C', '', '6.47'] }
@@ -82,7 +82,7 @@
       name: 'Broadcast', tag: 'TV at 8–12 ft · all ≥7:1 · left-border accent, no fill', bg: '#141618', card: '#141618', elev: '#1B1E20',
       text: { primary: ['#F4F4F4', '16.49'], secondary: ['#C0BFBC', '9.86'] },
       accent: ['#E5B53D', '9.51'], mode: 'accent',
-      status: { pending: ['#9CA3AF', '', '7.14'], active: ['#60A5FA', '', '7.13'],
+      status: { pending: ['#9CA3AF', '', '7.14'], process: ['#60A5FA', '', '7.13'],
         strutset: ['#B9A7FC', '', '8.63'], cutting: ['#FBBF24', '', '10.87'],
         runner: ['#FB923C', '', '8.01'], secured: ['#34D399', '', '9.44'],
         returned: ['#A8A29E', '', '7.19'], danger: ['#FB8C8C', '', '7.97'] }

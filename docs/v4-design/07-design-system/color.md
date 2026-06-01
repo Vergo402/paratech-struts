@@ -60,7 +60,7 @@ Warm off-white surfaces, precise hairline strokes, no drop shadows. Clean withou
 | Status | `--status-*-text` | `--status-*-bg` | Ratio |
 |---|---|---|---|
 | pending | `#4B5563` | `#F3F4F6` | **6.87** ✓ |
-| active | `#1D4ED8` | `#EFF6FF` | **6.16** ✓ |
+| process | `#1D4ED8` | `#EFF6FF` | **6.16** ✓ |
 | strutset | `#5B21B6` | `#F5F3FF` | **8.19** ✓ |
 | cutting | `#92400E` | `#FEF3C7` | **6.37** ✓ |
 | runner | `#9A3412` | `#FFEDD5` | **6.38** ✓ |
@@ -101,7 +101,7 @@ The default during night operations. A muted, desaturated, **warm** slate — th
 | Status | `--status-*-text` | `--status-*-bg` | Ratio |
 |---|---|---|---|
 | pending | `#9CA3AF` | `#2A2D31` | **5.45** ✓ |
-| active | `#60A5FA` | `#172033` | **6.40** ✓ |
+| process | `#60A5FA` | `#172033` | **6.40** ✓ |
 | strutset | `#A78BFA` | `#221A38` | **6.06** ✓ |
 | cutting | `#FBBF24` | `#2A2410` | **9.26** ✓ |
 | runner | `#FB923C` | `#2A1B0F` | **7.35** ✓ |
@@ -136,7 +136,7 @@ Status in sunlight is a **solid-fill banner with white text**, not a tinted badg
 | Status | fill (`--status-*-bg`) | white-text ratio |
 |---|---|---|
 | pending | `#374151` | **10.31** ✓ |
-| active | `#1D4ED8` | **6.70** ✓ |
+| process | `#1D4ED8` | **6.70** ✓ |
 | strutset | `#5B21B6` | **8.98** ✓ |
 | cutting | `#92400E` | **7.09** ✓ |
 | runner | `#9A3412` | **7.31** ✓ |
@@ -144,7 +144,7 @@ Status in sunlight is a **solid-fill banner with white text**, not a tinted badg
 | returned | `#44403C` | **10.27** ✓ |
 | `--danger` | `#B91C1C` | **6.47** ✓ |
 
-All clear the essay's ≥4.5 sunlight-badge floor; most clear 7. (`active` and `--danger` land 6.47–6.70 — acceptable for the solid banner per the essay's stated floor; flagged in Open Questions for the gate if a stricter 7:1 banner is wanted.)
+All clear the essay's ≥4.5 sunlight-badge floor; most clear 7. (`process` and `--danger` land 6.47–6.70 — acceptable for the solid banner per the essay's stated floor; flagged in Open Questions for the gate if a stricter 7:1 banner is wanted.)
 
 ---
 
@@ -164,7 +164,7 @@ Read-only status board on a wall display. No picker affordances, no interactivit
 | Status | color | Ratio |
 |---|---|---|
 | pending | `#9CA3AF` | **7.14** ✓ |
-| active | `#60A5FA` | **7.13** ✓ |
+| process | `#60A5FA` | **7.13** ✓ |
 | strutset | `#B9A7FC` | **8.63** ✓ |
 | cutting | `#FBBF24` | **10.87** ✓ |
 | runner | `#FB923C` | **8.01** ✓ |
@@ -184,22 +184,22 @@ The status colors are the most consequential color decision in the file. Three s
 2. **v3.5.2-audited hexes** the essay claimed to "carry forward" — materially different hues (cutting `#7A4500` on yellow `#FFF176`, runner `#8A3300` on `#FFCC80`). *Retired* — they are the saturated look v4 exits.
 3. **The renamed v4 enum** — `strutplaced` → `strutset` (display "Strut Set"), per [`nims-org-structure.md`](../04-references/nims-org-structure.md) §10 / matrix E-14.
 
-**Resolution:** adopt the essay's muted execution and AA rigor, **restore green = `secured`** (field-correct), **fill the two gaps** (`strutset` = violet, distinct from active-blue; `returned` = warm neutral, distinct from pending-slate), and map to the renamed enum. Every resulting pair is AA-verified above.
+**Resolution:** adopt the essay's muted execution and AA rigor, **restore green = `secured`** (field-correct), **fill the two gaps** (`strutset` = violet, distinct from process-blue; `returned` = warm neutral, distinct from pending-slate), and map to the renamed enum. Every resulting pair is AA-verified above.
 
 ### The v4 lifecycle status set
 | Token group | Display label | Lifecycle meaning | v3 key |
 |---|---|---|---|
 | `--status-pending` | Pending | created, not yet worked | `pending` |
-| `--status-active` | Active | work underway | `process` |
+| `--status-process` | In Process | work underway | `process` |
 | `--status-strutset` | **Strut Set** | strut placed, pre-cut | `strutplaced` (renamed) |
 | `--status-cutting` | Cutting | wood being cut to length | `cutting` |
 | `--status-runner` | Runner | cut piece in transit | `runner` |
-| `--status-secured` | Secured | installed and locked | `secured` |
+| `--status-secured` | Shore Secured | installed and locked | `secured` |
 | `--status-returned` | Returned | equipment back in inventory (terminal) | `returned` |
 
-`--danger` is a **feedback** color (errors, destructive actions, the `WarningGate` unrated-zone / over-capacity disclosures), **not** a lifecycle status. Success and info reuse the `secured` green and `active` blue hues respectively rather than introducing new tokens.
+`--danger` is a **feedback** color (errors, destructive actions, the `WarningGate` unrated-zone / over-capacity disclosures), **not** a lifecycle status. Success and info reuse the `secured` green and `process` blue hues respectively rather than introducing new tokens.
 
-> The `process` → "Active" **display label** is essay 02's naming; whether the UI reads "Active," "In Progress," or keeps "Process," and the exact key in the data model, are owned by [`voice-and-tone.md`](voice-and-tone.md) and the data layer — see Open Questions. This file fixes only the *color* for that lifecycle slot.
+> **Display labels (resolved 2026-06-01):** the in-progress state keeps the v3 key `process` and displays **"In Process"** — Alex reverted essay 02's "Active," which was never a doctrine decision. The locked state displays **"Shore Secured"** (key `secured`). Token names follow the keys (`--status-process`, `--status-secured`); only the displayed words are fixed here — full copy lives in [`voice-and-tone.md`](voice-and-tone.md).
 
 ---
 
@@ -232,7 +232,7 @@ Cards never use a drop shadow; elevation is **stroke + a 1pt top-edge inner high
 | **Sunlight auto** | When `AmbientLightSensor` is available and permitted, auto-switch to sunlight at **≥10,000 lux** (synthesis §1.5/§4); revert below ~8,000 lux (hysteresis band to avoid flicker). Manual override always wins and pins until cleared. |
 | **Broadcast** | Never auto. Entered only by casting/opening the broadcast view from a tablet/laptop; it is a distinct read-only surface, not a user theme toggle. |
 
-The **sync indicator** maps to existing tokens, no new color: synced = `--status-active`, offline/idle = `--status-pending` text, queued writes = `--accent` (amber-gold). State change is instant, never pulsing (it is information, not an alarm — Principle 3/10).
+The **sync indicator** maps to existing tokens, no new color: synced = `--status-process`, offline/idle = `--status-pending` text, queued writes = `--accent` (amber-gold). State change is instant, never pulsing (it is information, not an alarm — Principle 3/10).
 
 ---
 
@@ -270,6 +270,6 @@ The **sync indicator** maps to existing tokens, no new color: synced = `--status
 
 ## Open questions for the gate
 
-1. **`process` → "Active" display label.** This file fixes the color slot; the final UI label (Active / In Progress / Process) and the data-model key belong to voice-and-tone + the data layer. Confirm direction so `badge.md` and `voice-and-tone.md` inherit it.
-2. **Sunlight `active`/`--danger` banners at 6.47–6.70:1.** They clear the essay's ≥4.5 banner floor but not 7:1. Acceptable, or tighten the fills to clear 7:1 for full sunlight-contract consistency?
+1. ~~**`process` → "Active" display label.**~~ **Resolved (2026-06-01):** displays **"In Process"** (v3 key `process`, reverting essay 02's "Active"); the locked state displays **"Shore Secured"** (key `secured`). `badge.md` / `voice-and-tone.md` inherit these.
+2. **Sunlight `process`/`--danger` banners at 6.47–6.70:1.** They clear the essay's ≥4.5 banner floor but not 7:1. Acceptable, or tighten the fills to clear 7:1 for full sunlight-contract consistency?
 3. **`returned` visibility.** As a terminal/archival state, should its card be de-emphasized further (e.g., reduced opacity) beyond the warm-neutral hue? Resolved in `card.md` interaction, noted here for the color choice.
