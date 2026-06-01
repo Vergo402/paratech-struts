@@ -19,6 +19,31 @@
   wire('data-theme-btn', function (v) { stage.setAttribute('data-theme', v); });
   wire('data-vp-btn', function (v) { stage.setAttribute('data-viewport', v); });
 
+  /* deep-link the theme/width via ?theme=sunlight&vp=phone (or #theme=...).
+     Lets a specific view be shared or captured. */
+  function param(k) {
+    var u = new URLSearchParams(location.search);
+    if (u.has(k)) return u.get(k);
+    return new URLSearchParams(location.hash.replace(/^#/, '')).get(k);
+  }
+  function applyParam(attr, btnAttr, val) {
+    if (!val) return;
+    stage.setAttribute(attr, val);
+    document.querySelectorAll('[' + btnAttr + ']').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute(btnAttr) === val ? 'true' : 'false');
+    });
+  }
+  applyParam('data-theme', 'data-theme-btn', param('theme'));
+  applyParam('data-viewport', 'data-vp-btn', param('vp'));
+
+  /* ?only=card|color|type focuses one section (used for clean captures). */
+  var only = param('only');
+  if (only) {
+    ['color', 'type', 'card'].forEach(function (s) {
+      if (s !== only) { var el = document.getElementById('sec-' + s); if (el) el.style.display = 'none'; }
+    });
+  }
+
   /* ---- COLOR section: single source of truth for the palette reference ----
      Values mirror tokens.css / color.md exactly; ratios are from wcag-contrast.mjs. */
   var STATUS = ['pending', 'active', 'strutset', 'cutting', 'runner', 'secured', 'returned', 'danger'];

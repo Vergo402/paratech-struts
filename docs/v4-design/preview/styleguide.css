@@ -156,11 +156,13 @@ img, svg { display: block; }
 }
 .sg-card.is-active { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--surface-card-hover); }
 
-/* ShorePointCard: status drives stripe + badge via --sp-* */
-.sg-sp-card { padding-left: 24px; }       /* room for the 16pt tap zone + 4pt stripe */
+/* ShorePointCard: status drives stripe + badge via --sp-* .
+   --sp-solid is the saturated identifying hue in every theme: the status text color
+   in light/dark/broadcast, the solid fill in sunlight (where --sp-text is white). */
+.sg-sp-card { padding-left: 24px; --sp-solid: var(--sp-text); }   /* room for the 16pt tap zone + 4pt stripe */
 .sg-sp-card .sg-stripe {
   position: absolute; left: 0; top: 0; bottom: 0; width: 4px;       /* visible 4pt */
-  background: var(--sp-text); border-radius: var(--radius-card) 0 0 var(--radius-card);
+  background: var(--sp-solid); border-radius: var(--radius-card) 0 0 var(--radius-card);
 }
 .sg-sp-card .sg-stripe::after {                                     /* 16pt tap zone */
   content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 16px;
@@ -170,6 +172,10 @@ img, svg { display: block; }
 .sg-sp-loc { font: var(--type-caption); color: var(--text-secondary); margin-top: 2px; }
 .sg-sp-meas { font: var(--type-mono); font-size: 15px; color: var(--text-primary); margin-top: 8px; }
 .sg-sp-meas .lbl { font: var(--type-caption); color: var(--text-secondary); }
+/* Cutting (cut-table) state: the cut length is the number the cutter reads — make it
+   bigger, bold, and in the status color so it stands out without being overbearing. */
+.sg-sp-card.is-cutting .sg-sp-meas > .frac,
+.sg-sp-card.is-cutting .sg-sp-meas > .num { font-size: 22px; font-weight: 700; color: var(--sp-solid); }
 
 .sg-badge {
   display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
@@ -197,10 +203,13 @@ img, svg { display: block; }
   background: none; border: none; padding: 6px; }
 
 /* red-slash "Removed from cut list" off-queue state */
+.sg-sp-card.is-removed { overflow: hidden; }   /* clip the slash to the card */
 .sg-sp-card.is-removed .sg-sp-head, .sg-sp-card.is-removed .sg-sp-meas { opacity: 0.45; }
 .sg-sp-card.is-removed .sg-slide { display: none; }
-.sg-slash { position: absolute; inset: 0; pointer-events: none; }
-.sg-slash line { stroke: var(--danger-text); stroke-width: 2; }
+/* SVG is a replaced element — inset:0 alone won't stretch it; size it explicitly
+   so the line runs corner-to-corner (top-right → bottom-left) of the card. */
+.sg-slash { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.sg-slash line { stroke: var(--danger-text); stroke-width: 4; }
 .sg-removed-label { position: absolute; inset: 0; display: grid; place-items: center; }
 .sg-removed-label span { font: var(--type-body-medium); font-weight: 600; color: var(--danger-text);
   background: var(--surface-card); padding: 2px 10px; border-radius: 6px;
@@ -236,6 +245,9 @@ img, svg { display: block; }
 /* ============================================================================
    SUNLIGHT overrides — weight bump + status banner
    ============================================================================ */
+/* sunlight status-text is white (for the banner); the stripe + cut-length use the
+   solid fill instead so the status hue stays visible on the white card. */
+[data-theme="sunlight"] .sg-sp-card { --sp-solid: var(--sp-bg); }
 [data-theme="sunlight"] .sg-sp-name,
 [data-theme="sunlight"] .sg-rec-model { font-weight: 700; }
 [data-theme="sunlight"] .t-body, [data-theme="sunlight"] .sg-tx-secondary { font-weight: 500; }

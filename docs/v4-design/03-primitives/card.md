@@ -61,6 +61,8 @@ The card's left edge is a **4pt status-color stripe** (the `--status-*` color fo
 
 The stripe color is **redundant**, never the sole status signal (Principle 9): the card also shows a status **badge with its label as text** (see [`badge.md`](badge.md)) and the status name.
 
+**Stripe hue across themes.** The stripe renders the status's *saturated identifying hue* in every theme — the status **text** color in light / dark / broadcast, and the **solid fill** in the sunlight theme (where the status text is white, for the banner, so the text color can't carry the stripe). The status identity is the same in all four; only the source token differs. (Captured in the styleguide as a single `--sp-solid` variable.)
+
 ### Slide-to-advance — the status commit model (governed by ADR-010)
 
 Status advances by a **deliberate slide gesture, not a tap.** This is deliberate: wet screens fire ghost taps and gloves miss small targets (synthesis §1.5), so a tap is the wrong commit gesture for a safety-consequential state change. The operator slides the card's advance control to commit the next status.
@@ -75,9 +77,15 @@ Status advances by a **deliberate slide gesture, not a tap.** This is deliberate
 
 When a `ShorePointCard` **regresses off an active work queue** — e.g., its status steps back out of `cutting` while it is shown in the Cutting Station list — the card **does not silently vanish** (Principle 10: visible state, not a silent change). It shows a passive **red diagonal slash across the whole card with "Removed from cut list" stated over the slash.** The operator sees *why* the card left the queue, then dismisses it from that view. Silent removal is forbidden — a card disappearing reads as data loss under stress.
 
+The slash runs **corner-to-corner — upper-right to lower-left — contained within the card** (it does not extend past the card edges), at a weight heavy enough to read as a deliberate strike (≈4px, `--danger`). The card body dims beneath it; the "Removed from cut list" label sits centered over the slash in `--danger` on a small chip so it stays legible across the line.
+
 ### Hazard badge
 
 When the shore point's area has **unmitigated hazards** (the hazard log, synthesis §1.10), the card shows a hazard badge. The Safety Officer surfaces hazards; the app **does not** gate advancement on them (no `safety-hold` status — safety holds are a radio/face-to-face action, synthesis Q2). The badge is visible information, not a block.
+
+### Cut-table emphasis
+
+In the **`cutting` state**, the **cut length is the one number the cutter reads** at the Cutting Station, so the card promotes it: the measurement value renders **larger and bold, in the status hue** (`--sp-solid`), while its label stays muted. It should stand out at a glance without becoming the loudest thing on the screen — emphasis through size + weight + the cutting color, not a fill or a box. (This is the v3 "cut length stands out" behavior, carried forward into the v4 card.) Other lifecycle states keep the measurement at the normal mono body size; the promotion is specific to the cut-table moment.
 
 ---
 
