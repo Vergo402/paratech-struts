@@ -121,6 +121,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 - `07-design-system/color.md` 🚦 (gate trio — 4 themes light/dark/sunlight/broadcast, reconciled status palette, all ratios verified)
 - `07-design-system/typography.md` 🚦 (gate trio — Geist + Geist Mono ramp, tabular numerals, typographic fractions)
 - `07-design-system/wcag-contrast.mjs` 🟢 (reproducible WCAG verification — `node …/wcag-contrast.mjs`)
+- `preview/` 🟢 (**living styleguide** — token-driven static HTML rendering the gate trio in all 4 themes; `npx serve docs/v4-design/preview` or the `v4-styleguide` preview config. A mockup, not the build; `preview/tokens.css` is reused in Phase H)
 - `07-design-system/spacing-grid.md` ⚪ (wave 1, post-gate)
 - `07-design-system/motion.md` ⚪ (wave 1, post-gate — drops the 5s undo line per ADR-010)
 - `07-design-system/voice-and-tone.md` ⚪
