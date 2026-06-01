@@ -3518,12 +3518,14 @@ function parseFractional(text) {
   return NaN;
 }
 
-const FRACTION_OPTIONS_HTML = [
-  [0, '0'], [0.0625, '1/16'], [0.125, '1/8'], [0.1875, '3/16'],
-  [0.25, '1/4'], [0.3125, '5/16'], [0.375, '3/8'], [0.4375, '7/16'],
-  [0.5, '1/2'], [0.5625, '9/16'], [0.625, '5/8'], [0.6875, '11/16'],
-  [0.75, '3/4'], [0.8125, '13/16'], [0.875, '7/8'], [0.9375, '15/16']
-].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+// Labels derived from fractionGlyph() so the picker can't drift from the display.
+// Sixteenths in 1/16 steps; value stays decimal (0–0.9375), label is the glyph.
+const FRACTION_OPTIONS_HTML = Array.from({ length: 16 }, (_, i) => {
+  const value = i / 16;
+  if (i === 0) return `<option value="0">0</option>`;
+  const g = (function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); })(i, 16);
+  return `<option value="${value}">${fractionGlyph(i / g, 16 / g)}</option>`;
+}).join('');
 
 // Reads compound cut-table input. Returns NaN if blank/invalid so callers can preserve the
 // existing `if (val && !isNaN(val))` skip-on-empty pattern from sendToRunner / markCutDone.
