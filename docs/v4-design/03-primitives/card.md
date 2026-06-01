@@ -99,7 +99,7 @@ The output of Quick Find / shore search. **Leads with the selection and the dedu
 
 The recommended strut is the **clearly-identifiable headline of the card** — when scanning a list of results, the operator must immediately read *which strut each card is*. This carries forward v3's result-card identity, which the first v4 pass under-emphasized by letting the ledger dominate the model name. The header therefore leads with:
 
-- **Model name prominent** — `--type-headline-2` weight 700 (e.g., "Acme Long Shore"), the largest element on the card.
+- **Model name prominent but not overpowering** — `--type-body-lg` weight 700 (e.g., "Acme Long Shore"), the **same size as a shore-point name**; its identity comes from the weight + the strut-type accent bar + position, **not** from being the biggest thing on the card. It must not dominate the deduction ledger (the important content) — an oversized title overpowers the math on a phone.
 - **Specs line readable** — length range + plates at `--type-body` (not caption): "88″ – 136″ · 8×8 base plate · sole plate".
 - **A strut-type accent** — a 4pt left identity bar in the strut-type color (the gold accent for Long Shore; type-specific colors are a Phase F result-list decision), echoing v3's color-coded result card. *This is identity, not lifecycle status — `RecommendationCard` has no status stripe.*
 - A **"Fits"** match badge confirms the strut satisfies the measurement.
