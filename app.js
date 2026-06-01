@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.21.1';
+const APP_VERSION = '3.21.2';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
@@ -3470,8 +3470,26 @@ function formatFractional(decimalInches, opts) {
     den = den / g;
   }
   if (num === 0) return `${sign}${whole}"`;
-  if (whole === 0) return `${sign}${num}/${den}"`;
-  return `${sign}${whole}-${num}/${den}"`;
+  const frac = fractionGlyph(num, den);
+  if (whole === 0) return `${sign}${frac}"`;
+  return `${sign}${whole}${frac}"`; // no separator — 48½", 48⁹⁄₁₆" read as one number
+}
+
+// v3.21.2 (#119 follow-up) — render fractions as real glyphs instead of "-N/D".
+// Returns a plain string (safe in every text/attr/innerHTML surface — no markup).
+const VULGAR_FRACTIONS = {
+  '1/2': '½', '1/4': '¼', '3/4': '¾',
+  '1/8': '⅛', '3/8': '⅜', '5/8': '⅝', '7/8': '⅞'
+};
+const SUPERSCRIPT_DIGITS = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+const SUBSCRIPT_DIGITS = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉' };
+function fractionGlyph(num, den) {
+  const precomposed = VULGAR_FRACTIONS[`${num}/${den}`];
+  if (precomposed) return precomposed;
+  // Sixteenths (and any non-precomposed denom): diagonal superscript⁄subscript, e.g. ⁹⁄₁₆
+  const sup = String(num).split('').map(d => SUPERSCRIPT_DIGITS[d] || d).join('');
+  const sub = String(den).split('').map(d => SUBSCRIPT_DIGITS[d] || d).join('');
+  return `${sup}⁄${sub}`; // U+2044 fraction slash
 }
 
 function parseFractional(text) {
