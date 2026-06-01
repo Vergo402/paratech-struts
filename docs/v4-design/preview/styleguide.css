@@ -1,0 +1,268 @@
+/* ============================================================================
+   FieldShore v4 — Living Styleguide (rendering layer)
+   ----------------------------------------------------------------------------
+   Renders the gate-trio specs (color.md, typography.md, card.md) from tokens.css.
+   This is a MOCKUP, not the build: no framework, no app.js. The Phase H build
+   re-implements these primitives in the chosen stack, consuming the same tokens.
+   Base reset adapted from v3 style.css:1-86 (overflow:hidden dropped).
+   ============================================================================ */
+
+/* ---- reset (from v3, de-mobilized) ---------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+body { background: #141618; color: #F0EFEC; }
+img, svg { display: block; }
+:focus-visible { outline: 2px solid #D4A017; outline-offset: 2px; }
+
+/* ============================================================================
+   CHROME — fixed dark toolbar (literal v4 dark values so it's stable while the
+   stage theme changes).
+   ============================================================================ */
+.sg-toolbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  padding: 12px 20px;
+  background: #1C1F23;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sg-toolbar .sg-brand { font-weight: 600; font-size: 15px; color: #F0EFEC; letter-spacing: -0.01em; }
+.sg-toolbar .sg-brand b { color: #D4A017; }
+.sg-toolbar .sg-group { display: flex; gap: 4px; align-items: center; }
+.sg-toolbar .sg-group > span { font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase; color: #9B9A97; margin-right: 4px; }
+.sg-btn {
+  font: inherit; font-size: 13px; font-weight: 500;
+  color: #C0BFBC; background: #252930;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+  padding: 7px 12px; cursor: pointer; min-height: 36px;
+}
+.sg-btn:hover { background: #2E333B; color: #F0EFEC; }
+.sg-btn[aria-pressed="true"] { background: #D4A017; color: #1C1F23; border-color: #D4A017; }
+.sg-note-cdn { margin-left: auto; font-size: 11px; color: #6B6A67; }
+
+/* ============================================================================
+   STAGE — takes [data-theme] + [data-viewport]; all rendered specs live here.
+   ============================================================================ */
+.sg-stage {
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  min-height: calc(100vh - 61px);
+  padding: 32px clamp(16px, 4vw, 48px) 96px;
+  transition: none;
+}
+.sg-stage[data-viewport="phone"]     { max-width: 390px;  margin: 0 auto; border-left: 1px dashed rgba(128,128,128,.35); border-right: 1px dashed rgba(128,128,128,.35); }
+.sg-stage[data-viewport="tablet"]    { max-width: 834px;  margin: 0 auto; }
+.sg-stage[data-viewport="broadcast"] { max-width: 1280px; margin: 0 auto; }
+.sg-stage[data-viewport="full"]      { max-width: none; }
+
+.sg-section { margin: 0 auto 56px; max-width: 1080px; }
+.sg-section > h2 {
+  font: var(--type-headline-1); letter-spacing: -0.01em;
+  color: var(--text-primary); margin-bottom: 6px;
+  padding-bottom: 8px; border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.sg-section > .sg-sub { font: var(--type-caption); color: var(--text-secondary); margin-bottom: 24px; max-width: 60ch; }
+.sg-subhead { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-secondary); margin: 28px 0 12px; }
+
+/* ---- COLOR: swatches ------------------------------------------------------- */
+.sg-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
+.sg-swatch {
+  border: var(--stroke-width) solid var(--surface-stroke); border-radius: 10px; overflow: hidden;
+  background: var(--surface-card); box-shadow: var(--card-top-highlight);
+}
+.sg-swatch .sg-chip { height: 56px; }
+.sg-swatch .sg-meta { padding: 8px 10px; }
+.sg-swatch .sg-meta .nm { font: var(--type-body-medium); color: var(--text-primary); }
+.sg-swatch .sg-meta .hx { font: var(--type-mono); color: var(--text-secondary); text-transform: uppercase; }
+.sg-swatch .sg-meta .rt { font: var(--type-caption); color: var(--text-tertiary); }
+
+/* surface stack */
+.sg-surfaces { display: flex; gap: 0; border-radius: 10px; overflow: hidden; border: var(--stroke-width) solid var(--surface-stroke); }
+.sg-surfaces > div { flex: 1; padding: 18px 12px; font: var(--type-caption); }
+.sg-surf-bg { background: var(--surface-bg); color: var(--text-secondary); }
+.sg-surf-card { background: var(--surface-card); color: var(--text-secondary); }
+.sg-surf-elev { background: var(--surface-elevated); color: var(--text-secondary); box-shadow: var(--card-top-highlight); }
+
+/* text tiers sample */
+.sg-textsample { background: var(--surface-card); border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: 10px; padding: 16px 18px; box-shadow: var(--card-top-highlight); }
+.sg-textsample p { margin-bottom: 8px; }
+.sg-tx-primary { font: var(--type-body-lg); color: var(--text-primary); }
+.sg-tx-secondary { font: var(--type-body); color: var(--text-secondary); }
+.sg-tx-tertiary { font: var(--type-caption); color: var(--text-tertiary); }
+.sg-tx-accent { font: var(--type-body-medium); color: var(--accent); }
+
+/* status palette grid */
+.sg-status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.sg-status-cell { border: var(--stroke-width) solid var(--surface-stroke); border-radius: 10px; padding: 12px;
+  background: var(--surface-card); box-shadow: var(--card-top-highlight); }
+.sg-status-cell .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sg-status-cell .rt { font: var(--type-caption); color: var(--text-tertiary); margin-top: 8px; }
+.sg-status-cell .hx { font: var(--type-mono); color: var(--text-secondary); }
+
+/* ---- TYPE ------------------------------------------------------------------ */
+.sg-type-row { display: grid; grid-template-columns: 132px 1fr; gap: 16px; align-items: baseline;
+  padding: 12px 0; border-bottom: var(--stroke-width) solid var(--surface-stroke); }
+.sg-type-row .meta { font: var(--type-caption); color: var(--text-secondary); }
+.sg-type-row .meta b { display: block; font: var(--type-label); letter-spacing: 0.02em; color: var(--text-tertiary); }
+.t-display-1 { font: var(--type-display-1); letter-spacing: -0.02em; color: var(--text-primary); }
+.t-display-2 { font: var(--type-display-2); letter-spacing: -0.02em; color: var(--text-primary); }
+.t-headline-1 { font: var(--type-headline-1); letter-spacing: -0.01em; color: var(--text-primary); }
+.t-headline-2 { font: var(--type-headline-2); color: var(--text-primary); }
+.t-body-lg { font: var(--type-body-lg); color: var(--text-primary); }
+.t-body { font: var(--type-body); color: var(--text-primary); }
+.t-body-medium { font: var(--type-body-medium); color: var(--text-primary); }
+.t-caption { font: var(--type-caption); letter-spacing: 0.02em; color: var(--text-primary); }
+.t-label { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-primary); }
+.t-mono { font: var(--type-mono); color: var(--text-primary); }
+
+.num { font-variant-numeric: tabular-nums; }
+/* fraction values: precomposed glyphs in Geist sans (which carries them) render
+   true typographic fractions at any size. In-app, typography.md specs the OpenType
+   `frac` feature + a composed-glyph fallback; this is the rendered result. */
+.frac { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+
+/* mono measurement column */
+.sg-mono-col { display: inline-grid; gap: 4px; padding: 14px 18px; background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke); border-radius: 10px; box-shadow: var(--card-top-highlight); }
+.sg-mono-col span { font: var(--type-mono); font-size: 16px; color: var(--text-primary); text-align: right; }
+
+.sg-frac-demo { display: flex; gap: 28px; flex-wrap: wrap; align-items: baseline;
+  padding: 18px; background: var(--surface-card); border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: 10px; box-shadow: var(--card-top-highlight); }
+.sg-frac-demo .big { font-family: var(--font-sans); font-weight: 400; font-size: 34px; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.sg-frac-demo .lbl { font: var(--type-caption); color: var(--text-secondary); }
+
+/* ============================================================================
+   CARD primitive (gate primitive) — card.md
+   ============================================================================ */
+.sg-cardstack { display: grid; gap: 14px; max-width: 460px; }
+
+.sg-card {
+  position: relative;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-top-highlight), var(--card-shadow);
+  padding: var(--space-3) var(--space-4);
+  min-height: 60px;
+}
+.sg-card.is-active { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--surface-card-hover); }
+
+/* ShorePointCard: status drives stripe + badge via --sp-* */
+.sg-sp-card { padding-left: 24px; }       /* room for the 16pt tap zone + 4pt stripe */
+.sg-sp-card .sg-stripe {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;       /* visible 4pt */
+  background: var(--sp-text); border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
+.sg-sp-card .sg-stripe::after {                                     /* 16pt tap zone */
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 16px;
+}
+.sg-sp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.sg-sp-name { font: var(--type-body-lg); font-weight: 600; color: var(--text-primary); }
+.sg-sp-loc { font: var(--type-caption); color: var(--text-secondary); margin-top: 2px; }
+.sg-sp-meas { font: var(--type-mono); font-size: 15px; color: var(--text-primary); margin-top: 8px; }
+.sg-sp-meas .lbl { font: var(--type-caption); color: var(--text-secondary); }
+
+.sg-badge {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: var(--radius-badge); font: var(--type-label); letter-spacing: 0.02em;
+  white-space: nowrap; background: var(--sp-bg); color: var(--sp-text);
+  border: 1px solid color-mix(in srgb, var(--sp-text) 22%, transparent);
+}
+.sg-hazard { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
+  border-radius: var(--radius-badge); font: var(--type-label); margin-left: 6px;
+  background: var(--danger-bg); color: var(--danger-text);
+  border: 1px solid color-mix(in srgb, var(--danger-text) 22%, transparent); }
+
+/* slide-to-advance affordance (rendered at rest) */
+.sg-slide { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.sg-slide .track {
+  flex: 1; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 6px;
+  background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px; min-width: 0;
+}
+.sg-slide .handle { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); display: grid; place-items: center; color: var(--surface-bg); font-weight: 700; }
+.sg-slide .track .lbl { font: var(--type-body-medium); color: var(--text-secondary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+.sg-slide .back { flex: 0 0 auto; font: var(--type-caption); color: var(--text-tertiary); cursor: default;
+  background: none; border: none; padding: 6px; }
+
+/* red-slash "Removed from cut list" off-queue state */
+.sg-sp-card.is-removed .sg-sp-head, .sg-sp-card.is-removed .sg-sp-meas { opacity: 0.45; }
+.sg-sp-card.is-removed .sg-slide { display: none; }
+.sg-slash { position: absolute; inset: 0; pointer-events: none; }
+.sg-slash line { stroke: var(--danger-text); stroke-width: 2; }
+.sg-removed-label { position: absolute; inset: 0; display: grid; place-items: center; }
+.sg-removed-label span { font: var(--type-body-medium); font-weight: 600; color: var(--danger-text);
+  background: var(--surface-card); padding: 2px 10px; border-radius: 6px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-text) 30%, transparent); }
+
+/* RecommendationCard: deduction ledger leads, capacity demoted */
+.sg-rec-card .sg-rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.sg-rec-model { font: var(--type-body-lg); font-weight: 600; color: var(--text-primary); }
+.sg-rec-sub { font: var(--type-caption); color: var(--text-secondary); }
+.sg-ledger { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
+.sg-ledger .lk { font: var(--type-body); color: var(--text-primary); }
+.sg-ledger .lk.ded { color: var(--text-secondary); }
+.sg-ledger .lv { font-family: var(--font-sans); font-weight: 400; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--text-primary); text-align: right; }
+.sg-ledger .lv.ded { color: var(--text-secondary); }
+.sg-ledger .eff-k, .sg-ledger .eff-v { padding-top: 8px; margin-top: 4px; border-top: var(--stroke-width) solid var(--surface-stroke); }
+.sg-ledger .eff-k { font: var(--type-body-medium); }
+.sg-ledger .eff-v { font-size: 16px; font-weight: 600; }
+.sg-floor { font: var(--type-caption); color: var(--text-tertiary); margin-top: 10px; }
+.sg-capacity { font: var(--type-caption); color: var(--text-secondary); margin-top: 14px;
+  padding-top: 10px; border-top: var(--stroke-width) solid var(--surface-stroke); display: flex; justify-content: space-between; }
+.sg-capacity .v { font: var(--type-mono); color: var(--text-secondary); }
+.sg-demoted-tag { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary); }
+
+/* ---- status modifiers (drive stripe + badge) ------------------------------ */
+.is-pending  { --sp-text: var(--status-pending-text);  --sp-bg: var(--status-pending-bg); }
+.is-active   { --sp-text: var(--status-active-text);   --sp-bg: var(--status-active-bg); }
+.is-strutset { --sp-text: var(--status-strutset-text); --sp-bg: var(--status-strutset-bg); }
+.is-cutting  { --sp-text: var(--status-cutting-text);  --sp-bg: var(--status-cutting-bg); }
+.is-runner   { --sp-text: var(--status-runner-text);   --sp-bg: var(--status-runner-bg); }
+.is-secured  { --sp-text: var(--status-secured-text);  --sp-bg: var(--status-secured-bg); }
+.is-returned { --sp-text: var(--status-returned-text); --sp-bg: var(--status-returned-bg); }
+
+/* ============================================================================
+   SUNLIGHT overrides — weight bump + status banner
+   ============================================================================ */
+[data-theme="sunlight"] .sg-sp-name,
+[data-theme="sunlight"] .sg-rec-model { font-weight: 700; }
+[data-theme="sunlight"] .t-body, [data-theme="sunlight"] .sg-tx-secondary { font-weight: 500; }
+[data-theme="sunlight"] .sg-badge {
+  height: 30px; padding: 0 12px; font: var(--type-body-medium); font-weight: 600;
+  border: none;   /* solid banner: fill + white text from tokens */
+}
+[data-theme="sunlight"] .sg-sp-head { align-items: center; }
+
+/* ============================================================================
+   BROADCAST overrides — read-only board: left-border accent, no fill,
+   bigger type, no interactive affordances
+   ============================================================================ */
+[data-theme="broadcast"] .sg-card {
+  border: none; border-left: 4px solid var(--sp-text, var(--surface-stroke));
+  border-radius: 0; background: var(--surface-card); box-shadow: none; padding-left: 20px;
+}
+[data-theme="broadcast"] .sg-sp-card .sg-stripe { display: none; }
+[data-theme="broadcast"] .sg-slide { display: none; }
+[data-theme="broadcast"] .sg-badge { background: transparent; color: var(--sp-text); border: none; height: auto; padding: 0;
+  font: var(--type-headline-2); font-weight: 700; }
+[data-theme="broadcast"] .sg-sp-name { font: var(--type-display-2); }
+[data-theme="broadcast"] .sg-sp-meas { font: var(--type-headline-1); font-family: var(--font-mono); }
+[data-theme="broadcast"] .sg-sp-loc { font: var(--type-headline-2); color: var(--text-secondary); }
+[data-theme="broadcast"] .sg-section > .sg-sub { font-size: 16px; }
+
+/* small helpers */
+.sg-flex { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.sg-col { display: grid; gap: 12px; }
+.sg-cap { font: var(--type-caption); color: var(--text-tertiary); margin-top: 6px; }

@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/fieldshore\""],
       "autoPort": true
+    },
+    {
+      "name": "v4-styleguide",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/fieldshore/docs/v4-design/preview\""],
+      "autoPort": true
     }
   ]
 }

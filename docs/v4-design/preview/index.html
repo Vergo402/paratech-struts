@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FieldShore v4 — Living Styleguide (gate trio)</title>
+  <!-- Geist + Geist Mono from Google Fonts — PREVIEW ONLY. Final build self-hosts (Phase H). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="styleguide.css">
+</head>
+<body>
+
+  <!-- ===================== CHROME ===================== -->
+  <header class="sg-toolbar">
+    <span class="sg-brand">Field<b>Shore</b> v4 · Living Styleguide</span>
+    <div class="sg-group" role="group" aria-label="Theme">
+      <span>Theme</span>
+      <button class="sg-btn" data-theme-btn="light">Light</button>
+      <button class="sg-btn" data-theme-btn="dark" aria-pressed="true">Dark</button>
+      <button class="sg-btn" data-theme-btn="sunlight">Sunlight</button>
+      <button class="sg-btn" data-theme-btn="broadcast">Broadcast</button>
+    </div>
+    <div class="sg-group" role="group" aria-label="Viewport">
+      <span>Width</span>
+      <button class="sg-btn" data-vp-btn="phone">Phone</button>
+      <button class="sg-btn" data-vp-btn="tablet">Tablet</button>
+      <button class="sg-btn" data-vp-btn="broadcast">TV</button>
+      <button class="sg-btn" data-vp-btn="full" aria-pressed="true">Full</button>
+    </div>
+    <span class="sg-note-cdn">mockup · not the build · markdown specs are source of truth</span>
+  </header>
+
+  <main class="sg-stage" id="stage" data-theme="dark" data-viewport="full">
+
+    <!-- ===================== COLOR (all 4 themes, from PALETTE source) ===================== -->
+    <section class="sg-section" id="sec-color">
+      <h2>Color</h2>
+      <p class="sg-sub">Four themes, each authored from scratch (sunlight is not a dark override). Every value is the verified set from <code>color.md</code> / <code>wcag-contrast.mjs</code>; ratios shown are recomputed, not the essay's claims. Status palette: <b>green = secured</b> (restored), plus <code>strutset</code> + <code>returned</code> (added). All four blocks are shown at once — the toolbar Theme switch drives the Type and Card sections below.</p>
+      <div id="color-root"><!-- rendered by styleguide.js from the single PALETTE source --></div>
+    </section>
+
+    <!-- ===================== TYPE (follows stage theme) ===================== -->
+    <section class="sg-section" id="sec-type">
+      <h2>Typography</h2>
+      <p class="sg-sub">Geist + Geist Mono, minor-third ramp anchored at 14pt body. Tabular numerals everywhere a number aligns. Display tier is broadcast-only; interactive surfaces top out at Headline 1.</p>
+
+      <div class="sg-subhead">Ramp</div>
+      <div class="sg-type-row"><div class="meta"><b>display-1</b>40 / 700</div><div class="t-display-1">Surfside MURT</div></div>
+      <div class="sg-type-row"><div class="meta"><b>display-2</b>32 / 700</div><div class="t-display-2">Division 2 · C side</div></div>
+      <div class="sg-type-row"><div class="meta"><b>headline-1</b>24 / 600</div><div class="t-headline-1">Shore Point B-2</div></div>
+      <div class="sg-type-row"><div class="meta"><b>headline-2</b>20 / 600</div><div class="t-headline-2">Cutting Station</div></div>
+      <div class="sg-type-row"><div class="meta"><b>body-lg</b>16 / 400</div><div class="t-body-lg">Single Upright · 6×6 header</div></div>
+      <div class="sg-type-row"><div class="meta"><b>body</b>14 / 400</div><div class="t-body">Required length before deductions, measured floor to header.</div></div>
+      <div class="sg-type-row"><div class="meta"><b>body-medium</b>14 / 500</div><div class="t-body-medium">Slide to set Runner</div></div>
+      <div class="sg-type-row"><div class="meta"><b>caption</b>12 / 400</div><div class="t-caption">Updated 14:22 · Engine 7</div></div>
+      <div class="sg-type-row"><div class="meta"><b>label</b>11 / 500</div><div class="t-label">Status</div></div>
+      <div class="sg-type-row"><div class="meta"><b>mono</b>13 / 400</div><div class="t-mono num">72.000 in · 18,400 lb</div></div>
+
+      <div class="sg-subhead">Tabular alignment (Geist Mono)</div>
+      <div class="sg-mono-col num">
+        <span>72<span class="sg-cap" style="display:inline">"</span></span>
+        <span>108"</span>
+        <span>65.5"</span>
+        <span>11.625"</span>
+      </div>
+
+      <div class="sg-subhead">Typographic fractions — true ½, not slashed numerals</div>
+      <div class="sg-frac-demo">
+        <div><div class="big frac">5¾"</div><div class="lbl">fraction smaller than the whole number, same cap height</div></div>
+        <div><div class="big frac">11⅝"</div><div class="lbl">quarters · eighths · sixteenths</div></div>
+        <div><div class="big frac">65½"</div><div class="lbl">effective length — not <code>65 1/2</code></div></div>
+      </div>
+    </section>
+
+    <!-- ===================== CARD (follows stage theme) ===================== -->
+    <section class="sg-section" id="sec-card">
+      <h2>Card — the gate primitive</h2>
+      <p class="sg-sub">ShorePointCard absorbs four PR #282 changes: the 16pt left-stripe tap zone, slide-to-advance + always-reversible (no timed undo), the red-slash "Removed from cut list" state, and the inline deduction ledger with capacity demoted. Switch the Theme above to see dark / light / sunlight (banner) / broadcast (left-border board).</p>
+
+      <div class="sg-subhead">Lifecycle status set (7 + danger)</div>
+      <div class="sg-flex" style="gap:8px">
+        <span class="sg-badge is-pending">Pending</span>
+        <span class="sg-badge is-active">Active</span>
+        <span class="sg-badge is-strutset">Strut Set</span>
+        <span class="sg-badge is-cutting">Cutting</span>
+        <span class="sg-badge is-runner">Runner</span>
+        <span class="sg-badge is-secured">Secured</span>
+        <span class="sg-badge is-returned">Returned</span>
+      </div>
+
+      <div class="sg-subhead">ShorePointCard</div>
+      <div class="sg-cardstack">
+
+        <!-- cutting + hazard -->
+        <article class="sg-card sg-sp-card is-cutting">
+          <span class="sg-stripe" aria-hidden="true"></span>
+          <div class="sg-sp-head">
+            <div>
+              <div class="sg-sp-name">B-2 · Single Upright</div>
+              <div class="sg-sp-loc">Division 2 · C side · Engine 7</div>
+            </div>
+            <div style="display:flex;align-items:center">
+              <span class="sg-badge is-cutting">Cutting</span>
+              <span class="sg-hazard" title="Unmitigated hazard in area">⚠ Hazard</span>
+            </div>
+          </div>
+          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">65½"</span></div>
+          <div class="sg-slide">
+            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Runner</span></div>
+            <button class="back" type="button">‹ step back</button>
+          </div>
+          <div class="sg-cap">16pt left-stripe is a secondary tap zone for the primary action (visible 4pt). Slide commits; reverse is always available — no timed undo.</div>
+        </article>
+
+        <!-- secured (green) + active/focus -->
+        <article class="sg-card sg-sp-card is-secured is-active">
+          <span class="sg-stripe" aria-hidden="true"></span>
+          <div class="sg-sp-head">
+            <div>
+              <div class="sg-sp-name">A-1 · T-Shore</div>
+              <div class="sg-sp-loc">Division 1 · A side · Rescue 2</div>
+            </div>
+            <span class="sg-badge is-secured">Secured</span>
+          </div>
+          <div class="sg-sp-meas"><span class="lbl">Set length</span> <span class="frac">108¾"</span></div>
+          <div class="sg-slide">
+            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Returned</span></div>
+            <button class="back" type="button">‹ step back</button>
+          </div>
+          <div class="sg-cap">Active/focus card: accent border + hover fill, no scale change. Green = secured (field-correct).</div>
+        </article>
+
+        <!-- removed / red-slash off-queue -->
+        <article class="sg-card sg-sp-card is-strutset is-removed">
+          <span class="sg-stripe" aria-hidden="true"></span>
+          <div class="sg-sp-head">
+            <div>
+              <div class="sg-sp-name">B-5 · Single Upright</div>
+              <div class="sg-sp-loc">Division 2 · C side · Engine 7</div>
+            </div>
+            <span class="sg-badge is-strutset">Strut Set</span>
+          </div>
+          <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">72"</span></div>
+          <svg class="sg-slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="100" x2="100" y2="0" vector-effect="non-scaling-stroke"/></svg>
+          <div class="sg-removed-label"><span>Removed from cut list</span></div>
+        </article>
+
+      </div>
+
+      <div class="sg-subhead">RecommendationCard — deduction ledger leads, capacity demoted</div>
+      <div class="sg-cardstack">
+        <article class="sg-card sg-rec-card">
+          <div class="sg-rec-head">
+            <div>
+              <div class="sg-rec-model">Acme Long Shore</div>
+              <div class="sg-rec-sub">88" – 136" · 8×8 base plate · sole plate</div>
+            </div>
+            <span class="sg-badge is-active">Fits</span>
+          </div>
+          <div class="sg-ledger">
+            <div class="lk">Required</div>                       <div class="lv num">72"</div>
+            <div class="lk ded">− base plate</div>               <div class="lv ded frac">3¼"</div>
+            <div class="lk ded">− sole plate</div>               <div class="lv ded frac">3¼"</div>
+            <div class="lk eff-k">Effective</div>                <div class="lv eff-v frac">65½"</div>
+          </div>
+          <div class="sg-floor">Conservative-floor capacity — a planning aid, not an engineering certification.</div>
+          <div class="sg-capacity"><span>Rated capacity <span class="sg-demoted-tag">secondary</span></span><span class="v num">18,400 lb</span></div>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="styleguide.js"></script>
+</body>
+</html>
