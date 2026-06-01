@@ -151,7 +151,7 @@ When updating:
 - **Org chart drag-and-drop:** Supports 3 input methods — tap-to-pick-and-place, HTML5 drag events, touch drag with floating clone. State tracked via `orgChartPickedRole`.
 - **Grouped shore points — phase-based split (v3.8.0):** Shore types with qty > 1 share a `groupId`. Behavior depends on phase: **pre-cutting** (pending → process → strutplaced → cutting) transitions apply to all group members at once via `getGroupMembers()`. **Cutting workflow** (cutting → runner → secured → returned) transitions operate on individual points only. Controlled by `individualPhase = ['cutting', 'runner', 'secured']` check in `updateShoreStatus()`. `markCutDone()`, `sendToRunner()`, and `returnEquipment()` always operate individually.
 - **Git auth:** SSH key (configured 2026-05-09). Single repo, no staging remote.
-- **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team"). **CAVEAT:** v3.5.0 made the SP `group` field a dropdown of apparatus IDs — this is NIMS-terminology-incorrect (NIMS Group is a functional command unit, not a resource). To be renamed `assignedResource` in v4.0.0.
+- **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team"). **CAVEAT:** v3.5.0 made the SP `group` field a dropdown of apparatus IDs — this is NIMS-terminology-incorrect (NIMS Group is a functional command unit, not a resource). To be renamed `assignedResource` in v4.0.0 (locked in ADR-008; see `docs/v4-design/11-decisions/`).
 
 ---
 
@@ -266,10 +266,19 @@ The per-release "What shipped" view from v3.9.2 onward lives in **`.claude/plans
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
-- **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department.
-- **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — arrays need migration to keyed objects.
-- **NIMS doctrine overhaul** — Default ICS structure is not NIMS-compliant for Level I/II incidents. The `"Group"` field on shore points stores apparatus IDs but NIMS Group is a functional command unit — terminology violation.
-- **3rd-party UX paradigm shifts** — Roster tab move (move Apparatus/External/Individuals/My-Role OFF Operations page), SP recommendation dedup (220 cards for 11 configs at TF scale), compact shore-point card mode, activity feed paradigm.
+> **v4 is now an active, deliberate redesign on the `v4-redesign` branch** (forked at v3.19.1) — not just a backlog. All v4 design lives under **`docs/v4-design/`**; start with `00-INDEX.md`. The master plan ("constitution") is `~/.claude/plans/keen-whistling-pancake.md`. Use the `/v4-plan` (`/v4`) skill for v4 work; `/plan` is for v3 release work. **Nothing v4 ships to `main` until the Phase J cutover.**
+>
+> **Phase status (2026-05-31):** A–D done (foundation, reference teardowns, 12 brainstorm essays, synthesis + 247-rec decision matrix). **Phase E (design system) is next.** Key decisions are now locked as ADRs in `docs/v4-design/11-decisions/`:
+> - **ADR-009 — database:** stay on **Firebase RTDB** for v4.0 behind a `data/sync` seam (event-sourced log; current state is a projection).
+> - **ADR-008 — NIMS org structure:** two functional Groups (Rescue + Shoring Supervisors), Search/Medical add-ons at Level III+; Entry/Wood/Cutting/Runner tracked beneath as tasks/resources; **Cutting Station** = workstation card under Operations; Divisions numbered by floor, sides A–D; titles spelled out (no acronyms); **level presets deferred**.
+> - **Scope/interaction:** marketing site + demo mode **dropped**; capacity **demoted** (engine unchanged); status = **slide-to-advance + always-reversible** (no timed undo); **no in-app comms / no safety-hold**; **phone is the floor** for every workflow.
+
+The original v4.0.0 backlog items below are now folded into (or superseded by) the v4-design work above:
+
+- **Per-device UID + role-based security rules** — Anonymous Auth is in place but all users share the same permission level. v4.0.0 adds per-device UIDs and write restrictions per department. (Synthesis §1.3 / §4 Auth; backend per ADR-009.)
+- **R3-R6 remaining** — `customRoles` and `assignedApparatus` still use `set()` — arrays need migration to keyed objects. (`customRoles` → `positions`, keyed object, per ADR-008.)
+- **NIMS doctrine overhaul** — now specified in **ADR-008**: the `"Group"` field on shore points becomes `assignedResource` (it stores an apparatus assignment, not a NIMS Group); full position-title mapping in `docs/v4-design/04-references/nims-org-structure.md`.
+- **3rd-party UX paradigm shifts** — Roster tab move, SP recommendation dedup (ShorePointCard vs. RecommendationCard, synthesis §3.2), compact card mode, activity feed paradigm. Addressed across the synthesis recommended path; detailed in Phase E/F.
 
 ---
 
