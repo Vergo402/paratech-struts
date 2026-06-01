@@ -95,6 +95,18 @@ In the **`cutting` state**, the **cut length is the one number the cutter reads*
 
 The output of Quick Find / shore search. **Leads with the selection and the deduction math — not capacity.**
 
+### Strut identity is the subject (the card must say *which strut* at a glance)
+
+The recommended strut is the **clearly-identifiable headline of the card** — when scanning a list of results, the operator must immediately read *which strut each card is*. This carries forward v3's result-card identity, which the first v4 pass under-emphasized by letting the ledger dominate the model name. The header therefore leads with:
+
+- **Model name prominent** — `--type-headline-2` weight 700 (e.g., "Acme Long Shore"), the largest element on the card.
+- **Specs line readable** — length range + plates at `--type-body` (not caption): "88″ – 136″ · 8×8 base plate · sole plate".
+- **A strut-type accent** — a 4pt left identity bar in the strut-type color (the gold accent for Long Shore; type-specific colors are a Phase F result-list decision), echoing v3's color-coded result card. *This is identity, not lifecycle status — `RecommendationCard` has no status stripe.*
+- A **"Fits"** match badge confirms the strut satisfies the measurement.
+- A divider separates the strut-identity header from the ledger below.
+
+"Deduction ledger leads" means the **math leads over capacity** — it does **not** mean the strut identity is demoted. The strut is the subject; the ledger is its prominent supporting math; capacity is secondary.
+
 ### The inline deduction ledger (capacity demoted — synthesis §1.6 / §3.4)
 
 The deduction math is the core of structural shoring and must be **inline, never in a disclosure**. The card shows a **stacked-subtraction ledger**:

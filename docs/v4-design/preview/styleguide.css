@@ -224,10 +224,16 @@ img, svg { display: block; }
   background: var(--surface-card); padding: 2px 10px; border-radius: 6px;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-text) 30%, transparent); }
 
-/* RecommendationCard: deduction ledger leads, capacity demoted */
-.sg-rec-card .sg-rec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.sg-rec-model { font: var(--type-body-lg); font-weight: 600; color: var(--text-primary); }
-.sg-rec-sub { font: var(--type-caption); color: var(--text-secondary); }
+/* RecommendationCard: the recommended strut is the clearly-identifiable subject
+   (prominent model + readable specs + strut-type accent bar, like v3); the
+   deduction ledger leads the math inline below; capacity demoted. */
+.sg-rec-card { padding-left: 22px; }   /* room for the strut-identity accent bar */
+.sg-rec-card .sg-rec-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--accent); border-radius: var(--radius-card) 0 0 var(--radius-card); }
+.sg-rec-card .sg-rec-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  margin-bottom: 14px; padding-bottom: 12px; border-bottom: var(--stroke-width) solid var(--surface-stroke); }
+.sg-rec-model { font: var(--type-headline-2); font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+.sg-rec-sub { font: var(--type-body); color: var(--text-secondary); margin-top: 3px; }
 .sg-ledger { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
 .sg-ledger .lk { font: var(--type-body); color: var(--text-primary); }
 .sg-ledger .lk.ded { color: var(--text-secondary); }
