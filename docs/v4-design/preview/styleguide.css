@@ -154,7 +154,9 @@ img, svg { display: block; }
   padding: var(--space-3) var(--space-4);
   min-height: 60px;
 }
-.sg-card.is-active { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--surface-card-hover); }
+/* focus/selected state — renamed from .is-active to avoid colliding with the
+   .is-active lifecycle STATUS modifier (a status card must not look focused). */
+.sg-card.is-focus { border-color: color-mix(in srgb, var(--accent) 60%, transparent); background: var(--surface-card-hover); }
 
 /* ShorePointCard: status drives stripe + badge via --sp-* .
    --sp-solid is the saturated identifying hue in every theme: the status text color
