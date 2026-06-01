@@ -186,9 +186,13 @@ img, svg { display: block; }
   border: 1px solid color-mix(in srgb, var(--sp-text) 22%, transparent);
 }
 .sg-hazard { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px;
-  border-radius: var(--radius-badge); font: var(--type-label); margin-left: 6px;
+  border-radius: var(--radius-badge); font: var(--type-label); white-space: nowrap;
   background: var(--danger-bg); color: var(--danger-text);
   border: 1px solid color-mix(in srgb, var(--danger-text) 22%, transparent); }
+/* badge group (status + hazard): wraps as a unit on a narrow phone instead of
+   squeezing a badge until its text breaks. Name shrinks to give it room. */
+.sg-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; flex-shrink: 0; }
+.sg-sp-head > div:first-child { min-width: 0; }
 
 /* slide-to-advance affordance (rendered at rest).
    Track is the prominent, full-width primary action — the next-status label is
@@ -225,6 +229,11 @@ img, svg { display: block; }
 .sg-removed-label span { font: var(--type-body-medium); font-weight: 600; color: var(--danger-text);
   background: var(--surface-card); padding: 2px 10px; border-radius: 6px;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-text) 30%, transparent); }
+/* sunlight: --danger-text is white (for banners) — a white slash/label is invisible on
+   the white card. Use the red fill (--danger-bg) so the off-queue state stays visible. */
+[data-theme="sunlight"] .sg-slash line { stroke: var(--danger-bg); }
+[data-theme="sunlight"] .sg-removed-label span { color: var(--danger-bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-bg) 30%, transparent); }
 
 /* RecommendationCard: the recommended strut is the clearly-identifiable subject
    (prominent model + readable specs + strut-type accent bar, like v3); the

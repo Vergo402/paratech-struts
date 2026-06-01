@@ -51,7 +51,7 @@ Elevation discipline: **shadows are for sheets and modals, never cards.** A card
 
 ## `ShorePointCard` — the lifecycle card
 
-The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending → In Process → Strut Set → Cutting → Runner → Shore Secured → Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
+The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending → In Process → Strut Set → Cutting → Runner → Shore Secured → Strut Equipment Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
 
 ### The left-edge status stripe — and its hidden tap zone
 

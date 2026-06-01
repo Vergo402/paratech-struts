@@ -48,7 +48,7 @@
      Values mirror tokens.css / color.md exactly; ratios are from wcag-contrast.mjs. */
   var STATUS = ['pending', 'process', 'strutset', 'cutting', 'runner', 'secured', 'returned', 'danger'];
   var LABEL = { pending: 'Pending', process: 'In Process', strutset: 'Strut Set', cutting: 'Cutting',
-    runner: 'Runner', secured: 'Shore Secured', returned: 'Returned', danger: 'Danger' };
+    runner: 'Runner', secured: 'Shore Secured', returned: 'Strut Equipment Returned', danger: 'Danger' };
 
   var PALETTE = {
     light: {

@@ -195,7 +195,7 @@ The status colors are the most consequential color decision in the file. Three s
 | `--status-cutting` | Cutting | wood being cut to length | `cutting` |
 | `--status-runner` | Runner | cut piece in transit | `runner` |
 | `--status-secured` | Shore Secured | installed and locked | `secured` |
-| `--status-returned` | Returned | equipment back in inventory (terminal) | `returned` |
+| `--status-returned` | Strut Equipment Returned | equipment back in inventory (terminal) | `returned` |
 
 `--danger` is a **feedback** color (errors, destructive actions, the `WarningGate` unrated-zone / over-capacity disclosures), **not** a lifecycle status. Success and info reuse the `secured` green and `process` blue hues respectively rather than introducing new tokens.
 
