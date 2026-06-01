@@ -106,6 +106,12 @@ When a phase reaches its gate, do ALL of the following before stopping:
 
 Alex is never waiting on a gate without knowing it's ready.
 
+### Issue lifecycle
+
+- **Sub-issues** (deliverables, gate-notification) close when their individual work item is complete.
+- **Parent issue** closes when *both* conditions hold: (a) the last step of the phase is complete, and (b) the next phase has begun. Closing the parent earlier is premature; leaving it open after the next phase is in flight is stale bookkeeping.
+- **Gate-notification sub-issue** is its own marker — it stays open until Alex's actual sign-off action lands (e.g., Approve review on the gate PR, or explicit "approved" in chat). Closing the parent does not close the gate notification; the gate notification is the audit trail for sign-off itself.
+
 ---
 
 ## Phase 4 — Continuous discipline
