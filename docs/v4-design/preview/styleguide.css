@@ -312,14 +312,16 @@ img, svg { display: block; }
 .sg-ded-line .v { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 /* each deduction = label + value on the SAME line (values align in a clean column);
    the component name drops to a sub-line so a long plate name never wraps the value out of line. */
-.sg-ded-rows { display: flex; flex-direction: column; padding: 4px 0; }
+.sg-ded-rows { display: flex; flex-direction: column; padding: 4px 0;
+  margin-left: 14px; padding-left: 12px; border-left: 2px solid var(--surface-stroke); }
 .sg-ded-row { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; row-gap: 2px; padding: 7px 0; align-items: baseline; }
 .sg-ded-row .k { grid-row: 1; grid-column: 1; font: var(--type-body); color: var(--text-primary); }
 .sg-ded-row .v { grid-row: 1; grid-column: 2; text-align: right; white-space: nowrap;
   font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--text-secondary); }
 .sg-ded-row .sel { grid-row: 2; grid-column: 1; font: var(--type-caption); color: var(--text-tertiary); }
 .sg-ded-row .v.ns { color: var(--danger-text); font-weight: 600; }   /* unselected stands out */
-.sg-ded-note { font: var(--type-caption); color: var(--text-tertiary); font-style: italic; margin-top: 8px; line-height: 1.35; }
+.sg-ded-note { font: var(--type-caption); color: var(--text-tertiary); font-style: italic; margin-top: 8px; line-height: 1.35;
+  margin-left: 14px; padding-left: 12px; }
 .sg-ded-eff { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
   padding-top: 8px; border-top: var(--stroke-width) solid var(--surface-stroke); }
 .sg-ded-eff .k { font: var(--type-body-medium); color: var(--text-primary); }
