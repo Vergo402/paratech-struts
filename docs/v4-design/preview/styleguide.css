@@ -203,6 +203,14 @@ img, svg { display: block; }
 .sg-sp-loc { font: var(--type-caption); color: var(--text-secondary); margin-top: 2px; }
 .sg-sp-meas { font: var(--type-mono); font-size: 15px; color: var(--text-primary); margin-top: 8px; }
 .sg-sp-meas .lbl { font: var(--type-caption); color: var(--text-secondary); }
+/* deployed strut — shown on every state that has equipment assigned (process → returned).
+   Two-line layout: model [+ ext] on line 1 (mono, bold); "from apparatus" on line 2 (caption). */
+.sg-sp-strut { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.sg-sp-strut .strut-id { display: flex; align-items: baseline; gap: 6px; }
+.sg-sp-strut .model { font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: 0.01em; }
+.sg-sp-strut .ext   { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.sg-sp-strut .source { font: var(--type-caption); color: var(--text-tertiary); }
+.sg-sp-strut .ext-src { color: var(--status-runner-text); }
 /* Cutting (cut-table) state: the cut length is the number the cutter reads — make it
    bigger, bold, and in the status color so it stands out without being overbearing. */
 .sg-sp-card.is-cutting .sg-sp-meas > .frac,
