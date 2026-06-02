@@ -100,7 +100,7 @@
       <div class="sg-subhead">ShorePointCard — 7 lifecycle states (pending → returned)</div>
       <div class="sg-cardstack">
 
-        <!-- 1 · Pending (first state — no step back) -->
+        <!-- 1 · Pending — measured, no strut deployed. Action = Assign Equipment (deploy), not a slide. -->
         <article class="sg-card sg-sp-card is-pending">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -110,11 +110,11 @@
             </div>
             <span class="sg-badge is-pending">Pending</span>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span></div>
-          <div class="sg-slide">
-            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set In Process</span></div>
-          </div>
-          <div class="sg-cap">Advance = slide right (handle left); reverse = slide left (handle right); no timed undo. Pending is first — no step back.</div>
+          <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span> <span class="lbl">@ 6,000 lbs</span></div>
+          <div class="sg-sp-noequip"><span class="ic">⏳</span>No equipment assigned</div>
+          <div class="sg-sp-reason">No matching strut — nothing in inventory fits 84″ at this load.</div>
+          <button class="sg-assign" type="button">🔧 Assign Equipment</button>
+          <div class="sg-cap">Pending = measured, no strut deployed. The action is <b>Assign Equipment</b> (deploy) — not a status slide; reaching In Process <i>means</i> a strut was deployed.</div>
         </article>
 
         <!-- 2 · In Process -->
@@ -285,21 +285,21 @@
           <div class="sg-removed-label"><span>Removed from cut list</span></div>
         </article>
 
-        <!-- waiting for inventory (no available strut to pull) -->
-        <article class="sg-card sg-sp-card is-waiting">
+        <!-- Pending · waiting for inventory — SAME state as lifecycle #1, different reason (no stock to pull) -->
+        <article class="sg-card sg-sp-card is-pending">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
             <div>
               <div class="sg-sp-name">D-1 · Single Upright</div>
               <div class="sg-sp-loc">Division 1 · A side · unassigned</div>
             </div>
-            <span class="sg-badge">Waiting</span>
+            <span class="sg-badge is-pending">Pending</span>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span></div>
-          <div class="sg-waiting">
-            <span class="ic">⧖</span>
-            <span class="txt"><b>Waiting for inventory</b><small>No matching strut available to deploy — request equipment.</small></span>
-          </div>
+          <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span> <span class="lbl">@ 6,000 lbs</span></div>
+          <div class="sg-sp-noequip"><span class="ic">⏳</span>No equipment assigned</div>
+          <div class="sg-sp-reason">Waiting for inventory — no apparatus stock to pull from yet.</div>
+          <button class="sg-assign" type="button">🔧 Assign Equipment</button>
+          <div class="sg-cap">The "waiting for inventory" case is just Pending with a different reason (v3 stored it as <code>pendingReason</code>) — same card, same Assign action.</div>
         </article>
 
       </div>

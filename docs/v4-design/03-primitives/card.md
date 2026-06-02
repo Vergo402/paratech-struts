@@ -53,6 +53,10 @@ Elevation discipline: **shadows are for sheets and modals, never cards.** A card
 
 The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending → In Process → Strut Set → Cutting → Runner → Shore Secured → Strut Equipment Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
 
+### Deployed strut — carried cradle to grave
+
+Once a strut is deployed, the card carries the **deployed-strut identity** through every state until equipment is returned: the **model** (mono — e.g. `AT 37-58`, or `LS 203 + 12"` with extensions) and the **apparatus it came from** (`from Rescue 2`, on its own sub-line beneath the model). This is the operational thread — at any point the team can see *what strut is in this hole and where it came from*. It appears from **In Process through Strut Equipment Returned**; **pending** shows no strut (nothing deployed yet), and the off-queue red-slash state suppresses it. External / mutual-aid equipment shows the source in the **runner/external hue** ("External · Dept 14") so it's flagged for return to the right agency. (Faithful to v3, which renders the model + `Equipment from: <apparatus>` on every deployed card.)
+
 ### The left-edge status stripe — and its hidden tap zone
 
 The card's left edge is a **4pt status-color stripe** (the `--status-*` color for its current state). This is the at-a-glance status read across a tablet board.
@@ -89,14 +93,15 @@ When the shore point's area has **unmitigated hazards** (the hazard log, synthes
 
 In the **`cutting` state**, the **cut length is the one number the cutter reads** at the Cutting Station, so the card promotes it: the measurement value renders **larger and bold, in the status hue** (`--sp-solid`), while its label stays muted. It should stand out at a glance without becoming the loudest thing on the screen — emphasis through size + weight + the cutting color, not a fill or a box. (This is the v3 "cut length stands out" behavior, carried forward into the v4 card.) Other lifecycle states keep the measurement at the normal mono body size; the promotion is specific to the cut-table moment.
 
-### Waiting for inventory (blocked state)
+### Pending — no strut deployed yet (and its "waiting" reason)
 
-A shore point can be measured and ready but have **no matching strut available in inventory to deploy** — common at scale once struts run out and points queue up. This is **not** a lifecycle status; it is a *blocked* condition on a pre-strut (pending) point. The card:
+**Pending is the pre-deployment state: the shore point is measured (length + load recorded) but no strut is deployed.** v3 confirms a point only *becomes* pending when a strut can't be deployed at save time. Crucially, pending is **not** advanced by a slide — the action is **Deploy / Assign Equipment**, because reaching In Process *means* a strut was deployed. The card:
 
-- Replaces the slide-to-advance with a **"Waiting for inventory" banner** (you cannot advance without equipment) — an icon + the line plus a short reason ("No matching strut available to deploy — request equipment").
-- Uses the **gold accent** for the stripe + a "Waiting" badge — **attention, not alarm.** Deliberately *not* a status hue (so it doesn't read as one of the seven states) and *not* `--danger` red (it's a logistics wait, not an error). The IC scanning the board can spot blocked points at a glance.
-- Keeps the shore-point identity (name, area, **Required** length) so the point is still actionable once equipment arrives.
-- Clears automatically: when a matching strut becomes available, the card returns to the normal pending state with its deploy/advance affordance. (At v5 federal scale this is where a resource request would tie in — out of v4.0 scope.)
+- Shows **"⏳ No equipment assigned"** + a **reason line**, then one primary action: **"🔧 Assign Equipment"** (a deploy action, full-width, process-blue) — **not** a slide-to-advance. (Faithful to v3, where the pending card shows an Assign Equipment button, never a status slider.)
+- **"Waiting for inventory" is a *reason*, not a separate state.** v3 stores `pendingReason` — `no-match` (inventory exists but nothing fits the length + load) vs `no-inventory` (no apparatus stock to pull from at all) — and the reason line surfaces it ("No matching strut — nothing fits 84″ at this load" / "Waiting for inventory — no apparatus stock to pull from"). Same card, same Assign action; only the reason differs. (v3 stored the reason but never displayed it; v4 finally shows it.)
+- Uses the **pending status hue** like any pending point — *not* a separate gold "Waiting" badge/state. An earlier v4 pass split these into two cards (pending vs a gold "Waiting" state); that conflated a reason with a state and was reconciled back to v3's single pending model.
+- Keeps the shore-point identity (name, area, **Required** length + load) so the point is actionable the moment equipment arrives.
+- Clears when a strut is assigned: Assign Equipment deploys and advances the point to **In Process** with the strut attached. (At v5 federal scale a resource request would tie in here — out of v4.0 scope.)
 
 ---
 
