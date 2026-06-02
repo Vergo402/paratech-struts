@@ -35,6 +35,166 @@
 
   <main class="sg-stage" id="stage" data-theme="dark" data-viewport="full">
 
+    <!-- ===================== LOGO & MARK (FS monogram — new identity) ===================== -->
+    <section class="sg-section" id="sec-logo">
+      <h2>Logo &amp; Mark — FS monogram <span style="font:var(--type-label);opacity:.6">(new identity · Open Q#10)</span></h2>
+      <p class="sg-sub">New identity, not a refresh (overrides essay 02's "refresh the P"). The <b>F is built from rescue struts</b> (tube body + base-plate feet + locking collar); the <b>S from cut 4×4 lumber fastened with gusset plates</b>, the way a T-shore is fastened. <b>One ink</b> — steel vs. wood reads from <i>form</i> (round/smooth vs. square/gusseted), never color. The mark appears only as gold-on-slate or dark-goldenrod-on-white.</p>
+
+      <!-- ============ symbol defs (single source; tiles <use> these) ============ -->
+      <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="fs-mark-full" viewBox="0 0 200 120">
+          <defs>
+            <mask id="fs-fasten" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="120">
+              <rect width="200" height="120" fill="#fff"/>
+              <g fill="#000">
+                <circle cx="125" cy="30" r="2"/><circle cx="125" cy="23.5" r="2"/><circle cx="125" cy="36.5" r="2"/><circle cx="118.5" cy="30" r="2"/><circle cx="131.5" cy="30" r="2"/>
+                <circle cx="125" cy="60" r="2"/><circle cx="125" cy="53.5" r="2"/><circle cx="125" cy="66.5" r="2"/><circle cx="118.5" cy="60" r="2"/><circle cx="131.5" cy="60" r="2"/>
+                <circle cx="175" cy="60" r="2"/><circle cx="175" cy="53.5" r="2"/><circle cx="175" cy="66.5" r="2"/><circle cx="168.5" cy="60" r="2"/><circle cx="181.5" cy="60" r="2"/>
+                <circle cx="175" cy="86" r="2"/><circle cx="175" cy="79.5" r="2"/><circle cx="175" cy="92.5" r="2"/><circle cx="168.5" cy="86" r="2"/><circle cx="181.5" cy="86" r="2"/>
+              </g>
+            </mask>
+          </defs>
+          <!-- F : three struts (round tubes) + base-plate feet + collar -->
+          <g fill="currentColor">
+            <rect x="33.5" y="20" width="13" height="74" rx="6.5"/>            <!-- spine tube -->
+            <rect x="25" y="93" width="30" height="7" rx="2"/>                  <!-- spine foot plate -->
+            <rect x="40" y="20" width="54" height="13" rx="6.5"/>              <!-- top arm tube -->
+            <rect x="91" y="15" width="7" height="23" rx="2"/>                 <!-- top arm end plate -->
+            <rect x="40" y="53.5" width="42" height="13" rx="6.5"/>            <!-- mid arm tube -->
+            <rect x="79" y="48.5" width="7" height="23" rx="2"/>               <!-- mid arm end plate -->
+            <rect x="29.5" y="78" width="21" height="6" rx="1.5"/>             <!-- locking collar -->
+          </g>
+          <!-- S : five cut 4x4 members (square ends) -->
+          <g fill="currentColor">
+            <rect x="116" y="20" width="68" height="19"/>                      <!-- top bar -->
+            <rect x="116" y="20" width="19" height="41"/>                      <!-- upper-left vertical -->
+            <rect x="116" y="50.5" width="68" height="19"/>                    <!-- mid bar -->
+            <rect x="165" y="50.5" width="19" height="49.5"/>                  <!-- lower-right vertical -->
+            <rect x="116" y="81" width="68" height="19"/>                      <!-- bottom bar -->
+          </g>
+          <!-- gusset plates over the four butt joints (fastener holes knocked out) -->
+          <g fill="currentColor" mask="url(#fs-fasten)">
+            <path d="M125,16 L139,30 L125,44 L111,30 Z"/>
+            <path d="M125,46 L139,60 L125,74 L111,60 Z"/>
+            <path d="M175,46 L189,60 L175,74 L161,60 Z"/>
+            <path d="M175,72 L189,86 L175,100 L161,86 Z"/>
+          </g>
+        </symbol>
+        <!-- app icon: dark variant only — gold mark on a 12pt-equivalent slate square (mask travels with the nested mark) -->
+        <symbol id="fs-app-icon" viewBox="0 0 100 100">
+          <rect width="100" height="100" rx="18" fill="#1C1F23"/>
+          <g transform="translate(10,27) scale(0.333)"><use href="#fs-mark-color"/></g>
+        </symbol>
+        <!-- FULL-COLOR variant: 3 complete struts (gold LongShore vertical + 2 grey struts), wood 4x4 end plates, S of cut 4x4 + plywood gussets w/ 9-nail pattern -->
+        <symbol id="fs-mark-color" viewBox="0 0 240 140">
+          <!-- F: vertical gold LongShore + steel 6" rigid base plates + collar -->
+          <rect x="38" y="20" width="27" height="11" rx="1.5" fill="#6E747C"/>
+          <rect x="38" y="109" width="27" height="11" rx="1.5" fill="#6E747C"/>
+          <rect x="44" y="29" width="15" height="82" fill="#D4A017"/>
+          <rect x="42" y="86" width="19" height="7" rx="1" fill="#A87C0E"/>
+          <!-- F: top grey aluminum strut + steel base plates -->
+          <rect x="59" y="28" width="12" height="26" rx="1.5" fill="#6E747C"/>
+          <rect x="117" y="28" width="12" height="26" rx="1.5" fill="#6E747C"/>
+          <rect x="69" y="34" width="50" height="14" fill="#AEB4BB"/>
+          <rect x="90" y="37" width="7" height="8" rx="1" fill="#777E86"/>
+          <!-- F: mid grey aluminum strut + steel base plates -->
+          <rect x="59" y="62" width="12" height="26" rx="1.5" fill="#6E747C"/>
+          <rect x="105" y="62" width="12" height="26" rx="1.5" fill="#6E747C"/>
+          <rect x="69" y="68" width="38" height="14" fill="#AEB4BB"/>
+          <rect x="86" y="71" width="7" height="8" rx="1" fill="#777E86"/>
+          <!-- S: cut 4x4 lumber -->
+          <g fill="#C39A5E">
+            <rect x="150" y="30" width="72" height="20"/>
+            <rect x="150" y="30" width="20" height="48"/>
+            <rect x="150" y="60" width="72" height="20"/>
+            <rect x="202" y="60" width="20" height="50"/>
+            <rect x="150" y="90" width="72" height="20"/>
+          </g>
+          <!-- plywood gusset plates -->
+          <g fill="#CBB287" stroke="#A88E5E" stroke-width="0.75">
+            <rect x="147" y="37" width="26" height="24" rx="1"/>
+            <rect x="147" y="58" width="26" height="24" rx="1"/>
+            <rect x="199" y="58" width="26" height="24" rx="1"/>
+            <rect x="199" y="79" width="26" height="24" rx="1"/>
+          </g>
+          <!-- nails: 3x3 per gusset -->
+          <g fill="#2C2A28">
+            <circle cx="153" cy="43" r="1.5"/><circle cx="160" cy="43" r="1.5"/><circle cx="167" cy="43" r="1.5"/>
+            <circle cx="153" cy="49" r="1.5"/><circle cx="160" cy="49" r="1.5"/><circle cx="167" cy="49" r="1.5"/>
+            <circle cx="153" cy="55" r="1.5"/><circle cx="160" cy="55" r="1.5"/><circle cx="167" cy="55" r="1.5"/>
+            <circle cx="153" cy="64" r="1.5"/><circle cx="160" cy="64" r="1.5"/><circle cx="167" cy="64" r="1.5"/>
+            <circle cx="153" cy="70" r="1.5"/><circle cx="160" cy="70" r="1.5"/><circle cx="167" cy="70" r="1.5"/>
+            <circle cx="153" cy="76" r="1.5"/><circle cx="160" cy="76" r="1.5"/><circle cx="167" cy="76" r="1.5"/>
+            <circle cx="205" cy="64" r="1.5"/><circle cx="212" cy="64" r="1.5"/><circle cx="219" cy="64" r="1.5"/>
+            <circle cx="205" cy="70" r="1.5"/><circle cx="212" cy="70" r="1.5"/><circle cx="219" cy="70" r="1.5"/>
+            <circle cx="205" cy="76" r="1.5"/><circle cx="212" cy="76" r="1.5"/><circle cx="219" cy="76" r="1.5"/>
+            <circle cx="205" cy="85" r="1.5"/><circle cx="212" cy="85" r="1.5"/><circle cx="219" cy="85" r="1.5"/>
+            <circle cx="205" cy="91" r="1.5"/><circle cx="212" cy="91" r="1.5"/><circle cx="219" cy="91" r="1.5"/>
+            <circle cx="205" cy="97" r="1.5"/><circle cx="212" cy="97" r="1.5"/><circle cx="219" cy="97" r="1.5"/>
+          </g>
+        </symbol>
+        <!-- simplified MONO mark — one ink (currentColor), themeable, 16px-safe; rounded F bars (struts) + square S (lumber) -->
+        <symbol id="fs-mark-mono" viewBox="0 0 172 100" fill="currentColor">
+          <rect x="14" y="10" width="16" height="80" rx="8"/>
+          <rect x="14" y="10" width="52" height="16" rx="8"/>
+          <rect x="14" y="42" width="42" height="16" rx="8"/>
+          <rect x="90" y="10" width="68" height="16"/>
+          <rect x="90" y="10" width="16" height="48"/>
+          <rect x="90" y="42" width="68" height="16"/>
+          <rect x="142" y="42" width="16" height="48"/>
+          <rect x="90" y="74" width="68" height="16"/>
+        </symbol>
+        <symbol id="fs-favicon" viewBox="0 0 100 100">
+          <rect width="100" height="100" rx="18" fill="#1C1F23"/>
+          <g transform="translate(12,29) scale(0.44)" style="color:#D4A017"><use href="#fs-mark-mono"/></g>
+        </symbol>
+        <symbol id="fs-wordmark" viewBox="0 0 470 140">
+          <g transform="translate(2,22) scale(0.686)"><use href="#fs-mark-color"/></g>
+          <text x="178" y="88" font-family="Geist, -apple-system, sans-serif" font-size="52" letter-spacing="-1" fill="#F0EFEC"><tspan font-weight="500">Field</tspan><tspan font-weight="700">Shore</tspan></text>
+        </symbol>
+      </svg>
+
+      <div class="sg-subhead" style="color:#D4A017">▸ FULL-COLOR direction (Alex) — gold LongShore (vertical) + 2 aluminum struts (horizontal), each with steel 6″ rigid base plates both ends; S = cut 4×4 + plywood gussets, 9-nail pattern</div>
+      <div style="display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;background:#1C1F23;padding:28px;border-radius:12px">
+        <div style="text-align:center"><svg width="360" height="210" viewBox="0 0 240 140"><use href="#fs-mark-color"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">360</div></div>
+        <div style="text-align:center"><svg width="160" height="93" viewBox="0 0 240 140"><use href="#fs-mark-color"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">160</div></div>
+        <div style="text-align:center"><svg width="80" height="47" viewBox="0 0 240 140"><use href="#fs-mark-color"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">80</div></div>
+        <div style="text-align:center"><svg width="40" height="23" viewBox="0 0 240 140"><use href="#fs-mark-color"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">40 — detail collapses</div></div>
+      </div>
+      <p class="sg-sub" style="margin-top:10px"><b>Note:</b> full color reverses the locked "one accent / gold-on-slate / no second brand color" rule (<code>color.md</code>, open-Q#10). It also stops the mark theming by token, and the multi-color detail collapses below ~64px (so a simplified small/favicon mark is still needed). The monochrome rows below are the alternative kept for comparison.</p>
+
+      <div class="sg-subhead">Wordmark — emblem + "FieldShore" (Geist, no tagline lockup)</div>
+      <div style="display:flex;align-items:center;background:#1C1F23;padding:28px;border-radius:12px">
+        <svg width="380" height="113" viewBox="0 0 470 140"><use href="#fs-wordmark"/></svg>
+      </div>
+
+      <div class="sg-subhead">App icon (full-color emblem on slate, 12pt-equivalent corner) — color collapses by 16px, which is why the favicon below uses the mono mark</div>
+      <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;padding:24px;border-radius:12px;background:#0F1113">
+        <div style="text-align:center"><svg width="180" height="180" viewBox="0 0 100 100"><use href="#fs-app-icon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">180 · home screen</div></div>
+        <div style="text-align:center"><svg width="96" height="96" viewBox="0 0 100 100"><use href="#fs-app-icon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">96</div></div>
+        <div style="text-align:center"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#fs-app-icon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">64</div></div>
+        <div style="text-align:center"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#fs-app-icon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">32</div></div>
+        <div style="text-align:center"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#fs-app-icon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">16 — color collapses</div></div>
+      </div>
+
+      <div class="sg-subhead">Simplified mono mark (UI · dense lists · light surfaces) — single ink, themes via <code>--accent</code></div>
+      <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;background:#1C1F23;padding:24px;border-radius:12px;color:#D4A017">
+        <div style="text-align:center"><svg width="77" height="45" viewBox="0 0 172 100"><use href="#fs-mark-mono"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">48</div></div>
+        <div style="text-align:center"><svg width="55" height="32" viewBox="0 0 172 100"><use href="#fs-mark-mono"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">32</div></div>
+        <div style="text-align:center"><svg width="41" height="24" viewBox="0 0 172 100"><use href="#fs-mark-mono"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">24</div></div>
+        <div style="text-align:center"><svg width="28" height="16" viewBox="0 0 172 100"><use href="#fs-mark-mono"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">16</div></div>
+        <div style="text-align:center;background:#F7F6F3;padding:10px;border-radius:8px;color:#8C6700"><svg width="55" height="32" viewBox="0 0 172 100"><use href="#fs-mark-mono"/></svg><div style="font:var(--type-label);color:#5C5C5C;margin-top:8px">on white</div></div>
+      </div>
+
+      <div class="sg-subhead">Favicon — simplified mono on slate (the 16px-safe mark)</div>
+      <div style="display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;padding:24px;border-radius:12px;background:#0F1113">
+        <div style="text-align:center"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#fs-favicon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">64</div></div>
+        <div style="text-align:center"><svg width="32" height="32" viewBox="0 0 100 100"><use href="#fs-favicon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">32</div></div>
+        <div style="text-align:center"><svg width="16" height="16" viewBox="0 0 100 100"><use href="#fs-favicon"/></svg><div style="font:var(--type-label);color:#9B9A97;margin-top:8px">16 · favicon</div></div>
+      </div>
+
+    </section>
+
     <!-- ===================== COLOR (all 4 themes, from PALETTE source) ===================== -->
     <section class="sg-section" id="sec-color">
       <h2>Color</h2>

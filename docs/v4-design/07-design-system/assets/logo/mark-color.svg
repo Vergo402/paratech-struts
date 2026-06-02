@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" role="img" aria-label="FieldShore">
+  <!-- FieldShore FS mark — FULL COLOR (primary brand emblem).
+       F = gold LongShore (vertical) + 2 aluminum struts (horizontal); every strut capped at both ends by a rigid 6" Paratech plate (base plate top / sole plate bottom).
+       S = five cut 4x4 lumber members fastened with plywood gusset plates (3x3 nail pattern). -->
+  <!-- rigid 6" Paratech end plates — base plate (top) / sole plate (bottom) on every strut -->
+
+  <g fill="#6E747C">
+    <rect x="38" y="20" width="27" height="11" rx="1.5"/>
+    <rect x="38" y="109" width="27" height="11" rx="1.5"/>
+    <rect x="59" y="28" width="12" height="26" rx="1.5"/>
+    <rect x="117" y="28" width="12" height="26" rx="1.5"/>
+    <rect x="59" y="62" width="12" height="26" rx="1.5"/>
+    <rect x="105" y="62" width="12" height="26" rx="1.5"/>
+  </g>
+  <!-- gold LongShore (vertical) -->
+  <rect x="44" y="29" width="15" height="82" fill="#D4A017"/>
+  <rect x="42" y="86" width="19" height="7" rx="1" fill="#A87C0E"/>
+  <!-- aluminum struts (horizontal) -->
+  <g fill="#AEB4BB">
+    <rect x="69" y="34" width="50" height="14"/>
+    <rect x="69" y="68" width="38" height="14"/>
+  </g>
+  <g fill="#5E646C">
+    <rect x="90" y="37" width="7" height="8" rx="1"/>
+    <rect x="86" y="71" width="7" height="8" rx="1"/>
+  </g>
+  <!-- S: cut 4x4 lumber -->
+  <g fill="#C39A5E">
+    <rect x="150" y="30" width="72" height="20"/>
+    <rect x="150" y="30" width="20" height="48"/>
+    <rect x="150" y="60" width="72" height="20"/>
+    <rect x="202" y="60" width="20" height="50"/>
+    <rect x="150" y="90" width="72" height="20"/>
+  </g>
+  <!-- plywood gusset plates -->
+  <g fill="#CBB287" stroke="#A88E5E" stroke-width="0.75">
+    <rect x="147" y="37" width="26" height="24" rx="1"/>
+    <rect x="147" y="58" width="26" height="24" rx="1"/>
+    <rect x="199" y="58" width="26" height="24" rx="1"/>
+    <rect x="199" y="79" width="26" height="24" rx="1"/>
+  </g>
+  <!-- nails: 3x3 per gusset -->
+  <g fill="#2C2A28">
+    <circle cx="153" cy="43" r="1.5"/><circle cx="160" cy="43" r="1.5"/><circle cx="167" cy="43" r="1.5"/>
+    <circle cx="153" cy="49" r="1.5"/><circle cx="160" cy="49" r="1.5"/><circle cx="167" cy="49" r="1.5"/>
+    <circle cx="153" cy="55" r="1.5"/><circle cx="160" cy="55" r="1.5"/><circle cx="167" cy="55" r="1.5"/>
+    <circle cx="153" cy="64" r="1.5"/><circle cx="160" cy="64" r="1.5"/><circle cx="167" cy="64" r="1.5"/>
+    <circle cx="153" cy="70" r="1.5"/><circle cx="160" cy="70" r="1.5"/><circle cx="167" cy="70" r="1.5"/>
+    <circle cx="153" cy="76" r="1.5"/><circle cx="160" cy="76" r="1.5"/><circle cx="167" cy="76" r="1.5"/>
+    <circle cx="205" cy="64" r="1.5"/><circle cx="212" cy="64" r="1.5"/><circle cx="219" cy="64" r="1.5"/>
+    <circle cx="205" cy="70" r="1.5"/><circle cx="212" cy="70" r="1.5"/><circle cx="219" cy="70" r="1.5"/>
+    <circle cx="205" cy="76" r="1.5"/><circle cx="212" cy="76" r="1.5"/><circle cx="219" cy="76" r="1.5"/>
+    <circle cx="205" cy="85" r="1.5"/><circle cx="212" cy="85" r="1.5"/><circle cx="219" cy="85" r="1.5"/>
+    <circle cx="205" cy="91" r="1.5"/><circle cx="212" cy="91" r="1.5"/><circle cx="219" cy="91" r="1.5"/>
+    <circle cx="205" cy="97" r="1.5"/><circle cx="212" cy="97" r="1.5"/><circle cx="219" cy="97" r="1.5"/>
+  </g>
+</svg>

@@ -259,7 +259,7 @@ The **sync indicator** maps to existing tokens, no new color: synced = `--status
 ## Anti-patterns (do not do these)
 
 - **Raw hex in a component.** Always a semantic token. A primitive that hard-codes `#D4A017` breaks theme-swap and sunlight.
-- **A second accent.** FieldShore has exactly one accent (the gold). A "secondary brand color" is forbidden — the new brand mark ([`logo-and-mark.md`](logo-and-mark.md)) must live within gold-on-slate.
+- **A second accent in the UI.** FieldShore has exactly one accent (the gold); a "secondary brand color" is forbidden in product chrome. **One exception:** the brand **emblem** ([`logo-and-mark.md`](logo-and-mark.md)) is full-color by [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) — its aluminum / steel / wood / plywood hues live *only* inside the emblem and never leak into UI tokens. The in-product mark is the single-ink mono mark that inherits `--accent`.
 - **Color as the only state signal.** Banned by Principle 9 (see above).
 - **Navy + saturated red.** That is the dispatch-console look v4 exits. Status reds are the muted `--danger`, never a fire-engine red header.
 - **OLED black (`#000`) as the dark background.** The differentiator is the warm slate `#1C1F23`; `#000` is reserved for sunlight text only.

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 100" fill="currentColor" role="img" aria-label="FieldShore">
+  <!-- FieldShore FS mark — simplified MONOCHROME. Single ink: fill is currentColor, so it inherits the accent token and themes automatically.
+       The 16px-safe / UI / favicon mark. Rounded F bars echo the struts; square S echoes the lumber. -->
+  <rect x="14" y="10" width="16" height="80" rx="8"/>
+  <rect x="14" y="10" width="52" height="16" rx="8"/>
+  <rect x="14" y="42" width="42" height="16" rx="8"/>
+  <rect x="90" y="10" width="68" height="16"/>
+  <rect x="90" y="10" width="16" height="48"/>
+  <rect x="90" y="42" width="68" height="16"/>
+  <rect x="142" y="42" width="16" height="48"/>
+  <rect x="90" y="74" width="68" height="16"/>
+</svg>
