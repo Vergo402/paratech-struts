@@ -102,39 +102,41 @@ A shore point can be measured and ready but have **no matching strut available i
 
 ## `RecommendationCard` — the result card
 
-The output of Quick Find / shore search. **Leads with the selection and the deduction math — not capacity.**
+The output of Quick Find / shore search, and the card you Deploy from during an operation. **This card is grounded in the actual v3 deploy card** (`renderResults()`), not a simplification — it carries the full, safety-critical anatomy below, top to bottom.
 
-### Strut identity is the subject (the card must say *which strut* at a glance)
+### Card anatomy (top → bottom)
 
-The recommended strut is the **clearly-identifiable headline of the card** — when scanning a list of results, the operator must immediately read *which strut each card is*. This carries forward v3's result-card identity, which the first v4 pass under-emphasized by letting the ledger dominate the model name. The header therefore leads with:
+1. **`COLOR — SYSTEM`** — e.g. **"GOLD — LONGSHORE"**, **"GREY — ACMETHREAD"**, **"GREY — LOCKSTROKE"** (uppercase, in the strut color). The color is a real Paratech field-ID attribute — `gold` = LongShore, `grey` = AcmeThread / LockStroke — and it's how the operator physically finds the right strut in the cache.
+2. **Model** — the real model number (e.g. **"AT 37-58"**, **"LS 203"**), `--type-headline-2`/700.
+3. **Range** — the reach range, **large and in the strut color** (e.g. **"37″ – 58″"**). With extensions this is the *adjusted* range (strut + extensions); without, the strut's own collapsed–extended range.
+4. **Extension block** — either **"No extensions needed"** (in the secured **green**, a positive signal) **or** **"Extensions: `12″`"** (chip per extension) followed by **"strut alone 26″ – 36″"**. Extensions are color-matched tubes the operator must also grab.
+5. **Deduction section** — *the most important part* (see below).
+6. **`Equipment from: <apparatus>`** + a primary **Deploy** button (operation mode only; Quick Find omits these).
 
-- **Model prominent but not overpowering** — the real model number at `--type-body-lg` weight 700 (e.g., **"LS 610"**, **"LK 37-58"**), the **same size as a shore-point name**; identity comes from the weight + the color bar + position, **not** from being the biggest thing on the card. It must not dominate the deduction ledger (the important content).
-- **Strut color is a first-class, named field.** Every Paratech strut carries a `color` — **gold** (LongShore) or **grey** (AcmeThread / LockStroke) — and that color is how a firefighter physically IDs and grabs the right strut from the cache. The card **names it in the spec line** alongside the system and plates: `<color> · <system> · <plates>`, e.g. **"Gold · LongShore · 8×8 base plate · sole plate"** / **"Grey · LockStroke · 6×6 base plate · sole plate"** at `--type-body`. The color word is emphasized (weight 600).
-- **The left accent bar IS the strut color** (gold or grey), not a generic brand accent — it reinforces the named color (Principle 9: color is named *and* shown, never color-alone). *This is strut identity, not lifecycle status — `RecommendationCard` has no status stripe.* (The full field set is finalized in the Quick Find IA, Phase F.)
-- A **"Fits"** match badge confirms the strut satisfies the measurement.
-- **Extensions are part of the recommendation.** When the strut's telescoping range doesn't reach, the match adds fixed-length **extension tube(s)**, color-matched to the strut. The card names them between the identity and the ledger — e.g. **"+ 24″ extension"** with a short reach note — so the operator grabs the strut *and* its extensions from the cache. A strut that fits within its own collapsed–extended range shows **no** extension line. (Multiple extensions list together: "+ 24″ + 6″".)
-- A divider separates the strut-identity header from the ledger below.
+**The left accent bar IS the strut color** (Principle 9: color named *and* shown). The strut color bar is identity, not lifecycle status.
 
-"Deduction ledger leads" means the **math leads over capacity** — it does **not** mean the strut identity is demoted. The strut is the subject; the ledger is its prominent supporting math; capacity is secondary.
+### Deductions — fixed order, "N/S" when unselected
 
-### The inline deduction ledger (capacity demoted — synthesis §1.6 / §3.4)
-
-The deduction math is the core of structural shoring and must be **inline, never in a disclosure**. The card shows a **stacked-subtraction ledger**:
+The deduction section shows the **Opening → Effective** math and the four component slots that produce the total deduction. **The slots ALWAYS display top-down in physical order** (a v4 correction to v3's wood-then-plates grouping):
 
 ```
-Required        72"
-  − base plate   3¼"
-  − sole plate   3¼"
-  ─────────────────      ← thin top border
-Effective       65½"
+Deductions
+Opening                                    56"
+  Header             4×4                   −3½"
+  Top Connector      Channel Base 4"x4"    −3.4"
+  Bottom Connector   Channel Base 4"x4"    −3.4"
+  Footer             N/S                     —
+  ──────────────────────────────────────────────
+Effective                  −10⁵⁄₁₆" total   45¹¹⁄₁₆"
 ```
 
-- Required length in `--type-mono`; deduction rows in `--text-secondary`; Effective with a thin top border above it. Conservative-floor footnote beneath (the planning-aid disclaimer crosses verbatim from v3.7.2).
-- The **cut-length** formula (for wood replacing strut+plates) uses the **same ledger format** but is **visually separated** from the search-result deduction — different inputs (wedge vs. plates), so they must not blur together.
-- Fractions render typographically (`65½`, not `65 1/2`) per [`typography.md`](typography.md).
-- **Rated capacity is computed and available but demoted** — a secondary field, not the headline that drives the card hierarchy. Capacity was conceived as a large-vehicle-stabilization aid, not the structural-shoring core (synthesis §3.4); over-weighting it inverts the safety hierarchy. **Display-prominence only — the load tables, conservative-floor `getLoadCapacity`, and the strut-matching engine are unchanged.**
+- **Order is rigid: Header → Top Connector → Bottom Connector → Footer** (top of the assembly to the bottom). Never reorder or alphabetize.
+- **Every slot is always shown.** If a section is unselected, it renders **"N/S"** (not selected) in `--danger` so the gap is obvious at a glance — v3 silently omitted unselected slots; v4 surfaces them (visible state, Principle 7/10). The omission of a footer or a connector is a decision the operator should *see*, not infer.
+- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″). `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the card shows the plate name + its deduction.
+- Opening and Effective are emphasized (`--type-mono`); Effective is in the strut color; the total deduction sits beside it. Measurement fractions render typographically (`42³⁄₁₆`, not `42 3/16`) per [`typography.md`](typography.md).
+- **Rated capacity is computed and available but is *not* on the card face** (synthesis §3.4 — demoted; it was a vehicle-stabilization aid, not the shoring core). The load tables / conservative-floor engine are unchanged; this is display-prominence only.
 
-The leading information is the **shore/strut selection** (model, length, plates) + the deduction ledger. Capacity sits below as an available datum.
+> **Lesson recorded:** the first v4 pass mocked a generic "Required − plate − plate = Effective" ledger and missed the real structure (color/system, range, extension block, the four ordered deduction slots, equipment source, Deploy). Result cards are safety-critical — the v4 card is built from the v3 `renderResults()` anatomy, not from the design essays' abstraction.
 
 ---
 

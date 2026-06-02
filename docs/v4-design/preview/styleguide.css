@@ -249,42 +249,57 @@ img, svg { display: block; }
 .sg-waiting .txt b { display: block; font: var(--type-body-medium); color: var(--text-primary); }
 .sg-waiting .txt small { font: var(--type-caption); color: var(--text-secondary); }
 
-/* RecommendationCard: the recommended strut is the clearly-identifiable subject
-   (prominent model + readable specs + strut-type accent bar, like v3); the
-   deduction ledger leads the math inline below; capacity demoted. */
-/* --rec-bar = the strut's COLOR (a real Paratech field-ID attribute): gold for
-   LongShore, grey for AcmeThread/LockStroke. The accent bar IS the color; the
-   color is also NAMED in the spec line (.ck) — color is never the only signal. */
-.sg-rec-card { padding-left: 22px; --rec-bar: var(--accent); }   /* gold default (LongShore) */
-.sg-rec-card.rec-grey { --rec-bar: var(--text-secondary); }      /* grey (AcmeThread / LockStroke) */
+/* RecommendationCard — faithful to the v3 deploy card. Top-down:
+   COLOR — SYSTEM · model · range (in strut color) · extension block ·
+   the Opening→Effective deduction (Header / Top Connector / Bottom Connector /
+   Footer, ALWAYS in that order, "N/S" when a section is unselected) ·
+   Equipment-from + Deploy. --rec-bar = strut COLOR (gold=LongShore, grey=Acme/Lock). */
+.sg-rec-card { padding-left: 22px; --rec-bar: var(--accent); }
+.sg-rec-card.rec-grey { --rec-bar: var(--text-secondary); }
 .sg-rec-card .sg-rec-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
   background: var(--rec-bar); border-radius: var(--radius-card) 0 0 var(--radius-card); }
-.sg-rec-card .sg-rec-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  margin-bottom: 14px; padding-bottom: 12px; border-bottom: var(--stroke-width) solid var(--surface-stroke); }
-.sg-rec-model { font: var(--type-body-lg); font-weight: 700; color: var(--text-primary); }   /* 16px/700 — same size as a shore-point name; identity comes from weight + the accent bar, not size */
-.sg-rec-sub { font: var(--type-body); color: var(--text-secondary); margin-top: 3px; }
-.sg-rec-sub .ck { font-weight: 600; color: var(--text-primary); }   /* the named color word */
-/* extension assembly: fixed-length tube(s) added when the strut's range doesn't
-   reach. Color-matched to the strut (--rec-bar). Tells the operator what to grab. */
-.sg-rec-ext { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font: var(--type-body); }
-.sg-rec-ext .ic { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px;
-  border-radius: 6px; background: color-mix(in srgb, var(--rec-bar) 22%, transparent); color: var(--rec-bar);
-  font-weight: 700; font-size: 14px; }
-.sg-rec-ext b { color: var(--text-primary); font-weight: 600; }
-.sg-rec-ext .note { color: var(--text-secondary); font: var(--type-caption); }
-.sg-ledger { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
-.sg-ledger .lk { font: var(--type-body); color: var(--text-primary); }
-.sg-ledger .lk.ded { color: var(--text-secondary); }
-.sg-ledger .lv { font-family: var(--font-sans); font-weight: 400; font-size: 15px; font-variant-numeric: tabular-nums; color: var(--text-primary); text-align: right; }
-.sg-ledger .lv.ded { color: var(--text-secondary); }
-.sg-ledger .eff-k, .sg-ledger .eff-v { padding-top: 8px; margin-top: 4px; border-top: var(--stroke-width) solid var(--surface-stroke); }
-.sg-ledger .eff-k { font: var(--type-body-medium); }
-.sg-ledger .eff-v { font-size: 16px; font-weight: 600; }
-.sg-floor { font: var(--type-caption); color: var(--text-tertiary); margin-top: 10px; }
-.sg-capacity { font: var(--type-caption); color: var(--text-secondary); margin-top: 14px;
-  padding-top: 10px; border-top: var(--stroke-width) solid var(--surface-stroke); display: flex; justify-content: space-between; }
-.sg-capacity .v { font: var(--type-mono); color: var(--text-secondary); }
-.sg-demoted-tag { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary); }
+
+/* identity */
+.sg-rec-system { font: var(--type-label); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; color: var(--rec-bar); }
+.sg-rec-model { font: var(--type-headline-2); font-weight: 700; color: var(--text-primary); margin-top: 3px; }
+.sg-rec-range { font-family: var(--font-mono); font-weight: 700; font-size: 26px; line-height: 1.1; margin-top: 4px;
+  color: var(--rec-bar); font-variant-numeric: tabular-nums; }
+
+/* extension block */
+.sg-rec-extblock { margin-top: 12px; }
+.sg-rec-extblock .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font: var(--type-body); color: var(--text-secondary); }
+.sg-rec-extblock .lbl { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary); }
+.sg-rec-extblock .chip { font-family: var(--font-mono); font-weight: 600; color: var(--text-primary);
+  background: color-mix(in srgb, var(--rec-bar) 18%, transparent); border: 1px solid color-mix(in srgb, var(--rec-bar) 42%, transparent);
+  border-radius: 6px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.sg-rec-extblock .alone { color: var(--text-secondary); font: var(--type-caption); }
+.sg-rec-extblock .no-ext { font: var(--type-body-medium); font-weight: 600; color: var(--status-secured-text); }
+
+/* deduction section */
+.sg-ded { margin-top: 14px; padding-top: 12px; border-top: var(--stroke-width) solid var(--surface-stroke); }
+.sg-ded-head { font: var(--type-label); letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+.sg-ded-line { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.sg-ded-line .k { font: var(--type-body-medium); color: var(--text-primary); }
+.sg-ded-line .v { font-family: var(--font-mono); font-size: 16px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.sg-ded-grid { display: grid; grid-template-columns: max-content 1fr auto; gap: 5px 12px; align-items: baseline; padding: 8px 0; }
+.sg-ded-grid .k { font: var(--type-body); color: var(--text-primary); }
+.sg-ded-grid .sel { font: var(--type-body); color: var(--text-secondary); }
+.sg-ded-grid .sel.ns { color: var(--danger-text); font-weight: 600; font-style: normal; }   /* unselected stands out */
+.sg-ded-grid .v { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--text-secondary); text-align: right; }
+.sg-ded-eff { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  padding-top: 8px; border-top: var(--stroke-width) solid var(--surface-stroke); }
+.sg-ded-eff .k { font: var(--type-body-medium); color: var(--text-primary); }
+.sg-ded-eff .right { display: flex; align-items: baseline; gap: 8px; }
+.sg-ded-eff .total { font: var(--type-caption); color: var(--text-secondary); }
+.sg-ded-eff .v { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--rec-bar); font-variant-numeric: tabular-nums; }
+
+/* footer: equipment source + Deploy */
+.sg-rec-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 14px; padding-top: 12px; border-top: var(--stroke-width) solid var(--surface-stroke); }
+.sg-equip { font: var(--type-caption); color: var(--status-process-text); background: var(--status-process-bg);
+  border-radius: 999px; padding: 5px 12px; }
+.sg-deploy { font: var(--type-body-medium); font-weight: 600; color: #fff; background: var(--status-process-text);
+  border: none; border-radius: 10px; padding: 0 22px; min-height: 44px; cursor: default; }
 
 /* ---- status modifiers (drive stripe + badge) ------------------------------ */
 .is-pending  { --sp-text: var(--status-pending-text);  --sp-bg: var(--status-pending-bg); }
