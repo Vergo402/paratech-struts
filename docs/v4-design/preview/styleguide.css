@@ -235,6 +235,20 @@ img, svg { display: block; }
 [data-theme="sunlight"] .sg-removed-label span { color: var(--danger-bg);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-bg) 30%, transparent); }
 
+/* "Waiting for inventory" — a measured shore point with no matching strut available
+   to deploy. Gold accent (attention, not alarm) so blocked points are easy to spot;
+   the slide is replaced by a waiting banner (you can't advance without equipment). */
+.sg-sp-card.is-waiting { --sp-text: var(--accent); --sp-bg: var(--accent-subtle); }
+.sg-sp-card.is-waiting .sg-stripe { background: var(--accent); }   /* gold in every theme */
+.sg-waiting { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 12px 14px;
+  background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 10px; }
+.sg-waiting .ic { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 17px; }
+.sg-waiting .txt { min-width: 0; }
+.sg-waiting .txt b { display: block; font: var(--type-body-medium); color: var(--text-primary); }
+.sg-waiting .txt small { font: var(--type-caption); color: var(--text-secondary); }
+
 /* RecommendationCard: the recommended strut is the clearly-identifiable subject
    (prominent model + readable specs + strut-type accent bar, like v3); the
    deduction ledger leads the math inline below; capacity demoted. */

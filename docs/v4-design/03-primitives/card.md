@@ -89,6 +89,15 @@ When the shore point's area has **unmitigated hazards** (the hazard log, synthes
 
 In the **`cutting` state**, the **cut length is the one number the cutter reads** at the Cutting Station, so the card promotes it: the measurement value renders **larger and bold, in the status hue** (`--sp-solid`), while its label stays muted. It should stand out at a glance without becoming the loudest thing on the screen — emphasis through size + weight + the cutting color, not a fill or a box. (This is the v3 "cut length stands out" behavior, carried forward into the v4 card.) Other lifecycle states keep the measurement at the normal mono body size; the promotion is specific to the cut-table moment.
 
+### Waiting for inventory (blocked state)
+
+A shore point can be measured and ready but have **no matching strut available in inventory to deploy** — common at scale once struts run out and points queue up. This is **not** a lifecycle status; it is a *blocked* condition on a pre-strut (pending) point. The card:
+
+- Replaces the slide-to-advance with a **"Waiting for inventory" banner** (you cannot advance without equipment) — an icon + the line plus a short reason ("No matching strut available to deploy — request equipment").
+- Uses the **gold accent** for the stripe + a "Waiting" badge — **attention, not alarm.** Deliberately *not* a status hue (so it doesn't read as one of the seven states) and *not* `--danger` red (it's a logistics wait, not an error). The IC scanning the board can spot blocked points at a glance.
+- Keeps the shore-point identity (name, area, **Required** length) so the point is still actionable once equipment arrives.
+- Clears automatically: when a matching strut becomes available, the card returns to the normal pending state with its deploy/advance affordance. (At v5 federal scale this is where a resource request would tie in — out of v4.0 scope.)
+
 ---
 
 ## `RecommendationCard` — the result card
