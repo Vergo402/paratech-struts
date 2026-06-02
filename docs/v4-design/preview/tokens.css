@@ -47,6 +47,18 @@
   --radius-button: 12px;
   --radius-input: 8px;
 
+  /* icon system — sizes, stroke, join radius (iconography.md, E4).
+     Four sizes, two stroke weights, one derived join radius; extend only by ADR.
+     --icon-stroke-heavy is the sunlight override; the theme applies it globally
+     via --stroke-width: 2px — no per-icon rule needed. */
+  --icon-size-sm: 16px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+  --icon-size-xl: 48px;
+  --icon-stroke-default: 1.5px;  /* 24px grid; scales to 1px at sm, 2px at lg/xl */
+  --icon-stroke-heavy: 2px;       /* sunlight override — matches --stroke-width in theme-sunlight */
+  --icon-radius: 2px;             /* derived: --radius-card / 6; cap/join radius only, not a 6th vocab member */
+
   /* motion — durations + easings (motion.md, E3). Six durations, five easings;
      extend only by ADR. Pairings are fixed (see motion.md Easing tokens). */
   --motion-instant: 0ms;     /* reduced-motion swap, broadcast, sync dot */
