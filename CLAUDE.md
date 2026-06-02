@@ -62,7 +62,7 @@ gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
 gh project item-list 2 --owner Vergo402 --limit 400 --format json \
   | jq -r '.items[] | select(.content.number == ISSUE_NUMBER) | .id'
 gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYV37 \
-  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
+  --field-id PVTSSF_lAHODy7CN84BYV37zhTcaGE \
   --single-select-option-id 47fc9ee4
 ```
 
