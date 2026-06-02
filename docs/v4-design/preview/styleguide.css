@@ -264,6 +264,14 @@ img, svg { display: block; }
 .sg-rec-model { font: var(--type-body-lg); font-weight: 700; color: var(--text-primary); }   /* 16px/700 — same size as a shore-point name; identity comes from weight + the accent bar, not size */
 .sg-rec-sub { font: var(--type-body); color: var(--text-secondary); margin-top: 3px; }
 .sg-rec-sub .ck { font-weight: 600; color: var(--text-primary); }   /* the named color word */
+/* extension assembly: fixed-length tube(s) added when the strut's range doesn't
+   reach. Color-matched to the strut (--rec-bar). Tells the operator what to grab. */
+.sg-rec-ext { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; font: var(--type-body); }
+.sg-rec-ext .ic { flex: 0 0 auto; display: grid; place-items: center; width: 22px; height: 22px;
+  border-radius: 6px; background: color-mix(in srgb, var(--rec-bar) 22%, transparent); color: var(--rec-bar);
+  font-weight: 700; font-size: 14px; }
+.sg-rec-ext b { color: var(--text-primary); font-weight: 600; }
+.sg-rec-ext .note { color: var(--text-secondary); font: var(--type-caption); }
 .sg-ledger { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
 .sg-ledger .lk { font: var(--type-body); color: var(--text-primary); }
 .sg-ledger .lk.ded { color: var(--text-secondary); }
@@ -307,10 +315,15 @@ img, svg { display: block; }
    bigger type, no interactive affordances
    ============================================================================ */
 [data-theme="broadcast"] .sg-card {
-  border: none; border-left: 4px solid var(--sp-text, var(--surface-stroke));
-  border-radius: 0; background: var(--surface-card); box-shadow: none; padding-left: 20px;
+  border: 1px solid rgba(255,255,255,0.18);                          /* real outline, TV-legible */
+  border-left: 6px solid var(--sp-text, var(--surface-stroke));     /* status/color accent */
+  border-radius: 10px; background: var(--surface-elevated);          /* lifted off the page bg */
+  box-shadow: none; padding-left: 20px;
 }
 [data-theme="broadcast"] .sg-sp-card .sg-stripe { display: none; }
+/* rec card: left accent = the strut color (not a status); drop the overlay stripe so it doesn't double the border. */
+[data-theme="broadcast"] .sg-rec-card { border-left-color: var(--rec-bar); }
+[data-theme="broadcast"] .sg-rec-card .sg-rec-stripe { display: none; }
 [data-theme="broadcast"] .sg-slide { display: none; }
 [data-theme="broadcast"] .sg-badge { background: transparent; color: var(--sp-text); border: none; height: auto; padding: 0;
   font: var(--type-headline-2); font-weight: 700; }
