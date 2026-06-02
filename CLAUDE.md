@@ -41,20 +41,34 @@ Uses SSH authentication. Branching workflow: `main` = production, feature branch
 
 ## GitHub Project — Status Tracking
 
-When starting work on any GitHub issue (whether via `/plan` or ad-hoc), set its Project Status to **In Progress**:
+There are **two separate project boards**. Always use the one that matches the branch being worked on:
+
+| Board | Project # | URL | Used for |
+|-------|-----------|-----|----------|
+| FieldShore Roadmap (v3) | `1` | https://github.com/users/Vergo402/projects/1 | v3 issues — bugs, features, releases on `main` |
+| v4 Redesign Roadmap | `2` | https://github.com/users/Vergo402/projects/2 | v4 issues — all work on `v4-redesign` branch |
+
+When starting work on any GitHub issue (whether via `/plan`, `/v4-plan`, or ad-hoc), set its Project Status to **In Progress** using the correct board:
 
 ```bash
-# Find the item ID first
+# v3 issue (project 1)
 gh project item-list 1 --owner Vergo402 --limit 200 --format json \
   | jq -r '.items[] | select(.content.number == ISSUE_NUMBER) | .id'
-
-# Set Status → In Progress
 gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYNd6 \
+  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
+  --single-select-option-id 47fc9ee4
+
+# v4 issue (project 2)
+gh project item-list 2 --owner Vergo402 --limit 400 --format json \
+  | jq -r '.items[] | select(.content.number == ISSUE_NUMBER) | .id'
+gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYV37 \
   --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c \
   --single-select-option-id 47fc9ee4
 ```
 
-This applies to all work — /plan handles it automatically at scope-in (plan mode) and execution start (ship-bugs mode), but ad-hoc fixes must also set it. Status → Done auto-syncs when the issue closes.
+**New issues created mid-session** must be added to the correct board as sub-issues of the current parent issue — never left as standalone issues.
+
+This applies to all work — /plan handles it automatically for v3; /v4-plan for v4. Ad-hoc fixes must also set it. Status → Done auto-syncs when the issue closes.
 
 ---
 
