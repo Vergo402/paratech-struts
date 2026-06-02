@@ -46,6 +46,34 @@
   --radius-badge: 6px;
   --radius-button: 12px;
   --radius-input: 8px;
+
+  /* motion — durations + easings (motion.md, E3). Six durations, five easings;
+     extend only by ADR. Pairings are fixed (see motion.md Easing tokens). */
+  --motion-instant: 0ms;     /* reduced-motion swap, broadcast, sync dot */
+  --motion-micro: 100ms;     /* press, fill, nav content-pane fade */
+  --motion-transition: 200ms;/* sheet slide-up, modal/scrim fade, toast in (NOT 300ms — picker doctrine) */
+  --motion-status: 250ms;    /* status badge color cross-fade */
+  --motion-nav: 300ms;       /* full-screen list push, tab-switch content */
+  --motion-exit: 180ms;      /* toast slide-out + fade */
+
+  --ease-micro: ease-out;
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);  /* sheet/modal/toast in */
+  --ease-nav: cubic-bezier(0.4, 0, 0.2, 1);           /* navigation push */
+  --ease-status: ease-in-out;                         /* status cross-fade */
+  --ease-exit: ease-in;                               /* toast dismiss */
+}
+
+/* Reduced-motion floor — all durations collapse to instant; the badge SWITCHES,
+   it does not transition. Color is never the only signal, so no info is lost
+   (motion.md Accessibility). Haptics are NOT suppressed — they are not motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-micro: 0ms;
+    --motion-transition: 0ms;
+    --motion-status: 0ms;
+    --motion-nav: 0ms;
+    --motion-exit: 0ms;
+  }
 }
 
 /* ============================================================================
@@ -178,4 +206,11 @@
   --card-top-highlight: none;
   --card-shadow: none;
   --type-weight-bump: 0;
+
+  /* zero motion — the TV view is a snapshot, not a reactive UI (motion.md) */
+  --motion-micro: 0ms;
+  --motion-transition: 0ms;
+  --motion-status: 0ms;
+  --motion-nav: 0ms;
+  --motion-exit: 0ms;
 }
