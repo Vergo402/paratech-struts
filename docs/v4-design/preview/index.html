@@ -30,10 +30,15 @@
       <button class="sg-btn" data-vp-btn="broadcast">TV</button>
       <button class="sg-btn" data-vp-btn="full" aria-pressed="true">Full</button>
     </div>
+    <div class="sg-group" role="group" aria-label="Fraction style">
+      <span>Fraction</span>
+      <button class="sg-btn" data-frac-btn="stack" aria-pressed="true">Stacked</button>
+      <button class="sg-btn" data-frac-btn="diag">Diagonal</button>
+    </div>
     <span class="sg-note-cdn">mockup · not the build · markdown specs are source of truth</span>
   </header>
 
-  <main class="sg-stage" id="stage" data-theme="dark" data-viewport="full">
+  <main class="sg-stage" id="stage" data-theme="dark" data-viewport="full" data-frac="stack">
 
     <!-- ===================== COLOR (all 4 themes, from PALETTE source) ===================== -->
     <section class="sg-section" id="sec-color">
@@ -67,11 +72,12 @@
         <span>11.625"</span>
       </div>
 
-      <div class="sg-subhead">Typographic fractions — true ½, not slashed numerals</div>
+      <div class="sg-subhead">Fractions — reported to 1/8″, the field granularity (toggle Stacked / Diagonal above)</div>
       <div class="sg-frac-demo">
-        <div><div class="big frac">5¾"</div><div class="lbl">fraction smaller than the whole number, same cap height</div></div>
-        <div><div class="big frac">11⅝"</div><div class="lbl">quarters · eighths · sixteenths</div></div>
-        <div><div class="big frac">65½"</div><div class="lbl">effective length — not <code>65 1/2</code></div></div>
+        <div><div class="big frac">5<span class="fr"><span class="n">3</span><span class="d">4</span></span>"</div><div class="lbl">quarters</div></div>
+        <div><div class="big frac">11<span class="fr"><span class="n">5</span><span class="d">8</span></span>"</div><div class="lbl"><b>eighths — the floor</b></div></div>
+        <div><div class="big frac">45<span class="fr"><span class="n">3</span><span class="d">4</span></span>"</div><div class="lbl">the cut-to length</div></div>
+        <div><div class="big frac">65<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</div><div class="lbl">not <code>65 1/2</code>; 1/16 was false precision</div></div>
       </div>
     </section>
 
@@ -158,7 +164,7 @@
               <span class="sg-hazard" title="Unmitigated hazard in area">⚠ Hazard</span>
             </div>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">65½"</span></div>
+          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">65<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</span></div>
           <div class="sg-slide">
             <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Runner</span></div>
             <div class="back">Slide back to Strut Set<span class="rhandle">‹</span></div>
@@ -176,7 +182,7 @@
             </div>
             <span class="sg-badge is-runner">Runner</span>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">88¼"</span></div>
+          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">88<span class="fr"><span class="n">1</span><span class="d">4</span></span>"</span></div>
           <div class="sg-slide">
             <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Shore Secured</span></div>
             <div class="back">Slide back to Cutting<span class="rhandle">‹</span></div>
@@ -193,7 +199,7 @@
             </div>
             <span class="sg-badge is-secured">Shore Secured</span>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Set length</span> <span class="frac">108¾"</span></div>
+          <div class="sg-sp-meas"><span class="lbl">Set length</span> <span class="frac">108<span class="fr"><span class="n">3</span><span class="d">4</span></span>"</span></div>
           <div class="sg-slide">
             <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Strut Equipment Returned</span></div>
             <div class="back">Slide back to Runner<span class="rhandle">‹</span></div>
@@ -232,7 +238,7 @@
             </div>
             <span class="sg-badge is-cutting">Cutting</span>
           </div>
-          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">65½"</span></div>
+          <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">65<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</span></div>
           <div class="sg-cap">Focus / selected: accent border + hover fill, no scale change.</div>
         </article>
 
@@ -284,12 +290,12 @@
             <div class="sg-ded-head">Deductions</div>
             <div class="sg-ded-line"><span class="k">Opening</span><span class="v">56"</span></div>
             <div class="sg-ded-grid">
-              <span class="k">Header</span>           <span class="sel">4×4</span>                 <span class="v">−3½"</span>
+              <span class="k">Header</span>           <span class="sel">4×4</span>                 <span class="v">−3<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</span>
               <span class="k">Top Connector</span>    <span class="sel">Channel Base 4"x4"</span> <span class="v">−3.4"</span>
               <span class="k">Bottom Connector</span> <span class="sel">Channel Base 4"x4"</span> <span class="v">−3.4"</span>
-              <span class="k">Footer</span>           <span class="sel">4×4</span>                 <span class="v">−3½"</span>
+              <span class="k">Footer</span>           <span class="sel">4×4</span>                 <span class="v">−3<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</span>
             </div>
-            <div class="sg-ded-eff"><span class="k">Effective</span><span class="right"><span class="total">−13¹³⁄₁₆" total</span><span class="v">42³⁄₁₆"</span></span></div>
+            <div class="sg-ded-eff"><span class="k">Effective</span><span class="right"><span class="floor">↓ floored to 1/8″</span><span class="v">42<span class="fr"><span class="n">1</span><span class="d">8</span></span>"</span></span></div>
           </div>
           <div class="sg-rec-foot"><span class="sg-equip">Equipment from: Res 56</span><button class="sg-deploy" type="button">Deploy</button></div>
         </article>
@@ -307,12 +313,12 @@
             <div class="sg-ded-head">Deductions</div>
             <div class="sg-ded-line"><span class="k">Opening</span><span class="v">56"</span></div>
             <div class="sg-ded-grid">
-              <span class="k">Header</span>           <span class="sel">4×4</span>                 <span class="v">−3½"</span>
+              <span class="k">Header</span>           <span class="sel">4×4</span>                 <span class="v">−3<span class="fr"><span class="n">1</span><span class="d">2</span></span>"</span>
               <span class="k">Top Connector</span>    <span class="sel">Channel Base 4"x4"</span> <span class="v">−3.4"</span>
               <span class="k">Bottom Connector</span> <span class="sel">Channel Base 4"x4"</span> <span class="v">−3.4"</span>
               <span class="k">Footer</span>           <span class="sel ns">N/S</span>             <span class="v">—</span>
             </div>
-            <div class="sg-ded-eff"><span class="k">Effective</span><span class="right"><span class="total">−10⁵⁄₁₆" total</span><span class="v">45¹¹⁄₁₆"</span></span></div>
+            <div class="sg-ded-eff"><span class="k">Effective</span><span class="right"><span class="floor">↓ floored to 1/8″</span><span class="v">45<span class="fr"><span class="n">5</span><span class="d">8</span></span>"</span></span></div>
           </div>
           <div class="sg-rec-foot"><span class="sg-equip">Equipment from: Res 56</span><button class="sg-deploy" type="button">Deploy</button></div>
         </article>

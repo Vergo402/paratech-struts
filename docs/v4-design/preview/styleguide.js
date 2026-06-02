@@ -18,6 +18,7 @@
   }
   wire('data-theme-btn', function (v) { stage.setAttribute('data-theme', v); });
   wire('data-vp-btn', function (v) { stage.setAttribute('data-viewport', v); });
+  wire('data-frac-btn', function (v) { stage.setAttribute('data-frac', v); });
 
   /* deep-link the theme/width via ?theme=sunlight&vp=phone (or #theme=...).
      Lets a specific view be shared or captured. */
@@ -35,6 +36,7 @@
   }
   applyParam('data-theme', 'data-theme-btn', param('theme'));
   applyParam('data-viewport', 'data-vp-btn', param('vp'));
+  applyParam('data-frac', 'data-frac-btn', param('frac'));
 
   /* ?only=card|color|type focuses one section (used for clean captures). */
   var only = param('only');

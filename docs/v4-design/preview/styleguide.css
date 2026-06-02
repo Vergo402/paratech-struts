@@ -124,10 +124,39 @@ img, svg { display: block; }
 .t-mono { font: var(--type-mono); color: var(--text-primary); }
 
 .num { font-variant-numeric: tabular-nums; }
-/* fraction values: precomposed glyphs in Geist sans (which carries them) render
-   true typographic fractions at any size. In-app, typography.md specs the OpenType
-   `frac` feature + a composed-glyph fallback; this is the rendered result. */
+
+/* ── Fraction primitive ──────────────────────────────────────────────────────
+   Measurements are reported to 1/8" — the field granularity (ADR-012; 1/16 was
+   false precision for shoring, and unreadable at a gloved glance). Eighths are
+   built from REAL digits —
+   `<span class="fr"><span class="n">5</span><span class="d">8</span></span>` —
+   not super/subscript codepoints (the old 45¹¹⁄₁₆ hack rendered illegibly tiny).
+   One renderer for every denominator keeps the look consistent and big. Two
+   modes, toggled live via [data-frac] on the stage so the house style is chosen
+   by eye:
+     stack — tape-measure form: numerator over a ruled bar over denominator
+     diag  — diagonal nut fraction: raised numerator ⁄ lowered denominator
+   typography.md specs the in-app form. */
 .frac { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
+.fr { font-variant-numeric: tabular-nums; font-weight: inherit; white-space: nowrap; }
+.fr .n, .fr .d { font-variant-numeric: tabular-nums; }
+
+/* stacked (default) — reads like a ruler; unambiguous for two-digit denominators.
+   Sized at 0.6em (not the typographer's 0.5) because sixteenths must survive a
+   gloved glance in sun: legibility outranks "same cap height" for two-digit pairs. */
+[data-frac="stack"] .fr {
+  display: inline-flex; flex-direction: column; align-items: center;
+  font-size: 0.6em; line-height: 1; text-align: center;
+  vertical-align: 0.26em; margin: 0 0.05em 0 0.14em;
+}
+[data-frac="stack"] .fr .n { padding: 0 0.22em 0.05em; border-bottom: 0.1em solid currentColor; line-height: 1.04; }
+[data-frac="stack"] .fr .d { padding: 0.05em 0.22em 0; line-height: 1.04; }
+
+/* diagonal — raised numerator, true fraction slash, lowered denominator */
+[data-frac="diag"] .fr { display: inline-block; font-size: 0.66em; margin: 0 0.02em 0 0.08em; vertical-align: 0.04em; }
+[data-frac="diag"] .fr .n { vertical-align: 0.45em; }
+[data-frac="diag"] .fr .d { vertical-align: -0.1em; }
+[data-frac="diag"] .fr .n::after { content: "\2044"; vertical-align: -0.45em; font-size: 1.3em; margin: 0 -0.06em; }
 
 /* mono measurement column */
 .sg-mono-col { display: inline-grid; gap: 4px; padding: 14px 18px; background: var(--surface-card);
@@ -291,7 +320,9 @@ img, svg { display: block; }
 .sg-ded-eff .k { font: var(--type-body-medium); color: var(--text-primary); }
 .sg-ded-eff .right { display: flex; align-items: baseline; gap: 8px; }
 .sg-ded-eff .total { font: var(--type-caption); color: var(--text-secondary); }
-.sg-ded-eff .v { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--rec-bar); font-variant-numeric: tabular-nums; }
+/* cut length always rounds DOWN to 1/8" — slack taken up by wedge + strut (ADR-012, SME-confirmed) */
+.sg-ded-eff .floor { font: var(--type-caption); color: var(--text-tertiary); font-style: italic; white-space: nowrap; }
+.sg-ded-eff .v { font-family: var(--font-mono); font-size: 26px; font-weight: 700; color: var(--rec-bar); font-variant-numeric: tabular-nums; line-height: 1.05; }
 
 /* footer: equipment source + Deploy */
 .sg-rec-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px;
