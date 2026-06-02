@@ -131,32 +131,20 @@ img, svg { display: block; }
    built from REAL digits —
    `<span class="fr"><span class="n">5</span><span class="d">8</span></span>` —
    not super/subscript codepoints (the old 45¹¹⁄₁₆ hack rendered illegibly tiny).
-   One renderer for every denominator keeps the look consistent and big. Two
-   modes, toggled live via [data-frac] on the stage so the house style is chosen
-   by eye:
-     stack — tape-measure form: numerator over a ruled bar over denominator
-     diag  — diagonal nut fraction: raised numerator ⁄ lowered denominator
-   typography.md specs the in-app form. */
+   One renderer for every denominator keeps the look consistent and big. The
+   locked house style is the STACKED tape-measure form — numerator over a ruled
+   bar over denominator — sized at 0.6em (not the typographer's 0.5) because
+   eighths must survive a gloved glance in sun: legibility outranks "same cap
+   height" for two-digit pairs. typography.md specs the in-app form. */
 .frac { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
-.fr { font-variant-numeric: tabular-nums; font-weight: inherit; white-space: nowrap; }
-.fr .n, .fr .d { font-variant-numeric: tabular-nums; }
-
-/* stacked (default) — reads like a ruler; unambiguous for two-digit denominators.
-   Sized at 0.6em (not the typographer's 0.5) because sixteenths must survive a
-   gloved glance in sun: legibility outranks "same cap height" for two-digit pairs. */
-[data-frac="stack"] .fr {
+.fr {
   display: inline-flex; flex-direction: column; align-items: center;
+  font-variant-numeric: tabular-nums; font-weight: inherit; white-space: nowrap;
   font-size: 0.6em; line-height: 1; text-align: center;
   vertical-align: 0.52em; margin: 0 0.05em 0 0.14em;
 }
-[data-frac="stack"] .fr .n { padding: 0 0.22em 0.05em; border-bottom: 0.1em solid currentColor; line-height: 1.04; }
-[data-frac="stack"] .fr .d { padding: 0.05em 0.22em 0; line-height: 1.04; }
-
-/* diagonal — raised numerator, true fraction slash, lowered denominator */
-[data-frac="diag"] .fr { display: inline-block; font-size: 0.66em; margin: 0 0.02em 0 0.08em; vertical-align: 0.04em; }
-[data-frac="diag"] .fr .n { vertical-align: 0.45em; }
-[data-frac="diag"] .fr .d { vertical-align: -0.1em; }
-[data-frac="diag"] .fr .n::after { content: "\2044"; vertical-align: -0.45em; font-size: 1.3em; margin: 0 -0.06em; }
+.fr .n { font-variant-numeric: tabular-nums; padding: 0 0.22em 0.05em; border-bottom: 0.1em solid currentColor; line-height: 1.04; }
+.fr .d { font-variant-numeric: tabular-nums; padding: 0.05em 0.22em 0; line-height: 1.04; }
 
 /* mono measurement column */
 .sg-mono-col { display: inline-grid; gap: 4px; padding: 14px 18px; background: var(--surface-card);
