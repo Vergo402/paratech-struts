@@ -121,18 +121,25 @@ The deduction section shows the **Opening → Effective** math and the four comp
 
 ```
 Deductions
-Opening                                    56"
-  Header             4×4                   −3½"
-  Top Connector      Channel Base 4"x4"    −3.4"
-  Bottom Connector   Channel Base 4"x4"    −3.4"
-  Footer             N/S                     —
-  ──────────────────────────────────────────────
-Effective              ↓ floored to 1/8″    45 5/8"
+Opening                                       56"
+  Header                                     −3½"
+    4×4
+  Top Connector                              −3⅜"     (≈)
+    Channel Base 4×4
+  Bottom Connector                           −3⅜"     (≈)
+    Channel Base 4×4
+  Footer                                     N/S       (red)
+    not selected
+  ─────────────────────────────────────────────────
+Effective               ↓ floored to 1/8″    45 5/8"
+≈ plate heights to nearest 1/8″ — exact 3.4″ used in the math
 ```
+
+Each slot is **label + deduction value on one line** (values align in a right column), with the wood size / plate name on a **sub-line beneath** — so a long plate name never wraps and shoves the value column out of alignment (the v3 mid-column wrap problem).
 
 - **Order is rigid: Header → Top Connector → Bottom Connector → Footer** (top of the assembly to the bottom). Never reorder or alphabetize.
 - **Every slot is always shown.** If a section is unselected, it renders **"N/S"** (not selected) in `--danger` so the gap is obvious at a glance — v3 silently omitted unselected slots; v4 surfaces them (visible state, Principle 7/10). The omission of a footer or a connector is a decision the operator should *see*, not infer.
-- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″). `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the card shows the plate name + its deduction. **Plate heights display exact** (e.g., `3.4″`), never pre-rounded to 1/8″ — only the final Effective length rounds ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs accumulates unsafe error).
+- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″) — exact eighths. `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the sub-line shows the plate name. **Plate deductions display as the nearest-1/8″ fraction** (e.g., `≈3⅜″` for a 3.4″ plate) so the column reads as one consistent fraction set, **but the exact spec (3.4″) is used in the math** — a footnote marks the plate rows approximate ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs *in the math* would accumulate unsafe error).
 - Opening and Effective are emphasized (`--type-mono`); **Effective is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) with a `↓ floored to 1/8″` note beside it: short is taken up by wedge + strut thread, long is unsafe. Fractions render via the digit-pair component (stacked) per [`typography.md`](typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
 - **Rated capacity is computed and available but is *not* on the card face** (synthesis §3.4 — demoted; it was a vehicle-stabilization aid, not the shoring core). The load tables / conservative-floor engine are unchanged; this is display-prominence only.
 
