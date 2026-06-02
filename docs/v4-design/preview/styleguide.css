@@ -147,7 +147,7 @@ img, svg { display: block; }
 [data-frac="stack"] .fr {
   display: inline-flex; flex-direction: column; align-items: center;
   font-size: 0.6em; line-height: 1; text-align: center;
-  vertical-align: 0.26em; margin: 0 0.05em 0 0.14em;
+  vertical-align: 0.52em; margin: 0 0.05em 0 0.14em;
 }
 [data-frac="stack"] .fr .n { padding: 0 0.22em 0.05em; border-bottom: 0.1em solid currentColor; line-height: 1.04; }
 [data-frac="stack"] .fr .d { padding: 0.05em 0.22em 0; line-height: 1.04; }
