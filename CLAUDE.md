@@ -68,7 +68,12 @@ gh project item-edit --id <item-id> --project-id PVT_kwHODy7CN84BYV37 \
 
 **New issues created mid-session** must be added to the correct board as sub-issues of the current parent issue — never left as standalone issues.
 
-This applies to all work — /plan handles it automatically for v3; /v4-plan for v4. Ad-hoc fixes must also set it. Status → Done auto-syncs when the issue closes.
+### Closing issues
+
+- **v4 issues (`v4-redesign` branch):** Close manually with `gh issue close NUMBER --repo Vergo402/paratech-struts` as soon as the work is done. Do NOT rely on `Closes #N` in commit messages — that keyword only fires on merge to the default branch (`main`), and v4 won't merge for a long time.
+- **v3 issues (`main` branch):** `Closes #N` in the commit message works correctly on merge to main. Manual close is also fine.
+
+The board Status updates to Done automatically when the issue closes.
 
 ---
 
