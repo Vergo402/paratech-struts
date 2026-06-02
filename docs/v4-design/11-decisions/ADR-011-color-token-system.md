@@ -2,12 +2,12 @@
 
 ## Status
 
-- [x] Proposed
-- [ ] Accepted *(pending Phase E gate sign-off)*
+- [ ] Proposed
+- [x] Accepted *(Phase E gate — Alex, 2026-06-01)*
 
 **Date:** 2026-05-31
 **Author:** Claude Opus 4.8 (Phase E session) + reproducible WCAG verification ([`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs))
-**Reviewer(s):** Alex (Phase E gate — pending)
+**Reviewer(s):** Alex (Phase E gate — approved 2026-06-01)
 
 ---
 

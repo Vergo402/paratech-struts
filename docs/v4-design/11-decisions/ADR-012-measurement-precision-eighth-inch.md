@@ -2,14 +2,14 @@
 
 ## Status
 
-- [x] Proposed
-- [ ] Accepted *(pending Phase E gate sign-off)*
+- [ ] Proposed
+- [x] Accepted *(Phase E gate — Alex, 2026-06-01)*
 
 **Date:** 2026-06-01
 **Author:** Claude Opus 4.8 (Phase E session)
 **Domain review:** `structural-collapse-sme` agent — doctrine verdict (Paratech O&M + USACE/FEMA shoring practice). Verdict: **approve, with a mandatory floor-rounding rule and an exact-spec rule.**
 **Decided by:** Alex (chat, 2026-06-01) — *"go with 1/8th; 1/16ths was the fine carpentry skills coming out."*
-**Reviewer(s):** Alex (Phase E gate — pending)
+**Reviewer(s):** Alex (Phase E gate — approved 2026-06-01)
 
 ---
 
