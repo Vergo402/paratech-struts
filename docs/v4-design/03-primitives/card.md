@@ -127,13 +127,13 @@ Opening                                    56"
   Bottom Connector   Channel Base 4"x4"    −3.4"
   Footer             N/S                     —
   ──────────────────────────────────────────────
-Effective                  −10⁵⁄₁₆" total   45¹¹⁄₁₆"
+Effective              ↓ floored to 1/8″    45 5/8"
 ```
 
 - **Order is rigid: Header → Top Connector → Bottom Connector → Footer** (top of the assembly to the bottom). Never reorder or alphabetize.
 - **Every slot is always shown.** If a section is unselected, it renders **"N/S"** (not selected) in `--danger` so the gap is obvious at a glance — v3 silently omitted unselected slots; v4 surfaces them (visible state, Principle 7/10). The omission of a footer or a connector is a decision the operator should *see*, not infer.
-- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″). `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the card shows the plate name + its deduction.
-- Opening and Effective are emphasized (`--type-mono`); Effective is in the strut color; the total deduction sits beside it. Measurement fractions render typographically (`42³⁄₁₆`, not `42 3/16`) per [`typography.md`](typography.md).
+- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″). `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the card shows the plate name + its deduction. **Plate heights display exact** (e.g., `3.4″`), never pre-rounded to 1/8″ — only the final Effective length rounds ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs accumulates unsafe error).
+- Opening and Effective are emphasized (`--type-mono`); **Effective is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) with a `↓ floored to 1/8″` note beside it: short is taken up by wedge + strut thread, long is unsafe. Fractions render via the digit-pair component (stacked) per [`typography.md`](typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
 - **Rated capacity is computed and available but is *not* on the card face** (synthesis §3.4 — demoted; it was a vehicle-stabilization aid, not the shoring core). The load tables / conservative-floor engine are unchanged; this is display-prominence only.
 
 > **Lesson recorded:** the first v4 pass mocked a generic "Required − plate − plate = Effective" ledger and missed the real structure (color/system, range, extension block, the four ordered deduction slots, equipment source, Deploy). Result cards are safety-critical — the v4 card is built from the v3 `renderResults()` anatomy, not from the design essays' abstraction.

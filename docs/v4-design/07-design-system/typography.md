@@ -73,16 +73,18 @@ This single rule is why every reference app's measurement columns look ragged an
 
 ---
 
-## Typographic fractions (new — synthesis §4)
+## Fractions — 1/8″ granularity, legible digit pairs (synthesis §4; [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md))
 
-FieldShore measurements are fractional (½", 5¾", 11⅝"). They must render as **true typographic fractions**, not same-size slashed numerals (`5 3/4`) and not a Unicode-vulgar-fraction grab bag (which only covers a few denominators and renders inconsistently).
+FieldShore measurements are fractional and reported to **1/8″** — the field granularity (ADR-012: 1/16″ was false precision *and* unreadable at a gloved glance; the internal math was only 0.1″-decimal anyway). Denominators are therefore **2, 4, 8 only** (½, ¼/¾, ⅛/⅜/⅝/⅞). They must render legibly — never same-size slashed numerals (`5 3/4`), and never the super/subscript codepoint hack (`45¹¹⁄₁₆`) that rendered illegibly tiny at field distance.
 
-**Spec:** the numerator and denominator are set **smaller than the whole number but raised/positioned so the fraction occupies the same total cap height** as the integer beside it — a true `5¾` appearance, vertically centered, the fraction bar at the optical midline.
+**Spec:** a fraction is a composed component of **real digits**, not glyph codepoints — `<span class="fr"><span class="n">5</span><span class="d">8</span></span>` — sized to *read*, not shrunk to the integer's cap height. Two render forms; **stacked is the house default**:
 
-- Preferred mechanism: the OpenType `frac` feature on Geist where the input is `5 3/4` → `font-feature-settings: "frac" 1;` (or `font-variant-numeric: diagonal-fractions;`). Verify Geist's `frac` coverage for all denominators FieldShore uses (halves, quarters, eighths, sixteenths) during Phase H; where a denominator is uncovered, fall back to a composed-glyph component (numerator `sup`, denominator `sub`, U+2044 fraction slash) sized to ~62% with baseline shift so total cap height matches.
-- The whole number stays at the host size (e.g., `--type-mono` 13pt); the fraction set is the smaller component within it.
-- Fractions inherit tabular alignment — `11⅝` and `5¾` in a column align on the integer's right edge.
-- This is owned here as a token-level rule; the reusable render component is specified with [`input.md`](../03-primitives/input.md) (measurement display) and the result/deduction card in [`card.md`](../03-primitives/card.md).
+- **Stacked** (default) — numerator over a ruled bar over denominator, the tape-measure/ruler form. Unambiguous and the most legible at the small deduction-row size. Sized ~0.6em of the host number.
+- **Diagonal** — raised numerator, fraction slash, lowered denominator. Acceptable for a large display value; the slash muddies at small sizes, so it is not the default. (Both modes ship in the styleguide behind a live toggle so the call is made by eye.)
+- The whole number stays at the host size; the fraction is the smaller-but-still-legible component within it. **Legibility outranks the typographer's "same cap height"** — a measurement you can't read in sun is a failed measurement.
+- Fractions inherit tabular alignment — values in a column align on the integer's right edge.
+- OpenType `frac` / precomposed Unicode glyphs are **not** used: they cover only a few denominators, render smaller, and would be inconsistent the moment another denominator appears. One digit-pair renderer covers every denominator uniformly.
+- This is owned here as a token-level rule; the reusable component renders in [`input.md`](../03-primitives/input.md) (measurement display) and the result/deduction card in [`card.md`](../03-primitives/card.md). Rendered proof (both modes, live toggle) is in `preview/`.
 
 ---
 
@@ -126,7 +128,7 @@ The ramp is shared; **size and weight adapt by surface, components do not** (Pri
 ## Anti-patterns (do not do these)
 
 - **Proportional numerals in a measurement column.** Always tabular / Geist Mono. This is the single most common quality tell.
-- **`5 3/4` rendered as three same-size characters.** Use the typographic-fraction spec.
+- **`5 3/4` as three same-size characters, or `45¹¹⁄₁₆` faked with super/subscript codepoints.** Both fail — use the digit-pair fraction component (stacked).
 - **A third typeface.** Geist + Geist Mono is the entire system. No display face, no "friendly" secondary.
 - **System-font fallback as the design.** Inter/system is a *fallback*, never the authored target (essay 02's rejected skeptic position).
 - **Weight below 400 for body.** Geist's lighter axes wash out in sunlight; body floor is 400 (500 in sunlight).
@@ -137,6 +139,6 @@ The ramp is shared; **size and weight adapt by surface, components do not** (Pri
 
 ## Open questions for the gate
 
-1. **Geist `frac` denominator coverage.** Confirmed at Phase H against the real font; if eighths/sixteenths aren't covered by the OpenType feature, the composed-glyph fallback component ships. No blocker for the gate — the *rule* is fixed here.
+1. **~~Geist `frac` denominator coverage~~ — RESOLVED ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).** Moot: fractions render via the digit-pair component, not the OpenType `frac` feature, so there's no font-coverage dependency; output is 1/8″ only (no sixteenths). The one remaining call is stacked vs. diagonal house style (stacked recommended), made by eye at the gate.
 2. **Self-host vs. CDN for the Geist woff2.** Leaning self-host + subset (offline-first, no third-party request, SRI moot). Confirmed at Phase H build.
 3. **Söhne** stays parked for Phase I (synthesis Q1) — not reopened in Phase E.
