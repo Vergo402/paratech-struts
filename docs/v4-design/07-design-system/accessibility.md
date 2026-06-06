@@ -76,7 +76,7 @@ The scripts for the controls that exist today — the two filled primitives plus
 | **Loading region** (skeleton / indeterminate) | Announced once, politely, via `aria-busy` + live region: "Loading shore points." Skeleton blocks are not focus stops; when content lands it is read on next focus, never as a "done loading" interruption. The loading-vs-empty boundary lives in `aria-busy` ([`loading-state.md`](../03-primitives/loading-state.md)). |
 | **Determinate progress** | "Importing, 142 of 500." Announced **at intervals**, not every row; tabular figures, spoken as the field says them ([`loading-state.md`](../03-primitives/loading-state.md)). |
 
-**Registry rule.** Each primitive doc still to be filled — `input`, `list`, `slider`, `segmented`, `toast`, `nested-checklist` (issues #185–196) — adds its own script *following this grammar* and links back here. (`sheet` (#183), `modal` (#184), `badge` (#186), `button` (#187), `toggle` (#190), `empty-state` (#194), and `loading-state` (#195) are filled — their scripts are in the table above.) This file is where the scripts are collected, not where their interaction models are invented.
+**Registry rule.** Each primitive doc still to be filled — `input`, `list`, `slider`, `toast`, `nested-checklist` (issues #185–196) — adds its own script *following this grammar* and links back here. (`sheet` (#183), `modal` (#184), `badge` (#186), `button` (#187), `toggle` (#190), `segmented` (#191), `empty-state` (#194), and `loading-state` (#195) are filled — their scripts are in the table above.) This file is where the scripts are collected, not where their interaction models are invented.
 
 ---
 
