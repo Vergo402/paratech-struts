@@ -58,12 +58,16 @@ The scripts for the controls that exist today — the two filled primitives plus
 | **`ShorePointCard`** | "Shore point B-2, Shore Secured, Division 2. Double tap to open." State is the *word*, not the stripe color. |
 | **Advance / Step-back control** | "Button, Advance to Runner." / "Button, Step back to Cutting." Activating commits, then the card announces its new state. |
 | **Status badge** (read-only) | Read inline as its label word: "Cutting." Never announced as a color. |
+| **Count badge** (read-only) | Spoken with its referent, never bare: "12 shore points, Cutting" — not "12." Not a focus stop; read as part of its host row / header. |
+| **Label / tag badge** (read-only) | Read inline as its word: "External," "Rescue Group Supervisor." Any abbreviation expands via `<abbr>`. |
+| **Severity badge** (read-only) | Read as its level + what it flags: "High severity hazard," "Unrated zone." Paired with the consequence text, never announced as a color. |
+| **Indicator dot** (read-only) | Never announced as a dot or a color — only its adjacent label word is read: "Active." |
 | **Toast / live region** | Announced once, politely: "Advancing all 2 group members." Confirmation or notification only — never the *sole* record of a state (it is also on the card). |
 | **Modal / sheet** (on open) | "[Title], dialog." Focus enters the dialog; the rest of the screen is inert to the reader until it closes. |
 | **Sheet handle / Close control** | "Button, Close." Backdrop tap, Esc, or activating Close all commit the same dismissal; the handle's swipe-down is the enhancement, this button the equivalent path (*assistive tech cannot drag* — [`sheet.md`](../03-primitives/sheet.md)). |
 | **Measurement input / numeric keypad** | "[Field], text field, [value] inches." Keys are 56pt and individually labeled; system dictation is the secondary affordance. |
 
-**Registry rule.** Each primitive doc still to be filled — `button`, `badge`, `modal`, `toggle`, `input`, `list`, `slider`, `segmented`, `toast`, `empty-state`, `loading-state`, `nested-checklist` (issues #184–196) — adds its own script *following this grammar* and links back here. (`sheet` (#183) is filled — its handle / Close script is in the table above.) This file is where the scripts are collected, not where their interaction models are invented.
+**Registry rule.** Each primitive doc still to be filled — `button`, `toggle`, `input`, `list`, `slider`, `segmented`, `toast`, `empty-state`, `loading-state`, `nested-checklist` (issues #185–196) — adds its own script *following this grammar* and links back here. (`sheet` (#183), `modal` (#184), and `badge` (#186) are filled — their scripts are in the table above.) This file is where the scripts are collected, not where their interaction models are invented.
 
 ---
 
