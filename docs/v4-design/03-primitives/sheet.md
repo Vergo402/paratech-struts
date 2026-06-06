@@ -18,6 +18,7 @@ The bottom edge is not an aesthetic choice. **The phone is the floor** ([`motion
 | Choosing, entering, or reviewing — non-destructive | Confirming something destructive or terminal |
 | The parent screen should stay in context behind it | The operator must stop and decide before anything else |
 | It is the everyday rhythm of an operation | The action is rare and consequential |
+| The content fits a short form or a single choice | The content is a form too large for a 60vh sheet (Start Operation, Add Shore Point) |
 | Base-plate picker, role assignment, wood size, Assign Equipment, action lists | End Operation, un-deploy a strut, un-return equipment, delete |
 
 If the action is reversible and routine, it is a sheet — and the doubt-free escape principle (Principle 6) carries it: a sheet never asks "Are you sure?"; the operator dismisses it and nothing committed.
@@ -49,7 +50,7 @@ All three are the **same shell** — handle, scrim, slide-up, dismiss gestures �
 | Background | Elevated surface | `--surface-elevated` |
 | Border | 1pt hairline (2pt under sunlight) | `--surface-stroke` / `--stroke-width` |
 | Elevation | **A real cast shadow** — the one primitive allowed one | `--shadow-sheet` (per-theme: `0 -4pt 24pt …0.18` dark, `0 -2pt 16pt …0.08` light, `none` broadcast) — [`spacing-grid.md`](../07-design-system/spacing-grid.md) §Elevation |
-| Scrim | Backdrop dims the parent, **fades 0 → 40%** with the slide | [`motion.md`](../07-design-system/motion.md) §What moves (not yet a named token — see Open questions) |
+| Scrim | Backdrop dims the parent, **fades 0 → `--scrim` (40%)** with the slide | `--scrim` — [`color.md`](../07-design-system/color.md); timing in [`motion.md`](../07-design-system/motion.md) §What moves |
 | Title (optional) | `--type-headline-2`; doubles as the dialog's accessible name | [`typography.md`](../07-design-system/typography.md) |
 | Body padding | `--space-4` sides | [`spacing-grid.md`](../07-design-system/spacing-grid.md) |
 | Row height | **56pt** (operational touch floor) for any tappable row | [`spacing-grid.md`](../07-design-system/spacing-grid.md) touch-target table |
@@ -60,7 +61,7 @@ The sheet is the one element with a real cast shadow because it genuinely overla
 
 ## Open / dismiss mechanics
 
-- **Open.** The sheet translates `translateY(100%) → translateY(0)` over `--motion-transition` (**200ms**) on `--ease-standard`, and the scrim fades `0 → 40%` simultaneously ([`motion.md`](../07-design-system/motion.md)). 200ms, **not** 300ms: the operator is already waiting with a gloved thumb, and a slower sheet feels sluggish in exactly the workflow that can least afford it.
+- **Open.** The sheet translates `translateY(100%) → translateY(0)` over `--motion-transition` (**200ms**) on `--ease-standard`, and the scrim fades `0 → --scrim` (40%) simultaneously ([`motion.md`](../07-design-system/motion.md)). 200ms, **not** 300ms: the operator is already waiting with a gloved thumb, and a slower sheet feels sluggish in exactly the workflow that can least afford it.
 - **Dismiss — four equal paths:** backdrop tap · **drag the handle down** (past a velocity / displacement threshold) · **Esc** (keyboard) · **system back** (Android). All four commit the same dismissal.
 - **Single-select commits immediately and self-dismisses** (picker rule 2); the parent reflects the new value the instant the sheet closes. **No "Save / Cancel / Are you sure?"** on a single-select or non-destructive sheet (Principle 6). A multi-field form shows one primary **Apply / Done**.
 - **One sheet at a time.** Opening a second dismisses the first — sheets never stack. Stacked overlays are a stacking-context and focus-trap hazard, and they bury the parent the sheet promised to keep in view.
@@ -118,7 +119,7 @@ The v3 plate picker was hardened for iOS Safari across several patches. v4 inher
 ## Anti-patterns (do not do these)
 
 - **A centered dialog for an everyday choice.** Out of thumb reach with a glove. Bottom sheet, not modal.
-- **A sheet taller than 60vh**, or a full-height sheet that hides the parent — that is a screen, not a sheet; use the full-screen list ([`picker.md`](picker.md)).
+- **A sheet taller than 60vh**, or a full-height sheet that hides the parent — that is not a sheet; an oversized *list or choice* becomes the full-screen list ([`picker.md`](picker.md)), an oversized *form* becomes the full-screen-form [`modal.md`](modal.md).
 - **Stacked sheets.** One at a time; a second dismisses the first.
 - **"Are you sure?" on a non-destructive sheet.** Reversibility handles regret (Principle 6).
 - **Toggling `display` to show / hide.** Drops iOS scroll and the transition; use `visibility` + `pointer-events`.
@@ -131,6 +132,6 @@ The v3 plate picker was hardened for iOS Safari across several patches. v4 inher
 
 ## Open questions for downstream
 
-1. **Scrim is not yet a named token.** Its 40% opacity is owned in prose by [`motion.md`](../07-design-system/motion.md) (and [`picker.md`](picker.md)); v3 used `rgba(0,0,0,0.3)`. The sheet and the modal share one scrim — when [`modal.md`](modal.md) (#184) lands, tokenize it **once** (e.g. `--scrim`) in the color / spacing owner rather than minting it in either primitive. Flagged, not resolved here.
+1. ~~**Scrim is not yet a named token.**~~ **Resolved (#184):** the sheet and modal share one scrim, now minted **once** as `--scrim` in its owner [`color.md`](../07-design-system/color.md) (per theme: 40% light/dark, 55% sunlight; none in broadcast) — neither primitive mints it. The fade *timing* stays with [`motion.md`](../07-design-system/motion.md). Landed with [`modal.md`](modal.md).
 2. **Swipe-down dismiss threshold.** The exact velocity / displacement that commits a swipe-down (vs. snapping back) is affordance geometry, finalized in the vertical slice (Phase H) — like the card's exact slide mechanics ([`card.md`](card.md) OQ1). The *principle* (drag the handle down, one sheet at a time, 200ms) is fixed here.
 3. **Tablet popover anchoring.** Whether the center-popover variant tethers with a pointer/arrow to its trigger or floats free is an IA decision per screen (Phase F).

@@ -45,6 +45,7 @@ Warm off-white surfaces, precise hairline strokes, no drop shadows. Clean withou
 | `--surface-elevated` | `#FFFFFF` | Sheet / modal surface (elevation via shadow, not color, in light) |
 | `--surface-stroke` | `rgba(0,0,0,0.08)` | 1pt hairline border |
 | `--accent-subtle` | `#FFF8E7` | Gold-tint background for selected state |
+| `--scrim` | `rgba(0,0,0,0.40)` | Backdrop behind a sheet / modal — dims the parent; fades `0 → --scrim` (timing in [`motion.md`](motion.md)). The one scrim, shared by both overlay surfaces ([`sheet.md`](../03-primitives/sheet.md) / [`modal.md`](../03-primitives/modal.md)) |
 
 ### Text (ratios on `--surface-bg` `#F7F6F3` unless noted)
 | Token | Value | Ratio | Use class |
@@ -85,6 +86,7 @@ The default during night operations. A muted, desaturated, **warm** slate — th
 | `--surface-elevated` | `#2E333B` | Sheet / modal / focused surface |
 | `--surface-stroke` | `rgba(255,255,255,0.07)` | 1pt hairline at 7% white |
 | `--accent-subtle` | `#2A2310` | Gold-tint background for selected state |
+| `--scrim` | `rgba(0,0,0,0.40)` | Backdrop behind a sheet / modal — 40% black, the doctrine value (as light); the darkened parent recedes beneath the lighter `--surface-elevated` |
 
 ### Text
 | Token | Value | Ratio (on card `#252930`) | Use class |
@@ -122,6 +124,7 @@ The default during night operations. A muted, desaturated, **warm** slate — th
 | `--surface-card` | `#FFFFFF` | Card surface; separated by 2pt stroke + shadow |
 | `--surface-stroke` | `rgba(0,0,0,0.25)` | **2pt** stroke; guaranteed visible under glare |
 | `--accent-subtle` | `#FFF3D6` | Selected-state tint (kept light; selection also gets weight/border) |
+| `--scrim` | `rgba(0,0,0,0.55)` | Backdrop behind a sheet / modal — **stronger (55%)** than light/dark so the dim survives direct sun, the same thicken-for-glare strategy as the 2pt stroke and the card shadow |
 
 ### Text & accent
 | Token | Value | Ratio (on white) | Use class |
@@ -220,6 +223,8 @@ Cards never use a drop shadow; elevation is **stroke + a 1pt top-edge inner high
 |---|---|---|---|
 | `--shadow-sheet` | `0 -2pt 16pt rgba(0,0,0,0.08)` | `0 -4pt 24pt rgba(0,0,0,0.18)` | `0 2pt 8pt rgba(0,0,0,0.08)` (cards gain a shadow here) |
 | card top inner highlight | `inset 0 1pt 0 rgba(255,255,255,0.50)` | `inset 0 1pt 0 rgba(255,255,255,0.06)` | none (2pt stroke does the work) |
+
+The overlay **scrim** is the other color-side overlay treatment: a single `--scrim` token, authored per theme above (40% light/dark, 55% sunlight). It is shared by both overlay surfaces — sheet and modal mint nothing, they reference it ([`sheet.md`](../03-primitives/sheet.md) / [`modal.md`](../03-primitives/modal.md)); the fade *timing* is owned by [`motion.md`](motion.md). **Broadcast has no `--scrim`** — that surface renders no overlays (no sheets, no modals; see [`picker.md`](../03-primitives/picker.md) surface table). A centered-modal cast shadow (`--shadow-modal`) is not yet defined — `--shadow-sheet`'s geometry is bottom-anchored; flagged in [`modal.md`](../03-primitives/modal.md) Open questions for the vertical slice.
 
 ---
 
