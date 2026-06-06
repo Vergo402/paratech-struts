@@ -59,10 +59,11 @@ The scripts for the controls that exist today — the two filled primitives plus
 | **Advance / Step-back control** | "Button, Advance to Runner." / "Button, Step back to Cutting." Activating commits, then the card announces its new state. |
 | **Status badge** (read-only) | Read inline as its label word: "Cutting." Never announced as a color. |
 | **Toast / live region** | Announced once, politely: "Advancing all 2 group members." Confirmation or notification only — never the *sole* record of a state (it is also on the card). |
-| **Modal / sheet** | "[Title], dialog." Focus enters the dialog; the rest of the screen is inert to the reader until it closes. |
+| **Modal / sheet** (on open) | "[Title], dialog." Focus enters the dialog; the rest of the screen is inert to the reader until it closes. |
+| **Sheet handle / Close control** | "Button, Close." Backdrop tap, Esc, or activating Close all commit the same dismissal; the handle's swipe-down is the enhancement, this button the equivalent path (*assistive tech cannot drag* — [`sheet.md`](../03-primitives/sheet.md)). |
 | **Measurement input / numeric keypad** | "[Field], text field, [value] inches." Keys are 56pt and individually labeled; system dictation is the secondary affordance. |
 
-**Registry rule.** Each primitive doc still to be filled — `button`, `badge`, `modal`, `sheet`, `toggle`, `input`, `list`, `slider`, `segmented`, `toast`, `empty-state`, `loading-state`, `nested-checklist` (issues #183–196) — adds its own script *following this grammar* and links back here. This file is where the scripts are collected, not where their interaction models are invented.
+**Registry rule.** Each primitive doc still to be filled — `button`, `badge`, `modal`, `toggle`, `input`, `list`, `slider`, `segmented`, `toast`, `empty-state`, `loading-state`, `nested-checklist` (issues #184–196) — adds its own script *following this grammar* and links back here. (`sheet` (#183) is filled — its handle / Close script is in the table above.) This file is where the scripts are collected, not where their interaction models are invented.
 
 ---
 
