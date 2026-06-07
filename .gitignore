@@ -5,6 +5,7 @@
 .claude/worktrees/
 .claude/settings.local.json
 .claude/launch.json
+.claude/scheduled_tasks.lock
 
 # Review queue (pending manual delete)
 _review-to-delete/

@@ -111,6 +111,12 @@ When updating (MINOR/MAJOR):
 5. **Refresh screenshots for any screen the release changed.** Capture fresh shots from the live app (the `qa-driver` agent can drive the UI) and overwrite the matching PNG(s) in `docs/manual-assets/` — filenames are mapped to sections in the build script's `IMAGE_MAP`. Then rerun the build so the new shots embed. If a release touches no UI, the existing screenshots may be reused.
 6. Commit and push **both manuals + any changed screenshots** in the same commit/PR as the feature — the manuals ship with the work, never in a separate trailing commit.
 
+### v3 → v4 Parity Matrix — Sync Rule
+
+The v4 redesign (`v4-redesign` branch) forked at **v3.19.1**, so every v3 feature shipped after that fork must be carried into the v4 design or it will be silently lost when v4 is built. The living matrix at **`docs/v4-design/12-parity/v3-feature-parity.md`** (on `v4-redesign`) tracks this.
+
+**On every v3 MINOR or MAJOR release**, add/refresh that feature's row in the parity matrix — what shipped, its v4 coverage (Covered / Deferred / Gap / Decided-drop), and the v4 design-doc reference. Same discipline as the user-manual rule above: the release isn't "done" until the matrix reflects it. (PATCH releases: only if they change user-facing behavior the matrix tracks.) This is the concrete instrument behind the Phase J parity gate, [#256](https://github.com/Vergo402/paratech-struts/issues/256).
+
 ---
 
 ## App Structure
