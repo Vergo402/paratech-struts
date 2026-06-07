@@ -7,11 +7,11 @@
 ## Status
 
 - [x] Proposed
-- [ ] Accepted *(awaiting the Phase F foundation mini-gate — Alex)*
+- [x] Accepted *(Phase F foundation mini-gate — Alex, 2026-06-07)*
 
 **Date:** 2026-06-07
 **Author:** Claude Opus 4.8 (Phase F foundation session)
-**Reviewer(s):** Alex (Phase F foundation gate — pending)
+**Reviewer(s):** Alex (Phase F foundation gate — approved 2026-06-07)
 
 ---
 
