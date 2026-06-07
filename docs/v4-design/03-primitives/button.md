@@ -9,7 +9,7 @@
 
 A button is a **momentary control that performs one action** — assign equipment, log a hazard, start an operation, confirm a deletion. The operator presses it, the action fires, the button returns to rest. It owns no state of its own; it is a verb, not a setting. After the picker (which *chooses*) and the card (which *holds an object*), the button is the third foundational interactive primitive: the one that *acts*.
 
-The reason v3 needs this doc is the reason [`picker.md`](picker.md) and [`badge.md`](badge.md) needed theirs: **the same conceptual thing looks different in a dozen places, and several things that are not buttons at all wear button markup.** v3 grew 32 button-shaped classes — `.btn` with seven color/size modifiers, plus `.fab-arc`, `.quick-start-fab`, `.nav-btn`, `.qty-btn`, `.system-toggle`, `.inv-qty-btn`, `.plate-picker-btn`, `.sp-edit-btn`, `.division-add-btn`, and more — each hand-tuned at its call site. Worse, many `<button>` elements are not actions: the bottom nav is a tab set (`role="tab"`), the strut-system and quantity pickers are segmented selectors (`role="radio"` / `aria-pressed`), the inventory `±` is a stepper. They share a tag and nothing else.
+The reason v3 needs this doc is the reason [`picker.md`](picker.md) and [`badge.md`](badge.md) needed theirs: **the same conceptual thing looks different in a dozen places, and several things that are not buttons at all wear button markup.** v3 grew 32 button-shaped classes — `.btn` with seven color/size modifiers, plus `.fab-arc`, `.quick-start-fab`, `.nav-btn`, `.qty-btn`, `.system-toggle`, `.inv-qty-btn`, `.plate-picker-btn`, `.sp-edit-btn`, `.division-add-btn`, and more — each hand-tuned at its call site. Worse, many `<button>` elements are not actions: the bottom nav is a tab set (`role="tab"`), the quantity picker is a segmented selector (`role="radio"`), the strut-system filter is a multi-select chip set (`aria-pressed`), the inventory `±` is a stepper. They share a tag and nothing else.
 
 v4 collapses the genuine buttons into a **small, ruled emphasis vocabulary** and **evicts everything that is not an action** to the primitive that actually owns it. The discipline is the system's promise kept once more: a button is one shape, three emphasis levels, one intent overlay — and if a control selects, navigates, or toggles instead of acting, it is not a button.
 
@@ -49,7 +49,8 @@ Two **special forms** are buttons but constrained, specified in their own sectio
 The v3 elements this evicts, each to its true owner:
 
 - **The bottom nav** (`.nav-btn` ×5, `style.css:145`; `index.html` `showTab(...)`) is a **tab set**, not five buttons — it switches which screen is shown and one tab is always selected. [`accessibility.md`](../07-design-system/accessibility.md) already scripts it as *"Tab, Operations, 2 of 4, selected"* — a tab role, confirming the boundary. The Operations/Cut-Table view switcher (`role="tab"` in `index.html`) is the same. These belong to the navigation primitive, not here.
-- **The strut-system selector** (`.system-toggle` gold / grey / lockstroke, `aria-pressed`, `style.css:424`) and **the quantity picker** (`.qty-btn` 1–4, `role="radio"`, `style.css:946`) and **the theme picker** (`.theme-option`, `role="radio"`) **select one of a set** → [`segmented.md`](segmented.md). They look like button rows and behave like inline pickers; the gold/grey/lockstroke choice is the *inline-segmented* picker variant from [`picker.md`](picker.md).
+- **The quantity picker** (`.qty-btn` 1–4, `role="radio"`, `style.css:946`) and **the theme picker** (`.theme-option`, `role="radio"`) **select one of a set** → [`segmented.md`](segmented.md). They look like button rows and behave like inline pickers — the *inline-segmented* picker variant from [`picker.md`](picker.md).
+- **The strut-system filter** (`.system-toggle` gold / grey / lockstroke, `aria-pressed`, `style.css:424`) looks like the same button row but is **multi-select** — `toggleSystem()` toggles each independently and `getActiveSystemFilter()` returns an array (`app.js:404`), so it is **zero-or-many, not one-of-N**. A multi-select filter is **filter chips → [`input.md`](input.md)**, not a segmented control ([`segmented.md`](segmented.md) makes the same ruling and forwards it there). Only the *single*-select theme and quantity pickers above are segmented.
 - **The inventory stepper** (`.inv-qty-btn` `±`, `style.css:639`) edits a numeric value → the numeric stepper in [`input.md`](input.md).
 - **The slide-to-advance control** on a `ShorePointCard` is a *slide*, not a tap ([`card.md`](card.md)); a safety-consequential commit must not be a button a wet-screen ghost-tap can fire. Its accessible equivalent **is** a button — see *The Advance / Step-back control*.
 - **The assignment chip's `×`** removes an assignment → the interactive chip in [`input.md`](input.md) (already evicted there by [`badge.md`](badge.md)).
@@ -171,7 +172,8 @@ v3 renders button-shaped UI from many call sites with no shared primitive and no
 | `.modal-close`, `.inv-qv-close` (`style.css:1511`) | **Icon button** (Close) — `aria-label` mandatory |
 | `.plate-picker-btn` (`style.css:1328`), `.sp-edit-btn`, `.ops-add-sp-btn`, `.division-add-btn`, `.org-card-btn`, `.legend-action`, `.reload-btn` | **Primary / Secondary / Tertiary or Icon button** by emphasis — not per-call-site classes |
 | `.nav-btn` (`style.css:145`), the `role="tab"` view switcher | **Not a button** → navigation / tab |
-| `.system-toggle` (`style.css:424`), `.qty-btn` (`style.css:946`), `.theme-option` | **Not a button** → [`segmented.md`](segmented.md) (inline-segmented picker) |
+| `.qty-btn` (`style.css:946`), `.theme-option` | **Not a button** → [`segmented.md`](segmented.md) (inline-segmented picker) |
+| `.system-toggle` (`style.css:424`) — **multi-select**, `getActiveSystemFilter()` returns an array | **Not a button** → multi-select **filter chips**, [`input.md`](input.md) |
 | `.inv-qty-btn` `±` (`style.css:639`) | **Not a button** → numeric stepper, [`input.md`](input.md) |
 | `.fab-arc*`, `.quick-start-fab`, `#qvFab` | **Retired** — no FAB variant; a launcher is a button placed by IA, the arc speed-dial is a Principle-4 anti-pattern |
 
@@ -226,7 +228,7 @@ The **sunlight** theme thickens strokes 1pt → 2pt and bumps the label weight o
 ## Anti-patterns (do not do these)
 
 - **A second primary competing on the same screen** (Principle 4). One filled accent button; the rest step down.
-- **A nav tab, a segmented selector, or a toggle dressed as a button.** The bottom nav is a tab, gold/grey/lockstroke is a segmented picker, the inventory `±` is a stepper — each goes to its own primitive (the action boundary).
+- **A nav tab, a segmented selector, a filter, or a toggle dressed as a button.** The bottom nav is a tab, the theme/quantity pickers are segmented, gold/grey/lockstroke is a multi-select filter ([`input.md`](input.md)), the inventory `±` is a stepper — each goes to its own primitive (the action boundary).
 - **An icon-only primary action** (Principle 9). Mystery meat fails the gloved, first-time, or non-visual operator. Every primary carries a word.
 - **A FAB or arc speed-dial.** No floating-primary variant; a launcher is a button placed by IA, and the radial speed-dial is a kitchen-sink toolbar (Principle 4).
 - **Emphasis by color** — a green "save," a blue "go," a purple "special." Emphasis is fill → outline → text; the only color swap is `--danger`.
