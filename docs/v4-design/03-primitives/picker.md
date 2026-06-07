@@ -18,7 +18,7 @@ v4 ships exactly four picker variants. Choosing between them is a rule, not a ju
 
 | Variant | When | Examples | Touch target | Open animation | Dismiss |
 |---|---|---|---|---|---|
-| **Inline segmented** | 2 to 4 options, mutually exclusive, parent screen visible at all times | Gold / Grey / LockStroke; Theme (System / Light / Dark); Apparatus tabs | 44pt each, 48pt vertical | None, always visible | n/a |
+| **Inline segmented** | 2 to 4 options, mutually exclusive, parent screen visible at all times | Theme (System / Light / Dark); Apparatus tabs; wood size (4×4 / 6×6) | 44pt each, 48pt vertical | None, always visible | n/a |
 | **Bottom sheet picker** | 5 to 7 options, single select, parent screen stays visible | Base plate, wood size, incident type (NIMS I through V), role for assignment | 56pt rows | Slide up from bottom edge over 200ms, scrim fades 0→40% | Backdrop tap, swipe down, system back |
 | **Full screen list** | 8+ options OR options need search/filter OR rich preview content | Strut combinations, apparatus list at scale, shore point picker for cross op move | 56pt rows | Push from right (phone), modal sheet (tablet/laptop) | "Done" button left, Cancel right |
 | **Power select** | Fallback ONLY when accessibility tech (VoiceOver/TalkBack) is in use OR operator has explicitly enabled "Native Controls" in Settings | Any of the above | OS default | OS default | OS default |
