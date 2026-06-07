@@ -166,7 +166,7 @@ The Firebase database sharing is the load bearing risk. v3 and v4 both write to 
 
 1. v4 reads the v3 schema unchanged for the first month. Every write v4 does follows the v3 shape.
 2. v4 adds new top level keys (`/v4-meta/{deptId}/...`) for v4-only state (sunlight mode preference, picker selection history, role assignment animations).
-3. The Bucket 2 renames from `keen-whistling-pancake.md` Section V (`group` → `assignedResource`, `Strut Placed` → `Strut Set`) ship as dual writes. v3 reads both. v4 reads both. After three months of dual writing, v3 patches up to read only the new key, then v4 stops writing the old key.
+3. The Bucket 2 renames from `v4-master-plan.md` Section V (`group` → `assignedResource`, `Strut Placed` → `Strut Set`) ship as dual writes. v3 reads both. v4 reads both. After three months of dual writing, v3 patches up to read only the new key, then v4 stops writing the old key.
 
 This is the local first reconciliation pattern Principle 8 names, applied to the v3-to-v4 split. The same pattern handles the multi device no comms case described in D5.
 

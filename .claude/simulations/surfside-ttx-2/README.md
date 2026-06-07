@@ -38,7 +38,7 @@ This directory holds the pre-event package for the **Surfside TTX-2** simulation
 
 | Path | Purpose |
 |---|---|
-| [`plan.md`](plan.md) | Canonical plan — mirror of `/Users/alex/.claude/plans/run-through-a-miami-snazzy-glade.md` |
+| [`plan.md`](plan.md) | Canonical plan — mirror of `/Users/alex/.claude/plans/v4-surfside-ttx-2-pre-event.md` |
 | [`runbook.md`](runbook.md) | Step-by-step execution instructions (T-30 through hotwash phase 3) |
 | [`scenario/`](scenario/) | Building profile, victim cluster mapping, master E+ timeline |
 | [`roster/`](roster/) | Personnel roster (~71 unit rows + 30 named leaders), ICS leadership transfer chain, per-OP active participant cast |

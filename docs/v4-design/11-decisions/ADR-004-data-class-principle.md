@@ -71,4 +71,4 @@ Add a 12th principle to `02-principles.md` that names structural collapse as a d
 
 The Phase C briefing packet now includes: 12 principles, primitive doctrine (picker as worked example), all 6 reference teardowns, the positioning doc, and the lens charter per agent. The 12th principle is the single addition.
 
-References in the plan file and the INDEX that said "11 principles" or "Eleven Principles" were swept in this same commit. `keen-whistling-pancake.md` Section I header and two other references updated; `02-principles.md` header changed from "Eleven Principles" to "Twelve Principles."
+References in the plan file and the INDEX that said "11 principles" or "Eleven Principles" were swept in this same commit. `v4-master-plan.md` Section I header and two other references updated; `02-principles.md` header changed from "Eleven Principles" to "Twelve Principles."

@@ -12,7 +12,7 @@
 
 ## Context
 
-The original v4 plan (Section III.D2 of `keen-whistling-pancake.md`) imposed a strict rule: **no real names of reference apps anywhere in the v4 design folder.** Six codenames (brass-folding-compass, iron-glowing-lantern, copper-burning-forge, steel-piercing-whistle, bronze-sinking-anchor, granite-standing-mantle) were assigned, and a private mapping file lived on Alex's desktop, never committed.
+The original v4 plan (Section III.D2 of `v4-master-plan.md`) imposed a strict rule: **no real names of reference apps anywhere in the v4 design folder.** Six codenames (brass-folding-compass, iron-glowing-lantern, copper-burning-forge, steel-piercing-whistle, bronze-sinking-anchor, granite-standing-mantle) were assigned, and a private mapping file lived on Alex's desktop, never committed.
 
 The stated reason was caution about defamation, trademark, and disparagement risk. The rule applied to all of Phase B (six reference teardowns + one positioning synthesis, ~17,400 words committed 2026-05-20 to 2026-05-21).
 
@@ -103,7 +103,7 @@ The retroactive rename was executed in one batch on `v4-redesign`:
 3. Scrub the residual "codename" language in three teardown front matter lines and one section header (`Per codename placement justification` → `Per product placement justification`).
 4. Update `00-INDEX.md` (file list + Strict Rules entry + Phase B status line).
 5. Update `99-open questions.md` row #17 to "superseded by ADR-001."
-6. Update `keen-whistling-pancake.md` Section III.D2 to reflect the relaxed rule and reference this ADR.
+6. Update `v4-master-plan.md` Section III.D2 to reflect the relaxed rule and reference this ADR.
 7. Update `/v4-plan` skill (Phase B briefing packet, continuous discipline rule, Phase 2 dispatch matrix) to drop the codename language.
 
 The ASCII chart in `positioning.md` had some alignment skew after rename (longer real names shifted column positions). Content is intact; cosmetic realignment deferred, not blocking.

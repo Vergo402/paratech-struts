@@ -1,6 +1,6 @@
 # FieldShore v4 Design Folder Index
 
-> Scannable table of contents. Updated by every commit. The full plan lives at `/Users/alex/.claude/plans/keen-whistling-pancake.md` (outside the repo, so it survives branch churn).
+> Scannable table of contents. Updated by every commit. The full plan lives at `/Users/alex/.claude/plans/v4-master-plan.md` (outside the repo, so it survives branch churn).
 
 ---
 
@@ -173,4 +173,4 @@ ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 1. **Real names are allowed under nominative fair use** (the legal doctrine that lets you name a competitor's product when comparing truthfully)**.** Describe behavior, not brand. Never disparage. Cite truth. No trademarked taglines presented as endorsements. See ADR-001. (Previous rule: codenames only, relaxed 2026-05-21.)
 2. **Nothing in here is committed to `main`.** Everything stays on the `v4-redesign` branch until Phase J cutover.
 3. **Every committed decision becomes an ADR.** No silent design changes.
-4. **The plan file (`keen-whistling-pancake.md`) is the constitution.** This folder is its execution.
+4. **The plan file (`v4-master-plan.md`) is the constitution.** This folder is its execution.

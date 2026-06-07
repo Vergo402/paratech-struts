@@ -79,5 +79,5 @@ The positioning doc (`04-references/positioning.md`) already landed the reframe 
 
 Cross-file syncs performed in this same commit:
 - `docs/v4-design/01-context.md` — scope section reframed from "NOT federal" to "everyday + expandable"
-- `/Users/alex/.claude/plans/keen-whistling-pancake.md` — 3 ceiling-language sites updated (D7 revision notes, D7 scope clarification, What This Plan Does Not Do)
+- `/Users/alex/.claude/plans/v4-master-plan.md` — 3 ceiling-language sites updated (D7 revision notes, D7 scope clarification, What This Plan Does Not Do)
 - `project_local_first_pivot.md` — frontmatter description updated, ADR-003 reframe note appended

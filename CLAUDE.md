@@ -287,7 +287,7 @@ The per-release "What shipped" view from v3.9.2 onward lives in **`.claude/plans
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
-> **v4 is now an active, deliberate redesign on the `v4-redesign` branch** (forked at v3.19.1) — not just a backlog. All v4 design lives under **`docs/v4-design/`**; start with `00-INDEX.md`. The master plan ("constitution") is `~/.claude/plans/keen-whistling-pancake.md`. Use the `/v4-plan` (`/v4`) skill for v4 work; `/plan` is for v3 release work. **Nothing v4 ships to `main` until the Phase J cutover.**
+> **v4 is now an active, deliberate redesign on the `v4-redesign` branch** (forked at v3.19.1) — not just a backlog. All v4 design lives under **`docs/v4-design/`**; start with `00-INDEX.md`. The master plan ("constitution") is `~/.claude/plans/v4-master-plan.md` — all FieldShore plan files in the global `~/.claude/plans/` use descriptive `v4-`/`v3-`/`fieldshore-` names, mapped from their old random names in `.claude/plans/GLOBAL-PLAN-INDEX.md`. Use the `/v4-plan` (`/v4`) skill for v4 work; `/plan` is for v3 release work. **Nothing v4 ships to `main` until the Phase J cutover.**
 >
 > **Phase status (2026-05-31):** A–D done (foundation, reference teardowns, 12 brainstorm essays, synthesis + 247-rec decision matrix). **Phase E (design system) is next.** Key decisions are now locked as ADRs in `docs/v4-design/11-decisions/`:
 > - **ADR-009 — database:** stay on **Firebase RTDB** for v4.0 behind a `data/sync` seam (event-sourced log; current state is a projection).

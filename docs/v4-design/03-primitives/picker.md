@@ -1,6 +1,6 @@
 # UI Primitive: The Picker
 
-> Copied from Section II of `keen-whistling-pancake.md`. This file serves a double purpose: (1) it is the picker primitive spec; (2) it sets the **standard of detail** for every other primitive in this folder. When you write `sheet.md` or `card.md` or any other primitive doc, this is the level of detail expected.
+> Copied from Section II of `v4-master-plan.md`. This file serves a double purpose: (1) it is the picker primitive spec; (2) it sets the **standard of detail** for every other primitive in this folder. When you write `sheet.md` or `card.md` or any other primitive doc, this is the level of detail expected.
 
 ---
 

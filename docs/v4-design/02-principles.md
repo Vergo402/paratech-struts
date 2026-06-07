@@ -1,6 +1,6 @@
 # Design Philosophy: Twelve Principles
 
-> Copied from Section I of `keen-whistling-pancake.md`. These are the constitution. Every downstream decision (component, screen, copy, color) is checked against them. Each principle has a "rejected alternative" so the trade-off is visible.
+> Copied from Section I of `v4-master-plan.md`. These are the constitution. Every downstream decision (component, screen, copy, color) is checked against them. Each principle has a "rejected alternative" so the trade-off is visible.
 
 ---
 

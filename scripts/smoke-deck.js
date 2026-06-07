@@ -7,7 +7,7 @@
 //
 //   node scripts/smoke-deck.js && echo "smoke deck OK"
 //
-// See begin-release-1-fluffy-duckling.md for derivation rationale and the
+// See v3-release-v3.11.2-blocker-hotfix.md for derivation rationale and the
 // matching browser surface at smoke-deck.html.
 
 'use strict';

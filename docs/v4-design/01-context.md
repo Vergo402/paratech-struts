@@ -1,6 +1,6 @@
 # Context: Why v4 Exists
 
-> Copied from Section "Context" of `keen-whistling-pancake.md`. This file is the elevator pitch for every agent and every future session.
+> Copied from Section "Context" of `v4-master-plan.md`. This file is the elevator pitch for every agent and every future session.
 
 ---
 
@@ -12,7 +12,7 @@ The Round 2 audit, Hartsdale field feedback, and Surfside TTX 2 all point at the
 
 Alex's constraint is strict but freeing: **nothing about v4 ships to `main` for the foreseeable future.** v3 keeps the field. v4 has all the time it needs.
 
-This folder is the execution layer of `keen-whistling-pancake.md`, which is the constitution. The plan is intentionally long because the work is intentionally large.
+This folder is the execution layer of `v4-master-plan.md`, which is the constitution. The plan is intentionally long because the work is intentionally large.
 
 ---
 
