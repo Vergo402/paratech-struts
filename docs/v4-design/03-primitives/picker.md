@@ -19,7 +19,7 @@ v4 ships exactly four picker variants. Choosing between them is a rule, not a ju
 | Variant | When | Examples | Touch target | Open animation | Dismiss |
 |---|---|---|---|---|---|
 | **Inline segmented** | 2 to 4 options, mutually exclusive, parent screen visible at all times | Theme (System / Light / Dark); Apparatus tabs; wood size (4×4 / 6×6) | 44pt each, 48pt vertical | None, always visible | n/a |
-| **Bottom sheet picker** | 5 to 7 options, single select, parent screen stays visible | Base plate, wood size, incident type (NIMS I through V), role for assignment | 56pt rows | Slide up from bottom edge over 200ms, scrim fades 0→40% | Backdrop tap, swipe down, system back |
+| **Bottom sheet picker** | 5 to 7 options, single select, parent screen stays visible | Base plate, wood size, incident level (NIMS Level I–V), role for assignment | 56pt rows | Slide up from bottom edge over 200ms, scrim fades 0→40% | Backdrop tap, swipe down, system back |
 | **Full screen list** | 8+ options OR options need search/filter OR rich preview content | Strut combinations, apparatus list at scale, shore point picker for cross op move | 56pt rows | Push from right (phone), modal sheet (tablet/laptop) | "Done" button left, Cancel right |
 | **Power select** | Fallback ONLY when accessibility tech (VoiceOver/TalkBack) is in use OR operator has explicitly enabled "Native Controls" in Settings | Any of the above | OS default | OS default | OS default |
 
@@ -44,6 +44,8 @@ Between bottom sheet picker and full screen list, the boundary is **8 options**.
 6. **Outdoor readable mode** (a brightness and contrast boost we will spec in Phase E) **does not break picker affordances.** Borders thicken, type weight bumps, shadows drop, but the picker stays a picker.
 
 7. **The bottom sheet picker uses a 64pt drag handle visible at the top edge.** Dragging is the gesture you teach once and never re teach.
+
+8. **A picker invoked for a grouped shore type applies to all siblings at once.** When a picker is opened in a grouped-shore creation context — choosing the T-Shore wood size for a group of 3 — it asks **once** and applies to **every member of the group**, never three times. The picker carries an inline note stating the scope (*"Applies to all 3 members of this T-Shore group"*) so the operator sees that one choice fans out (synthesis §3.5, rec **K-6**). This is the picker side of the grouped-shore phase split that [`card.md`](card.md) / [`slider.md`](slider.md) own for status; the group-vs-individual workflow detail is finalized in Phase G.
 
 ---
 

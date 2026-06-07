@@ -2,6 +2,7 @@
 
 > Phase E, design-system token file 5 of 8. Authored at the depth of [`03-primitives/picker.md`](../03-primitives/picker.md).
 > Source: essay [`05-essays/02-visual-language.md`](../05-essays/02-visual-language.md) "Iconography" + [`07-design-system/spacing-grid.md`](spacing-grid.md) (`--icon-radius` derived from `--radius-card ÷ 6`; icon internal padding via `--space-1`) + [`07-design-system/motion.md`](motion.md) (`--motion-micro` / `--ease-micro` for fill transition) — reconciled, not transcribed. Every `--icon-*` token here matches [`preview/tokens.css`](../preview/tokens.css) verbatim; the living styleguide is the rendered proof.
+> **Supersedes recs J-9 / B-13** ("adopt Lucide for the general icon set"): Phase E adopts a **fully custom** set and rejects *every* off-the-shelf library, including Lucide (the foreign-grammar argument in Purpose, below, won). The *intent* of J-9 / B-13 — a real, consistent icon set plus separately-drawn custom shore-type diagrams — ships; the *means* (Lucide for the general set) does not. The decision matrix marks J-9 / B-13 "accepted (revised)."
 
 ---
 
