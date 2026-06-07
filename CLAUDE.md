@@ -37,6 +37,8 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 
 Uses SSH authentication. Branching workflow: `main` = production, feature branches for new work.
 
+**Push on commit (standing rule, 2026-06-07):** whenever you commit, push to the same branch in the same step — do not ask separately about pushing. (Commit only when Alex asks; but a commit implies its push.) Never commit or push to `main` outside the release/merge process.
+
 ---
 
 ## GitHub Project — Status Tracking

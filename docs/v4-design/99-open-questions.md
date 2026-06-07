@@ -6,13 +6,14 @@
 
 > **2026-06-07 — A–E traceability audit.** A pass over the Phase-D decision matrix found a few accepted recs that had no execution trace and were tracked only in the matrix (which the gate doesn't read) — the same blind-spot class. Now surfaced into this live register: **#24–#26 carried forward** (two doc deliverables re-scoped Phase E → H, plus org-chart/dashboard/pocket-lock clarified as Phase F), **#27–#30 resolved** (LESSONS.md written, picker K-6 + E-20 fixed, the Lucide reversal recorded). Detail in `06-decision-tracking-matrix.md` (reconciled same day).
 
+> **2026-06-07 — Phase F foundation.** Began Phase F; the cross-cutting foundation ([`00-ia-foundation.md`](08-information-architecture/00-ia-foundation.md) + ADR-014/015/016) resolves the two Phase-F-gated questions in this register: **#4** (checklist placement) and **#26** (org-chart/dashboard/pocket-lock placement) — pocket-lock *geometry* carries to Phase H. The remaining per-primitive affordance-geometry items still roll up to Phase H.
+
 ---
 
 ## Active Questions
 
 | # | Question | Phase that decides | Notes |
 |---|---|---|---|
-| 4 | Checklist IA placement (D6). Recommendation: IC Command under Command tab; Task Level under Operations tab; ORM/TCRM as a button bar at the top of any active operation screen. | F | v3.20.0 ships with the recommendation unless Alex redirects. |
 | 4b | D7.1 auth mechanism. | H | Recommendation: email + password as default, magic link as no password path. |
 | 5 | AskUserQuestion as a collaboration tool. | Practice | Open question on whether the multi choice picker is the right tool for me to ask Alex questions during planning. Options: keep AskUserQuestion for genuinely exclusive choices; favor text questions for open ended thinking; never use it. |
 | 6 | Notification mechanism for gates. | A | Currently specified as chat message + INDEX update + Project subtask + 24h ScheduleWakeup. Alex may want PushNotification, email, or just chat. |
@@ -28,7 +29,6 @@
 | 20 | **Measurement-field fraction sub-control form** — inline strip vs. a small picker-sheet for the eight ⅛″ values, which exceed [`picker.md`](03-primitives/picker.md)'s 7-option inline boundary ([`input.md`](03-primitives/input.md) OQ1). | H | Affordance geometry, finalized in the vertical slice. Surfaced by the Phase E audit (2026-06-07). |
 | 24 | **`07-design-system/architecture.md`** (rec A-30) — document the *code* architecture at picker depth. **Re-scoped Phase E → H** (A–E audit): documents modules/build that don't exist until the build. | H | Write before Phase H code starts (essay 01 §30). |
 | 25 | **`07-design-system/module-boundaries.md`** (rec L-1) — codify app.js's 11 module seams, no file > 800 lines. **Re-scoped Phase E → H.** | H | Write before the Phase H migration (essay 12 §1). |
-| 26 | **Org chart / dashboard / pocket-lock** (recs K-3/K-12/K-13, K-9, G-13) — labeled "Phase E primitive" but they are screen-level compositions, not reusable primitives. | F | Carry into Phase F IA (org-card surface already in `card.md`); honor K-12's tablet-portrait constraint. Surfaced by the A–E audit (2026-06-07). |
 
 ---
 
@@ -51,3 +51,5 @@
 | 28 | **Picker "apply to grouped siblings"** (rec K-6) — ask the T-Shore wood choice once for a group of 3. | **Done 2026-06-07** — added to [`picker.md`](03-primitives/picker.md) as Universal Rule 8. | A–E audit (2026-06-07) |
 | 29 | **picker.md "Type" → "Level"** (rec E-20) — incident-complexity terminology. | **Done 2026-06-07** — `picker.md` now reads "incident level (NIMS Level I–V)." | A–E audit (2026-06-07) |
 | 30 | **Lucide reversal** (recs J-9 / B-13 vs. `iconography.md`) — accepted "adopt Lucide" contradicted the shipped fully-custom set. | **Resolved 2026-06-07** — matrix marks J-9 / B-13 "accepted (revised)"; `iconography.md` records the supersession. Phase E is fully custom. | A–E audit (2026-06-07) |
+| 4 | Checklist IA placement (D6). | **Resolved** — IC Command Checklist under the **Command** tab; Task Level Checklist under **Operations**; ORM/TCRM as a **button-bar on any active-operation screen**. Locked in [ADR-014](11-decisions/ADR-014-tab-structure.md) / [ADR-016](11-decisions/ADR-016-modal-vs-sheet-rules.md) and the tab map in [`00-ia-foundation.md`](08-information-architecture/00-ia-foundation.md). | Phase F foundation (2026-06-07) |
+| 26 | Org chart / dashboard / pocket-lock placement (K-3/K-12/K-13, K-9, G-13). | **Resolved** — Org Chart = its own screen spec under Command ([#295](https://github.com/Vergo402/paratech-struts/issues/295)), shown as a sheet/modal, honoring the **K-12 ≤ 7 cards × 2 levels** tablet-portrait budget; dashboard/SitStat = the Command tab **home composition** (folds into [#201](https://github.com/Vergo402/paratech-struts/issues/201)); pocket-lock = **global shell chrome**, geometry carried to Phase H ([`00-ia-foundation.md`](08-information-architecture/00-ia-foundation.md) §Persistent chrome). | Phase F foundation (2026-06-07) |
