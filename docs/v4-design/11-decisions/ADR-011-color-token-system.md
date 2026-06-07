@@ -63,6 +63,17 @@ The one synthesis-pinned value — dark `--accent` `#D4A017` — is **kept**; on
 
 ---
 
+## Addendum (2026-06-07) — `--on-accent` + `--shadow-modal` minted
+
+The Phase E primitive cascade surfaced two tokens the gate-trio color set had **named but not yet minted**; both are added to [`color.md`](../07-design-system/color.md) under this ADR — filling out the accepted token system, not a new decision:
+
+- **`--on-accent`** — the per-theme foreground for a filled primary button ([`button.md`](../03-primitives/button.md), its lone flagged token dependency). Because `--accent` flips dark-gold ↔ light-gold by theme, the foreground cannot be a fixed color: **Light `#FFFFFF` (5.18) · Dark `#1C1F23` (6.96) · Sunlight `#FFFFFF` (7.47, clears the 7:1 contract)**; Broadcast renders no buttons. Verified by [`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs) — pairs added to the script, all pass.
+- **`--shadow-modal`** — the centered-modal cast shadow ([`modal.md`](../03-primitives/modal.md) Anatomy + OQ1), a symmetric **downward** cast distinct from `--shadow-sheet`'s bottom-anchored geometry: **Light `0 8pt 32pt /.12` · Dark `/.32` · Sunlight `0 4pt 16pt /.20`**; Broadcast none.
+
+Both were anticipated (the `--shadow-modal` flag already sat in color.md §Strokes & elevation, and both primitives flagged their needs); this addendum records the mint so the move from "flagged" to "defined" is on the record (Strict Rule 3). The `preview/tokens.css` mirror was synced the same session, and the previously-missing `--scrim` mirror (a prior drift from color.md) was added with them.
+
+---
+
 ## Related
 
 - **Principles:** 9 (color is never the only signal), 7 (visible safety), 3 (calm/muted palette).

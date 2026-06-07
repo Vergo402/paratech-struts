@@ -206,6 +206,21 @@ The status colors are the most consequential color decision in the file. Three s
 
 ---
 
+### The filled-primary foreground — `--on-accent`
+
+A filled **primary button** ([`button.md`](../03-primitives/button.md)) fills with `--accent` and needs a foreground that clears WCAG AA on that fill. The required foreground **flips by theme**, because `--accent` itself flips from dark gold (light / sunlight) to light gold (dark): white-on-gold and black-on-gold each fail in one theme, so the pair cannot be a fixed color. `--on-accent` is the per-theme answer, recomputed by [`wcag-contrast.mjs`](wcag-contrast.mjs):
+
+| Theme | `--accent` fill | `--on-accent` | Ratio |
+|---|---|---|---|
+| Light | `#8C6700` (dark gold) | `#FFFFFF` | **5.18** ✓ |
+| Dark | `#D4A017` (light gold) | `#1C1F23` (the warm-slate ink — not pure black) | **6.96** ✓ |
+| Sunlight | `#6E5000` (dark gold) | `#FFFFFF` | **7.47** ✓ — clears the 7:1 sunlight contract |
+| Broadcast | — | — | n/a — broadcast renders no buttons ([`button.md`](../03-primitives/button.md) surface table) |
+
+This resolves the one token [`button.md`](../03-primitives/button.md) flagged for minting (its lone token dependency); any other `--accent`-filled control inherits it. (Added 2026-06-07; [ADR-011](../11-decisions/ADR-011-color-token-system.md) §Addendum.)
+
+---
+
 ## Color is never the only signal (Principle 9)
 
 A hard rule the status palette must honor, because color-blind operators and sunlight-washed screens both defeat hue:
@@ -222,9 +237,10 @@ Cards never use a drop shadow; elevation is **stroke + a 1pt top-edge inner high
 | Token | Light | Dark | Sunlight |
 |---|---|---|---|
 | `--shadow-sheet` | `0 -2pt 16pt rgba(0,0,0,0.08)` | `0 -4pt 24pt rgba(0,0,0,0.18)` | `0 2pt 8pt rgba(0,0,0,0.08)` (cards gain a shadow here) |
+| `--shadow-modal` | `0 8pt 32pt rgba(0,0,0,0.12)` | `0 8pt 32pt rgba(0,0,0,0.32)` | `0 4pt 16pt rgba(0,0,0,0.20)` (a centered card still casts under glare) |
 | card top inner highlight | `inset 0 1pt 0 rgba(255,255,255,0.50)` | `inset 0 1pt 0 rgba(255,255,255,0.06)` | none (2pt stroke does the work) |
 
-The overlay **scrim** is the other color-side overlay treatment: a single `--scrim` token, authored per theme above (40% light/dark, 55% sunlight). It is shared by both overlay surfaces — sheet and modal mint nothing, they reference it ([`sheet.md`](../03-primitives/sheet.md) / [`modal.md`](../03-primitives/modal.md)); the fade *timing* is owned by [`motion.md`](motion.md). **Broadcast has no `--scrim`** — that surface renders no overlays (no sheets, no modals; see [`picker.md`](../03-primitives/picker.md) surface table). A centered-modal cast shadow (`--shadow-modal`) is not yet defined — `--shadow-sheet`'s geometry is bottom-anchored; flagged in [`modal.md`](../03-primitives/modal.md) Open questions for the vertical slice.
+The overlay **scrim** is the other color-side overlay treatment: a single `--scrim` token, authored per theme above (40% light/dark, 55% sunlight). It is shared by both overlay surfaces — sheet and modal mint nothing, they reference it ([`sheet.md`](../03-primitives/sheet.md) / [`modal.md`](../03-primitives/modal.md)); the fade *timing* is owned by [`motion.md`](motion.md). **Broadcast has no `--scrim`** — that surface renders no overlays (no sheets, no modals; see [`picker.md`](../03-primitives/picker.md) surface table). The centered-modal cast shadow **`--shadow-modal` is defined in the table above** — a symmetric **downward** cast (positive y-offset, larger blur), distinct from `--shadow-sheet`'s bottom-anchored `0 -Npt …` geometry, because the modal floats at center with no edge to sit flush against ([`modal.md`](../03-primitives/modal.md) Anatomy). Broadcast has neither shadow (no overlays).
 
 ---
 

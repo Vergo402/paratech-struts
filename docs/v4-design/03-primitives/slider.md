@@ -55,7 +55,7 @@ Like [`sheet.md`](sheet.md) vs [`modal.md`](modal.md) and [`badge.md`](badge.md)
 | You commit one *named discrete step* in a lifecycle | You set a *value on a continuous range* | a numeric **input** ([`input.md`](input.md)) |
 | The commit is safety-consequential and must resist ghost-taps | The choice is a *binary on/off* | a **toggle** ([`toggle.md`](toggle.md)) |
 | There is a forward and a back along one ordered axis | The choice is *one of a few peers* | **inline segmented** ([`picker.md`](picker.md)) |
-| The action *changes status only* | The action *mutates inventory* or is *terminal* | a **button** → [`warning-gate.md`](warning-gate.md) |
+| The action *changes status only* | The action *mutates inventory* or is *terminal* | a **button** → [`modal.md`](modal.md) |
 
 > **FieldShore ships no value-range slider.** This is a deliberate absence, not an omission. The temptations and why each is refused:
 > - **Measurement entry** is the obvious place a drag-slider shows up in other apps — and it is exactly wrong here. Measurements are exact to **1/8″, floored** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)); a thumb dragged across a track cannot reliably land on 45 5/8″, and "close enough" on a cut length is a safety failure. Measurement is the 56pt numeric keypad ([`input.md`](input.md)), never a slider.
@@ -78,15 +78,15 @@ The slide governs the **status-only** middle of the lifecycle. The two ends muta
  [Assign Equipment]                                          [Return Equipment]
   deploy · button ·                                          terminal · button ·
   decrements stock                                           mutates stock
-  → warning-gate                                             → warning-gate
+  → modal (confirm)                                          → modal (confirm)
 ```
 
 - **`pending → process` is not a slide.** It is **Assign Equipment** — a deploy action that pulls a strut from inventory — rendered as a full-width process-blue button, because reaching In Process *means* a strut was deployed ([`card.md`](card.md) §Pending). A point with nothing to advance has no track.
 - **`process → strutset → cutting → runner → secured` are slides.** This is the everyday lifecycle advance; it changes status only, never shows a confirm, and is the advance slider's entire forward domain.
-- **`secured → returned` is not a slide.** Returning equipment mutates inventory and is terminal — it is a button that invokes [`warning-gate.md`](warning-gate.md) (the heavy confirmation [ADR-010](../11-decisions/ADR-010-status-commit-model.md) reserves for destructive/terminal/inventory actions).
-- **Step-back has the same boundary.** Reversing within `secured … process` is a step-back slide. The two reversals that cross an inventory boundary — **un-deploying** (`process → pending`) and **un-returning** (`returned → secured`) — are *not* slides; they confirm through the warning-gate, because they move stock ([`card.md`](card.md): "the only reversal that confirms is one that is itself destructive/terminal or mutates inventory").
+- **`secured → returned` is not a slide.** Returning equipment mutates inventory and is terminal — it is a button that invokes [`modal.md`](modal.md) (the heavy confirmation [ADR-010](../11-decisions/ADR-010-status-commit-model.md) reserves for destructive/terminal/inventory actions).
+- **Step-back has the same boundary.** Reversing within `secured … process` is a step-back slide. The two reversals that cross an inventory boundary — **un-deploying** (`process → pending`) and **un-returning** (`returned → secured`) — are *not* slides; they confirm through the modal, because they move stock ([`card.md`](card.md): "the only reversal that confirms is one that is itself destructive/terminal or mutates inventory").
 
-One sentence: **the slide owns status; the button-plus-gate owns inventory.**
+One sentence: **the slide owns status; the button-plus-modal owns inventory.**
 
 ---
 
@@ -126,7 +126,7 @@ Reversal is not a special interaction; it is the forward slide run the other way
 - Mirrors the advance — **thumb at the trailing (right) edge, travels leftward** — so the direction itself reads as "go back."
 - Is **permanent, not a five-second window.** Reversibility is *spatial* (a control that is always there), not *temporal* (a timer that expires unseen) — the core of [ADR-010](../11-decisions/ADR-010-status-commit-model.md). A stray advance self-heals because the step-back is one gesture away in 5 seconds or 5 minutes.
 - Plays the **same** `--motion-status` cross-fade on commit, toward the *previous* status's hue ([`motion.md`](../07-design-system/motion.md)).
-- **Shows no confirmation pop-up** within the status-only domain — reversibility, not confirmation, handles regret. The *only* reversal that confirms is one that crosses the inventory boundary (un-deploy / un-return), which is a warning-gate, not this control (see The commit domain).
+- **Shows no confirmation pop-up** within the status-only domain — reversibility, not confirmation, handles regret. The *only* reversal that confirms is one that crosses the inventory boundary (un-deploy / un-return), which is a modal, not this control (see The commit domain).
 - Is **visually secondary** — smaller, lower-emphasis, below the advance track — so the canonical next step stays the loudest thing (Principle 4).
 
 ### Grouped shore points
@@ -144,7 +144,7 @@ v3 had **no slider.** Status advanced by tapping a row of per-state buttons, eac
 | "Strut Placed" / "Cutting" / "Send to Runner" / "Mark Cut Done" / "Secured" (status-only steps) | **Advance slider** |
 | "Send Back" / any step-down within the status-only range | **Step-back slider** |
 | "Assign Equipment" (deploy from pending) | **Button** → deploy ([`card.md`](card.md) §Pending); *not* a slider |
-| "Return Equipment" (terminal, mutates inventory) | **Button** → [`warning-gate.md`](warning-gate.md); *not* a slider |
+| "Return Equipment" (terminal, mutates inventory) | **Button** → [`modal.md`](modal.md); *not* a slider |
 
 **What carries forward verbatim:** the **status-progression guard** (`STATUS_ORDER`, v3.9.0 — a slide never regresses a group-mate that has already advanced past the target) and the **phase-based group/individual split** (v3.8.0/v3.9.0). Only the *commit gesture* changes — tap → slide. **The v4 gap this closes:** a safety-critical state change that any stray contact could trigger. The slide makes the commit *deliberate*; the always-present step-back makes a mistake *self-healing*; the event log makes both *auditable*.
 
@@ -156,7 +156,7 @@ v3 had **no slider.** Status advanced by tapping a row of per-state buttons, eac
 2. **Commit only past a deliberate threshold; release-short snaps back and commits nothing.** A half-slide is a non-event.
 3. **Every slide has a focusable, labeled button equivalent.** Advance and Step-back exist as real buttons for keyboard and assistive tech — *assistive tech cannot slide* (see Accessibility floor). The gesture and the button commit the **same event**.
 4. **The label is the next step, in words, never truncated** (Principle 9; Principle 4). "Slide to set Runner," fully legible on the phone.
-5. **Status-only domain.** The slide advances status; it never deploys, returns, ends an operation, or mutates inventory — those are buttons/[`warning-gate.md`](warning-gate.md) (The commit domain; [ADR-010](../11-decisions/ADR-010-status-commit-model.md)).
+5. **Status-only domain.** The slide advances status; it never deploys, returns, ends an operation, or mutates inventory — those are buttons/[`modal.md`](modal.md) (The commit domain; [ADR-010](../11-decisions/ADR-010-status-commit-model.md)).
 6. **Reversibility, not confirmation.** The everyday advance shows no confirm; the step-back is permanent, not a timer ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)). Only an inventory-crossing reversal confirms.
 7. **One geometry, cited not minted.** `--radius-button` track, `--radius-input` thumb, `--accent` thumb, `--status-*` travel reveal, `--motion-micro` snap-back, the 56/60pt targets — system tokens, never a hand-rolled value.
 8. **No urgency theater.** The thumb never pulses, glows, or ramps; the only motion is direct-manipulation drag, the snap-back, and the badge's commit cross-fade (Principle 3; [`motion.md`](../07-design-system/motion.md)).
@@ -196,7 +196,7 @@ The slider is the primitive that makes *assistive tech cannot slide* a load-bear
 - **Tap-to-advance.** The v3 mechanism, retired by [ADR-010](../11-decisions/ADR-010-status-commit-model.md): a ghost tap on a wet screen must not change safety-critical state. Tap opens; slide commits.
 - **A slide with no focusable button equivalent.** A drag without an Advance/Step-back button locks out every keyboard and assistive-tech user — the cardinal sin this primitive exists to prevent.
 - **A value-range slider** for measurement, capacity, or anything continuous. Measurement is exact 1/8″ keypad entry ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)); a drag cannot land on 45 5/8″.
-- **A slide to deploy, return, end an operation, or otherwise mutate inventory.** Those are buttons → [`warning-gate.md`](warning-gate.md). The slide is status-only.
+- **A slide to deploy, return, end an operation, or otherwise mutate inventory.** Those are buttons → [`modal.md`](modal.md). The slide is status-only.
 - **A confirm modal after a successful everyday advance.** Principle 6 / [ADR-010](../11-decisions/ADR-010-status-commit-model.md) — reversibility handles regret; "Are you sure?" does not belong in the lifecycle flow.
 - **A timed "Undo (5s)" toast on a status slide.** Reversibility is the always-present step-back, not a countdown ([`motion.md`](../07-design-system/motion.md); reintroducing the timer reintroduces the field failure the ADR was written against). The toast is for confirmations/notifications only ([`toast.md`](toast.md)).
 - **A truncated slide label** — "Slide to set Run…". The track owns full width; the step-back sits below it, never beside.

@@ -72,7 +72,7 @@ What *stays* a button: every `.btn-primary` / `.btn-outline` / `.btn-danger`, th
 | Inter-target spacing | **8pt** dead zone min, **64pt** center-to-center for adjacent primaries | [`spacing-grid.md`](../07-design-system/spacing-grid.md) (G-7) |
 | Label | **14 / 500**, sentence case, an **imperative verb** | `--type-body-medium` ("button text") — [`typography.md`](../07-design-system/typography.md); voice → [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) |
 | Icon (when paired) | **16px** leading or trailing, supplemental to the word — never replacing it on a primary | `--icon-size-sm` — [`iconography.md`](../07-design-system/iconography.md) |
-| Color — primary | `--accent` fill + **`--on-accent`** text | [`color.md`](../07-design-system/color.md) §Accent — **`--on-accent` flagged for color.md, see Open questions** |
+| Color — primary | `--accent` fill + **`--on-accent`** text | `--on-accent` — [`color.md`](../07-design-system/color.md) §The filled-primary foreground (per-theme, contrast-verified) |
 | Color — secondary | `--accent` (or `--text-secondary`) stroke + label, transparent fill | [`color.md`](../07-design-system/color.md) |
 | Color — tertiary | `--accent` or `--text-secondary` label, no fill, no stroke | [`color.md`](../07-design-system/color.md) |
 | Color — destructive | `--danger` (fill for primary, label/stroke for secondary) | [`color.md`](../07-design-system/color.md) ("`--danger` is feedback, not a status") |
@@ -80,9 +80,9 @@ What *stays* a button: every `.btn-primary` / `.btn-outline` / `.btn-danger`, th
 
 The button shares the **card's 12pt radius** on purpose — a docked action reads as part of the surface it sits on, not a foreign object pasted over it ([`spacing-grid.md`](../07-design-system/spacing-grid.md): "cards and buttons share 12pt so a button reads as part of the card language"). Like the card, it carries **no shadow at rest**; emphasis comes from fill / stroke / weight, never elevation.
 
-### The one token the button needs minted — `--on-accent`
+### The one token the button needed minted — `--on-accent` (now in `color.md`)
 
-A **filled primary** needs a foreground that clears WCAG AA on the `--accent` fill, and the required foreground **flips by theme**: dark-theme `--accent` `#D4A017` is light gold (needs *dark* text); light-theme `--accent` `#8C6700` is dark gold (needs *light* text). White-on-gold and black-on-gold each fail in one theme — so the pair cannot be a fixed color. This is the button's lone token requirement, and it is **flagged for [`color.md`](../07-design-system/color.md) to mint** (a per-theme `--on-accent`, verified by [`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs)) — exactly as [`sheet.md`](sheet.md) flagged `--scrim` for [`modal.md`](modal.md) to mint. Until it lands, the primary's foreground is undefined; see Open questions.
+A **filled primary** needs a foreground that clears WCAG AA on the `--accent` fill, and the required foreground **flips by theme**: dark-theme `--accent` `#D4A017` is light gold (needs *dark* text); light-theme `--accent` `#8C6700` is dark gold (needs *light* text). White-on-gold and black-on-gold each fail in one theme — so the pair cannot be a fixed color. This was the button's lone token requirement, and [`color.md`](../07-design-system/color.md) §The filled-primary foreground **now mints it** — a per-theme `--on-accent` (Light `#FFFFFF` 5.18 · Dark `#1C1F23` 6.96 · Sunlight `#FFFFFF` 7.47; Broadcast renders no buttons), verified by [`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs) — exactly as [`sheet.md`](sheet.md) flagged `--scrim` for [`modal.md`](modal.md) to mint. The primary's foreground is now defined.
 
 ---
 
@@ -128,7 +128,7 @@ v3 wraps its consequential actions in **`guardClick(this, fn)`** (`app.js:1946`,
 
 ## The destructive button
 
-A **destructive or terminal action** — End Operation, un-deploy a strut, a return that decrements inventory — is the `--danger` overlay on a primary or secondary button, and it is the one button class that **routes through a confirmation surface**. Per [ADR-010](../11-decisions/ADR-010-status-commit-model.md) and [`modal.md`](modal.md), everyday lifecycle advances commit immediately and reverse from the card (no confirm); only the destructive / inventory-mutating action raises a [`warning-gate`](warning-gate.md) / [`modal.md`](modal.md) confirmation before it fires. So a destructive button is **rare, always labeled with its exact consequence** ("End operation," not "Done"), and **always gated** — never a fast, unguarded path to data loss. The v3 `guardClick` on End Operation (`index.html` `cmdEndOpBtn`) is the seed of this; v4 pairs the intrinsic guard with the modal confirmation.
+A **destructive or terminal action** — End Operation, un-deploy a strut, a return that decrements inventory — is the `--danger` overlay on a primary or secondary button, and it is the one button class that **routes through a confirmation surface**. Per [ADR-010](../11-decisions/ADR-010-status-commit-model.md) and [`modal.md`](modal.md), everyday lifecycle advances commit immediately and reverse from the card (no confirm); only the destructive / inventory-mutating action raises a [`modal.md`](modal.md) confirmation before it fires. So a destructive button is **rare, always labeled with its exact consequence** ("End operation," not "Done"), and **always gated** — never a fast, unguarded path to data loss. The v3 `guardClick` on End Operation (`index.html` `cmdEndOpBtn`) is the seed of this; v4 pairs the intrinsic guard with the modal confirmation.
 
 ---
 
@@ -192,7 +192,7 @@ v3 renders button-shaped UI from many call sites with no shared primitive and no
 7. **No shadow at rest.** Elevation belongs to the sheet and modal; a button is fill / stroke / weight ([`spacing-grid.md`](../07-design-system/spacing-grid.md) §Elevation).
 8. **Press is micro motion + haptic, never scale.** `--motion-micro` fill shift + light haptic on touch-start, medium haptic on consequential commit; the haptic survives reduced motion ([`motion.md`](../07-design-system/motion.md)).
 9. **Consequential actions self-guard against double-fire** — the button disables on press for the action's duration (the v3 `guardClick` made intrinsic).
-10. **Destructive actions are gated and named.** A `--danger` button routes through a [`warning-gate`](warning-gate.md) / [`modal.md`](modal.md) confirmation and states its exact consequence ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)).
+10. **Destructive actions are gated and named.** A `--danger` button routes through a [`modal.md`](modal.md) confirmation and states its exact consequence ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)).
 11. **Navigation is a link, action is a button.** A control that goes to a destination is `<a>`; a control that does something is `<button>` — correct semantics, so assistive tech announces the right affordance.
 
 ---
@@ -244,7 +244,7 @@ The **sunlight** theme thickens strokes 1pt → 2pt and bumps the label weight o
 
 ## Open questions for downstream
 
-1. **`--on-accent` must be minted in [`color.md`](../07-design-system/color.md).** The filled primary needs a per-theme foreground that clears AA on the `--accent` fill (dark gold is light → dark text; light gold is dark → light text). Flagged here, to be minted and [`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs)-verified in [`color.md`](../07-design-system/color.md) — the same way [`sheet.md`](sheet.md) flagged `--scrim` for [`modal.md`](modal.md). The button primitive's only token dependency that does not yet exist.
+1. ~~**`--on-accent` must be minted in [`color.md`](../07-design-system/color.md).**~~ **Resolved (2026-06-07):** minted in [`color.md`](../07-design-system/color.md) §The filled-primary foreground — a per-theme foreground (Light `#FFFFFF` · Dark `#1C1F23` · Sunlight `#FFFFFF`), all clearing AA on the `--accent` fill and [`wcag-contrast.mjs`](../07-design-system/wcag-contrast.mjs)-verified. The button primitive has no remaining un-minted token dependency.
 2. **Exact per-emphasis geometry.** Pixel padding, the secondary stroke weight, the tertiary's hit area, the focus-ring offset, and the press-state fill delta are affordance geometry finalized in the **vertical slice (Phase H)** — like the sheet's swipe threshold and the card's slide mechanics. The *vocabulary* (three emphasis levels + destructive overlay, one radius, gold fill, 56pt operational) is fixed here.
 3. **The inventory quick-view launcher.** Retiring the FAB *variant* is settled; whether the Inventory screen keeps a floating quick-view *button* (and where it docks) is an information-architecture call (Phase F), not a primitive one. Flagged so the useful affordance is not silently dropped with the speed-dial.
 4. **The loading-state form.** The exact in-flight indicator (inline spinner vs. progress vs. label swap) and its `aria-busy` timing are [`loading-state.md`](loading-state.md)'s to specify; this doc fixes only that a consequential button self-disables while in flight.

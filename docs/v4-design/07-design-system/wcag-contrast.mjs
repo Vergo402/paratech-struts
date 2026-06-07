@@ -36,6 +36,7 @@ const THEMES = {
     ['text-tertiary / surface-bg',   '#8A8A8A', '#F7F6F3', 'large'],
     ['accent        / surface-bg',   '#8C6700', '#F7F6F3', 'normal'],
     ['accent        / surface-card', '#8C6700', '#FFFFFF', 'normal'],
+    ['on-accent     / accent fill',  '#FFFFFF', '#8C6700', 'normal'],
     // status: status-text on status-tint
     ['status pending', '#4B5563', '#F3F4F6', 'normal'],
     ['status process',  '#1D4ED8', '#EFF6FF', 'normal'],
@@ -53,6 +54,7 @@ const THEMES = {
     ['text-tertiary / surface-card',     '#8A8A86', '#252930', 'large'],
     ['accent        / surface-bg',       '#D4A017', '#1C1F23', 'normal'],
     ['accent        / surface-card',     '#D4A017', '#252930', 'normal'],
+    ['on-accent     / accent fill',      '#1C1F23', '#D4A017', 'normal'],
     // status: bright status-text on dark status-tint
     ['status pending', '#9CA3AF', '#2A2D31', 'normal'],
     ['status process',  '#60A5FA', '#172033', 'normal'],
@@ -66,6 +68,7 @@ const THEMES = {
   SUNLIGHT: [
     ['text-primary  / surface-bg', '#000000', '#FFFFFF', 'normal'],
     ['accent        / surface-bg', '#6E5000', '#FFFFFF', 'normal'],
+    ['on-accent     / accent fill', '#FFFFFF', '#6E5000', 'normal'],
     // status badges: white text on solid status fill (>=4.5 target; many clear 7)
     ['status pending  (white on)', '#FFFFFF', '#374151', 'normal'],
     ['status process   (white on)', '#FFFFFF', '#1D4ED8', 'normal'],

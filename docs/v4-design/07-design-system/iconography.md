@@ -100,7 +100,7 @@ See Section below. Two artboard variants each (`--icon-size-md` badge, `--icon-s
 
 ### Apparatus type (6)
 
-Matches `APPARATUS_TYPES_DEFAULT` in [`app.js`](../../../app.js:~line 85):
+Matches `APPARATUS_TYPES_DEFAULT` in [`app.js`](../../../app.js) (~line 85):
 
 Chief, Engine, Ladder, Rescue, Squad, Task Force.
 
@@ -110,9 +110,11 @@ Maps to the ICS/NIMS roles per ADR-008. Runner and Wood share Action glyphs (no 
 
 IC, Safety, Operations Section Chief, Shoring Supervisor, Rescue Supervisor, Cutting Station.
 
-### Utility (8)
+### Utility (9)
 
-Chevron Right, Chevron Left, Chevron Up, Chevron Down, Drag Handle, Sort, Alert / Info, Checkmark.
+Chevron Right, Chevron Left, Chevron Up, Chevron Down, Drag Handle, Sort, Alert / Info, Checkmark, Partial / indeterminate.
+
+> **Partial / indeterminate** is the centered "mixed" bar a [`nested-checklist.md`](../03-primitives/nested-checklist.md) section shows when *some — not all —* of its leaves are checked (the set had Checkmark but no minus/partial mark). Drawn to `--icon-stroke-default`; it is paired with the section's tabular count ("8 of 13"), never a color-only signal (Principle 9). Resolves `nested-checklist.md` OQ1.
 
 ---
 

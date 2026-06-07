@@ -198,7 +198,7 @@ The **sunlight** theme thickens the checkbox stroke to `--icon-stroke-heavy` (2p
 
 ## Open questions for downstream
 
-1. **The indeterminate-bar glyph.** The centered "partial" bar on a `mixed` section is not in [`iconography.md`](../07-design-system/iconography.md)'s ~46-glyph inventory (which has Checkmark but no minus/partial). It needs adding to the utility set, drawn to `--icon-stroke-default` — flagged here, an icon-set addition Phase F can fold in (iconography reserves that the Phase F screen pass "may add or consolidate icons").
+1. ~~**The indeterminate-bar glyph.**~~ **Resolved (2026-06-07):** the **Partial / indeterminate** glyph is now in [`iconography.md`](../07-design-system/iconography.md)'s Utility set (drawn to `--icon-stroke-default`, paired with the section's tabular count, never color-only). The centered "partial" bar a `mixed` section shows has its glyph.
 2. **Auto-collapse defaults per screen.** On for the IC Command's four long phases, off for the shallow ORM — the exact default and the user override are a Phase F IA decision.
 3. **ICS-201 auto-populate.** Driving form fields from checklist state is a D6 *v4 expansion* — a Phase G workflow, not a primitive concern. The reserved attribution record is what makes it possible.
 4. **Concurrent multi-user editing.** Two devices checking the same operation's checklist (D6 v4 expansion) reconcile through the `data/sync` seam ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)); optimistic UI + conflict behavior is a Phase G/H call.

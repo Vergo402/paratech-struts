@@ -100,6 +100,7 @@
   --stroke-width: 1px;
   --accent: #8C6700;          /* 4.79:1 on bg, 5.18:1 on card (was #B8860B = 3.01 FAIL) */
   --accent-subtle: #FFF8E7;
+  --on-accent: #FFFFFF;       /* white on --accent fill — 5.18:1 (button.md primary) */
 
   --text-primary: #1A1A1A;    /* 16.10:1 */
   --text-secondary: #5C5C5C;  /* 6.19:1  */
@@ -114,7 +115,9 @@
   --status-returned-text:#57534E;  --status-returned-bg:#F5F5F4;  /* 6.99 */
   --danger-text:         #B91C1C;  --danger-bg:         #FEF2F2;  /* 5.91 */
 
+  --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);    /* centered cast shadow (modal.md) */
   --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.50);
   --card-shadow: none;
   --type-weight-bump: 0;   /* sunlight bumps this */
@@ -132,6 +135,7 @@
   --stroke-width: 1px;
   --accent: #D4A017;          /* 6.96:1 on bg, 6.15:1 on card */
   --accent-subtle: #2A2310;
+  --on-accent: #1C1F23;       /* warm-slate ink on --accent fill — 6.96:1 (button.md primary) */
 
   --text-primary: #F0EFEC;    /* 12.70:1 on card */
   --text-secondary: #9B9A97;  /* 5.19:1 */
@@ -146,7 +150,9 @@
   --status-returned-text:#A8A29E;  --status-returned-bg:#26231F;  /* 6.20 */
   --danger-text:         #F87171;  --danger-bg:         #2A1416;  /* 6.27 */
 
+  --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.32);    /* centered cast shadow (modal.md) */
   --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --card-shadow: none;
   --type-weight-bump: 0;
@@ -165,6 +171,7 @@
   --stroke-width: 2px;        /* strokes thicken */
   --accent: #6E5000;          /* 7.47:1 (was #8B6500 = 5.30, failed its own 7:1 contract) */
   --accent-subtle: #FFF3D6;
+  --on-accent: #FFFFFF;       /* white on --accent fill — 7.47:1, clears 7:1 (button.md primary) */
 
   --text-primary: #000000;    /* only text color permitted in sunlight */
   --text-secondary: #000000;  /* no mid-gray text in sunlight */
@@ -180,7 +187,9 @@
   --status-returned-text:#FFFFFF;  --status-returned-bg:#44403C;  /* 10.27 */
   --danger-text:         #FFFFFF;  --danger-bg:         #B91C1C;  /* 6.47 */
 
+  --scrim: rgba(0, 0, 0, 0.55);                      /* stronger backdrop survives sun (color.md) */
   --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.20);    /* centered cast shadow (modal.md) */
   --card-top-highlight: none;
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);   /* cards gain a shadow under glare */
   --type-weight-bump: 100;   /* body 400->500, medium 500->600, headline 600->700 */
@@ -199,6 +208,7 @@
   --stroke-width: 1px;
   --accent: #E5B53D;                /* 9.51:1 — brighter gold for TV gamma */
   --accent-subtle: #221C0C;
+  /* no --on-accent / --scrim / --shadow-modal — broadcast renders no buttons or overlays */
 
   --text-primary: #F4F4F4;          /* 16.49:1 */
   --text-secondary: #C0BFBC;        /* 9.86:1 */
