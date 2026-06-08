@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.21.2';
+const APP_VERSION = '3.22.0';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the

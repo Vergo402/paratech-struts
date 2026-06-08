@@ -1,7 +1,7 @@
 # FieldShore User Manual
 
-**Version:** 3.21  
-**Last updated:** 2026-05-25  
+**Version:** 3.22  
+**Last updated:** 2026-06-07  
 **App:** [https://vergo402.github.io/paratech-struts/](https://vergo402.github.io/paratech-struts/)
 
 FieldShore is a progressive web app for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. It works offline on any mobile device.
@@ -434,6 +434,14 @@ The **Settings** tab includes:
 
 ## 9. Safety & Updates
 
+### Measurements Round Down to 1/8"
+
+Cut lengths and strut set-to lengths now round **down** to the nearest 1/8 inch — you will never be told to cut or set *long*. When a length lands between marks it is shortened, because the loading wedge takes up that small gap, while a piece cut too long cannot seat. The deduction math still works from the exact plate and wood sizes; only the final number you act on is rounded, once, to a tape-readable 1/8".
+
+### "Verify Physical Strut" Flag
+
+If two crews deploy against the **same** strut at the same time while offline, the app could briefly count one strut as two. When the devices reconnect and the app detects this, it flags the affected shore point with a persistent amber **VERIFY PHYSICAL STRUT** badge instead of silently hiding the discrepancy. The flag stays until the **IC or Safety** taps **Acknowledge** — go put eyes on that shore point and confirm a real strut is in place before relying on it. A flagged shore point is not counted as secured on the Command dashboard until it is acknowledged.
+
 ### Ending an Operation — Confirmation Gate
 
 The End Operation button lives on the **Command tab** header and is visible to the IC only.
@@ -484,6 +492,7 @@ Major and minor releases only. Patch releases (bug fixes) are omitted.
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| **v3.22** | 2026-06-07 | Inventory-integrity & measurement-safety release. **Measurements now round _down_ to 1/8"** (cut and set-to lengths) so you are never told to cut long — short is taken up by the wedge (issue #300). **Over-allocation safety flag:** if two crews deploy the same strut at once while offline, on reconnect the app flags the shore point with a persistent **VERIFY PHYSICAL STRUT** badge (cleared only by IC / Safety) instead of silently losing count, and a flagged point is not counted as secured (issue #80). Under the hood: stronger validation on visiting-department equipment counts, and a clean-up of the inventory deploy/return code with no change in behavior (issue #284). _(Header/footer beams and the Command department breadcrumb were planned for this release but deferred.)_ |
 | **v3.21** | 2026-05-25 | All measurements now display as fractions (issue #119, Hartsdale field feedback). Shore-card lengths, deduction summaries, cut table expected/actual, archived ops, Quick Find results, and Quick View inventory all render in tape-measure format — `48-1/2"` instead of `48.5"` — at 1/16" precision. The "Actual cut" override on the cut table is now a feet/inches/fraction picker matching the rest of the app, so cutters don't have to mentally convert tape-measure readings into decimals. Partially-typed actual measurements survive Firebase status pushes from peer devices. Excel import now accepts fractional text like `48 1/2` in the Extension Length column (previously silently truncated to `48`). Excel **exports** remain in decimal for spreadsheet math compatibility. |
 | **v3.20** | 2026-05-25 | External equipment now flows into "available inventory" end-to-end (issue #127). Adding external struts, extensions, or plates on the Command tab now makes them deployable on shore points — previously external extensions were silently invisible to the deploy modal, and external plates had a pre-existing silent loss on return. External items also now appear in the Quick View "Available Inventory" sidebar in a dedicated **External Department Equipment** section, with the source dept and apparatus shown on a subordinate sub-label under each item. The Inventory tab is unchanged — it remains dept-owned-only by design (visiting-dept gear is op-scoped and lives on Command + Quick View). |
 | **v3.19** | 2026-05-20 | Default ICS org chart restructured for NIMS Type IV–V incidents. **Added** two new default roles: **Staging Area Manager** (under Operations per NIMS doctrine) and **Division 1** (under Operations, collapsed by default to fit phone screens). The four tactical roles — Entry, Rescue, Initial Shoring, Wood Shoring — now sit under Division 1 instead of directly under Operations. Cutting Table and Runner stay where they were. Card titles (v3.18.2 fix carried forward) accept up to 30 characters with word-wrap and no subtitle row. |
