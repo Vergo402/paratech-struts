@@ -6154,31 +6154,12 @@ async function upgradePendingToDeployed(result, pendingId) {
   // v3.17.4: apply local optimistic decrement BEFORE the await so the
   // Firebase listener can't double-count between the transactions committing
   // and the decrement firing. Compensate below if transactions abort.
-  const isExternalStrut = strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id];
-  if (isExternalStrut) {
-    activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
-  } else {
-    strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-  }
-  for (const ext of extInvItems) {
-    // v3.20.0 #127 E8: branch on external — synthetic copy from opInv won't mutate the source
-    if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
-      const e = activeOperation.externalEquipment[ext.id];
-      e.available = Math.max(0, (e.available || 0) - 1);
-    } else {
-      ext.available = Math.max(0, ext.available - 1);
-    }
-  }
-  for (const pl of deployedPlates) {
-    // v3.20.0 #127 P6: branch on external — localInventory.find returns undefined for external plates
-    if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
-      const e = activeOperation.externalEquipment[pl.inventoryId];
-      e.available = Math.max(0, (e.available || 0) - 1);
-    } else {
-      const plInv = localInventory.find(i => i.id === pl.inventoryId);
-      if (plInv) plInv.available = Math.max(0, plInv.available - 1);
-    }
-  }
+  // #284: optimistic local decrement (-1) via adjustInventoryItemAvailable.
+  // E8/P6 external-vs-dept branching now resolved inside the helper.
+  const isExternalStrut = _isExternalItem(strutInvItem);
+  adjustInventoryItemAvailable(strutInvItem, -1);
+  for (const ext of extInvItems) adjustInventoryItemAvailable(ext, -1);            // E8
+  for (const pl of deployedPlates) adjustInventoryItemAvailable(pl, -1);            // P6
 
   // #80 (v3.15.0): run Firebase decrement transactions. If any abort, restore
   // the pending SP's pre-upgrade state and compensate the optimistic local
@@ -6192,32 +6173,11 @@ async function upgradePendingToDeployed(result, pendingId) {
     sp.deployedPlates = [];
     sp.status = 'pending';
     sp.deployedAt = null;
-    // Compensate the optimistic decrements (clamped to quantity)
-    if (isExternalStrut) {
-      const ext = activeOperation.externalEquipment[strutInvItem.id];
-      ext.available = Math.min(ext.quantity || Infinity, (ext.available || 0) + 1);
-    } else {
-      strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
-    }
-    for (const ext of extInvItems) {
-      // v3.20.0 #127 E9: compensate branch on external (mirror of E8)
-      if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
-        const e = activeOperation.externalEquipment[ext.id];
-        e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
-      } else {
-        ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
-      }
-    }
-    for (const pl of deployedPlates) {
-      // v3.20.0 #127 P7: compensate branch on external (mirror of P6)
-      if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
-        const e = activeOperation.externalEquipment[pl.inventoryId];
-        e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
-      } else {
-        const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
-      }
-    }
+    // #284: compensate the optimistic decrements (+1, clamped to quantity) via
+    // adjustInventoryItemAvailable. E9/P7 branching resolved inside the helper.
+    adjustInventoryItemAvailable(strutInvItem, 1);
+    for (const ext of extInvItems) adjustInventoryItemAvailable(ext, 1);            // E9
+    for (const pl of deployedPlates) adjustInventoryItemAvailable(pl, 1);            // P7
     const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
     const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
     if (anyExhausted) {
@@ -6230,19 +6190,21 @@ async function upgradePendingToDeployed(result, pendingId) {
   }
 
   // Transactions committed. If offline, mark each mutated item for the
-  // reconnect flush-pass (#71 v3.15.0).
+  // reconnect flush-pass (#71 v3.15.0). #284: external items skip here (their
+  // ext: epoch was bumped in runDeployTransactions); dept items route through
+  // markOfflineTouchedAny. Post-decrement `available` read from the resolved target.
   if (txResult.offline) {
-    if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available, -1); // #80 Fix C: deploy delta=-1
+    if (!isExternalStrut) markOfflineTouchedAny(strutInvItem.id, strutInvItem.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
     // v3.20.0 #127 E10/P8: skip markOfflineTouched for external items — runDeployTransactions
     // already bumped the ext: epoch key, which is what the offline flush pass uses.
     // Matches the strut pattern at line above.
     for (const ext of extInvItems) {
-      if (!ext.external) markOfflineTouched(ext.id, ext.available, -1); // #80 Fix C: deploy delta=-1
+      if (!ext.external) markOfflineTouchedAny(ext.id, ext.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
     }
     for (const pl of deployedPlates) {
       if (!pl.external) {
         const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) markOfflineTouched(plInv.id, plInv.available, -1); // #80 Fix C: deploy delta=-1
+        if (plInv) markOfflineTouchedAny(plInv.id, plInv.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
       }
     }
   }
@@ -6637,63 +6599,23 @@ async function deployShorePoint(result, qty) {
     // Firebase listener cannot fire between the await resolving and the
     // decrement applying (which would double-count). If the transactions
     // abort, we compensate by re-incrementing below.
-    const isExternalStrut = strutInvItem.external && activeOperation.externalEquipment && activeOperation.externalEquipment[strutInvItem.id];
-    if (isExternalStrut) {
-      activeOperation.externalEquipment[strutInvItem.id].available = Math.max(0, (activeOperation.externalEquipment[strutInvItem.id].available || 0) - 1);
-    } else {
-      strutInvItem.available = Math.max(0, strutInvItem.available - 1);
-    }
-    for (const ext of extInvItems) {
-      // v3.20.0 #127 E3: branch on external — synthetic copy from opInv won't mutate the source
-      if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
-        const e = activeOperation.externalEquipment[ext.id];
-        e.available = Math.max(0, (e.available || 0) - 1);
-      } else {
-        ext.available = Math.max(0, ext.available - 1);
-      }
-    }
-    for (const pl of deployedPlates) {
-      // v3.20.0 #127 P2: branch on external — localInventory.find returns undefined for external plates
-      if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
-        const e = activeOperation.externalEquipment[pl.inventoryId];
-        e.available = Math.max(0, (e.available || 0) - 1);
-      } else {
-        const plInv = localInventory.find(i => i.id === pl.inventoryId);
-        if (plInv) plInv.available = Math.max(0, plInv.available - 1);
-      }
-    }
+    // #284: optimistic local decrement (-1) via adjustInventoryItemAvailable.
+    // E3/P2 external-vs-dept branching now resolved inside the helper.
+    const isExternalStrut = _isExternalItem(strutInvItem);
+    adjustInventoryItemAvailable(strutInvItem, -1);
+    for (const ext of extInvItems) adjustInventoryItemAvailable(ext, -1);          // E3
+    for (const pl of deployedPlates) adjustInventoryItemAvailable(pl, -1);          // P2
 
     // #80 (v3.15.0): run Firebase decrement transactions with the v=0 / v=null
     // guard. If any abort, compensate the local optimistic decrements above
     // and break out of the qty loop.
     const txResult = await runDeployTransactions(strutInvItem, extInvItems, deployedPlates);
     if (!txResult.ok) {
-      // Compensate the optimistic decrements (clamped to quantity)
-      if (isExternalStrut) {
-        const ext = activeOperation.externalEquipment[strutInvItem.id];
-        ext.available = Math.min(ext.quantity || Infinity, (ext.available || 0) + 1);
-      } else {
-        strutInvItem.available = Math.min(strutInvItem.quantity || Infinity, strutInvItem.available + 1);
-      }
-      for (const ext of extInvItems) {
-        // v3.20.0 #127 E4: compensate branch on external (mirror of E3)
-        if (ext.external && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.id]) {
-          const e = activeOperation.externalEquipment[ext.id];
-          e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
-        } else {
-          ext.available = Math.min(ext.quantity || Infinity, ext.available + 1);
-        }
-      }
-      for (const pl of deployedPlates) {
-        // v3.20.0 #127 P3: compensate branch on external (mirror of P2)
-        if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
-          const e = activeOperation.externalEquipment[pl.inventoryId];
-          e.available = Math.min(e.quantity || Infinity, (e.available || 0) + 1);
-        } else {
-          const plInv = localInventory.find(i => i.id === pl.inventoryId);
-          if (plInv) plInv.available = Math.min(plInv.quantity || Infinity, plInv.available + 1);
-        }
-      }
+      // #284: compensate the optimistic decrements (+1, clamped to quantity) via
+      // adjustInventoryItemAvailable. E4/P3 branching resolved inside the helper.
+      adjustInventoryItemAvailable(strutInvItem, 1);
+      for (const ext of extInvItems) adjustInventoryItemAvailable(ext, 1);          // E4
+      for (const pl of deployedPlates) adjustInventoryItemAvailable(pl, 1);          // P3
       const labels = [...new Set(txResult.aborted.map(a => a.label))].join(', ');
       const anyExhausted = txResult.aborted.some(a => a.reason === 'exhausted');
       if (anyExhausted) {
@@ -6705,17 +6627,20 @@ async function deployShorePoint(result, qty) {
     }
 
     // Transactions committed. If offline, mark each mutated item for the
-    // reconnect flush-pass (#71 v3.15.0).
+    // reconnect flush-pass (#71 v3.15.0). #284: external items are skipped here
+    // (runDeployTransactions already bumped their ext: epoch); dept items route
+    // through markOfflineTouchedAny. The post-decrement `available` is read back
+    // from the resolved target (strutInvItem/ext are live; plates via localInventory).
     if (txResult.offline) {
-      if (!isExternalStrut) markOfflineTouched(strutInvItem.id, strutInvItem.available, -1); // #80 Fix C: deploy delta=-1
+      if (!isExternalStrut) markOfflineTouchedAny(strutInvItem.id, strutInvItem.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
       // v3.20.0 #127 E5/P4: skip markOfflineTouched for external items (matches strut pattern)
       for (const ext of extInvItems) {
-        if (!ext.external) markOfflineTouched(ext.id, ext.available, -1); // #80 Fix C: deploy delta=-1
+        if (!ext.external) markOfflineTouchedAny(ext.id, ext.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
       }
       for (const pl of deployedPlates) {
         if (!pl.external) {
           const plInv = localInventory.find(i => i.id === pl.inventoryId);
-          if (plInv) markOfflineTouched(plInv.id, plInv.available, -1); // #80 Fix C: deploy delta=-1
+          if (plInv) markOfflineTouchedAny(plInv.id, plInv.available, -1, false, activeOperation.id); // #80 Fix C: deploy delta=-1
         }
       }
     }
@@ -7983,6 +7908,103 @@ function deleteShorePoint(spId) {
   renderInventory();
 }
 
+// #284 (v3.22.0): DRY inventory-mutation helpers. Behavior-preserving extraction
+// of the ~22 inline `if (item.external) {...externalEquipment...} else {...localInventory...}`
+// branches that were duplicated across deployShorePoint, upgradePendingToDeployed,
+// runDeployTransactions, and returnInventoryItems. These encode the POST-#80
+// contract exactly — every body is the prior inline behavior, no logic change.
+//
+// All four resolve the external-vs-dept split the same way the inline code did:
+//   - EXTERNAL: `item.external` truthy AND `activeOperation.externalEquipment[id]`
+//     exists → the op's externalEquipment node is the source of truth
+//     (getOperationInventory pushes a *copy* for external items, so mutating the
+//     opInv copy is a dead end — must hit activeOperation.externalEquipment[id]).
+//   - DEPT: the live `localInventory` entry. Deploy strut/ext opInv items ARE
+//     live localInventory references (getOperationInventory `.filter` preserves
+//     identity); plate/return descriptors are NOT, so we resolve via localInventory.find.
+//
+// The id field differs by descriptor: deploy strut/ext opInv items carry `id`;
+// plate-deploy descriptors and all return descriptors carry `inventoryId`. These
+// are disjoint, so `item.id ?? item.inventoryId` is unambiguous.
+function _invItemId(item) {
+  return (item && item.id != null) ? item.id : (item && item.inventoryId);
+}
+function _isExternalItem(item) {
+  const id = _invItemId(item);
+  return !!(item && item.external && activeOperation && activeOperation.externalEquipment && activeOperation.externalEquipment[id]);
+}
+
+// Optimistic local mutate + clamp. `delta` is the signed change (deploy = -1,
+// return/compensation = +1). Resolves the `quantity` source internally (external →
+// activeOperation.externalEquipment[id].quantity; dept → the mutated inventory
+// entry's quantity) and clamps to [0, quantity].
+//
+// This is the behavior-preserving SUPERSET of the prior asymmetric inline clamps:
+//   - deploy decrement was `Math.max(0, x - 1)` (floor only) — the +quantity
+//     ceiling never bites on a decrement (x <= quantity ⇒ x-1 < quantity).
+//   - return increment was `Math.min(quantity, x + 1)` (ceiling only) — the 0
+//     floor never bites on an increment (x >= 0 ⇒ x+1 > 0).
+//   - compensation increment was `Math.min(quantity || Infinity, x + 1)` — when
+//     `quantity` is not a number the ceiling is dropped (uncapped), matching the
+//     `|| Infinity` fallback.
+// Returns the mutated object (or undefined when a dept item could not be resolved,
+// mirroring the inline `if (plInv)` / `if (inv)` guards that simply skipped).
+function adjustInventoryItemAvailable(item, delta) {
+  if (typeof delta !== 'number') delta = 0;
+  const id = _invItemId(item);
+  let target;
+  let quantity;
+  if (_isExternalItem(item)) {
+    target = activeOperation.externalEquipment[id];
+    quantity = target.quantity;
+  } else if (item && typeof item.available === 'number') {
+    // Live inventory reference passed directly (deploy strut/ext, compensation
+    // strut/ext) — mutate it in place exactly as the inline code did.
+    target = item;
+    quantity = item.quantity;
+  } else {
+    // Descriptor with no live `available` (plate-deploy, all returns) — resolve
+    // the live localInventory entry. Skip when missing (inline `if (inv)` guard).
+    target = localInventory.find(i => i.id === id);
+    if (!target) return undefined;
+    quantity = target.quantity;
+  }
+  const next = (target.available || 0) + delta;
+  const floored = Math.max(0, next);
+  target.available = (typeof quantity === 'number') ? Math.min(quantity, floored) : floored;
+  return target;
+}
+
+// Returns the correct Firebase `…/available` ref for an inventory item:
+//   external → the active op's externalEquipment node; dept → inventoryRef.
+// Mirrors the inline ternary at the strut/ext/plate transaction sites.
+function inventoryAvailableRef(itemId, isExternal) {
+  return isExternal
+    ? operationsRef.child(activeOperation.id).child('externalEquipment').child(itemId).child('available')
+    : inventoryRef.child(itemId).child('available');
+}
+
+// Bumps the optimistic-locking epoch for an inventory item, choosing the
+// namespaced `ext:{opId}:{id}` key for external items vs the bare `{id}` key
+// for dept items (the A2 collision-avoidance scheme).
+function bumpInventoryEpoch(itemId, isExternal) {
+  return bumpEpoch(isExternal ? ('ext:' + activeOperation.id + ':' + itemId) : itemId);
+}
+
+// Records an offline-touched entry through the correct post-#80 pipe:
+//   external → markOfflineTouchedExternal(opId, id, baselineAvail, delta)
+//   dept     → markOfflineTouched(id, baselineAvail, delta)
+// `baselineAvail` is the local `available` AFTER the mutation (the post-mutation
+// value the inline call sites passed); `delta` is the signed change. Both pipes
+// store the `{baselineAvail, delta}` record Fix C introduced.
+function markOfflineTouchedAny(itemId, baselineAvail, delta, isExternal, opId) {
+  if (isExternal) {
+    markOfflineTouchedExternal(opId, itemId, baselineAvail, delta);
+  } else {
+    markOfflineTouched(itemId, baselineAvail, delta);
+  }
+}
+
 // NEW-7 (v3.5.2): inventory transaction handler — guard against phantom-item creation
 // and over-increment.
 //   - If the Firebase node doesn't exist (item was deleted but a deployed SP still
@@ -8082,31 +8104,21 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
   const guards = [];
 
   // Strut transaction
-  const strutRef = strutInvItem.external
-    ? operationsRef.child(activeOperation.id).child('externalEquipment').child(strutInvItem.id).child('available')
-    : inventoryRef.child(strutInvItem.id).child('available');
+  // #284: ref/epoch keyed on the raw `external` flag (preserves the pre-extraction
+  // inline behavior at this site, which did NOT re-check externalEquipment[id]).
+  const strutRef = inventoryAvailableRef(strutInvItem.id, strutInvItem.external);
   const strutGuard = makeAllocateDecrementer();
   const strutLocalAvail = Math.max(0, (strutInvItem.available || 0) - 1);
-  if (strutInvItem.external) {
-    bumpEpoch('ext:' + activeOperation.id + ':' + strutInvItem.id);
-  } else {
-    bumpEpoch(strutInvItem.id);
-  }
+  bumpInventoryEpoch(strutInvItem.id, strutInvItem.external);
   guards.push({ ref: strutRef, guard: strutGuard, label: strutInvItem.model || 'strut', localAvail: strutLocalAvail, quantity: strutInvItem.quantity });
 
   // Extension transactions
   for (const ext of (extInvItems || [])) {
     const g = makeAllocateDecrementer();
     const extLocalAvail = Math.max(0, (ext.available || 0) - 1);
-    // v3.20.0 #127 E11: branch Firebase ref + epoch on external (mirror of strut path at line 7645-7654)
-    const extRef = ext.external
-      ? operationsRef.child(activeOperation.id).child('externalEquipment').child(ext.id).child('available')
-      : inventoryRef.child(ext.id).child('available');
-    if (ext.external) {
-      bumpEpoch('ext:' + activeOperation.id + ':' + ext.id);
-    } else {
-      bumpEpoch(ext.id);
-    }
+    // v3.20.0 #127 E11 / #284: branch Firebase ref + epoch on external (raw flag).
+    const extRef = inventoryAvailableRef(ext.id, ext.external);
+    bumpInventoryEpoch(ext.id, ext.external);
     // #80 Fix A: thread `quantity` so the partial-abort compensation below can
     // clamp the re-increment to the item's ceiling (never inflate `available`
     // past `quantity`). External ext quantity lives on the op's externalEquipment
@@ -8129,19 +8141,20 @@ async function runDeployTransactions(strutInvItem, extInvItems, deployedPlates) 
     let plRef;
     // #80 Fix A: capture `quantity` alongside localAvail so compensation clamps.
     let plQuantity;
-    if (pl.external && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
+    // #284: plate ref/epoch branch on the full external guard (mirrors the
+    // pre-extraction inline behavior, which gated on externalEquipment[id]).
+    const plIsExternal = _isExternalItem(pl);
+    if (plIsExternal) {
       const extItem = activeOperation.externalEquipment[pl.inventoryId];
       plLocalAvail = Math.max(0, (extItem.available || 0) - plSeenCounts[pl.inventoryId]);
       plQuantity = extItem.quantity;
-      plRef = operationsRef.child(activeOperation.id).child('externalEquipment').child(pl.inventoryId).child('available');
-      bumpEpoch('ext:' + activeOperation.id + ':' + pl.inventoryId);
     } else {
       const plInv = localInventory.find(i => i.id === pl.inventoryId);
       plLocalAvail = plInv ? Math.max(0, (plInv.available || 0) - plSeenCounts[pl.inventoryId]) : undefined;
       plQuantity = plInv ? plInv.quantity : undefined;
-      plRef = inventoryRef.child(pl.inventoryId).child('available');
-      bumpEpoch(pl.inventoryId);
     }
+    plRef = inventoryAvailableRef(pl.inventoryId, plIsExternal);
+    bumpInventoryEpoch(pl.inventoryId, plIsExternal);
     guards.push({ ref: plRef, guard: g, label: (pl.plateId || 'plate'), localAvail: plLocalAvail, quantity: plQuantity });
   }
 
@@ -8182,79 +8195,53 @@ function returnInventoryItems(sp) {
   // listener echo will reconcile.
   const isOnline = !!(db && deptId && inventoryRef);
   if (sp.deployedStrut && sp.deployedStrut.inventoryId) {
-    if (sp.deployedStrut.external && activeOperation.externalEquipment && activeOperation.externalEquipment[sp.deployedStrut.inventoryId]) {
-      const extItem = activeOperation.externalEquipment[sp.deployedStrut.inventoryId];
-      extItem.available = Math.min(extItem.quantity, extItem.available + 1);
-      const extEpochKey = 'ext:' + activeOperation.id + ':' + sp.deployedStrut.inventoryId;
-      if (db && deptId && operationsRef) {
-        bumpEpoch(extEpochKey);
-        firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available, delta: 1 }); // #80 Fix C: return delta=+1
-      } else {
-        markOfflineTouchedExternal(activeOperation.id, sp.deployedStrut.inventoryId, extItem.available, 1); // #80 Fix C: return delta=+1
-      }
-    } else {
-      const inv = localInventory.find(i => i.id === sp.deployedStrut.inventoryId);
-      if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-      if (isOnline) {
-        bumpEpoch(sp.deployedStrut.inventoryId);
-        firebaseSave(inventoryRef.child(sp.deployedStrut.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined, delta: 1 }); // #80 Fix C: return delta=+1
-      } else if (inv) {
-        markOfflineTouched(inv.id, inv.available, 1); // #80 Fix C: return delta=+1
-      }
-    }
+    returnOneInventoryItem(sp.deployedStrut, isOnline);
   }
   if (sp.deployedExtensions) {
     for (const ext of sp.deployedExtensions) {
-      if (ext.inventoryId) {
-        // v3.20.0 #127 E12: external branch mirrors strut path at lines 7705-7714
-        if (ext.external && activeOperation && activeOperation.externalEquipment && activeOperation.externalEquipment[ext.inventoryId]) {
-          const extItem = activeOperation.externalEquipment[ext.inventoryId];
-          extItem.available = Math.min(extItem.quantity, extItem.available + 1);
-          const extEpochKey = 'ext:' + activeOperation.id + ':' + ext.inventoryId;
-          if (db && deptId && operationsRef) {
-            bumpEpoch(extEpochKey);
-            firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available, delta: 1 }); // #80 Fix C: return delta=+1
-          } else {
-            markOfflineTouchedExternal(activeOperation.id, ext.inventoryId, extItem.available, 1); // #80 Fix C: return delta=+1
-          }
-        } else {
-          const inv = localInventory.find(i => i.id === ext.inventoryId);
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-          if (isOnline) {
-            bumpEpoch(ext.inventoryId);
-            firebaseSave(inventoryRef.child(ext.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined, delta: 1 }); // #80 Fix C: return delta=+1
-          } else if (inv) {
-            markOfflineTouched(inv.id, inv.available, 1); // #80 Fix C: return delta=+1
-          }
-        }
-      }
+      // v3.20.0 #127 E12 / #284: extracted into returnOneInventoryItem.
+      if (ext.inventoryId) returnOneInventoryItem(ext, isOnline);
     }
   }
   if (sp.deployedPlates) {
     for (const pl of sp.deployedPlates) {
-      if (pl.inventoryId) {
-        // v3.20.0 #127 P10: external branch (closes pre-existing prod bug for external plate return)
-        if (pl.external && activeOperation && activeOperation.externalEquipment && activeOperation.externalEquipment[pl.inventoryId]) {
-          const extItem = activeOperation.externalEquipment[pl.inventoryId];
-          extItem.available = Math.min(extItem.quantity, extItem.available + 1);
-          const extEpochKey = 'ext:' + activeOperation.id + ':' + pl.inventoryId;
-          if (db && deptId && operationsRef) {
-            bumpEpoch(extEpochKey);
-            firebaseSave(operationsRef.child(activeOperation.id).child('externalEquipment').child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(extItem.quantity), { localAvail: extItem.available, delta: 1 }); // #80 Fix C: return delta=+1
-          } else {
-            markOfflineTouchedExternal(activeOperation.id, pl.inventoryId, extItem.available, 1); // #80 Fix C: return delta=+1
-          }
-        } else {
-          const inv = localInventory.find(i => i.id === pl.inventoryId);
-          if (inv) inv.available = Math.min(inv.quantity, inv.available + 1);
-          if (isOnline) {
-            bumpEpoch(pl.inventoryId);
-            firebaseSave(inventoryRef.child(pl.inventoryId).child('available'), 'transaction', makeReturnIncrementer(inv ? inv.quantity : null), { localAvail: inv ? inv.available : undefined, delta: 1 }); // #80 Fix C: return delta=+1
-          } else if (inv) {
-            markOfflineTouched(inv.id, inv.available, 1); // #80 Fix C: return delta=+1
-          }
-        }
-      }
+      // v3.20.0 #127 P10 / #284: extracted into returnOneInventoryItem.
+      if (pl.inventoryId) returnOneInventoryItem(pl, isOnline);
+    }
+  }
+}
+
+// #284 (v3.22.0): the per-item return body shared by the strut / extension /
+// plate loops in returnInventoryItems (previously three byte-identical inline
+// blocks). Behavior-preserving — encodes the POST-#80 return contract exactly:
+//   - optimistic local +1 (ceiling = quantity) via adjustInventoryItemAvailable
+//   - ONLINE: bump epoch + makeReturnIncrementer transaction with {localAvail, delta:+1}
+//   - OFFLINE: markOfflineTouchedAny with {baselineAvail = post-increment, delta:+1}
+// The external vs dept online-condition asymmetry is preserved: external gates on
+// `db && deptId && operationsRef`; dept gates on the caller-passed `isOnline`
+// (= `db && deptId && inventoryRef`). `descriptor` carries `external` + `inventoryId`.
+function returnOneInventoryItem(descriptor, isOnline) {
+  const itemId = descriptor.inventoryId;
+  const isExternal = _isExternalItem(descriptor);
+  // Optimistic local mutate (+1, clamped to quantity). Returns the mutated
+  // target (externalEquipment[id] or the localInventory entry), or undefined for
+  // a dept item that no longer exists locally (mirrors the old `if (inv)` skip).
+  const target = adjustInventoryItemAvailable(descriptor, 1);
+  if (isExternal) {
+    // External online-condition: operationsRef (NOT inventoryRef). The op's
+    // externalEquipment node is the canonical store for external availability.
+    if (db && deptId && operationsRef) {
+      bumpInventoryEpoch(itemId, true);
+      firebaseSave(inventoryAvailableRef(itemId, true), 'transaction', makeReturnIncrementer(target.quantity), { localAvail: target.available, delta: 1 }); // #80 Fix C: return delta=+1
+    } else {
+      markOfflineTouchedAny(itemId, target.available, 1, true, activeOperation.id); // #80 Fix C: return delta=+1
+    }
+  } else {
+    if (isOnline) {
+      bumpInventoryEpoch(itemId, false);
+      firebaseSave(inventoryAvailableRef(itemId, false), 'transaction', makeReturnIncrementer(target ? target.quantity : null), { localAvail: target ? target.available : undefined, delta: 1 }); // #80 Fix C: return delta=+1
+    } else if (target) {
+      markOfflineTouchedAny(itemId, target.available, 1, false, activeOperation.id); // #80 Fix C: return delta=+1
     }
   }
 }
