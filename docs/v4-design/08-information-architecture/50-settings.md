@@ -1,0 +1,112 @@
+# IA Spec: Settings
+
+> Phase F information-architecture spec. Cites [`00-ia-foundation.md`](00-ia-foundation.md) for all cross-cutting rules (tab map, navigation, modal-vs-sheet row, four-surface framework, persistent chrome) and does not re-derive them.
+> Source: the [`00-ia-foundation.md`](00-ia-foundation.md) tab map **Settings** row (themes · the Build-A/Build-C dept-choice toggle, C disabled "Coming with mobile app" · Native Controls · dept registration entry) + modal-vs-sheet **Settings** row (toggles commit in place; delete/leave dept = destructive modal, 48pt non-operational targets); [`06-synthesis.md`](../06-synthesis.md) §1.7 (Build A vs Build C) + [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md); the D7 four-role identity model (Owner / Admin / Member / Observer); [ADR-011](../11-decisions/ADR-011-color-token-system.md) (themes), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)/[015](../11-decisions/ADR-015-navigation-pattern.md)/[016](../11-decisions/ADR-016-modal-vs-sheet-rules.md). Grounded in the v3 Settings tab (`index.html` screenSettings): `connectDepartment()` (app.js:2759), `saveSettings()` (7855), `setTheme()` (7894), `renderApparatusTypesList()` (3445) / `addCustomApparatusType()` (3108), `manualCheckForUpdates()` (1874), `exportInventory()` (7906) / `handleImport()` (7992) / `downloadTemplate()` (8033), `openFeedbackModal()` (3722) / `submitFeedback()` (3738), `logOut()`. **Largely a v3 carry-forward + the v4 additions (Build choice, Native Controls, role/registration, admin gateways).** GitHub [#202](https://github.com/Vergo402/paratech-struts/issues/202).
+
+---
+
+## Purpose
+
+The app's **configuration home**: appearance, the department connection + registration + this device's role, the sync-build choice, the accessibility (Native Controls) fallback, data management, feedback, reference materials, and the gateways to administration (User Manager) and the Audit Log. The one tab that is setup/config, not field work.
+
+## Where it lives
+
+- **Tab / parent:** **Settings** — the fifth bottom-nav tab home (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)); nothing nests *as a tab* beneath it, but it holds the forward routes to the pre-shell auth screens and the admin screens.
+- **How it is reached:** the Settings bottom-nav tab; and it is the **forward destination of the guest-mode "Sign in to sync" path** — a guest reaches [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206), [Department Setup](https://github.com/Vergo402/paratech-struts/issues/207), and [Invite Code](https://github.com/Vergo402/paratech-struts/issues/208) *from here*, never as a cold-open gate ([`00-ia-foundation.md`](00-ia-foundation.md) §Navigation / guest-first, [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)).
+- **Issue:** [#202](https://github.com/Vergo402/paratech-struts/issues/202).
+
+## Primary role(s) and surface(s)
+
+- **Primary role(s):** **any user** (everyday config); **Owner / Admin** additionally see the admin gateways (User Manager, Cross-Dept Invite) — the D7 four-role model, NIMS-independent device roles spelled out.
+- **Primary surface(s):** **phone is the floor** — but Settings is a **non-operational surface**, so its targets are the **48pt** non-operational size, not the 56pt operational floor ([`spacing-grid.md`](../07-design-system/spacing-grid.md); the ADR-016 Settings row). Tablet/laptop add two-column density + keyboard-friendly forms. **Broadcast does not render Settings** (it is config, never a cast board).
+
+## Information hierarchy (above / below fold) — per surface
+
+### Phone (the floor)
+- **Above fold:** **Appearance** (theme); **Department** (connection / registration + this device's role); **Sync** (the Build A / Build C choice).
+- **Below fold:** **Accessibility** (Native Controls); **Data Management** (Excel export / import / template); **Apparatus Types**; **App Updates**; **Feedback**; **Reference Materials**; the **admin gateways** (role-gated); **Log Out**.
+
+### Tablet / laptop
+- **Above fold:** settings groups in two columns; the Excel data-management flows + forms foregrounded and keyboard-friendly.
+
+### Broadcast TV
+- **Not rendered.** Settings is a configuration surface; a cast device never projects it.
+
+## Primary action + secondary actions
+
+- **Primary action (one — Principle 4):** **change a setting** — most **commit in place** (theme, Native Controls, the Build choice) the moment they're toggled, immediate + reversible (Principle 6; the ADR-016 Settings row).
+- **Secondary actions:** department registration (forward routes to auth); data management (Excel); feedback; check for updates; the admin gateways.
+- **Destructive / terminal:** **Log Out** and **Leave / Delete Department** raise a destructive [`modal`](../03-primitives/modal.md) (default-Cancel, 48pt non-operational targets — the ADR-016 Settings row); an Excel **import that would orphan deployed struts** raises the shared orphan-confirm [`modal`](../03-primitives/modal.md) ([40-inventory.md](40-inventory.md)).
+
+## Composed primitives
+
+- [x] [segmented](../03-primitives/segmented.md) — **theme** (System / Light / Dark — the v3 `.theme-toggle` → the value variant); the **Build A / Build C** choice (a value segmented with **Build C disabled**, labeled "Coming with mobile app").
+- [x] [toggle](../03-primitives/toggle.md) — **Native Controls** (immediate + reversible per Principle 6); other binary preferences.
+- [x] [input](../03-primitives/input.md) — Department ID / name fields; the feedback description; apparatus-type name entry.
+- [x] [button](../03-primitives/button.md) — Connect / Save department; Export / Import / Download Template; Check for Updates; Feedback; the admin-gateway links; Log Out.
+- [x] [list](../03-primitives/list.md) — the settings groups; the apparatus-types list; the reference-material links.
+- [x] [sheet](../03-primitives/sheet.md) — **Feedback** (the v3 modal re-homes to a sheet per [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md)); the apparatus-type add.
+- [x] [modal](../03-primitives/modal.md) — **Log Out** / **Leave-or-Delete Department** (destructive); the Excel **import orphan-confirm**; import parse-failure blocking alert.
+- [x] [badge](../03-primitives/badge.md) — this device's **role** (Owner / Admin / Member / Observer); the app **version**; a "guest / connected" indicator.
+- [x] [loading-state](../03-primitives/loading-state.md) — the Excel import/export determinate progress (a legitimate wait).
+- [ ] picker · card · slider · toast · empty-state · warning-gate · nested-checklist — not core (the dept-registration sub-forms are the **pre-shell auth routes**, not overlays).
+
+> **A new primitive would be a gate escalation, not a spec decision.**
+
+## The settings groups
+
+1. **Appearance** — theme: **System / Light / Dark** (the authored themes, [ADR-011](../11-decisions/ADR-011-color-token-system.md)). **Sunlight auto-activates at ≥ 10,000 lux** with a manual override ([`color.md`](../07-design-system/color.md)); **broadcast is a cast/display mode, not a user theme pick.** So the user-facing control is the three base themes; sunlight is automatic-with-override; broadcast does not appear as a choice.
+2. **Department** — connection (Dept ID / name, faithful to v3 `connectDepartment` / `saveSettings`) + the **registration entry** forwarding to [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206) / [Department Setup](https://github.com/Vergo402/paratech-struts/issues/207) / [Invite Code](https://github.com/Vergo402/paratech-struts/issues/208) (guest-first — reached forward, never a gate); **this device's role** (Owner / Admin / Member / Observer, D7) shown as a [`badge`](../03-primitives/badge.md); **Leave / Delete Department = destructive [`modal`](../03-primitives/modal.md)**.
+3. **Sync (Build choice)** — the **Build A / Build C** [`segmented`](../03-primitives/segmented.md): **Build A** (multi-device local-first queue + batch reconcile — ships v4.0, the default) is selectable; **Build C** (a Command-Post hub with a real-time WebSocket relay) is **disabled, labeled "Coming with mobile app"** — it ships at v5.0 with React Native because a PWA cannot host a local WebSocket relay ([`06-synthesis.md`](../06-synthesis.md) §1.7, [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)). The toggle is **visible-but-disabled** so the roadmap is honest, not hidden.
+4. **Accessibility — Native Controls** ([`toggle`](../03-primitives/toggle.md)): ON makes every picker render as the OS-native `<select>` (the **Power Select** fallback); it **auto-enables under VoiceOver / TalkBack** ([`accessibility.md`](../07-design-system/accessibility.md); the picker doctrine in [`picker.md`](../03-primitives/picker.md)).
+5. **Data Management** — **Export / Import / Download Template** (Excel) — the **same ID-preserving round-trip + orphan-confirm modal + determinate loader** as [Inventory](40-inventory.md) (one implementation, reached from both; OQ below).
+6. **Apparatus Types** — manage the custom apparatus-type vocabulary (faithful to v3 `renderApparatusTypesList` / `addCustomApparatusType`; NIMS terms, [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)). **This resolves [40-inventory.md](40-inventory.md) OQ3: the apparatus-type *vocabulary* is edited here; Inventory's Add Apparatus *consumes* the set, it does not edit it.**
+7. **App Updates** — **Check for Updates** (faithful to v3 `manualCheckForUpdates`; the service-worker update flow).
+8. **Feedback** — category + description → Firebase (faithful to v3 `submitFeedback`); a [`sheet`](../03-primitives/sheet.md).
+9. **Reference Materials** — static doctrine links (USACE Shoring Operations Guide, FEMA US&R), faithful to v3.
+10. **Administration (role-gated)** — gateways to **[User Manager](https://github.com/Vergo402/paratech-struts/issues/209)** (Owner/Admin), **[Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210)** (v4.5), and the **[Audit Log](https://github.com/Vergo402/paratech-struts/issues/211)** (one tap).
+11. **Log Out** — destructive/terminal [`modal`](../03-primitives/modal.md).
+
+## Locked cross-cutting rules this screen honors
+
+- [x] **Phone is the floor** — every setting is reachable phone-only.
+- [x] **Non-operational tap geometry** — **48pt** targets (Settings is not field work), the documented exception to the 56pt operational floor ([`spacing-grid.md`](../07-design-system/spacing-grid.md); ADR-016 Settings row).
+- [x] **Guest-first** — auth/registration is reached **forward** from here, never a cold-open wall ([ADR-015](../11-decisions/ADR-015-navigation-pattern.md)).
+- [x] **NIMS terminology** — apparatus types + device roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
+- [x] **Reversible settings never confirm** — theme / Native Controls / Build choice commit in place (Principle 6); only **Log Out / Leave-Delete Dept** confirm (destructive [`modal`](../03-primitives/modal.md)).
+- [x] **No silent data loss** — the Excel import orphan-confirm protects deployed references (the v3.5.2 transaction-sanity lesson; [40-inventory.md](40-inventory.md)).
+- [x] **Modal-vs-sheet** per the ADR-016 Settings row: toggles/segmented in place; feedback/apparatus-add = sheet; destructive = modal; dept registration = pre-shell routes.
+- [x] **Honest roadmap** — Build C is visible-but-disabled, not hidden (Principle 11 / [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
+- [x] **Capacity demoted** — N/A here.
+
+## The four-surface table (this screen)
+
+| Dimension | Phone | Tablet | Laptop | Broadcast |
+|---|---|---|---|---|
+| Layout | single-column setting groups | two-column groups | two-column + keyboard forms | **not rendered** |
+| Above fold | Appearance · Department · Sync | the same, two-up | same + Excel foregrounded | — |
+| Primary-action affordance | toggle/segmented in place (48pt) | in place | in place + keyboard | — |
+| Added density | — | two-column | keyboard-first Excel + forms | — |
+| Does NOT render | — | — | — | **the whole screen** |
+
+## Empty / error / loading states
+
+(Posture set in [`00-ia-foundation.md`](00-ia-foundation.md) §Cross-cutting empty / error / loading.)
+
+- **Empty — guest (not connected to a department):** not a void — the **Department** group shows the forward "Sign in to sync" path to [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206) etc. (guest-first, never a wall).
+- **Error:** Excel import parse failure → a blocking-alert [`modal`](../03-primitives/modal.md) with the reason; inline [`input.md`](../03-primitives/input.md) validation on the dept fields; feedback submit failure resolves inline; never `alert()`.
+- **Loading:** instant for local settings; **determinate progress** only for the Excel round-trip ([`loading-state.md`](../03-primitives/loading-state.md)); a dept connect/auth call shows a busy control on its button.
+
+## Accessibility / screen-reader notes
+
+**Cite [`accessibility.md`](../07-design-system/accessibility.md), do not restate.**
+- The theme/Build segmented + the Native Controls toggle announce per the registry ([`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts); a **disabled** Build C announces its disabled state + the "Coming with mobile app" reason, not just greyed pixels (Principle 9).
+- **Native Controls** is itself the accessibility fallback control — and it auto-engages under VoiceOver/TalkBack regardless of its stored value ([`accessibility.md`](../07-design-system/accessibility.md) §Power Select).
+- Destructive modals (Log Out / Leave-Delete Dept, import orphan) trap focus + name the consequence ([`accessibility.md`](../07-design-system/accessibility.md) §Focus & keyboard); 48pt non-operational targets still meet the AA target-size floor.
+
+## Open questions (per-screen)
+
+1. **Theme taxonomy in the control** — confirm the user-facing picker is System / Light / Dark with sunlight auto-at-lux + manual override and broadcast excluded (per [`color.md`](../07-design-system/color.md)); the manual sunlight-override affordance is finalized in the Phase H slice.
+2. **Data-management single implementation** — Settings and [Inventory](40-inventory.md) both surface the Excel round-trip; confirm one shared implementation reached from both, not two; resolved in the Phase G/H data work.
+3. **Department-registration sub-flow** — exactly where the boundary sits between an in-Settings sheet and the **pre-shell auth routes** ([#206](https://github.com/Vergo402/paratech-struts/issues/206)/[#207](https://github.com/Vergo402/paratech-struts/issues/207)/[#208](https://github.com/Vergo402/paratech-struts/issues/208)) is resolved with the auth specs (next session).
+4. **Admin-gateway visibility by role** — which of User Manager / Cross-Dept Invite / Audit Log each of Owner / Admin / Member / Observer sees is the D7 authorization model, detailed with the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209) spec.
