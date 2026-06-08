@@ -1,7 +1,7 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.20.0 (shipped 2026-05-25) · **Live:** https://vergo402.github.io/paratech-struts/
-> **Next planned:** v4.0.0 (doctrine cutover — see `.claude/plans/v4.0.0-plan.md`)
+> **Current:** v3.21.2 (shipped 2026-06-01) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Next planned:** v3.22.0 (in planning — beams · Command breadcrumb · inventory integrity; see `.claude/plans/v3.22.0-beams-breadcrumb-integrity.md`) · then v4.0.0 doctrine cutover
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
@@ -83,6 +83,12 @@ GATE 1 ran 4 reviewers in parallel. **code-auditor:** no blockers — migration 
 ### v3.19.1 ✅ shipped 2026-05-20 — Note explaining IC-only chart editing (PATCH)
 
 The v3.19.0 cycle surfaced a long-standing UX gap: when a user's `myRole !== 'ic'`, `canReparent()` returns false → Edit button, toolbar arrows, drag-and-drop, and tap-modal reorder controls are ALL gated off. The corner of the ICS Organization section rendered empty, making the chart look broken / read-only. v3.19.1 fills that corner with **"Only the IC can edit the chart"** in italic muted text, with a tooltip explaining how to claim the IC role. Zero behavior change — just a label closing the UX seam.
+
+### v3.20.0–v3.21.2 ✅ shipped 2026-05-25 → 2026-06-01 — external-equipment plumbing + fractional measurement display
+v3.20.0 (#127) external/mutual-aid equipment inventory plumbing (Quick View + Inventory restructure). v3.21.0 (#119) fractional measurement display, v3.21.1 (#285) auto-scroll results into view, v3.21.2 (#119 follow-up) real fraction glyphs. *(Per-release narrative backfill pending — item detail in the Project.)*
+
+### v3.22.0 ⏳ in planning — beams · Command breadcrumb · inventory integrity
+MINOR scoping 5 items (Project Release=v3.22.0): #103 header/footer beams + cut-length deduction, #123 Dept→Apparatus→Equipment/Individuals breadcrumb on Command, #284 inventory-mutation DRY refactor, #300 ADR-012 1/8″ floor-rounding backport (structural-collapse-sme sign-off), #80 concurrent-deploy phantom-double — **descoped at GATE 2** to the cheap provable fixes (clamp the unclamped compensation, numeric-validate external equipment, delta-reconciliation surfacing offline doubles with a persistent "verify physical strut" SP flag); the full allocation-ledger + Cloud Function deferred to v4. 7-agent review (all CONCERNS) folded in. Plan: [v3.22.0-beams-breadcrumb-integrity.md](v3.22.0-beams-breadcrumb-integrity.md). **Lesson (pre-ship):** the panel converged that forward-compat schema (#80's ledger) doesn't belong on the v3 line v4 replaces — descope to provable fixes, defer the architecture to where the multi-device model actually lands.
 
 ### v4.0.0 (MAJOR, ~2-3 weeks) ⏳ planned — 4 items scoped in Project
 
