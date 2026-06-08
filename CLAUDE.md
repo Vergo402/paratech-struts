@@ -176,6 +176,38 @@ When updating:
 
 ---
 
+## How We Talk — Plain Language for Alex (standing rule, 2026-06-08)
+
+Alex is a firefighter (USAR/FEMA) **and a tech-savvy power user of decades — but from
+the user side, not the engineering/IT-internals side.** Assume full fluency with
+*using* software: apps, phones, files, accounts, syncing, offline, settings. The wall
+is the **under-the-hood engineering jargon** — architecture, data structures, the
+plumbing. Translate only that. Do not explain user-level concepts, do not condescend,
+do not pad. Calibrate the altitude; never dumb it down.
+
+In **conversation** — chat replies, planning discussions, triage and gate write-ups,
+code-review explanations, summaries of what an agent found:
+
+- **Plain first, term in parentheses.** Lead with the meaning, then tuck the
+  engineering term in parens so it's available but never in the way. E.g. "all the
+  cloud-saving code lives in one swappable spot (a 'data/sync seam')."
+- **Give the "so what," not a tutorial.** Say what the thing is and why it matters to
+  the app. Skip the walk-through of concepts he already owns.
+- **Analogies only when they truly fit — and as a one-liner, not a lecture.** Use
+  ICS / shoring / fireground comparisons when the mapping is genuinely strong; skip
+  them when forced. (Strong: a data/sync seam ≈ Operations going through one liaison
+  instead of calling vendors directly — swap the vendor, Ops never knows.)
+- **The glossary is the bridge.** `docs/PLAIN-LANGUAGE-GLOSSARY.md` translates the
+  recurring engineering terms. Point Alex there; add new ones as they come up.
+
+**Scope — conversation only.** This does NOT change how design docs, plans, specs,
+ADRs, commit messages, or code comments are written — those keep their precise
+vocabulary (v4 doc voice is governed by
+`docs/v4-design/07-design-system/voice-and-tone.md`). The job is to pitch our
+back-and-forth at the right altitude, not to dumb anything down.
+
+---
+
 ## v3.5.2 hotfix (2026-05-14) — what shipped
 
 The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`. The v3.5.2 hotfix shipped 17 commits addressing safety-critical, data-integrity, security, and accessibility findings. Remaining items are staged for v3.5.3 / v3.6.0 / v4.0.0.
