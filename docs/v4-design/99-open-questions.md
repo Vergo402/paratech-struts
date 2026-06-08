@@ -15,6 +15,7 @@
 | # | Question | Phase that decides | Notes |
 |---|---|---|---|
 | 4b | D7.1 auth mechanism. | H | Recommendation: email + password as default, magic link as no password path. |
+| 31 | **Multi-department membership** — can one user/device belong to several departments at once, or does creating/joining a department (Dept Setup [#207](https://github.com/Vergo402/paratech-struts/issues/207) / Invite Code [#208](https://github.com/Vergo402/paratech-struts/issues/208)) *switch* the active dept? The auth IA specs flag it but do not resolve it. | G/H | Affects the #207/#208 flows + the security-rule shape. Surfaced by Phase F Session 6 (auth cluster, 2026-06-08). |
 | 5 | AskUserQuestion as a collaboration tool. | Practice | Open question on whether the multi choice picker is the right tool for me to ask Alex questions during planning. Options: keep AskUserQuestion for genuinely exclusive choices; favor text questions for open ended thinking; never use it. |
 | 6 | Notification mechanism for gates. | A | Currently specified as chat message + INDEX update + Project subtask + 24h ScheduleWakeup. Alex may want PushNotification, email, or just chat. |
 | 7 | D5 multi device no comms: order of implementation between A (accept + reconcile) and C (CP hub). | D | Both will ship; question is which is the default and which is the upgrade path. |
