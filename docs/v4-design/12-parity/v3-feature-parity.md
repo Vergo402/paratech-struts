@@ -43,9 +43,9 @@ v4 ADRs that mandate a change to the **v3 app** not yet made. Under the ship-v3-
 
 | v4 decision | Owed v3 change | Status | Ref |
 |---|---|---|---|
-| **ADR-012** (1/8″ floor-rounding) | Replace `Math.round`-to-nearest with an explicit **floor** at the cut-/effective-length sites (`app.js` ~189, ~573, ~5295, ~6395). Round-**down** is the safe direction — over-long is the hazard (gap / eccentric bearing / unreachable config). | ↩︎ **Owed — tracked as [#300](https://github.com/Vergo402/paratech-struts/issues/300)** (Project 1, Todo). v3 still emits 0.1″ decimals internally; the v3.21.x work was *display* only. | [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md) §Scope / §Consequences |
+| **ADR-012** (1/8″ floor-rounding) | Replace `Math.round`-to-nearest with an explicit **floor** at the cut-/effective-length sites (`app.js` ~189, ~573, ~5295, ~6395). Round-**down** is the safe direction — over-long is the hazard (gap / eccentric bearing / unreachable config). | ✅ **Shipped in v3.22.0** ([#300](https://github.com/Vergo402/paratech-struts/issues/300), 2026-06-07) — floored at the cut-/effective-length sites; the v3.21.x work had been *display* only. | [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md) §Scope / §Consequences |
 
-→ **Action:** filed as [#300](https://github.com/Vergo402/paratech-struts/issues/300) (Project 1, Todo) — needs SME sign-off + retained disclaimer/strut-extension-warning per ADR-012. Candidate for v3.22.x.
+→ **Done:** shipped in **v3.22.0** ([#300](https://github.com/Vergo402/paratech-struts/issues/300)) — `Math.round`→`Math.floor` to 1/8″ at the three live cut-/effective-length sites (app.js 189 / 6579 / 7692), disclaimer + extension warning retained.
 
 ---
 
