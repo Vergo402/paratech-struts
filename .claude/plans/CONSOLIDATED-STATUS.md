@@ -1,7 +1,7 @@
 # FieldShore — Status & Roadmap (narrative)
 
-> **Current:** v3.21.2 (shipped 2026-06-01) · **Live:** https://vergo402.github.io/paratech-struts/
-> **Next planned:** v3.22.0 (in planning — beams · Command breadcrumb · inventory integrity; see `.claude/plans/v3.22.0-beams-breadcrumb-integrity.md`) · then v4.0.0 doctrine cutover
+> **Current:** v3.22.0 (shipped 2026-06-07 — inventory integrity + measurement safety) · **Live:** https://vergo402.github.io/paratech-struts/
+> **Next planned:** v4.0.0 (doctrine cutover — see `.claude/plans/v4.0.0-plan.md`). v3 backlog (unscheduled): #283 demob-accountability view, #103 header/footer beams.
 > **Source of truth for items:** [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1) (also linked under the repo's Projects tab)
 
 This file is narrative only — per-release lessons learned + strategic direction. **Item-level tracking lives in the Project**, queryable by `Release`, `Status`, `Source`, `Severity`, `Component`. Plan files in `.claude/plans/` are frozen specs (immutable after ship; archived).
