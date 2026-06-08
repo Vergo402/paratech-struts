@@ -186,7 +186,9 @@ function findStrutCombinations(requiredLength, estimatedLoad, sfIndex, inventory
   let effectiveLength = requiredLength;
   if (deductions) {
     const totalDed = (deductions.header || 0) + (deductions.sole || 0) + (deductions.topPlate || 0) + (deductions.bottomPlate || 0);
-    effectiveLength = Math.round((requiredLength - totalDed) * 10) / 10;
+    // #300 (ADR-012): floor to nearest 1/8" — round DOWN is the safe side
+    // (short is absorbed by the loading wedge; long is the hazard).
+    effectiveLength = Math.floor((requiredLength - totalDed) * 8) / 8;
     if (effectiveLength <= 0) return [];
   }
   const searchLength = effectiveLength;
@@ -6576,7 +6578,8 @@ function updateShoreStatus(spId, newStatus) {
     if (newStatus === 'cutting') {
       const headerH = member.deductions?.header || 0;
       const footerH = member.deductions?.sole || 0;
-      updateData.cutLength = Math.round((member.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 10) / 10;
+      // #300 (ADR-012): floor cut length to nearest 1/8" — cut short, wedge finishes.
+      updateData.cutLength = Math.floor((member.requiredLength - headerH - footerH - WEDGE_DEDUCTION) * 8) / 8;
       updateData.cuttingStartedAt = new Date().toISOString();
     }
 
@@ -7689,7 +7692,8 @@ function confirmEditShorePoint() {
   const totalDed = deductions
     ? (deductions.header||0) + (deductions.sole||0) + (deductions.topPlate||0) + (deductions.bottomPlate||0)
     : 0;
-  const effectiveLength = Math.round((requiredLength - totalDed) * 10) / 10;
+  // #300 (ADR-012): floor to nearest 1/8" — round DOWN is the safe side.
+  const effectiveLength = Math.floor((requiredLength - totalDed) * 8) / 8;
 
   const editGroup = validateInput(document.getElementById('spGroup').value, 100) || null;
   const updateData = {
