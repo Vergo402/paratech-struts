@@ -2,15 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "fieldshore",
+      "name": "paratech-struts main",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/fieldshore\""],
-      "autoPort": true
-    },
-    {
-      "name": "v4-styleguide",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "npx serve -l $PORT \"/Users/alex/Developer/paratech-struts/fieldshore/docs/v4-design/preview\""],
+      "runtimeArgs": ["-c", "cd \"$(git rev-parse --show-toplevel)\" && npx serve -l $PORT ."],
       "autoPort": true
     }
   ]

@@ -62,6 +62,9 @@
                 },
                 "divisionLegacyLabel": {
                   ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
+                },
+                "allocConflict": {
+                  ".validate": "!newData.exists() || newData.isBoolean()"
                 }
               }
             },
@@ -87,6 +90,12 @@
             },
             "externalEquipment": {
               "$itemId": {
+                "available": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && (!newData.parent().child('quantity').exists() || newData.val() <= newData.parent().child('quantity').val())"
+                },
+                "quantity": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0"
+                },
                 "_meta": {
                   "lastVerifiedAt": {
                     ".validate": "newData.isNumber()"

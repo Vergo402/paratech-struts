@@ -2,13 +2,13 @@
 
 ## Context
 
-The prior Surfside-scale run ([`interactive-findings.md`](/Users/alex/Developer/paratech-struts/main/.claude/audits/interactive-findings.md)) was a JS-injected stress test against a snapshot dataset: 41 shore points, 21 apparatus, 12 ICS roles, all instantiated at once. It produced 10 findings (F1–F10) and a render-time baseline, but it skipped everything that makes a real collapse a *collapse*: alarm growth, mutual-aid escalation, USAR task force assembly, command transfers, shift rotations, and the field experience of using the app while resources are arriving.
+The prior Surfside-scale run ([`interactive-findings.md`](.claude/audits/interactive-findings.md)) was a JS-injected stress test against a snapshot dataset: 41 shore points, 21 apparatus, 12 ICS roles, all instantiated at once. It produced 10 findings (F1–F10) and a render-time baseline, but it skipped everything that makes a real collapse a *collapse*: alarm growth, mutual-aid escalation, USAR task force assembly, command transfers, shift rotations, and the field experience of using the app while resources are arriving.
 
 This run rebuilds the simulation with three properties the first run lacked:
 
 1. **Pre-staging.** Personnel and teams are catalogued and assigned before the event starts, in the order they'd arrive in a real incident.
 2. **Staggered response.** Time advances on an event clock; resources, decisions, and app actions occur at the right tagged-clock moment, not all at once.
-3. **Observation + feedback loop.** A six-persona moderator cohort watches participants drive the app, captures friction in real time, and consolidates findings at a structured hotwash. Both participants (in-character) and moderators (out-of-character) submit app feedback. Findings are mapped against the v4.0.0 release scope (per [`MASTER-PLAN.md`](/Users/alex/Developer/paratech-struts/main/.claude/plans/MASTER-PLAN.md) Release 3 — Firebase Auth, multi-tenancy, NIMS doctrine, ICS forms export, strut algorithm enhancements, hardening) to identify which findings v4.0.0 already addresses, which it doesn't (gaps), and which suggest new ideas worth adding to the v4.0.0 backlog.
+3. **Observation + feedback loop.** A six-persona moderator cohort watches participants drive the app, captures friction in real time, and consolidates findings at a structured hotwash. Both participants (in-character) and moderators (out-of-character) submit app feedback. Findings are mapped against the v4.0.0 release scope (per [`MASTER-PLAN.md`](.claude/plans/MASTER-PLAN.md) Release 3 — Firebase Auth, multi-tenancy, NIMS doctrine, ICS forms export, strut algorithm enhancements, hardening) to identify which findings v4.0.0 already addresses, which it doesn't (gaps), and which suggest new ideas worth adding to the v4.0.0 backlog.
 
 **This plan is the pre-event package.** It produces the full roster, timeline, framework, file scaffolding, and runbook. The live simulation runs in a follow-up Claude Code session, driving the real PWA against an isolated Firebase department.
 
@@ -36,7 +36,7 @@ This run rebuilds the simulation with three properties the first run lacked:
 | 16 | Moderator cohort | 6 silent-observation moderators: NIMS, Structural SME, Field UX, Data Integrity, Communications, FEMA IST |
 | 17 | Moderator interaction | Pure silent observation; rolling timestamped notes; no mid-event interruption |
 | 18 | Hotwash format | Two-layer: Army AAR (4 questions) per participant + per moderator → synthesized FEMA Improvement Plan table |
-| 19 | v4.0.0 reference doc | [`MASTER-PLAN.md`](/Users/alex/Developer/paratech-struts/main/.claude/plans/MASTER-PLAN.md) Release 3 (lines 862–1180) — Phases 3A/3B/3C/3D/3E/3F |
+| 19 | v4.0.0 reference doc | [`MASTER-PLAN.md`](.claude/plans/MASTER-PLAN.md) Release 3 (lines 862–1180) — Phases 3A/3B/3C/3D/3E/3F |
 | 20 | Output location | New directory `.claude/simulations/surfside-ttx-2/` in the FieldShore repo |
 | 21 | Sim ethics header | Each scenario file carries a "training-only, not based on any real person/address/unit" disclaimer |
 
@@ -414,12 +414,12 @@ How we'll know the live event ran successfully (executed in follow-up session):
 
 | File | Purpose |
 |---|---|
-| [`.claude/audits/interactive-findings.md`](/Users/alex/Developer/paratech-struts/main/.claude/audits/interactive-findings.md) | Prior Surfside-scale run; F1–F10 baseline that regression checks verify against |
-| [`.claude/plans/MASTER-PLAN.md`](/Users/alex/Developer/paratech-struts/main/.claude/plans/MASTER-PLAN.md) lines 862–1180 | v4.0.0 Release 3 scope — phases 3A/3B/3C/3D/3E/3F; the comparison target |
-| [`.claude/audits/findings-ledger.md`](/Users/alex/Developer/paratech-struts/main/.claude/audits/findings-ledger.md) | Cross-reference for any IP-# that overlaps an existing audit finding |
-| [`/Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-main/memory/reference_fema_ics_collapse.md`](/Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-main/memory/reference_fema_ics_collapse.md) | FEMA ICSSCI doctrine reference for `mod-nims` |
-| [`CLAUDE.md`](/Users/alex/Developer/paratech-struts/main/CLAUDE.md) | Current app state (v3.11.1), local-first write architecture, Firebase listener behavior — `mod-data` reference |
-| [`docs/USER-MANUAL.md`](/Users/alex/Developer/paratech-struts/main/docs/USER-MANUAL.md) | Current feature surface — `mod-ux` baseline |
+| [`.claude/audits/interactive-findings.md`](.claude/audits/interactive-findings.md) | Prior Surfside-scale run; F1–F10 baseline that regression checks verify against |
+| [`.claude/plans/MASTER-PLAN.md`](.claude/plans/MASTER-PLAN.md) lines 862–1180 | v4.0.0 Release 3 scope — phases 3A/3B/3C/3D/3E/3F; the comparison target |
+| [`.claude/audits/findings-ledger.md`](.claude/audits/findings-ledger.md) | Cross-reference for any IP-# that overlaps an existing audit finding |
+| `reference_fema_ics_collapse.md` (project memory — machine-local) | FEMA ICSSCI doctrine reference for `mod-nims` |
+| [`CLAUDE.md`](CLAUDE.md) | Current app state (v3.11.1), local-first write architecture, Firebase listener behavior — `mod-data` reference |
+| [`docs/USER-MANUAL.md`](docs/USER-MANUAL.md) | Current feature surface — `mod-ux` baseline |
 | `app.js`, `index.html`, `style.css`, `sw.js`, `database.rules.json` | The live PWA the simulation drives |
 
 ---
@@ -552,7 +552,7 @@ URLs returned HTTP 403 from paratech.com via WebFetch:
 
 The teamequipment.com mirror returned binary-only image scans.
 
-**Authoritative load tables are ALREADY ENCODED in [`app.js`](/Users/alex/Developer/paratech-struts/main/app.js)**, with traceability:
+**Authoritative load tables are ALREADY ENCODED in [`app.js`](app.js)**, with traceability:
 - `ACME_LOAD_TABLE` (~line 38–80) — corrected to match Paratech O&M Table 2-7 in v3.5.2 (per `.claude/audits/v3.5.1-deep-audit-round2.md` S2/S3 fix; over-reporting at 132" and 24" was eliminated)
 - `LONGSHORE_LOAD_TABLE` — corrected to match Paratech LongShore datasheet (Dec 2019) in v3.5.2 NEW-2; lengths < 6 ft removed; unrated-zone surfaced for >16 ft
 

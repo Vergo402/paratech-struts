@@ -54,12 +54,22 @@ This is the source of truth for tracked items. Returns items with fields: `Statu
 
 ```bash
 cat CLAUDE.md
-cat /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-fieldshore/memory/MEMORY.md
-ls /Users/alex/.claude/projects/-Users-alex-Developer-paratech-struts-fieldshore/memory/
+# Derive the per-project memory dir from the repo's current absolute path —
+# Claude Code names it by replacing every "/" in the repo path with "-".
+# This keeps working if the repo is moved/renamed (see the May-2026 path
+# migration that broke a hardcoded slug). Do NOT hardcode the slug.
+REPO="$(git rev-parse --show-toplevel)"
+MEM="$HOME/.claude/projects/$(echo "$REPO" | sed 's#/#-#g')/memory"
+cat "$MEM/MEMORY.md" 2>/dev/null || echo "(no MEMORY.md at $MEM — check repo path)"
+ls "$MEM" 2>/dev/null
 ```
 
+If `$MEM` is empty or missing, the repo was likely moved and the memory dir
+slug changed — list `~/.claude/projects/` for the directory whose name matches
+the current repo path, or re-point/re-create it there.
+
 Extract for the rest of the session:
-- **Release checklist** (CLAUDE.md) — 3-place version bump, user manual rule for MINOR/MAJOR
+- **Release checklist** (CLAUDE.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
 - **Architecture gotchas** (CLAUDE.md) — CSS stacking, plate picker, Firebase + SW, local-first writes, escapeHtml/escapeAttr
 - **Terminology rules** (CLAUDE.md) — Footer/Sole Plate/Header/Group conventions
 - **Code-quality** (`feedback_code_quality.md`) — lead with structural fix, not patch
@@ -168,8 +178,6 @@ The Project is the dedupe anchor, but a single issue might have audit findings A
 
 Wait for Alex to confirm the triage. He may re-prioritize, defer, or promote items.
 
-**Explicitly ask:** "Ready to continue? Reply **'continue'** to proceed to the plan (or give me redirects)."
-
 ---
 
 ## Phase 3 — Branch on intent
@@ -228,7 +236,7 @@ Fixing in priority order; PATCH release.
 - [ ] CONSOLIDATED-STATUS narrative updated
 ```
 
-Present plan, then explicitly ask: "Ready to continue? Reply **'continue'** to start executing fixes (or give me redirects)."
+Present plan, get approval.
 
 #### A3. Execute
 
@@ -253,34 +261,6 @@ Version bump:
 
 **Verification gate (per `feedback_verification_standard`):**
 Drive the real preview UI for every changed user flow. eval/spy tests are NOT sufficient.
-
-#### A3-GATE — Review before ship
-
-Present a pre-ship summary and wait for explicit approval before committing or merging:
-
-```
-## Ready to ship — v{VERSION}
-
-### Changes made
-| Bug | Issue | Fix summary | Verified |
-|---|---|---|---|
-| {title} | #{N} | {one-line description of what changed} | ✓ preview UI |
-
-### Files modified
-| File | Change |
-|---|---|
-| `app.js` | … |
-| `sw.js` | CACHE_NAME → v{VERSION} |
-| `index.html` | version label → v{VERSION} |
-
-### Version bump
-sw.js · index.html · app.js → v{VERSION}
-
-Reply **'continue'** to commit and merge to main, or describe what to fix.
-```
-
-If redirected: loop back into A3 to fix the issue, then re-present.
-**No commit, no merge, no push until explicitly approved.**
 
 #### A4. Ship
 
@@ -411,7 +391,7 @@ For each in-scope item, the table must show its **current Release field value** 
 ### Agents to dispatch (auto-detected — Phase B6 review pass)
 - `devops-resilience`, `mobile-ux`, `qa-driver`, `release-manager`, …
 
-Reply **'continue'** to approve this scope, describe redirects, or say 'cancel'.
+Approve, redirect, or cancel?
 ```
 
 The **Agent / Model / Effort / Owner** columns are auto-detected per the heuristics in the "Auto-detection" section below the field reference. If an item's dominant work changes (e.g., audit finding turns out to need a UI rebuild, not just a Firebase tweak), update the column before approving.
@@ -500,7 +480,7 @@ Auto-detect additional agents from scope:
 | Field stress (gloves, sun, dropped phones) | `rescue-specialist` |
 | Schema cutover, dual-write, rollback | `migration-specialist` |
 | Cross-file design, paradigm shifts | `architect` |
-| User manual updates | `manual-writer` |
+| User manual updates (.md + .docx, MINOR/MAJOR) | `manual-writer` |
 
 **Always include** `release-manager`, `qa-driver`, and `skeptical-senior-engineer`. Cap typically ≤ 7 agents total.
 
@@ -514,7 +494,7 @@ If an agent errors: report, offer retry/skip/abort, don't abort the whole phase.
 
 If an agent suggests a new persona: surface with 1-line rationale, draft only on explicit approval, save to `.claude/agents/{name}.md`.
 
-Present hybrid summary + final plan, then explicitly ask: "Ready to continue? Reply **'continue'** to move to finalization (or give me redirects)." → **GATE 2**.
+Present hybrid summary + final plan → **GATE 2**.
 
 #### B7. Finalize
 
@@ -635,7 +615,7 @@ Infer at scope-in. Surface in the GATE 1 / plan table; Alex can override before 
 | ICS roles, NIMS terms, apparatus, doctrine | `nims-compliance` (review) + `fullstack-engineer` (impl) |
 | Load tables, strut math, shore types, deductions | `structural-collapse-sme` (review) + `fullstack-engineer` (impl) |
 | Cross-file design, paradigm shift, modularization | `architect` (plan) + `fullstack-engineer` (impl) |
-| User manual updates | `manual-writer` |
+| User manual updates (.md + .docx, MINOR/MAJOR) | `manual-writer` |
 | Surfside-scale stress test | `scenario-conductor` |
 | IC workflow, command transfer, SitStat | `battalion-chief` (review) + `fullstack-engineer` (impl) |
 | Multi-agency / federal scope | `usar-task-force-leader` (review) |
@@ -720,6 +700,6 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - Work on feature branches, not directly on `main`.
 - Alex is a firefighter, not a developer — explanations clear, jargon-free.
 - Verification: drive the real preview UI per `feedback_verification_standard`.
-- v4.0 reframe (2026-05-17): scope pulled back from federal/USAR to local Level IV-V. Federal scope deferred to v5.x.
+- v4.0 reframe (2026-05-17): scope pulled back from federal/USAR to local Type IV-V. Federal scope deferred to v5.x.
 - Plan template reference: `.claude/plans/v3.12.0-feedback-command-tab.md` (most complete recent example).
 - Backfill script: `.claude/scripts/backfill-project.sh` (rerunnable; idempotent for already-added items).

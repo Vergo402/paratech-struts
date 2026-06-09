@@ -100,21 +100,43 @@ On every change:
 
 ### User Manual — Auto-Update Rule
 
-The user manual lives at `docs/USER-MANUAL.md`. It **must be updated and committed** whenever any of the following change:
+There are **two** user-manual deliverables and **both must stay in sync**:
 
+| File | What it is |
+|------|------------|
+| `docs/USER-MANUAL.md` | Canonical text manual (the source of truth) |
+| `docs/FieldStruts-User-Manual.docx` | Printable/shareable manual — **same text PLUS embedded app screenshots** |
+
+**Both must be updated and committed on every MINOR or MAJOR release** — never just the `.md`. A MINOR/MAJOR is not "done" until both manuals reflect it. The trigger is the **whole release**, not only the headline feature: when a MINOR/MAJOR drops, the manual update must account for **all** the work that shipped in it — backend/Firebase changes, security-rule changes, sync/offline behavior, schema migrations, new constants, and every UI change — anything a user could notice or that changes documented behavior. Roll it all into the one manual update for that release.
+
+Update both whenever any of the following change:
 - Features added, removed, or modified (any MINOR or MAJOR release)
 - Shore types, ICS roles, apparatus types, or other operational constants
 - UI workflow changes (new screens, changed navigation, status lifecycle)
 - Shore point lifecycle statuses
 - Settings options
+- Backend/data behavior a user can observe (offline/sync messaging, auth/login flow, security-rule effects, import/export behavior)
 
-**Do NOT update the manual for PATCH releases** (bug fixes only).
+**Do NOT update either manual for PATCH releases** (bug fixes only). PATCH releases keep the manuals' `major.minor` version as-is.
 
-When updating:
-1. Edit the relevant section(s) in `docs/USER-MANUAL.md`
-2. Update the **Version** and **Last updated** fields at the top
-3. Add a row to the **Version History** table (major.minor only)
-4. Commit and push with the feature — the manual ships in the same commit
+When updating (MINOR/MAJOR):
+1. Edit the relevant section(s) in `docs/USER-MANUAL.md`, covering everything that shipped in the release (see above — not just the marquee feature).
+2. Update the **Version** and **Last updated** fields at the top.
+3. Add a row to the **Version History** table (major.minor only).
+4. **Rebuild the `.docx` from the markdown** so it carries the same text:
+   ```bash
+   pip install python-docx          # once per environment
+   python3 .claude/scripts/build-user-manual-docx.py
+   ```
+   The build script reads `docs/USER-MANUAL.md`, re-embeds the screenshots in `docs/manual-assets/`, and writes `docs/FieldStruts-User-Manual.docx`.
+5. **Refresh screenshots for any screen the release changed.** Capture fresh shots from the live app (the `qa-driver` agent can drive the UI) and overwrite the matching PNG(s) in `docs/manual-assets/` — filenames are mapped to sections in the build script's `IMAGE_MAP`. Then rerun the build so the new shots embed. If a release touches no UI, the existing screenshots may be reused.
+6. Commit and push **both manuals + any changed screenshots** in the same commit/PR as the feature — the manuals ship with the work, never in a separate trailing commit.
+
+### v3 → v4 Parity Matrix — Sync Rule
+
+The v4 redesign (`v4-redesign` branch) forked at **v3.19.1**, so every v3 feature shipped after that fork must be carried into the v4 design or it will be silently lost when v4 is built. The living matrix at **`docs/v4-design/12-parity/v3-feature-parity.md`** (on `v4-redesign`) tracks this.
+
+**On every v3 MINOR or MAJOR release**, add/refresh that feature's row in the parity matrix — what shipped, its v4 coverage (Covered / Deferred / Gap / Decided-drop), and the v4 design-doc reference. Same discipline as the user-manual rule above: the release isn't "done" until the matrix reflects it. (PATCH releases: only if they change user-facing behavior the matrix tracks.) This is the concrete instrument behind the Phase J parity gate, [#256](https://github.com/Vergo402/paratech-struts/issues/256).
 
 ---
 

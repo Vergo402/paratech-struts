@@ -604,6 +604,11 @@ select { padding-right: 40px; }
 .ext-item .ext-info { font-weight: 600; }
 .ext-item .ext-dept { font-size: 12px; color: var(--text-secondary); }
 .ext-badge { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: var(--runner-bg); color: var(--runner-text); margin-left: 4px; }
+/* v3.20.0 #127 Fix 2: visually-distinct mega-section in Quick View for
+   visiting-dept equipment. Thick double rule above + uppercase header so
+   operators can see at a glance where dept-owned ends and external begins. */
+.inv-section.inv-section-external { margin-top: 20px; padding-top: 12px; border-top: 4px double var(--blue); }
+.inv-mega-header { text-transform: uppercase; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; color: var(--blue); margin-bottom: 12px; }
 
 /* --- Inventory --- */
 .inv-section { margin-bottom: 24px; }
@@ -1128,6 +1133,11 @@ select { padding-right: 40px; }
   color: var(--blue);
   font-weight: 600;
 }
+/* v3.20.0 #127 Fix 2: truncation rules so long external dept/apparatus names don't push the count badge off-screen.
+   `min-width: 0` is required on the flex child for ellipsis to fire (default is min-content). */
+.inv-qv-item > div:first-child { min-width: 0; flex: 1; overflow: hidden; }
+.inv-qv-item .qv-name,
+.inv-qv-item .qv-app { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inv-qv-overlay {
   position: fixed;
   inset: 0;
