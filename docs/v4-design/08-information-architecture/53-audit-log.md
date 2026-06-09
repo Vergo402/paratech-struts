@@ -67,11 +67,11 @@ After-Action folds in here as the laptop surface — "filters and formatting, no
 
 One persistence path, many formatted reads — no parallel data model.
 
-## After-action auto-email (a narrow Principle-10 exception — decided at #217)
+## After-action auto-email (a narrow Principle-10 exception — [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md))
 
 When an **incident is completed** (End Operation), the assembled after-action record — the export-convergence packet above (ICS-201/203/207/208/209 + PAR snapshot + Hazard Log ICS-208 + raw CSV) — is **automatically emailed to the Incident Commander / Operations Section Chief** (Alex, #217 gate). This is the **first and only outbound message the app sends**, and it is a **deliberate, narrow carve-out of [Principle 10](../02-principles.md)** (no in-app comms / no push): it fires **only on incident-complete**, **only to IC/Ops**, carries **only the after-action record** — **never during an operation, never tactical**. Everywhere else the no-comms / no-push rule stays absolute.
 
-**Captured here, designed in its own pass** — it needs its **own ADR amending Principle 10** plus the email transport + IC/Ops addresses (Phase H infrastructure). Tracked as a Phase F gate follow-up issue.
+**Decided in [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md)** ([#305](https://github.com/Vergo402/paratech-struts/issues/305) — the amendment of record to Principle 10). **On by default, department-disableable** — the opt-out toggle ships with the [Settings](50-settings.md) pass ([#308](https://github.com/Vergo402/paratech-struts/issues/308)). Recipients are the IC + Operations Section Chief **as assigned at close** (Ops unfilled → IC only; neither filled → department Admin fallback); a **guest** commander with no address simply isn't emailed — the record persists **here** regardless (email is a *sink*, not the record). The **email transport + address sourcing** is Phase H infrastructure ([`99-open-questions.md`](../99-open-questions.md) #35); the trigger wiring ships with the after-action feature ([`99-open-questions.md`](../99-open-questions.md) #32).
 
 ## What ships v4.0 (and the flagged ambiguity)
 
@@ -87,7 +87,7 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 - [x] **Immutable / read-only** — no destructive overlay; events are never edited or deleted (the ADR-016 Audit Log row).
 - [x] **Command record, position-gated** — read + export = Incident Commander / Operations Section Chief only (#217 gate); the audit log is a command/accountability record, not a field-safety surface (operational visible-safety lives on the operational screens, Principle 7).
 - [x] **NIMS terms in entries** — "Rescue Group Supervisor," spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
-- [x] **No comms / no push, with one narrow exception** (Principle 10) — a record of actions, never a messaging surface; the **single** carve-out is the **after-action auto-email** (above) — the assembled record to IC/Ops *when an incident closes*, never during an op, never tactical (decided #217; its own ADR, designed later).
+- [x] **No comms / no push, with one narrow exception** (Principle 10) — a record of actions, never a messaging surface; the **single** carve-out is the **after-action auto-email** (above) — the assembled record to IC/Ops *when an incident closes*, never during an op, never tactical ([ADR-018](../11-decisions/ADR-018-after-action-auto-email.md), [#305](https://github.com/Vergo402/paratech-struts/issues/305)).
 - [x] **Color never alone** — action/role badges carry text (Principle 9).
 - [x] **Phone is the floor**; **48pt non-operational targets**; **laptop = after-action**; **no broadcast render**.
 - [x] **Scale** — virtualized list, the K-15 250-card/1000-event rule ([`list.md`](../03-primitives/list.md)).
