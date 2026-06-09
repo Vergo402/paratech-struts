@@ -33,7 +33,7 @@ Under `prefers-reduced-motion` and in the broadcast theme, the entire system col
 |---|---|---|
 | `--motion-instant` | `0ms` | Reduced-motion swap, broadcast view, the sync dot, anything that must not animate |
 | `--motion-micro` | `100ms` | Button press state, checkbox/icon fill, nav content-pane fade |
-| `--motion-transition` | `200ms` | Bottom-sheet slide-up, modal fade-in, scrim fade, toast appear |
+| `--motion-transition` | `200ms` | Bottom-sheet slide-up, **side-drawer slide-in**, modal fade-in, scrim fade, toast appear |
 | `--motion-status` | `250ms` | Shore-point status badge color cross-fade |
 | `--motion-nav` | `300ms` | Full-screen list push, tab-switch content |
 | `--motion-exit` | `180ms` | Toast slide-out + fade |

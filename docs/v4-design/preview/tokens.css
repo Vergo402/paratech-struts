@@ -118,6 +118,7 @@
   --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.08);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -2px 0 16px rgba(0, 0, 0, 0.08);  /* sideways inward cast (side-drawer.md / ADR-019; mirror x-sign if left-anchored) */
   --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.50);
   --card-shadow: none;
   --type-weight-bump: 0;   /* sunlight bumps this */
@@ -153,6 +154,7 @@
   --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.18);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.32);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.18);  /* sideways inward cast (side-drawer.md / ADR-019) */
   --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --card-shadow: none;
   --type-weight-bump: 0;
@@ -190,6 +192,7 @@
   --scrim: rgba(0, 0, 0, 0.55);                      /* stronger backdrop survives sun (color.md) */
   --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.12);
   --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.20);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -2px 0 8px rgba(0, 0, 0, 0.08);   /* sideways inward cast (side-drawer.md / ADR-019) */
   --card-top-highlight: none;
   --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);   /* cards gain a shadow under glare */
   --type-weight-bump: 100;   /* body 400->500, medium 500->600, headline 600->700 */
@@ -208,7 +211,7 @@
   --stroke-width: 1px;
   --accent: #E5B53D;                /* 9.51:1 — brighter gold for TV gamma */
   --accent-subtle: #221C0C;
-  /* no --on-accent / --scrim / --shadow-modal — broadcast renders no buttons or overlays */
+  /* no --on-accent / --scrim / --shadow-modal / --shadow-drawer — broadcast renders no buttons or overlays */
 
   --text-primary: #F4F4F4;          /* 16.49:1 */
   --text-secondary: #C0BFBC;        /* 9.86:1 */
@@ -225,6 +228,7 @@
   --danger-text:         #FB8C8C;  --danger-bg:         transparent;  /* 7.97 */
 
   --shadow-sheet: none;
+  --shadow-drawer: none;
   --card-top-highlight: none;
   --card-shadow: none;
   --type-weight-bump: 0;

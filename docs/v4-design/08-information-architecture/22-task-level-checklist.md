@@ -11,9 +11,9 @@ The team officer's **per-task attestation list**: the doctrine steps for a singl
 
 ## Where it lives
 
-- **Tab / parent:** **Operations** — a **per-operation drilldown** under the Operations tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)); a sibling of [Operations](20-operations.md), the [Cutting Station](21-cutting-station.md), and the [ORM / TCRM](23-orm-tcrm.md) briefing.
-- **How it is reached:** from the active operation on the [Operations](20-operations.md) screen — opened against the task the team officer is working — push navigation within the Operations tab, the tab bar stays mounted (per the [navigation model](00-ia-foundation.md), [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)). (Exactly what it binds to is a per-screen OQ below.)
-- **Placement is changing (#217 gate, Alex):** this checklist moves from a front-and-center drilldown to a **small side tab (a checkmark-box affordance) that slides open** on demand, via a **new side-drawer primitive** (the 15th primitive — a gate escalation). The primitive + the re-home are a **Phase F gate follow-up** (its own issue); the checklist's depth, attestation, and content below are **unchanged** — only how it is reached changes.
+- **Tab / parent:** **Operations** — reached via a **[side-drawer](../03-primitives/side-drawer.md) side-tab** on the active-operation screen under the Operations tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md) / [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)); a companion to [Operations](20-operations.md), the [Cutting Station](21-cutting-station.md), and the [ORM / TCRM](23-orm-tcrm.md) briefing.
+- **How it is reached:** from the active operation on the [Operations](20-operations.md) screen — a **persistent edge tab (a checkmark-box affordance)** that **slides the checklist open** on demand and pushes it closed again ([`side-drawer.md`](../03-primitives/side-drawer.md), [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)); the tab bar and the operation canvas stay mounted behind it (on tablet / laptop the canvas stays **live** beside the drawer). (Exactly what it binds to is a per-screen OQ below.)
+- **Placement (resolved at the #217 gate, Alex — [#306](https://github.com/Vergo402/paratech-struts/issues/306) / [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)):** not a front-and-center destination — a **side-drawer** summoned from a small edge tab. The checklist's depth, attestation, and content below are **unchanged**; only how it is reached changed (the [side-drawer](../03-primitives/side-drawer.md) is the new 15th primitive that carries it).
 - **Issue:** [#204](https://github.com/Vergo402/paratech-struts/issues/204).
 
 ## Primary role(s) and surface(s)
@@ -49,7 +49,8 @@ The team officer's **per-task attestation list**: the doctrine steps for a singl
 - [x] [badge](../03-primitives/badge.md) — the section **count badge** + the **completion checkmark** at 100%.
 - [x] [button](../03-primitives/button.md) — section expand/collapse; the breadcrumb back-path.
 - [x] [empty-state](../03-primitives/empty-state.md) — no task in scope (first-run); the content-deferral posture (below).
-- [ ] picker · card · sheet · modal · input · toggle · segmented · slider · toast · loading-state · warning-gate — not core. **Leaf checks tap-toggle in place; no overlay, no confirm** — this is exactly the [`00-ia-foundation.md`](00-ia-foundation.md) modal-vs-sheet **Task Level Checklist** row, cited verbatim.
+- [x] [side-drawer](../03-primitives/side-drawer.md) — **the container.** The checklist lives in the edge-summoned companion panel (phone = scrimmed; tablet / laptop = beside a live canvas); the [`nested-checklist`](../03-primitives/nested-checklist.md) is its content ([ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)).
+- [ ] picker · card · sheet · modal · input · toggle · segmented · slider · toast · loading-state · warning-gate — not core. **Leaf checks tap-toggle in place inside the drawer; no confirm** — the [`00-ia-foundation.md`](00-ia-foundation.md) modal-vs-sheet **Task Level Checklist** row.
 
 > **A new primitive would be a gate escalation, not a spec decision.**
 
@@ -71,14 +72,14 @@ Same line as its siblings ([`nested-checklist.md`](../03-primitives/nested-check
 - [x] **No celebration on completion** (Principle 3/11).
 - [x] **Tap geometry** — the whole 56pt row toggles; 8pt dead zones.
 - [x] **Capacity demoted** — not a datum here.
-- [x] **Modal-vs-sheet** — the ADR-016 Task Level Checklist row: tap-toggle in place, no overlay ([`00-ia-foundation.md`](00-ia-foundation.md)).
+- [x] **Reached via the side-drawer** (the third overlay type — [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)); leaf checks **tap-toggle in place inside it**, no confirm — the [`00-ia-foundation.md`](00-ia-foundation.md) modal-vs-sheet Task Level Checklist row.
 - [x] **Persistent Safety Officer + OP header** (operation-facing).
 
 ## The four-surface table (this screen)
 
 | Dimension | Phone | Tablet (CP) | Laptop | Broadcast |
 |---|---|---|---|---|
-| Layout | single column; one section open | task tree beside the resource board | dense + keyboard + attribution columns | section headers + counts |
+| Layout | side-drawer (near-full-width) over the operation; one section open | side-drawer **companion beside** the resource board (live) | companion drawer + keyboard + attribution columns | section headers + counts (no drawer) |
 | Above fold | active section + next undone step + count | more sections + the board pane | sections + audit columns | completion % per section |
 | Primary-action affordance | tap the leaf row | tap the leaf row | Space/Enter on focused leaf | — (read-only) |
 | Added density | one section focus | two-pane (tree + board) | review columns | — |
@@ -103,6 +104,6 @@ Same line as its siblings ([`nested-checklist.md`](../03-primitives/nested-check
 
 ## Open questions (per-screen)
 
-1. **Attach-target (a genuine IA question, not affordance).** What a Task Level Checklist binds to — the **operation**, a **task/assignment**, a **shore point**, or a **group/resource** under a Group Supervisor. The [tab map](00-ia-foundation.md) calls it a "per-operation drilldown"; the working assumption is **a task/assignment scoped to the active operation** (distinct from the shore-point lifecycle, which is the [Operations](20-operations.md) board's slide). Resolved with the **Phase G operations workflow** + the [Operations](20-operations.md) drilldown; carry to [`99-open-questions.md`](../99-open-questions.md) if unresolved at the Phase F gate.
+1. **Attach-target (a genuine IA question, not affordance).** What a Task Level Checklist binds to — the **operation**, a **task/assignment**, a **shore point**, or a **group/resource** under a Group Supervisor. The [tab map](00-ia-foundation.md) now places it in a **side-drawer** side-tab on the active operation; the working assumption is **a task/assignment scoped to the active operation** (distinct from the shore-point lifecycle, which is the [Operations](20-operations.md) board's slide). Resolved with the **Phase G operations workflow** + the [Operations](20-operations.md) drilldown; carry to [`99-open-questions.md`](../99-open-questions.md) if unresolved at the Phase F gate.
 2. **Checklist content deferred to v4.1** ([`nested-checklist.md`](../03-primitives/nested-checklist.md) OQ7) — IA only here.
 3. **Auto-collapse = one-section-open resolved here**; per-user override is a Phase G / Settings call.

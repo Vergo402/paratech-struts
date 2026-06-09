@@ -11,9 +11,9 @@ The Incident Commander's **doctrine attestation tree**: the phase-by-phase comma
 
 ## Where it lives
 
-- **Tab / parent:** **Command** — a screen nested under the Command tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)). It is **not** SitStat (SitStat is the Command home composition — [30-command-sitstat.md](30-command-sitstat.md)); the checklist is its own destination.
-- **How it is reached:** one tap from [SitStat](30-command-sitstat.md), alongside the [Org Chart](31-org-chart.md) and [Hazard Log](32-hazard-log.md) entries — push navigation within the Command tab, the tab bar stays mounted (per the [navigation model](00-ia-foundation.md), [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)).
-- **Placement is changing (#217 gate, Alex):** like the [Task Level Checklist](22-task-level-checklist.md), this moves from a front-and-center destination to a **small side tab (a checkmark-box affordance) that slides open** on demand, via a **new side-drawer primitive** (the 15th primitive — a gate escalation). The primitive + the re-home are a **Phase F gate follow-up** (its own issue); the checklist's depth, attestation, and content below are **unchanged** — only how it is reached changes.
+- **Tab / parent:** **Command** — reached via a **[side-drawer](../03-primitives/side-drawer.md) side-tab** under the Command tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md) / [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)). It is **not** SitStat (SitStat is the Command home composition — [30-command-sitstat.md](30-command-sitstat.md)); the checklist is a **summonable companion**, not a front-and-center destination.
+- **How it is reached:** a **persistent edge tab (a checkmark-box affordance)** on the Command surface that **slides the checklist open** on demand and pushes it closed again ([`side-drawer.md`](../03-primitives/side-drawer.md), [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)); the tab bar and the [SitStat](30-command-sitstat.md) board stay mounted behind it (on tablet / laptop the board stays **live** beside the drawer — the IC reads both at once).
+- **Placement (resolved at the #217 gate, Alex — [#306](https://github.com/Vergo402/paratech-struts/issues/306) / [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)):** like the [Task Level Checklist](22-task-level-checklist.md), not a front-and-center destination — a **side-drawer** summoned from a small edge tab. The checklist's depth, attestation, and content below are **unchanged**; only how it is reached changed (the [side-drawer](../03-primitives/side-drawer.md) is the new 15th primitive that carries it).
 - **Issue:** [#203](https://github.com/Vergo402/paratech-struts/issues/203).
 
 ## Primary role(s) and surface(s)
@@ -50,10 +50,11 @@ The Incident Commander's **doctrine attestation tree**: the phase-by-phase comma
 - [x] [card](../03-primitives/card.md) — the **ICS-201 briefing** card (current objectives, resource summary, Safety Officer, hazard log — the doctrine-derived fields that ship v4.0; below).
 - [x] [button](../03-primitives/button.md) — expand/collapse; the ICS-201 briefing entry.
 - [x] [empty-state](../03-primitives/empty-state.md) — no active operation (first-run → Start Operation); the content-deferral posture (below).
-- [x] [sheet](../03-primitives/sheet.md) — the **ICS-201 briefing review surface** (a review sheet; or a pushed full-screen route if it outgrows 60vh — [`modal.md`](../03-primitives/modal.md) OQ2). Leaf checks raise **no overlay**.
-- [ ] picker · modal · input · toggle · segmented · slider · toast · loading-state · warning-gate — not core. **Leaf checks tap-toggle in place; no modal, no confirm** (the [`00-ia-foundation.md`](00-ia-foundation.md) modal-vs-sheet doctrine; this screen has no per-screen row of its own, so it follows the **Task Level Checklist** row — tap-toggle in place — and adds only the ICS-201 review surface).
+- [x] [side-drawer](../03-primitives/side-drawer.md) — **the container.** The checklist lives in the edge-summoned companion panel (phone = scrimmed; tablet / laptop = beside a live [SitStat](30-command-sitstat.md) board); the [`nested-checklist`](../03-primitives/nested-checklist.md) is its content ([ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)).
+- [x] [sheet](../03-primitives/sheet.md) — the **ICS-201 briefing review surface** (a review sheet; or a pushed full-screen route if it outgrows 60vh — [`modal.md`](../03-primitives/modal.md) OQ2). The checklist itself rides the side-drawer (above); the ICS-201 brief is the one transient sheet.
+- [ ] picker · modal · input · toggle · segmented · slider · toast · loading-state · warning-gate — not core. **Leaf checks tap-toggle in place inside the drawer; no confirm** (the [`00-ia-foundation.md`](00-ia-foundation.md) modal-vs-sheet doctrine; this screen now has its own **IC Command Checklist** row — reached via the side-drawer — beside the Task Level Checklist row, and adds only the ICS-201 review sheet).
 
-> **A new primitive would be a gate escalation, not a spec decision.** Everything here composes the 14.
+> **A new primitive would be a gate escalation, not a spec decision.** This screen composes existing primitives — including the **side-drawer**, the 15th, added by its own gate escalation ([ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)).
 
 ## What ships v4.0 vs. v4.1 (the content-deferral line)
 
@@ -78,14 +79,14 @@ The IA — where the screen lives, what it composes, how it behaves across four 
 - [x] **No celebration on completion** — finishing Phase IV swaps in a "complete" count + checkmark; no confetti, no chime (Principle 3/11).
 - [x] **Tap geometry** — the whole 56pt row toggles, not the 24px box; 8pt dead zones.
 - [x] **Capacity demoted** — not a datum on this screen.
-- [x] **Modal-vs-sheet** — leaf checks tap-toggle in place (no overlay); the ICS-201 brief = a review sheet / pushed route ([`modal.md`](../03-primitives/modal.md) OQ2). Cites the [`00-ia-foundation.md`](00-ia-foundation.md) doctrine (no IC-Command row exists; follows the Task Level Checklist row).
+- [x] **Reached via the side-drawer** (the third overlay type — [ADR-019](../11-decisions/ADR-019-side-drawer-primitive.md)); leaf checks **tap-toggle in place inside it**; the ICS-201 brief = a review sheet / pushed route ([`modal.md`](../03-primitives/modal.md) OQ2). Cites the [`00-ia-foundation.md`](00-ia-foundation.md) doctrine (the IC Command Checklist now has its own row).
 - [x] **Persistent Safety Officer + OP header** (IC-facing).
 
 ## The four-surface table (this screen)
 
 | Dimension | Phone | Tablet (CP) | Laptop | Broadcast |
 |---|---|---|---|---|
-| Layout | single column; active phase focused | multi-phase board | dense + keyboard + ICS-201 auto-populate | phase headers + counts grid |
+| Layout | side-drawer (near-full-width) over Command; active phase focused | side-drawer **companion beside** the SitStat board (live) | companion drawer + keyboard + ICS-201 auto-populate | phase headers + counts grid (no drawer) |
 | Above fold | active phase + next undone step + progress | several phases at once + attribution | several phases + audit columns | phase headers + completion % |
 | Primary-action affordance | tap the leaf row | tap the leaf row | Space/Enter on focused leaf | — (read-only) |
 | Added density | one phase focus | full attribution captions | ICS-201 auto-populate; after-action | — |

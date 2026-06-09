@@ -74,6 +74,12 @@ Both were anticipated (the `--shadow-modal` flag already sat in color.md §Strok
 
 ---
 
+## Addendum (2026-06-09) — `--shadow-drawer` minted (the 15th primitive)
+
+The Phase F [#217](https://github.com/Vergo402/paratech-struts/issues/217) gate added a **15th** UI primitive, the **side-drawer** ([`side-drawer.md`](../03-primitives/side-drawer.md), [ADR-019](ADR-019-side-drawer-primitive.md)) — an edge-anchored companion panel. Like the sheet and modal it is a real overlay and casts a real shadow, but in the **one direction the existing tokens never covered**: a **sideways inward** cast from the anchored edge toward the canvas (the sheet casts up, the modal down). **`--shadow-drawer`** is minted in [`color.md`](../07-design-system/color.md) §Strokes & elevation — **Light `-2pt 0 16pt /.08` · Dark `-4pt 0 24pt /.18` · Sunlight `-2pt 0 8pt /.08`** (right-anchored default; mirror the x-sign for a left-anchored drawer); **Broadcast none** (no overlays). Synced to `preview/tokens.css`. This is the sanctioned ADR-gated token addition — the move from "flagged" to "defined" on the record (Strict Rule 3), the same mechanism as `--on-accent` / `--shadow-modal` above. It is purely geometric (an alpha-black cast, like its siblings), so no `wcag-contrast.mjs` pair applies.
+
+---
+
 ## Related
 
 - **Principles:** 9 (color is never the only signal), 7 (visible safety), 3 (calm/muted palette).
