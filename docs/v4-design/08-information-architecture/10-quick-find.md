@@ -7,7 +7,7 @@
 
 ## Purpose
 
-The standalone strut calculator: enter an opening measurement (and optional deductions + load), get the struts that fit, ranked and field-ready. It is also **the app's cold-open landing** — the first screen a guest sees, usable with no operation and no sign-in.
+The standalone strut calculator: enter an opening measurement — **the single input that drives the result** — and get the struts that fit, ranked and field-ready. Deductions refine the effective length; **load is an optional secondary check, not a selector** (the span picks the strut). It is also **the app's cold-open landing** — the first screen a guest sees, usable with no operation and no sign-in.
 
 ## Where it lives
 
@@ -54,7 +54,7 @@ The standalone strut calculator: enter an opening measurement (and optional dedu
 
 1. **Measurement** — feet / inches / eighth-inch fraction, entered through the [`input.md`](../03-primitives/input.md) measurement field; the working value shows as a 1/8″ digit-pair fraction (ADR-012). This is the one required input.
 2. **Deductions** (disclosed, collapsed by default — faithful to v3's toggle): **Header · Footer · Top Plate · Sole Plate**. Wood (Header/Footer) and plates (Top/Sole) are chosen through the **visual-grid picker sheet** ([`sheet.md`](../03-primitives/sheet.md)); the panel shows the running **Opening → Effective** math. Order and "N/S when unselected" semantics are owned by the `RecommendationCard` deduction ledger ([`card.md`](../03-primitives/card.md)).
-3. **Estimated Load** (optional numeric) — feeds the (demoted) capacity/margin read.
+3. **Estimated Load** (optional, secondary) — **does not drive which struts fit** (the measurement / span does); it only feeds the demoted capacity / over-capacity check. Technically inconsequential to selection — present for the capacity read, never a required step.
 4. **System filter** — multi-select chips for **Gold (LongShore) · Grey (AcmeThread) · LockStroke**; selecting narrows the search to those systems ([`input.md`](../03-primitives/input.md) multi-select filter).
 5. **Find Struts** → the results.
 
@@ -73,7 +73,7 @@ v3's **"Hold to start" FAB** (the arc speed-dial, `initQuickStartFab()`) is **re
 
 - [x] **Phone is the floor** — full calculate flow works phone-only, gloved.
 - [x] **Guest-first cold-open** — no auth wall; the calculator runs as a guest ([ADR-015](../11-decisions/ADR-015-navigation-pattern.md), Principle 11).
-- [x] **Capacity demoted; deduction ledger leads** the `RecommendationCard` (§3.4).
+- [x] **Capacity demoted; deduction ledger leads** the `RecommendationCard` (§3.4); **measurement drives the fit — load is an optional input, not a selector** (it only feeds the demoted capacity read).
 - [x] **Measurements** — 1/8″ floored, digit-pair fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
 - [x] **Visible safety** — unrated-zone / over-capacity / disclaimer are the persistent [`warning-gate`](../03-primitives/warning-gate.md), never a toast, never buried (Principle 7).
 - [x] **NIMS terminology** ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)); the strut **color** (Gold/Grey) is a real Paratech field-ID attribute, kept.

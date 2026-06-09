@@ -1,7 +1,7 @@
 # IA Spec: Inventory
 
 > Phase F information-architecture spec. Cites [`00-ia-foundation.md`](00-ia-foundation.md) for all cross-cutting rules and does not re-derive them.
-> Source: [`06-synthesis.md`](../06-synthesis.md) §1.2; recs F-24 (Excel round-trip), I-7 (per-row sync → Roster, not here); [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md); GitHub [#200](https://github.com/Vergo402/paratech-struts/issues/200). Grounded in v3 `renderInventory()` (app.js:3445), `renderApparatusTabs()` (3091), `updateQty()` (3536), `quickAdd()` (3657), `exportInventory()` (7906), `handleImport()` (7992), `renderQuickViewInventory()` (8361).
+> Source: [`06-synthesis.md`](../06-synthesis.md) §1.2; recs F-24 (Excel round-trip), I-7 (per-row sync → Accountability, not here); [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md); GitHub [#200](https://github.com/Vergo402/paratech-struts/issues/200). Grounded in v3 `renderInventory()` (app.js:3445), `renderApparatusTabs()` (3091), `updateQty()` (3536), `quickAdd()` (3657), `exportInventory()` (7906), `handleImport()` (7992), `renderQuickViewInventory()` (8361).
 
 ---
 
@@ -11,7 +11,7 @@ The apparatus-centric equipment catalog: what struts, extensions, and connector 
 
 ## Where it lives
 
-- **Tab / parent:** **Inventory** (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)). Its sibling under this tab is **Roster** ([#297](https://github.com/Vergo402/paratech-struts/issues/297)), which owns personnel/apparatus **accountability + per-row sync** — Inventory owns **stock**.
+- **Tab / parent:** **Inventory** (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)). Its sibling under this tab is **[Accountability](41-accountability.md)** ([#297](https://github.com/Vergo402/paratech-struts/issues/297); renamed from "Roster"), which owns resource **accountability + per-row sync** — Inventory owns **stock**.
 - **How it is reached:** the Inventory bottom-nav tab; also surfaced as the **Quick View** stock panel from anywhere ([10-quick-find.md](10-quick-find.md) / [20-operations.md](20-operations.md) deploy contexts read the same stock).
 - **Issue:** [#200](https://github.com/Vergo402/paratech-struts/issues/200).
 
@@ -72,9 +72,9 @@ The at-a-glance **available-stock** panel ([`sheet`](../03-primitives/sheet.md),
 - **Import** (xlsx/csv) reads those IDs back; if an import would **delete IDs referenced by deployed shore points**, it raises the **orphan-detection [`modal`](../03-primitives/modal.md)** ("Import anyway?") rather than silently breaking deployed cards.
 - Both are a real wait → **determinate [`loading-state`](../03-primitives/loading-state.md)**; parse failure resolves inline / via a blocking-alert modal, never a bare `alert()`.
 
-## Per-row sync lives in Roster, not here
+## Per-row sync lives in Accountability, not here
 
-The **per-row sync state** (green/amber/grey dots, the PAR/accountability visibility win, rec I-7) is the **Roster** screen's job ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) — a foundation decision. Inventory shows **stock counts**; Roster shows **who/what is here and synced**. Keeping them separate stops the stock list from carrying two orthogonal meanings.
+The **per-row sync state** (synced / pending, the PAR/accountability visibility win, rec I-7) is the **[Accountability](41-accountability.md)** screen's job ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) — a foundation decision. Inventory shows **stock counts**; Accountability shows **who/what is here and synced**. Keeping them separate stops the stock list from carrying two orthogonal meanings.
 
 ## Locked cross-cutting rules this screen honors
 
@@ -114,5 +114,5 @@ The **per-row sync state** (green/amber/grey dots, the PAR/accountability visibi
 ## Open questions (per-screen)
 
 1. **Quick View placement** — a sheet raised from Inventory vs. a persistent shell affordance reachable from deploy contexts; affordance geometry, finalized in the Phase H slice / the deploy workflow (Phase G).
-2. **Inventory ↔ Roster boundary at the edges** — e.g. external/mutual-aid equipment (v3 "external equipment from Dept N") shows source for return; confirm it reads in Inventory stock while accountability stays in Roster; resolved with the Roster spec ([#297](https://github.com/Vergo402/paratech-struts/issues/297)).
+2. **Inventory ↔ Accountability boundary at the edges** — e.g. external/mutual-aid equipment (v3 "external equipment from Dept N") shows source for return; confirm it reads in Inventory stock while accountability stays in [Accountability](41-accountability.md); resolved with the Accountability spec ([#297](https://github.com/Vergo402/paratech-struts/issues/297)).
 3. **Apparatus-type editing** — whether custom apparatus types are managed here or in Settings; resolved with the Settings spec ([#202](https://github.com/Vergo402/paratech-struts/issues/202)).

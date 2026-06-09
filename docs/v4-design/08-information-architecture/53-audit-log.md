@@ -17,7 +17,7 @@ The **queryable read of the incident's append-only event log**: every state-chan
 
 ## Primary role(s) and surface(s)
 
-- **Primary role(s):** **all roles may read** the log (Principle 7 — visible safety; nothing buried); **export is Owner/Admin** (flag). Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
+- **Primary role(s):** **read + export are restricted to the Incident Commander / Operations Section Chief** (the #217 gate — Alex). The audit log is a **command record**, *not* an all-roles surface — operational visible-safety (hazards, deductions) lives on the operational screens, not here. This is a **position gate** (IC / Operations), distinct from the device-role Admin gateway in [Settings](50-settings.md) — the [Settings](50-settings.md) pass reconciles how the gateway is gated. Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - **Primary surface(s):** **phone is the floor** (scroll/filter the log); a **non-operational surface → 48pt targets**. **Laptop is the after-action surface** (the ICS assembly + export). **Broadcast does not render this** (a data-dense record, not a room board).
 
 ## Information hierarchy (above / below fold) — per surface
@@ -38,7 +38,7 @@ The **queryable read of the incident's append-only event log**: every state-chan
 ## Primary action + secondary actions
 
 - **Primary action (one — Principle 4):** **read / filter the log** — an **inline scope [`segmented`](../03-primitives/segmented.md) + filter [`input`](../03-primitives/input.md); no destructive overlay** (the immutable append-only contract — the ADR-016 Audit Log row).
-- **Secondary actions:** open a row's before→after detail; **export** (Owner/Admin — the after-action assembly, laptop-primary).
+- **Secondary actions:** open a row's before→after detail; **export** (IC / Operations Section Chief — the after-action assembly, laptop-primary).
 - **Destructive / terminal:** **none — the log is immutable** (you cannot delete events; correcting state happens by a new action on the source screen, which itself logs).
 
 ## Composed primitives
@@ -55,17 +55,23 @@ The **queryable read of the incident's append-only event log**: every state-chan
 
 ## The event-log projection (the architecture — synthesis §3.6, ADR-009)
 
-v4 is **event-sourced**: every write appends an immutable event to `/operations/{opId}/events/`, and the live UI renders a **projection** of that log. The Audit Log is simply a **filtered, paginated read of the same log** — *not a parallel record*. Each event carries `{ at, byUid, role (at time of action), deviceId, action, before, after }` ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md); the [`nested-checklist`](../03-primitives/nested-checklist.md) attribution record and the [Roster](41-roster.md) per-row sync are the same discipline). This is the v4 correction to v3's gap: the Surfside TTX-2 had five IC transitions and six Operations-Section-Chief rotations and **left no trace** (synthesis §1.2); v4 shows the whole thread.
+v4 is **event-sourced**: every write appends an immutable event to `/operations/{opId}/events/`, and the live UI renders a **projection** of that log. The Audit Log is simply a **filtered, paginated read of the same log** — *not a parallel record*. Each event carries `{ at, byUid, role (at time of action), deviceId, action, before, after }` ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md); the [`nested-checklist`](../03-primitives/nested-checklist.md) attribution record and the [Accountability](41-accountability.md) per-row sync are the same discipline). This is the v4 correction to v3's gap: the Surfside TTX-2 had five IC transitions and six Operations-Section-Chief rotations and **left no trace** (synthesis §1.2); v4 shows the whole thread.
 
 ## The after-action / export convergence point
 
 After-Action folds in here as the laptop surface — "filters and formatting, not data collection" (foundation). This screen is where the exports **converge**:
 - **ICS-201/203/207/209** assembled from the event log + role history (the [Command](30-command-sitstat.md) / [Org Chart](31-org-chart.md) role-history thread feeds it).
 - **ICS-208** Safety Message/Plan — from the [Hazard Log](32-hazard-log.md) register (its export resolves here).
-- **PAR snapshot** — the point-in-time accountability record from the [Roster](41-roster.md) (its OQ3 export resolves here).
+- **PAR snapshot** — the point-in-time accountability record from [Accountability](41-accountability.md) (its OQ3 export resolves here).
 - **Raw CSV** of the event log for further analysis.
 
 One persistence path, many formatted reads — no parallel data model.
+
+## After-action auto-email (a narrow Principle-10 exception — decided at #217)
+
+When an **incident is completed** (End Operation), the assembled after-action record — the export-convergence packet above (ICS-201/203/207/208/209 + PAR snapshot + Hazard Log ICS-208 + raw CSV) — is **automatically emailed to the Incident Commander / Operations Section Chief** (Alex, #217 gate). This is the **first and only outbound message the app sends**, and it is a **deliberate, narrow carve-out of [Principle 10](../02-principles.md)** (no in-app comms / no push): it fires **only on incident-complete**, **only to IC/Ops**, carries **only the after-action record** — **never during an operation, never tactical**. Everywhere else the no-comms / no-push rule stays absolute.
+
+**Captured here, designed in its own pass** — it needs its **own ADR amending Principle 10** plus the email transport + IC/Ops addresses (Phase H infrastructure). Tracked as a Phase F gate follow-up issue.
 
 ## What ships v4.0 (and the flagged ambiguity)
 
@@ -79,9 +85,9 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 
 - [x] **Audit log == event log** (synthesis §3.6, [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)) — a read projection, not a parallel record.
 - [x] **Immutable / read-only** — no destructive overlay; events are never edited or deleted (the ADR-016 Audit Log row).
-- [x] **Visible safety** — all roles read the log; nothing is buried (Principle 7).
+- [x] **Command record, position-gated** — read + export = Incident Commander / Operations Section Chief only (#217 gate); the audit log is a command/accountability record, not a field-safety surface (operational visible-safety lives on the operational screens, Principle 7).
 - [x] **NIMS terms in entries** — "Rescue Group Supervisor," spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
-- [x] **No comms / no push** (Principle 10) — a record of actions, never a messaging surface.
+- [x] **No comms / no push, with one narrow exception** (Principle 10) — a record of actions, never a messaging surface; the **single** carve-out is the **after-action auto-email** (above) — the assembled record to IC/Ops *when an incident closes*, never during an op, never tactical (decided #217; its own ADR, designed later).
 - [x] **Color never alone** — action/role badges carry text (Principle 9).
 - [x] **Phone is the floor**; **48pt non-operational targets**; **laptop = after-action**; **no broadcast render**.
 - [x] **Scale** — virtualized list, the K-15 250-card/1000-event rule ([`list.md`](../03-primitives/list.md)).
@@ -115,7 +121,7 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 
 1. **Review-UI ship version** — v4.0 vs v4.1 → [`99-open-questions.md`](../99-open-questions.md) #32 (the event-log persistence is firmly v4.0).
 2. **Which ICS forms in scope** — ICS-201 at minimum; 203/207/208/209 likely later (v4.1); confirmed at the Phase F gate / Phase G.
-3. **Export format** — CSV (raw log) + PDF (assembled forms); the exact format is shared with the [Hazard Log](32-hazard-log.md) ICS-208 + the [Roster](41-roster.md) PAR snapshot; finalized in the Phase G/H export work.
+3. **Export format** — CSV (raw log) + PDF (assembled forms); the exact format is shared with the [Hazard Log](32-hazard-log.md) ICS-208 + the [Accountability](41-accountability.md) PAR snapshot; finalized in the Phase G/H export work.
 4. **Pagination at scale** — load strategy for 1000+ events (infinite scroll vs. date-range); affordance for Phase H.
 5. **Immutability enforcement** — backend guarantee of no out-of-band deletes to `/events/`; Phase H infrastructure.
 6. **Multi-incident roll-up** — how a mutual-aid incident ([Cross-Dept Invite](52-cross-dept-invite.md)) merges contributing depts' events into one log; Phase G mutual-aid workflow.

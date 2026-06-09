@@ -31,7 +31,7 @@ Broadcast View is the **read-only projection mode** that renders an eligible ope
 - The cast control plus a **live preview** of the projected board, so the operator switches the wall board without leaving the CP work.
 
 ### Laptop (Toughbook)
-- Same, plus a **command-palette** entry ("Cast: Operations / SitStat / Hazard Log / Roster …") per the [navigation model](00-ia-foundation.md).
+- Same, plus a **command-palette** entry ("Cast: Operations / SitStat / Hazard Log / Accountability …") per the [navigation model](00-ia-foundation.md).
 
 ### Broadcast TV (the projected output — no fold; one board)
 - The **whole board at once** (a TV does not scroll). Default = the **SitStat C-13 layout**: left-third org chart to Section-Chief depth · center shore-point status board · a read-only header (incident · Incident Commander · Safety Officer · operational period + elapsed). Everything **≥ 32pt**; status renders as a **left-border accent + label, never a fill**; **zero motion**; refreshed on a **15-second poll**. No interactive primitive renders.
@@ -48,8 +48,8 @@ Two surfaces, two primitive sets.
 
 **On the output (broadcast) — a strict read-only subset:**
 - [x] [badge](../03-primitives/badge.md) — the board's primary content; the status badge is a 4pt **left-border + label** (never a fill, never a bare dot) per [`badge.md`](../03-primitives/badge.md) / [`color.md`](../07-design-system/color.md) §Broadcast — "the one primitive that renders on broadcast."
-- [x] [card](../03-primitives/card.md) — read-only board tiles (the SitStat datums, shore-point cards, hazard rows, roster rows) at broadcast density; **no slide, no tap zone, no Advance/Step-back** (the control lives on the source card).
-- [x] [list](../03-primitives/list.md) — the board arrangement (the status grid, hazards-by-severity, the roster); a TV shows a fixed board, so virtualization is moot.
+- [x] [card](../03-primitives/card.md) — read-only board tiles (the SitStat datums, shore-point cards, hazard rows, accountability rows) at broadcast density; **no slide, no tap zone, no Advance/Step-back** (the control lives on the source card).
+- [x] [list](../03-primitives/list.md) — the board arrangement (the status grid, hazards-by-severity, the accountability board); a TV shows a fixed board, so virtualization is moot.
 - [x] [empty-state](../03-primitives/empty-state.md) — the "No active operation" board and the all-clear filtered boards (below).
 - [x] [loading-state](../03-primitives/loading-state.md) — the first cast handshake and the staleness indicator (below).
 
@@ -71,7 +71,7 @@ Broadcast is **one adapter reading one event-log projection** ([`06-synthesis.md
 | **[Operations](20-operations.md)** ([#199](https://github.com/Vergo402/paratech-struts/issues/199)) | Operations | **Full board** | status lanes as a card grid; shore-point name + measurement largest; status = left-border + label |
 | **[Command / SitStat](30-command-sitstat.md)** ([#201](https://github.com/Vergo402/paratech-struts/issues/201)) | Command | **Full board — the C-13 default** | left-third org chart · center status board · read-only header (incident · IC · Safety Officer · OP/elapsed) |
 | **[Hazard Log](32-hazard-log.md)** ([#296](https://github.com/Vergo402/paratech-struts/issues/296)) | Command | **Full board** | open hazards ordered by severity |
-| **[Roster](41-roster.md)** ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) | Inventory | **Full board** | names + sync state — "who is accounted for and current" |
+| **[Accountability](41-accountability.md)** ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) | Inventory | **Full board** | names + sync state — "who is accounted for and current" |
 | **[Cutting Station](21-cutting-station.md)** ([#294](https://github.com/Vergo402/paratech-struts/issues/294)) | Operations | **Reduced board** | the cut queue; cut length the largest element |
 | **[Org Chart](31-org-chart.md)** ([#295](https://github.com/Vergo402/paratech-struts/issues/295)) | Command | **Reduced board** | to Section-Chief depth, populated roles only (the C-13 left third, standalone) |
 | **[Inventory](40-inventory.md)** ([#200](https://github.com/Vergo402/paratech-struts/issues/200)) | Inventory | **Reduced board (optional)** | a read-only stock summary — available counts per system |

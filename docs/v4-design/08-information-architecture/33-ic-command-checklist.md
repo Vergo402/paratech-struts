@@ -13,6 +13,7 @@ The Incident Commander's **doctrine attestation tree**: the phase-by-phase comma
 
 - **Tab / parent:** **Command** — a screen nested under the Command tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)). It is **not** SitStat (SitStat is the Command home composition — [30-command-sitstat.md](30-command-sitstat.md)); the checklist is its own destination.
 - **How it is reached:** one tap from [SitStat](30-command-sitstat.md), alongside the [Org Chart](31-org-chart.md) and [Hazard Log](32-hazard-log.md) entries — push navigation within the Command tab, the tab bar stays mounted (per the [navigation model](00-ia-foundation.md), [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)).
+- **Placement is changing (#217 gate, Alex):** like the [Task Level Checklist](22-task-level-checklist.md), this moves from a front-and-center destination to a **small side tab (a checkmark-box affordance) that slides open** on demand, via a **new side-drawer primitive** (the 15th primitive — a gate escalation). The primitive + the re-home are a **Phase F gate follow-up** (its own issue); the checklist's depth, attestation, and content below are **unchanged** — only how it is reached changes.
 - **Issue:** [#203](https://github.com/Vergo402/paratech-struts/issues/203).
 
 ## Primary role(s) and surface(s)

@@ -8,6 +8,8 @@
 
 > **2026-06-07 — Phase F foundation.** Began Phase F; the cross-cutting foundation ([`00-ia-foundation.md`](08-information-architecture/00-ia-foundation.md) + ADR-014/015/016) resolves the two Phase-F-gated questions in this register: **#4** (checklist placement) and **#26** (org-chart/dashboard/pocket-lock placement) — pocket-lock *geometry* carries to Phase H. The remaining per-primitive affordance-geometry items still roll up to Phase H.
 
+> **2026-06-08 — Phase F #217 gate (Alex walked all 19 specs).** Approved-with-changes. **Applied this batch (direct on v4-redesign):** Quick Find load-demote (CH-1), Cutting Station multi-saw-station note (CH-2), **Roster → Accountability rename** (CH-5; file `41-roster.md` → `41-accountability.md`), Accountability per-row state simplified to **synced / pending + freshness-on-tap** (CH-6 — resolves the old Roster OQ1, no passive staleness greying), Audit Log **read + export restricted to IC / Operations** (CH-8), Operations names the Begin-Briefing entry. **Spun out as follow-up sub-issues of #134:** custom-role RBAC ([#304](https://github.com/Vergo402/paratech-struts/issues/304), needs ADR), after-action auto-email = a narrow Principle-10 exception ([#305](https://github.com/Vergo402/paratech-struts/issues/305), needs ADR), **new side-drawer primitive (15th)** + re-home both checklists ([#306](https://github.com/Vergo402/paratech-struts/issues/306), gate escalation), Inventory Excel revisit ([#307](https://github.com/Vergo402/paratech-struts/issues/307)), Settings deeper plan ([#308](https://github.com/Vergo402/paratech-struts/issues/308)). The gate ([#217](https://github.com/Vergo402/paratech-struts/issues/217)) awaits Alex's final confirm.
+
 ---
 
 ## Active Questions

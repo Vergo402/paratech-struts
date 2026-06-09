@@ -77,7 +77,7 @@ v3 has **no transfer ceremony** — command moves implicitly when a device self-
 
 - **Role assignment** = a [`sheet`](../03-primitives/sheet.md): **My Role** (this device picks its ICS position, faithful to v3 `openMyRoleModal`); apparatus/individual → ICS position (feeds the [Org Chart](31-org-chart.md)). Role gates per `canPerformShoreAction` with **spelled-out NIMS names** ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - **The resource roster** (assigned apparatus / external equipment / individuals) is the **assignment surface** that populates org-chart positions; add flows are sheets (the v3 Command modals re-home per ADR-016).
-- **Roster-screen boundary:** Command owns **org structure + assignment**; the **Roster** screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297), under Inventory) owns **accountability + per-row sync**. Same resources, two lenses — cross-ref, don't duplicate. (Resolved in the Roster spec.)
+- **Accountability-screen boundary:** Command owns **org structure + assignment**; the **[Accountability](41-accountability.md)** screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297), under Inventory; renamed from "Roster") owns **accountability + per-row sync**. Same resources, two lenses — cross-ref, don't duplicate. (Resolved in the [Accountability](41-accountability.md) spec.)
 
 ## Locked cross-cutting rules this screen honors
 
@@ -116,6 +116,6 @@ v3 has **no transfer ceremony** — command moves implicitly when a device self-
 
 ## Open questions (per-screen)
 
-1. **Command roster ↔ Roster-screen boundary** — exactly which resource attributes live in Command (assignment) vs. the Roster screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297), accountability/sync); resolved with the Roster spec.
+1. **Command roster ↔ Accountability-screen boundary** — exactly which resource attributes live in Command (assignment) vs. the [Accountability](41-accountability.md) screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297), accountability/sync); resolved with the Accountability spec.
 2. **Command-transfer brief default by Level** — ICS-201 brief default at Level III+ vs. optional at IV–V; the choreography is the Phase G command-transfer workflow.
 3. **SitStat datum prominence at broadcast scale** — the exact C-13 left-third/center split sizing; affordance geometry finalized in the Phase H slice / broadcast spec ([#213](https://github.com/Vergo402/paratech-struts/issues/213)).

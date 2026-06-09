@@ -13,6 +13,7 @@ The team officer's **per-task attestation list**: the doctrine steps for a singl
 
 - **Tab / parent:** **Operations** — a **per-operation drilldown** under the Operations tab (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)); a sibling of [Operations](20-operations.md), the [Cutting Station](21-cutting-station.md), and the [ORM / TCRM](23-orm-tcrm.md) briefing.
 - **How it is reached:** from the active operation on the [Operations](20-operations.md) screen — opened against the task the team officer is working — push navigation within the Operations tab, the tab bar stays mounted (per the [navigation model](00-ia-foundation.md), [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)). (Exactly what it binds to is a per-screen OQ below.)
+- **Placement is changing (#217 gate, Alex):** this checklist moves from a front-and-center drilldown to a **small side tab (a checkmark-box affordance) that slides open** on demand, via a **new side-drawer primitive** (the 15th primitive — a gate escalation). The primitive + the re-home are a **Phase F gate follow-up** (its own issue); the checklist's depth, attestation, and content below are **unchanged** — only how it is reached changes.
 - **Issue:** [#204](https://github.com/Vergo402/paratech-struts/issues/204).
 
 ## Primary role(s) and surface(s)

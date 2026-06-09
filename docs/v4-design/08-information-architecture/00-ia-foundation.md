@@ -11,7 +11,7 @@
 
 Phase F turns the locked primitives ([`03-primitives/`](../03-primitives/)) and decisions (the ADRs, [`06-synthesis.md`](../06-synthesis.md)) into a **per-screen information-architecture spec** for every screen across the four surfaces (phone / tablet / laptop / broadcast-TV). The screen specs are the blueprint Phase G (workflows) and Phase H (the vertical slice) build against.
 
-Sixteen of those screens are the everyday app; a handful more are first-class surfaces the synthesis named but the original issue list missed (Cutting Station, Org Chart, Hazard Log, Roster). Every one of them shares the same skeleton — the same tab spine, the same navigation model, the same overlay rules, the same four-surface density logic. **This document owns that shared skeleton.** A screen spec that needed to re-argue "is this a sheet or a modal?" or "what does the tablet add?" would re-litigate a settled question; instead it **cites this file** and spends its words on what is genuinely particular to that screen.
+Sixteen of those screens are the everyday app; a handful more are first-class surfaces the synthesis named but the original issue list missed (Cutting Station, Org Chart, Hazard Log, Accountability). Every one of them shares the same skeleton — the same tab spine, the same navigation model, the same overlay rules, the same four-surface density logic. **This document owns that shared skeleton.** A screen spec that needed to re-argue "is this a sheet or a modal?" or "what does the tablet add?" would re-litigate a settled question; instead it **cites this file** and spends its words on what is genuinely particular to that screen.
 
 This is the same discipline the primitive cascade enforced — [`accessibility.md`](../07-design-system/accessibility.md) consolidated every primitive's a11y *by reference, not restatement*, and the duplication it removed is the duplication the screen specs must also avoid.
 
@@ -58,7 +58,7 @@ v4 keeps the five bottom-nav tabs v3 ships, in the **v3 DOM order** (`index.html
 | **Quick Find** | **Quick Find** ([#198](https://github.com/Vergo402/paratech-struts/issues/198)) — the cold-open guest landing; renders [`RecommendationCard`](../03-primitives/card.md)s. |
 | **Operations** | **Operations** ([#199](https://github.com/Vergo402/paratech-struts/issues/199), tab home — [`ShorePointCard`](../03-primitives/card.md) status lanes + building→division→area→resource drilldown) · **Cutting Station** (new sub-issue — a workstation under Operations per [ADR-008](../11-decisions/ADR-008-nims-org-structure.md); absorbs v3's Cut Table) · **Task Level Checklist** ([#204](https://github.com/Vergo402/paratech-struts/issues/204) — per-operation drilldown) · **ORM / TCRM** ([#205](https://github.com/Vergo402/paratech-struts/issues/205) — a button-bar entry on any active-operation screen, not a tree screen). |
 | **Command** | **Command** ([#201](https://github.com/Vergo402/paratech-struts/issues/201); **its home composition *is* SitStat** — the six canonical datums, rec C-1) · **IC Command Checklist** ([#203](https://github.com/Vergo402/paratech-struts/issues/203)) · **Org Chart** (new sub-issue — a screen-level composition shown as a sheet/modal, K-12 7×2 tablet-portrait budget) · **Hazard Log** (new sub-issue — ICS-208, one tap from SitStat, feeds SP hazard badges) · command transfer (an interaction off the persistent IC header, detailed in Phase G). |
-| **Inventory** | **Inventory** ([#200](https://github.com/Vergo402/paratech-struts/issues/200) — apparatus scope + the preserved visual-grid plate/wood picker sheet) · **Roster** (new sub-issue — per-row sync state, the PAR test case, rec I-7). |
+| **Inventory** | **Inventory** ([#200](https://github.com/Vergo402/paratech-struts/issues/200) — apparatus scope + the preserved visual-grid plate/wood picker sheet) · **Accountability** ([#297](https://github.com/Vergo402/paratech-struts/issues/297), formerly Roster — per-row sync state, the PAR test case, rec I-7). |
 | **Settings** | **Settings** ([#202](https://github.com/Vergo402/paratech-struts/issues/202); themes, the Build-A/Build-C dept-choice toggle with C disabled "Coming with mobile app", Native Controls, dept registration entry) · **User Manager** ([#209](https://github.com/Vergo402/paratech-struts/issues/209), admin) · **Cross-Dept Invite** ([#210](https://github.com/Vergo402/paratech-struts/issues/210), v4.5) · **Audit Log** ([#211](https://github.com/Vergo402/paratech-struts/issues/211); After-Action folds in as its laptop surface). |
 
 **Cross-surface (not a tab):** **Broadcast View** ([#213](https://github.com/Vergo402/paratech-struts/issues/213)) is a **read-only projection mode** of any screen, selected as a display mode (cast from a tablet/laptop), never navigated to. This doc defines the broadcast adapter once (§Four surfaces); each screen spec fills its own broadcast column.
@@ -137,7 +137,7 @@ This ADR **ratifies and applies** the doctrine already settled in [`sheet.md`](.
 | **Org Chart** | reparent; promote; node history | Pick/reparent = **sheet**; **modal** only when destructive (removing an assigned supervisor). Node history = **sheet** (inline panel on tablet). |
 | **Hazard Log** | Add Hazard; ICS-208 export | Add Hazard = **sheet** (v3's modal re-sorts to a sheet per [`modal.md`](../03-primitives/modal.md) §v3 grounding). Export = sheet action / direct. |
 | **Inventory** | plate/wood picker; Add Apparatus / External / Individual | Pickers = **sheet** (visual-grid preserved verbatim). Add Apparatus = **full-screen-form modal** if large. Delete = **destructive modal**. |
-| **Roster** | per-row sync detail | **Sheet**. No destructive overlay in the common path. |
+| **Accountability** | per-row sync detail | **Sheet**. No destructive overlay in the common path. |
 | **Settings** | dept registration; theme; toggles | Toggles/segmented commit in place. Delete/leave dept = **destructive modal** (48pt non-operational targets). |
 | **User Manager** | promote/demote; revoke | Promote/demote = **sheet**. Revoke access = **destructive modal**. |
 | **Cross-Dept Invite** | generate / enter code | **Sheet**. |
@@ -173,7 +173,7 @@ The single canonical reference every screen spec links to instead of re-deriving
 Some elements are not part of any one screen — they ride the shell. Each screen spec assumes their presence rather than redrawing them.
 
 - **Safety Officer + OP-period header.** On every IC-facing screen, the persistent header shows the **Safety Officer's name and status** and the **operational-period indicator with elapsed time** — no navigation required to find who is watching safety (§1.10, rec C-6). One tap on the Safety Officer opens the **Hazard Log**.
-- **Sync indicator.** The ambient local-first sync state is **one quiet indicator** (Principle 8), never a blocking modal and never a spinner ([`loading-state.md`](../03-primitives/loading-state.md) draws the loading-vs-sync-indicator line). It lives in the shell chrome; the **Roster** screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) is where per-row sync detail is read.
+- **Sync indicator.** The ambient local-first sync state is **one quiet indicator** (Principle 8), never a blocking modal and never a spinner ([`loading-state.md`](../03-primitives/loading-state.md) draws the loading-vs-sync-indicator line). It lives in the shell chrome; the **Accountability** screen ([#297](https://github.com/Vergo402/paratech-struts/issues/297)) is where per-row sync detail is read.
 - **"Sign in to sync" banner.** The guest-mode forward path to auth (§Navigation) — dismissible, persistent-until-actioned, never a wall.
 - **Pocket lock** (rec G-13). A global behavior, not a screen: a proximity-triggered overlay that suppresses interaction when the phone is pocketed/covered, dismissed by a swipe-up from a bottom handle. This doc names it as shell chrome; **Phase H wires the sensor + gesture** (open question carried below).
 - **No life-safety signal ever rides the chrome** (Principle 10): no PAR/evac/mayday, no push notification during an operation. The chrome carries status and context, not comms.
@@ -197,7 +197,7 @@ The full Phase F screen set (issue numbers; ✚ = new sub-issue filed this sessi
 **Quick Find:** Quick Find (#198).
 **Operations:** Operations (#199) · Cutting Station ✚ · Task Level Checklist (#204) · ORM/TCRM (#205).
 **Command:** Command/SitStat (#201) · IC Command Checklist (#203) · Org Chart ✚ · Hazard Log ✚.
-**Inventory:** Inventory (#200) · Roster ✚.
+**Inventory:** Inventory (#200) · Accountability ✚ (formerly Roster).
 **Settings:** Settings (#202) · User Manager (#209) · Cross-Dept Invite (#210, v4.5) · Audit Log (#211, After-Action folded).
 **Cross-surface:** Broadcast View (#213).
 **Pre-shell:** Login/Register (#206) · Dept Setup (#207) · Invite Code (#208).
@@ -209,7 +209,7 @@ The full Phase F screen set (issue numbers; ✚ = new sub-issue filed this sessi
 2. **Quick Find (#198) + Inventory (#200)** — the `RecommendationCard` deploy surface and the stock it pulls from.
 3. **Command/SitStat (#201) + Org Chart ✚ + Hazard Log ✚** — SitStat surfaces both.
 4. **IC Command Checklist (#203) + Task Level (#204) + ORM/TCRM (#205)** — batch; all compose [`nested-checklist`](../03-primitives/nested-checklist.md).
-5. **Roster ✚ + Settings (#202).**
+5. **Accountability ✚ (formerly Roster) + Settings (#202).**
 6. **Login/Register (#206) + Dept Setup (#207) + Invite Code (#208)** — pre-shell, guest-first.
 7. **User Manager (#209) + Audit Log (#211) + Cross-Dept Invite (#210)**, then **Broadcast View (#213) last** (a projection over screens that must exist first).
 

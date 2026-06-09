@@ -60,6 +60,7 @@ v3 renders three stacked sections (`renderCutTableView()`): **Ready to Cut** →
 - **One FIFO queue**, default-ordered by `cuttingStartedAt` (oldest first) — the cut that's waited longest is next. The three v3 groupings become **state within the queue** (awaiting cut → cut done, awaiting runner → handed off), carried by each card's status, not three separate headers.
 - **Priority override (new in v4):** the lead can pull an urgent cut to the top. On **tablet**, drag the card (G-16); on **phone**, priority is **read-only** (the cutter works the order the lead set) — phone is the floor, drag-reorder is the enhancement.
 - **The sent-to-runner tail stays visible, read-only**, until [Operations](20-operations.md) returns the equipment — faithful to v3 (the cutter sees what they've handed off).
+- **Single station in v4.0.** This is **one** cut station's queue. When more than one saw station runs (Saw A / Saw B / …), routing each cut to a *named* station is a multi-station concern (OQ4) — workstation-instancing like running more than one Staging area, not v4.0.
 
 ## The cut card
 
@@ -120,3 +121,4 @@ The role gate (who may commit a cut) is the D7 authorization work; the screen re
 1. **Priority-override model** — is reorder a free drag, or a small set of priority tiers? Free drag (G-16) is the default; tiers are an alternative if free order proves fragile at scale. Finalized in the Phase G cutting workflow.
 2. **Exact slide gesture + drag threshold** — affordance geometry inherited from [`card.md`](../03-primitives/card.md) OQ1 / [`sheet.md`](../03-primitives/sheet.md) OQ2; finalized in the Phase H slice.
 3. **Grouped cuts** — how a T-Shore group's three individual cuts present in the queue (each is an individual card post-cutting per the phase-split, [`20-operations.md`](20-operations.md)); ordering of group-mates finalized in the Phase G grouped-shore workflow.
+4. **Multiple saw stations (Saw A / B / n…).** v4.0 assumes **one** cut station / queue. When a second+ saw station opens, each cut must be **placed at a named station** — per-station queues + cut routing are a multi-station design (workstation-instancing under Operations, like multiple Staging areas, [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)); planned for the Phase G cutting workflow / future scale, not v4.0. (Raised by Alex at the #217 gate.)

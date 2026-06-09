@@ -39,7 +39,7 @@ The live shoring job board: every shore point in the active operation, grouped b
 ## Primary action + secondary actions
 
 - **Primary action (one — Principle 4):** advance a shore point to its next status — a **slide-to-advance** on the [`ShorePointCard`](../03-primitives/card.md) / [`slider`](../03-primitives/slider.md) ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)). The exception is **Pending**, whose primary action is **Assign Equipment** (a deploy, not a slide — see below).
-- **Secondary actions:** **Step back** (the reverse slide, below the track); **Add Shore Point** (full-screen-form modal); **Start / End Operation**; drill into building → division → area; switch to the [Cutting Station](21-cutting-station.md). None competes with the slide for the card face.
+- **Secondary actions:** **Step back** (the reverse slide, below the track); **Add Shore Point** (full-screen-form modal); **Start / End Operation**; **Begin Briefing** — the [ORM / TCRM](23-orm-tcrm.md) crew-briefing entry, a button-bar action on this active-operation screen (not a navigated screen); drill into building → division → area; switch to the [Cutting Station](21-cutting-station.md). None competes with the slide for the card face.
 - **Destructive / terminal / inventory-mutating:** **End Operation** and an inventory-decrementing **return** raise a [`modal`](../03-primitives/modal.md) confirm (the ADR-016 Operations row); everyday advances never confirm.
 
 ## Composed primitives
