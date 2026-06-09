@@ -17,14 +17,14 @@ The app's **configuration home**: appearance, the department connection + regist
 
 ## Primary role(s) and surface(s)
 
-- **Primary role(s):** **any user** (everyday config); **Admin** (and any custom role granted Manage-users) additionally see the admin gateways (User Manager, Cross-Dept Invite) — the custom-role model ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)), device roles spelled out.
+- **Primary role(s):** **any user** (everyday config — appearance, sync, accessibility, updates, feedback, reference); **Admin** (and custom roles granted the matching back-office permission) additionally see the admin gateways (User Manager, Cross-Dept Invite) and the **Department policies** group — the custom-role model ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)), device roles spelled out. **Who sees what is the [§Settings by context](#settings-by-context) matrix** (guest / member / Admin).
 - **Primary surface(s):** **phone is the floor** — but Settings is a **non-operational surface**, so its targets are the **48pt** non-operational size, not the 56pt operational floor ([`spacing-grid.md`](../07-design-system/spacing-grid.md); the ADR-016 Settings row). Tablet/laptop add two-column density + keyboard-friendly forms. **Broadcast does not render Settings** (it is config, never a cast board).
 
 ## Information hierarchy (above / below fold) — per surface
 
 ### Phone (the floor)
 - **Above fold:** **Appearance** (theme); **Department** (connection / registration + this device's role); **Sync** (the Build A / Build C choice).
-- **Below fold:** **Accessibility** (Native Controls); **Data Management** (Excel export / import / template); **Apparatus Types**; **App Updates**; **Feedback**; **Reference Materials**; the **admin gateways** (role-gated); **Log Out**.
+- **Below fold:** **Accessibility** (Native Controls); **Data Management** (Excel/CSV export / import / template); **Apparatus Types**; **App Updates**; **Feedback**; **Reference Materials**; the **Administration gateways** (role-gated) + the **Department policies** group (Admin-only); **Log Out**. *(Which of these actually render for the current user is the [§Settings by context](#settings-by-context) matrix.)*
 
 ### Tablet / laptop
 - **Above fold:** settings groups in two columns; the Excel data-management flows + forms foregrounded and keyboard-friendly.
@@ -41,7 +41,7 @@ The app's **configuration home**: appearance, the department connection + regist
 ## Composed primitives
 
 - [x] [segmented](../03-primitives/segmented.md) — **theme** (System / Light / Dark — the v3 `.theme-toggle` → the value variant); the **Build A / Build C** choice (a value segmented with **Build C disabled**, labeled "Coming with mobile app").
-- [x] [toggle](../03-primitives/toggle.md) — **Native Controls** (immediate + reversible per Principle 6); other binary preferences.
+- [x] [toggle](../03-primitives/toggle.md) — **Native Controls** (immediate + reversible per Principle 6); the **Department policies** switches (after-action auto-email, [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md)); other binary preferences. No new primitive — the after-action policy is the existing form-toggle.
 - [x] [input](../03-primitives/input.md) — Department ID / name fields; the feedback description; apparatus-type name entry.
 - [x] [button](../03-primitives/button.md) — Connect / Save department; Export / Import / Download Template; Check for Updates; Feedback; the admin-gateway links; Log Out.
 - [x] [list](../03-primitives/list.md) — the settings groups; the apparatus-types list; the reference-material links.
@@ -56,16 +56,54 @@ The app's **configuration home**: appearance, the department connection + regist
 ## The settings groups
 
 1. **Appearance** — theme: **System / Light / Dark** (the authored themes, [ADR-011](../11-decisions/ADR-011-color-token-system.md)). **Sunlight auto-activates at ≥ 10,000 lux** with a manual override ([`color.md`](../07-design-system/color.md)); **broadcast is a cast/display mode, not a user theme pick.** So the user-facing control is the three base themes; sunlight is automatic-with-override; broadcast does not appear as a choice.
-2. **Department** — connection (Dept ID / name, faithful to v3 `connectDepartment` / `saveSettings`) + the **registration entry** forwarding to [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206) / [Department Setup](https://github.com/Vergo402/paratech-struts/issues/207) / [Invite Code](https://github.com/Vergo402/paratech-struts/issues/208) (guest-first — reached forward, never a gate); **this device's role** (Admin / Default / a department role, [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)) shown as a [`badge`](../03-primitives/badge.md); **Leave / Delete Department = destructive [`modal`](../03-primitives/modal.md)**.
+2. **Department** — connection (Dept ID / name, faithful to v3 `connectDepartment` / `saveSettings`) + the **registration entry** forwarding to [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206) / [Department Setup](https://github.com/Vergo402/paratech-struts/issues/207) / [Invite Code](https://github.com/Vergo402/paratech-struts/issues/208) (guest-first — reached forward, never a gate); **this device's role** shown as a [`badge`](../03-primitives/badge.md) — this is the **back-office department role** (Admin / Default / a department-defined role, [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)), **not** the device's ICS position in an operation (the two axes are orthogonal — [User Manager](https://github.com/Vergo402/paratech-struts/issues/209) §the-load-bearing-distinction). This dept role is what gates the rest of this screen (see [§Settings by context](#settings-by-context)); **Leave / Delete Department = destructive [`modal`](../03-primitives/modal.md)**.
 3. **Sync (Build choice)** — the **Build A / Build C** [`segmented`](../03-primitives/segmented.md): **Build A** (multi-device local-first queue + batch reconcile — ships v4.0, the default) is selectable; **Build C** (a Command-Post hub with a real-time WebSocket relay) is **disabled, labeled "Coming with mobile app"** — it ships at v5.0 with React Native because a PWA cannot host a local WebSocket relay ([`06-synthesis.md`](../06-synthesis.md) §1.7, [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)). The toggle is **visible-but-disabled** so the roadmap is honest, not hidden.
 4. **Accessibility — Native Controls** ([`toggle`](../03-primitives/toggle.md)): ON makes every picker render as the OS-native `<select>` (the **Power Select** fallback); it **auto-enables under VoiceOver / TalkBack** ([`accessibility.md`](../07-design-system/accessibility.md); the picker doctrine in [`picker.md`](../03-primitives/picker.md)).
-5. **Data Management** — **Export / Import / Download Template** (Excel) — the **same ID-preserving round-trip + orphan-confirm modal + determinate loader** as [Inventory](40-inventory.md) (one implementation, reached from both; OQ below).
-6. **Apparatus Types** — manage the custom apparatus-type vocabulary (faithful to v3 `renderApparatusTypesList` / `addCustomApparatusType`; NIMS terms, [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)). **This resolves [40-inventory.md](40-inventory.md) OQ3: the apparatus-type *vocabulary* is edited here; Inventory's Add Apparatus *consumes* the set, it does not edit it.**
+5. **Data Management** — **Export / Import / Download Template** — the **one** Excel/CSV implementation, shared with [Inventory](40-inventory.md) and reached from both (the full 10-column schema + Flatfile-style validated import + xlsx/csv round-trip specified there, [#307](https://github.com/Vergo402/paratech-struts/issues/307) — **resolves [OQ2](#open-questions-per-screen)**: one implementation, not two). **Per-action gating:** **Download Template** + **Export** are open to **any connected member** (read-only actions — the Default role's Read covers them); **Import** mutates department stock → **Admin / Manage-inventory-&-apparatus** only ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). The shared **orphan-confirm modal** + determinate loader protect deployed references on import.
+6. **Apparatus Types** — manage the custom apparatus-type vocabulary (faithful to v3 `renderApparatusTypesList` / `addCustomApparatusType`; NIMS terms, [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)). **This resolves [40-inventory.md](40-inventory.md) OQ3: the apparatus-type *vocabulary* is edited here; Inventory's Add Apparatus *consumes* the set, it does not edit it.** **Gating: read is always on** — every connected member can *view* the list (they need the available types when adding apparatus) — but **add / rename / delete is Admin / Manage-inventory-&-apparatus** only ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)).
 7. **App Updates** — **Check for Updates** (faithful to v3 `manualCheckForUpdates`; the service-worker update flow).
 8. **Feedback** — category + description → Firebase (faithful to v3 `submitFeedback`); a [`sheet`](../03-primitives/sheet.md).
 9. **Reference Materials** — static doctrine links (USACE Shoring Operations Guide, FEMA US&R), faithful to v3.
-10. **Administration (role-gated)** — gateways to **[User Manager](https://github.com/Vergo402/paratech-struts/issues/209)** (Admin / Manage-users), **[Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210)** (v4.5), and the **[Audit Log](https://github.com/Vergo402/paratech-struts/issues/211)** (IC / Operations, #217; one tap).
-11. **Log Out** — destructive/terminal [`modal`](../03-primitives/modal.md).
+10. **Administration** — the **gateway links** (navigate elsewhere; this group never holds behavioral toggles — those live in §11). Three gateways, **three different gating rules** (this **resolves [OQ4](#open-questions-per-screen)** and reconciles the [Audit Log](https://github.com/Vergo402/paratech-struts/issues/211) §gateway-gating handoff):
+    - **[User Manager](https://github.com/Vergo402/paratech-struts/issues/209)** — a **back-office admin feature**: **hidden** from anyone who isn't Admin or granted Manage-users-&-roles. Hidden, not greyed — there is nothing to tap and nothing to wonder about.
+    - **[Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210)** — **hidden** from non-Admins; for an Admin it is **visible-but-disabled** ("Coming with mobile app", v4.5 — the same honest-roadmap pattern as Build C).
+    - **[Audit Log](https://github.com/Vergo402/paratech-struts/issues/211)** — the one that is **visible to every connected member**, because it is a **department/command record, not an admin feature** — but access is **ICS-position-checked at entry**: tapping in when this device is not assigned **Incident Commander or Operations Section Chief** in an active (or just-closed) operation lands on a **locked state with a plain reason** ("Access requires Incident Commander or Operations Section Chief assignment in an active operation"), never a dead end (#217; consistent with [53-audit-log.md](53-audit-log.md) §Primary-role). This is the one gateway where the **lock is visible** rather than the gateway hidden — the record exists for two specific ICS positions, not for a back-office role.
+
+    | Gateway | Guest (no dept) | Default / custom member | Admin |
+    |---|---|---|---|
+    | User Manager | — | **hidden** | visible + active |
+    | Cross-Dept Invite | — | **hidden** | visible + disabled (v4.5) |
+    | Audit Log | — | **visible, ICS-position-checked at entry** | **visible, ICS-position-checked at entry** |
+    | Department policies (§11) | — | **hidden** | visible |
+
+11. **Department policies (Admin-only)** — department-wide **behavioral toggles** (how the app *acts* for the whole department), distinct from §10's navigation gateways. The whole group is **hidden** from anyone who isn't Admin / Manage-department-settings (the hide-not-grey rule).
+    - **After-action auto-email** ([`toggle`](../03-primitives/toggle.md)) — **on by default, department-disableable** (the Principle 5 safe default: the commanders get the record; a department with its own records/PII policy can turn it off). When on, completing an incident (End Operation) emails the assembled after-action packet to the Incident Commander / Operations Section Chief. This is the toggle whose **placement [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md) deferred to this pass** ([#305](https://github.com/Vergo402/paratech-struts/issues/305) / [#308](https://github.com/Vergo402/paratech-struts/issues/308)); the email **transport** is Phase H ([`99-open-questions.md`](../99-open-questions.md) #35). Per ADR-018 this is a **Principle 10 scope clarification** (an after-action record read *later* is documentation, not communication) — **not** an in-app-comms feature.
+    - The group is **extensible** — future department-wide policies (e.g. the "require 2FA" hook, [`99-open-questions.md`](../99-open-questions.md) #33) land here without reworking §10.
+
+12. **Log Out** — destructive/terminal [`modal`](../03-primitives/modal.md).
+
+## Settings by context
+
+Settings is the one screen whose **contents change with who's looking** — three primary contexts, each a different screen. The rule throughout is **hide, don't grey** (an absent group is simply not for this role; there is nothing to tap and nothing to wonder about) — with the single deliberate exception of the **Audit Log gateway**, which stays *visible* and shows a *locked state* on entry because it is a command record, not a back-office feature.
+
+**Guest (no department connected):**
+- Sees: **Appearance · Sync · Accessibility · App Updates · Feedback · Reference Materials**.
+- **Department** group shows the forward **"Sign in to sync"** path to [Login/Register](https://github.com/Vergo402/paratech-struts/issues/206) / [Department Setup](https://github.com/Vergo402/paratech-struts/issues/207) / [Invite Code](https://github.com/Vergo402/paratech-struts/issues/208) (guest-first — reached forward, never a wall).
+- **Not shown:** Data Management + Apparatus Types (no department = no inventory to manage), Administration, Department policies.
+
+**Connected — Default / custom member:**
+- Sees every group **except** Administration's **User Manager** and **Cross-Dept Invite** (hidden) and the whole **Department policies** group (hidden).
+- **Apparatus Types:** view-only (add / rename / delete gated to Admin / Manage-inventory).
+- **Data Management:** **Export + Download Template** available; **Import** gated to Admin / Manage-inventory.
+- **Administration:** the **Audit Log** gateway is visible and **ICS-position-checked at entry** (opens for an Incident Commander / Operations Section Chief; otherwise the locked state with its reason).
+- *(A custom role carrying a back-office permission — e.g. Manage-users-&-roles — sees the matching gateway/group; the permission, not the role name, is what gates.)*
+
+**Admin:**
+- Sees **everything**. Administration shows all three gateways: **User Manager** (active), **Cross-Dept Invite** (visible-but-disabled, v4.5), **Audit Log** (still ICS-position-checked — being Admin does **not** grant command-record access; that follows ICS position, the orthogonal axis).
+- **Department policies** group visible + editable (the after-action auto-email toggle).
+- **Apparatus Types** fully editable; **Data Management** full (Export + Import + Template).
+
+The two gating axes never cross: the **department role** (back-office, [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)) decides which *admin/config* surfaces render; the **ICS position** ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)) alone decides Audit Log entry. An Admin with no command assignment still can't read the Audit Log; a non-Admin Incident Commander can.
 
 ## Locked cross-cutting rules this screen honors
 
@@ -77,6 +115,8 @@ The app's **configuration home**: appearance, the department connection + regist
 - [x] **No silent data loss** — the Excel import orphan-confirm protects deployed references (the v3.5.2 transaction-sanity lesson; [40-inventory.md](40-inventory.md)).
 - [x] **Modal-vs-sheet** per the ADR-016 Settings row: toggles/segmented in place; feedback/apparatus-add = sheet; destructive = modal; dept registration = pre-shell routes.
 - [x] **Honest roadmap** — Build C is visible-but-disabled, not hidden (Principle 11 / [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
+- [x] **Hide-not-grey for role-gated surfaces** — a group/gateway a role can't use is **absent**, not greyed (User Manager, Cross-Dept Invite, Department policies), so there's nothing to tap and nothing to wonder about. The **single exception is the Audit Log gateway**: it stays **visible with a locked entry state** because it is a command record gated by **ICS position**, not a back-office role (see [§Settings by context](#settings-by-context) / [53-audit-log.md](53-audit-log.md)).
+- [x] **Two orthogonal gating axes** — back-office **department role** ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)) gates the admin/config surfaces; **ICS position** ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)) alone gates Audit Log entry; being Admin grants no command-record access.
 - [x] **Capacity demoted** — N/A here.
 
 ## The four-surface table (this screen)
@@ -106,7 +146,7 @@ The app's **configuration home**: appearance, the department connection + regist
 
 ## Open questions (per-screen)
 
-1. **Theme taxonomy in the control** — confirm the user-facing picker is System / Light / Dark with sunlight auto-at-lux + manual override and broadcast excluded (per [`color.md`](../07-design-system/color.md)); the manual sunlight-override affordance is finalized in the Phase H slice.
-2. **Data-management single implementation** — Settings and [Inventory](40-inventory.md) both surface the Excel round-trip; confirm one shared implementation reached from both, not two; resolved in the Phase G/H data work.
-3. **Department-registration sub-flow** — exactly where the boundary sits between an in-Settings sheet and the **pre-shell auth routes** ([#206](https://github.com/Vergo402/paratech-struts/issues/206)/[#207](https://github.com/Vergo402/paratech-struts/issues/207)/[#208](https://github.com/Vergo402/paratech-struts/issues/208)) is resolved with the auth specs (next session).
-4. **Admin-gateway visibility by role** — which of User Manager / Cross-Dept Invite / Audit Log each role sees is the authorization model ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md): User Manager = Admin / Manage-users-granted; Audit Log = IC / Operations per #217); detailed with the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209) spec.
+1. **Theme taxonomy in the control** — the user-facing picker is System / Light / Dark with sunlight auto-at-lux + manual override and broadcast excluded (per [`color.md`](../07-design-system/color.md)); the **manual sunlight-override affordance remains a Phase H slice detail** (geometry of the override control), the standing geometry-deferral class.
+2. **~~Data-management single implementation~~ — RESOLVED (#308).** One shared Excel/CSV implementation, reached from both Settings and [Inventory](40-inventory.md), specified in [40-inventory.md](40-inventory.md) §Excel/CSV import-export ([#307](https://github.com/Vergo402/paratech-struts/issues/307); see §Data Management above). Build details (the column-mapper component) are the Phase H tooling decision tracked in [`99-open-questions.md`](../99-open-questions.md) #36.
+3. **Department-registration sub-flow** — exactly where the boundary sits between an in-Settings sheet and the **pre-shell auth routes** ([#206](https://github.com/Vergo402/paratech-struts/issues/206)/[#207](https://github.com/Vergo402/paratech-struts/issues/207)/[#208](https://github.com/Vergo402/paratech-struts/issues/208)) is resolved with the auth specs (done in Session 6).
+4. **~~Admin-gateway visibility by role~~ — RESOLVED (#308).** Specified in [§Administration](#the-settings-groups) (the gating matrix) and [§Settings by context](#settings-by-context): User Manager + Cross-Dept Invite + Department policies are **hidden** off-role; the **Audit Log** gateway is **visible to all but ICS-position-checked at entry** (IC / Operations, #217). The two axes — back-office role ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)) vs. ICS position ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)) — never cross.
