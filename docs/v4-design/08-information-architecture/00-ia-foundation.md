@@ -108,7 +108,7 @@ boot
      └─ shell mounts in GUEST mode → [Quick Find]
           ├─ "Sign in to sync" banner (dismissible, persistent-until-actioned) ──► Login/Register (#206)
           └─ Settings ──► Login/Register · Department Setup (#207) · Invite Code (#208)
-                              └─ on success → shell in AUTHED mode (Owner claimed once via a one-time banner)
+                              └─ on success → shell in AUTHED mode (founding Admin claimed once via a one-time banner)
 ```
 
 Guest state persists locally (local-first), so even first-run dept creation/join is deferrable — the operator can run an entire local operation as a guest and claim/sync later. The auth screens are **pre-shell full-screen routes**, not overlays.
@@ -139,7 +139,7 @@ This ADR **ratifies and applies** the doctrine already settled in [`sheet.md`](.
 | **Inventory** | plate/wood picker; Add Apparatus / External / Individual | Pickers = **sheet** (visual-grid preserved verbatim). Add Apparatus = **full-screen-form modal** if large. Delete = **destructive modal**. |
 | **Accountability** | per-row sync detail | **Sheet**. No destructive overlay in the common path. |
 | **Settings** | dept registration; theme; toggles | Toggles/segmented commit in place. Delete/leave dept = **destructive modal** (48pt non-operational targets). |
-| **User Manager** | promote/demote; revoke | Promote/demote = **sheet**. Revoke access = **destructive modal**. |
+| **User Manager** | assign role; create/edit role; promote; revoke; delete role | Assign role / create-edit role / promote = **sheet**. Revoke / delete role = **destructive modal**. |
 | **Cross-Dept Invite** | generate / enter code | **Sheet**. |
 | **Audit Log** | — | Inline scope segmented + filter input; no destructive overlay. |
 | **Login / Register · Dept Setup · Invite Code** | the forms | **Pre-shell full-screen routes**, not overlays. |

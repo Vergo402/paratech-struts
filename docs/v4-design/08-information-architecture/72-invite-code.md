@@ -1,23 +1,23 @@
 # IA Spec: Invite Code Entry
 
 > Phase F information-architecture spec. Cites [`00-ia-foundation.md`](00-ia-foundation.md) for all cross-cutting rules (tab map, navigation / guest-first boot flow, modal-vs-sheet row, four-surface framework) and does not re-derive them.
-> Source: the master plan **D7.2** (a second user joins a dept by entering an invite code, 24h / one-time, added as **Member**); [`06-synthesis.md`](../06-synthesis.md) §1.3 (guest-first, deferrable join) + §Auth-identity; [ADR-015](../11-decisions/ADR-015-navigation-pattern.md), [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md). **Distinct from the cross-dept *incident* invite** ([#210](https://github.com/Vergo402/paratech-struts/issues/210), D7.4, v4.5) — this is **dept-level join**, not incident-scoped mutual aid. **Net-new** — v3 has no join concept (a single hardcoded Dept ID). GitHub [#208](https://github.com/Vergo402/paratech-struts/issues/208).
+> Source: the master plan **D7.2** (a second user joins a dept by entering an invite code, 24h / one-time, added with the **Default role** — [ADR-017](../11-decisions/ADR-017-custom-department-roles.md), "Member" folded into the Default); [`06-synthesis.md`](../06-synthesis.md) §1.3 (guest-first, deferrable join) + §Auth-identity; [ADR-015](../11-decisions/ADR-015-navigation-pattern.md), [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md). **Distinct from the cross-dept *incident* invite** ([#210](https://github.com/Vergo402/paratech-struts/issues/210), D7.4, v4.5) — this is **dept-level join**, not incident-scoped mutual aid. **Net-new** — v3 has no join concept (a single hardcoded Dept ID). GitHub [#208](https://github.com/Vergo402/paratech-struts/issues/208).
 
 ---
 
 ## Purpose
 
-Join an existing department by entering its invite code — adding this user to the dept as a **Member** (D7). The teammate-onboarding counterpart to the code [Department Setup](71-dept-setup.md) generates. Reached forward, deferrable.
+Join an existing department by entering its invite code — adding this user to the dept with the **Default role** ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). The teammate-onboarding counterpart to the code [Department Setup](71-dept-setup.md) generates. Reached forward, deferrable.
 
 ## Where it lives
 
 - **Tab / parent:** **pre-shell** — a full-screen route on join; thereafter reached from **[Settings](50-settings.md) → Department → "Join existing department"** (per the [tab map](00-ia-foundation.md) §pre-shell, [ADR-014](../11-decisions/ADR-014-tab-structure.md)); **not** an overlay.
-- **How it is reached:** **forward** from [Login / Register](70-login-register.md) on success when joining, or from [Settings](50-settings.md). **Never a cold-open gate** ([ADR-015](../11-decisions/ADR-015-navigation-pattern.md)). On success → the shell in AUTHED mode, as a **Member**.
+- **How it is reached:** **forward** from [Login / Register](70-login-register.md) on success when joining, or from [Settings](50-settings.md). **Never a cold-open gate** ([ADR-015](../11-decisions/ADR-015-navigation-pattern.md)). On success → the shell in AUTHED mode, with the **Default role**.
 - **Issue:** [#208](https://github.com/Vergo402/paratech-struts/issues/208).
 
 ## Primary role(s) and surface(s)
 
-- **Primary role(s):** the joining user → becomes **Member** (read everything in the dept; write the operations they're part of; the Owner/Admin may promote them later via the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209), v4.1). Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
+- **Primary role(s):** the joining user → gets the **Default role** (read everything in the dept; run field work in operations they're part of; an **Admin** may assign a different role later via the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209) — [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - **Primary surface(s):** **phone is the floor** (a teammate joins from their own phone); a **non-operational surface → 48pt targets**. Tablet/laptop center the form. **Broadcast does not render this.**
 
 ## Information hierarchy (above / below fold) — per surface
@@ -34,7 +34,7 @@ Join an existing department by entering its invite code — adding this user to 
 
 ## Primary action + secondary actions
 
-- **Primary action (one — Principle 4):** **Join department** — enter the invite code and submit; on success the user is added as a **Member**.
+- **Primary action (one — Principle 4):** **Join department** — enter the invite code and submit; on success the user is added with the **Default role**.
 - **Secondary actions:** **paste** the code from the clipboard; **Continue as guest** (until committed).
 - **Destructive / terminal:** none.
 
@@ -43,14 +43,14 @@ Join an existing department by entering its invite code — adding this user to 
 - [x] [input](../03-primitives/input.md) — the **invite-code** field (a constrained code entry); inline `aria-invalid` for invalid/expired/used, never color-alone.
 - [x] [button](../03-primitives/button.md) — primary **Join department**; secondary **Paste**, Continue as guest.
 - [x] [loading-state](../03-primitives/loading-state.md) — the join write/validation is a genuine wait → a busy primary button.
-- [x] [badge](../03-primitives/badge.md) — the resulting **Member** role badge (on success).
+- [x] [badge](../03-primitives/badge.md) — the resulting **Default** role badge (on success).
 - [ ] picker · card · sheet · modal · segmented · toggle · slider · toast · empty-state · warning-gate · nested-checklist — not core. Errors resolve **inline**, calm (Principle 3) — never `alert()`.
 
 > **A new primitive would be a gate escalation, not a spec decision.**
 
 ## What ships v4.0 (and the dept-vs-incident distinction)
 
-This screen **ships v4.0**: enter a code → join as Member. The **role on join is Member** by default (promotion is the Owner/Admin's later action via the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209), v4.1). **This is a dept-level join.** The **cross-dept *incident* invite** — an assisting department getting scoped access to *one incident* at a mutual-aid scene — is a **separate flow** ([Cross-Dept Invite, #210](https://github.com/Vergo402/paratech-struts/issues/210), D7.4, **v4.5**); do not conflate them.
+This screen **ships v4.0**: enter a code → join with the **Default role**. The **role on join is the Default** ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)); an **Admin** assigns a different role later via the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209). **This is a dept-level join.** The **cross-dept *incident* invite** — an assisting department getting scoped access to *one incident* at a mutual-aid scene — is a **separate flow** ([Cross-Dept Invite, #210](https://github.com/Vergo402/paratech-struts/issues/210), D7.4, **v4.5**); do not conflate them.
 
 ## Guest-first — never a gate
 
@@ -63,7 +63,7 @@ Joining is **deferrable** (Principle 11, [ADR-015](../11-decisions/ADR-015-navig
 - [x] **Phone is the floor**; **48pt non-operational targets**.
 - [x] **Calm errors** — invalid / expired / already-used codes are inline `aria-invalid` + specific copy, never an alarm, never `alert()` (Principle 3; [`input.md`](../03-primitives/input.md)).
 - [x] **No mystery meat** — labeled field + buttons (Principle 9).
-- [x] **NIMS / device roles spelled out** — "Member" ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
+- [x] **Device roles spelled out** — e.g. the **Default** role ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)).
 - [x] **No broadcast render.**
 - [x] **Dept-join ≠ incident-join** — kept distinct from the v4.5 [Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210).
 
@@ -91,7 +91,7 @@ Joining is **deferrable** (Principle 11, [ADR-015](../11-decisions/ADR-015-navig
 ## Open questions (per-screen)
 
 1. **Code format / alphabet / validation** — length and character set (avoiding ambiguous glyphs), QR vs. text — affordance geometry for Phase G/H; shared with the [Department Setup](71-dept-setup.md) generator + the v4.5 [Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210).
-2. **Role on join** — Member by default vs. a "role requested" choice vs. owner-assigns-later (via [User Manager](https://github.com/Vergo402/paratech-struts/issues/209), v4.1); default is **Member**, revisited at the Phase F gate.
+2. **Role on join** — the **Default role** ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)); an **Admin** assigns a different role later via the [User Manager](https://github.com/Vergo402/paratech-struts/issues/209). (Resolved at the #217 gate.)
 3. **Display-name entry point** — captured here, in [Login / Register](70-login-register.md), or in the shell; resolved across the cluster + the Phase G auth workflow.
 4. **Multi-dept membership vs. switch** — whether joining adds the dept to a per-user list or replaces the current one (the data-model question shared with [Department Setup](71-dept-setup.md)); **escalated to [`99-open-questions.md`](../99-open-questions.md)**, resolved in Phase G/H.
 5. **Code paste UX** — clipboard-read affordance detail (Phase H).

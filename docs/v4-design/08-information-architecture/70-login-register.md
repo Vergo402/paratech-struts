@@ -1,13 +1,13 @@
 # IA Spec: Login / Register
 
 > Phase F information-architecture spec. Cites [`00-ia-foundation.md`](00-ia-foundation.md) for all cross-cutting rules (tab map, navigation / guest-first boot flow, modal-vs-sheet row, four-surface framework, persistent chrome) and does not re-derive them.
-> Source: the master plan **D7.1** (auth method) + **D7.2** (dept ownership); [`06-synthesis.md`](../06-synthesis.md) §1.3 (cold-open / guest-first) + §Auth-identity (guest mode default, "Sign in to sync" the only auth surface, per-device UID, one-time Owner claim); [ADR-015](../11-decisions/ADR-015-navigation-pattern.md) (guest-first cold-open), [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md) (per-device UID, security rules), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md); [Principle 11](../02-principles.md) (the app earns its place quietly). **Net-new** — v3 has only Firebase **Anonymous Auth** (`signInAnonymously`, app.js:~2597) + a hardcoded Dept ID (`connectDepartment`) + one shared permission level (the `members` stub in `database.rules.json`); per-user login/register is new in v4.0. GitHub [#206](https://github.com/Vergo402/paratech-struts/issues/206).
+> Source: the master plan **D7.1** (auth method) + **D7.2** (dept ownership); [`06-synthesis.md`](../06-synthesis.md) §1.3 (cold-open / guest-first) + §Auth-identity (guest mode default, "Sign in to sync" the only auth surface, per-device UID, one-time founding-Admin claim); [ADR-015](../11-decisions/ADR-015-navigation-pattern.md) (guest-first cold-open), [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md) (per-device UID, security rules), [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md); [Principle 11](../02-principles.md) (the app earns its place quietly). **Net-new** — v3 has only Firebase **Anonymous Auth** (`signInAnonymously`, app.js:~2597) + a hardcoded Dept ID (`connectDepartment`) + one shared permission level (the `members` stub in `database.rules.json`); per-user login/register is new in v4.0. GitHub [#206](https://github.com/Vergo402/paratech-struts/issues/206).
 
 ---
 
 ## Purpose
 
-Sign an existing user in, or create a new account — establishing the authenticated, per-device identity that the four-role model and security rules gate on (D7). It is the **forward** destination of the "Sign in to sync" banner and Settings, never a wall between the firefighter and the work.
+Sign an existing user in, or create a new account — establishing the authenticated, per-device identity that the **role model** and security rules gate on ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). It is the **forward** destination of the "Sign in to sync" banner and Settings, never a wall between the firefighter and the work.
 
 ## Where it lives
 
@@ -17,7 +17,7 @@ Sign an existing user in, or create a new account — establishing the authentic
 
 ## Primary role(s) and surface(s)
 
-- **Primary role(s):** any user (becomes Owner / Admin / Member / Observer only *after* a dept is created or joined — D7; this screen establishes identity, not role). NIMS-independent device roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
+- **Primary role(s):** any user (gets a **department role** — the founding **Admin** on create, or the **Default** role on join, [ADR-017](../11-decisions/ADR-017-custom-department-roles.md) — only *after* a dept is created or joined; this screen establishes identity, not role). Device roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - **Primary surface(s):** **phone is the floor**; a **non-operational surface → 48pt targets** (like [Settings](50-settings.md); [`spacing-grid.md`](../07-design-system/spacing-grid.md)). Tablet/laptop center a wider form. **Broadcast does not render this** (a cast board never shows a login form).
 
 ## Information hierarchy (above / below fold) — per surface
@@ -50,11 +50,11 @@ Sign an existing user in, or create a new account — establishing the authentic
 
 ## What ships v4.0 (and what doesn't)
 
-This screen **ships v4.0** (the auth/identity cluster is not content-deferred like the checklist strings). v4.0 delivers per-device UID, the four-role storage + security rules, and the create/join/Owner-claim flow. The **auth method** is the D7.1 recommendation — **email + password (default) + email magic-link (no-password path)**; phone/SMS OTP and SSO are out of scope. The **Admin User Manager UI** (D7.3 — promote/demote/revoke) is the **separate [#209](https://github.com/Vergo402/paratech-struts/issues/209) screen, deferred to v4.1**; this screen does not manage other users.
+This screen **ships v4.0** (the auth/identity cluster is not content-deferred like the checklist strings). v4.0 delivers per-device UID, the **role/permission storage + data-driven security rules** ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)), and the create/join/founding-Admin-claim flow. The **auth method** is the D7.1 recommendation — **email + password (default) + email magic-link (no-password path)**; phone/SMS OTP and SSO are out of scope. The **Admin User Manager UI** (custom roles — create/edit roles, assign, revoke) is the **separate [#209](https://github.com/Vergo402/paratech-struts/issues/209) screen, ship-flagged ([`99-open-questions.md`](../99-open-questions.md) #32)**; this screen does not manage other users.
 
 ## Guest-first — never a gate (the load-bearing rule)
 
-The app boots to **guest mode on [Quick Find](10-quick-find.md) with no auth wall** (Principle 11, [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)); a firefighter at a collapse reaches the shore-point list, not a login form. This screen is reached **forward** and is **fully deferrable** — guest state persists locally, so an operator can run an entire operation as a guest and claim/sync later. Therefore **Continue as guest is a permanent, first-class action here** — the screen never traps. (The v3→v4 migration is silent; if it ran, the device is already a Member and may never see this screen — synthesis §Auth-identity.)
+The app boots to **guest mode on [Quick Find](10-quick-find.md) with no auth wall** (Principle 11, [ADR-015](../11-decisions/ADR-015-navigation-pattern.md)); a firefighter at a collapse reaches the shore-point list, not a login form. This screen is reached **forward** and is **fully deferrable** — guest state persists locally, so an operator can run an entire operation as a guest and claim/sync later. Therefore **Continue as guest is a permanent, first-class action here** — the screen never traps. (The v3→v4 migration is silent; if it ran, the device already has the **Default role** and may never see this screen — synthesis §Auth-identity.)
 
 ## Locked cross-cutting rules this screen honors
 

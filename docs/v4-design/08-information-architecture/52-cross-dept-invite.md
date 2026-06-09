@@ -12,12 +12,12 @@ Local **mutual-aid incident sharing**: let a host department invite 2–5 neighb
 ## Where it lives
 
 - **Tab / parent:** **Settings** — a role-gated admin screen nested under Settings (per the [tab map](00-ia-foundation.md), [ADR-014](../11-decisions/ADR-014-tab-structure.md)); also reachable as an "Invite assisting department" action from the incident menu on [Command](30-command-sitstat.md) (the host IC's natural entry — Phase G workflow).
-- **How it is reached:** the **Administration gateway in [Settings](50-settings.md)** (host: Owner/Admin/IC) to **generate**; and the dept-registration area to **enter** a received code. **Shown but disabled in v4.0** ("Coming in a later release"), the same visible-but-disabled roadmap pattern as the Build C toggle — it **ships v4.5**.
+- **How it is reached:** the **Administration gateway in [Settings](50-settings.md)** (host: Admin / IC) to **generate**; and the dept-registration area to **enter** a received code. **Shown but disabled in v4.0** ("Coming in a later release"), the same visible-but-disabled roadmap pattern as the Build C toggle — it **ships v4.5**.
 - **Issue:** [#210](https://github.com/Vergo402/paratech-struts/issues/210).
 
 ## Primary role(s) and surface(s)
 
-- **Primary role(s):** **host IC / Admin** generates the per-incident code; **any user of an assisting dept** enters it and gains a **scoped Member** role on that incident (the host IC may grant a specific assisting user elevated rights — Phase G). Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
+- **Primary role(s):** **host IC / Admin** generates the per-incident code; **any user of an assisting dept** enters it and gains **scoped access** (a Default-equivalent role limited to that one incident) (the host IC may grant a specific assisting user elevated rights — Phase G). Roles spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - **Primary surface(s):** **phone is the floor**; a **non-operational surface → 48pt targets**. Tablet/laptop add density + paste. **Broadcast does not render this.**
 
 ## Information hierarchy (above / below fold) — per surface
@@ -52,7 +52,7 @@ Local **mutual-aid incident sharing**: let a host department invite 2–5 neighb
 
 ## Three things that keep this distinct (don't conflate)
 
-1. **Cross-Dept *incident* invite (#210, this screen) ≠ dept-level [Invite Code Entry](72-invite-code.md) (#208).** #208 joins a person to a *department* (→ Member of the dept, v4.0). #210 grants an *assisting department* scoped access to *one incident* (v4.5). Different code, different scope, different ship.
+1. **Cross-Dept *incident* invite (#210, this screen) ≠ dept-level [Invite Code Entry](72-invite-code.md) (#208).** #208 joins a person to a *department* (→ the dept's Default role, v4.0). #210 grants an *assisting department* scoped access to *one incident* (v4.5). Different code, different scope, different ship.
 2. **≠ v3 "external equipment from Dept N."** v3 only tags borrowed equipment with a source dept for return ([Accountability](41-accountability.md) owns that accountability); it grants **no** access to the incident. #210 is real-time scoped read/write — a major expansion.
 3. **Local, not federal.** Scope is 2–5 neighboring departments at one incident ([ADR-003](../11-decisions/ADR-003-scope-everyday-expandable.md)) — **not** a state-wide unified-command structure, IST workflow, or FEMA mutual-aid agreement. The interface must not break at federal scale, but the everyday case is small and local.
 
