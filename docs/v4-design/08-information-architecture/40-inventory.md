@@ -68,9 +68,64 @@ The at-a-glance **available-stock** panel ([`sheet`](../03-primitives/sheet.md),
 
 ## Excel import / export
 
-- **Export** writes the catalog with the **ID and Plate-ID columns** so deployed-strut references survive a round-trip (the v3.5.2 / v3.9.0 fixes).
-- **Import** (xlsx/csv) reads those IDs back; if an import would **delete IDs referenced by deployed shore points**, it raises the **orphan-detection [`modal`](../03-primitives/modal.md)** ("Import anyway?") rather than silently breaking deployed cards.
-- Both are a real wait → **determinate [`loading-state`](../03-primitives/loading-state.md)**; parse failure resolves inline / via a blocking-alert modal, never a bare `alert()`.
+This is a **pre-incident cache-loading tool** — not an asset tracker, not an operational snapshot. The file answers one question: *which apparatus carries how many of which item?* The app owns everything else (available count, deployed state, collapsed/extended dimensions).
+
+### What the ID represents — stock record, not asset serial
+
+FieldShore tracks inventory as a **quantity-based cache**: one record per apparatus × item-type pairing, with a Quantity field saying how many physical pieces that record covers. "Engine 270 carries 4 LongShore S54-96 struts" is one record. Individual strut barcodes or per-piece serial numbers are out of scope — this is accessible inventory, not equipment management.
+
+The `ID` column is a FieldShore-generated stock-record identifier, never visible in normal use. It exists only to survive **round-trips**: export → edit quantities → re-import without creating duplicates or orphaning deployed references.
+
+### The column contract (10 columns)
+
+`Collapsed (in)` and `Extended (in)` are intrinsic to the Paratech model — the app resolves them from `STRUTS[]` when a Model is validated; the operator does not enter them. `Available` is runtime state managed by the app (deploys decrement it, returns restore it); it has no place in the file.
+
+| Column | Strut | Extension | Plate | Notes |
+|---|---|---|---|---|
+| `ID` | ✓ | ✓ | ✓ | FieldShore stock-record ID. **Blank on first upload** — app assigns on import. Preserved automatically on round-trip exports. |
+| `Apparatus` | ✓ | ✓ | ✓ | Human-readable apparatus name (e.g., "Engine 270"). |
+| `Apparatus ID` | ✓ | ✓ | ✓ | FieldShore apparatus ID. Blank on first upload → a new apparatus is created on import. |
+| `Type` | `Strut` | `Extension` | `Plate` | **All three types now.** v3 silently dropped plates from the export — the broken round-trip this fixes. |
+| `Model` | ✓ | — | — | Paratech model name. Validated against `STRUTS[]` on import; app resolves collapsed/extended from model automatically. |
+| `System` | ✓ | — | — | `Gold` / `Grey` / `LockStroke`. Validated on import. |
+| `Plate ID` | — | — | ✓ | **The round-trip fix.** Export now writes this; import reads it back. Key for the plate — `Plate Name` is the display label. |
+| `Plate Name` | — | — | ✓ | Human-readable display label. Read-only on import — `Plate ID` is the key; name is resolved from `BASE_PLATES[]`. |
+| `Extension Length (in)` | — | ✓ | — | Positive integer. The only descriptor an extension needs. |
+| `Quantity` | ✓ | ✓ | ✓ | How many this apparatus carries. The only number the operator sets. |
+
+**Blank = not carried.** If an apparatus doesn't stock a particular item, that row simply doesn't exist for it. No zero-quantity rows, no "confirm it's absent" step — absence is the signal.
+
+**Per-apparatus organization.** Rows are sorted by Apparatus (alphabetical), then by Type (Strut → Extension → Plate), then by system / length within each type. The Apparatus column carries the grouping — no special section-header rows (self-describing rows, like the CheckIt pattern). The xlsx export may insert a blank separator row between apparatus blocks for readability; csv omits separators.
+
+### The downloadable template
+
+The template ships with **column headers + 3–4 clearly labeled example rows** ("EXAMPLE — delete before importing") to show the format, not to pre-populate fake inventory. The xlsx template adds a **Reference sheet** listing all valid Paratech Model names (by system) and all known Plate IDs, so the operator knows the exact values to enter without guessing. The csv template ships headers + example rows only.
+
+### Validated import flow (Flatfile-style — 4 steps in a [`sheet`](../03-primitives/sheet.md))
+
+A step-indicator at the top of the import sheet tracks progress. Phone: each step is full-screen-height. Laptop: step 3 shows the column-map and row-validation table side by side.
+
+**Step 1 — File pick.** xlsx or csv accepted. An instant 5-row preview confirms "yes, that's my file" before the operator proceeds.
+
+**Step 2 — Column mapping.** The app auto-detects standard column names and shows a one-screen map ("Your column X → FieldShore field Y"). Mismatches are highlighted; the operator fixes them before proceeding. Extra columns → "Ignore." A file exported from FieldShore auto-maps with zero mismatches.
+
+**Step 3 — Row validation** (runs instantly, local):
+- `Type` is one of `Strut` / `Extension` / `Plate`.
+- `Model` is in the known strut list — warning (not block) for unknown values (future strut models).
+- `Plate ID` is in the known plate list — warning for unknown values.
+- `Extension Length` is a positive number (Extension rows).
+- `Quantity` is a positive integer.
+- `Apparatus` is non-empty; if `Apparatus ID` is blank, a new apparatus will be created (surfaced as an info note).
+- Cross-apparatus ID collision: an import row's ID matches an existing item on a *different* apparatus → flagged.
+- Active-operation guard: if an operation is in progress, a banner warns that deployed items won't be affected by the import.
+
+**Step 4 — Error review + commit gate.** A summary card reads "N rows will import · M warnings · K rows skipped." The operator can: scroll to a flagged row and edit inline, skip individual rows, or cancel entirely. "Import N rows" is the final confirm → [`loading-state`](../03-primitives/loading-state.md) determinate progress bar during the write.
+
+**Orphan-detection** is the final pre-write check: if rows being replaced or removed reference IDs currently used by deployed shore points in an active operation → [`modal`](../03-primitives/modal.md) confirm before proceeding. This is an edge case (the tool is for pre-incident loading), but the guard remains.
+
+### File formats
+
+Both **xlsx** and **csv** are accepted on import and produced on export. xlsx gets the optional blank apparatus-separator rows and the Reference sheet; csv is a flat, separator-free file. Parse failure in either format surfaces via a blocking-alert [`modal`](../03-primitives/modal.md) with the reason — never a bare `alert()`.
 
 ## Per-row sync lives in Accountability, not here
 
