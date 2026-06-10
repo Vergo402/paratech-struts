@@ -1,0 +1,131 @@
+import { describe, it, expect } from 'vitest';
+import { NO_DEDUCTIONS, type ShorePoint, type ShorePointStatus, type FieldShoreEvent } from '../schema';
+import { operationReducer, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
+import { projectOperation } from './projection';
+
+function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
+  return {
+    id,
+    opId: 'op1',
+    division: '1',
+    shoreType: 't-shore',
+    measurementEighths: 40 * 8,
+    deductions: NO_DEDUCTIONS,
+    status: 'pending',
+    ...over,
+  };
+}
+
+function stateWith(points: ShorePoint[]): OperationState {
+  return {
+    operation: { id: 'op1', name: 'Test', multiBuilding: false, status: 'active', createdAt: 1 },
+    shorePoints: points,
+  };
+}
+
+function statusEvent(spId: string, from: ShorePointStatus, to: ShorePointStatus): FieldShoreEvent {
+  return { type: 'ShorePointStatusChanged', id: 'e', opId: 'op1', at: 1, by: 't', spId, from, to };
+}
+
+const byId = (s: OperationState, id: string): ShorePoint => s.shorePoints.find((p) => p.id === id)!;
+
+describe('L-7 group fan-out', () => {
+  it('a pre-cutting advance moves every lockstep group member at once', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'process' }),
+      sp('b', { groupId: 'g', status: 'process' }),
+      sp('c', { groupId: 'g', status: 'process' }),
+    ]);
+    const next = operationReducer(state, statusEvent('a', 'process', 'strutset'));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'b').status).toBe('strutset');
+    expect(byId(next, 'c').status).toBe('strutset');
+  });
+
+  it('SKIPS a group member already advanced past the trigger — never regresses it', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'cutting' }), // already ahead
+      sp('b', { groupId: 'g', status: 'process' }),
+      sp('c', { groupId: 'g', status: 'process' }),
+    ]);
+    const next = operationReducer(state, statusEvent('b', 'process', 'strutset'));
+    expect(byId(next, 'a').status).toBe('cutting'); // untouched — not regressed
+    expect(byId(next, 'b').status).toBe('strutset');
+    expect(byId(next, 'c').status).toBe('strutset');
+  });
+
+  it('a group step-back (reverse) moves lockstep members, never regresses an advanced mate', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'cutting' }),
+      sp('b', { groupId: 'g', status: 'strutset' }),
+      sp('c', { groupId: 'g', status: 'strutset' }),
+    ]);
+    const next = operationReducer(state, statusEvent('b', 'strutset', 'process'));
+    expect(byId(next, 'a').status).toBe('cutting'); // ahead — untouched
+    expect(byId(next, 'b').status).toBe('process');
+    expect(byId(next, 'c').status).toBe('process');
+  });
+
+  it('once at cutting, transitions are individual (cutting onward is per-card)', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'cutting' }),
+      sp('b', { groupId: 'g', status: 'cutting' }),
+    ]);
+    const next = operationReducer(state, statusEvent('a', 'cutting', 'runner'));
+    expect(byId(next, 'a').status).toBe('runner');
+    expect(byId(next, 'b').status).toBe('cutting'); // not swept along
+  });
+
+  it('an ungrouped point advances only itself', () => {
+    const state = stateWith([sp('a', { status: 'process' }), sp('b', { status: 'process' })]);
+    const next = operationReducer(state, statusEvent('a', 'process', 'strutset'));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'b').status).toBe('process');
+  });
+
+  it('never sweeps a still-Pending member across the deploy boundary', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'process' }),
+      sp('b', { groupId: 'g', status: 'pending' }), // not yet deployed
+    ]);
+    const next = operationReducer(state, statusEvent('a', 'process', 'strutset'));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'b').status).toBe('pending'); // untouched
+  });
+});
+
+describe('projection — current state is a fold of the event log', () => {
+  const events: FieldShoreEvent[] = [
+    { type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false },
+    { type: 'ShorePointAdded', id: 'e2', opId: 'op1', at: 101, by: 'officer', shorePoint: sp('sp1', { status: 'pending' }) },
+    {
+      type: 'StrutDeployed',
+      id: 'e3',
+      opId: 'op1',
+      at: 102,
+      by: 'officer',
+      spId: 'sp1',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' },
+    },
+    statusEvent('sp1', 'process', 'strutset'),
+  ];
+
+  it('rebuilds the expected state from the log', () => {
+    const state = projectOperation(events);
+    expect(state.operation?.name).toBe('Riverside');
+    expect(state.operation?.status).toBe('active');
+    expect(state.shorePoints).toHaveLength(1);
+    expect(byId(state, 'sp1').status).toBe('strutset');
+    expect(byId(state, 'sp1').deployedStrut?.model).toBe('LS 203');
+  });
+
+  it('projecting the log equals folding the reducer incrementally (store ≡ rebuild)', () => {
+    const incremental = events.reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(projectOperation(events)).toEqual(incremental);
+  });
+
+  it('ignores events that arrive before their operation exists', () => {
+    const orphan = projectOperation([statusEvent('sp1', 'process', 'strutset')]);
+    expect(orphan).toEqual(EMPTY_OPERATION_STATE);
+  });
+});

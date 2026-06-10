@@ -1,0 +1,96 @@
+import type { ShorePoint, ShorePointPatch, FieldShoreEvent, InventoryItem } from '../schema';
+import {
+  findStrutCombinations,
+  woodHeight,
+  plateHeight,
+  type EngineDeductions,
+  type StrutCombination,
+} from '../load';
+import { canTransition } from './status';
+
+// Resolve the shore point's deduction SELECTIONS to exact catalog heights for the
+// engine. L-2: the exact value is deducted; only the final effective length floors.
+export function resolveDeductions(sp: ShorePoint): EngineDeductions {
+  return {
+    header: woodHeight(sp.deductions.headerWood),
+    sole: woodHeight(sp.deductions.footerWood),
+    topPlate: plateHeight(sp.deductions.topPlate),
+    bottomPlate: plateHeight(sp.deductions.bottomPlate),
+  };
+}
+
+// Matches Quick Find's default safety factor (4:1). Capacity is demoted on the
+// card (ADR-012), but the engine still needs the index to compute it.
+const SP_SAFETY_FACTOR_INDEX = 2;
+
+/**
+ * Run the selection engine for a shore point. Passes the RAW required length
+ * (measurementEighths / 8 — exact, not pre-deducted, L-2); the engine deducts
+ * once and floors the effective length to ⅛″. estimatedLoad is 0 (capacity
+ * demoted; not captured in the slice's add-SP flow).
+ */
+export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | null): StrutCombination[] {
+  const requiredLength = sp.measurementEighths / 8;
+  return findStrutCombinations(requiredLength, 0, SP_SAFETY_FACTOR_INDEX, inventory ?? null, null, resolveDeductions(sp));
+}
+
+/** Effective strut length (inches) after deductions, floored to ⅛″ — for display. */
+export function effectiveLengthInches(sp: ShorePoint): number {
+  const d = resolveDeductions(sp);
+  const totalDed = (d.header ?? 0) + (d.sole ?? 0) + (d.topPlate ?? 0) + (d.bottomPlate ?? 0);
+  return Math.floor((sp.measurementEighths / 8 - totalDed) * 8) / 8;
+}
+
+function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
+  const next: ShorePoint = { ...sp };
+  // #220 field-lock: only label is editable once a point advances past Pending.
+  if (patch.label !== undefined) next.label = patch.label;
+  if (sp.status !== 'pending') return next;
+  if (patch.division !== undefined) next.division = patch.division;
+  if (patch.building !== undefined) next.building = patch.building;
+  if (patch.area !== undefined) next.area = patch.area;
+  if (patch.shoreType !== undefined) next.shoreType = patch.shoreType;
+  if (patch.measurementEighths !== undefined) next.measurementEighths = patch.measurementEighths;
+  if (patch.deductions !== undefined) next.deductions = patch.deductions;
+  return next;
+}
+
+/**
+ * Apply one SP-mutating event to a single shore point. Returns the next state,
+ * or the SAME point unchanged if the event doesn't target it or is an illegal /
+ * stale transition (the log is the source of truth; a bad event must never crash
+ * projection). Operation-level events (Added/Deleted/Operation*) are no-ops here
+ * — core/operation owns those.
+ */
+export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): ShorePoint {
+  switch (event.type) {
+    case 'ShorePointEdited':
+      if (event.spId !== sp.id) return sp;
+      return applyPatch(sp, event.patch);
+
+    case 'ShorePointStatusChanged': {
+      if (event.spId !== sp.id) return sp;
+      // The pending↔process boundary is owned by deploy/return, not this event.
+      if (event.from === 'pending' || event.to === 'pending') return sp;
+      if (sp.status !== event.from) return sp; // stale / out-of-order — skip (L-7)
+      if (!canTransition(event.from, event.to)) return sp;
+      return { ...sp, status: event.to };
+    }
+
+    case 'StrutDeployed':
+      if (event.spId !== sp.id) return sp;
+      if (sp.status !== 'pending') return sp;
+      return { ...sp, status: 'process', deployedStrut: event.deployedStrut };
+
+    case 'StrutReturned': {
+      if (event.spId !== sp.id) return sp;
+      if (sp.status !== 'process') return sp;
+      const next: ShorePoint = { ...sp, status: 'pending' };
+      delete next.deployedStrut;
+      return next;
+    }
+
+    default:
+      return sp;
+  }
+}

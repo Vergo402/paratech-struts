@@ -30,3 +30,9 @@ docs/manual-screenshots/
 
 # Department operational data (real inventory — do not commit)
 *.csv
+
+# v4 build (Vite) — never committed; v4 does not deploy in this slice
+dist/
+dev-dist/
+.vite/
+stats.html

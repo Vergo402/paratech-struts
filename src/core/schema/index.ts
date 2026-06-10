@@ -1,0 +1,8 @@
+// core/schema — the single source of truth for v4 domain types + validation.
+// Zod schemas here generate both the TypeScript types and (in a later session,
+// L-5) the Firebase security rules, so client and server validate identically.
+export * from './common';
+export * from './operation';
+export * from './shorepoint';
+export * from './inventory';
+export * from './event';

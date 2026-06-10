@@ -1,0 +1,247 @@
+/* COPIED VERBATIM from docs/v4-design/preview/tokens.css (the canonical source).
+   ADR-007 / architecture.md: this file is reused by the build, not throwaway.
+   If a token changes in the canonical doc, it changes here in the SAME commit —
+   no silent drift. Do not hand-edit values here; edit the doc and re-copy. */
+
+/* ============================================================================
+   FieldShore v4 — Design Tokens
+   ----------------------------------------------------------------------------
+   The single machine-readable token source. Values are the VERIFIED set from
+   docs/v4-design/07-design-system/color.md + typography.md, identical to the
+   hexes in 07-design-system/wcag-contrast.mjs (run it to reproduce every ratio).
+
+   This file is REUSED VERBATIM by the Phase H build — it is not throwaway.
+   In the styleguide, [data-theme] sits on the #stage element; in the app it
+   sits on :root / <html>. The [data-theme="x"] selectors work at either level.
+
+   Markdown specs are the source of truth + rationale. If a value changes there,
+   it changes here in the same session — no silent drift.
+   ============================================================================ */
+
+/* ---- Type ramp + spacing + radius (theme-independent) ---------------------- */
+:root {
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+  /* type ramp — size / weight / line-height / tracking (typography.md) */
+  --type-display-1: 700 40px/1.10 var(--font-sans);
+  --type-display-2: 700 32px/1.12 var(--font-sans);
+  --type-headline-1: 600 24px/1.25 var(--font-sans);
+  --type-headline-2: 600 20px/1.30 var(--font-sans);
+  --type-body-lg: 400 16px/1.45 var(--font-sans);
+  --type-body: 400 14px/1.45 var(--font-sans);
+  --type-body-medium: 500 14px/1.45 var(--font-sans);
+  --type-caption: 400 12px/1.35 var(--font-sans);
+  --type-label: 500 11px/1.30 var(--font-sans);
+  --type-mono: 400 13px/1.40 var(--font-mono);
+
+  /* spacing — 4pt base (spacing-grid.md, E2, formalizes these) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* corner radius vocabulary — the complete set (color.md) */
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+  --radius-badge: 6px;
+  --radius-button: 12px;
+  --radius-input: 8px;
+
+  /* icon system — sizes, stroke, join radius (iconography.md, E4).
+     Four sizes, two stroke weights, one derived join radius; extend only by ADR.
+     --icon-stroke-heavy is the sunlight override; the theme applies it globally
+     via --stroke-width: 2px — no per-icon rule needed. */
+  --icon-size-sm: 16px;
+  --icon-size-md: 24px;
+  --icon-size-lg: 32px;
+  --icon-size-xl: 48px;
+  --icon-stroke-default: 1.5px;  /* 24px grid; scales to 1px at sm, 2px at lg/xl */
+  --icon-stroke-heavy: 2px;       /* sunlight override — matches --stroke-width in theme-sunlight */
+  --icon-radius: 2px;             /* derived: --radius-card / 6; cap/join radius only, not a 6th vocab member */
+
+  /* motion — durations + easings (motion.md, E3). Six durations, five easings;
+     extend only by ADR. Pairings are fixed (see motion.md Easing tokens). */
+  --motion-instant: 0ms;     /* reduced-motion swap, broadcast, sync dot */
+  --motion-micro: 100ms;     /* press, fill, nav content-pane fade */
+  --motion-transition: 200ms;/* sheet slide-up, modal/scrim fade, toast in (NOT 300ms — picker doctrine) */
+  --motion-status: 250ms;    /* status badge color cross-fade */
+  --motion-nav: 300ms;       /* full-screen list push, tab-switch content */
+  --motion-exit: 180ms;      /* toast slide-out + fade */
+
+  --ease-micro: ease-out;
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);  /* sheet/modal/toast in */
+  --ease-nav: cubic-bezier(0.4, 0, 0.2, 1);           /* navigation push */
+  --ease-status: ease-in-out;                         /* status cross-fade */
+  --ease-exit: ease-in;                               /* toast dismiss */
+}
+
+/* Reduced-motion floor — all durations collapse to instant; the badge SWITCHES,
+   it does not transition. Color is never the only signal, so no info is lost
+   (motion.md Accessibility). Haptics are NOT suppressed — they are not motion. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-micro: 0ms;
+    --motion-transition: 0ms;
+    --motion-status: 0ms;
+    --motion-nav: 0ms;
+    --motion-exit: 0ms;
+  }
+}
+
+/* ============================================================================
+   THEME 1 — LIGHT (preplan, office)
+   ============================================================================ */
+[data-theme="light"] {
+  --surface-bg: #F7F6F3;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #FAFAF9;
+  --surface-elevated: #FFFFFF;
+  --surface-stroke: rgba(0, 0, 0, 0.08);
+  --stroke-width: 1px;
+  --accent: #8C6700;          /* 4.79:1 on bg, 5.18:1 on card (was #B8860B = 3.01 FAIL) */
+  --accent-subtle: #FFF8E7;
+  --on-accent: #FFFFFF;       /* white on --accent fill — 5.18:1 (button.md primary) */
+
+  --text-primary: #1A1A1A;    /* 16.10:1 */
+  --text-secondary: #5C5C5C;  /* 6.19:1  */
+  --text-tertiary: #8A8A8A;   /* 3.19:1 — large/non-essential only */
+
+  --status-pending-text: #4B5563;  --status-pending-bg: #F3F4F6;  /* 6.87 (was #6B7280=4.39) */
+  --status-process-text:  #1D4ED8;  --status-process-bg:  #EFF6FF;  /* 6.16 */
+  --status-strutset-text:#5B21B6;  --status-strutset-bg:#F5F3FF;  /* 8.19 */
+  --status-cutting-text: #92400E;  --status-cutting-bg: #FEF3C7;  /* 6.37 */
+  --status-runner-text:  #9A3412;  --status-runner-bg:  #FFEDD5;  /* 6.38 */
+  --status-secured-text: #065F46;  --status-secured-bg: #ECFDF5;  /* 7.29 — green = secured */
+  --status-returned-text:#57534E;  --status-returned-bg:#F5F5F4;  /* 6.99 */
+  --danger-text:         #B91C1C;  --danger-bg:         #FEF2F2;  /* 5.91 */
+
+  --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
+  --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -2px 0 16px rgba(0, 0, 0, 0.08);  /* sideways inward cast (side-drawer.md / ADR-019; mirror x-sign if left-anchored) */
+  --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+  --card-shadow: none;
+  --type-weight-bump: 0;   /* sunlight bumps this */
+}
+
+/* ============================================================================
+   THEME 2 — DARK (incident operations) — the differentiator: warm slate
+   ============================================================================ */
+[data-theme="dark"] {
+  --surface-bg: #1C1F23;      /* muted warm slate — protect this value */
+  --surface-card: #252930;
+  --surface-card-hover: #2A2E36;
+  --surface-elevated: #2E333B;
+  --surface-stroke: rgba(255, 255, 255, 0.07);
+  --stroke-width: 1px;
+  --accent: #D4A017;          /* 6.96:1 on bg, 6.15:1 on card */
+  --accent-subtle: #2A2310;
+  --on-accent: #1C1F23;       /* warm-slate ink on --accent fill — 6.96:1 (button.md primary) */
+
+  --text-primary: #F0EFEC;    /* 12.70:1 on card */
+  --text-secondary: #9B9A97;  /* 5.19:1 */
+  --text-tertiary: #8A8A86;   /* 4.21:1 (was #6B6A67 = 2.70 FAIL) */
+
+  --status-pending-text: #9CA3AF;  --status-pending-bg: #2A2D31;  /* 5.45 */
+  --status-process-text:  #60A5FA;  --status-process-bg:  #172033;  /* 6.40 */
+  --status-strutset-text:#A78BFA;  --status-strutset-bg:#221A38;  /* 6.06 */
+  --status-cutting-text: #FBBF24;  --status-cutting-bg: #2A2410;  /* 9.26 */
+  --status-runner-text:  #FB923C;  --status-runner-bg:  #2A1B0F;  /* 7.35 */
+  --status-secured-text: #34D399;  --status-secured-bg: #0F2620;  /* 8.29 — green = secured */
+  --status-returned-text:#A8A29E;  --status-returned-bg:#26231F;  /* 6.20 */
+  --danger-text:         #F87171;  --danger-bg:         #2A1416;  /* 6.27 */
+
+  --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
+  --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.32);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -4px 0 24px rgba(0, 0, 0, 0.18);  /* sideways inward cast (side-drawer.md / ADR-019) */
+  --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --card-shadow: none;
+  --type-weight-bump: 0;
+}
+
+/* ============================================================================
+   THEME 3 — SUNLIGHT (on scene, direct sun) — separately authored, NOT a
+   dark override. Black-on-white, 2pt strokes, status = solid banner, weight +1.
+   ============================================================================ */
+[data-theme="sunlight"] {
+  --surface-bg: #FFFFFF;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #F4F4F4;
+  --surface-elevated: #FFFFFF;
+  --surface-stroke: rgba(0, 0, 0, 0.25);
+  --stroke-width: 2px;        /* strokes thicken */
+  --accent: #6E5000;          /* 7.47:1 (was #8B6500 = 5.30, failed its own 7:1 contract) */
+  --accent-subtle: #FFF3D6;
+  --on-accent: #FFFFFF;       /* white on --accent fill — 7.47:1, clears 7:1 (button.md primary) */
+
+  --text-primary: #000000;    /* only text color permitted in sunlight */
+  --text-secondary: #000000;  /* no mid-gray text in sunlight */
+  --text-tertiary: #000000;
+
+  /* status = solid fill, white text (banner treatment) */
+  --status-pending-text: #FFFFFF;  --status-pending-bg: #374151;  /* white 10.31 */
+  --status-process-text:  #FFFFFF;  --status-process-bg:  #1D4ED8;  /* 6.70 */
+  --status-strutset-text:#FFFFFF;  --status-strutset-bg:#5B21B6;  /* 8.98 */
+  --status-cutting-text: #FFFFFF;  --status-cutting-bg: #92400E;  /* 7.09 */
+  --status-runner-text:  #FFFFFF;  --status-runner-bg:  #9A3412;  /* 7.31 */
+  --status-secured-text: #FFFFFF;  --status-secured-bg: #065F46;  /* 7.68 */
+  --status-returned-text:#FFFFFF;  --status-returned-bg:#44403C;  /* 10.27 */
+  --danger-text:         #FFFFFF;  --danger-bg:         #B91C1C;  /* 6.47 */
+
+  --scrim: rgba(0, 0, 0, 0.55);                      /* stronger backdrop survives sun (color.md) */
+  --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.20);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -2px 0 8px rgba(0, 0, 0, 0.08);   /* sideways inward cast (side-drawer.md / ADR-019) */
+  --card-top-highlight: none;
+  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);   /* cards gain a shadow under glare */
+  --type-weight-bump: 100;   /* body 400->500, medium 500->600, headline 600->700 */
+}
+
+/* ============================================================================
+   THEME 4 — BROADCAST (read-only TV, 8-12 ft) — all text >=7:1 (AAA),
+   status = 4pt left-border accent (no fill), no animation.
+   ============================================================================ */
+[data-theme="broadcast"] {
+  --surface-bg: #141618;
+  --surface-card: #141618;          /* borderless; status is a left-border accent */
+  --surface-card-hover: #141618;
+  --surface-elevated: #1B1E20;
+  --surface-stroke: rgba(255, 255, 255, 0.10);
+  --stroke-width: 1px;
+  --accent: #E5B53D;                /* 9.51:1 — brighter gold for TV gamma */
+  --accent-subtle: #221C0C;
+  /* no --on-accent / --scrim / --shadow-modal / --shadow-drawer — broadcast renders no buttons or overlays */
+
+  --text-primary: #F4F4F4;          /* 16.49:1 */
+  --text-secondary: #C0BFBC;        /* 9.86:1 */
+  --text-tertiary: #C0BFBC;
+
+  /* status = text + 4pt left-border accent, no bg fill */
+  --status-pending-text: #9CA3AF;  --status-pending-bg: transparent;  /* 7.14 */
+  --status-process-text:  #60A5FA;  --status-process-bg:  transparent;  /* 7.13 */
+  --status-strutset-text:#B9A7FC;  --status-strutset-bg:transparent;  /* 8.63 */
+  --status-cutting-text: #FBBF24;  --status-cutting-bg: transparent;  /* 10.87 */
+  --status-runner-text:  #FB923C;  --status-runner-bg:  transparent;  /* 8.01 */
+  --status-secured-text: #34D399;  --status-secured-bg: transparent;  /* 9.44 */
+  --status-returned-text:#A8A29E;  --status-returned-bg:transparent;  /* 7.19 */
+  --danger-text:         #FB8C8C;  --danger-bg:         transparent;  /* 7.97 */
+
+  --shadow-sheet: none;
+  --shadow-drawer: none;
+  --card-top-highlight: none;
+  --card-shadow: none;
+  --type-weight-bump: 0;
+
+  /* zero motion — the TV view is a snapshot, not a reactive UI (motion.md) */
+  --motion-micro: 0ms;
+  --motion-transition: 0ms;
+  --motion-status: 0ms;
+  --motion-nav: 0ms;
+  --motion-exit: 0ms;
+}

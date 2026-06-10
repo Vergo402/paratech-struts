@@ -1,0 +1,81 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* ============================================================================
+   Tailwind v4 ⇄ design-token bridge (ADR-023).
+   The tokens live in tokens.css under :root + [data-theme="x"]. Here we expose
+   the theme-switchable COLOR tokens to Tailwind's --color-* namespace with
+   `@theme inline`, so utilities (bg-surface-card, text-ink, text-status-process)
+   emit `var(--token)` rather than a build-time-resolved value — that is what lets
+   a [data-theme] swap on <html> recolor the whole UI at runtime.
+
+   Names are prefixed/renamed so they never collide with the source vars
+   (e.g. --color-surface-card → var(--surface-card)). Foreground tokens are
+   exposed as `ink*` to avoid the awkward `text-text-primary`.
+
+   Spacing is NOT remapped: Tailwind v4's default 4px-based scale already matches
+   the --space-* ramp (p-4 = 16px = --space-4). Radius is exposed below as literal
+   px (theme-independent). Type ramp stays raw `var(--type-*)` via the utilities
+   in the @layer block — finalized when primitives land (S3).
+   ============================================================================ */
+@theme inline {
+  /* surfaces */
+  --color-surface-bg: var(--surface-bg);
+  --color-surface-card: var(--surface-card);
+  --color-surface-card-hover: var(--surface-card-hover);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-stroke: var(--surface-stroke);
+
+  /* brand */
+  --color-accent: var(--accent);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-on-accent: var(--on-accent);
+
+  /* ink (foreground) */
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-tertiary: var(--text-tertiary);
+
+  /* status — text + bg, all seven lifecycle states + danger */
+  --color-status-pending: var(--status-pending-text);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-process: var(--status-process-text);
+  --color-status-process-bg: var(--status-process-bg);
+  --color-status-strutset: var(--status-strutset-text);
+  --color-status-strutset-bg: var(--status-strutset-bg);
+  --color-status-cutting: var(--status-cutting-text);
+  --color-status-cutting-bg: var(--status-cutting-bg);
+  --color-status-runner: var(--status-runner-text);
+  --color-status-runner-bg: var(--status-runner-bg);
+  --color-status-secured: var(--status-secured-text);
+  --color-status-secured-bg: var(--status-secured-bg);
+  --color-status-returned: var(--status-returned-text);
+  --color-status-returned-bg: var(--status-returned-bg);
+  --color-danger: var(--danger-text);
+  --color-danger-bg: var(--danger-bg);
+}
+
+/* Radius vocabulary — theme-independent literals (rounded-card, rounded-sheet…). */
+@theme {
+  --radius-card: 12px;
+  --radius-sheet: 16px;
+  --radius-badge: 6px;
+  --radius-button: 12px;
+  --radius-input: 8px;
+}
+
+/* App baseline. The field PWA defaults to dark (incident ops); ThemeProvider
+   owns [data-theme] on <html>. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-bg);
+  color: var(--text-primary);
+  font: var(--type-body);
+  -webkit-font-smoothing: antialiased;
+}
