@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "cd \"$(git rev-parse --show-toplevel)\" && npx serve -l $PORT ."],
       "autoPort": true
+    },
+    {
+      "name": "fieldshore-v4-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5199", "--strictPort"],
+      "port": 5199
     }
   ]
 }

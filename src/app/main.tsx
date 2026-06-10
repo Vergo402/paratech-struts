@@ -1,13 +1,24 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { bootData, type BootResult } from '@data/store';
 import './styles.css';
 
-// Session-1 splash. Intentionally minimal — its only job is to prove the
-// toolchain end-to-end: Tailwind v4 utilities (bg-surface-bg / text-ink) resolve
-// the design tokens, and a [data-theme] swap on <html> recolors the page. The
-// real app shell (router, providers, nav) lands in S3. Not the gate for Session 1
-// (the gate is typecheck + lint + test on pure core), but a free build smoke test.
+// Session-2 splash. Still intentionally minimal — S1 proved the token pipeline;
+// S2 adds the data-layer boot (Dexie open → uid mint → seed-if-empty → event-log
+// projection) and surfaces one proof line. The real app shell (router,
+// providers, nav) lands in S3. src/app is the composition root — the one place
+// outside ui/hooks that may touch @data (the boundary lint scopes invariant 3
+// to ui/*).
 function Splash() {
+  const [boot, setBoot] = useState<BootResult | null>(null);
+  const [bootError, setBootError] = useState<string | null>(null);
+
+  useEffect(() => {
+    bootData()
+      .then(setBoot)
+      .catch((err: unknown) => setBootError(err instanceof Error ? err.message : String(err)));
+  }, []);
+
   return (
     <main className="flex min-h-full flex-col items-center justify-center gap-2 bg-surface-bg text-ink">
       <h1 style={{ font: 'var(--type-display-2)' }}>FieldShore</h1>
@@ -19,6 +30,16 @@ function Splash() {
         style={{ font: 'var(--type-label)', letterSpacing: '0.08em' }}
       >
         TOOLCHAIN ONLINE
+      </span>
+      <span
+        className={bootError ? 'text-status-pending' : 'text-ink-secondary'}
+        style={{ font: 'var(--type-label)', letterSpacing: '0.08em' }}
+      >
+        {bootError
+          ? `DATA LAYER ERROR — ${bootError}`
+          : boot
+            ? `DATA LAYER READY — ${boot.inventoryCount} INVENTORY ITEMS · ${boot.eventCount} EVENTS`
+            : 'DATA LAYER BOOTING…'}
       </span>
     </main>
   );
