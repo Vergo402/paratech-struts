@@ -66,13 +66,13 @@ The app's **configuration home**: appearance, the department connection + regist
 9. **Reference Materials** — static doctrine links (USACE Shoring Operations Guide, FEMA US&R), faithful to v3.
 10. **Administration** — the **gateway links** (navigate elsewhere; this group never holds behavioral toggles — those live in §11). Three gateways, **three different gating rules** (this **resolves [OQ4](#open-questions-per-screen)** and reconciles the [Audit Log](https://github.com/Vergo402/paratech-struts/issues/211) §gateway-gating handoff):
     - **[User Manager](https://github.com/Vergo402/paratech-struts/issues/209)** — a **back-office admin feature**: **hidden** from anyone who isn't Admin or granted Manage-users-&-roles. Hidden, not greyed — there is nothing to tap and nothing to wonder about.
-    - **[Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210)** — **hidden** from non-Admins; for an Admin it is **visible-but-disabled** ("Coming with mobile app", v4.5 — the same honest-roadmap pattern as Build C).
+    - **[Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210)** — **hidden** from non-Admins; for an Admin it is **visible and active** (mutual-aid incident sharing **ships v4.0** per [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md) — pulled forward from the earlier v4.5 deferral).
     - **[Audit Log](https://github.com/Vergo402/paratech-struts/issues/211)** — the one that is **visible to every connected member**, because it is a **department/command record, not an admin feature** — but access is **ICS-position-checked at entry**: tapping in when this device is not assigned **Incident Commander or Operations Section Chief** in an active (or just-closed) operation lands on a **locked state with a plain reason** ("Access requires Incident Commander or Operations Section Chief assignment in an active operation"), never a dead end (#217; consistent with [53-audit-log.md](53-audit-log.md) §Primary-role). This is the one gateway where the **lock is visible** rather than the gateway hidden — the record exists for two specific ICS positions, not for a back-office role.
 
     | Gateway | Guest (no dept) | Default / custom member | Admin |
     |---|---|---|---|
     | User Manager | — | **hidden** | visible + active |
-    | Cross-Dept Invite | — | **hidden** | visible + disabled (v4.5) |
+    | Cross-Dept Invite | — | **hidden** | visible + active (v4.0, ADR-022) |
     | Audit Log | — | **visible, ICS-position-checked at entry** | **visible, ICS-position-checked at entry** |
     | Department policies (§11) | — | **hidden** | visible |
 
@@ -99,7 +99,7 @@ Settings is the one screen whose **contents change with who's looking** — thre
 - *(A custom role carrying a back-office permission — e.g. Manage-users-&-roles — sees the matching gateway/group; the permission, not the role name, is what gates.)*
 
 **Admin:**
-- Sees **everything**. Administration shows all three gateways: **User Manager** (active), **Cross-Dept Invite** (visible-but-disabled, v4.5), **Audit Log** (still ICS-position-checked — being Admin does **not** grant command-record access; that follows ICS position, the orthogonal axis).
+- Sees **everything**. Administration shows all three gateways: **User Manager** (active), **Cross-Dept Invite** (active, v4.0 — ADR-022), **Audit Log** (still ICS-position-checked — being Admin does **not** grant command-record access; that follows ICS position, the orthogonal axis).
 - **Department policies** group visible + editable (the after-action auto-email toggle).
 - **Apparatus Types** fully editable; **Data Management** full (Export + Import + Template).
 

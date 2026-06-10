@@ -254,6 +254,6 @@ Alex's gate decisions, applied to the specs. The panel findings above are left i
 - **B5 (checklist editor + baseline content = v4.1)** remains the one honest disclosure (governed by ADR-020).
 
 ### Should-fix → Phase H trackers
-B6/Theme-2 (buttons-beside-slide), M4 (measurement/Division control lock), M1 (PAR in command chrome), M7 (over-capacity card), M8 (mandatory display-name), plus the QR scanner — logged as [`99-open-questions.md`](../99-open-questions.md) #37–#42.
+B6/Theme-2 (buttons-beside-slide), M4 (measurement/Division control lock), M1 (PAR in command chrome), M7 (over-capacity card), M8 (mandatory display-name), plus the QR scanner — logged as [`99-open-questions.md`](../99-open-questions.md) #37–#42. The remaining acknowledged majors now have explicit homes too: **M2** (per-Division roll-up) → #43, **M10** (cutting-station discoverability) → #44, **M11** (sync attention-grab) → #45, **M14** (tablet-primary saw) → #46, **M9** (User-Manager UI ship) → #47 (folds into #32). **Every gate finding is now either encoded or tracked.**
 
 **Gate status:** all five must-fix decisions encoded; the design is ready for Alex's **#239 final sign-off**.
