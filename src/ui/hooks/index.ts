@@ -5,5 +5,5 @@ export { useOperation } from './useOperation';
 export { useShorePoints } from './useShorePoints';
 export { useInventory } from './useInventory';
 export { useRecommendations } from './useRecommendations';
-export { useCommit } from './useCommit';
+export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';

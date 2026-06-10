@@ -155,4 +155,40 @@ describe('#220 field-lock — editable fields by status', () => {
     expect(next.shoreType).toBe('t-shore'); // unchanged — locked
     expect(next.label).toBe('relabeled'); // label still editable
   });
+
+  it('null clears building/area/label (the OperationEdited.location convention)', () => {
+    const next = shorePointReducer(
+      sp({ status: 'pending', building: 'B', area: 'NW corner', label: 'tagged' }),
+      {
+        type: 'ShorePointEdited',
+        ...meta,
+        spId: 'sp1',
+        patch: { building: null, area: null, label: null },
+      } satisfies FieldShoreEvent,
+    );
+    expect('building' in next).toBe(false);
+    expect('area' in next).toBe(false);
+    expect('label' in next).toBe(false);
+  });
+
+  it('label null-clear still works past Pending; locked optionals do not clear', () => {
+    const next = shorePointReducer(sp({ status: 'cutting', area: 'NW corner', label: 'tagged' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { area: null, label: null },
+    } satisfies FieldShoreEvent);
+    expect(next.area).toBe('NW corner'); // locked — unchanged
+    expect('label' in next).toBe(false); // label always editable
+  });
+
+  it('undefined (absent) keys leave fields untouched', () => {
+    const next = shorePointReducer(sp({ status: 'pending', area: 'NW corner' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { label: 'only label' },
+    } satisfies FieldShoreEvent);
+    expect(next.area).toBe('NW corner');
+  });
 });

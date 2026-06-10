@@ -30,6 +30,7 @@ export function FullScreenList<T extends string>({
   onSelect,
 }: FullScreenListProps<T>) {
   const [query, setQuery] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
@@ -39,7 +40,10 @@ export function FullScreenList<T extends string>({
     if (!open) return;
     setQuery(''); // fresh search per visit
     const close = () => closeRef.current();
-    claimOverlay(close);
+    claimOverlay(close, {
+      container: () => contentRef.current,
+      opener: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+    });
     return () => releaseOverlay(close);
   }, [open]);
 
@@ -56,6 +60,7 @@ export function FullScreenList<T extends string>({
     <Dialog.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <Dialog.Portal>
         <Dialog.Content
+          ref={contentRef}
           className="fs-fullscreen"
           aria-describedby={undefined} /* the list is the content, not a description */
 >

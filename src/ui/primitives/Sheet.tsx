@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { claimOverlay, releaseOverlay } from './overlay';
+import { claimOverlay, releaseOverlay, isTopOverlay, overlayContains } from './overlay';
 
 /** Drag distance past which releasing the handle dismisses the sheet. */
 const DISMISS_THRESHOLD_PX = 80;
@@ -30,13 +30,20 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
+  // Stable claim identity — Esc/outside guards compare against the stack top.
+  const claimRef = useRef(() => closeRef.current());
 
+  // One peer overlay at a time; a sheet opened from inside a form modal (the
+  // #220 division picker) is a CHILD and stacks above it instead.
   useEffect(() => {
     if (!open) return;
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const close = () => closeRef.current();
-    claimOverlay(close);
-    return () => releaseOverlay(close);
+    const claim = claimRef.current; // stable — set once at init
+    claimOverlay(claim, {
+      container: () => contentRef.current,
+      opener: openerRef.current,
+    });
+    return () => releaseOverlay(claim);
   }, [open]);
 
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -66,6 +73,12 @@ export function Sheet({ open, onClose, title, children }: SheetProps) {
           ref={contentRef}
           className="fs-sheet"
           aria-describedby={undefined} /* rows are the content, not a description */
+          onEscapeKeyDown={(e) => {
+            if (!isTopOverlay(claimRef.current)) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (overlayContains(e.target as Node)) e.preventDefault();
+          }}
           onCloseAutoFocus={(e) => {
             if (openerRef.current?.isConnected) {
               e.preventDefault();

@@ -56,12 +56,23 @@ export function effectiveLengthInches(sp: ShorePoint): number {
 
 function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   const next: ShorePoint = { ...sp };
+  // building/area/label: `null` clears the field (the OperationEdited.location
+  // convention), `undefined` = no change.
   // #220 field-lock: only label is editable once a point advances past Pending.
-  if (patch.label !== undefined) next.label = patch.label;
+  if (patch.label !== undefined) {
+    if (patch.label === null) delete next.label;
+    else next.label = patch.label;
+  }
   if (sp.status !== 'pending') return next;
   if (patch.division !== undefined) next.division = patch.division;
-  if (patch.building !== undefined) next.building = patch.building;
-  if (patch.area !== undefined) next.area = patch.area;
+  if (patch.building !== undefined) {
+    if (patch.building === null) delete next.building;
+    else next.building = patch.building;
+  }
+  if (patch.area !== undefined) {
+    if (patch.area === null) delete next.area;
+    else next.area = patch.area;
+  }
   if (patch.shoreType !== undefined) next.shoreType = patch.shoreType;
   if (patch.measurementEighths !== undefined) next.measurementEighths = patch.measurementEighths;
   if (patch.deductions !== undefined) next.deductions = patch.deductions;

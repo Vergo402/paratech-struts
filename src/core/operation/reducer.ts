@@ -64,6 +64,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           name: event.name,
           multiBuilding: event.multiBuilding,
           location: event.location,
+          divisions: [1], // Ground level — grown via DivisionAdded, never on the wire
           status: 'active',
           createdAt: event.at,
         },
@@ -81,6 +82,16 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'OperationEnded':
       if (!state.operation) return state;
       return { ...state, operation: { ...state.operation, status: 'ended' } };
+
+    case 'DivisionAdded': {
+      // Idempotent: concurrent "add floor above" from two devices converges.
+      if (!state.operation) return state;
+      if (state.operation.divisions.includes(event.division)) return state;
+      return {
+        ...state,
+        operation: { ...state.operation, divisions: [...state.operation.divisions, event.division] },
+      };
+    }
 
     case 'ShorePointAdded':
       return { ...state, shorePoints: [...state.shorePoints, event.shorePoint] };

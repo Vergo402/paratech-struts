@@ -1,11 +1,18 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
-import { Badge, Button, Card, EmptyState, Modal } from '@ui/primitives';
+import { divisionLabel } from '@core/operation';
+import { Badge, Button, EmptyState, Modal } from '@ui/primitives';
 import { useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
+import { AddShorePointModal } from './AddShorePointModal';
+import { DeleteShorePointModal } from './DeleteShorePointModal';
+import { ShorePointCard } from './ShorePointCard';
 
 type ModalMode = null | 'create' | 'edit';
+
+/** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
+type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
 
 // ---- Chevron SVG (matches BottomNav inline-glyph pattern) -------------------
 function Chevron() {
@@ -37,9 +44,12 @@ interface LaneProps {
   points: ShorePoint[];
   collapsed: boolean;
   onToggle: () => void;
+  onEdit: (sp: ShorePoint) => void;
+  onDelete: (sp: ShorePoint) => void;
+  onAssignEquipment: (sp: ShorePoint) => void;
 }
 
-function Lane({ status, points, collapsed, onToggle }: LaneProps) {
+function Lane({ status, points, collapsed, onToggle, onEdit, onDelete, onAssignEquipment }: LaneProps) {
   return (
     <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
       <button
@@ -58,13 +68,13 @@ function Lane({ status, points, collapsed, onToggle }: LaneProps) {
             <p className="fs-lane-empty">No shore points</p>
           ) : (
             points.map((sp) => (
-              <div key={sp.id} role="listitem">
-                <Card>
-                  <div className="fs-lane-card-row">
-                    <span>{sp.label ?? `Div ${sp.division}`}</span>
-                    <Badge variant="status" status={sp.status} />
-                  </div>
-                </Card>
+              <div key={sp.id} role="listitem" data-sp-id={sp.id}>
+                <ShorePointCard
+                  shorePoint={sp}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onAssignEquipment={onAssignEquipment}
+                />
               </div>
             ))
           )}
@@ -82,6 +92,43 @@ export function OperationsBoard() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [endOpOpen, setEndOpOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<ShorePointStatus>>(new Set());
+  const [spModal, setSpModal] = useState<SpModalState>(null);
+  const [deleteSp, setDeleteSp] = useState<ShorePoint | null>(null);
+  const [announcement, setAnnouncement] = useState('');
+  const [scrollToId, setScrollToId] = useState<string | null>(null);
+
+  // After a commit lands, bring the first new Pending card into view. Optional-
+  // call guarded — jsdom has no scrollIntoView (the Sheet pointer-capture rule).
+  useEffect(() => {
+    if (!scrollToId) return;
+    document.querySelector(`[data-sp-id="${scrollToId}"]`)?.scrollIntoView?.({ block: 'nearest' });
+    setScrollToId(null);
+  }, [scrollToId]);
+
+  const openEdit = useCallback((sp: ShorePoint) => setSpModal({ mode: 'edit', shorePoint: sp }), []);
+  const openDelete = useCallback((sp: ShorePoint) => setDeleteSp(sp), []);
+  // S5 stub — the Assign Equipment sheet is the deploy workflow (S6, #221).
+  const assignEquipment = useCallback(() => {}, []);
+
+  const handleAdded = useCallback((added: ShorePoint[]) => {
+    // The spec's modal-close response: open the Pending lane, scroll the first
+    // new card into view, announce assertively (workflow #220 §Accessibility).
+    setCollapsed((prev) => {
+      if (!prev.has('pending')) return prev;
+      const next = new Set(prev);
+      next.delete('pending');
+      return next;
+    });
+    const first = added[0];
+    if (!first) return;
+    setScrollToId(first.id);
+    const where = [divisionLabel(first.division), first.building, first.area].filter(Boolean).join(', ');
+    setAnnouncement(
+      added.length === 1
+        ? `Shore point added — ${where}, Pending.`
+        : `${added.length} shore points added — ${where}, Pending.`,
+    );
+  }, []);
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -138,9 +185,13 @@ export function OperationsBoard() {
       </header>
 
       <div className="fs-ops-actions">
-        <Button variant="primary" fullWidth onPress={() => {}}>
+        <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
           + Add Shore Point
         </Button>
+      </div>
+
+      <div className="fs-sr-only" role="status" aria-live="assertive">
+        {announcement}
       </div>
 
       <div className="fs-ops-lanes">
@@ -151,6 +202,9 @@ export function OperationsBoard() {
             points={byStatus[status]}
             collapsed={collapsed.has(status)}
             onToggle={() => toggleLane(status)}
+            onEdit={openEdit}
+            onDelete={openDelete}
+            onAssignEquipment={assignEquipment}
           />
         ))}
       </div>
@@ -166,6 +220,15 @@ export function OperationsBoard() {
         onClose={() => setModalMode(null)}
         operation={modalMode === 'edit' ? operation : undefined}
       />
+
+      <AddShorePointModal
+        open={spModal !== null}
+        onClose={() => setSpModal(null)}
+        shorePoint={spModal?.mode === 'edit' ? spModal.shorePoint : undefined}
+        onAdded={handleAdded}
+      />
+
+      <DeleteShorePointModal shorePoint={deleteSp} onClose={() => setDeleteSp(null)} />
 
       <Modal
         open={endOpOpen}

@@ -18,7 +18,7 @@ function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
 
 function stateWith(points: ShorePoint[]): OperationState {
   return {
-    operation: { id: 'op1', name: 'Test', multiBuilding: false, status: 'active', createdAt: 1 },
+    operation: { id: 'op1', name: 'Test', multiBuilding: false, divisions: [1], status: 'active', createdAt: 1 },
     shorePoints: points,
   };
 }
@@ -127,5 +127,33 @@ describe('projection — current state is a fold of the event log', () => {
   it('ignores events that arrive before their operation exists', () => {
     const orphan = projectOperation([statusEvent('sp1', 'process', 'strutset')]);
     expect(orphan).toEqual(EMPTY_OPERATION_STATE);
+  });
+});
+
+describe('divisions — the grow-the-building model (#220)', () => {
+  const created: FieldShoreEvent = {
+    type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false,
+  };
+  const divAdded = (id: string, division: number): FieldShoreEvent => ({
+    type: 'DivisionAdded', id, opId: 'op1', at: 101, by: 'officer', division,
+  });
+
+  it('OperationCreated initializes divisions to [1] (Ground)', () => {
+    const state = operationReducer(EMPTY_OPERATION_STATE, created);
+    expect(state.operation?.divisions).toEqual([1]);
+  });
+
+  it('DivisionAdded appends the new floor', () => {
+    const state = [created, divAdded('e2', 2), divAdded('e3', -1)].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.divisions).toEqual([1, 2, -1]);
+  });
+
+  it('DivisionAdded is idempotent — concurrent adds of the same floor converge', () => {
+    const state = [created, divAdded('e2', 2), divAdded('e3', 2)].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.divisions).toEqual([1, 2]);
+  });
+
+  it('DivisionAdded with no operation is a no-op', () => {
+    expect(operationReducer(EMPTY_OPERATION_STATE, divAdded('e1', 2))).toEqual(EMPTY_OPERATION_STATE);
   });
 });

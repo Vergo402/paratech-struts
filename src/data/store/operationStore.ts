@@ -31,6 +31,13 @@ export interface CommitOptions {
 export interface OperationStoreApi {
   store: StoreApi<OperationState>;
   commit(event: FieldShoreEvent, opts?: CommitOptions): Promise<CommitResult>;
+  /**
+   * Atomic multi-event commit — a grouped Add Shore Point (#220) lands all N
+   * member events as ONE durable batch (all-or-nothing) and one re-render.
+   * Plain-append events only; inventory-consequential events (StrutDeployed /
+   * StrutReturned) need per-event pre-flight guards and commit one at a time.
+   */
+  commitMany(events: FieldShoreEvent[], opts?: CommitOptions): Promise<CommitResult>;
   /** Rebuild in-memory state from the event log (boot path). */
   boot(): Promise<void>;
 }
@@ -101,9 +108,44 @@ export function createOperationStore(opts?: {
     return { ok: true };
   }
 
+  async function commitMany(raws: FieldShoreEvent[], options?: CommitOptions): Promise<CommitResult> {
+    if (raws.length === 0) return { ok: false, reason: 'empty batch' };
+
+    // Validate the WHOLE batch before any write — garbage never enters the log.
+    const events: FieldShoreEvent[] = [];
+    for (const raw of raws) {
+      const parsed = FieldShoreEvent.safeParse(raw);
+      if (!parsed.success) {
+        return { ok: false, reason: `invalid event: ${parsed.error.issues[0]?.message ?? 'schema mismatch'}` };
+      }
+      if (parsed.data.type === 'StrutDeployed' || parsed.data.type === 'StrutReturned') {
+        return { ok: false, reason: 'inventory-consequential events commit one at a time' };
+      }
+      events.push(parsed.data);
+    }
+
+    try {
+      // All-or-nothing: an uncaught failure (e.g. a duplicate &id BulkError)
+      // inside the transaction callback aborts the whole transaction. Do NOT
+      // catch inside the callback — the abort must propagate.
+      await db.transaction('rw', db.events, async () => {
+        await db.events.bulkAdd(events.map((e) => ({ ...e }))); // clone — Dexie writes seq onto the object
+      });
+    } catch (err) {
+      return { ok: false, reason: err instanceof Error ? err.message : String(err) };
+    }
+
+    // Durable batch landed — fold all events, then ONE setState / re-render (L-4).
+    store.setState(events.reduce(operationReducer, store.getState()), true);
+
+    if (!options?.fromRemote) for (const e of events) enqueue(e);
+    return { ok: true };
+  }
+
   return {
     store,
     commit,
+    commitMany,
     async boot() {
       // toArray() returns primary-key (seq) order — true local append order.
       const rows = await db.events.toArray();

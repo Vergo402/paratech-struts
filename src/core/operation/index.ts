@@ -2,3 +2,4 @@
 // Pure: no React, no Firebase. Consumed by ui/operations and data/store.
 export * from './reducer';
 export * from './projection';
+export * from './division';

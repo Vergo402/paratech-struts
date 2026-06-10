@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { claimOverlay, releaseOverlay } from './overlay';
+import { claimOverlay, releaseOverlay, isTopOverlay, overlayContains } from './overlay';
 
 /**
  * Modal — the center-anchored STOP surface (modal.md). For destructive or
@@ -37,14 +37,21 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
   useEffect(() => {
     closeRef.current = onClose;
   }, [onClose]);
+  // Stable claim identity — Esc/outside guards compare against the stack top.
+  const claimRef = useRef(() => closeRef.current());
 
-  // One overlay at a time — claim while open.
+  // One peer overlay at a time — claim while open. container + opener let a
+  // child overlay opened from inside this modal STACK instead of closing it
+  // (the #220 form hosts the division sheet + plate grids).
   useEffect(() => {
     if (!open) return;
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const close = () => closeRef.current();
-    claimOverlay(close);
-    return () => releaseOverlay(close);
+    const claim = claimRef.current; // stable — set once at init
+    claimOverlay(claim, {
+      container: () => contentRef.current,
+      opener: openerRef.current,
+    });
+    return () => releaseOverlay(claim);
   }, [open]);
 
   return (
@@ -56,6 +63,15 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
           className={`fs-modal fs-modal--${variant}`}
           aria-modal="true"
           aria-describedby={bodyId}
+          onEscapeKeyDown={(e) => {
+            // A child overlay (e.g. the portaled plate grid) is above us —
+            // Esc closes the child, never the parent underneath it.
+            if (!isTopOverlay(claimRef.current)) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            // A tap inside a portaled child overlay is not an outside-dismiss.
+            if (overlayContains(e.target as Node)) e.preventDefault();
+          }}
           onOpenAutoFocus={(e) => {
             if (variant !== 'destructive') return;
             // The marker may sit on the control itself or wrap it.

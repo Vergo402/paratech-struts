@@ -22,7 +22,7 @@ import {
   VisualGridPicker,
 } from '@ui/picker';
 import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
-import { StartOperationModal } from '@ui/operations';
+import { ShorePointCard, StartOperationModal } from '@ui/operations';
 import { useTheme } from '../theme';
 
 /**
@@ -408,6 +408,54 @@ export function GalleryScreen() {
         <StartOperationModal
           open={startOpOpen}
           onClose={() => setStartOpOpen(false)}
+        />
+      </Section>
+
+      {/* AddShorePointModal + DivisionPicker read live store state (they need
+          an active operation) — they're driven on /operations in the preview,
+          not demoed here. The card is props-only, so it demos directly. */}
+      <Section title="Shore point card (S5 — #220)">
+        <ShorePointCard
+          shorePoint={{
+            id: 'demo-1',
+            opId: 'demo',
+            division: '1',
+            area: 'NW corner',
+            shoreType: 't-shore',
+            groupId: 'demo-g',
+            groupIndex: 2,
+            groupTotal: 3,
+            measurementEighths: 388,
+            deductions: NO_DEDUCTIONS,
+            status: 'pending',
+            pendingReason: 'no-match',
+          }}
+        />
+        <ShorePointCard
+          shorePoint={{
+            id: 'demo-2',
+            opId: 'demo',
+            division: '2',
+            shoreType: 'double-t',
+            label: 'B-2',
+            measurementEighths: 547,
+            deductions: NO_DEDUCTIONS,
+            status: 'process',
+            deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'demo-inv' },
+          }}
+        />
+        <ShorePointCard
+          shorePoint={{
+            id: 'demo-3',
+            opId: 'demo',
+            division: '-1',
+            area: 'Stairwell B',
+            shoreType: '3-post',
+            measurementEighths: 766,
+            deductions: NO_DEDUCTIONS,
+            status: 'secured',
+            deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' },
+          }}
         />
       </Section>
     </div>

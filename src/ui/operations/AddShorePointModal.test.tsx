@@ -1,0 +1,222 @@
+// @vitest-environment jsdom
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { AddShorePointModal } from './AddShorePointModal';
+import type { Operation, ShorePoint, FieldShoreEvent } from '@core/schema';
+
+const mockCommit = vi.fn().mockResolvedValue({ ok: true });
+const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
+const mockOperation = vi.fn((): Operation | null => null);
+const mockShorePoints = vi.fn((): ShorePoint[] => []);
+
+vi.mock('@ui/hooks', () => ({
+  useOperation: () => mockOperation(),
+  useShorePoints: () => mockShorePoints(),
+  useCommit: () => mockCommit,
+  useCommitMany: () => mockCommitMany,
+  useDeviceUid: () => () => Promise.resolve('device-test'),
+}));
+
+const OP: Operation = {
+  id: 'op-1',
+  name: 'Surfside',
+  multiBuilding: false,
+  divisions: [1],
+  status: 'active',
+  createdAt: 1000,
+};
+
+function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
+  return {
+    id: 'sp-1',
+    opId: 'op-1',
+    division: '1',
+    shoreType: 't-shore',
+    measurementEighths: 388,
+    deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' },
+    status: 'pending',
+    ...over,
+  };
+}
+
+const submitButton = () => screen.getByRole('button', { name: 'Add Shore Point' });
+
+/** Drive the measurement to 4 ft via the foot stepper (96 eighths per tap). */
+async function setMeasurementFeet(user: ReturnType<typeof userEvent.setup>, feet: number) {
+  const up = screen.getByRole('button', { name: 'Up one foot' });
+  for (let i = 0; i < feet; i++) await user.click(up);
+}
+
+describe('AddShorePointModal — create', () => {
+  beforeEach(() => {
+    mockCommit.mockClear();
+    mockCommitMany.mockClear();
+    mockOperation.mockReturnValue(OP);
+    mockShorePoints.mockReturnValue([]);
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('submit is disabled until a measurement is entered', () => {
+    render(<AddShorePointModal open onClose={() => {}} />);
+    expect(submitButton()).toBeDisabled();
+    expect(screen.getByText('Enter the opening measurement')).toBeInTheDocument();
+  });
+
+  it('a single add commits ONE event with no group keys', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(submitButton());
+
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const events = mockCommitMany.mock.calls[0]![0] as FieldShoreEvent[];
+    expect(events).toHaveLength(1);
+    const event = events[0]!;
+    expect(event).toMatchObject({ type: 'ShorePointAdded', opId: 'op-1', by: 'device-test' });
+    const sp = (event as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>).shorePoint;
+    expect(sp).toMatchObject({ division: '1', shoreType: 't-shore', measurementEighths: 384, status: 'pending' });
+    expect(sp).not.toHaveProperty('groupId');
+    expect(sp).not.toHaveProperty('groupIndex');
+    expect(sp).not.toHaveProperty('groupTotal');
+    expect(sp).not.toHaveProperty('building');
+    expect(sp).not.toHaveProperty('area');
+    expect(sp).not.toHaveProperty('label');
+  });
+
+  it('qty 3 commits one batch of 3 events sharing a groupId, indices 1..3', async () => {
+    const user = userEvent.setup();
+    const onAdded = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onAdded={onAdded} />);
+    await setMeasurementFeet(user, 4);
+    const qty = screen.getByRole('textbox', { name: 'Quantity' });
+    await user.clear(qty);
+    await user.type(qty, '3');
+    await user.click(submitButton());
+
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const events = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(events).toHaveLength(3);
+    const sps = events.map((e) => e.shorePoint);
+    const groupIds = new Set(sps.map((s) => s.groupId));
+    expect(groupIds.size).toBe(1);
+    expect([...groupIds][0]).toBeTruthy();
+    expect(sps.map((s) => s.groupIndex)).toEqual([1, 2, 3]);
+    expect(sps.every((s) => s.groupTotal === 3)).toBe(true);
+    expect(new Set(sps.map((s) => s.id)).size).toBe(3); // distinct ids
+    expect(new Set(sps.map((s) => s.measurementEighths))).toEqual(new Set([384]));
+    expect(onAdded).toHaveBeenCalledWith(sps);
+  });
+
+  it('a high quantity warns but never blocks (#220 OQ2)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    const qty = screen.getByRole('textbox', { name: 'Quantity' });
+    await user.clear(qty);
+    await user.type(qty, '12');
+    expect(screen.getByText(/double-check the count/)).toBeInTheDocument();
+    expect(submitButton()).toBeEnabled();
+  });
+
+  it('an empty / non-integer quantity disables submit with a reason', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.clear(screen.getByRole('textbox', { name: 'Quantity' }));
+    expect(submitButton()).toBeDisabled();
+    expect(screen.getByText(/whole number of 1 or more/)).toBeInTheDocument();
+  });
+
+  it('selecting 3-Post auto-fills 6×6 wood; switching back never resets (v3.9.1)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
+    const headerGroup = () => screen.getByRole('radiogroup', { name: 'Header wood' });
+
+    expect(within(headerGroup()).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true');
+    await user.click(within(shoreType).getByRole('radio', { name: '3-Post' }));
+    expect(within(headerGroup()).getByRole('radio', { name: '6×6' })).toHaveAttribute('aria-checked', 'true');
+    await user.click(within(shoreType).getByRole('radio', { name: 'T-Shore' }));
+    expect(within(headerGroup()).getByRole('radio', { name: '6×6' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('Building shows only on a multi-building op, and is required there', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<AddShorePointModal open onClose={() => {}} />);
+    expect(screen.queryByRole('textbox', { name: 'Building' })).not.toBeInTheDocument();
+
+    mockOperation.mockReturnValue({ ...OP, multiBuilding: true });
+    rerender(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    expect(submitButton()).toBeDisabled();
+    expect(screen.getByText('Enter the building')).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Building' }), 'North tower');
+    expect(submitButton()).toBeEnabled();
+  });
+
+  it('seeds division / shore type / building from the newest shore point', () => {
+    mockOperation.mockReturnValue({ ...OP, multiBuilding: true, divisions: [1, 2] });
+    mockShorePoints.mockReturnValue([
+      makeSP({ id: 'a', division: '1' }),
+      makeSP({ id: 'b', division: '2', shoreType: 'double-t', building: 'North tower' }),
+    ]);
+    render(<AddShorePointModal open onClose={() => {}} />);
+    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('Div 2 (+1 floor up)');
+    const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
+    expect(within(shoreType).getByRole('radio', { name: 'Double-T' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('textbox', { name: 'Building' })).toHaveValue('North tower');
+  });
+});
+
+describe('AddShorePointModal — edit (#220 3-R)', () => {
+  const EDIT_SP = makeSP({ area: 'NW corner', label: 'B-2' });
+
+  beforeEach(() => {
+    mockCommit.mockClear();
+    mockCommitMany.mockClear();
+    mockOperation.mockReturnValue(OP);
+    mockShorePoints.mockReturnValue([EDIT_SP]);
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('pre-populates, hides Quantity, and titles "Edit Shore Point"', () => {
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
+    expect(screen.getByRole('dialog', { name: 'Edit Shore Point' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Quantity' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Area' })).toHaveValue('NW corner');
+    expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('B-2');
+  });
+
+  it('no changes → Save closes without committing', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<AddShorePointModal open onClose={onClose} shorePoint={EDIT_SP} />);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(mockCommit).not.toHaveBeenCalled();
+    expect(mockCommitMany).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('a diff-only patch: area change emits only { area }', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
+    const area = screen.getByRole('textbox', { name: 'Area' });
+    await user.clear(area);
+    await user.type(area, 'Stairwell B');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(mockCommit).toHaveBeenCalledTimes(1);
+    const event = mockCommit.mock.calls[0]![0];
+    expect(event).toMatchObject({ type: 'ShorePointEdited', spId: 'sp-1' });
+    expect(event.patch).toEqual({ area: 'Stairwell B' });
+  });
+
+  it('clearing the label sends label: null (the null-clears convention)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
+    await user.clear(screen.getByRole('textbox', { name: 'Label' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(mockCommit.mock.calls[0]![0].patch).toEqual({ label: null });
+  });
+});

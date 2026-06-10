@@ -65,7 +65,12 @@ export function VisualGridPicker({
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
-    claimOverlay(close);
+    // container + opener: opened from inside a modal (the #220 deduction
+    // slots), the grid stacks as a child instead of closing its host.
+    claimOverlay(close, {
+      container: () => gridRef.current,
+      opener: triggerRef.current,
+    });
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
     };

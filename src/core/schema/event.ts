@@ -33,6 +33,20 @@ export const OperationEnded = z.object({
   ...base,
 });
 
+// A floor added to the operation's division list (#220 — the v3 grow-the-
+// building model, app.js addFloorAbove/Below). Additive on purpose: two
+// devices concurrently adding "floor above" both emit { division: N } and the
+// reducer converges (idempotent) — an edited full array would clobber.
+// Division 0 does not exist (1 = Ground, −1 = Basement).
+export const DivisionAdded = z.object({
+  type: z.literal('DivisionAdded'),
+  ...base,
+  division: z
+    .number()
+    .int()
+    .refine((n) => n !== 0, 'division 0 does not exist'),
+});
+
 export const ShorePointAdded = z.object({
   type: z.literal('ShorePointAdded'),
   ...base,
@@ -81,6 +95,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
   OperationEnded,
+  DivisionAdded,
   ShorePointAdded,
   ShorePointEdited,
   ShorePointDeleted,

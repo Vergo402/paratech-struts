@@ -10,3 +10,12 @@ import { operationStore, type CommitResult } from '@data/store';
 export function useCommit(): (event: FieldShoreEvent) => Promise<CommitResult> {
   return operationStore.commit;
 }
+
+/**
+ * Atomic multi-event commit — a grouped Add Shore Point (#220) lands its N
+ * member events as one durable all-or-nothing batch and one re-render. Plain
+ * append events only (the store rejects inventory-consequential types).
+ */
+export function useCommitMany(): (events: FieldShoreEvent[]) => Promise<CommitResult> {
+  return operationStore.commitMany;
+}

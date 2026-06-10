@@ -121,3 +121,159 @@
   flex-direction: column;
   gap: var(--space-4);
 }
+
+/* ---- shore point card (card.md — the lifecycle card) ---------------------- */
+/* Status hues arrive via the shared is-{status} hooks (--sp-text / --sp-bg)
+   declared in primitives.css. */
+.fs-spc {
+  min-height: 60px; /* status-bar card floor (card.md) */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The 4pt visible stripe with the 16pt full-height tap zone (card.md §stripe).
+   A real <button> on pending (one-handed primary-action reach); a decorative
+   <span> on later states until the S6 slide owns the primary action. */
+.fs-spc-stripe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  -webkit-tap-highlight-color: transparent;
+}
+button.fs-spc-stripe {
+  cursor: pointer;
+}
+.fs-spc-stripe::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--sp-text); /* the saturated status hue */
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
+
+/* Header row — tap-to-expand button on pending, static div otherwise. */
+.fs-spc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+button.fs-spc-head {
+  cursor: pointer;
+}
+
+.fs-spc-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fs-spc-label {
+  font: var(--type-body-medium);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fs-spc-where {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+.fs-spc-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.fs-spc-type {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+/* Deployed strut identity — cradle to grave (card.md). */
+.fs-spc-strut {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fs-spc-strut-model {
+  font: var(--type-mono);
+  color: var(--text-primary);
+}
+
+.fs-spc-strut-source {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+/* Pending block — no equipment yet + the Assign primary action. */
+.fs-spc-pending {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fs-spc-noequip {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fs-spc-reason {
+  color: var(--text-tertiary);
+}
+
+.fs-spc-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.fs-spc-actions > * {
+  flex: 1;
+}
+
+/* ---- division picker sheet footer ----------------------------------------- */
+.fs-division-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 var(--space-2);
+  border-top: 1px solid var(--surface-stroke);
+  margin-top: var(--space-2);
+}
+
+/* ---- visually hidden (live regions, SR-only announcements) ---------------- */
+.fs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

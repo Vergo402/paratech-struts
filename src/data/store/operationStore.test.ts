@@ -131,6 +131,88 @@ describe('operationStore.commit', () => {
     });
   });
 
+  describe('commitMany — atomic grouped batch (#220)', () => {
+    const group = () => {
+      const groupId = newId();
+      return [1, 2, 3].map((n) =>
+        spAdded(makeSp(`sp-g${n}`, { groupId, groupIndex: n, groupTotal: 3 })),
+      );
+    };
+
+    it('appends all events durably, projection ≡ state, and a reboot refolds', async () => {
+      expect((await ops.commitMany(group())).ok).toBe(true);
+      const rows = await db.events.toArray();
+      expect(rows).toHaveLength(6); // 3 from beforeEach + 3 batch
+      expect(projectOperation(rows)).toEqual(ops.store.getState());
+      expect(ops.store.getState().shorePoints.map((s) => s.id)).toContain('sp-g2');
+
+      const rebooted = createOperationStore({ db, inventory, enqueue: () => {} });
+      await rebooted.boot();
+      expect(rebooted.store.getState()).toEqual(ops.store.getState());
+    });
+
+    it('re-renders ONCE for the whole batch', async () => {
+      let fires = 0;
+      const unsub = ops.store.subscribe(() => {
+        fires += 1;
+      });
+      await ops.commitMany(group());
+      unsub();
+      expect(fires).toBe(1);
+    });
+
+    it('is all-or-nothing: a duplicate id anywhere rolls back the entire batch', async () => {
+      const batch = group();
+      const dup = await db.events.toArray();
+      batch[1]!.id = dup[0]!.id; // collides with an already-logged event (&id unique)
+      const res = await ops.commitMany(batch);
+      expect(res.ok).toBe(false);
+      expect(await db.events.count()).toBe(3); // ZERO batch rows persisted
+      expect(ops.store.getState().shorePoints.map((s) => s.id)).toEqual(['sp-1', 'sp-2']);
+      expect(enqueued.filter((e) => e.type === 'ShorePointAdded')).toHaveLength(2); // beforeEach only
+    });
+
+    it('rejects the batch before any write when one member is schema-invalid', async () => {
+      const batch = [...group(), { type: 'Nope' } as unknown as FieldShoreEvent];
+      const res = await ops.commitMany(batch);
+      expect(res.ok).toBe(false);
+      expect(await db.events.count()).toBe(3);
+    });
+
+    it('rejects inventory-consequential events — those commit one at a time', async () => {
+      const res = await ops.commitMany([deploy('sp-1', 'inv-1')]);
+      expect(res.ok).toBe(false);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2);
+    });
+
+    it('rejects an empty batch', async () => {
+      expect((await ops.commitMany([])).ok).toBe(false);
+    });
+
+    it('enqueues every batch member in order; fromRemote skips the enqueue', async () => {
+      const batch = group();
+      await ops.commitMany(batch);
+      expect(enqueued.slice(-3).map((e) => e.id)).toEqual(batch.map((e) => e.id));
+
+      const before = enqueued.length;
+      const remote = [spAdded(makeSp('sp-remote'))];
+      await ops.commitMany(remote, { fromRemote: true });
+      expect(enqueued).toHaveLength(before);
+    });
+
+    it('Zod rejects DivisionAdded with division 0', async () => {
+      const res = await ops.commitMany([
+        { type: 'DivisionAdded', ...base(), division: 0 } as FieldShoreEvent,
+      ]);
+      expect(res.ok).toBe(false);
+    });
+
+    it('a DivisionAdded batch member folds into the operation', async () => {
+      expect((await ops.commitMany([{ type: 'DivisionAdded', ...base(), division: 2 }])).ok).toBe(true);
+      expect(ops.store.getState().operation?.divisions).toEqual([1, 2]);
+    });
+  });
+
   describe('StrutReturned (L-8)', () => {
     beforeEach(async () => {
       await ops.commit(deploy('sp-1', 'inv-1')); // available 2 → 1

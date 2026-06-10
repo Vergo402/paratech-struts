@@ -16,6 +16,7 @@ const MOCK_OP: Operation = {
   name: 'Surfside',
   multiBuilding: false,
   location: '123 Main St',
+  divisions: [1],
   status: 'active',
   createdAt: 1000,
 };

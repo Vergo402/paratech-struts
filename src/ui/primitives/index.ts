@@ -22,4 +22,11 @@ export { TextField, type TextFieldProps } from './Input';
 export { Toggle, type ToggleProps } from './Toggle';
 export { WarningGate, GATE_COPY, type WarningGateProps } from './WarningGate';
 export { tapHaptic, commitHaptic } from './haptics';
-export { claimOverlay, releaseOverlay, hasOverlayClaim } from './overlay';
+export {
+  claimOverlay,
+  releaseOverlay,
+  hasOverlayClaim,
+  isTopOverlay,
+  overlayContains,
+  type OverlayClaimOptions,
+} from './overlay';

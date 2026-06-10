@@ -79,15 +79,17 @@ export type ShorePoint = z.infer<typeof ShorePoint>;
 
 // The fields editable while a shore point is still Pending (#220). Shore type +
 // measurement lock once it advances past Pending — enforced in the reducer.
+// building/area/label follow the OperationEdited.location convention:
+// `null` clears the field, `undefined` (absent) = no change.
 export const ShorePointPatch = z
   .object({
     division: z.string(),
-    building: z.string().optional(),
-    area: z.string().optional(),
+    building: z.string().nullable(),
+    area: z.string().nullable(),
     shoreType: ShoreTypeId,
     measurementEighths: Eighths,
     deductions: Deductions,
-    label: z.string().optional(),
+    label: z.string().nullable(),
   })
   .partial();
 export type ShorePointPatch = z.infer<typeof ShorePointPatch>;
