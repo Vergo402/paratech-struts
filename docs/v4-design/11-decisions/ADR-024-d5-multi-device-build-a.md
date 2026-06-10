@@ -22,7 +22,7 @@ D5 is the multi-device, no-comms problem: several devices work one incident with
 
 ## Decision
 
-**v4.0 ships Build A (accept-and-reconcile) only; Build C (CP hub / local relay) is deferred to v5.0 with React Native.** A PWA cannot bind a local IP and serve a WebSocket relay — hosting the hub is a React-Native unlock, not a v4 feature. The Build C Settings toggle is **shown but disabled, labeled "Coming with mobile app."** Build B (local mesh) stays dropped.
+**v4.0 ships Build A (accept-and-reconcile) only; Build C (CP hub / local relay) is deferred to v5.0 with React Native.** A PWA cannot bind a local IP and serve a WebSocket relay — hosting the hub is a React-Native unlock, not a v4 feature. **v4.0 Settings exposes no Build-choice control** — there is exactly one sync model in v4.0, so there is nothing to choose; the hub (and any control to select it) surfaces in v5 when Build C ships. Build B (local mesh) stays dropped.
 
 Build A's mechanics for v4.0:
 - A **per-device Firebase anonymous UID**, persisted to IndexedDB at `fieldshore_auth_uid`, Firebase `LOCAL` persistence — the same per-device anon UID [ADR-009](ADR-009-database-firebase-rtdb.md) and [ADR-022](ADR-022-mutual-aid-v40-qr-guest.md) describe (one UID per device; provisioned members and guests both ride it — see Reconciliation below).
@@ -37,7 +37,8 @@ Build A's mechanics for v4.0:
 - **A PWA cannot host the relay** (synthesis §1.7; essay 01 §7). Build C needs a device to bind a local IP and serve WebSockets on the SSID; the browser sandbox forbids it. RN lifts that limit — so Build C is genuinely a v5 capability, not a deferred v4 feature.
 - **Build A covers the real v4.0 incident.** Small departments, a handful of devices, hours of outage, reconcile on WAN return — Build A's accept-and-reconcile is exactly that shape, and it inherits the entire v3 offline-hardening investment with zero migration ([ADR-009](ADR-009-database-firebase-rtdb.md)).
 - **The seam makes Build C a transport variant, not an application mode** (synthesis §1.7; essay 01 §7). Because every mutation is an event on the append log, Build C swaps the transport (host relay vs. Firebase) beneath the same reducers — the app above `data/sync` never learns which is on. Designing the seam now keeps the v5 add affordable.
-- **"v5, not v4.5" is the correction.** The older roadmap guessed v4.5 for the hub (essay 01 §2 ramp); this ADR refines it to v5.0 because the hub and the RN shell are the same unlock and ship together. The shown-but-disabled toggle keeps the promise visible without overclaiming.
+- **"v5, not v4.5" is the correction.** The older roadmap guessed v4.5 for the hub (essay 01 §2 ramp); this ADR refines it to v5.0 because the hub and the RN shell are the same unlock and ship together.
+- **No hub UI in v4.0.** The synthesis (§1.7) and matrix A-9 called for a *visible-but-disabled* Build C toggle "so the roadmap is honest." This ADR overrides that: a permanently-dead control teasing a v5 feature is in-product roadmap promotion (**Principle 11 — no marketing in the product**), and "Coming with mobile app" misreads on a PWA the firefighter already runs on a phone. The **seam** (event log + reducers + projections), not a billboard, is what keeps the v5 add cheap — so v4.0 shows nothing for the hub at all; the selector appears in v5 when it's real.
 
 ---
 
@@ -46,7 +47,8 @@ Build A's mechanics for v4.0:
 - **Ship Build C in v4.0 via WebRTC + QR fallback (data-resilience, essay 09).** Rejected/deferred (synthesis §1.7, §2.2): the WebRTC path is real, but iOS Safari mDNS limits and the QR-exchange UX are not v4.0 work; the hub is a v5 RN unlock.
 - **Ship Build C in v4.0 via an Electron companion "Hub" app** (essay 01 §7 option 2). Rejected: the Electron tax to host the relay on a Toughbook for one build mode is more engineering than the v4.0 scope absorbs; RN gives the same hosting capability as part of v5's reason to exist.
 - **Build B — local mesh (peer-to-peer, no host).** Stays dropped (synthesis §1.7): the host-relay model (Build C) is the chosen hub architecture; a hostless mesh adds conflict-surface without a matching field need.
-- **Build A *and* C both in v4.0 behind the live toggle.** Rejected: the toggle's "C" side has no PWA implementation to enable — hence shown-but-disabled, not shipped-then-hidden.
+- **Build A *and* C both in v4.0 behind a live toggle.** Rejected: the "C" side has no PWA implementation to enable (a PWA can't host the relay).
+- **Show Build C as a *visible-but-disabled* toggle (the synthesis §1.7 / matrix A-9 directive).** Rejected — and this ADR supersedes that UI directive: a permanently-dead control teasing a v5 feature is in-product roadmap marketing (Principle 11), the "mobile app" label is confusing on a PWA the user already runs on a phone, and an untappable control is clutter (Principle 4). v4.0 shows **no** Build-choice control; the hub appears in v5 when it's real.
 
 ---
 
@@ -58,7 +60,7 @@ Build A's mechanics for v4.0:
 - The event-log seam keeps Build C a v5 transport add, not a v5 rewrite.
 
 **Negative:**
-- The large/connectivity-poor incident that wants a CP hub waits for v5 — the shown-but-disabled toggle is the honest placeholder, not a capability.
+- The large/connectivity-poor incident that wants a CP hub waits for v5 — v4.0 shows no Build-choice control at all; the hub (and its selector) surface in v5 when it's real, not as a v4.0 placeholder.
 - Build A's path-level last-write-wins still rides on the event log absorbing field-level edits; if field tests surface a loss the log doesn't catch, [ADR-009](ADR-009-database-firebase-rtdb.md)'s Supabase + PowerSync second choice is the escape hatch.
 
 **Neutral:**
@@ -78,4 +80,4 @@ Build A's mechanics for v4.0:
 
 ## Notes
 
-This ADR refines two older guesses to one date: the roadmap's "v4.5 hub" (essay 01 §2) and the synthesis's occasional "v4.5+" phrasing both resolve to **v5.0**, because the hub and the RN shell are the same unlock. The reconciliation that [ADR-009](ADR-009-database-firebase-rtdb.md) describes (append, flush, merge by the event log) is unchanged — this ADR only fixes *which build ships when* and the storage/UID/per-row-sync specifics that ride Build A. Build C's seam (event log + reducers + projections) is designed in v4.0 even though the transport is not built, so v5 adds a transport, not an architecture.
+This ADR refines two older guesses to one date: the roadmap's "v4.5 hub" (essay 01 §2) and the synthesis's occasional "v4.5+" phrasing both resolve to **v5.0**, because the hub and the RN shell are the same unlock. The reconciliation that [ADR-009](ADR-009-database-firebase-rtdb.md) describes (append, flush, merge by the event log) is unchanged — this ADR only fixes *which build ships when* and the storage/UID/per-row-sync specifics that ride Build A. Build C's seam (event log + reducers + projections) is designed in v4.0 even though the transport is not built, so v5 adds a transport, not an architecture. This ADR also **supersedes the synthesis §1.7/§4 + matrix A-9 "visible-but-disabled Build C toggle" UI directive** — v4.0 ships no Build-choice control in Settings (Principle 11); the frozen Phase-D records (synthesis, matrix, essays 01/09) are left intact, and this ADR is the record of that change.
