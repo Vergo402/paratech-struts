@@ -52,6 +52,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | begin-phase-g-cheerful-lynx | v4-phase-g-foundation |
 | cheerful-strolling-treasure | v4-phase-h-foundation-adrs (2026-06-09) — random name then **reused** by the harness for two later plan-mode sessions: → v4-phase-h-scaffold-docs (2026-06-10); the interim toggle-removal plan shared the name and was overwritten (no separate file) |
 | expressive-wandering-blanket | v4-phase-h-slice-build (2026-06-10) — the #246 vertical-slice build plan (Sessions 1–7); Session 1 (toolchain + core domain) shipped at commit 3e59954 |
+| yes-luminous-rocket | v4-phase-h-s2-data-layer (2026-06-10) — the Session-2 execution plan (data/store + data/sync stub + ui/hooks + seed) derived from v4-phase-h-slice-build; shipped at commit 5825eb9 |
 
 ### v4 — issue / ADR / positioning
 | old | new |
