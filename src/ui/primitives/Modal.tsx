@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { claimOverlay, releaseOverlay, isTopOverlay, overlayContains } from './overlay';
 
 /**
@@ -29,7 +29,6 @@ export interface ModalProps {
 
 export function Modal({ open, onClose, title, variant = 'confirm', children, footer }: ModalProps) {
   const contentRef = useRef<HTMLDivElement>(null);
-  const bodyId = useId(); // the body IS the dialog description (aria-describedby)
   // Modal is controlled (no Dialog.Trigger), so Radix has no opener to return
   // focus to — remember it ourselves; focus must never land on <body>.
   const openerRef = useRef<HTMLElement | null>(null);
@@ -62,7 +61,6 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
           ref={contentRef}
           className={`fs-modal fs-modal--${variant}`}
           aria-modal="true"
-          aria-describedby={bodyId}
           onEscapeKeyDown={(e) => {
             // A child overlay (e.g. the portaled plate grid) is above us —
             // Esc closes the child, never the parent underneath it.
@@ -93,9 +91,12 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
           }}
         >
           <Dialog.Title className="fs-modal-title">{title}</Dialog.Title>
-          <div id={bodyId} className="fs-modal-body">
-            {children}
-          </div>
+          {/* The body IS the dialog description — Description asChild gives it
+              Radix's own description id, which Content's aria-describedby
+              targets by default (a custom id trips Radix's dev warning). */}
+          <Dialog.Description asChild>
+            <div className="fs-modal-body">{children}</div>
+          </Dialog.Description>
           {footer && <div className="fs-modal-footer">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>
