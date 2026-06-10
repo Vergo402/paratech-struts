@@ -65,7 +65,7 @@ Joining is **deferrable** (Principle 11, [ADR-015](../11-decisions/ADR-015-navig
 - [x] **No mystery meat** — labeled field + buttons (Principle 9).
 - [x] **Device roles spelled out** — e.g. the **Default** role ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)).
 - [x] **No broadcast render.**
-- [x] **Dept-join ≠ incident-join** — kept distinct from the v4.5 [Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210).
+- [x] **Dept-join ≠ incident-join** — kept distinct from the [Cross-Dept Invite](https://github.com/Vergo402/paratech-struts/issues/210) (v4.0 — [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)).
 
 ## The four-surface table (this screen)
 
