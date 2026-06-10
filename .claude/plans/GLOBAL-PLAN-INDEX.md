@@ -50,6 +50,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | start-186-wild-hearth | v4-phase-e-primitive-badge |
 | begin-phase-f-glittery-sun | v4-phase-f-ia-foundation |
 | begin-phase-g-cheerful-lynx | v4-phase-g-foundation |
+| cheerful-strolling-treasure | v4-phase-h-foundation-adrs |
 
 ### v4 — issue / ADR / positioning
 | old | new |
