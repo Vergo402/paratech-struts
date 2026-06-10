@@ -6,11 +6,11 @@
 
 ## Status
 
-- [x] Proposed
+- [x] Accepted
 
 **Date:** 2026-06-09
 **Author:** Claude Opus 4.8 (architect agent, drafting)
-**Reviewer(s):** Alex — pending Phase H foundation mini-gate
+**Reviewer(s):** Alex — Phase H foundation mini-gate PASSED 2026-06-10
 
 ---
 
