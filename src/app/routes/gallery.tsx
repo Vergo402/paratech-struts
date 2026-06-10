@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { BASE_PLATES } from '@core/load';
-import { NO_DEDUCTIONS, STATUS_IDS, type Deductions, type ShorePointStatus } from '@core/schema';
+import { BASE_PLATES, findStrutCombinations } from '@core/load';
+import { NO_DEDUCTIONS, STATUS_IDS, type Deductions, type InventoryItem, type ShorePointStatus } from '@core/schema';
 import {
   Badge,
   Button,
@@ -22,8 +22,39 @@ import {
   VisualGridPicker,
 } from '@ui/picker';
 import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
-import { ShorePointCard, StartOperationModal } from '@ui/operations';
+import { RecommendationCard, ShorePointCard, StartOperationModal } from '@ui/operations';
 import { useTheme } from '../theme';
+
+// ---- RecommendationCard demos (S6 — #221) — driven by the REAL engine so the
+// gallery never drifts from the math. Computed once at module load.
+const REC_DEDUCTIONS: Deductions = {
+  headerWood: '4x4',
+  topPlate: 'channel4x4',
+  bottomPlate: 'channel4x4',
+  footerWood: 'none',
+};
+const REC_INVENTORY: InventoryItem[] = [
+  {
+    id: 'demo-inv-ls304',
+    type: 'strut',
+    model: 'LS 304',
+    system: 'LongShore',
+    apparatus: 'Rescue 2',
+    apparatusId: 'demo-app-r2',
+    quantity: 4,
+    available: 4,
+  },
+];
+// 56″ opening − (3.5 header + 3.4 + 3.4 plates) = 45.7 → floors to 45⅝″; LS 304 fits.
+const REC_STANDARD = findStrutCombinations(56, 0, 2, REC_INVENTORY, null, {
+  header: 3.5,
+  topPlate: 3.4,
+  bottomPlate: 3.4,
+})[0];
+// 200″ is past LongShore's 192″ chart — physically reachable, unrated (#247 state 5).
+const REC_UNRATED = findStrutCombinations(200, 0, 2, null, null, null)[0];
+// 180″ at 4:1 caps at 4,500 lb — a 60,000 lb load needs >4 struts: the NEW-3 sentinel (#40).
+const REC_OVER_CAPACITY = findStrutCombinations(180, 60000, 2, null, null, null)[0];
 
 /**
  * /gallery — DEV SURFACE, not a product screen. Every S3 primitive, picker,
@@ -457,6 +488,28 @@ export function GalleryScreen() {
             deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' },
           }}
         />
+      </Section>
+
+      <Section title="Recommendation card (S6 — #221): standard · unrated ack · over-capacity #40">
+        {REC_STANDARD && (
+          <RecommendationCard
+            combo={REC_STANDARD}
+            deductions={REC_DEDUCTIONS}
+            source="Rescue 2"
+            onDeploy={() => setCommits((c) => c + 1)}
+          />
+        )}
+        {REC_UNRATED && (
+          <RecommendationCard
+            combo={REC_UNRATED}
+            deductions={NO_DEDUCTIONS}
+            source="Engine 1"
+            onDeploy={() => setCommits((c) => c + 1)}
+          />
+        )}
+        {REC_OVER_CAPACITY && (
+          <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />
+        )}
       </Section>
     </div>
   );

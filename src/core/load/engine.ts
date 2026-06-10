@@ -16,13 +16,17 @@ export interface EngineDeductions {
   bottomPlate?: number;
 }
 
-interface StrutCandidate extends Strut {
+// Exported because every combination's `strut` is one of these at runtime —
+// the deploy path (S6, #221) reads `inventoryId` off the result to commit
+// StrutDeployed against the exact stock record (L-8 ID round-trip).
+// `inventoryId` is null only in catalog mode (no inventory passed).
+export interface StrutCandidate extends Strut {
   inventoryId: string | null;
   availableQty: number;
 }
 
 export interface StrutCombination {
-  strut: Strut;
+  strut: StrutCandidate;
   extensions: number[];
   extTotal: number;
   adjCollapsed: number;
@@ -44,7 +48,7 @@ export interface StrutCombination {
 }
 
 interface ExceedsCombo {
-  strut: Strut;
+  strut: StrutCandidate;
   extensions: number[];
   capacity: number;
   maxFourStrutCapacity: number;

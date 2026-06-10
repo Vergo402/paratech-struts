@@ -21,6 +21,8 @@ export interface SliderProps {
   direction?: 'advance' | 'stepback';
   onCommit: () => void;
   disabled?: boolean;
+  /** Why the slide is disabled — rendered adjacent by the #37 button (button.md disabled-with-reason). */
+  disabledReason?: string;
   /** Track fill revealed by travel — typically the target status bg token. */
   revealColor?: string;
 }
@@ -37,6 +39,7 @@ export function Slider({
   direction = 'advance',
   onCommit,
   disabled = false,
+  disabledReason,
   revealColor,
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -107,6 +110,7 @@ export function Slider({
         variant="secondary"
         size="standard"
         disabled={disabled}
+        disabledReason={disabledReason}
         onPress={onCommit}
       >
         {buttonLabel ?? (direction === 'advance' ? 'Advance' : 'Step back')}

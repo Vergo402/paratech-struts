@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ShorePoint, ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
+import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
+import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor } from '@core/shorepoint';
 import { divisionLabel } from '@core/operation';
+import { newId } from '@core/id';
 import { Badge, Button, EmptyState, Modal } from '@ui/primitives';
-import { useOperation, useShorePoints } from '@ui/hooks';
+import { useCommit, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
 import { ShorePointCard } from './ShorePointCard';
+import { AssignEquipmentSheet } from './AssignEquipmentSheet';
+import { StepBackConfirmModal } from './StepBackConfirmModal';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -47,9 +50,24 @@ interface LaneProps {
   onEdit: (sp: ShorePoint) => void;
   onDelete: (sp: ShorePoint) => void;
   onAssignEquipment: (sp: ShorePoint) => void;
+  onAdvance: (sp: ShorePoint) => void;
+  onStepBack: (sp: ShorePoint) => void;
+  /** Group gate (#221 OQ2): set while a grouped In Process point has mates still Pending. */
+  advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
 }
 
-function Lane({ status, points, collapsed, onToggle, onEdit, onDelete, onAssignEquipment }: LaneProps) {
+function Lane({
+  status,
+  points,
+  collapsed,
+  onToggle,
+  onEdit,
+  onDelete,
+  onAssignEquipment,
+  onAdvance,
+  onStepBack,
+  advanceDisabledReasonFor,
+}: LaneProps) {
   return (
     <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
       <button
@@ -74,6 +92,9 @@ function Lane({ status, points, collapsed, onToggle, onEdit, onDelete, onAssignE
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onAssignEquipment={onAssignEquipment}
+                  onAdvance={onAdvance}
+                  onStepBack={onStepBack}
+                  advanceDisabledReason={advanceDisabledReasonFor(sp)}
                 />
               </div>
             ))
@@ -88,13 +109,19 @@ function Lane({ status, points, collapsed, onToggle, onEdit, onDelete, onAssignE
 export function OperationsBoard() {
   const operation = useOperation();
   const shorePoints = useShorePoints();
+  const inventory = useInventory();
+  const commit = useCommit();
+  const getUid = useDeviceUid();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [endOpOpen, setEndOpOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<ShorePointStatus>>(new Set());
   const [spModal, setSpModal] = useState<SpModalState>(null);
   const [deleteSp, setDeleteSp] = useState<ShorePoint | null>(null);
+  const [assignSpId, setAssignSpId] = useState<string | null>(null);
+  const [stepBackSpId, setStepBackSpId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
+  const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
 
   // After a commit lands, bring the first new Pending card into view. Optional-
@@ -105,30 +132,150 @@ export function OperationsBoard() {
     setScrollToId(null);
   }, [scrollToId]);
 
+  // The sheet/modal targets derive LIVE by id so they always see the current
+  // point (a stale object would compute recommendations against old state) and
+  // self-close when the point leaves the state they act on.
+  const assignSp = assignSpId
+    ? (shorePoints.find((s) => s.id === assignSpId && s.status === 'pending') ?? null)
+    : null;
+  const stepBackSp = stepBackSpId
+    ? (shorePoints.find((s) => s.id === stepBackSpId && s.status === 'process') ?? null)
+    : null;
+  // Drop a stale id once its target derives null, so the overlay cannot
+  // spontaneously reopen if the point later re-enters that state.
+  useEffect(() => {
+    if (assignSpId && !assignSp) setAssignSpId(null);
+  }, [assignSpId, assignSp]);
+  useEffect(() => {
+    if (stepBackSpId && !stepBackSp) setStepBackSpId(null);
+  }, [stepBackSpId, stepBackSp]);
+
   const openEdit = useCallback((sp: ShorePoint) => setSpModal({ mode: 'edit', shorePoint: sp }), []);
   const openDelete = useCallback((sp: ShorePoint) => setDeleteSp(sp), []);
-  // S5 stub — the Assign Equipment sheet is the deploy workflow (S6, #221).
-  const assignEquipment = useCallback(() => {}, []);
+  const assignEquipment = useCallback((sp: ShorePoint) => setAssignSpId(sp.id), []);
 
-  const handleAdded = useCallback((added: ShorePoint[]) => {
-    // The spec's modal-close response: open the Pending lane, scroll the first
-    // new card into view, announce assertively (workflow #220 §Accessibility).
+  const expandLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
-      if (!prev.has('pending')) return prev;
+      if (!prev.has(status)) return prev;
       const next = new Set(prev);
-      next.delete('pending');
+      next.delete(status);
       return next;
     });
-    const first = added[0];
-    if (!first) return;
-    setScrollToId(first.id);
-    const where = [divisionLabel(first.division), first.building, first.area].filter(Boolean).join(', ');
-    setAnnouncement(
-      added.length === 1
-        ? `Shore point added — ${where}, Pending.`
-        : `${added.length} shore points added — ${where}, Pending.`,
-    );
   }, []);
+
+  const handleAdded = useCallback(
+    (added: ShorePoint[]) => {
+      // The spec's modal-close response: open the Pending lane, scroll the first
+      // new card into view, announce assertively (workflow #220 §Accessibility).
+      expandLane('pending');
+      const first = added[0];
+      if (!first) return;
+      setScrollToId(first.id);
+      const where = [divisionLabel(first.division), first.building, first.area].filter(Boolean).join(', ');
+      setAnnouncement(
+        added.length === 1
+          ? `Shore point added — ${where}, Pending.`
+          : `${added.length} shore points added — ${where}, Pending.`,
+      );
+    },
+    [expandLane],
+  );
+
+  // ---- Deploy / advance / step-back (#221) ----------------------------------
+
+  /** The reducer's pre-cutting fan-out set: same-status lockstep group mates. */
+  const lockstepCount = useCallback(
+    (sp: ShorePoint) =>
+      sp.groupId ? shorePoints.filter((s) => s.groupId === sp.groupId && s.status === sp.status).length : 1,
+    [shorePoints],
+  );
+
+  const handleDeployed = useCallback(
+    (sp: ShorePoint, model: string) => {
+      setAssignSpId(null);
+      expandLane('process');
+      setScrollToId(sp.id);
+      const where = [divisionLabel(sp.division), sp.building, sp.area].filter(Boolean).join(', ');
+      setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
+    },
+    [expandLane],
+  );
+
+  const handleReturned = useCallback(
+    (sp: ShorePoint) => {
+      expandLane('pending');
+      setScrollToId(sp.id);
+      setPoliteAnnouncement(`${sp.deployedStrut?.model ?? 'Strut'} returned — back to Pending.`);
+    },
+    [expandLane],
+  );
+
+  const commitStatusChange = useCallback(
+    async (sp: ShorePoint, to: ShorePointStatus, phrase: string) => {
+      const n = lockstepCount(sp);
+      const result = await commit({
+        type: 'ShorePointStatusChanged',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: await getUid(),
+        spId: sp.id,
+        from: sp.status,
+        to,
+      });
+      if (!result.ok) return;
+      expandLane(to);
+      setScrollToId(sp.id);
+      setPoliteAnnouncement(
+        n > 1 ? `${n} shore points — ${phrase} ${STATUS_LABELS[to]}.` : `Shore point — ${phrase} ${STATUS_LABELS[to]}.`,
+      );
+    },
+    [commit, getUid, expandLane, lockstepCount],
+  );
+
+  const handleAdvance = useCallback(
+    async (sp: ShorePoint) => {
+      const to = STATUS_ORDER[STATUS_ORDER.indexOf(sp.status) + 1];
+      if (to) await commitStatusChange(sp, to, 'now');
+    },
+    [commitStatusChange],
+  );
+
+  const handleStepBack = useCallback(
+    async (sp: ShorePoint) => {
+      // process → pending is an un-deploy: inventory-consequential, so it is the
+      // ONE reversal that confirms (ADR-016) — route to the modal, commit nothing here.
+      if (sp.status === 'process') {
+        setStepBackSpId(sp.id);
+        return;
+      }
+      const to = STATUS_ORDER[STATUS_ORDER.indexOf(sp.status) - 1];
+      if (to) await commitStatusChange(sp, to, 'back to');
+    },
+    [commitStatusChange],
+  );
+
+  /** Group gate (#221 OQ2): a grouped point's advance waits until every mate has left Pending. */
+  const advanceDisabledReasonFor = useCallback(
+    (sp: ShorePoint) => {
+      if (sp.status !== 'process' || !sp.groupId) return undefined;
+      const mates = shorePoints.filter((s) => s.groupId === sp.groupId);
+      const stillPending = mates.filter((s) => s.status === 'pending').length;
+      if (stillPending === 0) return undefined;
+      return `Waiting on group — ${stillPending} of ${mates.length} still Pending`;
+    },
+    [shorePoints],
+  );
+
+  // Live pending reasons (#221, settled 2026-06-10): computed from current
+  // stock, never persisted — the reason appears/clears as inventory changes.
+  const pendingReasons = useMemo(() => {
+    const m = new Map<string, PendingReason | undefined>();
+    for (const sp of shorePoints) {
+      if (sp.status === 'pending') m.set(sp.id, pendingReasonFor(sp, inventory));
+    }
+    return m;
+  }, [shorePoints, inventory]);
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -137,10 +284,12 @@ export function OperationsBoard() {
     };
     for (let i = shorePoints.length - 1; i >= 0; i--) {
       const sp = shorePoints[i]!;
-      map[sp.status].push(sp);
+      // Display-only enrichment — the computed reason never re-serializes
+      // (ShorePointPatch has no such field; events are built from live SPs).
+      map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
     }
     return map;
-  }, [shorePoints]);
+  }, [shorePoints, pendingReasons]);
 
   const toggleLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
@@ -193,6 +342,10 @@ export function OperationsBoard() {
       <div className="fs-sr-only" role="status" aria-live="assertive">
         {announcement}
       </div>
+      {/* Status changes announce politely (slider.md) — the assertive region is add-only. */}
+      <div className="fs-sr-only" role="status" aria-live="polite">
+        {politeAnnouncement}
+      </div>
 
       <div className="fs-ops-lanes">
         {STATUS_ORDER.map((status) => (
@@ -205,6 +358,9 @@ export function OperationsBoard() {
             onEdit={openEdit}
             onDelete={openDelete}
             onAssignEquipment={assignEquipment}
+            onAdvance={handleAdvance}
+            onStepBack={handleStepBack}
+            advanceDisabledReasonFor={advanceDisabledReasonFor}
           />
         ))}
       </div>
@@ -229,6 +385,14 @@ export function OperationsBoard() {
       />
 
       <DeleteShorePointModal shorePoint={deleteSp} onClose={() => setDeleteSp(null)} />
+
+      <AssignEquipmentSheet shorePoint={assignSp} onClose={() => setAssignSpId(null)} onDeployed={handleDeployed} />
+
+      <StepBackConfirmModal
+        shorePoint={stepBackSp}
+        onClose={() => setStepBackSpId(null)}
+        onReturned={handleReturned}
+      />
 
       <Modal
         open={endOpOpen}

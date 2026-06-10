@@ -57,4 +57,16 @@ describe('Slider', () => {
     await user.click(screen.getByRole('button', { name: 'Advance' }));
     expect(onCommit).not.toHaveBeenCalled();
   });
+
+  it('disabledReason renders adjacent to the #37 button (disabled-with-reason)', () => {
+    render(
+      <Slider
+        label="Slide to set Strut Set"
+        onCommit={vi.fn()}
+        disabled
+        disabledReason="Waiting on group — 1 of 3 still Pending"
+      />,
+    );
+    expect(screen.getByText('Waiting on group — 1 of 3 still Pending')).toBeInTheDocument();
+  });
 });

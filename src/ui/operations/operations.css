@@ -255,6 +255,14 @@ button.fs-spc-head {
   flex: 1;
 }
 
+/* The slide stack — advance prominent, step-back secondary below (card.md). */
+.fs-spc-slides {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-1);
+}
+
 /* ---- division picker sheet footer ----------------------------------------- */
 .fs-division-actions {
   display: flex;
@@ -263,6 +271,227 @@ button.fs-spc-head {
   padding: var(--space-3) 0 var(--space-2);
   border-top: 1px solid var(--surface-stroke);
   margin-top: var(--space-2);
+}
+
+/* ---- recommendation card (card.md §RecommendationCard — the result card) --- */
+/* The left accent bar IS the strut color — identity, not lifecycle status
+   (Principle 9). No global strut-color tokens are minted: gold maps to the
+   brand accent, grey to the secondary ink, per theme. */
+.fs-rec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-rec--gold {
+  --rec-color: var(--accent);
+}
+.fs-rec--grey {
+  --rec-color: var(--text-secondary);
+}
+/* #40 — the gated card (unrated / over-capacity) reads as danger at a glance,
+   an accent and a word, never a full red fill (Principle 3). */
+.fs-rec.is-gated {
+  --rec-color: var(--danger);
+}
+
+.fs-rec-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--rec-color);
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+}
+
+.fs-rec-system {
+  margin: 0;
+  font: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--rec-color);
+}
+
+.fs-rec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fs-rec-model {
+  font: var(--type-headline-2);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fs-rec-range {
+  font: var(--type-mono);
+  font-size: 1.125rem;
+  color: var(--rec-color);
+  white-space: nowrap;
+}
+
+/* Extension block — "none needed" is a positive signal (secured green). */
+.fs-rec-noext {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--status-secured-text);
+}
+
+.fs-rec-ext {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+.fs-rec-ext-chip {
+  font: var(--type-mono);
+  font-size: 0.8125rem;
+  padding: 1px var(--space-2);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+}
+
+.fs-rec-ext-alone {
+  color: var(--text-tertiary);
+}
+
+/* The deduction ledger — fixed physical order, every slot always shown. */
+.fs-rec-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--surface-stroke);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+
+.fs-rec-ledger-title {
+  margin: 0;
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.fs-rec-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.fs-rec-slot-label {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+.fs-rec-slot-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font: var(--type-mono);
+  color: var(--text-primary);
+}
+
+.fs-rec-approx {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* A slot's wood size / plate name on its own sub-line — a long plate name
+   never wraps mid-column and shoves the value column out of alignment. */
+.fs-rec-slot-name {
+  display: block;
+  padding-left: var(--space-3);
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* N/S — not selected. The omission is a decision the operator should SEE. */
+.fs-rec-ns,
+.fs-rec-slot.is-ns .fs-rec-slot-name {
+  color: var(--danger);
+}
+
+.fs-rec-opening {
+  font: var(--type-mono);
+}
+
+/* Effective is the cut-to answer — promoted: larger, in the strut color. */
+.fs-rec-effective-row {
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--surface-stroke);
+}
+.fs-rec-effective {
+  font: var(--type-mono);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--rec-color);
+}
+.fs-rec-floor-note {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+.fs-rec-footnote {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* F-4B-1 zero-margin caution — informational, not a gate. */
+.fs-rec-caution {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--status-cutting-text);
+  background: var(--surface-elevated);
+  border-radius: 0 var(--radius-button) var(--radius-button) 0;
+}
+
+/* The engine's detailed reason line beneath a gate (numbers + guidance). */
+.fs-rec-gate-detail {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+.fs-rec-source {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+/* ---- assign equipment sheet (#221) ----------------------------------------- */
+.fs-assign-context {
+  margin: 0 0 var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.fs-assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.fs-assign-error,
+.fs-modal-error {
+  margin: 0 0 var(--space-2);
+  font: var(--type-caption);
+  color: var(--danger);
 }
 
 /* ---- visually hidden (live regions, SR-only announcements) ---------------- */

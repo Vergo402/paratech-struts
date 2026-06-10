@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import type { ShorePoint, ShoreTypeId } from '@core/schema';
 import { divisionLabel } from '@core/operation';
-import { Badge, Button, Card, MeasurementValue } from '@ui/primitives';
+import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
-const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
+export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
   't-shore': 'T-Shore',
   'double-t': 'Double-T',
   '3-post': '3-Post',
@@ -17,15 +17,17 @@ const PENDING_REASON_COPY = {
 
 /**
  * ShorePointCard — the lifecycle card (card.md). Presentational: the board
- * owns every modal and commit. Pending is the fully-built state this session
- * (#220); the slide-to-advance + Assign Equipment sheet arrive with the deploy
- * workflow (S6, #221).
+ * owns every modal and commit. Pending shipped with #220; In Process and the
+ * Strut Set step-back ship with the deploy workflow (S6, #221): the advance
+ * slide commits the next status, the step-back slide mirrors it (ADR-010
+ * always-reversible — the board decides whether a step-back needs the
+ * inventory-consequential confirm modal). Cutting onward is workflow #222.
  *
  * Deliberately NOT `Card onPress` — the card hosts its own buttons (stripe,
  * expand, actions) and onPress would render the card itself as a <button>
  * (nested-interactive). The stripe is the card.md 4pt status bar with the
  * 16pt full-height tap zone: a real button on pending (one-handed reach for
- * the primary action), decorative once the primary action is the S6 slide.
+ * the primary action), decorative once the primary action is the slide.
  */
 export interface ShorePointCardProps {
   shorePoint: ShorePoint;
@@ -33,11 +35,25 @@ export interface ShorePointCardProps {
   onEdit?: (sp: ShorePoint) => void;
   /** Pending only — opens the destructive Delete confirm. */
   onDelete?: (sp: ShorePoint) => void;
-  /** Pending primary action (S5: board passes a stub; S6 wires the sheet). */
+  /** Pending primary action — opens the Assign Equipment sheet (#221). */
   onAssignEquipment?: (sp: ShorePoint) => void;
+  /** In Process only — commits the advance to Strut Set. */
+  onAdvance?: (sp: ShorePoint) => void | Promise<void>;
+  /** In Process + Strut Set — the board routes: process → confirm modal, strutset → direct commit. */
+  onStepBack?: (sp: ShorePoint) => void | Promise<void>;
+  /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
+  advanceDisabledReason?: string;
 }
 
-export function ShorePointCard({ shorePoint: sp, onEdit, onDelete, onAssignEquipment }: ShorePointCardProps) {
+export function ShorePointCard({
+  shorePoint: sp,
+  onEdit,
+  onDelete,
+  onAssignEquipment,
+  onAdvance,
+  onStepBack,
+  advanceDisabledReason,
+}: ShorePointCardProps) {
   const [expanded, setExpanded] = useState(false);
   const pending = sp.status === 'pending';
 
@@ -121,6 +137,40 @@ export function ShorePointCard({ shorePoint: sp, onEdit, onDelete, onAssignEquip
               </Button>
             </div>
           )}
+        </div>
+      )}
+
+      {sp.status === 'process' && (
+        <div className="fs-spc-slides">
+          <Slider
+            label="Slide to set Strut Set"
+            buttonLabel="Advance to Strut Set"
+            revealColor="var(--status-strutset-bg)"
+            disabled={!!advanceDisabledReason}
+            disabledReason={advanceDisabledReason}
+            onCommit={() => onAdvance?.(sp)}
+          />
+          {/* Un-deploy: the board confirms (inventory-consequential) before any commit. */}
+          <Slider
+            label="Slide back to Pending"
+            buttonLabel="Step back to Pending"
+            direction="stepback"
+            onCommit={() => onStepBack?.(sp)}
+          />
+        </div>
+      )}
+
+      {sp.status === 'strutset' && (
+        <div className="fs-spc-slides">
+          {/* Advance → Cutting is workflow #222 (role gates begin there). Step-back
+              ships now: always reversible from the card, no confirm — no inventory
+              change on strutset → process (ADR-010). */}
+          <Slider
+            label="Slide back to In Process"
+            buttonLabel="Step back to In Process"
+            direction="stepback"
+            onCommit={() => onStepBack?.(sp)}
+          />
         </div>
       )}
     </Card>

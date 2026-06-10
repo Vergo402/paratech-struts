@@ -2,3 +2,4 @@
 // and the recommendation wrapper (L-2). Pure: no React, no Firebase.
 export * from './status';
 export * from './reducer';
+export * from './pendingReason';

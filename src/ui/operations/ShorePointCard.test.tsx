@@ -87,7 +87,82 @@ describe('ShorePointCard', () => {
     );
     expect(screen.getByText('LS 203')).toBeInTheDocument();
     expect(screen.getByText('from Rescue 2')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument(); // no assign/edit/delete/expand
+    // No pending-only actions — the slide stack owns the card now (#221).
+    expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Assign equipment' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(screen.queryByText(/No equipment assigned/)).not.toBeInTheDocument();
+  });
+
+  it('process: advance + step-back slides with their #37 buttons; callbacks fire', async () => {
+    const user = userEvent.setup();
+    const onAdvance = vi.fn();
+    const onStepBack = vi.fn();
+    const sp = makeSP({
+      status: 'process',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
+
+    expect(screen.getByText('Slide to set Strut Set')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to Pending')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Advance to Strut Set' }));
+    expect(onAdvance).toHaveBeenCalledWith(sp);
+    await user.click(screen.getByRole('button', { name: 'Step back to Pending' }));
+    expect(onStepBack).toHaveBeenCalledWith(sp);
+  });
+
+  it('process: the group gate disables advance with its reason; step-back stays live', async () => {
+    const user = userEvent.setup();
+    const onAdvance = vi.fn();
+    const onStepBack = vi.fn();
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          groupId: 'g',
+          groupIndex: 1,
+          groupTotal: 3,
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        onAdvance={onAdvance}
+        onStepBack={onStepBack}
+        advanceDisabledReason="Waiting on group — 2 of 3 still Pending"
+      />,
+    );
+    const advance = screen.getByRole('button', { name: 'Advance to Strut Set' });
+    expect(advance).toBeDisabled();
+    expect(screen.getByText('Waiting on group — 2 of 3 still Pending')).toBeInTheDocument();
+    await user.click(advance);
+    expect(onAdvance).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Step back to Pending' }));
+    expect(onStepBack).toHaveBeenCalled();
+  });
+
+  it('strutset: step-back slide only — advance to Cutting is workflow #222', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'strutset',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        onStepBack={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Step back to In Process' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Advance/ })).not.toBeInTheDocument();
+  });
+
+  it('later states (secured/returned): no slides at all this slice', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'secured',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+      />,
+    );
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

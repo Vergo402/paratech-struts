@@ -56,6 +56,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | jolly-cuddling-russell | v4-phase-h-s3-primitives-shell (2026-06-10) — the Session-3 execution plan (ui/primitives + ui/picker w/ L-9 verbatim + MeasurementInput/DeductionPicker + themed shell + /gallery) derived from v4-phase-h-slice-build |
 | begin-lazy-koala | v4-phase-h-s4-start-operation (2026-06-10) — the Session-4 execution plan (OperationsBoard + StartOperationModal + useDeviceUid + operations.css + gallery demo) derived from v4-phase-h-slice-build |
 | splendid-tinkering-honey | v4-phase-h-s5-add-shore-point (2026-06-10) — the Session-5 execution plan (AddShorePointModal + ShorePointCard + DeleteShorePointModal + DivisionPicker w/ v3 grow-the-building model + DivisionAdded event + commitMany + overlay parent→child stack fix) derived from v4-phase-h-slice-build |
+| start-session-6-snappy-pebble | v4-phase-h-s6-deploy-strut (2026-06-10) — the Session-6 execution plan (RecommendationCard + AssignEquipmentSheet w/ single-flight deploy + StepBackConfirmModal + In-Process/Strut-Set slides + group advance gate + live pendingReason; over-capacity gate drives in /gallery — flag at the #248 gate) derived from v4-phase-h-slice-build |
 
 ### v4 — issue / ADR / positioning
 | old | new |
