@@ -20,7 +20,7 @@ This folder is the execution layer of `v4-master-plan.md`, which is the constitu
 
 - **Level IV and V as the everyday case.** Car into residence, residential or light commercial partial collapse. About 99% of structural collapse runs. Drives defaults, onboarding, and first impressions.
 - **On demand expansion through Level III, II, and I.** The interface contracts and expands alongside ICS itself. Single team officer with two shore points is the starting state; the design must not break at Surfside scale (250 shore points, federal task force).
-- **Local fire departments** working with one another at a single incident (mutual aid, two to five neighboring depts at v4.5).
+- **Local fire departments** working with one another at a single incident (mutual aid, two to five neighboring depts; originally scoped v4.5 — **moved into v4.0 by [ADR-022](11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)** at the Phase G gate, 2026-06-09; local scope unchanged).
 - **NIMS doctrine** as the terminology backbone.
 - **Federal IST workflows and state mutual aid auth deferred to v5.** The design ceiling is raised; the implementation timeline is not. We don't have a single dept's buy in yet.
 
@@ -30,4 +30,4 @@ This folder is the execution layer of `v4-master-plan.md`, which is the constitu
 - v4 work lives on the `v4-redesign` branch.
 - v3 patches cherry-pick or rebase into v4 as needed (~5 min cost per patch).
 - No timeline pressure. The work takes as long as it takes.
-- Conservative estimate: v4.0 roughly 8 to 11 months from Phase A to Phase J. v4.5 (local mutual aid) roughly 3 more months.
+- Conservative estimate: v4.0 roughly 8 to 11 months from Phase A to Phase J. v4.5 (local mutual aid) roughly 3 more months. *(Note: local mutual aid has since moved into v4.0 — [ADR-022](11-decisions/ADR-022-mutual-aid-v40-qr-guest.md), Phase G gate; this estimate pre-dates that move and the v4.0 figure now absorbs it.)*
