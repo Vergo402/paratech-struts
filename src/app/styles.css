@@ -79,3 +79,44 @@ body {
   font: var(--type-body);
   -webkit-font-smoothing: antialiased;
 }
+
+/* ---- app shell: scroll pane + the fixed 5-tab bottom nav (ADR-014) -------- */
+.fs-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.fs-shell-main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.fs-nav {
+  flex: none;
+  display: flex;
+  background: var(--surface-card);
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.fs-nav-link {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font: var(--type-label);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-secondary);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  /* navigation never animates (00-ia-foundation.md) — no transition on purpose */
+}
+.fs-nav-link--active { color: var(--accent); }
+.fs-nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-nav-icon { width: 20px; height: 20px; }

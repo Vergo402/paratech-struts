@@ -1,4 +1,4 @@
-import type { ShorePoint, ShorePointPatch, FieldShoreEvent, InventoryItem } from '../schema';
+import type { Deductions, ShorePoint, ShorePointPatch, FieldShoreEvent, InventoryItem } from '../schema';
 import {
   findStrutCombinations,
   woodHeight,
@@ -34,11 +34,24 @@ export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | 
   return findStrutCombinations(requiredLength, 0, SP_SAFETY_FACTOR_INDEX, inventory ?? null, null, resolveDeductions(sp));
 }
 
+/**
+ * Effective strut length (inches) after deductions, floored to ⅛″ — for
+ * display. Takes the raw selections so pre-SP UI (the deduction ledger in
+ * Quick Find / Add Shore Point) computes with the SAME math as a saved point —
+ * no UI-side constants ever (L-2).
+ */
+export function effectiveLengthFrom(measurementEighths: number, deductions: Deductions): number {
+  const totalDed =
+    woodHeight(deductions.headerWood) +
+    woodHeight(deductions.footerWood) +
+    plateHeight(deductions.topPlate) +
+    plateHeight(deductions.bottomPlate);
+  return Math.floor((measurementEighths / 8 - totalDed) * 8) / 8;
+}
+
 /** Effective strut length (inches) after deductions, floored to ⅛″ — for display. */
 export function effectiveLengthInches(sp: ShorePoint): number {
-  const d = resolveDeductions(sp);
-  const totalDed = (d.header ?? 0) + (d.sole ?? 0) + (d.topPlate ?? 0) + (d.bottomPlate ?? 0);
-  return Math.floor((sp.measurementEighths / 8 - totalDed) * 8) / 8;
+  return effectiveLengthFrom(sp.measurementEighths, sp.deductions);
 }
 
 function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {

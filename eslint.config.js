@@ -97,7 +97,7 @@ export default tseslint.config(
 
   // Config + test files — Node globals; boundary rules don't apply.
   {
-    files: ['**/*.config.{ts,js}', 'src/**/*.{test,spec}.ts'],
+    files: ['**/*.config.{ts,js}', 'vitest.setup.ts', 'src/**/*.{test,spec}.{ts,tsx}'],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-restricted-imports': 'off' },
   },

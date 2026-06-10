@@ -1,0 +1,86 @@
+// @vitest-environment jsdom
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { MeasurementInput } from './MeasurementInput';
+
+function Harness({ initial = 0 }: { initial?: number }) {
+  const [v, setV] = useState(initial);
+  return (
+    <>
+      <span data-testid="eighths">{v}</span>
+      <MeasurementInput value={v} onChange={setV} />
+    </>
+  );
+}
+
+const eighths = () => Number(screen.getByTestId('eighths').textContent);
+
+describe('MeasurementInput', () => {
+  it('steppers move by exact eighths: ±1″ = 8, ±1 ft = 96', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={40 * 8} />);
+
+    await user.click(screen.getByRole('button', { name: 'Up one inch' }));
+    expect(eighths()).toBe(40 * 8 + 8);
+    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
+    expect(eighths()).toBe(40 * 8 + 8 + 96);
+    await user.click(screen.getByRole('button', { name: 'Down one inch' }));
+    await user.click(screen.getByRole('button', { name: 'Down one foot' }));
+    expect(eighths()).toBe(40 * 8);
+  });
+
+  it('the tap-strip sets the eighths remainder and keeps the whole inches', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={40 * 8} />);
+    await user.click(screen.getByRole('radio', { name: '5/8 inch' }));
+    expect(eighths()).toBe(40 * 8 + 5);
+    await user.click(screen.getByRole('radio', { name: '1/8 inch' }));
+    expect(eighths()).toBe(40 * 8 + 1);
+    await user.click(screen.getByRole('radio', { name: 'zero eighths' }));
+    expect(eighths()).toBe(40 * 8);
+  });
+
+  it('clamps at 0 with an inline message — no negative value ever emitted', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={0} />);
+    await user.click(screen.getByRole('button', { name: 'Down one inch' }));
+    expect(eighths()).toBe(0);
+    expect(screen.getByText(/can.t go below 0/i)).toBeInTheDocument();
+  });
+
+  it('clamps at the 30 ft ceiling with an inline message — never over max', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={2880} />);
+    await user.click(screen.getByRole('button', { name: 'Up one inch' }));
+    expect(eighths()).toBe(2880);
+    expect(screen.getByText(/maximum opening is 30 ft/i)).toBeInTheDocument();
+
+    // A legal change clears the message.
+    await user.click(screen.getByRole('button', { name: 'Down one foot' }));
+    expect(eighths()).toBe(2880 - 96);
+    expect(screen.queryByText(/maximum opening is 30 ft/i)).toBeNull();
+  });
+
+  it('every emission is an integer (exact eighths, never a float)', async () => {
+    const user = userEvent.setup();
+    const seen: number[] = [];
+    function Capture() {
+      const [v, setV] = useState(13);
+      return (
+        <MeasurementInput
+          value={v}
+          onChange={(next) => {
+            seen.push(next);
+            setV(next);
+          }}
+        />
+      );
+    }
+    render(<Capture />);
+    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
+    await user.click(screen.getByRole('radio', { name: '7/8 inch' }));
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((n) => Number.isInteger(n))).toBe(true);
+  });
+});

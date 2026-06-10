@@ -1,0 +1,624 @@
+/* ============================================================================
+   FieldShore v4 primitives — bespoke CSS the Tailwind⇄token bridge doesn't
+   cover. Every value cites tokens.css; rendering mirrors the living styleguide
+   (docs/v4-design/preview/). All classes are fs- prefixed except the .is-*
+   status modifiers, which keep the styleguide's names on purpose: they are the
+   shared per-status hooks (--sp-text / --sp-bg) that the badge, the S5 card
+   stripe, and the cut-table emphasis all consume.
+   ============================================================================ */
+
+/* ---- status modifiers (drive badge + S5 stripe) --------------------------- */
+.is-pending  { --sp-text: var(--status-pending-text);  --sp-bg: var(--status-pending-bg); }
+.is-process  { --sp-text: var(--status-process-text);  --sp-bg: var(--status-process-bg); }
+.is-strutset { --sp-text: var(--status-strutset-text); --sp-bg: var(--status-strutset-bg); }
+.is-cutting  { --sp-text: var(--status-cutting-text);  --sp-bg: var(--status-cutting-bg); }
+.is-runner   { --sp-text: var(--status-runner-text);   --sp-bg: var(--status-runner-bg); }
+.is-secured  { --sp-text: var(--status-secured-text);  --sp-bg: var(--status-secured-bg); }
+.is-returned { --sp-text: var(--status-returned-text); --sp-bg: var(--status-returned-bg); }
+
+/* ---- badge (badge.md; mirrors styleguide .sg-badge) ------------------------ */
+.fs-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-badge);
+  font: var(--type-label);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.fs-badge--status {
+  background: var(--sp-bg);
+  color: var(--sp-text);
+  border: 1px solid color-mix(in srgb, var(--sp-text) 22%, transparent);
+}
+/* Color cross-fade on commit only — Badge.tsx adds this class strictly after a
+   post-mount status change, so first render never animates (badge.md). */
+.fs-badge--animate {
+  transition:
+    background-color var(--motion-status) var(--ease-status),
+    color var(--motion-status) var(--ease-status),
+    border-color var(--motion-status) var(--ease-status);
+}
+.fs-badge--count,
+.fs-badge--label {
+  background: var(--surface-card-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--surface-stroke);
+}
+.fs-badge--severity {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid color-mix(in srgb, var(--danger-text) 22%, transparent);
+}
+.fs-badge--dot {
+  gap: var(--space-1);
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+}
+.fs-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+.fs-badge--dot-accent .fs-badge-dot { background: var(--accent); }
+.fs-badge--dot-danger .fs-badge-dot { background: var(--danger-text); }
+
+/* ---- measurement fraction (input.md; ported verbatim from styleguide.css) --
+   The locked house style is the STACKED tape-measure form — numerator over a
+   ruled bar over denominator — sized at 0.6em (not the typographer's 0.5)
+   because eighths must survive a gloved glance in sun. Real digits, never
+   super/subscript codepoints. */
+.fr {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: inherit;
+  white-space: nowrap;
+  font-size: 0.6em;
+  line-height: 1;
+  text-align: center;
+  vertical-align: 0.52em;
+  margin: 0 0.05em 0 0.14em;
+}
+.fr .n {
+  font-variant-numeric: tabular-nums;
+  padding: 0 0.22em 0.05em;
+  border-bottom: 0.1em solid currentcolor;
+  line-height: 1.04;
+}
+.fr .d {
+  font-variant-numeric: tabular-nums;
+  padding: 0.05em 0.22em 0;
+  line-height: 1.04;
+}
+.fs-meas {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- button (button.md) ---------------------------------------------------- */
+.fs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-button);
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  transition: background-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-button--op { min-height: 56px; }
+.fs-button--std { min-height: 48px; }
+.fs-button--full { width: 100%; }
+.fs-button--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.fs-button--primary:active { background: color-mix(in srgb, var(--accent) 86%, black); }
+.fs-button--secondary {
+  border: var(--stroke-width) solid color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+}
+.fs-button--secondary:active { background: var(--accent-subtle); }
+.fs-button--tertiary { color: var(--accent); }
+.fs-button--tertiary:active { background: var(--accent-subtle); }
+/* destructive overlay — the danger pair replaces the accent at the SAME
+   emphasis level; a calm feedback treatment, never a full-red alarm */
+.fs-button--destructive.fs-button--primary {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: var(--stroke-width) solid color-mix(in srgb, var(--danger-text) 30%, transparent);
+}
+.fs-button--destructive.fs-button--primary:active {
+  background: color-mix(in srgb, var(--danger-bg) 85%, var(--danger-text));
+}
+.fs-button--destructive.fs-button--secondary {
+  border-color: color-mix(in srgb, var(--danger-text) 55%, transparent);
+  color: var(--danger-text);
+}
+.fs-button--destructive.fs-button--tertiary { color: var(--danger-text); }
+.fs-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fs-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-button-icon {
+  display: inline-flex;
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+.fs-button-reason {
+  display: block;
+  margin-top: var(--space-1);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+/* ---- card (card.md) -------------------------------------------------------- */
+.fs-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  text-align: left;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--card-top-highlight);
+  color: var(--text-primary);
+  font: var(--type-body);
+}
+.fs-card--press { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.fs-card--press:active { background: var(--surface-card-hover); }
+.fs-card--press:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-card--selected {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: var(--surface-card-hover);
+}
+.fs-card--edged { padding-left: var(--space-6); } /* room for a 4pt stripe + tap zone */
+[data-theme='sunlight'] .fs-card { box-shadow: var(--card-shadow); }
+
+/* ---- empty state (empty-state.md) — no surface, no border, no shadow ------- */
+.fs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+}
+.fs-empty-icon { opacity: 0.4; }
+.fs-empty-headline {
+  font: var(--type-body-lg);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+  margin: 0;
+}
+.fs-empty-reason {
+  font: var(--type-body);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 36ch;
+}
+.fs-empty > .fs-button { margin-top: var(--space-2); }
+
+/* ---- warning gate (warning-gate.md) — danger is an accent and a word ------- */
+.fs-gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border-left: 3px solid var(--danger-text);
+  padding: var(--space-2) 0 var(--space-2) var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+.fs-gate-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.fs-gate-glyph {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  flex: none;
+  color: var(--danger-text);
+  margin-top: 2px;
+  stroke-width: var(--icon-stroke-default);
+}
+.fs-gate-caveat {
+  font: var(--type-body);
+  color: var(--text-primary);
+  margin: 0;
+}
+p.fs-gate--disclaimer {
+  display: block;
+  border-left: none;
+  padding: var(--space-1) 0 0;
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-gate-ack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-3);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-gate-ack:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-gate-ack-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border: 2px solid var(--danger-text);
+  border-radius: 4px;
+  color: var(--danger-text);
+  font-weight: 700;
+}
+.fs-gate-ack[aria-checked='true'] .fs-gate-ack-box { background: var(--danger-bg); }
+
+/* ---- toggle (toggle.md) — state is thumb POSITION, never color alone ------- */
+.fs-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-toggle-row--op { min-height: 56px; }
+.fs-toggle-row--std { min-height: 48px; }
+.fs-toggle-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fs-toggle-label {
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+.fs-toggle-helper { font: var(--type-caption); color: var(--text-secondary); }
+.fs-toggle {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px; /* capsule: radius = height ÷ 2, not a --radius-* member */
+  background: var(--text-tertiary);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  cursor: pointer;
+  transition: background-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-toggle[data-state='checked'] { background: var(--accent); }
+.fs-toggle:disabled { opacity: 0.5; cursor: default; }
+.fs-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-toggle-thumb {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  /* a physical white thumb reads on every track in every theme; the hairline
+     keeps it visible on sunlight's all-white outlined capsule */
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  transform: translateX(3px);
+  transition: transform var(--motion-micro) var(--ease-micro); /* no bounce, no scale */
+}
+.fs-toggle[data-state='checked'] .fs-toggle-thumb { transform: translateX(23px); }
+/* sunlight off-state: mid-grey is forbidden — outlined empty capsule instead */
+[data-theme='sunlight'] .fs-toggle[data-state='unchecked'] { background: transparent; }
+
+/* ---- segmented (segmented.md) — raised pill changes IN PLACE, never slides - */
+.fs-segmented {
+  display: flex;
+  width: 100%;
+  padding: var(--space-1);
+  background: var(--surface-bg); /* the recessed well */
+  border-radius: var(--radius-button);
+}
+.fs-segmented--op { min-height: 56px; }
+.fs-segmented--std { min-height: 48px; }
+.fs-segment {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-2);
+  border: var(--stroke-width) solid transparent;
+  border-radius: var(--radius-input); /* nested concentrically inside the track */
+  background: transparent;
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-segment[data-state='checked'] {
+  background: var(--surface-card);
+  border-color: var(--surface-stroke);
+  color: var(--text-primary);
+  font-weight: calc(600 + var(--type-weight-bump));
+}
+.fs-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* sunlight: the raised pill is invisible on all-white — 2pt accent border instead */
+[data-theme='sunlight'] .fs-segment[data-state='checked'] { border: 2px solid var(--accent); }
+
+/* ---- text field (input.md) -------------------------------------------------- */
+.fs-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.fs-field-label {
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+.fs-field-input {
+  width: 100%;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+  transition: border-color var(--motion-micro) var(--ease-micro);
+}
+.fs-field-input--op { min-height: 56px; }
+.fs-field-input--std { min-height: 48px; }
+.fs-field-input::placeholder { color: var(--text-tertiary); }
+.fs-field-input:focus { border-color: var(--accent); outline: none; }
+.fs-field-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.fs-field-input--invalid,
+.fs-field-input--invalid:focus { border-color: var(--danger-text); }
+.fs-field-input:disabled { opacity: 0.5; }
+.fs-field-msg { font: var(--type-caption); color: var(--text-secondary); }
+.fs-field-msg--error { color: var(--danger-text); }
+
+/* ---- overlays: scrim + modal + sheet (modal.md / sheet.md) ----------------- */
+@keyframes fs-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fs-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes fs-sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fs-sheet-out {
+  from { transform: translateY(0); }
+  to { transform: translateY(100%); }
+}
+
+.fs-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 290;
+}
+.fs-scrim[data-state='open'] { animation: fs-fade-in var(--motion-transition) var(--ease-standard); }
+.fs-scrim[data-state='closed'] { animation: fs-fade-out var(--motion-exit) var(--ease-exit); }
+
+.fs-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100vw - 32px), 480px);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-sheet); /* all four corners — floats free of edges */
+  box-shadow: var(--shadow-modal);
+  padding: var(--space-8); /* more generous than the sheet — a stop surface */
+  z-index: 300;
+}
+.fs-modal[data-state='open'] { animation: fs-fade-in var(--motion-transition) var(--ease-standard); }
+.fs-modal[data-state='closed'] { animation: fs-fade-out var(--motion-exit) var(--ease-exit); }
+.fs-modal-title {
+  font: var(--type-headline-2);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+  margin: 0 0 var(--space-4);
+}
+.fs-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto; /* form variant: body scrolls, header/footer stay pinned */
+  font: var(--type-body);
+  color: var(--text-primary);
+}
+.fs-modal-footer {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-top: var(--space-4);
+}
+.fs-modal-footer .fs-button { min-width: 120px; } /* modal.md: ≥120pt wide */
+
+.fs-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0 auto;
+  max-width: 568px;
+  max-height: 60vh; /* never taller — the body scrolls inside */
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-bottom: none;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0; /* top corners only */
+  box-shadow: var(--shadow-sheet);
+  z-index: 300;
+}
+.fs-sheet[data-state='open'] { animation: fs-sheet-in var(--motion-transition) var(--ease-standard); }
+.fs-sheet[data-state='closed'] { animation: fs-sheet-out var(--motion-exit) var(--ease-exit); }
+.fs-sheet-handle {
+  flex: none;
+  min-height: 40px; /* + title row ≈ the 64pt learned grab zone at the top edge */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: grab;
+  touch-action: none; /* the handle itself is the drag surface */
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-sheet-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--text-tertiary);
+}
+.fs-sheet-title {
+  font: var(--type-headline-2);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0 var(--space-4) var(--space-3);
+}
+.fs-sheet-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  /* v3.5.1 iOS hardening — verbatim (L-9): vertical pan stays on this element,
+     own compositing layer, no scroll chaining to the page beneath. */
+  overflow-y: auto;
+  touch-action: pan-y;
+  transform: translateZ(0);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ---- slide-to-commit (slider.md) — a recessed channel, never a button ------ */
+.fs-slide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+.fs-slide-track {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-1);
+  background: var(--surface-bg); /* recessed channel, not a raised button */
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  overflow: hidden;
+}
+.fs-slide--stepback .fs-slide-track { flex-direction: row-reverse; }
+.fs-slide-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+}
+.fs-slide--stepback .fs-slide-fill { left: auto; right: 0; }
+.fs-slide-thumb {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 64px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius-input); /* nested inside the channel */
+  font: 600 22px/1 var(--font-sans);
+  cursor: grab;
+  touch-action: none; /* the thumb is the drag surface */
+  transition: transform var(--motion-micro) var(--ease-micro); /* snap-back */
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-slide-thumb--dragging { transition: none; cursor: grabbing; } /* 1:1 under the finger */
+.fs-slide-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+  pointer-events: none;
+  white-space: nowrap; /* the next step is always fully legible */
+}
+.fs-slide--disabled { opacity: 0.5; }
+/* step-back is visually secondary — quieter thumb, same geometry mirrored */
+.fs-slide--stepback .fs-slide-thumb {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  border: var(--stroke-width) solid var(--surface-stroke);
+}
+
+/* sunlight — status pill becomes a solid banner (fill + white text from the
+   theme's tokens); border drops, geometry grows (styleguide sunlight block) */
+[data-theme='sunlight'] .fs-badge--status {
+  height: 30px;
+  padding: 0 var(--space-3);
+  font: var(--type-body-medium);
+  font-weight: 600;
+  border: none;
+}
+
+/* broadcast — no fill at 8–12 ft; the status is the word in the status hue
+   (the 4pt left-border accent belongs to the card, not the badge) */
+[data-theme='broadcast'] .fs-badge--status {
+  background: transparent;
+  color: var(--sp-text);
+  border: none;
+  height: auto;
+  padding: 0;
+  font: var(--type-headline-2);
+  font-weight: 700;
+}

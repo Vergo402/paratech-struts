@@ -15,8 +15,8 @@
 
 /* ---- Type ramp + spacing + radius (theme-independent) ---------------------- */
 :root {
-  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  --font-sans: "Geist Variable", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
 
   /* type ramp — size / weight / line-height / tracking (typography.md) */
   --type-display-1: 700 40px/1.10 var(--font-sans);

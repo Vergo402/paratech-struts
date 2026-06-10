@@ -8,6 +8,19 @@
     />
     <meta name="color-scheme" content="dark light" />
     <title>FieldShore</title>
+    <script>
+      // Pre-paint theme apply — runs before first paint so a stored preference
+      // never flashes the default dark frame. ThemeProvider (theme.tsx) owns
+      // [data-theme] from mount onward; this only seeds the very first paint.
+      try {
+        var t = localStorage.getItem('fieldshore_theme');
+        if (t === 'system')
+          t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        if (t) document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {
+        /* storage unavailable — keep the data-theme="dark" default */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

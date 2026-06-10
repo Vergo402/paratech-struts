@@ -1,0 +1,405 @@
+import { useState, type ReactNode } from 'react';
+import { BASE_PLATES } from '@core/load';
+import { NO_DEDUCTIONS, STATUS_IDS, type Deductions, type ShorePointStatus } from '@core/schema';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  MeasurementValue,
+  Modal,
+  Sheet,
+  Slider,
+  TextField,
+  Toggle,
+  WarningGate,
+} from '@ui/primitives';
+import {
+  BottomSheetPicker,
+  FullScreenList,
+  InlineSegmented,
+  PowerSelect,
+  VisualGridPicker,
+} from '@ui/picker';
+import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
+import { useTheme } from '../theme';
+
+/**
+ * /gallery — DEV SURFACE, not a product screen. Every S3 primitive, picker,
+ * and quickfind input rendered live so the preview tools (and the #248 gate)
+ * can drive them and flip all four themes against real components. Reached by
+ * URL only — no nav tab. Ships in the production bundle on purpose: the gate
+ * drives `npm run preview`, and the v4 slice deploys nowhere.
+ */
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 style={{ font: 'var(--type-headline-2)' }}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+const THEME_OPTIONS = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'sunlight', label: 'Sunlight' },
+  { value: 'broadcast', label: 'Broadcast' },
+] as const;
+
+const WOODS = [
+  { value: 'none', label: 'None' },
+  { value: '4x4', label: '4×4' },
+  { value: '6x6', label: '6×6' },
+] as const;
+
+const LEVELS = [
+  { value: 'i', label: 'Level I', sub: 'Federal task-force scale' },
+  { value: 'ii', label: 'Level II', sub: 'Regional response' },
+  { value: 'iii', label: 'Level III', sub: 'Extended attack' },
+  { value: 'iv', label: 'Level IV', sub: 'Working incident' },
+  { value: 'v', label: 'Level V', sub: 'Single company' },
+] as const;
+
+const APPARATUS = [
+  'Rescue 2',
+  'Engine 1',
+  'Squad 3',
+  'Ladder 7',
+  'Engine 14',
+  'Rescue 41',
+  'Squad 18',
+  'Tower 2',
+  'Engine 9',
+].map((label, i) => ({ value: `a${i}`, label, sub: i % 3 === 0 ? 'On scene' : 'Staged' }));
+
+const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
+  id: p.id,
+  name: p.name,
+  sub: p.height > 0 ? `deducts ${p.height}″` : 'no deduction',
+}));
+
+function StatusCycleDemo() {
+  const [i, setI] = useState(1);
+  const status = STATUS_IDS[i % STATUS_IDS.length] as ShorePointStatus;
+  return (
+    <div className="flex items-center gap-3">
+      <Badge variant="status" status={status} />
+      <Button size="standard" onPress={() => setI((n) => n + 1)}>
+        Commit next status
+      </Button>
+    </div>
+  );
+}
+
+function GateDemo() {
+  const [acknowledged, setAcknowledged] = useState(false);
+  return (
+    <Card>
+      <div className="flex flex-col gap-3">
+        <span style={{ font: 'var(--type-body-medium)' }}>
+          LS 1016 + 67″ ext — <MeasurementValue eighths={200 * 8} />
+        </span>
+        <WarningGate
+          use="unrated"
+          acknowledged={acknowledged}
+          onAcknowledge={() => setAcknowledged((a) => !a)}
+        />
+        <Button
+          variant="primary"
+          disabled={!acknowledged}
+          disabledReason={acknowledged ? undefined : 'Acknowledge the unrated zone first'}
+          onPress={() => {}}
+        >
+          Deploy
+        </Button>
+        <WarningGate use="disclaimer" />
+      </div>
+    </Card>
+  );
+}
+
+function AsyncButtonDemo() {
+  return (
+    <Button
+      variant="primary"
+      onPress={() => new Promise<void>((r) => setTimeout(r, 1500))}
+    >
+      Deploy (1.5s in-flight)
+    </Button>
+  );
+}
+
+export function GalleryScreen() {
+  const { preference, setPreference } = useTheme();
+  const [wood, setWood] = useState<'none' | '4x4' | '6x6'>('4x4');
+  const [level, setLevel] = useState<(typeof LEVELS)[number]['value']>('iv');
+  const [apparatus, setApparatus] = useState<string | null>(null);
+  const [listOpen, setListOpen] = useState(false);
+  const [plate, setPlate] = useState('none');
+  const [stockOnly, setStockOnly] = useState(false);
+  const [toggleOn, setToggleOn] = useState(false);
+  const [text, setText] = useState('');
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [eighths, setEighths] = useState(56 * 8);
+  const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
+  const [commits, setCommits] = useState(0);
+
+  const galleryTheme = THEME_OPTIONS.some((o) => o.value === preference) ? preference : 'dark';
+
+  return (
+    <div className="flex flex-col gap-8 pb-8">
+      <header>
+        <h1 style={{ font: 'var(--type-headline-1)' }}>Component gallery</h1>
+        <p className="text-ink-secondary" style={{ font: 'var(--type-caption)' }}>
+          Dev surface, not a product screen — every S3 primitive live, for preview verification
+          and the #248 gate. Broadcast renders no controls in the product; here it themes them
+          anyway so the palette can be checked.
+        </p>
+      </header>
+
+      <Section title="Theme">
+        <InlineSegmented
+          label="Theme (gallery adds Broadcast)"
+          options={THEME_OPTIONS}
+          value={galleryTheme}
+          onChange={setPreference}
+        />
+      </Section>
+
+      <Section title="Badge — all 7 status words + variants">
+        <div className="flex flex-wrap gap-2">
+          {STATUS_IDS.map((s) => (
+            <Badge key={s} variant="status" status={s} />
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="count" value={12} srLabel="12 shore points" />
+          <Badge variant="label">External · Dept 14</Badge>
+          <Badge variant="severity">2 hazards</Badge>
+          <Badge variant="dot" tone="accent" text="Sync queued" />
+        </div>
+        <StatusCycleDemo />
+      </Section>
+
+      <Section title="Button">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" onPress={() => {}}>
+            Primary
+          </Button>
+          <Button variant="secondary" onPress={() => {}}>
+            Secondary
+          </Button>
+          <Button variant="tertiary" onPress={() => {}}>
+            Tertiary
+          </Button>
+          <Button variant="primary" destructive onPress={() => {}}>
+            End Operation
+          </Button>
+        </div>
+        <AsyncButtonDemo />
+        <Button onPress={() => {}} disabled disabledReason="No strut assigned yet">
+          Advance
+        </Button>
+      </Section>
+
+      <Section title="Card">
+        <Card>Base card — flat at rest, hairline + top highlight</Card>
+        <Card selected>Selected card — accent border, never scale</Card>
+        <Card
+          onPress={() => {}}
+          edge={
+            <span
+              className="is-cutting"
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 4,
+                background: 'var(--sp-text)',
+                borderRadius: '12px 0 0 12px',
+              }}
+            />
+          }
+        >
+          Pressable card with the edge slot (the S5 status stripe lives here)
+        </Card>
+      </Section>
+
+      <Section title="Empty state — 4 variants">
+        <EmptyState
+          variant="first-run"
+          headline="No shore points yet"
+          reason="Tap Add Shore Point to add the first"
+          action={{ label: 'Add Shore Point', onPress: () => {} }}
+        />
+        <EmptyState
+          variant="filtered"
+          headline="No points in Division 3"
+          reason="The division filter is hiding 12 points"
+          action={{ label: 'Clear filter', onPress: () => {} }}
+        />
+        <EmptyState
+          variant="upstream-blocked"
+          headline="No operation running"
+          reason="Start an operation from the Operations tab first"
+        />
+        <EmptyState
+          variant="all-clear"
+          headline="All equipment returned"
+          reason="Every deployed strut is back on its apparatus"
+        />
+      </Section>
+
+      <Section title="Warning gate — ack unlocks Deploy, disclosure stays">
+        <GateDemo />
+        <Card>
+          <div className="flex flex-col gap-3">
+            <span style={{ font: 'var(--type-body-medium)' }}>
+              AT 25-36 ×5 — load exceeds the 4-strut capacity
+            </span>
+            <WarningGate use="over-capacity" />
+            <Button variant="primary" disabled disabledReason="Choose a different strut, quantity, or opening" onPress={() => {}}>
+              Deploy
+            </Button>
+          </div>
+        </Card>
+      </Section>
+
+      <Section title="Toggle · Segmented · Text field">
+        <Toggle
+          label="Sync over cellular"
+          helper="Uses mobile data when off Wi-Fi"
+          checked={toggleOn}
+          onChange={setToggleOn}
+        />
+        <InlineSegmented label="Header wood" options={WOODS} value={wood} onChange={setWood} />
+        <TextField
+          label="Operation name"
+          value={text}
+          onChange={setText}
+          placeholder="e.g. Surfside"
+          error={text.length > 0 && text.length < 3 ? 'Name needs at least 3 characters' : undefined}
+        />
+      </Section>
+
+      <Section title="Slide to commit — advance + step-back (#37 buttons built in)">
+        <span style={{ font: 'var(--type-caption)' }} className="text-ink-secondary">
+          Commits: {commits}
+        </span>
+        <Slider
+          label="Slide to set Strut Set"
+          buttonLabel="Set Strut Set"
+          revealColor="var(--status-strutset-bg)"
+          onCommit={() => setCommits((c) => c + 1)}
+        />
+        <Slider
+          label="Slide back to In Process"
+          buttonLabel="Back to In Process"
+          direction="stepback"
+          onCommit={() => setCommits((c) => c + 1)}
+        />
+      </Section>
+
+      <Section title="Modal · Sheet">
+        <div className="flex flex-wrap gap-2">
+          <Button onPress={() => setModalOpen(true)}>Destructive modal</Button>
+          <Button onPress={() => setFormModalOpen(true)}>Form modal</Button>
+          <Button onPress={() => setSheetOpen(true)}>Sheet</Button>
+        </div>
+        <Modal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          title="End Operation?"
+          variant="destructive"
+          footer={
+            <>
+              <span data-modal-cancel>
+                <Button onPress={() => setModalOpen(false)}>Cancel</Button>
+              </span>
+              <Button variant="primary" destructive onPress={() => setModalOpen(false)}>
+                End Operation
+              </Button>
+            </>
+          }
+        >
+          Ends the operation and archives every shore point. Equipment still deployed stays
+          deployed.
+        </Modal>
+        <Modal
+          open={formModalOpen}
+          onClose={() => setFormModalOpen(false)}
+          title="Edit operation"
+          variant="form"
+          footer={
+            <Button variant="primary" onPress={() => setFormModalOpen(false)}>
+              Save
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <TextField label="Name" value={text} onChange={setText} />
+            <TextField label="Location" value="" onChange={() => {}} placeholder="Optional" />
+          </div>
+        </Modal>
+        <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Assign role">
+          {['Rescue Supervisor', 'Shoring Supervisor', 'Safety Officer'].map((r) => (
+            <button key={r} type="button" className="fs-picker-row" onClick={() => setSheetOpen(false)}>
+              {r}
+            </button>
+          ))}
+        </Sheet>
+      </Section>
+
+      <Section title="Pickers — sheet (5–7) · full-screen (8+, search) · native">
+        <BottomSheetPicker label="Incident level" options={LEVELS} value={level} onSelect={setLevel} />
+        <div className="fs-picker-field">
+          <span className="fs-field-label">Assign apparatus (full-screen list)</span>
+          <Button onPress={() => setListOpen(true)}>
+            {APPARATUS.find((a) => a.value === apparatus)?.label ?? 'Choose apparatus'}
+          </Button>
+        </div>
+        <FullScreenList
+          open={listOpen}
+          onClose={() => setListOpen(false)}
+          title="Assign apparatus"
+          options={APPARATUS}
+          value={apparatus}
+          onSelect={setApparatus}
+        />
+        <PowerSelect label="Incident level (native fallback)" options={LEVELS} value={level} onChange={setLevel} />
+      </Section>
+
+      <Section title="Visual grid — the v3 plate picker, verbatim (L-9)">
+        <Toggle
+          label="Filter by operation inventory"
+          helper="Out-of-stock plates sink below the divider and lock"
+          checked={stockOnly}
+          onChange={setStockOnly}
+        />
+        <VisualGridPicker
+          label="Top plate"
+          options={PLATE_OPTIONS}
+          value={plate}
+          onSelect={setPlate}
+          availableIds={stockOnly ? new Set(['rigid6', 'swivel6', 'threadedconn']) : undefined}
+        />
+      </Section>
+
+      <Section title="Measurement + deduction ledger (#20/#38 — strip + steppers)">
+        <MeasurementInput value={eighths} onChange={setEighths} />
+        <DeductionPicker
+          measurementEighths={eighths}
+          value={deductions}
+          onChange={setDeductions}
+        />
+      </Section>
+    </div>
+  );
+}

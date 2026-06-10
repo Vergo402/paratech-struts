@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent } from '../schema';
-import { shorePointReducer, effectiveLengthInches } from './reducer';
+import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom } from './reducer';
 import { canTransition } from './status';
 
 function sp(over: Partial<ShorePoint> = {}): ShorePoint {
@@ -32,6 +32,13 @@ describe('L-2 — effective length deducts once and floors to ⅛″', () => {
     });
     // 48 − 14.3 = 33.7 → floor to ⅛″ = 33.625
     expect(effectiveLengthInches(point)).toBe(33.625);
+  });
+
+  it('effectiveLengthFrom (the pre-SP ledger path) ≡ effectiveLengthInches', () => {
+    const deductions = { headerWood: '4x4', footerWood: '6x6', topPlate: 'threadedconn', bottomPlate: 'swivel6' } as const;
+    const point = sp({ measurementEighths: 48 * 8, deductions });
+    expect(effectiveLengthFrom(48 * 8, deductions)).toBe(effectiveLengthInches(point));
+    expect(effectiveLengthFrom(40 * 8, { headerWood: '4x4', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' })).toBe(36.5);
   });
 });
 

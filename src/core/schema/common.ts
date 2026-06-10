@@ -10,3 +10,9 @@ export type System = z.infer<typeof System>;
 // rounding (floor) happens only at the display/effective-length boundary (L-2).
 export const Eighths = z.number().int().nonnegative();
 export type Eighths = z.infer<typeof Eighths>;
+
+// Measurement entry ceiling — 30 ft opening (v3 app.js MAX_MEASUREMENT_INCHES;
+// no Paratech system reaches past it). Validation is inline at the field,
+// never a toast (input.md).
+export const MAX_MEASUREMENT_INCHES = 360;
+export const MAX_MEASUREMENT_EIGHTHS = MAX_MEASUREMENT_INCHES * 8;

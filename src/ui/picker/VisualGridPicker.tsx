@@ -1,0 +1,166 @@
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { claimOverlay, releaseOverlay } from '@ui/primitives';
+import { PlateSwatch } from './PlateSwatch';
+
+/**
+ * VisualGridPicker — the v3 plate/wood picker carried forward VERBATIM in
+ * behavior (L-9 / sheet.md variant 3 / picker.md "explicit preservation").
+ * The iOS reliability was paid for once in v3.5.1; do not modernize it:
+ *  - the grid stays MOUNTED at all times and toggles `visibility` +
+ *    `pointer-events` via the `.open` class — never display/unmount (iOS
+ *    fails to set up overflow scrolling on a freshly-displayed fixed element)
+ *  - `touch-action: pan-y` + `transform: translateZ(0)` + overscroll
+ *    containment on the scroll container (primitives… picker.css)
+ *  - `createPortal(document.body)` replaces the v3 DOM reparent — same
+ *    escape from ancestor stacking/containing contexts (#82)
+ *  - open marks the selection and scrolls it into view after ~50ms
+ *  - Esc, scrim tap, and outside click all close; selection commits + closes
+ *  - ops-mode (`availableIds`) splits Available / Not in inventory with
+ *    section labels and disables out-of-stock rows (v3 #121); 'none' is
+ *    always available
+ * Deliberately NO focus trap — verbatim v3 interaction (flagged in the
+ * session log; the AT path is PowerSelect).
+ */
+export interface VisualGridOption {
+  id: string;
+  name: string;
+  /** Secondary line — e.g. the plate's height deduction. */
+  sub?: string;
+}
+
+export interface VisualGridPickerProps {
+  label: string;
+  options: readonly VisualGridOption[];
+  value: string;
+  onSelect: (id: string) => void;
+  /** Ops mode: stocked option ids. Out-of-stock rows sink + lock (v3 #121). */
+  availableIds?: ReadonlySet<string>;
+  /** Thumbnail renderer — defaults to the placeholder swatch. */
+  renderThumb?: (option: VisualGridOption) => ReactNode;
+}
+
+const SCROLL_TO_SELECTED_MS = 50; // v3's settle delay before scrollIntoView
+
+export function VisualGridPicker({
+  label,
+  options,
+  value,
+  onSelect,
+  availableIds,
+  renderThumb,
+}: VisualGridPickerProps) {
+  const [open, setOpen] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const labelId = useId();
+
+  const isAvailable = (id: string) => !availableIds || id === 'none' || availableIds.has(id);
+  const filtering = !!availableIds;
+  const availableCount = options.filter((o) => isAvailable(o.id)).length;
+  const unavailableCount = options.length - availableCount;
+  const current = options.find((o) => o.id === value);
+
+  // Esc + outside-click close while open (v3 global handlers, scoped here).
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    claimOverlay(close);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!gridRef.current?.contains(t) && !triggerRef.current?.contains(t)) close();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('click', onDocClick);
+    // Scroll the current selection into view once the layer settles (v3).
+    const timer = setTimeout(() => {
+      gridRef.current
+        ?.querySelector('.fs-plate-option.selected')
+        ?.scrollIntoView?.({ block: 'center' });
+    }, SCROLL_TO_SELECTED_MS);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('click', onDocClick);
+      clearTimeout(timer);
+      releaseOverlay(close);
+    };
+  }, [open]);
+
+  const pick = (id: string) => {
+    onSelect(id); // single-select commits immediately…
+    setOpen(false); // …and closes (picker.md rule 2)
+  };
+
+  return (
+    <div className="fs-picker-field">
+      <span className="fs-field-label" id={labelId}>
+        {label}
+      </span>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="fs-picker-trigger"
+        aria-labelledby={labelId}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation(); // keep the opening tap away from the doc-level close
+          setOpen(!open);
+        }}
+      >
+        <span className="fs-picker-trigger-value">{current?.name ?? '—'}</span>
+        <span className="fs-picker-trigger-chevron" aria-hidden="true">
+          ▾
+        </span>
+      </button>
+      {createPortal(
+        <>
+          <div
+            className={`fs-plate-scrim${open ? ' open' : ''}`}
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            ref={gridRef}
+            className={`fs-plate-grid${open ? ' open' : ''}`}
+            role="listbox"
+            aria-labelledby={labelId}
+            aria-hidden={!open}
+          >
+            {filtering && availableCount > 0 && (
+              <div className="fs-plate-section fs-plate-section--available">Available</div>
+            )}
+            {filtering && unavailableCount > 0 && (
+              <div className="fs-plate-section fs-plate-section--unavailable">Not in inventory</div>
+            )}
+            {options.map((opt) => {
+              const stocked = isAvailable(opt.id);
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="option"
+                  aria-selected={opt.id === value}
+                  className={`fs-plate-option${opt.id === value ? ' selected' : ''}${
+                    stocked ? '' : ' fs-plate-option--unavailable'
+                  }`}
+                  tabIndex={open && stocked ? 0 : -1}
+                  onClick={() => pick(opt.id)}
+                >
+                  {renderThumb ? renderThumb(opt) : <PlateSwatch name={opt.name} />}
+                  <span className="fs-plate-info">
+                    <span className="fs-plate-name">{opt.name}</span>
+                    {opt.sub && <span className="fs-plate-sub">{opt.sub}</span>}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>,
+        document.body,
+      )}
+    </div>
+  );
+}

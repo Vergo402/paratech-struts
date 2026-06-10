@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 // root/test-discovery conflict and keeps unit tests free of the app build's
 // React/Tailwind/PWA plugins.
 //
-// environment: 'node' — Session-1 work is pure `core/*` (no DOM). Node guarantees
-// the webcrypto global (`crypto.randomUUID`, L10). UI tests (S3+) opt into jsdom
-// per-file via `// @vitest-environment jsdom`.
+// environment: 'node' — the default suits pure `core/*` + `data/*` (no DOM). Node
+// guarantees the webcrypto global (`crypto.randomUUID`, L10). UI tests (S3+) opt
+// into jsdom per-file via `// @vitest-environment jsdom`.
 const abs = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
@@ -23,6 +23,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.{test,spec}.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: ['./vitest.setup.ts'],
+    // jsdom only exposes localStorage on an http(s) origin — without this,
+    // window.localStorage is undefined in every `@vitest-environment jsdom` file.
+    environmentOptions: {
+      jsdom: { url: 'http://localhost/' },
+    },
   },
 });

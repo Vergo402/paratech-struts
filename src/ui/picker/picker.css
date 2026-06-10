@@ -1,0 +1,224 @@
+/* ============================================================================
+   ui/picker styles. The .fs-plate-* block is the v3.5.1 plate-picker CSS
+   (style.css ~1244–1331) ported VERBATIM in behavior, re-expressed in tokens
+   (L-9). Do not "modernize" the visibility/touch-action/translateZ trio
+   without re-proving it on an iOS device.
+   ============================================================================ */
+
+/* ---- shared picker field chrome -------------------------------------------- */
+.fs-picker-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.fs-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-picker-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.fs-picker-trigger-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-picker-trigger-chevron { flex: none; color: var(--text-secondary); }
+
+/* ---- sheet/full-screen picker rows ------------------------------------------ */
+.fs-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 56px; /* the operational row floor */
+  padding: var(--space-2) var(--space-2);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-stroke);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-picker-row:last-child { border-bottom: none; }
+.fs-picker-row:active { background: var(--surface-card-hover); }
+.fs-picker-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-picker-row--selected .fs-picker-row-label { font-weight: calc(600 + var(--type-weight-bump)); }
+.fs-picker-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fs-picker-row-sub { font: var(--type-caption); color: var(--text-secondary); }
+.fs-picker-row-check { flex: none; color: var(--accent); font-weight: 700; }
+
+/* ---- the visual grid (v3 .plate-option-grid, verbatim behavior) ------------- */
+.fs-plate-grid {
+  /* L-9: visibility instead of display so iOS Safari initializes the touch
+     scroll layer correctly. display:none → block on a position:fixed element
+     sometimes never sets up overflow scrolling; visibility keeps the element
+     in the layout tree at all times. */
+  visibility: hidden;
+  pointer-events: none;
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 0;
+  max-width: 568px;
+  margin: 0 auto;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  box-shadow: var(--shadow-sheet);
+  /* above the modal layer (300) — the picker opens from inside modals (#82) */
+  z-index: 400;
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  /* L-9: explicit touch-action keeps upward swipes from becoming page
+     gestures (pull-to-refresh) and forces vertical pan onto this element. */
+  touch-action: pan-y;
+  /* L-9: own compositing layer so iOS scrolls the layer, not the page. */
+  transform: translateZ(0);
+  /* flex column so `order` drives the available/unavailable sort (v3 #121) */
+  display: flex;
+  flex-direction: column;
+}
+.fs-plate-grid.open {
+  visibility: visible;
+  pointer-events: auto;
+}
+.fs-plate-scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+  z-index: 399;
+}
+.fs-plate-scrim.open { display: block; }
+
+.fs-plate-option {
+  order: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-stroke);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-plate-option:last-child { border-bottom: none; }
+.fs-plate-option:active,
+.fs-plate-option.selected { background: var(--accent-subtle); }
+.fs-plate-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-plate-option--unavailable {
+  order: 3;
+  opacity: 0.45;
+  pointer-events: none;
+}
+.fs-plate-section {
+  font: var(--type-label);
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  background: var(--surface-elevated);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.fs-plate-section--available { order: 0; }
+.fs-plate-section--unavailable { order: 2; }
+.fs-plate-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fs-plate-name {
+  font: var(--type-body-medium);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+.fs-plate-sub { font: var(--type-caption); color: var(--text-secondary); }
+.fs-swatch {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid var(--surface-stroke);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font: var(--type-body-medium);
+  font-weight: 600;
+}
+
+/* ---- full-screen list -------------------------------------------------------- */
+.fs-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-bg);
+}
+.fs-fullscreen[data-state='open'] { animation: fs-fade-in var(--motion-nav) var(--ease-nav); }
+.fs-fullscreen-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.fs-fullscreen-title {
+  font: var(--type-headline-2);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+  margin: 0;
+}
+.fs-fullscreen-cancel {
+  background: none;
+  border: none;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--accent);
+  cursor: pointer;
+}
+.fs-fullscreen-search { flex: none; padding: var(--space-3) var(--space-4) 0; }
+.fs-fullscreen-body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-2) var(--space-4) var(--space-4);
+  overflow-y: auto;
+  touch-action: pan-y;
+  transform: translateZ(0);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.fs-fullscreen-nomatch {
+  font: var(--type-body);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--space-6) 0;
+}
+
+/* ---- power select (native fallback) ----------------------------------------- */
+.fs-power-select {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+}
