@@ -196,14 +196,16 @@ Screen-reader behavior particular to this workflow:
 
 ## Open questions
 
-1. **Attach-target** ([`22-task-level-checklist.md`](../08-information-architecture/22-task-level-checklist.md)
-   OQ1): what a Task Level Checklist binds to — the operation, a task/assignment, a shore point, or a
-   group/resource under a Group Supervisor. Working assumption: **a task/assignment scoped to the active
-   operation** (distinct from the shore-point lifecycle, which is the Operations board's slide). Resolved
-   with the Phase G operations workflow + the Operations drilldown — a Phase H/I binding decision.
-2. **Multiple concurrent task checklists:** if two officers each work a task with its own checklist, how
-   the side-drawer scopes to "my task" vs. "all tasks" depends on the attach-target resolution (OQ1).
-   Phase H.
+1. **Attach-target — DIRECTION DECIDED (gate review M13):** a Task Level Checklist binds to **a
+   task/assignment under a Group — a per-Group/per-task instance, NOT one operation-wide shared tree.** This
+   is the deciding point: an op-wide shared instance would have two Group Supervisors attesting the *same*
+   tree, collapsing multi-Group visibility. With per-task/per-Group instances, each crew's checklist is its
+   own, and the side-drawer scopes to "my task." The full data-model binding (exactly how a task/assignment
+   is represented, and the Operations drilldown that surfaces it) remains a Phase H/I decision — but the
+   *direction* is no longer a working assumption.
+2. **Multiple concurrent task checklists — follows from OQ1:** with per-task/per-Group instances, two
+   officers each get their own checklist and the side-drawer shows the one for their task. The exact
+   selection UI when a device could see more than one is a Phase H detail.
 3. **Doctrine content authorship:** the section/step text is sourced doctrine — verbatim or
    paraphrase-then-approved by Alex before ship (Principle 1). v4.1.
 4. **Drawer handedness:** right-anchored default; left-anchored mirror is a Phase H setting

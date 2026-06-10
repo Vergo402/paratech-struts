@@ -32,7 +32,11 @@ slide; **ending an operation is not.**
 
 **Role gate:** **Incident Commander only.** End Operation is gated on the live `myRole` = IC (faithful to
 v3). No override — if command has not been claimed, the founding device holds IC by default
-(see workflow [#225](20-role-assignment-command-transfer.md)).
+(see workflow [#225](20-role-assignment-command-transfer.md)). **The IC gate is always satisfiable:** because
+command transfer is a two-party handshake where the **outgoing IC retains command until the incoming
+accepts** ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)), the incident is never in a
+no-IC state — there is always exactly one IC who can close the operation, even if a pending transfer is
+never accepted.
 
 Phone is the floor (Principle 2) — a solo IC running command phone-only can end the operation from the
 SitStat below-fold action.
@@ -97,6 +101,12 @@ rendered (hide-not-grey, per the Settings gating doctrine).
 │  archived. The record is final and   │
 │  cannot be re-opened.                │
 │                                     │
+│  ⚠ 3 shore points still deployed —   │  ← conditional warning (only if equipment unreturned)
+│    their equipment hasn't been       │
+│    returned to inventory. Ending now │
+│    leaves those apparatus counts     │
+│    short for the next call.          │
+│                                     │
 │  12 shore points · 14 personnel      │  ← summary so the IC sees what's being closed
 │                                     │
 │  [ Cancel ]      [ End Operation ]  │  ← Cancel is the default (destructive-confirm pattern)
@@ -107,6 +117,14 @@ A **destructive/terminal confirm modal** per [ADR-016](../11-decisions/ADR-016-m
 and [`modal.md`](../03-primitives/modal.md) §Destructive-confirm. Cancel is the default-focused button;
 the destructive action sits on the trailing edge. **No timed undo** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)) —
 once confirmed, the operation is archived.
+
+**Unreturned-equipment warning (ships v4.0).** When any shore point has **not** reached Strut Equipment
+Returned at close, the modal surfaces the count and what it costs: those struts are still decremented from
+their apparatus' available counts, so ending leaves the inventory **short for the next incident** (the gate
+review M3 fix — an inventory-accuracy issue, which is command accountability, not cosmetics). The warning
+**does not block** End Operation (the IC may legitimately close with equipment still in place); it is the
+deliberate friction on a terminal, un-reopenable action. If every shore point is already Returned, the
+warning does not appear.
 
 **Confirmed →** the operation archives; the event log freezes as the incident record.
 **Cancelled →** no change; returns to the active SitStat.
@@ -235,9 +253,11 @@ Screen-reader behavior particular to this workflow:
    Phase H owns the archive surface.
 2. **Re-open an archived operation:** v4.0 treats archive as terminal (no re-open). Whether a mis-ended
    operation can be re-opened (and by whom) is deferred — the safe v4.0 answer is "start a new operation."
-3. **Shore points not yet Returned at close:** the app does not force every SP to Strut Equipment Returned
-   before End Operation. Whether to warn the IC ("3 shore points still deployed — equipment not returned")
-   in the confirm modal is a Phase H copy/UX question.
+3. **Shore points not yet Returned at close — RESOLVED (gate review M3, ships v4.0):** the app does not
+   force every SP to Strut Equipment Returned before End Operation, **but the confirm modal now warns** when
+   any remain deployed (count + the inventory-shortfall consequence; Step 2). The warning informs, it does
+   not block. The only remaining open item here is **re-open / reflare recovery** (OQ2) — v4.0 keeps archive
+   terminal ("start a new operation"); a true re-open is deferred.
 4. **After-action email transport + recipient sourcing:** the send mechanism and IC/Ops address lookup are
    Phase H infrastructure ([`99-open-questions.md`](../99-open-questions.md) #35); the trigger wiring ships
    with the after-action feature (#32).

@@ -157,8 +157,15 @@ A hazard's **location ties it to an area**, so a shore point sitting in a hazard
 
 This is the **no-safety-hold rule made concrete** (Principle 10): the badge surfaces the hazard so the
 team officer factors it into the slide-to-advance decision, but the app **never gates the advance** on it.
-There is no `safety-hold` status. The badge clears when the hazard is mitigated (the immediate-vs-on-confirm
-timing is an open question below).
+There is no `safety-hold` status. The badge clears when the hazard is mitigated (sync-propagated).
+
+**v4.0 matching rule — Division-level, conservative (gate review fix).** A hazard's free-text location is
+resolved to a **Division**; the badge then appears on **every shore-point card in that Division**. If the
+location **cannot** be resolved to a Division, the hazard shows **only** in the Hazard Log and the persistent
+header — it is **never** badged onto a shore-point card. The rule is deliberately conservative: **better to
+under-badge (visible in the log) than to badge the wrong card.** Precise per-area badging via a structured
+building → division → area binding is a Phase H refinement; the v4.0 Division-level fallback is the stated
+default so the behavior is never silently chosen by whoever codes it.
 
 ---
 
@@ -233,10 +240,11 @@ Screen-reader behavior particular to this workflow:
 
 ## Open questions
 
-1. **Hazard ↔ area binding precision** ([`32-hazard-log.md`](../08-information-architecture/32-hazard-log.md)
-   OQ1): the Add-Hazard location is free text (v3 behavior). For the SP-card badge to map precisely, the
-   location may need a structured building → division → area drilldown. Free text ships v4.0; structured
-   binding is a Phase H refinement.
+1. **Hazard ↔ area binding precision — v4.0 fallback DECIDED (gate review):** the Add-Hazard location is
+   free text (v3 behavior), and v4.0 uses a **conservative Division-level match** — badge every SP card in
+   the resolved Division; if the location can't resolve to a Division, badge **no** card (log + header only),
+   never the wrong one (Step 4). Precise per-area badging via a structured building → division → area binding
+   is the Phase H refinement; the v4.0 behavior is no longer undecided.
 2. **Per-area badge clearing** (OQ3): when a hazard is mitigated, does the SP-card badge clear immediately
    or on a confirm? Working assumption: immediately on the mitigate commit (sync-propagated). Phase H.
 3. **ICS-208 export format** (OQ2): the export mechanism is shared with the after-action / audit export

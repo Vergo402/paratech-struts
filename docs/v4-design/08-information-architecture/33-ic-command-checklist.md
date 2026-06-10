@@ -60,8 +60,8 @@ The Incident Commander's **doctrine attestation tree**: the phase-by-phase comma
 
 [`nested-checklist.md`](../03-primitives/nested-checklist.md) (OQ7) and [`06-synthesis.md`](../06-synthesis.md) Open-Q5 draw this line, and this screen honors it exactly:
 
-- **v4.0 ships:** the screen + the primitive + the **ICS-201 briefing structure** — the *doctrine-derived field set* (current objectives, resource summary, Safety Officer identity, hazard-log summary), assembled from role history + the operation with **no extra entry at transfer time** (essay 03). That is structure, not paraphrase.
-- **v4.1 ships (behind a feature flag):** the **IC command-doctrine checklist content** — the paraphrased phase/step strings — after the first Hartsdale drill validates that an IC engages with a digital checklist mid-incident. The strings are sourced doctrine, **paraphrase-then-approved by Alex**, never invented (Principle 1; [`nested-checklist.md`](../03-primitives/nested-checklist.md) Universal Rule 6).
+- **v4.0 ships:** the screen + the primitive + a **real, auto-assembled ICS-201 brief** — the **six live SitStat datums** (operation name, elapsed, current IC, Safety Officer identity, open-hazard count, shore-point status counts), pulled from role history + the operation with **no manual entry at transfer time** (essay 03). This is a **populated, useful brief at the handoff — never a complete-looking blank** (the gate-review B2 fix). It is assembled live data, not paraphrased doctrine.
+- **v4.1 ships (behind a feature flag):** the **doctrine-expanded ICS-201 fields** (objectives narrative, etc.) **and** the **IC command-doctrine checklist content** — the paraphrased phase/step strings — after the first Hartsdale drill validates that an IC engages with a digital checklist mid-incident. These *add to* the live v4.0 brief, never replace it. The strings are sourced doctrine, **paraphrase-then-approved by Alex**, never invented (Principle 1; [`nested-checklist.md`](../03-primitives/nested-checklist.md) Universal Rule 6).
 
 The IA — where the screen lives, what it composes, how it behaves across four surfaces — is fixed now (Phase F); the words come later.
 

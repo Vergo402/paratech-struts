@@ -60,7 +60,7 @@ Faithful to the v3 schema:
 ## Two things v4 adds (v3 lacked both)
 
 1. **ICS-208 export.** The register exports to the ICS-208 Safety Message/Plan form (a [`button`](../03-primitives/button.md) action) — v3 only kept hazards in the archived-op snapshot with no formal export. (The doctrine-form export pattern is shared with the after-action/audit work.)
-2. **Hazard badges on shore-point cards.** A hazard's **location ties it to an area**, so a shore point in a hazarded area shows the [`card.md`](../03-primitives/card.md) **hazard badge** — v3's hazard data was isolated to Command. The badge is **visible information, not a gate** (below).
+2. **Hazard badges on shore-point cards.** A hazard's **location ties it to an area**, so a shore point in a hazarded area shows the [`card.md`](../03-primitives/card.md) **hazard badge** — v3's hazard data was isolated to Command. The badge is **visible information, not a gate** (below). **v4.0 matching rule (decided):** resolve the free-text location to a **Division** and badge every SP card in it; if it can't resolve to a Division, show the hazard in the log + header only, **never** on the wrong card — structured per-area precision is Phase H (see the [`21-hazard-log.md`](../09-workflows/21-hazard-log.md) workflow).
 
 ## No safety-hold (Principle 10 / synthesis Q2)
 

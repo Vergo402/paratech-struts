@@ -203,10 +203,10 @@ Screen-reader behavior particular to this workflow:
 ## Open questions
 
 1. **Session record shape + crew binding** ([`23-orm-tcrm.md`](../08-information-architecture/23-orm-tcrm.md)
-   OQ): the exact stored session record (start/end timestamps, attested items, notes) and **what the
-   briefing attaches to** — a task, a Group, or the operation — is resolved with the Phase G operations
-   workflow + the Operations drilldown. Working assumption: scoped to the active operation / the
-   supervisor's Group. Phase H.
+   OQ): the briefing **attaches to the supervisor's Group / task** — consistent with the Task Level Checklist
+   attach-target direction decided at the gate review (per-Group/per-task, not op-wide; see
+   [`23-task-level-checklist.md`](23-task-level-checklist.md) OQ1). The exact stored session record
+   (start/end timestamps, attested items, notes) and the data-model binding remain a Phase H detail.
 2. **Numeric ORM / GAR score:** out of scope for v4.0 — the app records the *briefing*, not a numeric risk
    score (Principle 1 — not invented here). If doctrine review adds a scored worksheet, it composes the
    same primitive (or a new variant via gate escalation). [`23-orm-tcrm.md`](../08-information-architecture/23-orm-tcrm.md).

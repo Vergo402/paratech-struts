@@ -136,18 +136,21 @@ reverse of a reversible attestation, not a destructive act.
 ┌──────────────────────────────────┐
 │  ICS-201 Briefing                 │
 │──────────────────────────────────│
-│  Current objectives · …           │  ← assembled from role history + operation
-│  Resource summary · 14 personnel  │  ← NO extra entry at transfer time
-│  Safety Officer · Lt. Cho         │
-│  Hazard-log summary · 2 open      │
+│  Cascade Building Fire · OP 1     │  ← op name (live)
+│  Elapsed 02:41 · IC Capt. Reyes   │  ← elapsed + current IC (live)
+│  Safety Officer · Lt. Cho         │  ← (live)
+│  2 open hazards                   │  ← open-hazard count (live)
+│  Returned 12 · Secured 0 · …      │  ← shore-point status counts (live)
 └──────────────────────────────────┘
 ```
 
-The **ICS-201 briefing structure** ships v4.0 — a [`card.md`](../03-primitives/card.md) assembled from the
-role history + the operation (current objectives, resource summary, Safety Officer identity, hazard-log
-summary) with **no extra entry at transfer time**. The **doctrine content ships v4.1** behind a feature
-flag. This card is the briefing payload the command-transfer workflow ([#225](20-role-assignment-command-transfer.md))
-attaches.
+**v4.0 ships a real, auto-assembled brief — not an empty shell.** The card carries the **six live SitStat
+datums** the receiving IC needs at a handoff — **operation name, elapsed time, current Incident Commander,
+Safety Officer, open-hazard count, and shore-point status counts** — pulled from the role history + the
+operation with **no manual entry at transfer time**. It is genuinely useful the moment it is handed over.
+The **doctrine-expanded ICS-201 fields** (objectives narrative, etc.) ship **v4.1** behind a feature flag —
+they *add to* the live six datums, never replace a populated card with a blank one. This card is the
+briefing payload the command-transfer workflow ([#225](20-role-assignment-command-transfer.md)) attaches.
 
 ---
 

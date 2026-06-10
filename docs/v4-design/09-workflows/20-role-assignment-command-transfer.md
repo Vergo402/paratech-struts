@@ -38,7 +38,7 @@ about the ICS-position axis. Spelled-out NIMS titles per ADR-008 — never "IC,"
 **Role gates:**
 - **My Role** — any authenticated device may set its own position.
 - **Assign resources / restructure / reparent / rename / add sub-role** — **Incident Commander only**.
-- **Command transfer** — **Incident Commander only** initiates; the named incoming IC accepts.
+- **Command transfer** — **Incident Commander only** initiates; the named incoming IC **must accept** (two-party handshake, [ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)).
 
 ---
 
@@ -57,10 +57,12 @@ stateDiagram-v2
     RemovePositionModal --> NodeSheet : IC · tap Cancel → modal
     RemovePositionModal --> CommandSurface : IC · tap Remove → modal (destructive confirm)
 
-    CommandSurface --> TransferTakeover : IC · tap Transfer Command → full-screen takeover
-    TransferTakeover --> CommandSurface : IC · cancel → takeover (no change)
-    TransferTakeover --> PendingAccept : IC · select incoming IC + confirm → takeover (writes role-history)
-    PendingAccept --> CommandSurface : incoming IC · accept on their device → command moves (gold accent follows)
+    CommandSurface --> TransferTakeover : outgoing IC · tap Transfer Command → full-screen takeover
+    TransferTakeover --> CommandSurface : outgoing IC · cancel → takeover (no change)
+    TransferTakeover --> TransferPending : outgoing IC · select incoming IC + confirm → takeover (logs initiated; OUTGOING RETAINS command)
+    TransferPending --> CommandSurface : incoming IC · Accept → command MOVES; role-history logs completed handshake (gold accent follows)
+    TransferPending --> CommandSurface : outgoing IC · Cancel / incoming IC · Decline → command stays with outgoing IC
+    note right of TransferPending : ADR-021 — outgoing IC keeps command + End-Op authority until Accept; never a no-IC state
 
     CommandSurface --> RoleHistory : any read-access · tap role history → list (one tap, new in v4)
     RoleHistory --> CommandSurface : dismiss → list
@@ -187,9 +189,11 @@ reached by tap-to-descend. Reparent commits to the structure (reversible by movi
 │  ● B/C Okafor · this incident       │
 │  ○ … other assigned individuals     │
 │                                     │
-│  A briefing (ICS-201) is attached    │  ← assembled from role history + op, no extra entry
+│  Transfer brief (auto)              │  ← live SitStat snapshot — real content, no manual entry
+│  Cascade Bldg Fire · 02:41 · SO Cho │
+│  2 open hazards · Returned 12 …     │
 │  ─────────────────────────────────  │
-│  [ Transfer Command ]               │
+│  [ Transfer Command ]               │  ← initiates; you KEEP command until B/C Okafor accepts
 └─────────────────────────────────────┘
 ```
 
@@ -197,18 +201,51 @@ Command transfer is a **full-screen takeover, not a stacked modal** ([ADR-016](.
 Command row) — it is consequential enough to own the screen. Afforded from the persistent IC header
 action on SitStat.
 
-The IC selects the incoming commander and confirms. On confirm, the app writes a **role-history event**
-(K-13) — the append-only audit thread that command-transfer and assignment events feed. An ICS-201-style
-briefing is attached, assembled from the role history + the operation with **no extra entry at transfer
-time** (the structure ships v4.0; doctrine content v4.1).
+**Two-party handshake — the outgoing IC retains command until the incoming accepts**
+([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)). The outgoing IC selects the incoming
+commander and confirms; this **initiates** the transfer (logs a role-history "initiated" event) but
+**does not move command yet** — Capt. Reyes remains the Incident Commander of record, with full authority
+including End Operation, while the transfer is **Pending** (Step 4-P). This is the literal fireground
+rule: *you keep command until the other party acknowledges they have it.*
 
-**Two-device choreography:** the named incoming IC accepts on their own device; command then moves and
-the gold accent underline follows the new IC. The exact handshake (does it require the incoming IC's
-explicit accept, or move on the outgoing IC's confirm with the incoming notified on sync?) is an open
-question below — Principle 10 forbids a push, so acceptance surfaces on the incoming device's next sync,
-not as an alert.
+**The transfer brief is a real, auto-assembled SitStat snapshot — not an empty form.** In v4.0 it carries
+the six live datums the receiving IC needs at the handoff — **operation name, elapsed time, current IC,
+Safety Officer, open-hazard count, shore-point status counts** — pulled from the role history + the
+operation with **no manual entry** at transfer time. The doctrine-expanded ICS-201 fields (objectives
+narrative, etc.) ship v4.1; the v4.0 brief is genuinely useful, never a complete-looking blank.
 
-⇩ commits → role-history event written; command moves to the incoming IC
+⇩ initiates → role-history "initiated" event; command stays with the outgoing IC → `[Transfer Pending]`
+
+---
+
+### Step 4-P — Transfer Pending → Accept / Cancel / Decline
+
+```
+┌─────────────────────────────────────┐   ┌─────────────────────────────────────┐
+│  Cascade Building Fire  [sync ●]    │   │  Cascade Building Fire  [sync ●]    │
+│  Incident Commander · Capt. Reyes   │   │  ⚑ You are being given command       │  ← incoming IC's
+│  ⏳ Transfer pending → B/C Okafor    │   │     from Capt. Reyes                 │     pending-acceptance
+│     [ Cancel transfer ]             │   │  Transfer brief: Cascade Bldg Fire…  │     state (on next sync;
+│                                     │   │  [ Accept command ] [ Decline ]      │     NOT a push)
+└─────────────────────────────────────┘   └─────────────────────────────────────┘
+   outgoing IC's device (still IC)            incoming IC's device
+```
+
+While **Pending**, command has **not** moved — the outgoing IC is still the IC of record. The incoming IC
+sees a prominent **pending-acceptance** state when they open the app (a visible state, **never a push** —
+Principle 10; the verbal "you have command / I have command" happens on the radio, the app records it).
+
+- **Incoming IC taps Accept →** command **moves**; the role-history logs the **completed two-party
+  handshake** (initiated-by Reyes → accepted-by Okafor, both timestamped); the gold accent underline
+  follows the new IC.
+- **Outgoing IC taps Cancel** (or **incoming IC taps Decline**) → the pending transfer ends; **command
+  stays with the outgoing IC**. The outgoing IC may reassign.
+
+**Never a no-IC state:** because command only leaves on Accept, there is always exactly one IC of
+record — so the IC-gated [End Operation](16-end-of-operation.md) is always reachable, even if the incoming
+IC is offline and never accepts ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)).
+
+⇩ on Accept commits → command moves to the incoming IC; completed-handshake role-history event written
 
 ---
 
@@ -238,13 +275,15 @@ only the IC edits structure.
 | Device | Step | What it sees |
 |---|---|---|
 | Any device | 1 | Sets its own My Role; the org chart reflects the staffing on next sync |
-| IC's **tablet** (CP) | 2–4 | Assigns resources, reparents (drag), initiates transfer |
-| Incoming IC's **phone** | 4 | On next sync: command-transfer event appears; accepts → becomes IC |
+| IC's **tablet** (CP) | 2–4 | Assigns resources, reparents (drag), **initiates** transfer; stays IC while Pending |
+| Incoming IC's **phone** | 4-P | On next sync: a prominent **pending-acceptance** state ("You are being given command"); taps **Accept** → becomes IC (or **Decline**) |
 | Operations Section Chief's **device** | — | On next sync: org chart updates; read-only |
-| **Broadcast** (C-13) | — | On next sync: left-third org chart updates to Section-Chief depth; the IC name in the header changes after a transfer |
+| **Broadcast** (C-13) | — | On next sync: the IC name in the header changes only **after Accept** (never on a still-pending transfer) |
 
-No push (Principle 10). Command transfer and assignments propagate via the event log on sync; the incoming
-IC is not paged — the transfer appears on their next sync.
+No push (Principle 10). Command transfer is a **two-party handshake** ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)):
+the outgoing IC initiates and **retains command until the incoming IC accepts**; the incoming IC is not
+paged — the pending-acceptance state appears on their next sync, and the verbal handshake happens on the
+radio. Command never enters a no-IC state, so End Operation is always reachable.
 
 ---
 
@@ -256,7 +295,8 @@ IC is not paged — the transfer appears on their next sync.
 | Assign / clear a resource | Yes | Re-open the node sheet; re-assign or clear |
 | Reparent a position | Yes | Drag / move it back |
 | Remove a populated position | Yes (re-add) | Destructive modal to remove; re-add to restore (the role-history event stays) |
-| Transfer command | Yes (transfer again) | Command can move again; **the role-history event is append-only — not erased** |
+| Initiate a transfer (while Pending) | Yes | Outgoing IC **Cancel** / incoming IC **Decline** → command stays with the outgoing IC (no move happened) |
+| Transfer command (after Accept) | Yes (transfer again) | Command can move again; **the role-history events (initiated + accepted) are append-only — not erased** |
 
 No timed undo (ADR-010). The audit trail (role history) is append-only by design — reversibility means
 "do the inverse action," never "erase the record."
@@ -296,7 +336,12 @@ Screen-reader behavior particular to this workflow:
   (`aria-live="polite"`, not assertive).
 - **Transfer takeover opens:** **"Transfer Command. Current Incident Commander, Captain Reyes."** Full-screen
   route announces as a navigation, focus on the first selectable incoming commander.
-- **Transfer commit:** **"Command transferred to Battalion Chief Okafor."** (`aria-live="assertive"`).
+- **Transfer initiated (outgoing IC):** **"Transfer pending to Battalion Chief Okafor. You keep command
+  until they accept."** (`aria-live="polite"`).
+- **Pending-acceptance state (incoming IC):** **"You are being given command of Cascade Building Fire from
+  Captain Reyes. Accept command, or decline."** (`aria-live="polite"` on the visible state — not an alert).
+- **Transfer completed (on Accept):** **"You now have command. Cascade Building Fire."** /
+  **"Command transferred to Battalion Chief Okafor."** (`aria-live="assertive"`).
 - **Remove position (destructive):** modal traps focus, default on Cancel.
 - No new SR script row needed (sheet + modal + list patterns already registered).
 
@@ -304,13 +349,15 @@ Screen-reader behavior particular to this workflow:
 
 ## Open questions
 
-1. **Command-transfer two-device handshake:** does the transfer require the incoming IC's explicit accept
-   on their device, or does it commit on the outgoing IC's confirm with the incoming IC notified on sync?
-   Principle 10 forbids a push, so any "notification" is a passive sync reflection. The exact choreography
-   (who-confirms, what happens if the incoming IC never accepts) is deferred to Phase H.
-2. **Briefing default by incident Level:** the ICS-201-style transfer brief is attached by default at
-   Level III+ and optional at Level IV–V — the threshold and whether it is skippable is a Phase H decision
-   (the structure ships v4.0; doctrine content v4.1).
+1. **Command-transfer handshake — RESOLVED ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)):**
+   the transfer **requires the incoming IC to accept** (two-party handshake), and **the outgoing IC retains
+   command until acceptance** — so the incident is never in a no-IC state and End Operation is always
+   reachable. The incoming IC sees a pending-acceptance state on next sync (not a push, Principle 10);
+   Cancel/Decline returns command to the outgoing IC. The data-model shape of the Pending state is a Phase H
+   detail, but the model is decided.
+2. **Briefing default by incident Level:** the v4.0 transfer brief is the **auto-assembled six-datum SitStat
+   snapshot** (real content, always attached, no manual entry). Whether the **doctrine-expanded ICS-201
+   fields** (v4.1) are default at Level III+ vs. optional at Level IV–V is the remaining Phase H decision.
 3. **My Role vs. org-chart self-assignment collision:** if a device sets My Role = Shoring Group Supervisor
    while the IC has assigned a different individual to that node, which wins? Working assumption: My Role is
    the device's self-declared staffing; the org chart is the IC's authoritative structure — they can
