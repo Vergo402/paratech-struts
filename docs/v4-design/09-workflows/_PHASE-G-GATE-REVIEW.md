@@ -233,3 +233,27 @@ These are the items that **shape the data model or mislead a commander** — the
 - **B4 / B5 — The bulk-onboarding invite path and the checklist editor + baseline content land in v4.1.** Training & Safety must be able to plan around this; *"my crews need to be told that up front."*
 
 **Bottom line:** the design earns the gate. Lock the five must-fix decisions, schedule the should-fix list into Phase H with the gloved-button work near the top, and put the v4.1/v4.5 deferrals in writing where a chief will see them. Then Phase H can build with confidence.
+
+---
+
+## 10. Resolutions Applied (2026-06-09)
+
+Alex's gate decisions, applied to the specs. The panel findings above are left intact.
+
+### The five must-fix decisions (Workstream A) — all encoded
+| # | Gate item | Resolution | Where |
+|---|---|---|---|
+| B1 | Command transfer silent handoff | **[ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)** — two-party handshake; the **outgoing IC retains command until the incoming accepts**, so there is always exactly one IC of record and End-Op is always reachable (removes the offline-stranding failure). Alex chose "requires accept"; the retain-until-accept invariant makes it safe. | `20`, `30`, `16` |
+| B2 | ICS-201 brief ships empty | v4.0 ships a **real auto-assembled six-datum SitStat snapshot brief** (op name, elapsed, current IC, Safety Officer, open-hazard count, shore-point counts) — never a complete-looking blank; doctrine-expanded fields v4.1. | `20`, `22`, `33` |
+| M3 | End-Op foot-gun | **Unreturned-equipment warning ships v4.0** in the confirm modal (count + inventory-shortfall consequence); informs, doesn't block. | `16` |
+| #7 | Hazard→SP matching | **v4.0 Division-level fallback** decided — badge every SP in the resolved Division; if unresolvable, log + header only, **never the wrong card**. | `21`, `32` |
+| M13 | Task-checklist attach-target | **Decided: per-Group/per-task instance, not one op-wide shared tree** (so two Group Supervisors never attest the same instance). | `23`, `22`, `24` |
+
+### The disclosures — inverted by Alex's scope call (Workstream B)
+- **B3 / M12 (multi-agency)** and **B4 (bulk onboarding)** are **no longer deferrals** — Alex pulled **mutual aid into v4.0** (**[ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)**): cross-dept incident sharing, **QR-everywhere join** (multi-use/revocable code — fixes B4), **guest participation** for un-provisioned units, and the **merged multi-agency audit roll-up** all ship v4.0. Specs `32`/`52` rewritten to v4.0; ripples in `06`/`07`/`08`/`20`/`31`/`41`/`53`. The v4.0 slice expanded accordingly (master plan flagged).
+- **B5 (checklist editor + baseline content = v4.1)** remains the one honest disclosure (governed by ADR-020).
+
+### Should-fix → Phase H trackers
+B6/Theme-2 (buttons-beside-slide), M4 (measurement/Division control lock), M1 (PAR in command chrome), M7 (over-capacity card), M8 (mandatory display-name), plus the QR scanner — logged as [`99-open-questions.md`](../99-open-questions.md) #37–#42.
+
+**Gate status:** all five must-fix decisions encoded; the design is ready for Alex's **#239 final sign-off**.
