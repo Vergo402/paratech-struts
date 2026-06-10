@@ -210,5 +210,9 @@ Screen-reader behavior particular to this workflow:
    performance decision (the K-15 virtualization rule sets the ceiling).
 4. **Immutability enforcement:** the backend guarantee that no client can delete/rewrite an event (a
    security-rule + event-sourcing concern). Phase H.
-5. **Multi-incident roll-up:** for mutual-aid incidents (v4.5), how contributing departments' events merge
-   into one reviewable record. Deferred with the cross-dept incident invite ([#210](../08-information-architecture/52-cross-dept-invite.md)).
+5. **Merged multi-agency roll-up — now v4.0** ([ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md);
+   was a v4.5 deferral). For a mutual-aid incident ([#235](32-mutual-aid-invite-accept.md)), every contributing
+   unit's events merge into **one reviewable, exportable record** — the unified after-action. Guest
+   contributors are attributed **"Guest · \<unit tag\>"** until claimed. The IA is set (same scope segmented +
+   filter + export); the merged-export format rides the shared export-convergence work. Only the export
+   *format* detail remains a Phase H item — the capability is v4.0.

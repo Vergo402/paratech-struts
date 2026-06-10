@@ -38,7 +38,7 @@ about the ICS-position axis. Spelled-out NIMS titles per ADR-008 — never "IC,"
 **Role gates:**
 - **My Role** — any authenticated device may set its own position.
 - **Assign resources / restructure / reparent / rename / add sub-role** — **Incident Commander only**.
-- **Command transfer** — **Incident Commander only** initiates; the named incoming IC **must accept** (two-party handshake, [ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)).
+- **Command transfer** — **Incident Commander only** initiates; the named incoming IC **must accept** (two-party handshake, [ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)). With mutual aid in v4.0 ([ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)), the incoming IC may be an **assisting (out-of-department) commander** on the shared incident — the **same handshake applies unchanged** (the outgoing IC still retains command until the assisting IC accepts).
 
 ---
 

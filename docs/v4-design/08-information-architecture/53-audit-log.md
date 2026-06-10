@@ -124,5 +124,5 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 3. **Export format** — CSV (raw log) + PDF (assembled forms); the exact format is shared with the [Hazard Log](32-hazard-log.md) ICS-208 + the [Accountability](41-accountability.md) PAR snapshot; finalized in the Phase G/H export work.
 4. **Pagination at scale** — load strategy for 1000+ events (infinite scroll vs. date-range); affordance for Phase H.
 5. **Immutability enforcement** — backend guarantee of no out-of-band deletes to `/events/`; Phase H infrastructure.
-6. **Multi-incident roll-up** — how a mutual-aid incident ([Cross-Dept Invite](52-cross-dept-invite.md)) merges contributing depts' events into one log; Phase G mutual-aid workflow.
+6. **Merged multi-agency roll-up — now v4.0** ([ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)) — a mutual-aid incident ([Cross-Dept Invite](52-cross-dept-invite.md)) merges every contributing unit's events into **one** reviewable/exportable record (the unified after-action); guests attributed "Guest · «unit»" until claimed. The merged-**export format** rides the shared export-convergence work (the only Phase H detail; the capability is v4.0).
 7. **2FA event recording** — when 2FA lands → [`99-open-questions.md`](../99-open-questions.md) #33.

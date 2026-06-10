@@ -109,7 +109,7 @@ defers.
 │                                     │
 │  Invite your crew with this code:   │
 │  ┌───────────────────────────┐      │
-│  │   HAMD-4F2K               │ [Copy]│  ← first invite code (one-time, 24h expiry)
+│  │   HAMD-4F2K   [QR] [Copy] │      │  ← first invite code: QR + code, multi-use, regenerable
 │  └───────────────────────────┘      │
 │  ─────────────────────────────────  │
 │  [ Done ]                           │  ← enters the app shell
@@ -120,9 +120,12 @@ On a successful create, the app:
 - **Claims the creator as the first Admin** (idempotent — only succeeds if the department has no Admin;
   cites [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). An **Admin** badge confirms it
   (cites [`badge.md`](../03-primitives/badge.md)).
-- **Generates the first invite code** (one-time, 24h expiry) and surfaces it in a success **sheet** to copy
-  and share (cites [`sheet.md`](../03-primitives/sheet.md)). This is the code the rest of the crew enter in
-  workflow [#232](08-joining-by-invite-code.md).
+- **Generates the first invite code** — a **QR + human-readable code**, **multi-use and regenerable** (NOT a
+  one-time/24h code — that could never onboard a 40-person department across three shifts; gate review B4,
+  [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)) — surfaced in a success **sheet** to display,
+  copy, or print (cites [`sheet.md`](../03-primitives/sheet.md)). The whole crew joins off the **one** code
+  (scan the QR on a screen/printed card, or type it) in workflow [#232](08-joining-by-invite-code.md). The
+  Admin can **regenerate** it (invalidating the old) if it leaks.
 - **Done** enters the app shell as Admin.
 
 The **Claim department** path (post-migration banner) lands at the same created state — the idempotent

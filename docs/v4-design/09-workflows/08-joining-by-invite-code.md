@@ -3,7 +3,7 @@
 > Phase G workflow spec — [#232](https://github.com/Vergo402/paratech-struts/issues/232). Sub-issue of epic [#135](https://github.com/Vergo402/paratech-struts/issues/135).
 > Cites [`00-workflow-foundation.md`](00-workflow-foundation.md) for all shared conventions.
 > Source: [`72-invite-code.md`](../08-information-architecture/72-invite-code.md) (the pre-shell join-by-code route — one field, paste convenience, Default-role outcome, calm errors, deferrable); [`input.md`](../03-primitives/input.md) (the code field); [`button.md`](../03-primitives/button.md) (Join / Paste / guest); [`loading-state.md`](../03-primitives/loading-state.md) (busy on validation/write); [`badge.md`](../03-primitives/badge.md) (Default role on success); [ADR-017](../11-decisions/ADR-017-custom-department-roles.md) (join → Default role); [ADR-015](../11-decisions/ADR-015-navigation-pattern.md) (deferrable, never a gate).
-> **Precondition:** the user is signed in (workflow [#234](06-signing-in-and-out.md)) — or signing in is part of the same forward flow — and has an invite code from a department Admin (generated in workflow [#231](07-department-setup.md)). **Distinct from** the v4.5 cross-department *incident* invite ([#210](../08-information-architecture/52-cross-dept-invite.md)).
+> **Precondition:** the user is signed in (workflow [#234](06-signing-in-and-out.md)) — or signing in is part of the same forward flow — and has an invite code (QR or human-readable) from a department Admin (generated in workflow [#231](07-department-setup.md)). **Distinct from** the cross-department *incident* invite ([#210](../08-information-architecture/52-cross-dept-invite.md) — both ship v4.0; that one scopes a *unit* to one *incident*, this one joins a *person* to a *department*).
 
 ---
 
@@ -69,7 +69,9 @@ guest can keep working and join later (ADR-015).
 │  ‹ Back        Join department      │  ← pre-shell full-screen route
 │                                     │
 │  Invite code                        │
-│  [ HAMD-4F2K __________ ] [ Paste ] │  ← constrained field + paste-from-clipboard convenience
+│  [ Scan QR ]                        │  ← primary: scan the dept code off a screen / printed card
+│  ── or ──                           │
+│  [ HAMD-4F2K __________ ] [ Paste ] │  ← fallback: type / paste the code
 │                                     │
 │  Ask your department Admin for a     │
 │  code if you don't have one.        │
@@ -79,8 +81,10 @@ guest can keep working and join later (ADR-015).
 └─────────────────────────────────────┘
 ```
 
-**One field — the invite code** (cites [`input.md`](../03-primitives/input.md); constrained format). A
-**Paste** affordance handles the common case (the code arrived by text/email). **Join department** commits;
+**Scan or type the code.** **Scan QR** is the primary path (off a training-room screen, a printed card in
+each rig, or an Admin's phone — the **multi-use** dept code admits the whole crew off one QR, gate review B4 /
+[ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)); **type/paste the human-readable code** is the
+fallback (cites [`input.md`](../03-primitives/input.md); constrained format). **Join department** commits;
 **Continue as guest** defers.
 
 **Calm error states** — invalid / expired / already-used codes show an inline `aria-invalid` message, never

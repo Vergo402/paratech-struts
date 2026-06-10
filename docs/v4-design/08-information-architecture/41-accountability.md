@@ -66,6 +66,8 @@ Three groups, carried verbatim from the v3 Command rosters but re-homed here and
 
 **External / mutual-aid accountability lives here** — resolving [40-inventory.md](40-inventory.md) OQ2: the *stock* of external equipment reads in [Inventory](40-inventory.md); its **accountability and return-to-source** read on Accountability. Same item, two lenses (the same discipline as Command↔Accountability).
 
+**Guest mutual-aid units (v4.0, [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)):** a walk-up unit that joined the incident as a **guest** ([Cross-Dept Invite](52-cross-dept-invite.md) / [#235](../09-workflows/32-mutual-aid-invite-accept.md)) has **no deployable apparatus inventory** — the struts it brought are tracked here as **External · «unit tag»** (e.g. "External · Engine 7, Westfield FD") for return-to-source, exactly the external-equipment row above. The guest's individuals appear in the Individuals group attributed by unit tag. This is how the no-on-the-fly-inventory rule surfaces on Accountability.
+
 ## Per-row sync — the heart of rec I-7
 
 From [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)'s event-log + per-device UID, each row's **face** shows whether its latest state is:

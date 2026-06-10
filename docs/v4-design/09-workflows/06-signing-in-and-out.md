@@ -137,6 +137,19 @@ heavy confirm unless it would leave un-synced local work at risk; that copy nuan
 
 ---
 
+### Step 5 — Claim a guest mutual-aid record (creating an account later)
+
+A **guest** can do more than use Quick Find: a walk-up crew can **join a host's incident as a guest** and work
+it for the duration (typed unit tag, no account — workflow [#235](32-mutual-aid-invite-accept.md) /
+[ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)). When that incident closes, the guest keeps a
+**read-only record** of what their unit worked. Later, creating an account here (Step 2, **Create Account**)
+**claims** that record under the new account — the guest's per-device anonymous UID is linked to the account,
+so the after-action record they contributed to is theirs. A guest who never makes an account simply keeps the
+local read-only record on the device; the host's incident record is unaffected (the in-app record is
+authoritative — Principle 8, local-first). No account is ever *required* to have helped on the incident.
+
+---
+
 ## Cross-surface story
 
 Single-actor, single-device — auth is per-device:
