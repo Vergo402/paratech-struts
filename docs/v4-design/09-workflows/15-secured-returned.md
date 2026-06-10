@@ -239,5 +239,5 @@ Screen-reader behavior particular to this workflow:
    exact copy.
 3. **Concurrent returns (race condition):** if two devices submit Remove & Return for the same
    SP simultaneously while offline, the second transaction checks available count > 0 before
-   incrementing — the v3 transaction guard ([CLAUDE.md](../../CLAUDE.md) §NEW-7) carries forward.
+   incrementing — the v3 transaction guard ([CLAUDE.md](../../../CLAUDE.md) §NEW-7) carries forward.
    Phase H owns the resync behavior.

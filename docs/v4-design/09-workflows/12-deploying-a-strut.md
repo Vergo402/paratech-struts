@@ -125,7 +125,7 @@ dismiss paths, scrim, iOS hardening, focus trap, Power Select fallback) — not 
 Each result is a `RecommendationCard` per [`card.md`](../03-primitives/card.md) §RecommendationCard
 anatomy (COLOR–SYSTEM label, model, range, extension block, deduction ledger, apparatus source,
 Deploy button). Cards are ranked by fit quality. Capacity is demoted (computed but not on the card
-face per [ADR-012](../11-decisions/ADR-012-measurement-precision.md) / synthesis §capacity-demoted).
+face per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md) / synthesis §capacity-demoted).
 
 **Standard Deploy (Step 3):** tapping Deploy on a card with no active warnings commits immediately.
 
