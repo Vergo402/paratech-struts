@@ -54,6 +54,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | expressive-wandering-blanket | v4-phase-h-slice-build (2026-06-10) — the #246 vertical-slice build plan (Sessions 1–7); Session 1 (toolchain + core domain) shipped at commit 3e59954 |
 | yes-luminous-rocket | v4-phase-h-s2-data-layer (2026-06-10) — the Session-2 execution plan (data/store + data/sync stub + ui/hooks + seed) derived from v4-phase-h-slice-build; shipped at commit 5825eb9 |
 | jolly-cuddling-russell | v4-phase-h-s3-primitives-shell (2026-06-10) — the Session-3 execution plan (ui/primitives + ui/picker w/ L-9 verbatim + MeasurementInput/DeductionPicker + themed shell + /gallery) derived from v4-phase-h-slice-build |
+| begin-lazy-koala | v4-phase-h-s4-start-operation (2026-06-10) — the Session-4 execution plan (OperationsBoard + StartOperationModal + useDeviceUid + operations.css + gallery demo) derived from v4-phase-h-slice-build |
 
 ### v4 — issue / ADR / positioning
 | old | new |

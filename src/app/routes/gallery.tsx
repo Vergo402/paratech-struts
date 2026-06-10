@@ -22,6 +22,7 @@ import {
   VisualGridPicker,
 } from '@ui/picker';
 import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
+import { StartOperationModal } from '@ui/operations';
 import { useTheme } from '../theme';
 
 /**
@@ -148,6 +149,7 @@ export function GalleryScreen() {
   const [eighths, setEighths] = useState(56 * 8);
   const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
   const [commits, setCommits] = useState(0);
+  const [startOpOpen, setStartOpOpen] = useState(false);
 
   const galleryTheme = THEME_OPTIONS.some((o) => o.value === preference) ? preference : 'dark';
 
@@ -398,6 +400,14 @@ export function GalleryScreen() {
           measurementEighths={eighths}
           value={deductions}
           onChange={setDeductions}
+        />
+      </Section>
+
+      <Section title="Start Operation modal (S4 — #219)">
+        <Button onPress={() => setStartOpOpen(true)}>Open Start Operation modal</Button>
+        <StartOperationModal
+          open={startOpOpen}
+          onClose={() => setStartOpOpen(false)}
         />
       </Section>
     </div>

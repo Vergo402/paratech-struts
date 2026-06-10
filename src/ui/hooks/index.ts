@@ -6,3 +6,4 @@ export { useShorePoints } from './useShorePoints';
 export { useInventory } from './useInventory';
 export { useRecommendations } from './useRecommendations';
 export { useCommit } from './useCommit';
+export { useDeviceUid } from './useDeviceUid';
