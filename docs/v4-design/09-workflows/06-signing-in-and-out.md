@@ -102,6 +102,16 @@ A pre-shell full-screen route (cites [`70-login-register.md`](../08-information-
 is the default method; **"Email me a sign-in link"** (magic-link) is the no-password path. **Continue as
 guest** is always present and first-class — the user can leave without an account.
 
+**Display name is mandatory at account creation (v4.0 — locked, gate review M8).** In **Create Account**
+mode the form adds a **required Display name** field (e.g. "Capt. T. Marchetti") — the form will not submit
+without it. This is **not deferrable**: the v4.0 accountability layer — the audit log ([#236](31-audit-log-review.md)),
+the per-device UID, and every **signed checklist attestation** (D7.5) — attributes each entry to this display
+name. If the name weren't captured, the audit trail would credit actions to a device code ("FF · device-abc123")
+instead of a person, gutting accountability. So the name is captured **up front, at identity creation**, before
+any attributable action is possible. (A **guest** has no account, so their attribution is the **required unit
+tag** they enter when they join an incident — "Engine 7, Westfield FD" — workflow [#235](32-mutual-aid-invite-accept.md);
+same guarantee, different field.) Editing the display name later is allowed (Settings), but it can never be empty.
+
 **Errors are inline** — `aria-invalid` + a specific message ("That email and password don't match"), never
 an `alert()`, never color alone (cites [`input.md`](../03-primitives/input.md) §validation).
 
@@ -217,9 +227,10 @@ Screen-reader behavior particular to this workflow:
 2. **Offline-auth token window:** how long a "trust this device" refresh token stays valid offline (so a
    previously-signed-in device keeps syncing through a multi-day operation with no signal) is a Phase H
    infrastructure decision. This spec names the queued-intent behavior; the token lifetime is plumbing.
-3. **Display-name capture point:** whether the user's display name is entered here, at department setup
-   ([#231](07-department-setup.md)), or at invite-code join ([#232](08-joining-by-invite-code.md)) is
-   resolved across the auth cluster — working assumption: at account creation here.
+3. **Display-name capture point — DECIDED (gate review M8, ships v4.0):** **mandatory at account creation**
+   here (the required Display name field in Create Account mode), because the v4.0 audit log + signed
+   attestations attribute to it. Guests are attributed by their required unit tag at incident join. No longer
+   an open question — it is a locked v4.0 onboarding requirement (the name field can never be empty).
 4. **Sign-out confirm copy:** whether sign-out warns about un-synced local work ("You have an operation
    that hasn't synced — sign out anyway?") is a Phase H copy decision; the action itself is non-destructive.
 5. **v3 → v4 migration UI:** the one-time path from a v3 anonymous-auth device to a v4 per-user account

@@ -45,7 +45,7 @@ The **queryable read of the incident's append-only event log**: every state-chan
 
 - [x] [list](../03-primitives/list.md) — the event list; virtualized past the fold (the K-15 scale rule — an incident can produce 1000+ events).
 - [x] [badge](../03-primitives/badge.md) — the **action type** + the actor's **role-at-time**; never color alone (Principle 9).
-- [x] [segmented](../03-primitives/segmented.md) — the inline scope (all / by-user / by-action / by-time).
+- [x] [segmented](../03-primitives/segmented.md) — the inline scope (all / by-user / by-action / by-time / **by operational period** — a first-class v4.0 axis for multi-day / mutual-aid review, gate review M12).
 - [x] [input](../03-primitives/input.md) — the filter (search / date-range).
 - [x] [button](../03-primitives/button.md) — export (CSV / PDF); the ICS-form assembly actions (laptop).
 - [x] [empty-state](../03-primitives/empty-state.md) — no events yet (a calm "Nothing logged yet," not an alarm).
@@ -59,11 +59,12 @@ v4 is **event-sourced**: every write appends an immutable event to `/operations/
 
 ## The after-action / export convergence point
 
-After-Action folds in here as the laptop surface — "filters and formatting, not data collection" (foundation). This screen is where the exports **converge**:
-- **ICS-201/203/207/209** assembled from the event log + role history (the [Command](30-command-sitstat.md) / [Org Chart](31-org-chart.md) role-history thread feeds it).
-- **ICS-208** Safety Message/Plan — from the [Hazard Log](32-hazard-log.md) register (its export resolves here).
-- **PAR snapshot** — the point-in-time accountability record from [Accountability](41-accountability.md) (its OQ3 export resolves here).
-- **Raw CSV** of the event log for further analysis.
+After-Action folds in here as the laptop surface — "filters and formatting, not data collection" (foundation). This screen is where the exports **converge**. **The v4.0 export set is committed** (gate review M12 — what auto-assembles from held data, stated plainly so a user knows what they can/can't export):
+- **ICS-201** Incident Briefing — assembled from the event log + role history + the six live SitStat datums (narrative fields v4.1). **v4.0**
+- **ICS-208** Safety Message/Plan — from the [Hazard Log](32-hazard-log.md) register (its export resolves here). **v4.0**
+- **PAR snapshot** — the point-in-time accountability record from [Accountability](41-accountability.md) (its OQ3 export resolves here). **v4.0**
+- **Raw CSV** of the event log for further analysis. **v4.0**
+- **ICS-203 / 207 / 209** (Org Assignment List · Org Chart form · Incident Status Summary) — form-specific layout/narrative beyond the raw data → **v4.1**. The raw CSV always covers the underlying data in v4.0.
 
 One persistence path, many formatted reads — no parallel data model.
 
@@ -120,7 +121,7 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 ## Open questions (per-screen)
 
 1. **Review-UI ship version** — v4.0 vs v4.1 → [`99-open-questions.md`](../99-open-questions.md) #32 (the event-log persistence is firmly v4.0).
-2. **Which ICS forms in scope** — ICS-201 at minimum; 203/207/208/209 likely later (v4.1); confirmed at the Phase F gate / Phase G.
+2. **Which ICS forms in scope — DECIDED (gate review M12, Phase G):** **v4.0 exports ICS-201 + ICS-208 + PAR snapshot + raw CSV**; **ICS-203 / 207 / 209 are v4.1**. Operational period is a **first-class v4.0 filter axis**. The formatted-PDF *layout* mechanism remains shared Phase H tooling; the v4.0 export *set* + filters are no longer open (see [`31-audit-log-review.md`](../09-workflows/31-audit-log-review.md) Step 3).
 3. **Export format** — CSV (raw log) + PDF (assembled forms); the exact format is shared with the [Hazard Log](32-hazard-log.md) ICS-208 + the [Accountability](41-accountability.md) PAR snapshot; finalized in the Phase G/H export work.
 4. **Pagination at scale** — load strategy for 1000+ events (infinite scroll vs. date-range); affordance for Phase H.
 5. **Immutability enforcement** — backend guarantee of no out-of-band deletes to `/events/`; Phase H infrastructure.

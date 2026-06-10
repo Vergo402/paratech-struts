@@ -89,8 +89,11 @@ filtering, and exporting are read-only; an export is itself a logged event but c
 
 A virtualized [`list.md`](../03-primitives/list.md) (K-15 scale — 1000+ events without lag), **newest-first**.
 Each row: **timestamp · actor (role-at-time) · action**. The **scope** [`segmented.md`](../03-primitives/segmented.md)
-filters All / by-user / by-action / by-time; the **filter** [`input.md`](../03-primitives/input.md) does
-search / date-range. Action type + role-at-time render as [`badge.md`](../03-primitives/badge.md)s, never
+filters All / by-user / by-action / by-time / **by operational period** — **operational period is a first-class
+v4.0 filter axis** (gate review M12): OP is already tracked (SitStat shows "OP 1"), and a multi-day mutual-aid
+incident (now v4.0 scope, [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md)) needs per-OP review.
+The **filter** [`input.md`](../03-primitives/input.md) does search / date-range. Action type + role-at-time
+render as [`badge.md`](../03-primitives/badge.md)s, never
 color alone. Cites [`53-audit-log.md`](../08-information-architecture/53-audit-log.md) — not redrawn.
 
 The event-log record shape (D7.5): `{ at, byUid, role (at-time), deviceId, action, before, after }`.
@@ -114,14 +117,22 @@ a decision surface). Read-only. This is how you see exactly what a deploy / step
 ```
 
 A [`button.md`](../03-primitives/button.md) action. The audit log is the **export convergence point** — the
-one place the incident's records assemble:
-- **Raw CSV** — the event log itself.
-- **Assembled PDF** — **ICS-201 / 203 / 207 / 208 / 209** built from the event log + role history; the
-  **ICS-208** Safety Message from the Hazard Log register ([#226](21-hazard-log.md)); the **PAR snapshot**
-  from Accountability.
+one place the incident's records assemble.
 
-Exporting records an export event; it changes no record. Which exact ICS forms are in scope for v4.0
-(201 at minimum; 203/207/208/209 likely later) is an open question below.
+**What a v4.0 user can export — committed (gate review M12):** the v4.0 set is exactly what **auto-assembles
+from data the app already holds, with no new authoring**:
+- **Raw event-log CSV** — the event log itself.
+- **ICS-201** (Incident Briefing) — the six live SitStat datums + resource summary + Safety Officer + open
+  hazards, from the event log + role history (the doctrine-narrative fields are v4.1, per `33-ic-command-checklist.md`).
+- **ICS-208** (Safety Message / Plan) — assembled from the Hazard Log register ([#226](21-hazard-log.md)).
+- **PAR snapshot** — the point-in-time accountability record from [Accountability](../08-information-architecture/41-accountability.md).
+
+**Deferred to v4.1:** **ICS-203 / 207 / 209** (Organization Assignment List, Org Chart form, Incident Status
+Summary) — these need form-specific layout/narrative beyond the raw data and land with the after-action UI
+work. A v4.0 user can always export the **raw CSV** of everything; the *formatted* 203/207/209 come later.
+This is stated plainly so a v4.0 user knows exactly what they can and cannot export.
+
+Exporting records an export event; it changes no record.
 
 ---
 
@@ -204,8 +215,11 @@ Screen-reader behavior particular to this workflow:
 1. **Review-UI ship version** ([`99-open-questions.md`](../99-open-questions.md) #32): **event-log
    persistence is firmly v4.0** (it IS the app's persistence path, ADR-009); whether the *review/after-action
    UI* renders in v4.0 or v4.1 is flagged. The IA is identical either way.
-2. **ICS forms in scope:** 201 at minimum for v4.0; 203 / 207 / 208 / 209 likely later. The export format
-   is shared with the Hazard Log ([#226](21-hazard-log.md)) and Accountability. Phase H.
+2. **ICS forms in scope — DECIDED (gate review M12):** v4.0 exports **ICS-201 + ICS-208 + the PAR snapshot +
+   the raw event-log CSV** (everything that auto-assembles from held data); **ICS-203 / 207 / 209 are v4.1**
+   (form-specific layout/narrative). A v4.0 user can always export the raw CSV. Stated in Step 3. The
+   formatted-PDF *layout* mechanism remains shared Phase H tooling with Hazard Log + Accountability, but the
+   v4.0 export *set* is no longer open.
 3. **Pagination at scale:** 1000+ events — infinite scroll vs. mandatory date-range windowing. Phase H
    performance decision (the K-15 virtualization rule sets the ceiling).
 4. **Immutability enforcement:** the backend guarantee that no client can delete/rewrite an event (a

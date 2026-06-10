@@ -177,9 +177,9 @@ Screen-reader behavior particular to this workflow:
 1. **Code format / alphabet** ([`72-invite-code.md`](../08-information-architecture/72-invite-code.md) OQ):
    length, character set, and avoidance of ambiguous glyphs (0/O, 1/l) so a code read aloud over the radio
    or typed with gloves is unambiguous. Phase H.
-2. **Display-name capture point:** whether the joining user's display name is set here, at sign-in
-   ([#234](06-signing-in-and-out.md)), or in the shell — resolved across the auth cluster (working
-   assumption: at account creation in #234).
+2. **Display-name capture point — DECIDED (gate review M8):** **mandatory at account creation** in sign-in
+   ([#234](06-signing-in-and-out.md) §Display name), v4.0 — a joining user already has (or creates) an account
+   with a required display name before joining. Not set on this join route.
 3. **Multi-department membership vs. switch:** shared with department setup ([#231](07-department-setup.md))
    — can a user belong to more than one department, and how do they switch? Escalated to
    [`99-open-questions.md`](../99-open-questions.md).
