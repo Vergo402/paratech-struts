@@ -88,3 +88,116 @@
 }
 .fs-ledger-value--big { font-size: 26px; font-weight: 700; line-height: 1.05; }
 .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-text); }
+
+/* ---- measurement entry sheet (KB-3, S10) -------------------------------------- */
+.fs-meas-readout--button {
+  display: block;
+  width: 100%;
+  padding: 12px var(--space-4);
+  min-height: 56px;
+  font: 400 34px/1.1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  text-align: center;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  transition: background-color var(--motion-micro) var(--ease-micro), border-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-meas-readout--button:active { background: var(--accent-subtle); border-color: var(--accent); }
+.fs-meas-readout--button:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.fs-meas-readout--input {
+  display: block;
+  width: 100%;
+  padding: 12px var(--space-4);
+  min-height: 56px;
+  font: 400 16px/1.5 var(--font-base);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  transition: border-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-meas-readout--input::placeholder { color: var(--text-tertiary); }
+.fs-meas-readout--input:focus-visible { outline: none; border-color: var(--accent); }
+.fs-meas-readout--input[aria-invalid='true'] { border-color: var(--danger); }
+
+/* the big-key numeric keypad (56pt minimum keys, 3-column main) */
+.fs-meas-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+.fs-keypad-row {
+  display: contents;
+}
+.fs-keypad-btn {
+  min-height: 56px;
+  font: 500 28px/1 var(--font-mono);
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  cursor: pointer;
+  transition: background-color var(--motion-micro) var(--ease-micro);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-keypad-btn:active { background: var(--accent-subtle); }
+.fs-keypad-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.fs-keypad-btn:disabled { opacity: 0.3; cursor: not-allowed; background: var(--surface-disabled); }
+
+.fs-keypad-backspace { grid-column: 1 / 2; font-size: 18px; }
+.fs-keypad-commit { grid-column: 2 / 3; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.fs-keypad-commit:active { background: var(--accent); opacity: 0.8; }
+
+/* the entry sheet display area */
+.fs-meas-entry-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-3);
+}
+.fs-meas-entry-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.fs-meas-entry-input {
+  padding: var(--space-2);
+  min-height: 40px;
+  font: 400 24px/1.2 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.fs-meas-entry-text { display: block; text-align: center; }
+.fs-meas-entry-hint { color: var(--text-tertiary); font-style: italic; }
+
+.fs-meas-entry-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--surface-elevated);
+  border-radius: var(--radius-input);
+  text-align: center;
+}
+.fs-meas-entry-current .fs-field-label { font-size: 12px; }
+
+.fs-meas-entry-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-meas-entry-strip .fs-field-label { font-size: 14px; }

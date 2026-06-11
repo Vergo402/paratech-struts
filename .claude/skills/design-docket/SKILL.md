@@ -1,6 +1,6 @@
 ---
-name: docket
-description: "Rapidly add an item to the v4 design docket (docs/v4-design/98-design-docket.md), or show the docket when invoked bare. Use whenever Alex says '/docket', 'add to the design docket', 'bring this to design', 'design item', 'put that on the design list', or describes a visual/layout/interaction concern he wants captured for a later design pass. v4-redesign branch only."
+name: design-docket
+description: "Rapidly add an item to the v4 design docket (docs/v4-design/98-design-docket.md), or show the docket when invoked bare. Use whenever Alex says '/design-docket', 'add to the design docket', 'bring this to design', 'design item', 'put that on the design list', or describes a visual/layout/interaction concern he wants captured for a later design pass. v4-redesign branch only."
 ---
 
 # Design Docket — rapid add

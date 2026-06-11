@@ -1,18 +1,17 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
-import { useId, useState } from 'react';
+import { useId, useState, useRef, useEffect } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
 import { Fraction, MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
+import { MeasurementEntrySheet } from './MeasurementEntrySheet';
+import { parseMeasurement } from './parseMeasurement';
 
 /**
- * MeasurementInput — the gloved measurement entry (settled gate follow-ups
- * #20/#38): big ± steppers for feet and inches plus an eighths TAP-STRIP.
- * No scroll wheel, no spinner — the two most safety-critical inputs are large
- * direct taps. DELIBERATE DEVIATION (session log): input.md's 56pt numeric
- * keypad remains the doctrine baseline for free numeric entry; the slice
- * ships the strip+stepper affordance Alex locked for the build. Value is an
- * EXACT eighths int end-to-end (ADR-012) — this component never emits a
- * float and never emits outside [0, maxEighths]; bound hits surface an
- * inline message, never a toast.
+ * MeasurementInput — the gloved measurement entry (KB-3, S10).
+ * Phone: readout is a button that opens MeasurementEntrySheet (56pt keypad).
+ * Desktop: readout is a focusable field for hardware typing (parser on blur/Enter).
+ * Both: steppers (feet/inches) and eighths strip for quick-adjust.
+ * Value is EXACT eighths int end-to-end (ADR-012) — never float, never outside bounds;
+ * bound hits surface inline, never toast.
  */
 export interface MeasurementInputProps {
   label?: string;
@@ -31,7 +30,25 @@ export function MeasurementInput({
   maxEighths = MAX_MEASUREMENT_EIGHTHS,
 }: MeasurementInputProps) {
   const labelId = useId();
+  const inputId = useId();
   const [bound, setBound] = useState<'min' | 'max' | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [hardwareInput, setHardwareInput] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Detect phone vs desktop by checking media query
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) {
+      setIsPhone(false);
+      return;
+    }
+    const media = window.matchMedia('(max-width: 768px)');
+    setIsPhone(media.matches);
+    const handler = (e: MediaQueryListEvent) => setIsPhone(e.matches);
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, []);
 
   const apply = (next: number) => {
     if (next < 0) {
@@ -53,11 +70,39 @@ export function MeasurementInput({
     apply(value + deltaEighths);
   };
 
+  const onReadoutClick = () => {
+    if (isPhone) {
+      setSheetOpen(true);
+    }
+  };
+
+  const onHardwareChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setHardwareInput(e.target.value);
+  };
+
+  const onHardwareBlur = () => {
+    if (hardwareInput.trim()) {
+      const parsed = parseMeasurement(hardwareInput);
+      if (parsed !== null) {
+        apply(parsed);
+      } else {
+        setBound('max');
+      }
+      setHardwareInput('');
+    }
+  };
+
+  const onHardwareKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      onHardwareBlur();
+    }
+  };
+
   const boundMessage =
     bound === 'max'
-      ? `Maximum opening is 30 ft (${maxEighths / 8}″)`
+      ? `Maximum opening is 30 ft (${maxEighths / 8} inches)`
       : bound === 'min'
-        ? 'Measurement can’t go below 0″'
+        ? 'Measurement cannot go below 0 inches'
         : null;
 
   return (
@@ -65,9 +110,35 @@ export function MeasurementInput({
       <span className="fs-field-label" id={labelId}>
         {label}
       </span>
-      <output className="fs-meas-readout" aria-labelledby={labelId} aria-live="polite">
-        <MeasurementValue eighths={value} form="feet-inches" />
-      </output>
+
+      {/* Phone: readout is a button that opens the entry sheet */}
+      {isPhone ? (
+        <button
+          type="button"
+          className="fs-meas-readout fs-meas-readout--button"
+          onClick={onReadoutClick}
+          aria-labelledby={labelId}
+        >
+          <MeasurementValue eighths={value} form="feet-inches" />
+        </button>
+      ) : (
+        /* Desktop: readout is a focusable input field for hardware typing */
+        <input
+          ref={inputRef}
+          type="text"
+          id={inputId}
+          className="fs-meas-readout fs-meas-readout--input"
+          placeholder="Type 68, 5 8 5/8, etc."
+          value={hardwareInput}
+          onChange={onHardwareChange}
+          onBlur={onHardwareBlur}
+          onKeyDown={onHardwareKeyDown}
+          aria-labelledby={labelId}
+          aria-invalid={bound === 'max' || bound === 'min'}
+        />
+      )}
+
+      {/* Steppers: quick-adjust via +/- buttons (both phone and desktop) */}
       <div className="fs-steppers">
         <div className="fs-step-group">
           <span className="fs-step-label">Feet</span>
@@ -92,6 +163,8 @@ export function MeasurementInput({
           </div>
         </div>
       </div>
+
+      {/* Eighths strip: quick-adjust (both phone and desktop) */}
       <RadioGroup.Root
         className="fs-eighths-strip"
         aria-label={`${label} — eighths of an inch`}
@@ -102,8 +175,7 @@ export function MeasurementInput({
         }}
       >
         {EIGHTHS.map((n) => {
-          // Tape-measure form (KB-2): cells read 1/8 1/4 3/8 1/2 5/8 3/4 7/8 —
-          // reduced for display only; the stored value stays the raw eighths int.
+          // Tape-measure form (KB-2): cells read 1/8 1/4 3/8 1/2 5/8 3/4 7/8
           const p = eighthsToParts(n);
           return (
             <RadioGroup.Item
@@ -117,10 +189,23 @@ export function MeasurementInput({
           );
         })}
       </RadioGroup.Root>
+
       {boundMessage && (
         <span className="fs-field-msg fs-field-msg--error" role="status">
           {boundMessage}
         </span>
+      )}
+
+      {/* Phone: the big-key entry sheet (56pt keypad + quick-adjust) */}
+      {isPhone && (
+        <MeasurementEntrySheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          value={value}
+          onChange={apply}
+          maxEighths={maxEighths}
+          label={label}
+        />
       )}
     </div>
   );

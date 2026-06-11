@@ -69,7 +69,7 @@ describe('MeasurementInput', () => {
     render(<Harness initial={0} />);
     await user.click(screen.getByRole('button', { name: 'Down one inch' }));
     expect(eighths()).toBe(0);
-    expect(screen.getByText(/can.t go below 0/i)).toBeInTheDocument();
+    expect(screen.getByText(/go below 0/i)).toBeInTheDocument();
   });
 
   it('clamps at the 30 ft ceiling with an inline message — never over max', async () => {
