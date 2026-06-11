@@ -45,7 +45,7 @@ Between bottom sheet picker and full screen list, the boundary is **8 options**.
 
 7. **The bottom sheet picker uses a 64pt drag handle visible at the top edge.** Dragging is the gesture you teach once and never re teach.
 
-8. **A picker invoked for a grouped shore type applies to all siblings at once.** When a picker is opened in a grouped-shore creation context — choosing the T-Shore wood size for a group of 3 — it asks **once** and applies to **every member of the group**, never three times. The picker carries an inline note stating the scope (*"Applies to all 3 members of this T-Shore group"*) so the operator sees that one choice fans out (synthesis §3.5, rec **K-6**). This is the picker side of the grouped-shore phase split that [`card.md`](card.md) / [`slider.md`](slider.md) own for status; the group-vs-individual workflow detail is finalized in Phase G.
+8. **A picker invoked for a grouped shore type applies to all siblings at once.** When a picker is opened in a grouped-shore creation context — choosing the wood size for a 3-Post (one shore = a linked group of 3 struts, KB-7) — it asks **once** and applies to **every strut of the shore**, never three times. The picker carries an inline note stating the scope (*"Applies to all 3 struts of this 3-Post shore"*) so the operator sees that one choice fans out (synthesis §3.5, rec **K-6**). This is the picker side of the grouped-shore phase split that [`card.md`](card.md) / [`slider.md`](slider.md) own for status; the group-vs-individual workflow detail is finalized in Phase G.
 
 ---
 

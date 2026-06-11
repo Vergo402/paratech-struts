@@ -1,6 +1,7 @@
 # Workflow: Adding a shore point
 
 > Phase G workflow spec — [#220](https://github.com/Vergo402/paratech-struts/issues/220). Sub-issue of epic [#135](https://github.com/Vergo402/paratech-struts/issues/135).
+> **Amended 2026-06-11 (Phase H S9 — KB-7, [#313](https://github.com/Vergo402/paratech-struts/issues/313)):** quantity = number of **shores**; the shore type drives **struts per shore** (T-Shore 1, Double-T 2, 3-Post 3); cards created = shores × struts/shore, with **one linked group per physical shore**. Replaces this spec's earlier conditional-qty model throughout.
 > Cites [`00-workflow-foundation.md`](00-workflow-foundation.md) for all shared conventions — does not re-derive them.
 > Source: [`20-operations.md`](../08-information-architecture/20-operations.md) (Operations board, Add Shore Point modal, lane/card structure, grouped SP behavior, drilldown); [`10-quick-find.md`](../08-information-architecture/10-quick-find.md) (measurement input + deduction picker — same component reused here); [`00-ia-foundation.md`](../08-information-architecture/00-ia-foundation.md) (four-surface framework, persistent chrome); [`card.md`](../03-primitives/card.md) (ShorePointCard, group badge, field-lock post-Pending); [`sheet.md`](../03-primitives/sheet.md) (Assign Equipment sheet — referenced but not owned here); [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) (assignedResource, ICS titles); [ADR-010](../11-decisions/ADR-010-status-commit-model.md) (reversibility); [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md) (Add Shore Point = full-screen-form modal).
 > **Precondition:** an active operation exists (see workflow [#219 — Starting an operation](10-starting-an-operation.md)).
@@ -43,7 +44,7 @@ stateDiagram-v2
     AddSPModal --> ActiveOperation : officer/IC · tap Cancel → modal (no SP created)
     AddSPModal --> PendingSP : officer/IC · tap Add Shore Point → modal (commit, full-screen form)
 
-    PendingSP --> ActiveOperation : ⇩ SP visible in Pending lane (group: N linked cards)
+    PendingSP --> ActiveOperation : ⇩ SP visible in Pending lane (one card per strut, linked per shore)
 
     PendingSP --> EditSPModal : officer/IC · tap Edit → modal (Pending-only)
     EditSPModal --> PendingSP : officer/IC · tap Save → modal (non-destructive)
@@ -103,10 +104,11 @@ commits the transition.
 │                                     │
 │  Shore type                         │
 │  ┌──────────┬──────────┬──────────┐ │
-│  │ T-Shore  │ Lp Shore │ 3-Post   │ │  ← SHORE_TYPES segmented/scroll; drives Qty field
+│  │ T-Shore  │ Double-T │ 3-Post   │ │  ← SHORE_TYPES segmented; type drives struts/shore (KB-7)
 │  └──────────┴──────────┴──────────┘ │
 │                                     │
-│  Qty   [ 2 ]      (T-Shore: min 2) │  ← shown only when shore type ≥ 2 points
+│  Number of shores  [ 3 ]            │  ← always visible (create mode); whole number ≥ 1
+│  3 × 3-Post = 9 struts              │  ← helper pre-states the math
 │                                     │
 │  Measurement *                      │
 │  ┌─────────────────────────────┐    │
@@ -134,8 +136,8 @@ here.
 | Division | Yes | Last-used or Div 1 | Floor-based vertical picker per `20-operations.md §Divisions`; phone = scroll wheel, tablet = segmented or dropdown |
 | Building | Yes (if multi-building op) | Last-used | Only shown when multi-building was enabled at operation start (workflow #219 Step 2) |
 | Area | No | — | Free text; e.g. "Northwest corner", "Stairwell B" |
-| Shore type | Yes | Last-used | Picker from `SHORE_TYPES`; T-Shore / Double-T surface the Qty field |
-| Qty | Conditional | 2 (T-Shore) | Only visible when shore type has qty ≥ 2; min 1, no enforced max at form layer |
+| Shore type | Yes | Last-used | Picker from `SHORE_TYPES`; drives **struts per shore** — T-Shore 1, Double-T 2, 3-Post 3 (KB-7) |
+| Number of shores | Yes (create only) | 1 | Whole number ≥ 1; **cards created = shores × struts/shore**; helper pre-states the math ("3 × 3-Post = 9 struts"); warns — never blocks — when total cards exceed 10 |
 | Measurement | Yes | — | Same fraction input as Quick Find (`10-quick-find.md §Input flow`); 1/8″ digit-pair; same validation, same component |
 | Deductions | No | All zero | Collapsed by default; same visual-grid picker `sheet` as Quick Find; cite `10-quick-find.md §Deductions` and `sheet.md` — not redrawn here |
 | Label / description | No | — | Short free text; appears on the card and in the drilldown |
@@ -177,22 +179,22 @@ non-empty and valid (client-side, local-first — no server round-trip before co
 └─────────────────────────────────────┘
 ```
 
-**Grouped shore type (T-Shore ×3):**
+**Multi-strut shore type (one 3-Post = 3 linked cards, KB-7):**
 
 ```
 ┌─────────────────────────────────────┐
 │  Pending                        (5) │  ← count reflects all 3 new cards
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ T-Shore · Pending  [1 / 3]  │    │  ← group badge (cites card.md)
+│  │ 3-Post · Pending   [1 / 3]  │    │  ← group badge (cites card.md)
 │  └─────────────────────────────┘    │
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ T-Shore · Pending  [2 / 3]  │    │
+│  │ 3-Post · Pending   [2 / 3]  │    │
 │  └─────────────────────────────┘    │
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ T-Shore · Pending  [3 / 3]  │    │
+│  │ 3-Post · Pending   [3 / 3]  │    │
 │  └─────────────────────────────┘    │
 └─────────────────────────────────────┘
 ```
@@ -200,12 +202,19 @@ non-empty and valid (client-side, local-first — no server round-trip before co
 The modal closes. The new card(s) appear in the Pending lane and the board scrolls to
 bring the first new card into view (or the Pending lane opens if it was collapsed).
 
-For grouped shore types (T-Shore, Double-T), N linked Pending cards are created in a
-single commit — each carries the group badge `[N / total]` per
-[`card.md`](../03-primitives/card.md). Pre-cutting status advances (Pending → In Process
-→ Strut Set → Cutting) apply to the whole group at once; Cutting → Runner → Secured →
-Returned advance individually. This is pre-specified group behavior from `card.md` —
-this workflow does not re-derive it.
+For multi-strut shore types (Double-T, 3-Post), **each physical shore** writes one linked
+Pending card per strut — all sharing that shore's `groupId`, badged `[N / total]` per
+[`card.md`](../03-primitives/card.md). A multi-shore add (Number of shores > 1) repeats
+this per shore — 2 × 3-Post = 6 cards in two groups of 3 — and the whole add commits as
+one atomic batch. Single-strut shores (T-Shore) are never grouped: T-Shore ×3 = 3
+independent cards. Pre-cutting status advances (Pending → In Process → Strut Set →
+Cutting) apply to the whole shore at once; Cutting → Runner → Secured → Returned advance
+individually. This is pre-specified group behavior from `card.md` — this workflow does
+not re-derive it.
+
+*(KB-7 correction, 2026-06-11: this section previously modeled qty-as-cards with grouping
+by add-batch — as v3 does; the v3 shore type is label + wood only. Per-shore strut math
+is a v4 improvement, not parity restoration.)*
 
 ---
 
@@ -218,7 +227,6 @@ this workflow does not re-derive it.
 │  Division  [ Div 1 (Ground) ▾ ]    │  ← pre-populated
 │  Area      [ Northwest corner ]    │  ← pre-populated
 │  Shore type  [ T-Shore      ▾ ]    │  ← pre-populated; editable while Pending
-│  Qty         [ 3            ]      │  ← pre-populated
 │  Measurement  48 ─ 1/2 "           │  ← pre-populated; editable while Pending
 │  Deductions  ▶ (collapsed)          │
 │  Label  [ _____________________ ]  │
@@ -229,7 +237,8 @@ this workflow does not re-derive it.
 
 The Edit button lives in the SP card (overflow or tap-to-expand). Same modal, pre-populated.
 Division, area, shore type, measurement, and label are all editable while the SP is in
-Pending. Once the SP advances past Pending, **shore type and measurement lock** — only
+Pending. **Number of shores is structurally absent in edit mode** — group membership is
+fixed at creation (KB-7). Once the SP advances past Pending, **shore type and measurement lock** — only
 label remains editable. Cites [`card.md`](../03-primitives/card.md) for which fields lock
 at which status — this spec names the rule, not the field-by-field matrix.
 
@@ -304,9 +313,10 @@ No new primitives.
 - **Offline at commit:** local-first — the SP is created locally and queued for sync. The
   sync dot shows the queued state. The card is immediately visible on the submitting device.
   Other devices see it on next sync after connectivity returns.
-- **Grouped SP partial failure (one of N fails to sync):** all N cards are written as a
-  local-first batch with a shared `groupId`; sync failures surface as queued writes per
-  card, not a partial group. Phase H sync implementation owns the retry semantics.
+- **Grouped SP partial failure (one of N fails to sync):** all cards are written as one
+  local-first batch (one `groupId` per multi-strut shore — KB-7); sync failures surface
+  as queued writes per card, not a partial group. Phase H sync implementation owns the
+  retry semantics.
 - **Loading:** no loading state on the commit path — local-first renders instantly.
 - **Pending lane empty (all SPs advanced):** `empty-state` filtered variant in the lane;
   this is expected state mid-operation, not an error.
@@ -323,14 +333,16 @@ Screen-reader behavior particular to this workflow:
 - **Modal opens:** VoiceOver / TalkBack announces **"Add Shore Point, full-screen form"**.
 - **Division picker change:** announces the new value inline — **"Division 2"**
   (`aria-live="polite"`).
-- **Shore type selection + Qty field appearance:** **"T-Shore selected. Quantity field
-  added"** (`aria-live="polite"`) so VoiceOver users know a new required field appeared.
+- **Shore type selection:** standard segmented announce; the **strut-math helper** on
+  Number of shores (**"3 × 3-Post = 9 struts"**) is associated to the field
+  (`aria-describedby`), so the per-shore fan-out is read in context whenever the type or
+  the count changes (KB-7).
 - **Successful single SP commit:** on return to the board, focus lands on the new card;
   VoiceOver reads: **"Shore point added. Div 1, Area A, 48 and a half inches, T-Shore,
   Pending."**
-- **Successful grouped SP commit (N > 1):** **"3 shore points added. Div 1, Area A, T-Shore,
-  group 1 of 3, Pending."** (`aria-live="assertive"` on the board landmark after modal
-  closes).
+- **Successful multi-card commit (total cards > 1):** **"9 shore points added — Div 1,
+  Pending."** (3 × 3-Post; the count is total cards = struts; `aria-live="assertive"` on
+  the board landmark after modal closes).
 - **Measurement input:** carries the existing Quick Find SR script (registered in
   [`accessibility.md`](../07-design-system/accessibility.md)).
 - **Deduction picker:** carries the existing picker SR script.
@@ -346,9 +358,9 @@ component.
 1. **Division picker widget on phone** — scroll wheel vs. segmented vs. dropdown; affordance
    geometry finalized in Phase H with the form layout. This spec names the behavior
    (floor-based, vertical, last-used default), not the control type.
-2. **Qty field upper bound** — no enforced max at the form layer; the app should warn (not
-   block) at high quantities (e.g. > 10 grouped SPs) as a field-use sanity check; detail
-   for Phase H.
+2. **Qty field upper bound** — **Resolved (Phase H S9 — KB-7, [#313](https://github.com/Vergo402/paratech-struts/issues/313)):**
+   no enforced max; the form warns — never blocks — when **total cards** (shores ×
+   struts/shore) exceed 10, carried on the strut-math helper line.
 3. **Building field ordering** — when multi-building is on, whether building appears before
    or after division in the form resolves with the Phase H form-layout pass.
 4. **Assign Equipment entry point from this workflow** — the Pending card's primary action

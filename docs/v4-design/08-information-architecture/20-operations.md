@@ -98,10 +98,10 @@ v3 risked one card per fitting strut per shore point (synthesis §2.7 predicted 
 - **Phone:** push one level at a time with a **breadcrumb** back-path (`All › Div 2 › Area 3`); the tab bar stays mounted (per [`00-ia-foundation.md`](00-ia-foundation.md) navigation). Each drilldown row shows status pills + a count.
 - **Tablet / laptop:** the drilldown renders as an **expanded sidebar tree** (the v3 desktop tree), so both the tree and the cards are visible — drilling **filters** the card pane, it does not navigate away.
 
-## Grouped shore points (the phase-split, carried verbatim)
+## Grouped shore points (per-shore groups + the phase-split)
 
-A shore type created with qty > 1 (e.g. a T-Shore ×3) shares a `groupId`; members render as **individual cards in the same lane** with a **"N/total" group badge** ([`card.md`](../03-primitives/card.md)). The v3.8/3.9 **phase-based split crosses unchanged**:
-- **Pre-cutting** (Pending → In Process → Strut Set → Cutting) — a slide advances **all group members at once** (`getGroupMembers()`), and a step-back never regresses a mate already further along (the v3 `STATUS_ORDER` guard).
+**KB-7 per-shore strut math ([#248](https://github.com/Vergo402/paratech-struts/issues/248) / [#313](https://github.com/Vergo402/paratech-struts/issues/313), 2026-06-11):** quantity = number of **shores**, and the shore type drives **struts per shore** (T-Shore 1, Double-T 2, 3-Post 3). Each **physical multi-strut shore** writes one card per strut sharing a `groupId` — one 3-Post = three cards badged **1/3 · 2/3 · 3/3**, rendered as **individual cards in the same lane** ([`card.md`](../03-primitives/card.md)). Single-strut shores are never grouped — a T-Shore ×3 = three independent cards. The Add form pre-states the math ("3 × 3-Post = 9 struts"). *(Corrects this section's earlier qty-as-cards model — which is also how v3 behaves; the v3 shore type is label + wood only. Per-shore strut math is a v4 improvement, not parity restoration.)* The v3.8/3.9 **phase-based split crosses unchanged**, now scoped to the physical shore:
+- **Pre-cutting** (Pending → In Process → Strut Set → Cutting) — a slide advances **all struts of the shore at once** (the v3 `getGroupMembers()` fan-out), and a step-back never regresses a mate already further along (the v3 `STATUS_ORDER` guard).
 - **Cutting onward** (Cutting → Runner → Shore Secured → Strut Equipment Returned) — each piece advances **individually** (its own cut length, its own slide).
 The card signposts which mode applies via the group badge; the full grouped-shore interaction is finalized in the Phase G workflow.
 
