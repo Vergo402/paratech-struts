@@ -1,6 +1,8 @@
 # Open Questions
 
 > Rolling list. Each question is a row. When a question is decided, the row moves to the "Resolved" section at the bottom with a link to the ADR or commit that decided it. **Cleared at the end of each phase,** meaning every open question must be addressed (resolved, deferred, or rejected) before the phase gate is passed.
+>
+> **Design-class rows are additionally indexed in [`98-design-docket.md`](98-design-docket.md)** — the curated list the S10–S12 fix sessions and Phase I design passes read first (added 2026-06-11). Resolution still happens HERE; the docket strikes its row and points back.
 
 > **2026-06-07 — Phase E audit reconciliation.** The primitive cascade's per-doc "Open questions" had **not** been mirrored into this register, so the pending cascade-gate checklist was blind to them. Now reconciled: **#21–#23 resolved** (the `WarningGate` primitive, `--on-accent`, `--shadow-modal`), **#19–#20 carried to Phase H**. The remaining per-primitive items are *affordance geometry* (slide/sheet thresholds, pixel sizing) tracked in each `03-primitives/*.md` and rolling up to the vertical slice (Phase H) — they are an accepted deferral class, not open blockers.
 

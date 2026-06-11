@@ -64,6 +64,7 @@ Twelve issues filed from Alex's sign off review of 2026-05-21 (eleven on review 
 - `03-primitives/picker.md` UI picker doctrine (worked example of design depth) 🟢
 - `11-decisions/ADR-template.md` template for Architecture Decision Records 🟢
 - `99-open-questions.md` rolling list of unresolved questions 🟢
+- `98-design-docket.md` curated running list of design items — the index the S10–S12 / Phase I design passes read first; rapid adds via the `/docket` skill 🟢 (added 2026-06-11)
 
 ### Primitives (Phase E will fill these out)
 
@@ -226,6 +227,7 @@ ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 - **New session opens v4 work** → read `00-INDEX.md` (this file), `01-context.md`, `02-principles.md`, then jump to the phase status row to find current work.
 - **Need to make a design decision** → write an ADR using the template. Commit it before implementing.
 - **Need to know what's not yet decided** → read `99-open-questions.md`.
+- **Have a design/visual item to capture, or starting a design pass** → `98-design-docket.md` (rapid adds: the `/docket` skill).
 - **Want to understand the standard of detail for design work** → read `03-primitives/picker.md` as the worked example.
 
 ---
