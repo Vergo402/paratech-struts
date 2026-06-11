@@ -138,6 +138,25 @@ describe('OperationsBoard', () => {
     expect(within(cuttingSection).getByText('1')).toBeInTheDocument();
   });
 
+  it('the G-15 status-summary bar carries a count per lane and stays out of the a11y tree', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending'),
+      makeSP('sp-2', 'pending'),
+      makeSP('sp-3', 'cutting'),
+    ]);
+    const { container } = render(<OperationsBoard />);
+    const bar = container.querySelector('.fs-ops-summary');
+    expect(bar).not.toBeNull();
+    // Visual glance aid only — the lane headers carry the counts for AT.
+    expect(bar).toHaveAttribute('aria-hidden', 'true');
+    const items = bar!.querySelectorAll('.fs-ops-summary-item');
+    expect(items).toHaveLength(7);
+    expect(items[0]!.textContent).toBe('Pending2');
+    expect(items[1]!.textContent).toBe('In Process0');
+    expect(items[3]!.textContent).toBe('Cutting1');
+  });
+
   it('lane collapse toggles card visibility', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);

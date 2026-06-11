@@ -41,6 +41,23 @@ function PencilIcon() {
   );
 }
 
+// ---- Status summary bar (rec G-15) -------------------------------------------
+// Counts per lane, above the board. Tablet/laptop only — CSS hides it below
+// 768pt (G-15: "phone does not show"). aria-hidden: it is a visual glance aid;
+// the lane headers already carry the same counts for assistive tech.
+function StatusSummaryBar({ byStatus }: { byStatus: Record<ShorePointStatus, ShorePoint[]> }) {
+  return (
+    <div className="fs-ops-summary" aria-hidden="true">
+      {STATUS_ORDER.map((status) => (
+        <span key={status} className={`fs-ops-summary-item is-${status}`}>
+          {STATUS_LABELS[status]}
+          <span className="fs-ops-summary-count">{byStatus[status].length}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // ---- Lane -------------------------------------------------------------------
 interface LaneProps {
   status: ShorePointStatus;
@@ -346,6 +363,8 @@ export function OperationsBoard() {
       <div className="fs-sr-only" role="status" aria-live="polite">
         {politeAnnouncement}
       </div>
+
+      <StatusSummaryBar byStatus={byStatus} />
 
       <div className="fs-ops-lanes">
         {STATUS_ORDER.map((status) => (

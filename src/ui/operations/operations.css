@@ -53,6 +53,14 @@
   gap: var(--space-3);
 }
 
+/* ---- status-summary bar (rec G-15) ---------------------------------------- */
+/* Counts per lane above the board — tablet/laptop only (G-15: phone does not
+   show it). A visual glance aid: aria-hidden in the markup, since the lane
+   headers already carry the same counts for assistive tech. */
+.fs-ops-summary {
+  display: none;
+}
+
 /* ---- single lane --------------------------------------------------------- */
 .fs-lane-header {
   display: flex;
@@ -505,4 +513,83 @@ button.fs-spc-head {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ---- surface breakpoints (spacing-grid.md §Surface breakpoints) ------------ */
+/* 768pt = tablet (command post), 1200pt = laptop (Toughbook). The page margin
+   grows toward --space-12 (48pt); internal card padding never changes — only
+   the rhythm between cards and the page margin (spacing-grid.md). Phone rules
+   above stay untouched: below 768px nothing here applies. */
+
+@media (min-width: 768px) {
+  .fs-ops-board {
+    padding: var(--space-6) var(--space-8);
+  }
+
+  /* The primary action stops stretching phone-wide. */
+  .fs-ops-actions {
+    max-width: 420px;
+  }
+
+  /* G-15 status-summary bar — visible from tablet up. */
+  .fs-ops-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .fs-ops-summary-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 32px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--surface-stroke);
+    border-radius: var(--radius-button);
+    font: var(--type-caption);
+    color: var(--text-secondary);
+  }
+
+  /* The status dot rides the shared is-{status} hue hooks (primitives.css). */
+  .fs-ops-summary-item::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sp-text);
+  }
+
+  .fs-ops-summary-count {
+    font: var(--type-mono);
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* The board goes multi-column: 2-up on tablet. align-items: start keeps a
+     collapsed lane compact instead of stretching to its row's tallest mate. */
+  .fs-ops-lanes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  /* Side-by-side lanes need a bounding surface to read as board columns —
+     hairline stroke only, no fill (tokens only, no new minting). */
+  .fs-lane {
+    border: 1px solid var(--surface-stroke);
+    border-radius: var(--radius-card);
+    padding: 0 var(--space-3) var(--space-1);
+  }
+}
+
+@media (min-width: 1200px) {
+  .fs-ops-board {
+    padding: var(--space-8) var(--space-12);
+  }
+
+  /* Laptop: the optional third column (spacing-grid.md). */
+  .fs-ops-lanes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
