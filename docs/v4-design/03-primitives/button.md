@@ -28,7 +28,7 @@ A button's variant is its **emphasis** — how loud it is relative to everything
 
 **Destructive is an overlay, not a fourth emphasis level** — it swaps the accent for `--danger` on whichever emphasis the action already carries, the same way a severity badge swaps the status palette for the feedback palette ([`badge.md`](badge.md)). A destructive primary is a red-filled button; a destructive secondary is a red-outlined one. It never stands on its own emphasis ladder.
 
-Two **special forms** are buttons but constrained, specified in their own sections below: the **icon button** (a glyph-only button, permitted for secondary/tertiary actions *only*, never primary — Principle 9) and the **Advance / Step-back control** (the focusable button that is the accessible equal of the card's slide gesture). The v3 **FAB / arc speed-dial is retired** — see *Icon buttons & the retired FAB*.
+One **special form** is a button but constrained, specified in its own section below: the **icon button** (a glyph-only button, permitted for secondary/tertiary actions *only*, never primary — Principle 9). The **Advance / Step-back control** — the button twin earlier drafts paired with the card's slide gesture — is **retired by [ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md)**: the slide is the only status commit path. The v3 **FAB / arc speed-dial is retired** — see *Icon buttons & the retired FAB*.
 
 ---
 
@@ -52,7 +52,7 @@ The v3 elements this evicts, each to its true owner:
 - **The quantity picker** (`.qty-btn` 1–4, `role="radio"`, `style.css:946`) and **the theme picker** (`.theme-option`, `role="radio"`) **select one of a set** → [`segmented.md`](segmented.md). They look like button rows and behave like inline pickers — the *inline-segmented* picker variant from [`picker.md`](picker.md).
 - **The strut-system filter** (`.system-toggle` gold / grey / lockstroke, `aria-pressed`, `style.css:424`) looks like the same button row but is **multi-select** — `toggleSystem()` toggles each independently and `getActiveSystemFilter()` returns an array (`app.js:404`), so it is **zero-or-many, not one-of-N**. A multi-select filter is **filter chips → [`input.md`](input.md)**, not a segmented control ([`segmented.md`](segmented.md) makes the same ruling and forwards it there). Only the *single*-select theme and quantity pickers above are segmented.
 - **The inventory stepper** (`.inv-qty-btn` `±`, `style.css:639`) edits a numeric value → the numeric stepper in [`input.md`](input.md).
-- **The slide-to-advance control** on a `ShorePointCard` is a *slide*, not a tap ([`card.md`](card.md)); a safety-consequential commit must not be a button a wet-screen ghost-tap can fire. Its accessible equivalent **is** a button — see *The Advance / Step-back control*.
+- **The slide-to-advance control** on a `ShorePointCard` is a *slide*, not a tap ([`card.md`](card.md)); a safety-consequential commit must not be a button a wet-screen ghost-tap can fire. It has **no button equivalent, visible or hidden** — the slide is the only status commit path ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md)).
 - **The assignment chip's `×`** removes an assignment → the interactive chip in [`input.md`](input.md) (already evicted there by [`badge.md`](badge.md)).
 
 What *stays* a button: every `.btn-primary` / `.btn-outline` / `.btn-danger`, the modal/sheet **Close** (an icon button), the **plate-picker launcher** (`.plate-picker-btn` — a secondary button that opens a sheet; its *value display* follows [`picker.md`](picker.md) rule 3), and the per-card / per-row action affordances (`.sp-edit-btn`, `.ops-add-sp-btn`, `.division-add-btn`, `.org-card-btn`) — all re-sorted into the three emphasis levels by their role on the screen.
@@ -132,14 +132,11 @@ A **destructive or terminal action** — End Operation, un-deploy a strut, a ret
 
 ---
 
-## The Advance / Step-back control — the slide's accessible equal
+## The Advance / Step-back control — RETIRED (ADR-026)
 
-The shore-point status commit is a **slide, not a button** ([`card.md`](card.md) / [ADR-010](../11-decisions/ADR-010-status-commit-model.md)) — but a VoiceOver, switch, or keyboard user cannot slide, so every `ShorePointCard` exposes a focusable, labeled **"Advance to [next status]"** button and a **"Step back to [previous status]"** button that commit the **same event**. This is where the button primitive appears *inside* another primitive's interaction, and the rules are this doc's:
+Earlier drafts specified a focusable **"Advance to [next status]"** / **"Step back to [previous status]"** button pair as the slide's accessible equal, and the Phase G gate (OQ #37) escalated it to a visible phone control. **Both are retired by [ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md)** — Alex's final KB-5 ruling at the Phase H gate ([#248](https://github.com/Vergo402/paratech-struts/issues/248)): the slide gesture is the **only** status commit path. No button twin renders beside the track, and no hidden AT/keyboard twin exists either — a status transition is not a button, anywhere, in any form. (The doubled control failed the gate drive; a button is also exactly the ghost-tappable commit surface the slide was chosen to eliminate.)
 
-- They are ordinary buttons — the **Advance** control is **primary** emphasis (the canonical next action; Principle 4), **Step back** is **secondary** (visually lower, mirroring the card's reverse-is-secondary rule).
-- They are **60pt in the sunlight theme** (the status-transition target, [`spacing-grid.md`](../07-design-system/spacing-grid.md) B-6) — the one place a button exceeds the 56pt operational floor.
-- Their labels **name the destination state, never a generic "next"** — "Advance to Runner," "Step back to Cutting" — so the control speaks the same words [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) locks for the slide ("Slide to set Runner").
-- The gesture is the enhancement; **these buttons are the equal path**, not a second-class fallback ([`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide). [`card.md`](card.md) owns their placement on the card; this doc owns their button anatomy; ADR-010 owns the model.
+What remains in button territory around the lifecycle: **deploy (Assign Equipment), un-deploy, return, and End Operation are ordinary buttons/modals** with full keyboard/AT operability — the exception covers status transitions only. The gated slide's *reason* line and the commit announcements are owned by [`slider.md`](slider.md) §Accessibility floor.
 
 ---
 
@@ -219,7 +216,7 @@ The **sunlight** theme thickens strokes 1pt → 2pt and bumps the label weight o
 - **Link vs. button semantics are honored** — a navigating control is a real `<a>`, an acting control a real `<button>`, so the screen reader announces "link" vs. "button" correctly (a v3 gap, where `<button onclick>` navigates).
 - **Keyboard parity** — Enter / Space activates; the delegated Enter/Space handler that makes `role="button"` elements operable (`app.js:8756`) is the v3 mechanism v4 inherits ([`accessibility.md`](../07-design-system/accessibility.md) §Focus & keyboard). Focus order follows reading order; the primary precedes secondary controls (Principle 4).
 - **Disabled is announced and explained** — a disabled button reads as unavailable with its reason adjacent ([`voice-and-tone.md`](../07-design-system/voice-and-tone.md) *say why*); a loading button sets `aria-busy` and blocks re-press.
-- **The Advance / Step-back buttons are the assistive-tech path** for the slide commit, committing the same event and announcing the new state through the card's polite live region ([`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide).
+- **No button is the assistive-tech path for the slide commit** — the status slide is pointer-only ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md), the recorded exception in [`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide); transitions announce through the card's polite live region. Every other consequential action stays a fully operable button.
 - **The press haptic survives `prefers-reduced-motion`** — it is the non-visual confirmation channel for an operator who cannot watch the screen ([`motion.md`](../07-design-system/motion.md)).
 - Touch targets and the inter-target dead zone are owned by [`spacing-grid.md`](../07-design-system/spacing-grid.md); this primitive obeys the 56pt operational floor.
 

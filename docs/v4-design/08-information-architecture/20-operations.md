@@ -108,7 +108,7 @@ The card signposts which mode applies via the group badge; the full grouped-shor
 ## Locked cross-cutting rules this screen honors
 
 - [x] **Phone is the floor** — every lane, drill, and advance works phone-only.
-- [x] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)); AT gets focusable Advance/Step-back buttons ([`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide).
+- [x] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)); the slide gesture is the **only** commit path — no button twins, no AT/keyboard commit ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md), the recorded exception in [`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide).
 - [x] **NIMS terminology** — spelled-out titles; `group` → **assignedResource**; the renamed status labels above ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
 - [x] **Capacity demoted** — the card never leads with rated capacity; it rides the deduction context only.
 - [x] **Measurements** — 1/8″ floored, digit-pair fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
@@ -125,7 +125,7 @@ The card signposts which mode applies via the group badge; the full grouped-shor
 |---|---|---|---|---|
 | Layout | single-column lanes | multi-column board + rail tree | denser board + rail + palette | status-card grid |
 | Above fold | active lanes; scope control | summary bar (G-15) + board | summary bar + dense board | largest = SP name + measurement |
-| Primary-action affordance | slide on card | slide on card; tablet drag affordances elsewhere | slide + keyboard Advance/Step-back | — (read-only) |
+| Primary-action affordance | slide on card | slide on card; tablet drag affordances elsewhere | slide on card (pointer drag — [ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md)) | — (read-only) |
 | Added density | one lane focus | counts-per-lane bar; tree expanded | sortable, keyboard nav | — |
 | Does NOT render | — | — | — | slides, buttons, overlays |
 
@@ -139,7 +139,7 @@ The card signposts which mode applies via the group badge; the full grouped-shor
 ## Accessibility / screen-reader notes
 
 **Cite [`accessibility.md`](../07-design-system/accessibility.md), do not restate.**
-- The `ShorePointCard` slide has focusable, labeled **Advance to [next] / Step back to [prev]** equivalents (the load-bearing "assistive tech cannot slide" contract) — script registry in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts.
+- The `ShorePointCard` slide is **pointer-only — no button or keyboard equivalent** ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md), the recorded exception to "assistive tech cannot slide"); transitions announce via the polite live region and a gated slide shows its reason as visible text — script registry in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts.
 - Lanes are landmarks; each card announces *object · status · area* ("Shore point B-2, Cutting, Division 2"); status changes announce via `aria-live` (per [`card.md`](../03-primitives/card.md)).
 - Drilldown rows are buttons with the level name + count; the breadcrumb is a navigable back-path → [`accessibility.md`](../07-design-system/accessibility.md) §Focus & keyboard.
 - Power Select applies to the Assign Equipment picker under VoiceOver/TalkBack-or-Settings.
