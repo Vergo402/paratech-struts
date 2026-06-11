@@ -120,6 +120,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | provide-an-updated-flow-humming-dusk | v3-all-open-items-to-v3 |
 | humble-doodling-hamming | v3-feedback-review-may-17 |
 | create-a-markdown-file-misty-journal | v3-issue-54-command-page-v2 |
+| do-we-have-a-cheeky-seahorse | v4-design-docket-creation |
 
 ## This migration's own plan file
 - Renamed at session end (68th FieldShore file): `is-there-a-reason-dazzling-russell.md` → `fieldshore-plan-file-rename-migration.md`.
