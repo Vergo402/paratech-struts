@@ -57,6 +57,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | begin-lazy-koala | v4-phase-h-s4-start-operation (2026-06-10) — the Session-4 execution plan (OperationsBoard + StartOperationModal + useDeviceUid + operations.css + gallery demo) derived from v4-phase-h-slice-build |
 | splendid-tinkering-honey | v4-phase-h-s5-add-shore-point (2026-06-10) — the Session-5 execution plan (AddShorePointModal + ShorePointCard + DeleteShorePointModal + DivisionPicker w/ v3 grow-the-building model + DivisionAdded event + commitMany + overlay parent→child stack fix) derived from v4-phase-h-slice-build |
 | start-session-6-snappy-pebble | v4-phase-h-s6-deploy-strut (2026-06-10) — the Session-6 execution plan (RecommendationCard + AssignEquipmentSheet w/ single-flight deploy + StepBackConfirmModal + In-Process/Strut-Set slides + group advance gate + live pendingReason; over-capacity gate drives in /gallery — flag at the #248 gate) derived from v4-phase-h-slice-build |
+| start-session-7-mossy-whale | v4-phase-h-s7-verification-gate (2026-06-10) — the Session-7 execution plan (formal #247 pass on the production bundle + `docs/v4-design/13-slice/` gate package: verification record + 15 screenshots + capture script + Alex's gate script w/ 14-item deviations register + Gate Notification Protocol; Alex's Option-1 gallery call + raker clarification recorded) derived from v4-phase-h-slice-build; shipped at commit b8e4505 |
 
 ### v4 — issue / ADR / positioning
 | old | new |
