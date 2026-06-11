@@ -30,6 +30,7 @@
 | Card hierarchy reads bland vs v3 — important data must stand out; treatments A (in-doctrine) / B (color-push, would amend ADR-011) / optional C; Alex picks (KB-6) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-6 → [#316](https://github.com/Vergo402/paratech-struts/issues/316) | 2026-06-11 (seed) |
 | **Over-capacity Deploy card must be visually unmistakable** — same card-treatment class as KB-6; recommend folding into S12 rather than waiting for Phase I | [`99-open-questions.md`](99-open-questions.md) #40 | 2026-06-11 (seed) |
 | Sunlight theme: card status stripe uses a placeholder color mapping (`--sp-solid` remap) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #11 | 2026-06-11 (seed) |
+| Grouped cards: rotate through stacked set instead of showing all members | ad hoc (Alex, 2026-06-11) | 2026-06-11 |
 
 ## Phase I design items
 
