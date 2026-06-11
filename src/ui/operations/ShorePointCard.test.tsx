@@ -30,7 +30,7 @@ describe('ShorePointCard', () => {
 
   it('shows the group badge only when grouped', () => {
     const { rerender } = render(
-      <ShorePointCard shorePoint={makeSP({ groupId: 'g', groupIndex: 2, groupTotal: 3 })} />,
+      <ShorePointCard shorePoint={makeSP({ shoreType: '3-post', groupId: 'g', groupIndex: 2, groupTotal: 3 })} />,
     );
     expect(screen.getByText('2 / 3')).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP()} />);
@@ -122,6 +122,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
+          shoreType: '3-post', // a group of 3 = one physical 3-Post shore (KB-7)
           groupId: 'g',
           groupIndex: 1,
           groupTotal: 3,

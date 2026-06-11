@@ -450,7 +450,7 @@ export function GalleryScreen() {
             opId: 'demo',
             division: '1',
             area: 'NW corner',
-            shoreType: 't-shore',
+            shoreType: '3-post', // a group of 3 = one physical 3-Post shore (KB-7)
             groupId: 'demo-g',
             groupIndex: 2,
             groupTotal: 3,

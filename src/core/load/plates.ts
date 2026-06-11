@@ -56,12 +56,15 @@ export interface ShoreTypeDef {
   desc: string;
   defaultHeader: WoodSizeId;
   defaultFooter: WoodSizeId;
+  /** Struts in ONE physical shore (KB-7, v4-new — not in the v3 catalog): the
+   *  Add form's quantity means shores; cards created = shores × strutsPerShore. */
+  strutsPerShore: 1 | 2 | 3;
 }
 
 export const SHORE_TYPES: readonly ShoreTypeDef[] = [
-  { id: 't-shore', name: 'Vertical T-Shore', desc: 'Single strut with header and footer', defaultHeader: '4x4', defaultFooter: '4x4' },
-  { id: 'double-t', name: 'Double-T Vertical Shore', desc: 'Two struts with shared header', defaultHeader: '4x4', defaultFooter: '4x4' },
-  { id: '3-post', name: '3-Post Vertical Shore', desc: 'Three struts with 6×6 header and footer', defaultHeader: '6x6', defaultFooter: '6x6' },
+  { id: 't-shore', name: 'Vertical T-Shore', desc: 'Single strut with header and footer', defaultHeader: '4x4', defaultFooter: '4x4', strutsPerShore: 1 },
+  { id: 'double-t', name: 'Double-T Vertical Shore', desc: 'Two struts with shared header', defaultHeader: '4x4', defaultFooter: '4x4', strutsPerShore: 2 },
+  { id: '3-post', name: '3-Post Vertical Shore', desc: 'Three struts with 6×6 header and footer', defaultHeader: '6x6', defaultFooter: '6x6', strutsPerShore: 3 },
 ];
 
 export const WEDGE_DEDUCTION = 1.5; // inches for loading wedges

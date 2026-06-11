@@ -63,7 +63,9 @@ export const ShorePoint = z.object({
   building: z.string().optional(), // only when the operation is multi-building
   area: z.string().optional(),
   shoreType: ShoreTypeId,
-  // grouping — a grouped shore type (T-Shore ×N) writes N linked points sharing groupId
+  // grouping (KB-7) — a multi-strut shore type writes one point per strut, all
+  // sharing a groupId; one group per PHYSICAL shore (a 3-Post = 3 points badged
+  // 1/3..3/3). Single-strut shores (T-Shore) are never grouped.
   groupId: z.string().optional(),
   groupIndex: z.number().int().positive().optional(), // 1-based
   groupTotal: z.number().int().positive().optional(),

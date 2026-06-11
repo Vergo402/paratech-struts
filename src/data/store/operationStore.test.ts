@@ -133,9 +133,10 @@ describe('operationStore.commit', () => {
 
   describe('commitMany — atomic grouped batch (#220)', () => {
     const group = () => {
+      // One physical 3-Post shore = 3 linked points (KB-7 per-shore grouping).
       const groupId = newId();
       return [1, 2, 3].map((n) =>
-        spAdded(makeSp(`sp-g${n}`, { groupId, groupIndex: n, groupTotal: 3 })),
+        spAdded(makeSp(`sp-g${n}`, { shoreType: '3-post', groupId, groupIndex: n, groupTotal: 3 })),
       );
     };
 

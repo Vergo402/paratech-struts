@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
 import { NO_DEDUCTIONS } from '@core/schema';
+import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import { Button, Modal, TextField } from '@ui/primitives';
@@ -26,8 +27,11 @@ const THREE_POST_WOOD: Pick<Deductions, 'headerWood' | 'footerWood'> = {
   footerWood: '6x6',
 };
 
-/** Grouped-quantity sanity threshold — warn, never block (#220 OQ2). */
+/** Total-cards sanity threshold (shores × struts/shore) — warn, never block (#220 OQ2). */
 const QTY_WARN_THRESHOLD = 10;
+
+const shoreTypeLabel = (id: ShoreTypeId) => SHORE_TYPE_OPTIONS.find((o) => o.value === id)!.label;
+const strutsPerShoreOf = (id: ShoreTypeId) => SHORE_TYPES.find((t) => t.id === id)!.strutsPerShore;
 
 function parseDivision(division: string | undefined): number {
   if (division && /^-?\d{1,3}$/.test(division.trim())) {
@@ -98,6 +102,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
 
   const qtyNum = qty.trim() === '' ? NaN : Number(qty);
   const qtyValid = Number.isInteger(qtyNum) && qtyNum >= 1;
+  // KB-7: qty = number of SHORES; the shore type drives struts per shore
+  // (T-Shore 1, Double-T 2, 3-Post 3). Cards created = shores × struts/shore.
+  const strutsPerShore = strutsPerShoreOf(shoreType);
+  const totalStruts = qtyValid ? qtyNum * strutsPerShore : 0;
   const effective = effectiveLengthFrom(measurementEighths, deductions);
   const buildingRequired = !!operation?.multiBuilding;
 
@@ -107,7 +115,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       : effective <= 0
         ? 'Deductions consume the whole opening'
         : !editing && !qtyValid
-          ? 'Quantity must be a whole number of 1 or more'
+          ? 'Number of shores must be a whole number of 1 or more'
           : buildingRequired && building.trim() === ''
             ? 'Enter the building'
             : null;
@@ -159,24 +167,31 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       return;
     }
 
-    // Create: qty > 1 fans out N linked points sharing a groupId — committed as
-    // ONE atomic batch (#220 "N cards in a single commit").
-    const n = qtyNum;
-    const groupId = n > 1 ? newId() : undefined;
+    // Create (KB-7): one card per STRUT. Each multi-strut shore writes its
+    // struts as linked points sharing a groupId — one group per PHYSICAL shore,
+    // so pre-cutting lockstep and the board's group gate scope to the shore.
+    // Single-strut shores (T-Shore) stay ungrouped. The whole add — all shores —
+    // commits as ONE atomic batch (#220 "N cards in a single commit").
     const at = Date.now();
-    const points: ShorePoint[] = Array.from({ length: n }, (_, i) => ({
-      id: newId(),
-      opId: operation.id,
-      division: String(division),
-      ...(building.trim() ? { building: building.trim() } : {}),
-      ...(area.trim() ? { area: area.trim() } : {}),
-      shoreType,
-      ...(groupId ? { groupId, groupIndex: i + 1, groupTotal: n } : {}),
-      measurementEighths,
-      deductions,
-      ...(label.trim() ? { label: label.trim() } : {}),
-      status: 'pending',
-    }));
+    const points: ShorePoint[] = [];
+    for (let shore = 0; shore < qtyNum; shore++) {
+      const groupId = strutsPerShore > 1 ? newId() : undefined;
+      for (let strut = 0; strut < strutsPerShore; strut++) {
+        points.push({
+          id: newId(),
+          opId: operation.id,
+          division: String(division),
+          ...(building.trim() ? { building: building.trim() } : {}),
+          ...(area.trim() ? { area: area.trim() } : {}),
+          shoreType,
+          ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: strutsPerShore } : {}),
+          measurementEighths,
+          deductions,
+          ...(label.trim() ? { label: label.trim() } : {}),
+          status: 'pending',
+        });
+      }
+    }
 
     const result = await commitMany(
       points.map((sp) => ({
@@ -237,17 +252,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
         />
         {!editing && (
           <TextField
-            label="Quantity"
+            label="Number of shores"
             value={qty}
             onChange={setQty}
             inputMode="numeric"
             maxLength={3}
             helper={
-              qtyValid && qtyNum > QTY_WARN_THRESHOLD
-                ? `Creates ${qtyNum} linked shore points — double-check the count`
-                : qtyValid && qtyNum > 1
-                  ? `Creates ${qtyNum} linked shore points`
-                  : undefined
+              qtyValid && totalStruts > 1
+                ? `${qtyNum} × ${shoreTypeLabel(shoreType)} = ${totalStruts} struts${
+                    totalStruts > QTY_WARN_THRESHOLD ? ' — double-check the count' : ''
+                  }`
+                : undefined
             }
           />
         )}

@@ -29,6 +29,8 @@ function statusEvent(spId: string, from: ShorePointStatus, to: ShorePointStatus)
 
 const byId = (s: OperationState, id: string): ShorePoint => s.shorePoints.find((p) => p.id === id)!;
 
+// Groups = the struts of ONE physical multi-strut shore (KB-7 per-shore
+// grouping). The reducer is groupId-driven, so the fixtures stay abstract.
 describe('L-7 group fan-out', () => {
   it('a pre-cutting advance moves every lockstep group member at once', () => {
     const state = stateWith([

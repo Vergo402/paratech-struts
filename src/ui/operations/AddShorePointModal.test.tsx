@@ -84,12 +84,12 @@ describe('AddShorePointModal — create', () => {
     expect(sp).not.toHaveProperty('label');
   });
 
-  it('qty 3 commits one batch of 3 events sharing a groupId, indices 1..3', async () => {
+  it('KB-7: 3 T-Shores commit 3 INDEPENDENT events — single-strut shores are never grouped', async () => {
     const user = userEvent.setup();
     const onAdded = vi.fn();
     render(<AddShorePointModal open onClose={() => {}} onAdded={onAdded} />);
     await setMeasurementFeet(user, 4);
-    const qty = screen.getByRole('textbox', { name: 'Quantity' });
+    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
     await user.clear(qty);
     await user.type(qty, '3');
     await user.click(submitButton());
@@ -98,32 +98,90 @@ describe('AddShorePointModal — create', () => {
     const events = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
     expect(events).toHaveLength(3);
     const sps = events.map((e) => e.shorePoint);
-    const groupIds = new Set(sps.map((s) => s.groupId));
-    expect(groupIds.size).toBe(1);
-    expect([...groupIds][0]).toBeTruthy();
-    expect(sps.map((s) => s.groupIndex)).toEqual([1, 2, 3]);
-    expect(sps.every((s) => s.groupTotal === 3)).toBe(true);
+    for (const s of sps) {
+      expect(s).not.toHaveProperty('groupId');
+      expect(s).not.toHaveProperty('groupIndex');
+      expect(s).not.toHaveProperty('groupTotal');
+    }
     expect(new Set(sps.map((s) => s.id)).size).toBe(3); // distinct ids
     expect(new Set(sps.map((s) => s.measurementEighths))).toEqual(new Set([384]));
     expect(onAdded).toHaveBeenCalledWith(sps);
   });
 
-  it('a high quantity warns but never blocks (#220 OQ2)', async () => {
+  it('KB-7: ONE 3-Post commits 3 linked events — one groupId, indices 1..3, total 3', async () => {
     const user = userEvent.setup();
     render(<AddShorePointModal open onClose={() => {}} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
     await setMeasurementFeet(user, 4);
-    const qty = screen.getByRole('textbox', { name: 'Quantity' });
+    await user.click(submitButton());
+
+    const events = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(events).toHaveLength(3);
+    const sps = events.map((e) => e.shorePoint);
+    const groupIds = new Set(sps.map((s) => s.groupId));
+    expect(groupIds.size).toBe(1);
+    expect([...groupIds][0]).toBeTruthy();
+    expect(sps.map((s) => s.groupIndex)).toEqual([1, 2, 3]);
+    expect(sps.every((s) => s.groupTotal === 3)).toBe(true);
+    expect(new Set(sps.map((s) => s.id)).size).toBe(3);
+  });
+
+  it('KB-7: 2 Double-T shores commit 4 events in TWO per-shore groups of 2', async () => {
+    const user = userEvent.setup();
+    const onAdded = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onAdded={onAdded} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'Double-T' }));
+    await setMeasurementFeet(user, 4);
+    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
     await user.clear(qty);
-    await user.type(qty, '12');
-    expect(screen.getByText(/double-check the count/)).toBeInTheDocument();
+    await user.type(qty, '2');
+    await user.click(submitButton());
+
+    const events = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(events).toHaveLength(4);
+    const sps = events.map((e) => e.shorePoint);
+    const groupIds = [...new Set(sps.map((s) => s.groupId))];
+    expect(groupIds).toHaveLength(2); // one group per PHYSICAL shore
+    for (const gid of groupIds) {
+      const shore = sps.filter((s) => s.groupId === gid);
+      expect(shore.map((s) => s.groupIndex)).toEqual([1, 2]);
+      expect(shore.every((s) => s.groupTotal === 2)).toBe(true);
+    }
+    expect(new Set(sps.map((s) => s.id)).size).toBe(4);
+    expect(onAdded).toHaveBeenCalledWith(sps);
+  });
+
+  it('the helper pre-states the strut math (KB-7)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    expect(screen.queryByText(/= \d+ struts/)).not.toBeInTheDocument(); // 1 × T-Shore: silent
+
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    expect(screen.getByText('1 × 3-Post = 3 struts')).toBeInTheDocument();
+
+    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    await user.clear(qty);
+    await user.type(qty, '3');
+    expect(screen.getByText('3 × 3-Post = 9 struts')).toBeInTheDocument();
+  });
+
+  it('the warn threshold reads TOTAL struts — 4 × 3-Post = 12 trips it, never blocks (#220 OQ2)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    await setMeasurementFeet(user, 4);
+    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    await user.clear(qty);
+    await user.type(qty, '4');
+    expect(screen.getByText('4 × 3-Post = 12 struts — double-check the count')).toBeInTheDocument();
     expect(submitButton()).toBeEnabled();
   });
 
-  it('an empty / non-integer quantity disables submit with a reason', async () => {
+  it('an empty / non-integer shore count disables submit with a reason', async () => {
     const user = userEvent.setup();
     render(<AddShorePointModal open onClose={() => {}} />);
     await setMeasurementFeet(user, 4);
-    await user.clear(screen.getByRole('textbox', { name: 'Quantity' }));
+    await user.clear(screen.getByRole('textbox', { name: 'Number of shores' }));
     expect(submitButton()).toBeDisabled();
     expect(screen.getByText(/whole number of 1 or more/)).toBeInTheDocument();
   });
@@ -180,10 +238,10 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('pre-populates, hides Quantity, and titles "Edit Shore Point"', () => {
+  it('pre-populates, hides Number of shores, and titles "Edit Shore Point"', () => {
     render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
     expect(screen.getByRole('dialog', { name: 'Edit Shore Point' })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: 'Quantity' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Number of shores' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Area' })).toHaveValue('NW corner');
     expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('B-2');
   });

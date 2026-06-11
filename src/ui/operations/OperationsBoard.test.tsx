@@ -210,11 +210,12 @@ describe('OperationsBoard', () => {
     await user.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
 
-    // Drive the real Add flow: 4 ft via the foot stepper, qty 3, submit.
+    // Drive the real Add flow: 4 ft via the foot stepper, 3 shores (T-Shore ×3
+    // = 3 independent cards under KB-7), submit.
     await user.click(screen.getByRole('button', { name: '+ Add Shore Point' }));
     const upFoot = screen.getByRole('button', { name: 'Up one foot' });
     for (let i = 0; i < 4; i++) await user.click(upFoot);
-    const qty = screen.getByRole('textbox', { name: 'Quantity' });
+    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
     await user.clear(qty);
     await user.type(qty, '3');
     await user.click(screen.getByRole('button', { name: 'Add Shore Point' }));
@@ -297,6 +298,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     const grouped = (id: string, status: ShorePointStatus, groupIndex: number): ShorePoint => ({
       ...makeSP(id, status),
+      shoreType: '3-post', // a group of 3 = one physical 3-Post shore (KB-7)
       groupId: 'g1',
       groupIndex,
       groupTotal: 3,
@@ -323,6 +325,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     const grouped = (id: string, groupIndex: number): ShorePoint => ({
       ...makeSP(id, 'process'),
+      shoreType: '3-post', // one physical 3-Post shore (KB-7)
       groupId: 'g1',
       groupIndex,
       groupTotal: 3,
