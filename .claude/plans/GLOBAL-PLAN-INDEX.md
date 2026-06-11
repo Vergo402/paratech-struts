@@ -60,6 +60,7 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | start-session-7-mossy-whale | v4-phase-h-s7-verification-gate (2026-06-10) — the Session-7 execution plan (formal #247 pass on the production bundle + `docs/v4-design/13-slice/` gate package: verification record + 15 screenshots + capture script + Alex's gate script w/ 14-item deviations register + Gate Notification Protocol; Alex's Option-1 gallery call + raker clarification recorded) derived from v4-phase-h-slice-build; shipped at commit b8e4505 |
 | composed-sauteeing-sprout | v4-phase-h-kickback-fix-plan (2026-06-11) — THE APPROVED #248 kick-back fix plan (user-edited at approval): 4 locked decisions (KB-7 per-shore grouping; KB-6 gallery options pass; KB-3 keypad + typed entry; KB-5 slide-only → ADR-026) + session map S8–S12 + re-drive; sub-issues #311–#316 |
 | groovy-mixing-raccoon | v4-phase-h-s8-kickback-quickwins (2026-06-11) — the S8 resume/execution pointer (thin wrapper around v4-phase-h-kickback-fix-plan §Fix Session 1); S8 shipped at commits 4454914 / 18a2728 / b719a19 (#311 + #312 closed) |
+| once-we-move-to-merry-noodle | v4-s12-claude-design-bridge-plan (2026-06-11) — the S12 ↔ Claude Design bridge: Claude Design = web app + GitHub repo only (no local handoff/resume there); in-repo `docs/v4-design/13-slice/S12-design-brief.md` authored at S11 close-out; fix-plan §S11/§S12 amended with the mechanics |
 
 ### v4 — issue / ADR / positioning
 | old | new |
