@@ -16,13 +16,6 @@
 | Measurement + Division as big gloved tap targets — no spinners/scroll-wheels | [`99-open-questions.md`](99-open-questions.md) #38 | 2026-06-11 (seed) |
 | Big-key custom keypad on phone + hardware-keyboard typed parsing on desktop (KB-3) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-3 → [#314](https://github.com/Vergo402/paratech-struts/issues/314) | 2026-06-11 (seed) |
 
-## Riding S11 — desktop surface ([#315](https://github.com/Vergo402/paratech-struts/issues/315))
-
-| Item | Canonical home | Added |
-|---|---|---|
-| Desktop = blown-up phone column; build the 768pt/1200pt breakpoints (KB-1) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-1 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 (seed) |
-| Per-lane status-summary bar at 768pt+ (rec G-15) | fix-plan §S11 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 (seed) |
-
 ## Riding S12 — card design pass ([#316](https://github.com/Vergo402/paratech-struts/issues/316))
 
 | Item | Canonical home | Added |
@@ -31,6 +24,7 @@
 | **Over-capacity Deploy card must be visually unmistakable** — same card-treatment class as KB-6; recommend folding into S12 rather than waiting for Phase I | [`99-open-questions.md`](99-open-questions.md) #40 | 2026-06-11 (seed) |
 | Sunlight theme: card status stripe uses a placeholder color mapping (`--sp-solid` remap) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #11 | 2026-06-11 (seed) |
 | Grouped cards: rotate through stacked set instead of showing all members | ad hoc (Alex, 2026-06-11) | 2026-06-11 |
+| Slide-track label clips behind the handle at narrow lane columns (~328px tablet 2-col) — clearance rides the card pass | ad hoc (S11 verification, 2026-06-11) | 2026-06-11 |
 
 ## Phase I design items
 
@@ -54,4 +48,7 @@
 
 ## Resolved (struck rows land here)
 
-*None yet.*
+| Item | Canonical home | Resolved |
+|---|---|---|
+| ~~Desktop = blown-up phone column; build the 768pt/1200pt breakpoints (KB-1)~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-1 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 — S11 landed (`24273e0`), #315 closed |
+| ~~Per-lane status-summary bar at 768pt+ (rec G-15)~~ | fix-plan §S11 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 — S11 landed (`24273e0`), #315 closed |
