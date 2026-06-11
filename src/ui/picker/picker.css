@@ -7,6 +7,13 @@
 
 /* ---- shared picker field chrome -------------------------------------------- */
 .fs-picker-field { display: flex; flex-direction: column; gap: var(--space-1); }
+/* Label line with a trailing value (the deduction ledger's −3½″ — KB-4). */
+.fs-picker-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
 .fs-picker-trigger {
   display: flex;
   align-items: center;

@@ -28,7 +28,8 @@ function gcd(a: number, b: number): number {
 
 /** Split exact eighths into whole parts + a REDUCED ⅛″-family fraction (4/8 → 1/2). */
 export function eighthsToParts(eighths: number): MeasurementParts {
-  const negative = eighths < 0;
+  // Negative zero carries the sign: a deduction of −0″ reads as a deduction (KB-4).
+  const negative = eighths < 0 || Object.is(eighths, -0);
   const abs = Math.abs(eighths);
   const totalInches = Math.floor(abs / 8);
   const rem = abs % 8;

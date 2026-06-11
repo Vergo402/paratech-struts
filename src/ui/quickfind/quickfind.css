@@ -76,6 +76,12 @@
   font-weight: 600;
   color: var(--text-primary);
 }
+/* Nearest-⅛″ marker on non-eighths-exact catalog heights (the rec-card ≈ precedent). */
+.fs-ledger-approx {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  margin-right: 2px;
+}
 .fs-ledger-effective {
   border-top: 1px solid var(--surface-stroke);
   padding-top: var(--space-3);

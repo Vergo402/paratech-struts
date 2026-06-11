@@ -3,6 +3,7 @@ import {
   createRoute,
   createRouter,
   Outlet,
+  redirect,
 } from '@tanstack/react-router';
 import { BottomNav } from './shell/BottomNav';
 import { QuickFindScreen } from './routes/quickfind';
@@ -31,7 +32,16 @@ function RootLayout() {
 const rootRoute = createRootRoute({ component: RootLayout });
 
 const routeTree = rootRoute.addChildren([
-  createRoute({ getParentRoute: () => rootRoute, path: '/', component: QuickFindScreen }),
+  // Cold open lands on Operations — the working screen, not the calculator
+  // (Phase H gate kick-back, #248). Quick Find lives at /quickfind.
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    beforeLoad: () => {
+      throw redirect({ to: '/operations' });
+    },
+  }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/quickfind', component: QuickFindScreen }),
   createRoute({ getParentRoute: () => rootRoute, path: '/operations', component: OperationsScreen }),
   createRoute({ getParentRoute: () => rootRoute, path: '/inventory', component: InventoryScreen }),
   createRoute({ getParentRoute: () => rootRoute, path: '/command', component: CommandScreen }),

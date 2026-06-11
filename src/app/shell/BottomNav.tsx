@@ -18,7 +18,7 @@ function NavIcon({ d }: { d: string }) {
 
 const TABS: { to: string; label: string; icon: ReactNode; exact?: boolean }[] = [
   // magnifier — measure & find
-  { to: '/', label: 'Quick Find', icon: <NavIcon d="M9 4 a5 5 0 1 0 0 10 a5 5 0 1 0 0-10 M13 13 L17 17" />, exact: true },
+  { to: '/quickfind', label: 'Quick Find', icon: <NavIcon d="M9 4 a5 5 0 1 0 0 10 a5 5 0 1 0 0-10 M13 13 L17 17" /> },
   // board lanes
   { to: '/operations', label: 'Operations', icon: <NavIcon d="M3 4 H17 M3 8 H17 M3 12 H12 M3 16 H9" /> },
   // crate

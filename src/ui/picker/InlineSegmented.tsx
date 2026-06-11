@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Segmented, type SegmentedOption } from '@ui/primitives';
 
 /**
@@ -12,6 +13,8 @@ export interface InlineSegmentedProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
   size?: 'operational' | 'standard';
+  /** Trailing value on the label line — e.g. the ledger's −3½″ (KB-4). */
+  trailing?: ReactNode;
 }
 
 export function InlineSegmented<T extends string>({
@@ -20,10 +23,18 @@ export function InlineSegmented<T extends string>({
   value,
   onChange,
   size,
+  trailing,
 }: InlineSegmentedProps<T>) {
   return (
     <div className="fs-picker-field">
-      <span className="fs-field-label">{label}</span>
+      {trailing != null ? (
+        <div className="fs-picker-label-row">
+          <span className="fs-field-label">{label}</span>
+          {trailing}
+        </div>
+      ) : (
+        <span className="fs-field-label">{label}</span>
+      )}
       <Segmented options={options} value={value} onChange={onChange} aria-label={label} size={size} />
     </div>
   );

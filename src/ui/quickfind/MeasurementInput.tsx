@@ -1,7 +1,7 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useId, useState } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
-import { Fraction, MeasurementValue, tapHaptic } from '@ui/primitives';
+import { Fraction, MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
 
 /**
  * MeasurementInput — the gloved measurement entry (settled gate follow-ups
@@ -101,16 +101,21 @@ export function MeasurementInput({
           apply(value - (value % 8) + Number(v));
         }}
       >
-        {EIGHTHS.map((n) => (
-          <RadioGroup.Item
-            key={n}
-            className="fs-eighth"
-            value={String(n)}
-            aria-label={n === 0 ? 'zero eighths' : `${n}/8 inch`}
-          >
-            {n === 0 ? '0' : <Fraction n={n} d={8} />}
-          </RadioGroup.Item>
-        ))}
+        {EIGHTHS.map((n) => {
+          // Tape-measure form (KB-2): cells read 1/8 1/4 3/8 1/2 5/8 3/4 7/8 —
+          // reduced for display only; the stored value stays the raw eighths int.
+          const p = eighthsToParts(n);
+          return (
+            <RadioGroup.Item
+              key={n}
+              className="fs-eighth"
+              value={String(n)}
+              aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
+            >
+              {n === 0 ? '0' : <Fraction n={p.n} d={p.d} />}
+            </RadioGroup.Item>
+          );
+        })}
       </RadioGroup.Root>
       {boundMessage && (
         <span className="fs-field-msg fs-field-msg--error" role="status">

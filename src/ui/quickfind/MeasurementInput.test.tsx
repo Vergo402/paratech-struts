@@ -41,6 +41,29 @@ describe('MeasurementInput', () => {
     expect(eighths()).toBe(40 * 8);
   });
 
+  it('strip cells read in reduced tape-measure form: 0, 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={40 * 8} />);
+    const labels = screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label'));
+    expect(labels).toEqual([
+      'zero eighths',
+      '1/8 inch',
+      '1/4 inch',
+      '3/8 inch',
+      '1/2 inch',
+      '5/8 inch',
+      '3/4 inch',
+      '7/8 inch',
+    ]);
+    // Reduced labels still commit the raw eighths value underneath.
+    await user.click(screen.getByRole('radio', { name: '1/4 inch' }));
+    expect(eighths()).toBe(40 * 8 + 2);
+    await user.click(screen.getByRole('radio', { name: '1/2 inch' }));
+    expect(eighths()).toBe(40 * 8 + 4);
+    await user.click(screen.getByRole('radio', { name: '3/4 inch' }));
+    expect(eighths()).toBe(40 * 8 + 6);
+  });
+
   it('clamps at 0 with an inline message — no negative value ever emitted', async () => {
     const user = userEvent.setup();
     render(<Harness initial={0} />);

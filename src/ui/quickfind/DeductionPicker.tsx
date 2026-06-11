@@ -1,4 +1,4 @@
-import { BASE_PLATES, WOOD_SIZES } from '@core/load';
+import { BASE_PLATES, WOOD_SIZES, plateHeight, woodHeight } from '@core/load';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import type { Deductions } from '@core/schema';
 import { MeasurementValue } from '@ui/primitives';
@@ -11,6 +11,9 @@ import { InlineSegmented, VisualGridPicker } from '@ui/picker';
  * All math comes from core (`effectiveLengthFrom`, exact catalog heights —
  * L-2 deduct-once); the ledger never holds its own constants. Effective
  * floors to ⅛″ and turns --danger when the deductions consume the opening.
+ * Deductions read as signed measurements — −3½″, never "deducts 3.5″" (KB-4);
+ * nearest ⅛″ with ≈ when the catalog height isn't eighths-exact (the
+ * RecommendationCard precedent — the exact spec still drives the math).
  */
 export interface DeductionPickerProps {
   /** The opening measurement the ledger deducts from (exact eighths). */
@@ -21,12 +24,21 @@ export interface DeductionPickerProps {
   plateAvailability?: ReadonlySet<string>;
 }
 
+function DeductionAmount({ heightInches }: { heightInches: number }) {
+  return (
+    <>
+      {(heightInches * 8) % 1 !== 0 && <span className="fs-ledger-approx">≈</span>}
+      <MeasurementValue eighths={-Math.round(heightInches * 8)} />
+    </>
+  );
+}
+
 const WOOD_OPTIONS = WOOD_SIZES.map((w) => ({ value: w.id, label: w.id === 'none' ? 'None' : w.id.replace('x', '×') }));
 
 const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
   id: p.id,
   name: p.name,
-  sub: p.height > 0 ? `deducts ${p.height}″` : 'no deduction',
+  sub: <DeductionAmount heightInches={p.height} />,
 }));
 
 export function DeductionPicker({
@@ -53,6 +65,11 @@ export function DeductionPicker({
         options={WOOD_OPTIONS}
         value={value.headerWood}
         onChange={(v) => set('headerWood', v)}
+        trailing={
+          <span className="fs-ledger-value">
+            <DeductionAmount heightInches={woodHeight(value.headerWood)} />
+          </span>
+        }
       />
       <VisualGridPicker
         label="Top plate"
@@ -60,6 +77,11 @@ export function DeductionPicker({
         value={value.topPlate}
         onSelect={(id) => set('topPlate', id)}
         availableIds={plateAvailability}
+        trailing={
+          <span className="fs-ledger-value">
+            <DeductionAmount heightInches={plateHeight(value.topPlate)} />
+          </span>
+        }
       />
       <VisualGridPicker
         label="Bottom plate"
@@ -67,12 +89,22 @@ export function DeductionPicker({
         value={value.bottomPlate}
         onSelect={(id) => set('bottomPlate', id)}
         availableIds={plateAvailability}
+        trailing={
+          <span className="fs-ledger-value">
+            <DeductionAmount heightInches={plateHeight(value.bottomPlate)} />
+          </span>
+        }
       />
       <InlineSegmented
         label="Footer wood"
         options={WOOD_OPTIONS}
         value={value.footerWood}
         onChange={(v) => set('footerWood', v)}
+        trailing={
+          <span className="fs-ledger-value">
+            <DeductionAmount heightInches={woodHeight(value.footerWood)} />
+          </span>
+        }
       />
       <div className={`fs-ledger-row fs-ledger-effective${impossible ? ' fs-ledger-effective--danger' : ''}`}>
         <span className="fs-ledger-label">

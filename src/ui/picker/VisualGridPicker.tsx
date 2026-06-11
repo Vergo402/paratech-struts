@@ -25,8 +25,8 @@ import { PlateSwatch } from './PlateSwatch';
 export interface VisualGridOption {
   id: string;
   name: string;
-  /** Secondary line — e.g. the plate's height deduction. */
-  sub?: string;
+  /** Secondary line — e.g. the plate's height deduction (−3½″). */
+  sub?: ReactNode;
 }
 
 export interface VisualGridPickerProps {
@@ -38,6 +38,8 @@ export interface VisualGridPickerProps {
   availableIds?: ReadonlySet<string>;
   /** Thumbnail renderer — defaults to the placeholder swatch. */
   renderThumb?: (option: VisualGridOption) => ReactNode;
+  /** Trailing value on the label line — e.g. the ledger's −3½″ (KB-4). */
+  trailing?: ReactNode;
 }
 
 const SCROLL_TO_SELECTED_MS = 50; // v3's settle delay before scrollIntoView
@@ -49,6 +51,7 @@ export function VisualGridPicker({
   onSelect,
   availableIds,
   renderThumb,
+  trailing,
 }: VisualGridPickerProps) {
   const [open, setOpen] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -101,9 +104,18 @@ export function VisualGridPicker({
 
   return (
     <div className="fs-picker-field">
-      <span className="fs-field-label" id={labelId}>
-        {label}
-      </span>
+      {trailing != null ? (
+        <div className="fs-picker-label-row">
+          <span className="fs-field-label" id={labelId}>
+            {label}
+          </span>
+          {trailing}
+        </div>
+      ) : (
+        <span className="fs-field-label" id={labelId}>
+          {label}
+        </span>
+      )}
       <button
         ref={triggerRef}
         type="button"

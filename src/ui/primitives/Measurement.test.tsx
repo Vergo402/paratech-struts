@@ -19,6 +19,11 @@ describe('eighthsToParts', () => {
   it('flags negatives without mangling parts', () => {
     expect(eighthsToParts(-12)).toMatchObject({ totalInches: 1, n: 1, d: 2, negative: true });
   });
+
+  it('negative zero carries the sign — a −0″ deduction reads as a deduction (KB-4)', () => {
+    expect(eighthsToParts(-0)).toMatchObject({ totalInches: 0, n: 0, d: 1, negative: true });
+    expect(eighthsToParts(0)).toMatchObject({ negative: false });
+  });
 });
 
 describe('MeasurementValue', () => {
