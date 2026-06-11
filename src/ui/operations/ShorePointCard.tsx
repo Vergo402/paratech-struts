@@ -144,7 +144,6 @@ export function ShorePointCard({
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Strut Set"
-            buttonLabel="Advance to Strut Set"
             revealColor="var(--status-strutset-bg)"
             disabled={!!advanceDisabledReason}
             disabledReason={advanceDisabledReason}
@@ -153,7 +152,6 @@ export function ShorePointCard({
           {/* Un-deploy: the board confirms (inventory-consequential) before any commit. */}
           <Slider
             label="Slide back to Pending"
-            buttonLabel="Step back to Pending"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />
@@ -167,7 +165,6 @@ export function ShorePointCard({
               change on strutset → process (ADR-010). */}
           <Slider
             label="Slide back to In Process"
-            buttonLabel="Step back to In Process"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />

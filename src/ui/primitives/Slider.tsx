@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { Button } from './Button';
 import { commitHaptic } from './haptics';
 
 /**
@@ -9,19 +8,18 @@ import { commitHaptic } from './haptics';
  * threshold, resistant to ghost taps on a wet screen. Advance slides
  * rightward; step-back mirrors leftward and reads as secondary. Always
  * reversible from the card — reversal is a normal slide, not a special
- * animation. Per settled gate follow-up #37, a plain VISIBLE button
- * committing the same step renders below the track on every surface (not
- * AT-only) — structural here so no call site can forget it.
+ * animation. The slide gesture is the ONLY commit path (ADR-026, the Phase H
+ * KB-5 ruling): no button twin, no hidden AT/keyboard equivalent — a
+ * deliberate accessibility exception, recorded with its trade-offs. When
+ * disabled, the gate reason renders as a visible line under the track.
  */
 export interface SliderProps {
   /** The full next step in words — "Slide to set Runner". Never truncated. */
   label: string;
-  /** #37 plain-button label; defaults to Advance / Step back by direction. */
-  buttonLabel?: string;
   direction?: 'advance' | 'stepback';
   onCommit: () => void;
   disabled?: boolean;
-  /** Why the slide is disabled — rendered adjacent by the #37 button (button.md disabled-with-reason). */
+  /** Why the slide is disabled — a visible .fs-slide-reason line under the track. */
   disabledReason?: string;
   /** Track fill revealed by travel — typically the target status bg token. */
   revealColor?: string;
@@ -35,7 +33,6 @@ export function shouldCommit(offsetPx: number, trackPx: number, threshold = 0.8)
 
 export function Slider({
   label,
-  buttonLabel,
   direction = 'advance',
   onCommit,
   disabled = false,
@@ -105,16 +102,8 @@ export function Slider({
         </button>
         <span className="fs-slide-label">{label}</span>
       </div>
-      {/* #37 — the plain visible equivalent; same commit, keyboard/AT path */}
-      <Button
-        variant="secondary"
-        size="standard"
-        disabled={disabled}
-        disabledReason={disabledReason}
-        onPress={onCommit}
-      >
-        {buttonLabel ?? (direction === 'advance' ? 'Advance' : 'Step back')}
-      </Button>
+      {/* The gate reason stays visible at full strength — only the track fades. */}
+      {disabled && disabledReason && <span className="fs-slide-reason">{disabledReason}</span>}
     </div>
   );
 }

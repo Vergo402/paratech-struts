@@ -593,7 +593,12 @@ p.fs-gate--disclaimer {
   pointer-events: none;
   white-space: nowrap; /* the next step is always fully legible */
 }
-.fs-slide--disabled { opacity: 0.5; }
+/* Fade the track only — the gate reason below stays fully legible. */
+.fs-slide--disabled .fs-slide-track { opacity: 0.5; }
+.fs-slide-reason {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
 /* step-back is visually secondary — quieter thumb, same geometry mirrored */
 .fs-slide--stepback .fs-slide-thumb {
   background: var(--surface-card);

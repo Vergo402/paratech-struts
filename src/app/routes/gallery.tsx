@@ -322,19 +322,17 @@ export function GalleryScreen() {
         />
       </Section>
 
-      <Section title="Slide to commit — advance + step-back (#37 buttons built in)">
+      <Section title="Slide to commit — advance + step-back (gesture only, ADR-026)">
         <span style={{ font: 'var(--type-caption)' }} className="text-ink-secondary">
           Commits: {commits}
         </span>
         <Slider
           label="Slide to set Strut Set"
-          buttonLabel="Set Strut Set"
           revealColor="var(--status-strutset-bg)"
           onCommit={() => setCommits((c) => c + 1)}
         />
         <Slider
           label="Slide back to In Process"
-          buttonLabel="Back to In Process"
           direction="stepback"
           onCommit={() => setCommits((c) => c + 1)}
         />

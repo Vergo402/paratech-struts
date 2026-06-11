@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
 import { ShorePointCard } from './ShorePointCard';
 import type { ShorePoint } from '@core/schema';
 
@@ -95,8 +96,7 @@ describe('ShorePointCard', () => {
     expect(screen.queryByText(/No equipment assigned/)).not.toBeInTheDocument();
   });
 
-  it('process: advance + step-back slides with their #37 buttons; callbacks fire', async () => {
-    const user = userEvent.setup();
+  it('process: advance + step-back slides commit through the gesture — no button twins (ADR-026)', async () => {
     const onAdvance = vi.fn();
     const onStepBack = vi.fn();
     const sp = makeSP({
@@ -107,14 +107,15 @@ describe('ShorePointCard', () => {
 
     expect(screen.getByText('Slide to set Strut Set')).toBeInTheDocument();
     expect(screen.getByText('Slide back to Pending')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Advance to Strut Set' }));
+    // The slide gesture is the ONLY status commit path — no Advance/Step-back buttons.
+    expect(screen.queryByRole('button', { name: /Advance|Step back/ })).toBeNull();
+    await slideToCommit('Slide to set Strut Set');
     expect(onAdvance).toHaveBeenCalledWith(sp);
-    await user.click(screen.getByRole('button', { name: 'Step back to Pending' }));
+    await slideToCommit('Slide back to Pending');
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 
-  it('process: the group gate disables advance with its reason; step-back stays live', async () => {
-    const user = userEvent.setup();
+  it('process: the group gate disables advance with its visible reason; step-back stays live', async () => {
     const onAdvance = vi.fn();
     const onStepBack = vi.fn();
     render(
@@ -131,12 +132,13 @@ describe('ShorePointCard', () => {
         advanceDisabledReason="Waiting on group — 2 of 3 still Pending"
       />,
     );
-    const advance = screen.getByRole('button', { name: 'Advance to Strut Set' });
-    expect(advance).toBeDisabled();
+    const advance = getSlide('Slide to set Strut Set');
+    expect(advance).toHaveClass('fs-slide--disabled');
+    // The gate reason survives the button removal — visible under the track.
     expect(screen.getByText('Waiting on group — 2 of 3 still Pending')).toBeInTheDocument();
-    await user.click(advance);
+    await slideToCommit(advance);
     expect(onAdvance).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Step back to Pending' }));
+    await slideToCommit('Slide back to Pending');
     expect(onStepBack).toHaveBeenCalled();
   });
 
@@ -150,8 +152,8 @@ describe('ShorePointCard', () => {
         onStepBack={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Step back to In Process' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Advance/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Slide back to In Process')).toBeInTheDocument();
+    expect(screen.queryByText(/Slide to set/)).not.toBeInTheDocument();
   });
 
   it('later states (secured/returned): no slides at all this slice', () => {

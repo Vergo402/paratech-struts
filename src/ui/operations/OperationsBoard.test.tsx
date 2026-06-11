@@ -2,6 +2,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
 import { OperationsBoard } from './OperationsBoard';
 import type { InventoryItem, Operation, ShorePoint, ShorePointStatus } from '@core/schema';
 import type { StrutCombination } from '@core/load';
@@ -278,22 +279,21 @@ describe('OperationsBoard', () => {
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 deployed — Div 1, In Process.');
   });
 
-  it('advance #37 button commits the status change and announces politely', async () => {
-    const user = userEvent.setup();
+  it('the advance slide commits the status change and announces politely (gesture only — ADR-026)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
       { ...makeSP('sp-1', 'process'), deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } },
     ]);
     render(<OperationsBoard />);
 
-    await user.click(screen.getByRole('button', { name: 'Advance to Strut Set' }));
+    await slideToCommit('Slide to set Strut Set');
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'process', to: 'strutset' }),
     );
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — now Strut Set.');
   });
 
-  it('the group gate disables advance while mates are still Pending (#221 OQ2)', () => {
+  it('the group gate disables advance while mates are still Pending (#221 OQ2)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     const grouped = (id: string, status: ShorePointStatus, groupIndex: number): ShorePoint => ({
       ...makeSP(id, status),
@@ -311,12 +311,15 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
 
-    expect(screen.getByRole('button', { name: 'Advance to Strut Set' })).toBeDisabled();
+    const advance = getSlide('Slide to set Strut Set');
+    expect(advance).toHaveClass('fs-slide--disabled');
     expect(screen.getByText('Waiting on group — 2 of 3 still Pending')).toBeInTheDocument();
+    // The gate holds against the gesture itself — a full drag commits nothing.
+    await slideToCommit(advance);
+    expect(mockCommit).not.toHaveBeenCalled();
   });
 
   it('once every mate has left Pending, advance fans out and announces the group size', async () => {
-    const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     const grouped = (id: string, groupIndex: number): ShorePoint => ({
       ...makeSP(id, 'process'),
@@ -328,9 +331,10 @@ describe('OperationsBoard', () => {
     mockShorePoints.mockReturnValue([grouped('sp-1', 1), grouped('sp-2', 2), grouped('sp-3', 3)]);
     render(<OperationsBoard />);
 
-    const advances = screen.getAllByRole('button', { name: 'Advance to Strut Set' });
-    expect(advances[0]).toBeEnabled();
-    await user.click(advances[0]!);
+    const advances = screen.getAllByText('Slide to set Strut Set');
+    expect(advances).toHaveLength(3);
+    expect(advances[0]!.closest('.fs-slide')).not.toHaveClass('fs-slide--disabled');
+    await slideToCommit(advances[0]!);
     expect(mockCommit).toHaveBeenCalledTimes(1); // ONE event — the reducer fans out
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points — now Strut Set.');
   });
@@ -343,7 +347,7 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
 
-    await user.click(screen.getByRole('button', { name: 'Step back to Pending' }));
+    await slideToCommit('Slide back to Pending');
     expect(screen.getByRole('dialog', { name: 'Return LS 304 to inventory?' })).toBeInTheDocument();
     expect(mockCommit).not.toHaveBeenCalled();
 
@@ -353,14 +357,13 @@ describe('OperationsBoard', () => {
   });
 
   it('step-back from Strut Set commits directly — no confirm (no inventory change)', async () => {
-    const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
       { ...makeSP('sp-1', 'strutset'), deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } },
     ]);
     render(<OperationsBoard />);
 
-    await user.click(screen.getByRole('button', { name: 'Step back to In Process' }));
+    await slideToCommit('Slide back to In Process');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'strutset', to: 'process' }),
