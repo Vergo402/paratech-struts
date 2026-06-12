@@ -2,12 +2,12 @@ import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useId, useState, useRef, useEffect } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
 import { Fraction, MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
-import { MeasurementEntrySheet } from './MeasurementEntrySheet';
+import { MeasurementEntryModal } from './MeasurementEntryModal';
 import { parseMeasurement } from './parseMeasurement';
 
 /**
  * MeasurementInput — the gloved measurement entry (KB-3, S10).
- * Phone: readout is a button that opens MeasurementEntrySheet (56pt keypad).
+ * Phone: readout is a button that opens MeasurementEntryModal (56pt keypad).
  * Desktop: readout is a focusable field for hardware typing (parser on blur/Enter).
  * Both: steppers (feet/inches) and eighths strip for quick-adjust.
  * Value is EXACT eighths int end-to-end (ADR-012) — never float, never outside bounds;
@@ -196,9 +196,9 @@ export function MeasurementInput({
         </span>
       )}
 
-      {/* Phone: the big-key entry sheet (56pt keypad + quick-adjust) */}
+      {/* Phone: the big-key entry modal (ft/in slots + 56pt dialer keypad) */}
       {isPhone && (
-        <MeasurementEntrySheet
+        <MeasurementEntryModal
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           value={value}
