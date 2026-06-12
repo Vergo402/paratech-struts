@@ -6,11 +6,12 @@ import { InlineSegmented, VisualGridPicker } from '@ui/picker';
 
 /**
  * DeductionPicker — the fixed-order deduction ledger (card.md / input.md):
- * Opening → Header wood → Top plate → Bottom plate → Footer wood → Effective.
- * The order is the build order of the shore, top-down, and never re-sorts.
- * All math comes from core (`effectiveLengthFrom`, exact catalog heights —
- * L-2 deduct-once); the ledger never holds its own constants. Effective
- * floors to ⅛″ and turns --danger when the deductions consume the opening.
+ * Raw opening → Header wood → Top plate → Bottom plate → Footer wood →
+ * Required strut length. The order is the build order of the shore, top-down,
+ * and never re-sorts. All math comes from core (`effectiveLengthFrom`, exact
+ * catalog heights — L-2 deduct-once); the ledger never holds its own constants.
+ * Required strut length floors to ⅛″ and turns --danger when the deductions
+ * consume the opening.
  * Deductions read as signed measurements — −3½″, never "deducts 3.5″" (KB-4);
  * nearest ⅛″ with ≈ when the catalog height isn't eighths-exact (the
  * RecommendationCard precedent — the exact spec still drives the math).
@@ -57,7 +58,7 @@ export function DeductionPicker({
   return (
     <div className="fs-ledger">
       <div className="fs-ledger-row">
-        <span className="fs-ledger-label">Opening</span>
+        <span className="fs-ledger-label">Raw opening</span>
         <MeasurementValue eighths={measurementEighths} className="fs-ledger-value" />
       </div>
       <InlineSegmented
@@ -108,7 +109,7 @@ export function DeductionPicker({
       />
       <div className={`fs-ledger-row fs-ledger-effective${impossible ? ' fs-ledger-effective--danger' : ''}`}>
         <span className="fs-ledger-label">
-          Effective
+          Required strut length
           <span className="fs-ledger-note"> floored to ⅛″</span>
         </span>
         <MeasurementValue eighths={effectiveEighths} className="fs-ledger-value fs-ledger-value--big" />

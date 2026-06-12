@@ -19,7 +19,7 @@ describe('DeductionPicker', () => {
   it('renders the six ledger rows in the fixed order', () => {
     const { container } = render(<Harness />);
     const text = container.textContent!;
-    const order = ['Opening', 'Header wood', 'Top plate', 'Bottom plate', 'Footer wood', 'Effective'];
+    const order = ['Raw opening', 'Header wood', 'Top plate', 'Bottom plate', 'Footer wood', 'Required strut length'];
     const positions = order.map((label) => text.indexOf(label));
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);

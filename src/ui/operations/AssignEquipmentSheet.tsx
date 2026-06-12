@@ -80,9 +80,13 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
 
   const reason = sp && recommendations.length === 0 ? pendingReasonFor(sp, inventory) : undefined;
 
+  // The shore point's identity line (division · building · area) — reused for
+  // the sheet header AND passed to each RecommendationCard's `location` (S12 §3.1).
+  const spLocation = sp ? [divisionLabel(sp.division), sp.building, sp.area].filter(Boolean).join(' · ') : undefined;
+
   const context = sp ? (
     <p className="fs-assign-context">
-      {[divisionLabel(sp.division), sp.building, sp.area].filter(Boolean).join(' · ')}
+      {spLocation}
       {' · '}
       {SHORE_TYPE_LABELS[sp.shoreType]}
       {' · '}
@@ -110,6 +114,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
                   ? inventory.find((i) => i.id === combo.strut.inventoryId)?.apparatus
                   : undefined
               }
+              location={spLocation}
               onDeploy={handleDeploy}
               deployDisabled={deploying}
             />

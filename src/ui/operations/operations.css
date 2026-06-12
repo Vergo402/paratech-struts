@@ -450,6 +450,12 @@ button.fs-spc-head {
 .fs-rec--grey {
   --rec-color: var(--text-secondary);
 }
+/* LockStroke is keyed off the strut SYSTEM, not its color (every lk-* is
+   physically grey): cyan is the opposite pole from gold and unmistakable from
+   grey (S12 §4 — the lockstroke token carries its own per-theme contrast). */
+.fs-rec--lockstroke {
+  --rec-color: var(--sys-lockstroke);
+}
 /* #40 — the gated card (unrated / over-capacity) reads as danger at a glance,
    an accent and a word, never a full red fill (Principle 3). */
 .fs-rec.is-gated {
@@ -466,32 +472,87 @@ button.fs-spc-head {
   border-radius: var(--radius-card) 0 0 var(--radius-card);
 }
 
-.fs-rec-system {
-  margin: 0;
-  font: var(--type-caption);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--rec-color);
-}
-
-.fs-rec-head {
+/* Centered identity header — the deliberate visual split from the left-aligned
+   ShorePointCard (S12 §3.1). The identity column centers across the card; the
+   fit badge floats top-right, OUTSIDE the centering flow, so it never shoves
+   the identity off-center. */
+.fs-rec-header {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
+  justify-content: center;
 }
 
-.fs-rec-model {
+.fs-rec-headcol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  /* leave room for the absolutely-positioned fit badge so the centered
+     identity never collides with it. */
+  max-width: calc(100% - 56px);
+}
+
+.fs-rec-identity {
+  margin: 0;
   font: var(--type-headline-2);
-  font-weight: 700;
   color: var(--text-primary);
 }
-
-.fs-rec-range {
-  font: var(--type-mono);
-  font-size: 1.125rem;
+.fs-rec-identity b {
   color: var(--rec-color);
+  font-weight: 700;
+}
+
+.fs-rec-connectors,
+.fs-rec-loc {
+  margin: 4px 0 0;
+  font: var(--type-body);
+  color: var(--text-secondary);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Apparatus sits bigger + bolder than location by decision (S12 §3.1). */
+.fs-rec-apparatus {
+  margin: 1px 0 0;
+  font: var(--type-body);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.fs-rec-loc {
+  margin-top: 3px;
+}
+
+/* Fit badge — process-status pill, top-right. The gated variant swaps to the
+   danger pair: the unmistakable #40 tell (Over capacity / Unrated). */
+.fs-rec-fit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font: var(--type-caption);
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+  color: var(--status-process-text);
+  background: var(--status-process-bg);
+  border: 1px solid var(--status-process-text);
+}
+.fs-rec-fit--no {
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border-color: var(--danger-text);
+}
+/* Sunlight renders the badge as a solid banner with WHITE text (the convention);
+   the white border would vanish on the solid fill, so drop it there. */
+[data-theme='sunlight'] .fs-rec-fit {
+  border-color: transparent;
 }
 
 /* Extension block — "none needed" is a positive signal (secured green). */
@@ -534,13 +595,6 @@ button.fs-spc-head {
   border-bottom: 1px solid var(--surface-stroke);
 }
 
-.fs-rec-ledger-title {
-  margin: 0;
-  font: var(--type-caption);
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
 .fs-rec-row {
   display: flex;
   align-items: baseline;
@@ -548,16 +602,29 @@ button.fs-spc-head {
   gap: var(--space-2);
 }
 
+/* Deduction slots indent under Raw opening — the signed rows are self-describing,
+   so no "Deductions" section title (S12 §3.3). The value side never wraps. */
+.fs-rec-slot {
+  padding-left: var(--space-4);
+}
+.fs-rec-slot .fs-rec-slot-value,
+.fs-rec-slot .fs-rec-ns {
+  white-space: nowrap;
+}
+
 .fs-rec-slot-label {
   font: var(--type-caption);
   color: var(--text-secondary);
 }
 
+/* Ledger numbers run at body-lg (16px) — the size the .fr stacked-fraction
+   metrics in primitives.css are tuned for (r=.5). */
 .fs-rec-slot-value {
   display: inline-flex;
   align-items: baseline;
   gap: 2px;
   font: var(--type-mono);
+  font-size: 1rem;
   color: var(--text-primary);
 }
 
@@ -583,6 +650,7 @@ button.fs-spc-head {
 
 .fs-rec-opening {
   font: var(--type-mono);
+  font-size: 1rem; /* body-lg — matches the deduction rows + tuned .fr metrics */
 }
 
 /* Effective is the cut-to answer — promoted: larger, in the strut color. */
@@ -625,10 +693,34 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 
-.fs-rec-source {
-  margin: 0;
+/* Rated-capacity footer — quiet, demoted below Deploy (synthesis §3.4). A
+   full-bleed shelf: the negative margins cancel the card's edged padding
+   (top/btm space-3, right space-4, LEFT space-6 from .fs-card--edged), then it
+   re-pads to the same insets. A small bottom margin keeps the permanent
+   disclaimer (the card's last word) from cramming against it. */
+.fs-rec-cap {
+  margin: var(--space-3) calc(-1 * var(--space-4)) var(--space-2) calc(-1 * var(--space-6));
+  padding: var(--space-3) var(--space-4) var(--space-3) var(--space-6);
+  border-top: 1px solid var(--surface-stroke);
+  background: color-mix(in srgb, var(--text-primary) 4%, var(--surface-card));
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.fs-rec-cap-label {
   font: var(--type-caption);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+}
+.fs-rec-cap-val {
+  font: var(--type-mono);
+  font-family: var(--font-mono); /* re-set: the font shorthand above resets family */
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+/* Broadcast renders no fills — the shelf reads from its top border alone. */
+[data-theme='broadcast'] .fs-rec-cap {
+  background: transparent;
 }
 
 /* ---- assign equipment sheet (#221) ----------------------------------------- */

@@ -89,12 +89,17 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     expect(screen.getByText(/T-Shore/)).toBeInTheDocument();
   });
 
-  it('renders a RecommendationCard per result, source resolved from the combo inventoryId', () => {
+  it('renders a RecommendationCard per result; source + location resolved from the combo/SP', () => {
     mockRecommendations.mockReturnValue([COMBO]);
     mockInventory.mockReturnValue([INV_ITEM]);
     render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={vi.fn()} />);
-    expect(screen.getByText('LS 406')).toBeInTheDocument();
-    expect(screen.getByText('Equipment from: Rescue 2')).toBeInTheDocument();
+    // S12 anatomy: model lives in the centered identity line; apparatus + the
+    // SP location (division · area, wired via §7) ride the header, not a footer.
+    // The sheet portals to document.body — query the document, not the container.
+    expect(document.querySelector('.fs-rec-identity')!.textContent).toContain('LS 406');
+    expect(document.querySelector('.fs-rec-apparatus')!.textContent).toBe('Rescue 2');
+    expect(document.querySelector('.fs-rec-loc')!.textContent).toBe('Div 1 · NW corner');
+    expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
   });
 
   it('Deploy commits StrutDeployed with the composed identity and reports back', async () => {

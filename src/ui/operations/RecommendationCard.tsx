@@ -4,36 +4,54 @@ import type { Deductions, WoodSizeId } from '@core/schema';
 import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
 
 /**
- * RecommendationCard — the result card (card.md §RecommendationCard), built
- * from the v3 `renderResults()` anatomy, not an abstraction: COLOR — SYSTEM,
- * model, adjusted range, extension block, the rigid deduction ledger, the
- * apparatus source, Deploy. Capacity is computed by the engine but demoted —
- * never on the card face (synthesis §3.4). Safety disclosures ride the card
- * as warning gates and never auto-dismiss: unrated gates Deploy behind an
- * explicit acknowledgment; over-capacity closes the deploy path outright
- * (#40 distinct danger treatment); the liability disclaimer is permanent.
+ * RecommendationCard — the result card (card.md §RecommendationCard; restyled
+ * S12 §3). A centered identity header — system word + model, the connectors
+ * line, apparatus, location — with the fit badge absolutely top-right (the
+ * gated danger tell, #40). Then the extension block, the rigid deduction
+ * ledger (Raw opening − deductions = Required strut length), Deploy, and a
+ * QUIET rated-capacity footer demoted below the action (synthesis §3.4 — the
+ * number is computed by the engine but never leads the card). Safety
+ * disclosures ride the card as warning gates and never auto-dismiss: unrated
+ * gates Deploy behind an explicit acknowledgment; over-capacity closes the
+ * deploy path outright (#40 distinct danger treatment); the liability
+ * disclaimer is permanent and always the card's last word.
  *
  * Deliberately a DIFFERENT component from ShorePointCard (Principle 12 —
- * collapsing them is the predicted tear, card.md anti-patterns).
+ * collapsing them is the predicted tear, card.md anti-patterns). The centered
+ * header is the deliberate visual split from the left-aligned ShorePointCard.
  */
 export interface RecommendationCardProps {
   combo: StrutCombination;
-  /** The SP's deduction SELECTIONS — names for the ledger sub-lines (combo.deductions is numeric-only). */
+  /** The SP's deduction SELECTIONS — names for the ledger sub-lines + the connectors line (combo.deductions is numeric-only). */
   deductions: Deductions;
   /** Apparatus the strut comes from. Operation mode only — Quick Find omits it. */
   source?: string;
+  /** Shore-point identity/location (division · building · area). Operation mode only — optional. */
+  location?: string;
   /** Operation mode: Deploy commits. Absent = Quick Find display-only card. */
   onDeploy?: (combo: StrutCombination) => void | Promise<void>;
   /** Sheet-level single-flight lock while a deploy is in flight. */
   deployDisabled?: boolean;
 }
 
-const SYSTEM_LABELS = { LongShore: 'LONGSHORE', AcmeThread: 'ACMETHREAD', LockStroke: 'LOCKSTROKE' } as const;
+/** Face identity word — keyed off the strut SYSTEM, not its color: a LockStroke
+ *  strut is physically grey but earns its own cyan word (S12 §3.1). */
+const SYS_WORD = { gold: 'Gold', grey: 'Grey', lockstroke: 'LockStroke' } as const;
 
 /** "LS 203" or "LS 203 + 12″" — the deployed-strut identity string (card.md cradle-to-grave). */
 export function comboModel(combo: StrutCombination): string {
   if (combo.extensions.length === 0) return combo.strut.model;
   return `${combo.strut.model} + ${combo.extensions.map((e) => `${e}″`).join(' + ')}`;
+}
+
+/** The connectors face line: selected top/bottom plate NAMES (as catalogued),
+ *  joined " · "; empty when neither plate is selected (S12 §3.1). */
+function connectorSpec(deductions: Deductions): string {
+  return [deductions.topPlate, deductions.bottomPlate]
+    .map((id) => BASE_PLATES.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => !!p && p.id !== 'none')
+    .map((p) => p.name)
+    .join(' · ');
 }
 
 // ---- Ledger rows ------------------------------------------------------------
@@ -79,12 +97,27 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typ
 
 // ---- Card -------------------------------------------------------------------
 
-export function RecommendationCard({ combo, deductions, source, onDeploy, deployDisabled }: RecommendationCardProps) {
+export function RecommendationCard({
+  combo,
+  deductions,
+  source,
+  location,
+  onDeploy,
+  deployDisabled,
+}: RecommendationCardProps) {
   const [acknowledged, setAcknowledged] = useState(false);
 
   const gated = !!combo.unrated || !!combo.exceedsCapacity;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
+  // Identity keys off the SYSTEM: LockStroke struts are grey-colored but carry
+  // their own cyan word + stripe (struts.ts — every lk-* is color:'grey').
+  const sys = combo.strut.system === 'LockStroke' ? 'lockstroke' : color;
+  const word = SYS_WORD[sys];
   const model = comboModel(combo);
+  const spec = connectorSpec(deductions);
+  // The gated fit badge is the unmistakable danger tell (99-OQ #40): over-capacity
+  // wins over unrated; otherwise a clean "Fits".
+  const fitLabel = combo.exceedsCapacity ? 'Over capacity' : combo.unrated ? 'Unrated' : 'Fits';
 
   // Fixed physical order — Header → Top Connector → Bottom Connector → Footer.
   // Never reorder (card.md: top of the assembly to the bottom).
@@ -103,6 +136,14 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
   const effectiveEighths = Math.round(combo.effectiveLength * 8);
   const openingEighths = Math.round(combo.openingLength * 8);
 
+  // Rated capacity is the QUIET footer (synthesis §3.4): the engine's per-strut
+  // rating at the effective length (conservative-floor row, the caller's 4:1 SP
+  // index). Shown only on a clean card — a gated card has no honest number to
+  // print (0 for unrated; the per-strut best is meaningless once load exceeds
+  // 4-strut capacity).
+  const capLb = Math.floor(combo.capacity);
+  const showCapacity = capLb > 0 && !combo.unrated && !combo.exceedsCapacity;
+
   // Full strut identity in the button's accessible name (workflow #221 §Accessibility).
   const fx = eighthsToParts(effectiveEighths);
   const deploySrLabel = `Deploy ${model}, ${color} ${combo.strut.system}, effective ${fx.totalInches}${
@@ -114,17 +155,19 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
 
   return (
     <Card
-      className={`fs-rec fs-rec--${color}${gated ? ' is-gated' : ''}`}
+      className={`fs-rec fs-rec--${sys}${gated ? ' is-gated' : ''}`}
       edge={<span className="fs-rec-bar" aria-hidden="true" />}
     >
-      <p className="fs-rec-system">
-        {color.toUpperCase()} — {SYSTEM_LABELS[combo.strut.system]}
-      </p>
-      <div className="fs-rec-head">
-        <span className="fs-rec-model">{combo.strut.model}</span>
-        <span className="fs-rec-range">
-          {combo.adjCollapsed}″ – {combo.adjExtended}″
-        </span>
+      <div className="fs-rec-header">
+        <div className="fs-rec-headcol">
+          <p className="fs-rec-identity">
+            <b>{word}</b> · {model}
+          </p>
+          {spec && <p className="fs-rec-connectors">{spec}</p>}
+          {source && <p className="fs-rec-apparatus">{source}</p>}
+          {location && <p className="fs-rec-loc">{location}</p>}
+        </div>
+        <span className={`fs-rec-fit${gated ? ' fs-rec-fit--no' : ''}`}>{fitLabel}</span>
       </div>
 
       {combo.extensions.length === 0 ? (
@@ -144,9 +187,8 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
       )}
 
       <div className="fs-rec-ledger">
-        <p className="fs-rec-ledger-title">Deductions</p>
         <div className="fs-rec-row">
-          <span className="fs-rec-slot-label">Opening</span>
+          <span className="fs-rec-slot-label">Raw opening</span>
           <MeasurementValue eighths={openingEighths} className="fs-rec-opening" />
         </div>
         {slots.map((row) => (
@@ -154,7 +196,7 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
         ))}
         <div className="fs-rec-row fs-rec-effective-row">
           <span className="fs-rec-slot-label">
-            Effective <span className="fs-rec-floor-note">↓ floored to 1/8″</span>
+            Required strut length <span className="fs-rec-floor-note">↓ floored to 1/8″</span>
           </span>
           <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
         </div>
@@ -185,8 +227,6 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
         </>
       )}
 
-      {source && <p className="fs-rec-source">Equipment from: {source}</p>}
-
       {onDeploy && (
         <Button
           variant="primary"
@@ -198,6 +238,15 @@ export function RecommendationCard({ combo, deductions, source, onDeploy, deploy
           Deploy
           <span className="fs-sr-only">{deploySrLabel.slice('Deploy'.length)}</span>
         </Button>
+      )}
+
+      {showCapacity && (
+        <div className="fs-rec-cap">
+          <span className="fs-rec-cap-label">
+            Rated capacity at <MeasurementValue eighths={effectiveEighths} />
+          </span>
+          <span className="fs-rec-cap-val">{capLb.toLocaleString('en-US')} lb</span>
+        </div>
       )}
 
       <WarningGate use="disclaimer" />
