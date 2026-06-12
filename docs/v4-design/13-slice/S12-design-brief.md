@@ -9,6 +9,19 @@
 > on the real app. Wanted back from a sketch round: exported screens/images + short notes
 > on which direction(s) to build as `/gallery` treatments for Alex to pick from.
 
+> **Outcome (2026-06-11) — S12 landed.** The Claude Design round returned a **full handoff**
+> (not just sketches), archived at [`./S12-handoff/`](./S12-handoff/) as exploration reference.
+> Per the locked ground rules it was **finalized in-code** on the real app — commits
+> `5912d7e..9faff63`, [#316](https://github.com/Vergo402/paratech-struts/issues/316) — and where
+> the handoff and the implementation diverge, the **code is the truth** (the handoff is archived
+> reference). The shipped direction is **Treatment C** (status-tinted value shelf, not a full-surface
+> tint). Decisions are recorded in [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)
+> and the updated primitives + system docs ([`card.md`](../03-primitives/card.md),
+> [`slider.md`](../03-primitives/slider.md), [`color.md`](../07-design-system/color.md),
+> [`typography.md`](../07-design-system/typography.md), [`logo-and-mark.md`](../07-design-system/logo-and-mark.md),
+> [`20-operations.md`](../08-information-architecture/20-operations.md)). **Pending: Alex's re-drive
+> verdict on [#248](https://github.com/Vergo402/paratech-struts/issues/248).**
+
 ---
 
 ## The problem (kick-back KB-6, [#248](https://github.com/Vergo402/paratech-struts/issues/248) → [#316](https://github.com/Vergo402/paratech-struts/issues/316))

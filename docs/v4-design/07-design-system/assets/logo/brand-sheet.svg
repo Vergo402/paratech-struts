@@ -49,16 +49,18 @@
         <circle cx="205" cy="97" r="1.5"/><circle cx="212" cy="97" r="1.5"/><circle cx="219" cy="97" r="1.5"/>
       </g>
     </g>
-    <!-- simplified mono mark -->
+    <!-- simplified mono mark — F5 geometry (S12): S-hook terminals, unified rx=4, S narrowed 68→56 -->
     <g id="mono" fill="#D4A017">
-      <rect x="14" y="10" width="16" height="80" rx="8"/>
-      <rect x="14" y="10" width="52" height="16" rx="8"/>
-      <rect x="14" y="42" width="42" height="16" rx="8"/>
-      <rect x="90" y="10" width="68" height="16"/>
-      <rect x="90" y="10" width="16" height="48"/>
-      <rect x="90" y="42" width="68" height="16"/>
-      <rect x="142" y="42" width="16" height="48"/>
-      <rect x="90" y="74" width="68" height="16"/>
+      <rect x="14" y="10" width="16" height="80" rx="4"/>
+      <rect x="14" y="10" width="52" height="16" rx="4"/>
+      <rect x="14" y="42" width="42" height="16" rx="4"/>
+      <rect x="90" y="10" width="56" height="16" rx="4"/>
+      <rect x="90" y="10" width="16" height="48" rx="4"/>
+      <rect x="130" y="10" width="16" height="24" rx="4"/>
+      <rect x="90" y="42" width="56" height="16" rx="4"/>
+      <rect x="130" y="42" width="16" height="48" rx="4"/>
+      <rect x="90" y="66" width="16" height="24" rx="4"/>
+      <rect x="90" y="74" width="56" height="16" rx="4"/>
     </g>
   </defs>
 

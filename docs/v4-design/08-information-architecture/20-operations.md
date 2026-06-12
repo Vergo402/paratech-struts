@@ -105,6 +105,15 @@ v3 risked one card per fitting strut per shore point (synthesis §2.7 predicted 
 - **Cutting onward** (Cutting → Runner → Shore Secured → Strut Equipment Returned) — each piece advances **individually** (its own cut length, its own slide).
 The card signposts which mode applies via the group badge; the full grouped-shore interaction is finalized in the Phase G workflow.
 
+### On the board — within-lane stacking + the split-on-divergence rule (S12)
+
+How grouped members render on the lanes (the card-side rolodex view is owned by [`card.md`](../03-primitives/card.md) §The grouped rolodex stack):
+
+- **Stacking is per-lane.** Within a single lane, the board collapses **2+ members of the same `groupId`** into one **rolodex stack** (`GroupedShorePoint`) rather than showing them as loose siblings; a lone member present in a lane renders as a plain `ShorePointCard`. The stack appears at its **earliest member's** position (first-appearance order preserved), and members inside it are ordered by `groupIndex`.
+- **Lockstep keeps a group whole pre-cutting.** Because the pre-cutting fan-out moves every member together, all members of a group share one status and therefore sit in **one lane** — the whole shore reads as a single stack the operator advances at once.
+- **Divergence splits the stack across lanes.** Once the cutting workflow begins and members advance **individually**, their statuses diverge — so they land in **different lanes**, and each lane stacks only the members that are *in it*. A 3-Post mid-cut might show one card in Cutting and a 2-member stack in Runner. This falls straight out of the per-lane grouping rule; nothing special-cases it.
+- **Scroll-into-view fronts the committed member.** After a commit the board scrolls to the affected group and **fronts the just-moved member** in its stack: every member carries `data-sp-id` on the stack's front wrapper, its sliver tab, *and* its expanded row, so the scroll-target query resolves whichever form the stack is in, and the stack mounts with that member up front (`initialActiveId`). When a fan-out lands a freshly-split group in a new lane, the operator arrives looking at the piece they moved, not at member 1.
+
 ## Locked cross-cutting rules this screen honors
 
 - [x] **Phone is the floor** — every lane, drill, and advance works phone-only.

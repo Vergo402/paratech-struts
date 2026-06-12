@@ -18,13 +18,7 @@
 
 ## Riding S12 — card design pass ([#316](https://github.com/Vergo402/paratech-struts/issues/316))
 
-| Item | Canonical home | Added |
-|---|---|---|
-| Card hierarchy reads bland vs v3 — important data must stand out; treatments A (in-doctrine) / B (color-push, would amend ADR-011) / optional C; Alex picks (KB-6) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-6 → [#316](https://github.com/Vergo402/paratech-struts/issues/316) | 2026-06-11 (seed) |
-| **Over-capacity Deploy card must be visually unmistakable** — same card-treatment class as KB-6; recommend folding into S12 rather than waiting for Phase I | [`99-open-questions.md`](99-open-questions.md) #40 | 2026-06-11 (seed) |
-| Sunlight theme: card status stripe uses a placeholder color mapping (`--sp-solid` remap) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #11 | 2026-06-11 (seed) |
-| Grouped cards: rotate through stacked set instead of showing all members | ad hoc (Alex, 2026-06-11) | 2026-06-11 |
-| Slide-track label clips behind the handle at narrow lane columns (~328px tablet 2-col) — clearance rides the card pass | ad hoc (S11 verification, 2026-06-11) | 2026-06-11 |
+**All five S12 items landed 2026-06-11 (commits `5912d7e..9faff63`) — struck to the Resolved table below.**
 
 ## Phase I design items
 
@@ -52,3 +46,8 @@
 |---|---|---|
 | ~~Desktop = blown-up phone column; build the 768pt/1200pt breakpoints (KB-1)~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-1 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 — S11 landed (`24273e0`), #315 closed |
 | ~~Per-lane status-summary bar at 768pt+ (rec G-15)~~ | fix-plan §S11 → [#315](https://github.com/Vergo402/paratech-struts/issues/315) | 2026-06-11 — S11 landed (`24273e0`), #315 closed |
+| ~~KB-6 card hierarchy reads bland — important data must stand out (treatments A/B/C, Alex picks)~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-6 → [#316](https://github.com/Vergo402/paratech-struts/issues/316) | 2026-06-11 — S12 landed (`5912d7e..9faff63`): Treatment-C status-tinted value shelf, `card.md` + ADR-011 Addendum 2; #316 implemented |
+| ~~Over-capacity Deploy card must be visually unmistakable~~ | [`99-open-questions.md`](99-open-questions.md) #40 | 2026-06-11 — **resolved** (99-OQ #40 → Resolved): danger fit badge + `is-gated` bar + closed Deploy; confirm at the Phase H re-drive |
+| ~~Sunlight theme: card status stripe placeholder color mapping~~ | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #11 | 2026-06-11 — `--sp-solid` minted with the sunlight remap (closes gap #11); `color.md` + ADR-011 Addendum 2 |
+| ~~Grouped cards: rotate through stacked set instead of showing all members~~ | ad hoc (Alex, 2026-06-11) | 2026-06-11 — `GroupedShorePoint` rolodex stack (`card.md` §The grouped rolodex stack, `20-operations.md`) |
+| ~~Slide-track label clips behind the handle at narrow lane columns (~328px)~~ | ad hoc (S11 verification, 2026-06-11) | 2026-06-11 — knob-side label-clearance padding rule (`slider.md` Anatomy); verify at the re-drive |

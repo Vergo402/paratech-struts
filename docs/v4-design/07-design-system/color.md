@@ -206,6 +206,42 @@ The status colors are the most consequential color decision in the file. Three s
 
 ---
 
+### System colors — the strut-system identity family (`--sys-*`)
+
+A **strut-system color** identifies a *physical Paratech strut system* on the result/recommendation surfaces (the `RecommendationCard`, [`card.md`](../03-primitives/card.md)). It is **identity, not state and not a UI accent** — the operator reads it to find the right strut in the cache, the same job the left color bar does. Gold = LongShore (maps to `--accent`), grey = AcmeThread (maps to `--text-secondary`). The one new token is **`--sys-lockstroke`** (S12, [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)).
+
+**Why cyan for LockStroke.** Every LockStroke model is *physically grey* hardware — it shares AcmeThread's load table and its grey body. Coloring it grey on the face would make a LockStroke recommendation indistinguishable from an AcmeThread one. So the LockStroke identity word, left bar, and tells take **cyan** — the **opposite pole from the brand gold** and unmistakable from grey on a screen. It keys off the strut **system**, not its color. (Doctrine: this is a system-ID color, exempt from the one-accent rule for the same reason the emblem is — it never appears on a button, a status, or chrome.)
+
+| Theme | `--sys-lockstroke` | `--sys-lockstroke-bg` | Ratio (text-use, AA) |
+|---|---|---|---|
+| Light | `#0E7490` | `#ECFEFF` | **4.96** on bg / 5.36 on card ✓ |
+| Dark | `#06B6D4` | `#0E262D` | **6.81** on bg / 6.01 on card ✓ |
+| Sunlight | `#155E75` | `#ECFEFF` | **7.27** on `#FFFFFF` ✓ — clears the 7:1 sunlight contract |
+| Broadcast | `#22D3EE` | `transparent` | **10.04** on bc-bg ✓ — fill is transparent per the broadcast status convention |
+
+All four pairs are emitted by [`wcag-contrast.mjs`](wcag-contrast.mjs) (8 new rows — each theme's color on its bg *and* on its card surface), proven against the same floors the lifecycle status hues meet. The `-bg` companion is the tint a LockStroke chip/badge could sit on; in broadcast it is transparent (a wall of fills reads as noise at 12 ft).
+
+### `--sp-solid` — the third status hook, and the sunlight remap
+
+The shared per-status hooks (`.is-{status}` in [`primitives.css`](../03-primitives/card.md)) carry two values — `--sp-text` (the status text color) and `--sp-bg` (its tint). S12 mints a **third, `--sp-solid`**: the *saturated identifying hue* that must survive every theme, including sunlight's all-white card where `--sp-text` flips to **white** for the banner.
+
+- In **light / dark / broadcast**, `--sp-solid` = the status **text** hue (it equals `--sp-text` there).
+- In **sunlight**, `--sp-solid` **remaps to the status `*-bg` solid fill hue** — the saturated banner color — because `--sp-text` is white in that theme and a white stripe/number/dot would vanish on the white card.
+
+This **closes the sunlight-stripe placeholder** (the gate-script's known-gap #11): the shore-point card stripe, the value-shelf number, the waiting callout border, the grouped-stack tabs/dots, and the tablet status-summary dot all read `--sp-solid`, so the status hue is correct in sunlight instead of a placeholder mapping. (`--sp-solid` is a per-status *hook variable*, derived from the status tokens above — it adds no new hue to the palette.)
+
+### The value-shelf status tint — a sanctioned status hue on a card region
+
+The `ShorePointCard`'s measurement value shelf (the KB-6 "Treatment C" answer, [`card.md`](../03-primitives/card.md)) is a **status-tinted region**, not a status-tinted surface. Color is mixed from `--sp-solid` so it survives sunlight:
+
+| Theme | Shelf ground | Hairline |
+|---|---|---|
+| Light / Dark | `color-mix(--sp-solid 13%, --surface-card)` | `color-mix(--sp-solid 22%, --surface-stroke)` |
+| Sunlight | `color-mix(--sp-solid 10%, #FFFFFF)` | (same 22% mix) |
+| Broadcast | `color-mix(--sp-solid 18%, --surface-card)` | (same 22% mix) |
+
+The number itself renders in full-strength `--sp-solid`. This is a **C-class treatment** (tint a region) — a B-class one would tint the whole card surface and require a full ADR-011 amendment; tinting a bounded region keeps the one-accent discipline while letting the safety-critical number pop. Recorded as the sanctioned middle in [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md).
+
 ### The filled-primary foreground — `--on-accent`
 
 A filled **primary button** ([`button.md`](../03-primitives/button.md)) fills with `--accent` and needs a foreground that clears WCAG AA on that fill. The required foreground **flips by theme**, because `--accent` itself flips from dark gold (light / sunlight) to light gold (dark): white-on-gold and black-on-gold each fail in one theme, so the pair cannot be a fixed color. `--on-accent` is the per-theme answer, recomputed by [`wcag-contrast.mjs`](wcag-contrast.mjs):
@@ -281,7 +317,7 @@ The **sync indicator** maps to existing tokens, no new color: synced = `--status
 ## Anti-patterns (do not do these)
 
 - **Raw hex in a component.** Always a semantic token. A primitive that hard-codes `#D4A017` breaks theme-swap and sunlight.
-- **A second accent in the UI.** FieldShore has exactly one accent (the gold); a "secondary brand color" is forbidden in product chrome. **One exception:** the brand **emblem** ([`logo-and-mark.md`](logo-and-mark.md)) is full-color by [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) — its aluminum / steel / wood / plywood hues live *only* inside the emblem and never leak into UI tokens. The in-product mark is the single-ink mono mark that inherits `--accent`.
+- **A second accent in the UI.** FieldShore has exactly one accent (the gold); a "secondary brand color" is forbidden in product chrome. **Two carve-outs, neither a second UI accent:** (1) the brand **emblem** ([`logo-and-mark.md`](logo-and-mark.md)) is full-color by [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) — its aluminum / steel / wood / plywood hues live *only* inside the emblem and never leak into UI tokens; the in-product mark is the single-ink mono mark that inherits `--accent`. (2) the **strut-system colors** (`--sys-*`, §System colors below) are a distinct, fixed family that identifies a *physical strut system* on result/recommendation surfaces — gold = LongShore, grey = AcmeThread, **cyan = LockStroke** ([ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)). They are identity, not emphasis: a `--sys-*` color never styles a button, a status, or chrome, and the one-gold-accent rule still binds every interactive affordance.
 - **Color as the only state signal.** Banned by Principle 9 (see above).
 - **Navy + saturated red.** That is the dispatch-console look v4 exits. Status reds are the muted `--danger`, never a fire-engine red header.
 - **OLED black (`#000`) as the dark background.** The differentiator is the warm slate `#1C1F23`; `#000` is reserved for sunlight text only.

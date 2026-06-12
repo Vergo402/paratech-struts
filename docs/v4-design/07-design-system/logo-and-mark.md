@@ -2,6 +2,8 @@
 
 > Phase E, design-system token file 6 of 8. Authored at the depth of [`03-primitives/picker.md`](../03-primitives/picker.md).
 > Source: essay [`05-essays/02-visual-language.md`](../05-essays/02-visual-language.md) "The 'P' Mark" — **superseded, not transcribed.** Open question #10 resolved to a **new identity, not a refresh** (Alex, 2026-05-31), and the identity is a **full-color emblem** per [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) (Alex, 2026-06-02) — which overrides the essay's "geometry-refresh the P" and amends [`color.md`](color.md)'s "no second brand color" rule. Artwork lives in [`assets/logo/`](assets/logo/); the rendered proof is the **Logo & Mark** panel in [`preview/`](../preview/index.html). Strut/timber depiction doctrine-checked by the `structural-collapse-sme` agent.
+>
+> **Asset note (S12):** [`mark-mono.svg`](assets/logo/mark-mono.svg) and the `#mono` glyph embedded in [`brand-sheet.svg`](assets/logo/brand-sheet.svg) carry the F5 geometry (below). The static raster [`brand-sheet.png`](assets/logo/brand-sheet.png) was **not regenerated** — it still shows the pre-F5 mono glyph and is stale; no SVG→PNG tool (rsvg-convert / Inkscape / ImageMagick) was available in the docs-sweep environment. Re-export it from `brand-sheet.svg` when a renderer is at hand.
 
 ---
 
@@ -64,6 +66,8 @@ Ground: **slate `#1C1F23`** (dark `--surface-bg`). The emblem is authored for th
 
 [`mark-mono.svg`](assets/logo/mark-mono.svg) is a single `currentColor` shape, so it inherits `--accent` and is correct in every theme automatically. Its only nod to the concept is form: the **F's bars are rounded** (struts), the **S is square** (lumber).
 
+**The F5 geometry fix (S12, adopted in-code).** The shipped mono glyph was refined so the S reads unambiguously as an S at small sizes: its segmented members now carry **S-defining hook terminals** (short stubs that close the top-right and bottom-left of the S so it can't be misread as a blocky "5" or "8"), the corner radius is **unified at `rx=4`** across every member (the old glyph mixed radii), the **S is narrowed (68 → 56 units wide)** so it balances against the F, and the artboard is **`viewBox="0 0 160 100"`**. This is the canonical mono mark; any place that embeds the glyph (favicon, app-icon fallback, the brand sheet) tracks this geometry.
+
 | Theme | Ink (`--accent`) | Ground (`--surface-bg`) | Ratio |
 |---|---|---|---|
 | Dark | `#D4A017` | `#1C1F23` | 6.96:1 |
@@ -115,6 +119,8 @@ Raster export of these sizes is mechanical and deferred to Phase H; the vector i
 - **Clear space** between emblem and wordmark: one stroke-width of the gold member.
 - **Dark ground:** wordmark text `--text-primary` (`#F0EFEC`). **Light ground:** text `#1A1A1A` and either the emblem on a slate chip or the mono mark in its place.
 - Minimum wordmark height: emblem at 32px (text stays ≥`--type-headline-1`).
+
+**In-app lockups render the wordmark text as HTML, never the baked SVG text** (S12). [`wordmark.svg`](assets/logo/wordmark.svg) bakes "FieldShore" as outlined glyphs — fine for a static export, but inside the app the lockup composes **"Field" + "Shore" as live, theme-styled text**: **"Field"** in `--text-primary` and **"Shore"** in `--accent`, **both at 700**, `-0.01em` tracking. Reasons: it themes for free (the gold "Shore" follows `--accent` across all four themes; the brand sheet's static export uses an 800 weight for "Shore" against the slate ground, but the in-app lockup is 700), it stays crisp at any size, and it scales with Dynamic Type instead of as a fixed raster. The baked `wordmark.svg` is for off-app surfaces (export headers, printed/broadcast credits); it is never the in-app header lockup.
 
 ---
 

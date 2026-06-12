@@ -86,6 +86,14 @@ FieldShore measurements are fractional and reported to **1/8″** — the field 
 - OpenType `frac` / precomposed Unicode glyphs are **not** used: they cover only a few denominators, render smaller, and would be inconsistent the moment another denominator appears. One digit-pair renderer covers every denominator uniformly.
 - This is owned here as a token-level rule; the reusable component renders in [`input.md`](../03-primitives/input.md) (measurement display) and the result/deduction card in [`card.md`](../03-primitives/card.md). Rendered proof (both modes, live toggle) is in `preview/`.
 
+**Stacked-fraction metrics — baseline-anchored (S12).** The stacked `.fr` is a **baseline-anchored box**, not a line-height hack: `inline-block` + `overflow: hidden` pins the box's *baseline to its bottom edge* (CSS2.1), so the denominator sits **on the host text baseline** and the numerator tops out near cap height — independent of the font's own metrics, so it doesn't drift between Geist and the fallback. The box height scales with the size ratio `r` (the fraction's `font-size` as a fraction of the host number) by a fixed formula:
+
+```
+height = 0.726 / r + 0.294   (em)
+```
+
+Two contexts ship: **`r = .5`** → height **1.75em** — the **ledger / 16px** default (the deduction rows, the body-lg readouts); and **`r = .36`** → height **2.31em** — the **display** form behind the `.fs-fr-display` hook, for **28px+** numbers (the large measurement readouts and the promoted cutting-card value shelf). One renderer, two re-derived heights; nothing else about the digit pair changes between them.
+
 ---
 
 ## Letter-spacing
