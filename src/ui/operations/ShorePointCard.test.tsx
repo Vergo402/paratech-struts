@@ -27,12 +27,18 @@ function valueShelfText(): string {
 }
 
 describe('ShorePointCard', () => {
-  it('renders identity, measurement, type, and status badge', () => {
+  it('renders the "label · type" headline, location, and status badge', () => {
     render(<ShorePointCard shorePoint={makeSP({ area: 'NW corner', label: 'B-2' })} />);
-    expect(screen.getByText('B-2')).toBeInTheDocument();
+    // Design-system title: label · shore type, one headline (type left the meta row).
+    const title = screen.getByText('B-2 · T-Shore');
+    expect(title).toHaveClass('fs-spc-title');
     expect(screen.getByText('Div 1 · NW corner')).toBeInTheDocument();
-    expect(screen.getByText('T-Shore')).toBeInTheDocument();
     expect(screen.getByText('Pending')).toBeInTheDocument();
+  });
+
+  it('headline falls back to the bare type when the point has no label', () => {
+    render(<ShorePointCard shorePoint={makeSP()} />);
+    expect(screen.getByText('T-Shore')).toHaveClass('fs-spc-title');
   });
 
   it('shows the group badge only when grouped', () => {
@@ -64,6 +70,34 @@ describe('ShorePointCard', () => {
     expect(
       screen.getByText('Waiting for inventory — no apparatus stock to pull from'),
     ).toBeInTheDocument();
+  });
+
+  it('waiting PRESENTATION: pending+reason shows the amber Waiting badge + is-waiting hooks', () => {
+    const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
+    // The badge presents "Waiting" (amber); the operational status stays pending.
+    expect(screen.getByText('Waiting')).toHaveClass('fs-badge--status', 'is-waiting');
+    expect(screen.queryByText('Pending')).not.toBeInTheDocument();
+    // The card carries BOTH hooks — is-pending (lifecycle) + is-waiting (presentation).
+    const card = document.querySelector('.fs-spc')!;
+    expect(card.className).toContain('is-pending');
+    expect(card.className).toContain('is-waiting');
+    // A reasonless pending card presents normally.
+    rerender(<ShorePointCard shorePoint={makeSP()} />);
+    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(document.querySelector('.fs-spc')!.className).not.toContain('is-waiting');
+  });
+
+  it('active draws the accent focus border class; caption renders under the controls', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({ status: 'process', deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' } })}
+        active
+        caption="Slide commits; reverse is always available — no timed undo."
+      />,
+    );
+    expect(document.querySelector('.fs-spc')!.className).toContain('is-active');
+    const caption = screen.getByText('Slide commits; reverse is always available — no timed undo.');
+    expect(caption).toHaveClass('fs-spc-caption');
   });
 
   it('pending: tap-to-expand reveals Edit and Delete, and the callbacks fire', async () => {

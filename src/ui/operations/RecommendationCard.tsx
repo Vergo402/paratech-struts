@@ -173,16 +173,30 @@ export function RecommendationCard({
       {combo.extensions.length === 0 ? (
         <p className="fs-rec-noext">No extensions needed</p>
       ) : (
+        /* Design-system ext anatomy: the [+] accent tile + added length + the
+           reach note (bare strut reach vs assembly reach) — replaces the chip
+           row. "What extra tube to grab", stated in plain reach numbers. */
         <div className="fs-rec-ext">
-          <span className="fs-rec-ext-label">Extensions:</span>
-          {combo.extensions.map((e, i) => (
-            <span key={i} className="fs-rec-ext-chip">
-              {e}″
-            </span>
-          ))}
-          <span className="fs-rec-ext-alone">
-            strut alone {combo.strut.collapsed}″ – {combo.strut.extended}″
+          <span className="fs-rec-ext-tile" aria-hidden="true">
+            +
           </span>
+          <div className="fs-rec-ext-amt">
+            <span className="fs-rec-ext-len">
+              {combo.extensions.map((e, i) => (
+                <span key={i}>
+                  {i > 0 && ' + '}
+                  <MeasurementValue eighths={e * 8} />
+                </span>
+              ))}
+            </span>
+            <span className="fs-rec-ext-word">
+              {combo.extensions.length > 1 ? 'extensions' : 'extension'}
+            </span>
+          </div>
+          <p className="fs-rec-ext-note">
+            {combo.strut.model} alone reaches <MeasurementValue eighths={combo.strut.extended * 8} /> — extension
+            takes the assembly to <MeasurementValue eighths={(combo.strut.extended + combo.extTotal) * 8} />
+          </p>
         </div>
       )}
 

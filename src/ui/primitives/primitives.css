@@ -28,6 +28,14 @@
 [data-theme='sunlight'] .is-runner   { --sp-solid: var(--status-runner-bg); }
 [data-theme='sunlight'] .is-secured  { --sp-solid: var(--status-secured-bg); }
 [data-theme='sunlight'] .is-returned { --sp-solid: var(--status-returned-bg); }
+/* waiting — a PRESENTATION of pending (pendingReason set), not a lifecycle
+   status (design-system waiting card; full S12 design audit). Rides as a
+   second class AFTER is-pending, so these must follow the base hooks to win
+   the cascade. Sunlight waiting is the authored pale-fill EXCEPTION — dark
+   amber ink on pale amber, never a banner — so --sp-solid stays the TEXT hue
+   in all four themes (the dark ink is the saturated mark on white). */
+.is-waiting { --sp-text: var(--status-waiting-text); --sp-bg: var(--status-waiting-bg); --sp-solid: var(--status-waiting-text); }
+[data-theme='sunlight'] .is-waiting { --sp-text: var(--status-waiting-text); --sp-solid: var(--status-waiting-text); }
 
 /* ---- badge (badge.md; mirrors styleguide .sg-badge) ------------------------ */
 .fs-badge {

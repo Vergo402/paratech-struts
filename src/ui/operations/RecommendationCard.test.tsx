@@ -78,10 +78,16 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(screen.getByText('Planning aid, not an engineering certification.')).toBeInTheDocument();
   });
 
-  it('extension combo: chips + the strut-alone range; comboModel carries the suffix', () => {
+  it('extension combo: [+] tile + added length + reach note; comboModel carries the suffix', () => {
     render(<RecommendationCard combo={WITH_EXT} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />);
-    expect(screen.getByText('12″')).toBeInTheDocument();
-    expect(screen.getByText('strut alone 36″ – 50″')).toBeInTheDocument();
+    // Design-system ext anatomy: accent tile, "12″ / extension" amount column,
+    // and the reach note stating bare vs assembly reach (LS 304: 36–50 + 12).
+    expect(document.querySelector('.fs-rec-ext-tile')).toBeInTheDocument();
+    expect(document.querySelector('.fs-rec-ext-len')!.textContent).toBe('12″');
+    expect(screen.getByText('extension')).toHaveClass('fs-rec-ext-word');
+    expect(document.querySelector('.fs-rec-ext-note')!.textContent).toBe(
+      'LS 304 alone reaches 50″ — extension takes the assembly to 62″',
+    );
     expect(screen.queryByText('No extensions needed')).not.toBeInTheDocument();
     expect(comboModel(WITH_EXT)).toBe('LS 304 + 12″');
     expect(comboModel(STANDARD)).toBe('LS 304');

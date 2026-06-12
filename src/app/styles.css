@@ -86,6 +86,45 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* Command header (design-system AppHeader) — title + mono version tag on the
+   card surface, hairline below, safe-area aware. Fixed above the scroll pane. */
+.fs-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  padding-top: calc(var(--space-3) + env(safe-area-inset-top));
+  background: var(--surface-card);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-header-title {
+  min-width: 0;
+  font: var(--type-headline-1);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The brand lockup as HTML text (logo-and-mark.md): Field primary, Shore
+   accent, both 700 — never the wordmark.svg's baked-in text. */
+.fs-header-brand {
+  font-weight: 700;
+}
+.fs-header-brand b {
+  font-weight: 700;
+  color: var(--accent);
+}
+.fs-header-ver {
+  flex-shrink: 0;
+  font: var(--type-mono);
+  font-family: var(--font-mono); /* re-set: the font shorthand resets family */
+  color: var(--text-tertiary);
+}
 .fs-shell-main {
   flex: 1;
   min-height: 0;
@@ -119,4 +158,4 @@ body {
 }
 .fs-nav-link--active { color: var(--accent); }
 .fs-nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.fs-nav-icon { width: 20px; height: 20px; }
+.fs-nav-icon { width: 24px; height: 24px; } /* design-system 24×24 stroke-2 outline set */

@@ -38,6 +38,17 @@ const VALUE_LABEL: Record<ShorePointStatus, string> = {
   returned: 'Set length',
 };
 
+/**
+ * Status-hook classes for a point — appends the WAITING presentation when a
+ * pending point carries a reason (S12 design audit: waiting cards read amber —
+ * badge, stripe, shelf, callout, dots — but waiting is a presentation of
+ * pending, never a lifecycle status; lanes and lockstep see only `pending`).
+ * Shared by the card, the rolodex tabs, and the pager dots.
+ */
+export function statusClasses(sp: Pick<ShorePoint, 'status' | 'pendingReason'>): string {
+  return `is-${sp.status}${sp.status === 'pending' && sp.pendingReason ? ' is-waiting' : ''}`;
+}
+
 // The clamp/strut glyph in the waiting callout (handoff JSX 212–215).
 function WaitIcon() {
   return (
@@ -94,6 +105,11 @@ export interface ShorePointCardProps {
    * after the status badge (the gallery + future hazard-log workflow set it).
    */
   hazard?: boolean;
+  /** Focus/selected styling — accent border, no scale change (design-system
+   *  ShorePointCard `active`; States doctrine in the styleguide README). */
+  active?: boolean;
+  /** Small explanatory caption under the controls (design-system `caption`). */
+  caption?: string;
 }
 
 export function ShorePointCard({
@@ -106,10 +122,19 @@ export function ShorePointCard({
   advanceDisabledReason,
   removed = false,
   hazard = false,
+  active = false,
+  caption,
 }: ShorePointCardProps) {
   const [expanded, setExpanded] = useState(false);
   const pending = sp.status === 'pending';
   const promoted = sp.status === 'cutting';
+  const waiting = pending && !!sp.pendingReason;
+
+  // The headline is "label · type" — "B-2 · 3-Post" — at headline-2 (the
+  // design-system ShorePointCard title; the type no longer rides the meta row).
+  const title = sp.label
+    ? `${sp.label} · ${SHORE_TYPE_LABELS[sp.shoreType]}`
+    : SHORE_TYPE_LABELS[sp.shoreType];
 
   const identity = [
     divisionLabel(sp.division),
@@ -130,18 +155,23 @@ export function ShorePointCard({
   const headContent = (
     <>
       <span className="fs-spc-identity">
-        {sp.label ? <span className="fs-spc-label">{sp.label}</span> : null}
+        <span className="fs-spc-title">{title}</span>
         <span className="fs-spc-where">{identity}</span>
         {sp.deployedStrut ? (
           <span className="fs-spc-apparatus">{sp.deployedStrut.source}</span>
         ) : null}
       </span>
       <span className="fs-spc-meta">
-        <span className="fs-spc-type">{SHORE_TYPE_LABELS[sp.shoreType]}</span>
         {sp.groupIndex && sp.groupTotal ? (
           <Badge variant="label">{`${sp.groupIndex} / ${sp.groupTotal}`}</Badge>
         ) : null}
-        <Badge variant="status" status={sp.status} />
+        {/* Waiting presents its own amber badge — the operational status stays
+            pending; the is-waiting hook on the card recolors the geometry. */}
+        {waiting ? (
+          <span className="fs-badge fs-badge--status is-waiting">Waiting</span>
+        ) : (
+          <Badge variant="status" status={sp.status} />
+        )}
         {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
       </span>
     </>
@@ -158,7 +188,7 @@ export function ShorePointCard({
 
   return (
     <Card
-      className={`fs-spc is-${sp.status}${removed ? ' is-removed' : ''}`}
+      className={`fs-spc ${statusClasses(sp)}${removed ? ' is-removed' : ''}${active ? ' is-active' : ''}`}
       edge={
         pending && !removed ? (
           <button
@@ -254,6 +284,8 @@ export function ShorePointCard({
           />
         </div>
       )}
+
+      {caption && !removed && <p className="fs-spc-caption">{caption}</p>}
 
       {removed && (
         <>

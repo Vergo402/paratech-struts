@@ -599,6 +599,16 @@ export function GalleryScreen() {
         <ShorePointCard
           shorePoint={spFixture({ label: 'C-3', area: 'Stairwell B', status: 'secured', deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' } })}
         />
+        {/* Design-audit additions: active (accent focus border) + the caption
+            explainer line (design-system ShorePointCard props). The waiting
+            presentation itself rides A-2/A-3 above — amber badge/stripe/shelf. */}
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'C-4', status: 'process', deployedStrut: DEPLOYED })}
+          active
+          caption="Slide commits; reverse is always available — no timed undo."
+          onAdvance={() => {}}
+          onStepBack={() => {}}
+        />
       </Section>
 
       <Section title="S12 — GroupedShorePoint: Double-T · 3-Post · expanded">

@@ -149,7 +149,8 @@ describe('GroupedShorePoint', () => {
     const user = userEvent.setup();
     render(<GroupedShorePoint members={THREE} />);
     // The front card's identity/value area is dead space (no button/slide).
-    await user.click(screen.getByText('C-2'));
+    // The headline is now "label · type" (design-system title).
+    await user.click(screen.getByText('C-2 · 3-Post'));
     expect(screen.getByText('C-2 · 3-Post · 3 cards')).toBeInTheDocument();
   });
 

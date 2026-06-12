@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { ShorePoint } from '@core/schema';
-import { ShorePointCard, SHORE_TYPE_LABELS, type ShorePointCardProps } from './ShorePointCard';
+import { ShorePointCard, SHORE_TYPE_LABELS, statusClasses, type ShorePointCardProps } from './ShorePointCard';
 
 const TAB_W = 30; // px of visible tab sticking out per fallen card (handoff §2)
 
@@ -187,7 +187,7 @@ export function GroupedShorePoint({
             <button
               key={member.id}
               type="button"
-              className={`fs-gs-tab is-${member.status}`}
+              className={`fs-gs-tab ${statusClasses(member)}`}
               data-sp-id={member.id}
               style={{ left: slot * TAB_W, zIndex: slot + 1 }}
               aria-label={`Bring ${memberLabel(member, i)} to front`}
@@ -216,7 +216,7 @@ export function GroupedShorePoint({
           {members.map((member, i) => (
             <span
               key={member.id}
-              className={`fs-gs-dot is-${member.status}${i === active ? ' is-on' : ''}`}
+              className={`fs-gs-dot ${statusClasses(member)}${i === active ? ' is-on' : ''}`}
             />
           ))}
         </div>

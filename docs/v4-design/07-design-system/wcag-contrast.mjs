@@ -49,6 +49,8 @@ const THEMES = {
     // sys-lockstroke strut-system color (S12 handoff §4) — on bg AND card
     ['sys-lockstroke / surface-bg',   '#0E7490', '#F7F6F3', 'normal'],
     ['sys-lockstroke / surface-card', '#0E7490', '#FFFFFF', 'normal'],
+    // waiting — amber presentation of pending+reason (S12 design audit)
+    ['status waiting', '#7A5A00', '#FBEFC4', 'normal'],
   ],
   DARK: [
     ['text-primary  / surface-card',     '#F0EFEC', '#252930', 'normal'],
@@ -70,6 +72,9 @@ const THEMES = {
     // sys-lockstroke strut-system color (S12 handoff §4) — on bg AND card
     ['sys-lockstroke / surface-bg',   '#06B6D4', '#1C1F23', 'normal'],
     ['sys-lockstroke / surface-card', '#06B6D4', '#252930', 'normal'],
+    // waiting — amber presentation of pending+reason (S12 design audit)
+    ['status waiting', '#E6BE55', '#2A2410', 'normal'],
+    ['status waiting / surface-card', '#E6BE55', '#252930', 'normal'],
   ],
   SUNLIGHT: [
     ['text-primary  / surface-bg', '#000000', '#FFFFFF', 'normal'],
@@ -87,6 +92,10 @@ const THEMES = {
     // sys-lockstroke strut-system color (S12 handoff §4) — 7:1 contract; bg/card both #FFFFFF
     ['sys-lockstroke / surface-bg',   '#155E75', '#FFFFFF', 'normal'],
     ['sys-lockstroke / surface-card', '#155E75', '#FFFFFF', 'normal'],
+    // waiting — the authored pale-fill EXCEPTION (dark ink, not a banner);
+    // design's #6E5000 was 6.20, darkened to clear the 7:1 contract
+    ['status waiting (ink on pale)', '#5C4300', '#FAE9B8', 'normal'],
+    ['status waiting / surface-bg',  '#5C4300', '#FFFFFF', 'normal'],
   ],
   BROADCAST: [
     // 7:1 AAA target — read at 8-12 ft
@@ -105,6 +114,8 @@ const THEMES = {
     // sys-lockstroke strut-system color (S12 handoff §4) — 7:1 contract; bg/card both #141618
     ['sys-lockstroke / surface-bg',   '#22D3EE', '#141618', 'normal'],
     ['sys-lockstroke / surface-card', '#22D3EE', '#141618', 'normal'],
+    // waiting — amber presentation of pending+reason (S12 design audit)
+    ['status waiting', '#E6BE55', '#141618', 'normal'],
   ],
 };
 

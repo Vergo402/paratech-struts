@@ -202,6 +202,8 @@ The status colors are the most consequential color decision in the file. Three s
 
 `--danger` is a **feedback** color (errors, destructive actions, the `WarningGate` unrated-zone / over-capacity disclosures), **not** a lifecycle status. Success and info reuse the `secured` green and `process` blue hues respectively rather than introducing new tokens.
 
+**`--status-waiting-*` — the amber waiting PRESENTATION (full S12 design audit).** A pending point with a `pendingReason` presents as **Waiting**: amber badge, stripe, value shelf, callout, rolodex tabs/dots (the `.is-waiting` hook rides beside `.is-pending` — [`card.md`](../03-primitives/card.md) §Pending). It is a presentation of `pending`, **never an eighth lifecycle status** — lanes, lockstep, and the reducer see only `pending`, so the table above stays seven rows. Values per theme: light `#7A5A00`/`#FBEFC4` (5.55), dark `#E6BE55`/`#2A2410` (8.73), sunlight `#5C4300`/`#FAE9B8` (7.71 — the one authored **pale-fill exception** to the banner treatment, dark ink on pale amber; the ink darkened from the design's `#6E5000` (6.20) to clear the 7:1 contract), broadcast `#E6BE55`/transparent (10.25). All proven in `wcag-contrast.mjs`.
+
 > **Display labels (resolved 2026-06-01):** the in-progress state keeps the v3 key `process` and displays **"In Process"** — Alex reverted essay 02's "Active," which was never a doctrine decision. The locked state displays **"Shore Secured"** (key `secured`). Token names follow the keys (`--status-process`, `--status-secured`); only the displayed words are fixed here — full copy lives in [`voice-and-tone.md`](voice-and-tone.md).
 
 ---

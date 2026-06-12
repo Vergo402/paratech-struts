@@ -5,6 +5,7 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
+import { AppHeader } from './shell/AppHeader';
 import { BottomNav } from './shell/BottomNav';
 import { QuickFindScreen } from './routes/quickfind';
 import { OperationsScreen } from './routes/operations';
@@ -21,6 +22,7 @@ import { GalleryScreen } from './routes/gallery';
 function RootLayout() {
   return (
     <div className="fs-shell">
+      <AppHeader />
       <main className="fs-shell-main">
         <Outlet />
       </main>
