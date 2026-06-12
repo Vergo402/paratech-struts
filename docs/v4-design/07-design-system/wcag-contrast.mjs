@@ -46,6 +46,9 @@ const THEMES = {
     ['status secured', '#065F46', '#ECFDF5', 'normal'],
     ['status returned','#57534E', '#F5F5F4', 'normal'],
     ['status warning', '#B91C1C', '#FEF2F2', 'normal'],
+    // sys-lockstroke strut-system color (S12 handoff §4) — on bg AND card
+    ['sys-lockstroke / surface-bg',   '#0E7490', '#F7F6F3', 'normal'],
+    ['sys-lockstroke / surface-card', '#0E7490', '#FFFFFF', 'normal'],
   ],
   DARK: [
     ['text-primary  / surface-card',     '#F0EFEC', '#252930', 'normal'],
@@ -64,6 +67,9 @@ const THEMES = {
     ['status secured', '#34D399', '#0F2620', 'normal'],
     ['status returned','#A8A29E', '#26231F', 'normal'],
     ['status warning', '#F87171', '#2A1416', 'normal'],
+    // sys-lockstroke strut-system color (S12 handoff §4) — on bg AND card
+    ['sys-lockstroke / surface-bg',   '#06B6D4', '#1C1F23', 'normal'],
+    ['sys-lockstroke / surface-card', '#06B6D4', '#252930', 'normal'],
   ],
   SUNLIGHT: [
     ['text-primary  / surface-bg', '#000000', '#FFFFFF', 'normal'],
@@ -78,6 +84,9 @@ const THEMES = {
     ['status secured  (white on)', '#FFFFFF', '#065F46', 'normal'],
     ['status returned (white on)', '#FFFFFF', '#44403C', 'normal'],
     ['status warning  (white on)', '#FFFFFF', '#B91C1C', 'normal'],
+    // sys-lockstroke strut-system color (S12 handoff §4) — 7:1 contract; bg/card both #FFFFFF
+    ['sys-lockstroke / surface-bg',   '#155E75', '#FFFFFF', 'normal'],
+    ['sys-lockstroke / surface-card', '#155E75', '#FFFFFF', 'normal'],
   ],
   BROADCAST: [
     // 7:1 AAA target — read at 8-12 ft
@@ -93,6 +102,9 @@ const THEMES = {
     ['status secured', '#34D399', '#141618', 'normal'],
     ['status returned','#A8A29E', '#141618', 'normal'],
     ['status warning', '#FB8C8C', '#141618', 'normal'],
+    // sys-lockstroke strut-system color (S12 handoff §4) — 7:1 contract; bg/card both #141618
+    ['sys-lockstroke / surface-bg',   '#22D3EE', '#141618', 'normal'],
+    ['sys-lockstroke / surface-card', '#22D3EE', '#141618', 'normal'],
   ],
 };
 

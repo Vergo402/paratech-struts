@@ -165,7 +165,7 @@ button.fs-spc-stripe {
   left: 0;
   bottom: 0;
   width: 4px;
-  background: var(--sp-text); /* the saturated status hue */
+  background: var(--sp-solid); /* the saturated status hue (sunlight-safe; fixes white stripe) */
   border-radius: var(--radius-card) 0 0 var(--radius-card);
 }
 
@@ -299,7 +299,7 @@ button.fs-spc-head {
 /* #40 — the gated card (unrated / over-capacity) reads as danger at a glance,
    an accent and a word, never a full red fill (Principle 3). */
 .fs-rec.is-gated {
-  --rec-color: var(--danger);
+  --rec-color: var(--danger-text);
 }
 
 .fs-rec-bar {
@@ -424,7 +424,7 @@ button.fs-spc-head {
 /* N/S — not selected. The omission is a decision the operator should SEE. */
 .fs-rec-ns,
 .fs-rec-slot.is-ns .fs-rec-slot-name {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .fs-rec-opening {
@@ -499,7 +499,7 @@ button.fs-spc-head {
 .fs-modal-error {
   margin: 0 0 var(--space-2);
   font: var(--type-caption);
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 /* ---- visually hidden (live regions, SR-only announcements) ---------------- */
@@ -556,7 +556,7 @@ button.fs-spc-head {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--sp-text);
+    background: var(--sp-solid); /* sunlight-safe: --sp-text is white there, --sp-solid keeps the hue */
   }
 
   .fs-ops-summary-count {

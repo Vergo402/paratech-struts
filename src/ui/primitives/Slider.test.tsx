@@ -4,9 +4,9 @@ import { Slider, shouldCommit } from './Slider';
 import { dragSlide, slideToCommit } from './Slider.testkit';
 
 describe('shouldCommit (the pure threshold)', () => {
-  it('commits only past the threshold fraction of travel', () => {
-    expect(shouldCommit(79, 100)).toBe(false);
-    expect(shouldCommit(80, 100)).toBe(true);
+  it('commits only past the threshold fraction of travel (0.6, finalized in S12)', () => {
+    expect(shouldCommit(59, 100)).toBe(false);
+    expect(shouldCommit(60, 100)).toBe(true);
     expect(shouldCommit(100, 100)).toBe(true);
     expect(shouldCommit(0, 100)).toBe(false);
   });
@@ -43,7 +43,7 @@ describe('Slider', () => {
   it('a short drag (under threshold) releases without committing and snaps back', async () => {
     const onCommit = vi.fn();
     const { container } = render(<Slider label="Slide to set Runner" onCommit={onCommit} />);
-    await dragSlide(container.querySelector('.fs-slide') as HTMLElement, 100); // < 148px threshold
+    await dragSlide(container.querySelector('.fs-slide') as HTMLElement, 90); // < 110.4px commit point (0.6 × 184px travel)
 
     expect(onCommit).not.toHaveBeenCalled();
     // Snap-back: inline transform returns to rest.

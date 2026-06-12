@@ -7,8 +7,9 @@ import { vi } from 'vitest';
  * so pointer* events are dispatched as MouseEvents (which DO carry clientX —
  * a plain fireEvent.pointerMove drops it and the drag never moves), and the
  * track/thumb rects are mocked for the duration of one drag: travel =
- * 240 − 48 − 8 = 184px, the 0.8 threshold needs ≥148px. Direction is read
- * from `.fs-slide--stepback` and the drag mirrors automatically.
+ * 240 − 48 − 8 = 184px, the 0.6 threshold (finalized in S12) needs ≥111px
+ * (0.6 × 184 = 110.4). Direction is read from `.fs-slide--stepback` and the
+ * drag mirrors automatically.
  */
 
 const rect = (width: number): DOMRect =>

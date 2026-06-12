@@ -25,8 +25,9 @@ export interface SliderProps {
   revealColor?: string;
 }
 
-/** Travel fraction past which release commits. Exported pure for tuning + tests. */
-export function shouldCommit(offsetPx: number, trackPx: number, threshold = 0.8): boolean {
+/** Travel fraction past which release commits. Exported pure for tuning + tests.
+ *  Finalized at 0.6 in the S12 slice (slider.md left the exact proportion open). */
+export function shouldCommit(offsetPx: number, trackPx: number, threshold = 0.6): boolean {
   if (trackPx <= 0) return false;
   return offsetPx / trackPx >= threshold;
 }
@@ -46,6 +47,10 @@ export function Slider({
   const [dragging, setDragging] = useState(false);
 
   const sign = direction === 'advance' ? 1 : -1;
+  // Fill reaches the thumb CENTRE as it travels: track inset (4px) + half the
+  // knob. Knobs differ by role — 44px advance / 36px step-back — so the nudge
+  // past the offset is half each (22 / 18). (S12 handoff slide geometry.)
+  const fillNudge = direction === 'advance' ? 22 : 18;
 
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled) return;
@@ -80,7 +85,7 @@ export function Slider({
         <span
           className="fs-slide-fill"
           style={{
-            width: offset > 0 ? `calc(${offset}px + var(--space-1) + 32px)` : 0,
+            width: offset > 0 ? `calc(${offset}px + var(--space-1) + ${fillNudge}px)` : 0,
             background: revealColor ?? 'var(--accent-subtle)',
           }}
           aria-hidden="true"

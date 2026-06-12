@@ -119,6 +119,7 @@
   --status-secured-text: #065F46;  --status-secured-bg: #ECFDF5;  /* 7.29 — green = secured */
   --status-returned-text:#57534E;  --status-returned-bg:#F5F5F4;  /* 6.99 */
   --danger-text:         #B91C1C;  --danger-bg:         #FEF2F2;  /* 5.91 */
+  --sys-lockstroke: #0E7490;  --sys-lockstroke-bg: #ECFEFF;  /* LockStroke strut-system color, S12 handoff §4 — 4.96 bg / 5.36 card */
 
   --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.08);
@@ -155,6 +156,7 @@
   --status-secured-text: #34D399;  --status-secured-bg: #0F2620;  /* 8.29 — green = secured */
   --status-returned-text:#A8A29E;  --status-returned-bg:#26231F;  /* 6.20 */
   --danger-text:         #F87171;  --danger-bg:         #2A1416;  /* 6.27 */
+  --sys-lockstroke: #06B6D4;  --sys-lockstroke-bg: #0E262D;  /* LockStroke strut-system color, S12 handoff §4 — 6.81 bg / 6.01 card */
 
   --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.18);
@@ -193,6 +195,7 @@
   --status-secured-text: #FFFFFF;  --status-secured-bg: #065F46;  /* 7.68 */
   --status-returned-text:#FFFFFF;  --status-returned-bg:#44403C;  /* 10.27 */
   --danger-text:         #FFFFFF;  --danger-bg:         #B91C1C;  /* 6.47 */
+  --sys-lockstroke: #155E75;  --sys-lockstroke-bg: #ECFEFF;  /* LockStroke strut-system color, S12 handoff §4 — 7.27 on #FFF, clears 7:1 */
 
   --scrim: rgba(0, 0, 0, 0.55);                      /* stronger backdrop survives sun (color.md) */
   --shadow-sheet: 0 2px 8px rgba(0, 0, 0, 0.12);
@@ -231,6 +234,7 @@
   --status-secured-text: #34D399;  --status-secured-bg: transparent;  /* 9.44 */
   --status-returned-text:#A8A29E;  --status-returned-bg:transparent;  /* 7.19 */
   --danger-text:         #FB8C8C;  --danger-bg:         transparent;  /* 7.97 */
+  --sys-lockstroke: #22D3EE;  --sys-lockstroke-bg: transparent;  /* LockStroke strut-system color, S12 handoff §4 — 10.04 on bc-bg; transparent fill per broadcast status convention */
 
   --shadow-sheet: none;
   --shadow-drawer: none;

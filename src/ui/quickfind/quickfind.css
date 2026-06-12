@@ -11,6 +11,13 @@
   color: var(--text-primary);
   text-align: center;
 }
+/* 34px is a display-size context — re-derive the stacked fraction at r=.36
+   (height = .726/.36 + .294 = 2.31em); mirrors primitives.css .fs-fr-display. */
+.fs-meas-readout .fr,
+.fs-meas-readout--button .fr {
+  font-size: 0.36em;
+  height: 2.31em;
+}
 .fs-steppers { display: flex; gap: var(--space-3); }
 .fs-step-group { flex: 1 1 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .fs-step-label { font: var(--type-caption); color: var(--text-secondary); text-align: center; }
@@ -48,7 +55,10 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.fs-eighth .fr { vertical-align: 0; font-size: 0.8em; }
+/* The strip cell shows the fraction ALONE (no baseline text to anchor to), so
+   drop the inline baseline offset and let flex center it. r=.8 keeps the old
+   visual size (height = .726/.8 + .294 = 1.20em). */
+.fs-eighth .fr { top: 0; font-size: 0.8em; height: 1.2em; }
 .fs-eighth[data-state='checked'] {
   border: 2px solid var(--accent);
   color: var(--text-primary);
@@ -125,7 +135,7 @@
 }
 .fs-meas-readout--input::placeholder { color: var(--text-tertiary); }
 .fs-meas-readout--input:focus-visible { outline: none; border-color: var(--accent); }
-.fs-meas-readout--input[aria-invalid='true'] { border-color: var(--danger); }
+.fs-meas-readout--input[aria-invalid='true'] { border-color: var(--danger-text); }
 
 /* the big-key numeric keypad (56pt minimum keys, 3-column main) */
 .fs-meas-keypad {
