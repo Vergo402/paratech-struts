@@ -1,0 +1,46 @@
+import * as React from 'react';
+import { ShoreState } from './ShorePointCard';
+
+export interface GroupedMember {
+  /** Unique id, e.g. "post-1". */
+  id: string;
+  /** Member label shown in tabs + location line, e.g. "Post 1", "East Leg". */
+  label: string;
+  /** Measurement value, e.g. `65½"`. */
+  value?: string;
+  /** Lifecycle state for this member. @default "pending" */
+  state?: ShoreState;
+}
+
+/**
+ * Collapsed rolodex stack ⇄ expanded member list for multi-card shore points.
+ *
+ * Collapsed: the active member's ShorePointCard shows as the front card;
+ * other members fall left as status-striped labeled tabs. Tap a tab to
+ * rotate it to the front (the old front goes to the bottom). Tap the card
+ * body to expand all members.
+ *
+ * Expanded: a border-left indented list of every member's ShorePointCard,
+ * each fully interactive. "Stack" collapses back.
+ *
+ * @startingPoint section="App Shell" subtitle="Grouped shore point — rolodex stack + expand" viewport="700x440"
+ */
+export interface GroupedShorePointProps {
+  /** Shared group title, e.g. "B-3 · Double T", "C-2 · 3-Post". */
+  groupTitle: string;
+  /** Location line shared by all members, e.g. "Division 1 · B side". */
+  location?: string;
+  /** Apparatus shared by all members, e.g. "Eng 7". Renders below location. */
+  apparatus?: string;
+  /** Member array — one entry per card in the group. */
+  members?: GroupedMember[];
+  /** Start in expanded state. @default false */
+  defaultExpanded?: boolean;
+  /** Called when any member's slide-to-advance commits. Receives the member's id. */
+  onAdvance?: (id: string) => void;
+  /** Called when any member's reverse is tapped. Receives the member's id. */
+  onReverse?: (id: string) => void;
+}
+
+export function GroupedShorePoint(props: GroupedShorePointProps): JSX.Element;
+export default GroupedShorePoint;

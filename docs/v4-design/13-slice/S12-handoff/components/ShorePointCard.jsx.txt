@@ -1,0 +1,274 @@
+import React from 'react';
+
+const CSS = `
+.fs-spc{position:relative;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px 16px 16px 24px;margin-bottom:12px;
+  font-family:var(--font-ui);overflow:hidden;box-shadow:var(--shadow)}
+.fs-spc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--stripe-width);
+  background:var(--_line)}
+.fs-spc.is-active{border-color:var(--accent)}
+.fs-spc.is-removed{opacity:.45}
+.fs-spc__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.fs-spc__title{font-size:var(--headline-2);font-weight:var(--headline-2-w);
+  color:var(--text-primary);line-height:1.2}
+.fs-spc__badges{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.fs-spc__grpbadge{display:inline-flex;align-items:center;font-family:var(--font-mono);
+  font-size:var(--caption);font-weight:700;color:var(--text-secondary);
+  background:var(--surface-elevated,var(--card));border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:3px 8px;
+  font-feature-settings:"tnum" 1;white-space:nowrap;letter-spacing:.01em}
+.fs-spc__sub{font-size:var(--body);color:var(--text-secondary);margin-top:3px}
+.fs-spc__apparatus{font-size:var(--caption);color:var(--text-tertiary);margin-top:1px}
+.fs-spc__value{margin:12px -16px 0 -24px;padding:12px 16px 12px 24px;
+  display:flex;align-items:baseline;gap:8px;
+  background:color-mix(in srgb,var(--_line) 13%,var(--card));
+  border-top:1px solid color-mix(in srgb,var(--_line) 22%,var(--border));
+  border-bottom:1px solid color-mix(in srgb,var(--_line) 22%,var(--border))}
+[data-theme="sunlight"] .fs-spc__value{background:color-mix(in srgb,var(--_line) 10%,#fff)}
+[data-theme="broadcast"] .fs-spc__value{background:color-mix(in srgb,var(--_line) 18%,var(--card))}
+.fs-spc__value-label{font-size:var(--body);color:var(--text-secondary);white-space:nowrap}
+.fs-spc__value-num{font-family:var(--font-mono);font-size:var(--body-lg);font-weight:600;
+  color:var(--_line);font-feature-settings:"tnum" 1;white-space:nowrap}
+.fs-spc__value.is-promoted .fs-spc__value-num{font-size:28px;font-weight:700}
+.fs-spc__caption{font-size:var(--caption);color:var(--text-tertiary);margin-top:12px;line-height:1.5}
+/* stacked digit-pair fraction (.fr) — inline-block + overflow:hidden anchors the
+   box baseline to its bottom edge (CSS2.1), so the denominator sits ON the text
+   baseline and the numerator tops out at cap height, independent of font metrics. */
+.fs-spc .fr{display:inline-block;position:relative;overflow:hidden;text-align:center;
+  height:1.75em;top:.151em;font-size:.5em;line-height:1.02;font-weight:700;
+  vertical-align:baseline;margin:0 .06em;letter-spacing:0}
+.fs-spc .fr-n{display:block}
+.fs-spc .fr-d{display:block;position:absolute;bottom:0;left:0;right:0;
+  border-top:.09em solid currentColor;padding-top:.04em}
+/* slide-to-advance */
+.fs-spc__slide{position:relative;height:52px;margin-top:14px;border-radius:var(--radius-pill);
+  background:color-mix(in srgb,var(--accent) 16%,var(--card));
+  border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);
+  display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden}
+.fs-spc__slide-label{font-size:var(--body-lg);font-weight:600;color:var(--text-primary);
+  pointer-events:none;padding-left:28px}
+.fs-spc__knob{position:absolute;left:4px;top:4px;width:44px;height:44px;border-radius:50%;
+  background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
+  cursor:grab;touch-action:none;box-shadow:var(--shadow-knob)}
+.fs-spc__knob:active{cursor:grabbing}
+.fs-spc__knob svg{width:20px;height:20px}
+/* slide-to-reverse */
+.fs-spc__back{position:relative;height:44px;margin-top:8px;border-radius:var(--radius-pill);
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden;
+  cursor:default}
+.fs-spc__back-label{font-size:var(--body);font-weight:500;color:var(--text-secondary);
+  pointer-events:none;padding-right:28px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-spc__back-knob{position:absolute;right:4px;top:50%;transform:translateY(-50%);
+  width:36px;height:36px;border-radius:50%;background:var(--surface-elevated,var(--card));
+  border:1px solid var(--border);color:var(--text-secondary);
+  display:flex;align-items:center;justify-content:center;
+  cursor:grab;touch-action:none;transition:border-color 120ms}
+.fs-spc__back-knob:active{cursor:grabbing;border-color:var(--border-strong)}
+.fs-spc__back-knob svg{width:14px;height:14px}
+/* waiting callout */
+.fs-spc__wait{margin-top:14px;display:flex;align-items:center;gap:12px;padding:14px 16px;
+  border-radius:var(--radius);background:var(--st-waiting-fill);
+  border:1px solid var(--st-waiting-line)}
+.fs-spc__wait-ic{flex-shrink:0;width:34px;height:34px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--st-waiting-line);color:var(--st-waiting-ink)}
+.fs-spc__wait-ic svg{width:17px;height:17px}
+.fs-spc__wait-t{font-size:var(--body-lg);font-weight:600;color:var(--text-primary)}
+.fs-spc__wait-d{font-size:var(--body);color:var(--text-secondary);margin-top:2px}
+/* removed slash */
+.fs-spc__slash{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fs-spc__slash line{stroke:var(--st-danger-line);stroke-width:5}
+.fs-spc__removed{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:var(--body);font-weight:600;color:var(--st-danger-ink);
+  background:var(--card);border:1px solid var(--st-danger-line);padding:4px 12px;
+  border-radius:var(--radius-sm);white-space:nowrap}
+`;
+if (typeof document !== 'undefined' && !document.getElementById('fs-spc-css')) {
+  const s = document.createElement('style'); s.id = 'fs-spc-css'; s.textContent = CSS;
+  document.head.appendChild(s);
+}
+
+const NEXT_LABEL = {
+  pending:'In Process', process:'Strut Set', strutset:'Cutting',
+  cutting:'Runner', runner:'Shore Secured', secured:'Strut Equipment Returned',
+};
+const PREV_LABEL = {
+  process:'Pending', strutset:'In Process', cutting:'Strut Set',
+  runner:'Cutting', secured:'Runner', returned:'Shore Secured',
+};
+const VALUE_LABEL = {
+  pending:'Required', process:'Required', strutset:'Required', waiting:'Required',
+  cutting:'Cut length', runner:'Cut length', secured:'Set length', returned:'Set length',
+};
+
+/* Unicode vulgar fractions → stacked digit pairs; spaces → thin spaces. */
+const FRAC_GLYPHS = {
+  '\u00bc':[1,4], '\u00bd':[1,2], '\u00be':[3,4], '\u2153':[1,3], '\u2154':[2,3],
+  '\u215b':[1,8], '\u215c':[3,8], '\u215d':[5,8], '\u215e':[7,8],
+};
+function MeasureText({ v }) {
+  return <>{[...String(v)].map((ch, i) => {
+    const f = FRAC_GLYPHS[ch];
+    if (f) return <span className="fr" key={i}><span className="fr-n">{f[0]}</span><span className="fr-d">{f[1]}</span></span>;
+    if (ch === ' ') return <span key={i}>{'\u2009'}</span>;
+    return ch;
+  })}</>;
+}
+
+function Arrow({ dir = 'right' }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === 'right' ? <path d="M9 6l6 6-6 6"/> : <path d="M15 6l-6 6 6 6"/>}
+    </svg>
+  );
+}
+
+/**
+ * The gate primitive — a shore point with a status left-stripe, a
+ * lifecycle-aware value (Required / Cut length / Set length), a
+ * slide-to-advance control, and an always-available reverse (no
+ * timed undo). Supports a Hazard badge and the removed/slashed state.
+ */
+export function ShorePointCard({
+  title, location, apparatus, value, state = 'pending', hazard = false, active = false,
+  removed = false, group, caption, onAdvance, onReverse,
+}) {
+  const trackRef = React.useRef(null);
+  const [drag, setDrag] = React.useState(0);
+  const next = NEXT_LABEL[state];
+  const prev = PREV_LABEL[state];
+  const promoted = state === 'cutting';
+  const lineVar = { ['--_line']: `var(--st-${state}-line)` };
+
+  const backRef = React.useRef(null);
+  const [backDrag, setBackDrag] = React.useState(0);
+
+  function startBackDrag(e) {
+    if (!prev) return;
+    e.preventDefault();
+    const track = backRef.current;
+    const max = track.clientWidth - 44;
+    const startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    function move(ev) {
+      const x = startX - (ev.touches ? ev.touches[0].clientX : ev.clientX);
+      setBackDrag(Math.max(0, Math.min(max, x)));
+    }
+    function up(ev) {
+      const x = startX - (ev.changedTouches ? ev.changedTouches[0].clientX : ev.clientX);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      if (x >= max * 0.6) { setBackDrag(max); setTimeout(() => { setBackDrag(0); onReverse && onReverse(); }, 120); }
+      else setBackDrag(0);
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  function startDrag(e) {
+    if (!next) return;
+    e.preventDefault();
+    const track = trackRef.current;
+    const max = track.clientWidth - 52;
+    const startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    function move(ev) {
+      const x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - startX;
+      setDrag(Math.max(0, Math.min(max, x)));
+    }
+    function up(ev) {
+      const x = (ev.changedTouches ? ev.changedTouches[0].clientX : ev.clientX) - startX;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      if (x >= max * 0.6) { setDrag(max); setTimeout(() => { setDrag(0); onAdvance && onAdvance(); }, 120); }
+      else setDrag(0);
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+
+  return (
+    <div className={`fs-spc${active ? ' is-active' : ''}${removed ? ' is-removed' : ''}`} style={lineVar}>
+      <div className="fs-spc__head">
+        <div className="fs-spc__title">{title}</div>
+        <div className="fs-spc__badges">
+          {group && <span className="fs-spc__grpbadge">{group}</span>}
+          <StatusInline state={state} />
+          {hazard && <StatusInline state="danger" label="⚠ Hazard" />}
+        </div>
+      </div>
+      {location && <div className="fs-spc__sub">{location}</div>}
+      {apparatus && <div className="fs-spc__sub fs-spc__apparatus">{apparatus}</div>}
+      {value && (
+        <div className={`fs-spc__value${promoted ? ' is-promoted' : ''}`}>
+          <span className="fs-spc__value-label">{VALUE_LABEL[state]}</span>
+          <span className="fs-spc__value-num"><MeasureText v={value} /></span>
+        </div>
+      )}
+
+      {state === 'waiting' && !removed && (
+        <div className="fs-spc__wait">
+          <span className="fs-spc__wait-ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/>
+            </svg>
+          </span>
+          <div>
+            <div className="fs-spc__wait-t">Waiting for inventory</div>
+            <div className="fs-spc__wait-d">No matching strut available to deploy — request equipment.</div>
+          </div>
+        </div>
+      )}
+
+      {!removed && next && (
+        <div className="fs-spc__slide" ref={trackRef}>
+          <span className="fs-spc__slide-label">Slide to set {next}</span>
+          <div className="fs-spc__knob" style={{ transform: `translateX(${drag}px)` }}
+            onPointerDown={startDrag} role="button" aria-label={`Slide to set ${next}`}>
+            <Arrow dir="right" />
+          </div>
+        </div>
+      )}
+      {!removed && prev && (
+        <div className="fs-spc__back" ref={backRef}>
+          <span className="fs-spc__back-label">Slide back to {prev}</span>
+          <div className="fs-spc__back-knob"
+            style={{ transform: `translateY(-50%) translateX(-${backDrag}px)` }}
+            onPointerDown={startBackDrag}
+            role="button"
+            aria-label={`Slide back to ${prev}`}>
+            <Arrow dir="left" />
+          </div>
+        </div>
+      )}
+
+      {caption && <div className="fs-spc__caption">{caption}</div>}
+
+      {removed && (<>
+        <svg className="fs-spc__slash" preserveAspectRatio="none" viewBox="0 0 100 100">
+          <line x1="100" y1="0" x2="0" y2="100" vectorEffect="non-scaling-stroke" />
+        </svg>
+        <span className="fs-spc__removed">Removed from cut list</span>
+      </>)}
+    </div>
+  );
+}
+
+/* Inline status pill so the card is self-contained (mirrors StatusBadge). */
+const STATUS_LABELS = { pending:'Pending', process:'In Process', strutset:'Strut Set',
+  cutting:'Cutting', runner:'Runner', secured:'Shore Secured',
+  returned:'Strut Equipment Returned', waiting:'Waiting', danger:'Hazard' };
+function StatusInline({ state, label }) {
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:4, fontFamily:'var(--font-ui)',
+      fontSize:'var(--type-caption)', fontWeight:600, lineHeight:1.4,
+      padding:'4px 10px', borderRadius:'var(--radius-sm)', whiteSpace:'nowrap',
+      color:`var(--st-${state}-ink)`, background:`var(--st-${state}-fill)`,
+      border:`1px solid var(--st-${state}-line)`,
+    }}>{label || STATUS_LABELS[state]}</span>
+  );
+}
+
+export default ShorePointCard;

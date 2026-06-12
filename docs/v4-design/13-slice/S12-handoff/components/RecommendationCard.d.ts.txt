@@ -1,0 +1,54 @@
+import * as React from 'react';
+
+interface Deduction { label: string; value: string; }
+
+export type StrutSystem = 'gold' | 'grey' | 'lockstroke';
+
+/**
+ * Strut recommendation with an inline deduction ledger. The stripe
+ * and identity line carry the strut-system color. The ledger leads
+ * (Required − deductions = Effective); rated capacity is demoted to
+ * a quiet secondary line. Planning aid, not an engineering
+ * certification. Optional extension block above the ledger.
+ *
+ * @startingPoint section="App Shell" subtitle="Recommendation card with deduction ledger" viewport="700x340"
+ */
+export interface RecommendationCardProps {
+  /** Model / part code, e.g. "LS 610". Renders on line 1 of the header as: Color · Type · Model#. */
+  model: string;
+  /** Strut system — drives stripe + identity color. @default "gold" */
+  system?: StrutSystem;
+  /** System color label override, e.g. "Gold". Defaults from system name. Renders highlighted in system color on line 1. */
+  systemLabel?: string;
+  /** Product type, e.g. "LongShore". Renders as part of line 1: Color · Type · Model#. */
+  product?: string;
+  /** Connectors / hardware spec, e.g. "8×8 base plate · sole plate". Renders on its own line (line 2) below the identity. */
+  spec?: string;
+  /** Whether it fits the opening — drives the badge. @default true */
+  fits?: boolean;
+  /** Badge text override (default "Fits" / "Too short"). */
+  fitLabel?: string;
+  /** Extension amount, e.g. `24"`. Renders the extension block. */
+  extension?: string;
+  /** Extension explanation, e.g. "LS 610 alone reaches 116″ …". */
+  extensionNote?: string;
+  /** Location, e.g. "Division 2 · C side". */
+  location?: string;
+  /** Apparatus, e.g. "Eng 7". Renders on its own line below location. */
+  apparatus?: string;
+  /** Deduction rows (base plate, sole plate, etc.). */
+  deductions?: Deduction[];
+  /** Required strut length after deductions, e.g. `65½"`. Renders as "Required strut length". */
+  effective?: string;
+  /** Rated capacity value (demoted), e.g. "18,400 lb" — the published
+      rating at `capacityAt`, rounded DOWN (conservative floor). */
+  capacity?: string;
+  /** Extended length the capacity is rated at, e.g. `72"`. Renders
+      the footer label as "Rated capacity at 72″". */
+  capacityAt?: string;
+  /** Optional caption under the ledger (none by default). */
+  caption?: string;
+}
+
+export function RecommendationCard(props: RecommendationCardProps): JSX.Element;
+export default RecommendationCard;

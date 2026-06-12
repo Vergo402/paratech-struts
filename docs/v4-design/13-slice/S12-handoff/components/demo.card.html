@@ -1,0 +1,77 @@
+<!-- Reference demo (copy of components/app/app.card.html) -->
+<!DOCTYPE html><html lang="en" data-theme="dark"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body{margin:0;font-family:var(--font-ui);background:var(--surface-bg);color:var(--text-primary);padding:22px}
+  .sec{font-size:var(--type-label);font-weight:600;text-transform:uppercase;letter-spacing:var(--tracking-label);color:var(--text-tertiary);margin:22px 0 10px;border-bottom:1px solid var(--border-hairline);padding-bottom:6px}
+  .sec:first-child{margin-top:0}
+  .frame{max-width:420px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border-hairline)}
+</style></head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="../../_ds_bundle.js"></script>
+  <script type="text/babel" data-presets="react">
+    const { AppHeader, BottomNav, ShorePointCard, GroupedShorePoint, RecommendationCard } = window.FieldShoreDesignSystem_9b137b;
+    function Demo(){
+      const [tab,setTab]=React.useState('ops');
+      const [st,setSt]=React.useState('cutting');
+      const ORDER=['pending','process','strutset','cutting','runner','secured','returned'];
+      const i=ORDER.indexOf(st);
+      return (<>
+        <div className="sec">App Header</div>
+        <div className="frame"><AppHeader title="Operations" subtitle="Engine 42 — FDNY" version="v4.0.1"/></div>
+
+        <div className="sec">Bottom Nav</div>
+        <div className="frame"><BottomNav active={tab} onChange={setTab}/></div>
+
+        <div className="sec">Shore Point Card · slide the knob to advance</div>
+        <ShorePointCard
+          title="B-2 · Single Upright" location="Division 2 · C side" apparatus="Eng 7"
+          value={`65½"`} state={st} hazard={st==='cutting'}
+          caption="Slide commits; reverse is always available — no timed undo."
+          onAdvance={()=>setSt(ORDER[Math.min(i+1,6)])}
+          onReverse={()=>setSt(ORDER[Math.max(i-1,0)])}/>
+        <ShorePointCard title="A-1 · T-Shore" location="Division 1 · A side" apparatus="Rescue 2"
+          value={`108¾"`} state="secured" active/>
+        <ShorePointCard title="D-1 · Single Upright" location="Division 1 · A side" apparatus="Unassigned"
+          value={`84"`} state="waiting"/>
+        <ShorePointCard title="B-5 · Single Upright" location="Division 2 · C side" apparatus="Eng 7"
+          value={`72"`} state="strutset" removed/>
+
+        <div className="sec">Grouped Shore Point · Double T (tap tabs to rotate, tap card to expand)</div>
+        <GroupedShorePoint
+          groupTitle="B-3 · Double T" location="Division 1 · B side" apparatus="Eng 7"
+          members={[
+            {id:'dt-1',label:'Post 1',value:`65½"`,state:'cutting'},
+            {id:'dt-2',label:'Post 2',value:`65½"`,state:'strutset'},
+          ]}/>
+
+        <div className="sec">Grouped Shore Point · 3-Post (tap tabs to rotate, tap card to expand)</div>
+        <GroupedShorePoint
+          groupTitle="C-2 · 3-Post" location="Division 2 · C side" apparatus="Rescue 3"
+          members={[
+            {id:'tp-1',label:'Post 1',value:`108¾"`,state:'secured'},
+            {id:'tp-2',label:'Post 2',value:`108¾"`,state:'runner'},
+            {id:'tp-3',label:'Post 3',value:`109⅜"`,state:'process'},
+          ]}/>
+
+        <div className="sec">Recommendation Card</div>
+        <RecommendationCard
+          model="LS 610" system="gold" product="LongShore" spec="8×8 base plate · sole plate"
+          fits required={`72"`}
+          deductions={[{label:'base plate',value:`3¼"`},{label:'sole plate',value:`3¼"`}]}
+          effective={`65½"`} capacity="18,400 lb" capacityAt={`72"`}/>
+        <RecommendationCard
+          model="LS 610" system="gold" product="LongShore" spec="8×8 base plate · sole plate"
+          fits extension={`24"`} extensionNote={`LS 610 alone reaches 116″ — extension takes the assembly to 140″`}
+          required={`130"`}
+          deductions={[{label:'base plate',value:`3¼"`},{label:'sole plate',value:`3¼"`}]}
+          effective={`123½"`} capacity="11,200 lb" capacityAt={`130"`}/>
+      </>);
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+  </script>
+</body></html>

@@ -1,0 +1,227 @@
+import React from 'react';
+
+// ShorePointCard is resolved from the compiled DS bundle at render time.
+// The DS compiler does not support cross-component relative imports.
+function resolveSPC() {
+  const key = Object.keys(window).find(k => k.startsWith('FieldShoreDesignSystem_'));
+  return key ? window[key].ShorePointCard : null;
+}
+
+const TAB_W = 30; // px of visible tab sticking out per fallen card
+
+const CSS = `
+.fs-gs{margin-bottom:18px;font-family:var(--font-ui)}
+.fs-gs__wrap{position:relative;cursor:pointer}
+.fs-gs__tab{position:absolute;top:8px;bottom:8px;width:130px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius) 0 0 var(--radius);box-shadow:var(--shadow);
+  overflow:hidden;cursor:pointer;transition:border-color 120ms}
+.fs-gs__tab::before{content:"";position:absolute;left:0;top:0;bottom:0;
+  width:4px;background:var(--_pline,var(--border-strong))}
+.fs-gs__tab > span{position:absolute;left:6px;top:0;bottom:0;width:20px;
+  display:flex;align-items:center;justify-content:center;
+  writing-mode:vertical-rl;transform:rotate(180deg);
+  font-family:var(--font-mono);font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text-secondary);
+  white-space:nowrap;transition:color 120ms}
+.fs-gs__tab:hover{border-color:var(--border-strong)}
+.fs-gs__tab:hover > span{color:var(--text-primary)}
+.fs-gs__front{position:relative;z-index:4}
+.fs-gs__roll-r{animation:fsGsRollR 220ms cubic-bezier(.2,0,.2,1) both}
+.fs-gs__roll-l{animation:fsGsRollL 220ms cubic-bezier(.2,0,.2,1) both}
+@keyframes fsGsRollR{from{transform:translateX(26px);opacity:.25}to{transform:none;opacity:1}}
+@keyframes fsGsRollL{from{transform:translateX(-26px);opacity:.25}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.fs-gs__roll-r,.fs-gs__roll-l{animation:none}}
+.fs-gs__pager{display:flex;align-items:center;margin-top:6px;padding:0 2px}
+.fs-gs__dots{display:flex;align-items:center;gap:7px;flex:1;justify-content:center}
+.fs-gs__dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong);
+  transition:all 160ms;flex-shrink:0}
+.fs-gs__dot.is-on{width:22px;border-radius:4px}
+.fs-gs__open{border-left:2px solid var(--border-strong);padding-left:12px;margin-left:2px}
+.fs-gs__openhead{display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:10px}
+.fs-gs__opentitle{font-size:var(--caption);font-weight:700;
+  letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--text-secondary)}
+.fs-gs__member{animation:fsGsIn 240ms cubic-bezier(.2,0,.2,1) both;
+  animation-delay:calc(var(--i,0)*45ms)}
+@keyframes fsGsIn{from{transform:translateY(-10px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.fs-gs__member{animation:none}}
+.fs-gs__colbtn{display:inline-flex;align-items:center;gap:7px;height:40px;
+  padding:0 14px;border-radius:var(--radius-pill);border:1px solid var(--border);
+  background:var(--card);color:var(--text-secondary);font-family:var(--font-ui);
+  font-size:var(--caption);font-weight:600;cursor:pointer;
+  transition:color var(--ease),border-color var(--ease)}
+.fs-gs__colbtn:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.fs-gs__colbtn:active{opacity:var(--press-opacity)}
+.fs-gs__colbtn svg{width:13px;height:13px}
+`;
+
+if (typeof document !== 'undefined' && !document.getElementById('fs-gs-css')) {
+  const s = document.createElement('style'); s.id = 'fs-gs-css'; s.textContent = CSS;
+  document.head.appendChild(s);
+}
+
+function GsChevUp() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M18 15l-6-6-6 6" />
+    </svg>
+  );
+}
+
+/**
+ * Collapsed rolodex stack ⇄ expanded member list for multi-card shore points
+ * (Double T = 2 members, 3-Post = 3 members, etc.)
+ *
+ * Collapsed: front card shows active member; other members fall left as
+ * status-striped labeled tabs. Tap a tab to rotate that member to the front.
+ * Tap the card body to expand all members.
+ *
+ * Expanded: border-left indented list of all member ShorePointCards, each
+ * fully interactive. "Stack" collapses back.
+ */
+export const GroupedShorePoint = function GroupedShorePoint({
+  groupTitle,
+  location,
+  apparatus,
+  members,
+  defaultExpanded,
+  onAdvance,
+  onReverse,
+}) {
+  members = members || [];
+  defaultExpanded = defaultExpanded || false;
+
+  const SPC = resolveSPC();
+  const [expanded, setExpanded] = React.useState(defaultExpanded);
+  const [active, setActive] = React.useState(0);
+  const [dir, setDir] = React.useState('r');
+  const [rollKey, setRollKey] = React.useState(0);
+  const n = members.length;
+
+  function jumpTo(i) {
+    if (i === active) return;
+    const fwd = ((i - active + n) % n) <= n / 2;
+    setDir(fwd ? 'r' : 'l');
+    setActive(i);
+    setRollKey(function(k) { return k + 1; });
+  }
+
+  function onCardTap(e) {
+    if (e.target.closest('.fs-spc__slide, .fs-spc__back, .fs-spc__knob')) return;
+    setExpanded(true);
+  }
+
+  function tabSlot(i) {
+    var d = (i - active + n) % n;
+    return (n - 1) - d;
+  }
+
+  function memberLoc(label) {
+    if (!label) return location;
+    return (label + (location ? ' \u00b7 ' + location : '')).replace(/ \u00b7 $/, '');
+  }
+
+  if (!SPC || n === 0) return null;
+
+  var m = members[active] || {};
+
+  if (!expanded) {
+    return (
+      <div className="fs-gs">
+        <div
+          className="fs-gs__wrap"
+          onClick={onCardTap}
+          role="button"
+          aria-label={groupTitle + ' \u2014 ' + n + ' cards, showing ' + (m.label || '') + '. Tap to expand.'}
+        >
+          {members.map(function(p, i) {
+            if (i === active) return null;
+            var slot = tabSlot(i);
+            return (
+              <div
+                key={p.id}
+                className="fs-gs__tab"
+                style={{ left: slot * TAB_W, zIndex: slot + 1, '--_pline': 'var(--st-' + (p.state || 'pending') + '-line)' }}
+                role="button"
+                aria-label={'Bring ' + p.label + ' to front'}
+                onClick={function(e) { e.stopPropagation(); jumpTo(i); }}
+              >
+                <span>{p.label}</span>
+              </div>
+            );
+          })}
+
+          <div
+            key={rollKey}
+            style={{ marginLeft: (n - 1) * TAB_W }}
+            className={'fs-gs__front' + (rollKey > 0 ? (dir === 'r' ? ' fs-gs__roll-r' : ' fs-gs__roll-l') : '')}
+          >
+            <SPC
+              title={groupTitle}
+              location={memberLoc(m.label)}
+              apparatus={apparatus}
+              value={m.value}
+              state={m.state}
+              group={(active + 1) + ' / ' + n}
+              onAdvance={onAdvance ? function() { onAdvance(m.id); } : undefined}
+              onReverse={onReverse ? function() { onReverse(m.id); } : undefined}
+            />
+          </div>
+        </div>
+
+        <div className="fs-gs__pager" style={{ marginLeft: (n - 1) * TAB_W }}>
+          <div className="fs-gs__dots">
+            {members.map(function(p, i) {
+              var on = i === active;
+              return (
+                <span
+                  key={p.id}
+                  className={'fs-gs__dot' + (on ? ' is-on' : '')}
+                  style={{
+                    background: 'var(--st-' + (p.state || 'pending') + '-line)',
+                    opacity: on ? 1 : 0.45,
+                    width: on ? 22 : undefined,
+                    borderRadius: on ? 4 : undefined,
+                  }}
+                />
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fs-gs">
+      <div className="fs-gs__open">
+        <div className="fs-gs__openhead">
+          <span className="fs-gs__opentitle">{groupTitle} \u00b7 {n} cards</span>
+          <button className="fs-gs__colbtn" onClick={function() { setExpanded(false); }}>
+            Stack <GsChevUp />
+          </button>
+        </div>
+        {members.map(function(p, i) {
+          return (
+            <div key={p.id} className="fs-gs__member" style={{ '--i': i }}>
+              <SPC
+                title={groupTitle}
+                location={memberLoc(p.label)}
+                apparatus={apparatus}
+                value={p.value}
+                state={p.state}
+                group={(i + 1) + ' / ' + n}
+                onAdvance={onAdvance ? function() { onAdvance(p.id); } : undefined}
+                onReverse={onReverse ? function() { onReverse(p.id); } : undefined}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default GroupedShorePoint;
