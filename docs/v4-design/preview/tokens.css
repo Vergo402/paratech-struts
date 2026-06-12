@@ -1,7 +1,6 @@
-/* COPIED VERBATIM from docs/v4-design/preview/tokens.css (the canonical source).
-   ADR-007 / architecture.md: this file is reused by the build, not throwaway.
-   If a token changes in the canonical doc, it changes here in the SAME commit —
-   no silent drift. Do not hand-edit values here; edit the doc and re-copy. */
+/* This file and src/app/tokens.css are byte-identical mirrors (ADR-007 /
+   architecture.md); the docs copy is canonical. A token change lands in BOTH
+   files in the SAME commit — no silent drift (`cmp` must pass). */
 
 /* ============================================================================
    FieldShore v4 — Design Tokens

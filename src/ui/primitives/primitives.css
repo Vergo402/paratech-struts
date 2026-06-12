@@ -35,7 +35,7 @@
    amber ink on pale amber, never a banner — so --sp-solid stays the TEXT hue
    in all four themes (the dark ink is the saturated mark on white). */
 .is-waiting { --sp-text: var(--status-waiting-text); --sp-bg: var(--status-waiting-bg); --sp-solid: var(--status-waiting-text); }
-[data-theme='sunlight'] .is-waiting { --sp-text: var(--status-waiting-text); --sp-solid: var(--status-waiting-text); }
+[data-theme='sunlight'] .is-waiting { --sp-solid: var(--status-waiting-text); }
 
 /* ---- badge (badge.md; mirrors styleguide .sg-badge) ------------------------ */
 .fs-badge {
