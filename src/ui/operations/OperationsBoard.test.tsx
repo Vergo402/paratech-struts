@@ -340,24 +340,53 @@ describe('OperationsBoard', () => {
     expect(mockCommit).not.toHaveBeenCalled();
   });
 
-  it('once every mate has left Pending, advance fans out and announces the group size', async () => {
+  // A 3-Post in one lane now collapses into ONE GroupedShorePoint rolodex (S12
+  // §2): only the front member shows its slide. The single slide commit still
+  // fans out to the whole group (the reducer's lockstep) and announces the
+  // group size — the stack is presentational, the lockstep math is unchanged.
+  const grouped3Post = (id: string, groupIndex: number): ShorePoint => ({
+    ...makeSP(id, 'process'),
+    shoreType: '3-post', // one physical 3-Post shore (KB-7)
+    groupId: 'g1',
+    groupIndex,
+    groupTotal: 3,
+    deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' },
+  });
+
+  it('collapsed stack: the front slide commits ONE event and announces the group size', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    const grouped = (id: string, groupIndex: number): ShorePoint => ({
-      ...makeSP(id, 'process'),
-      shoreType: '3-post', // one physical 3-Post shore (KB-7)
-      groupId: 'g1',
-      groupIndex,
-      groupTotal: 3,
-      deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' },
-    });
-    mockShorePoints.mockReturnValue([grouped('sp-1', 1), grouped('sp-2', 2), grouped('sp-3', 3)]);
+    mockShorePoints.mockReturnValue([grouped3Post('sp-1', 1), grouped3Post('sp-2', 2), grouped3Post('sp-3', 3)]);
     render(<OperationsBoard />);
 
+    // Only the front card (active member sp-1) shows the advance slide now.
     const advances = screen.getAllByText('Slide to set Strut Set');
-    expect(advances).toHaveLength(3);
+    expect(advances).toHaveLength(1);
     expect(advances[0]!.closest('.fs-slide')).not.toHaveClass('fs-slide--disabled');
     await slideToCommit(advances[0]!);
     expect(mockCommit).toHaveBeenCalledTimes(1); // ONE event — the reducer fans out
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'process', to: 'strutset' }),
+    );
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points — now Strut Set.');
+  });
+
+  it('expanded stack: every member shows its slide; any one commits the same fan-out', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([grouped3Post('sp-1', 1), grouped3Post('sp-2', 2), grouped3Post('sp-3', 3)]);
+    render(<OperationsBoard />);
+
+    // Expand the rolodex into the full member list.
+    await user.click(screen.getByRole('button', { name: 'Show all 3 cards' }));
+    const advances = screen.getAllByText('Slide to set Strut Set');
+    expect(advances).toHaveLength(3);
+
+    // Commit the third member's slide — still one event, still the group announce.
+    await slideToCommit(advances[2]!);
+    expect(mockCommit).toHaveBeenCalledTimes(1);
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-3', from: 'process', to: 'strutset' }),
+    );
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points — now Strut Set.');
   });
 

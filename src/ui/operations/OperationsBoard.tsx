@@ -9,6 +9,7 @@ import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
 import { ShorePointCard } from './ShorePointCard';
+import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
 
@@ -58,6 +59,41 @@ function StatusSummaryBar({ byStatus }: { byStatus: Record<ShorePointStatus, Sho
   );
 }
 
+// ---- Lane render grouping (S12 §2) ------------------------------------------
+// Within a lane, collapse 2+ same-groupId points (one PHYSICAL multi-strut
+// shore — a 3-Post = 3 points, KB-7) into a single rolodex stack; everything
+// else stays a plain card. A singleton (no groupId, OR the lone member of its
+// group present in THIS lane) renders as today. First-appearance order is
+// preserved: the group renders where its earliest member sits.
+type LaneItem =
+  | { kind: 'single'; sp: ShorePoint }
+  | { kind: 'group'; groupId: string; members: ShorePoint[] };
+
+function groupLanePoints(points: ShorePoint[]): LaneItem[] {
+  const byGroup = new Map<string, ShorePoint[]>();
+  for (const sp of points) {
+    if (!sp.groupId) continue;
+    const arr = byGroup.get(sp.groupId);
+    if (arr) arr.push(sp);
+    else byGroup.set(sp.groupId, [sp]);
+  }
+  const items: LaneItem[] = [];
+  const emitted = new Set<string>();
+  for (const sp of points) {
+    const mates = sp.groupId ? byGroup.get(sp.groupId) : undefined;
+    if (mates && mates.length >= 2) {
+      if (emitted.has(sp.groupId!)) continue; // group already rendered at its first member
+      emitted.add(sp.groupId!);
+      // Sort members by groupIndex (fall back to lane order) for a stable pile.
+      const members = [...mates].sort((a, b) => (a.groupIndex ?? 0) - (b.groupIndex ?? 0));
+      items.push({ kind: 'group', groupId: sp.groupId!, members });
+    } else {
+      items.push({ kind: 'single', sp });
+    }
+  }
+  return items;
+}
+
 // ---- Lane -------------------------------------------------------------------
 interface LaneProps {
   status: ShorePointStatus;
@@ -71,6 +107,8 @@ interface LaneProps {
   onStepBack: (sp: ShorePoint) => void;
   /** Group gate (#221 OQ2): set while a grouped In Process point has mates still Pending. */
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
+  /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
+  activeStackId: string | null;
 }
 
 function Lane({
@@ -84,7 +122,9 @@ function Lane({
   onAdvance,
   onStepBack,
   advanceDisabledReasonFor,
+  activeStackId,
 }: LaneProps) {
+  const items = groupLanePoints(points);
   return (
     <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
       <button
@@ -102,19 +142,37 @@ function Lane({
           {points.length === 0 ? (
             <p className="fs-lane-empty">No shore points</p>
           ) : (
-            points.map((sp) => (
-              <div key={sp.id} role="listitem" data-sp-id={sp.id}>
-                <ShorePointCard
-                  shorePoint={sp}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onAssignEquipment={onAssignEquipment}
-                  onAdvance={onAdvance}
-                  onStepBack={onStepBack}
-                  advanceDisabledReason={advanceDisabledReasonFor(sp)}
-                />
-              </div>
-            ))
+            items.map((item) =>
+              item.kind === 'group' ? (
+                <div key={item.groupId} role="listitem">
+                  <GroupedShorePoint
+                    members={item.members}
+                    initialActiveId={
+                      // If the board's scroll target lands inside this stack, front it.
+                      item.members.some((m) => m.id === activeStackId) ? activeStackId! : undefined
+                    }
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onAssignEquipment={onAssignEquipment}
+                    onAdvance={onAdvance}
+                    onStepBack={onStepBack}
+                    advanceDisabledReasonFor={advanceDisabledReasonFor}
+                  />
+                </div>
+              ) : (
+                <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id}>
+                  <ShorePointCard
+                    shorePoint={item.sp}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onAssignEquipment={onAssignEquipment}
+                    onAdvance={onAdvance}
+                    onStepBack={onStepBack}
+                    advanceDisabledReason={advanceDisabledReasonFor(item.sp)}
+                  />
+                </div>
+              ),
+            )
           )}
         </div>
       )}
@@ -141,8 +199,13 @@ export function OperationsBoard() {
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
 
-  // After a commit lands, bring the first new Pending card into view. Optional-
-  // call guarded — jsdom has no scrollIntoView (the Sheet pointer-capture rule).
+  // After a commit lands, bring the first new card into view. Optional-call
+  // guarded — jsdom has no scrollIntoView (the Sheet pointer-capture rule).
+  // scrollToId doubles as the stack-front hint (passed to Lane as
+  // activeStackId): a GroupedShorePoint reads it in its initial state, so when a
+  // fan-out lands a group in a new lane the stack mounts fronting that member.
+  // The data-sp-id target resolves whether the member is the stack's front
+  // wrapper or one of its tabs — both carry it (GroupedShorePoint).
   useEffect(() => {
     if (!scrollToId) return;
     document.querySelector(`[data-sp-id="${scrollToId}"]`)?.scrollIntoView?.({ block: 'nearest' });
@@ -380,6 +443,7 @@ export function OperationsBoard() {
             onAdvance={handleAdvance}
             onStepBack={handleStepBack}
             advanceDisabledReasonFor={advanceDisabledReasonFor}
+            activeStackId={scrollToId}
           />
         ))}
       </div>

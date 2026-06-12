@@ -839,3 +839,239 @@ button.fs-spc-head {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ==========================================================================
+   GroupedShorePoint — the rolodex stack (S12 §2, handoff
+   components/GroupedShorePoint.jsx). APPEND-ONLY region: nothing above the
+   ".fs-gs" marker is touched. Token dialect translated from the handoff's
+   --st-*-line / --font-ui / --radius vocabulary to the live slice tokens:
+     --st-<state>-line → var(--sp-solid) via an is-${status} class on the element
+     --font-ui         → var(--font-sans)        --radius      → var(--radius-card)
+     --radius-pill     → 999px                    --border      → var(--surface-stroke)
+     --border-strong   → color-mix 25% text→stroke (the slice's stronger-stroke step)
+     --card            → var(--surface-card)      --shadow      → none (stroke-based
+                         elevation, mirrors .fs-card)            --press-opacity → 0.6
+     --caption         → var(--type-caption)      --tracking-label → .02em
+     --ease            → var(--ease-micro)
+   ========================================================================== */
+.fs-gs {
+  /* A local stronger-stroke so the open-list border-left + tab hover read
+     above the hairline without minting a global token. */
+  --fs-gs-stroke-strong: color-mix(in srgb, var(--text-primary) 25%, var(--surface-stroke));
+  font-family: var(--font-sans);
+}
+
+/* ---- Collapsed: the pile ------------------------------------------------- */
+.fs-gs-wrap {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Fallen members — 130px cards, only TAB_W (30px) visible per the inline `left`.
+   Left-radius only; status stripe via ::before reading the is-${status} hue. */
+.fs-gs-tab {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 130px;
+  margin: 0;
+  padding: 0;
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--motion-micro) var(--ease-micro);
+}
+.fs-gs-tab::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--sp-solid); /* the saturated status hue (sunlight-safe) */
+}
+.fs-gs-tab:hover {
+  border-color: var(--fs-gs-stroke-strong);
+}
+
+/* The vertical member label inside a tab (writing-mode flip + 180° rotate puts
+   "Post 2" reading bottom-to-top along the visible sliver). */
+.fs-gs-tablabel {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  transition: color var(--motion-micro) var(--ease-micro);
+}
+.fs-gs-tab:hover .fs-gs-tablabel {
+  color: var(--text-primary);
+}
+
+/* The front card sits above every tab; the inline marginLeft clears the pile. */
+.fs-gs-front {
+  position: relative;
+  z-index: 4;
+}
+
+/* Roll-in on rotate — direction set by .fs-gs-roll-r / -l, re-triggered via the
+   React key bump. Reduced-motion drops the animation (the card still swaps). */
+.fs-gs-roll-r {
+  animation: fsGsRollR 220ms cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+.fs-gs-roll-l {
+  animation: fsGsRollL 220ms cubic-bezier(0.2, 0, 0.2, 1) both;
+}
+@keyframes fsGsRollR {
+  from { transform: translateX(26px); opacity: 0.25; }
+  to   { transform: none; opacity: 1; }
+}
+@keyframes fsGsRollL {
+  from { transform: translateX(-26px); opacity: 0.25; }
+  to   { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-gs-roll-r,
+  .fs-gs-roll-l { animation: none; }
+}
+
+/* ---- Pager dots + the quiet expand control ------------------------------- */
+.fs-gs-pager {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  padding: 0 2px;
+}
+.fs-gs-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  justify-content: center;
+}
+.fs-gs-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sp-solid); /* per-member status hue via is-${status} */
+  opacity: 0.45;
+  flex-shrink: 0;
+  transition: all 160ms var(--ease-micro);
+}
+.fs-gs-dot.is-on {
+  width: 22px;
+  border-radius: 4px;
+  opacity: 1;
+}
+
+/* Quiet chevron-down expand button — the a11y-canonical control beside the dots
+   (the dead-space card tap is the pointer convenience). 40px hit area. */
+.fs-gs-expand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: -8px 0; /* keep the 40px target without growing the pager row height */
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion-micro) var(--ease-micro);
+}
+.fs-gs-expand:hover {
+  color: var(--text-primary);
+}
+.fs-gs-expand:active {
+  opacity: 0.6;
+}
+.fs-gs-expand svg {
+  width: 16px;
+  height: 16px;
+  transform: rotate(180deg); /* chevron-up glyph → points down for "expand" */
+}
+
+/* ---- Expanded: the indented member list --------------------------------- */
+.fs-gs-open {
+  border-left: 2px solid var(--fs-gs-stroke-strong);
+  padding-left: 12px;
+  margin-left: 2px;
+}
+.fs-gs-openhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.fs-gs-opentitle {
+  font: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Staggered member entrance — 45ms/card, reduced-motion safe. */
+.fs-gs-member {
+  animation: fsGsIn 240ms cubic-bezier(0.2, 0, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.fs-gs-member + .fs-gs-member {
+  margin-top: var(--space-3);
+}
+@keyframes fsGsIn {
+  from { transform: translateY(-10px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fs-gs-member { animation: none; }
+}
+
+/* The "Stack" collapse pill — outlined, chevron-up, 40px tall. */
+.fs-gs-colbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--surface-stroke);
+  border-radius: 999px;
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font: var(--type-caption);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--motion-micro) var(--ease-micro),
+    border-color var(--motion-micro) var(--ease-micro);
+}
+.fs-gs-colbtn:hover {
+  color: var(--text-primary);
+  border-color: var(--fs-gs-stroke-strong);
+}
+.fs-gs-colbtn:active {
+  opacity: 0.6;
+}
+.fs-gs-colbtn svg {
+  width: 13px;
+  height: 13px;
+}

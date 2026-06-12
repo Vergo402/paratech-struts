@@ -22,7 +22,8 @@ import {
   VisualGridPicker,
 } from '@ui/picker';
 import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
-import { RecommendationCard, ShorePointCard, StartOperationModal } from '@ui/operations';
+import { GroupedShorePoint, RecommendationCard, ShorePointCard, StartOperationModal } from '@ui/operations';
+import type { ShorePoint } from '@core/schema';
 import { useTheme } from '../theme';
 
 // ---- RecommendationCard demos (S6 — #221) — driven by the REAL engine so the
@@ -55,6 +56,48 @@ const REC_STANDARD = findStrutCombinations(56, 0, 2, REC_INVENTORY, null, {
 const REC_UNRATED = findStrutCombinations(200, 0, 2, null, null, null)[0];
 // 180″ at 4:1 caps at 4,500 lb — a 60,000 lb load needs >4 struts: the NEW-3 sentinel (#40).
 const REC_OVER_CAPACITY = findStrutCombinations(180, 60000, 2, null, null, null)[0];
+// Gold + extension — 130″ opening, the first combo that needs an extension (LS
+// 610 + 24″ in the catalog), so the extension block renders alongside the footer.
+const REC_GOLD_EXT = findStrutCombinations(130, 5000, 2, null, ['LongShore'], null).find(
+  (c) => c.extensions.length > 0,
+);
+// LockStroke — forced via the system filter (every lk-* is physically grey but
+// earns its own cyan word + .fs-rec--lockstroke stroke, S12 §3.1/§4). 80″ on the
+// LK 55-89 = a clean rating, capacity footer visible.
+const REC_LOCKSTROKE = findStrutCombinations(80, 4000, 2, null, ['LockStroke'], null)[0];
+
+// ---- ShorePointCard / GroupedShorePoint fixtures (S12 §1–2) — props-only, no
+// engine: the cards are presentational, so the gallery hand-builds the SPs.
+const DEPLOYED = { model: 'LS 304', source: 'Engine 7', inventoryId: 'demo-inv' };
+function spFixture(over: Partial<ShorePoint> = {}): ShorePoint {
+  return {
+    id: `gx-${Math.random().toString(36).slice(2, 8)}`,
+    opId: 'demo',
+    division: '2',
+    area: 'C side',
+    shoreType: 't-shore',
+    measurementEighths: 524, // 65 1/2″
+    deductions: NO_DEDUCTIONS,
+    status: 'pending',
+    ...over,
+  };
+}
+// One physical multi-strut shore = N points sharing a groupId (KB-7). Mixed
+// statuses so the tabs/dots show different status hues.
+const DOUBLE_T_MEMBERS: ShorePoint[] = [
+  spFixture({ id: 'dt-1', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 1, groupTotal: 2, status: 'cutting', deductions: { headerWood: '6x6', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
+  spFixture({ id: 'dt-2', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 2, groupTotal: 2, status: 'strutset', deployedStrut: DEPLOYED }),
+];
+const THREE_POST_MEMBERS: ShorePoint[] = [
+  spFixture({ id: 'tp-1', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 1, groupTotal: 3, status: 'secured', deployedStrut: DEPLOYED }),
+  spFixture({ id: 'tp-2', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 2, groupTotal: 3, status: 'runner', deployedStrut: DEPLOYED }),
+  spFixture({ id: 'tp-3', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 3, groupTotal: 3, status: 'process', deployedStrut: DEPLOYED }),
+];
+const THREE_POST_OPEN: ShorePoint[] = [
+  spFixture({ id: 'op-1', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 1, groupTotal: 3, status: 'process', deployedStrut: DEPLOYED }),
+  spFixture({ id: 'op-2', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 2, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
+  spFixture({ id: 'op-3', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 3, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
+];
 
 /**
  * /gallery — DEV SURFACE, not a product screen. Every S3 primitive, picker,
@@ -504,6 +547,94 @@ export function GalleryScreen() {
             source="Engine 1"
             onDeploy={() => setCommits((c) => c + 1)}
           />
+        )}
+        {REC_OVER_CAPACITY && (
+          <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />
+        )}
+      </Section>
+
+      {/* ---- S12 — Card treatments (#316): the restyled cards across every
+          lifecycle state, the rolodex stack, and the LockStroke rec. ---- */}
+      <Section title="S12 — Card treatments (#316): ShorePointCard lifecycle">
+        {/* Pending — plain (no reason), then both waiting-callout reasons. */}
+        <ShorePointCard shorePoint={spFixture({ label: 'A-1', area: 'A side' })} />
+        <ShorePointCard shorePoint={spFixture({ label: 'A-2', pendingReason: 'no-inventory' })} />
+        <ShorePointCard shorePoint={spFixture({ label: 'A-3', pendingReason: 'no-match' })} />
+        {/* In Process — the advance + step-back slide stack. */}
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'B-1', status: 'process', deployedStrut: DEPLOYED })}
+          onAdvance={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
+        {/* Strut Set — step-back slide only (advance is workflow #222). */}
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'B-2', status: 'strutset', deployedStrut: DEPLOYED })}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
+        {/* Cutting — the promoted (28px) value shelf reading the cut length. */}
+        <ShorePointCard
+          shorePoint={spFixture({
+            label: 'B-3',
+            status: 'cutting',
+            deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
+            deployedStrut: DEPLOYED,
+          })}
+        />
+        {/* Runner · Secured · Returned. */}
+        <ShorePointCard shorePoint={spFixture({ label: 'B-4', status: 'runner', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ label: 'B-5', status: 'secured', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ label: 'B-6', status: 'returned', deployedStrut: DEPLOYED })} />
+        {/* Hazard pill + removed slash (presentational props, #222 surfaces). */}
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'C-1', status: 'process', deployedStrut: DEPLOYED })}
+          hazard
+          onAdvance={() => {}}
+          onStepBack={() => {}}
+        />
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'C-2', status: 'cutting', deployedStrut: DEPLOYED })}
+          removed
+        />
+        {/* Deployed card showing the apparatus caption line under location. */}
+        <ShorePointCard
+          shorePoint={spFixture({ label: 'C-3', area: 'Stairwell B', status: 'secured', deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' } })}
+        />
+      </Section>
+
+      <Section title="S12 — GroupedShorePoint: Double-T · 3-Post · expanded">
+        {/* Collapsed rolodex — tap tabs to rotate, tap the card body (or the
+            chevron) to expand. Mixed member statuses tint the tabs + dots. */}
+        <GroupedShorePoint
+          members={DOUBLE_T_MEMBERS}
+          onAdvance={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
+        <GroupedShorePoint
+          members={THREE_POST_MEMBERS}
+          onAdvance={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
+        {/* Opens expanded — the staggered member list, each a full card. */}
+        <GroupedShorePoint
+          members={THREE_POST_OPEN}
+          defaultExpanded
+          onAdvance={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
+      </Section>
+
+      <Section title="S12 — RecommendationCard: gold · gold+ext · LockStroke · gated">
+        {REC_STANDARD && (
+          <RecommendationCard combo={REC_STANDARD} deductions={REC_DEDUCTIONS} source="Rescue 2" onDeploy={() => setCommits((c) => c + 1)} />
+        )}
+        {REC_GOLD_EXT && (
+          <RecommendationCard combo={REC_GOLD_EXT} deductions={NO_DEDUCTIONS} source="Engine 14" onDeploy={() => setCommits((c) => c + 1)} />
+        )}
+        {REC_LOCKSTROKE && (
+          <RecommendationCard combo={REC_LOCKSTROKE} deductions={NO_DEDUCTIONS} source="Squad 3" onDeploy={() => setCommits((c) => c + 1)} />
+        )}
+        {REC_UNRATED && (
+          <RecommendationCard combo={REC_UNRATED} deductions={NO_DEDUCTIONS} source="Engine 1" onDeploy={() => setCommits((c) => c + 1)} />
         )}
         {REC_OVER_CAPACITY && (
           <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />

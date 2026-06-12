@@ -3,6 +3,7 @@ export { OperationsBoard } from './OperationsBoard';
 export { StartOperationModal, type StartOperationModalProps } from './StartOperationModal';
 export { AddShorePointModal, type AddShorePointModalProps } from './AddShorePointModal';
 export { ShorePointCard, SHORE_TYPE_LABELS, type ShorePointCardProps } from './ShorePointCard';
+export { GroupedShorePoint, type GroupedShorePointProps } from './GroupedShorePoint';
 export { DeleteShorePointModal, type DeleteShorePointModalProps } from './DeleteShorePointModal';
 export { DivisionPicker, type DivisionPickerProps } from './DivisionPicker';
 export { RecommendationCard, comboModel, type RecommendationCardProps } from './RecommendationCard';
