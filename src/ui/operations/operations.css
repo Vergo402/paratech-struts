@@ -360,11 +360,13 @@ button.fs-spc-head {
 .fs-spc-wait-t {
   font: var(--type-body-lg);
   font-weight: 600;
-  color: var(--text-primary);
+  /* --sp-text, not --text-primary: sunlight's callout bg is the SOLID status
+     banner — black text there is 2:1 (R2 review B-1); the status ink is white. */
+  color: var(--sp-text);
 }
 .fs-spc-wait-d {
   font: var(--type-body);
-  color: var(--text-secondary);
+  color: var(--sp-text); /* same banner-ink rule as the title (R2 B-1) */
   margin-top: 2px;
 }
 
@@ -715,7 +717,7 @@ button.fs-spc-head {
 .fs-rec-cap-val {
   font: var(--type-mono);
   font-family: var(--font-mono); /* re-set: the font shorthand above resets family */
-  color: var(--text-tertiary);
+  color: var(--text-secondary); /* a load rating is safety-relevant — AA at 13px (R2 S-6) */
   font-variant-numeric: tabular-nums;
 }
 /* Broadcast renders no fills — the shelf reads from its top border alone. */
@@ -978,16 +980,21 @@ button.fs-spc-head {
   border-radius: 4px;
   opacity: 1;
 }
+@media (prefers-reduced-motion: reduce) {
+  .fs-gs-dot {
+    transition: none; /* the 160ms literal bypasses the zeroed motion tokens (R2 S-7) */
+  }
+}
 
 /* Quiet chevron-down expand button — the a11y-canonical control beside the dots
-   (the dead-space card tap is the pointer convenience). 40px hit area. */
+   (the dead-space card tap is the pointer convenience). 44pt hit area (R2 S-5). */
 .fs-gs-expand {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin: -8px 0; /* keep the 40px target without growing the pager row height */
+  width: 44px;
+  height: 44px;
+  margin: -10px 0; /* keep the 44pt target without growing the pager row height */
   padding: 0;
   border: none;
   background: none;
@@ -1045,12 +1052,13 @@ button.fs-spc-head {
   .fs-gs-member { animation: none; }
 }
 
-/* The "Stack" collapse pill — outlined, chevron-up, 40px tall. */
+/* The "Stack" collapse pill — outlined, chevron-up, 44pt tall (R2 S-5: it is
+   the ONLY collapse control in the expanded state — no dead-space twin). */
 .fs-gs-colbtn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  height: 40px;
+  height: 44px;
   padding: 0 14px;
   border: 1px solid var(--surface-stroke);
   border-radius: 999px;

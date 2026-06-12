@@ -25,9 +25,9 @@ Theme lives in **Settings** (System / Light / Dark / Sunlight) if you want to ch
 - Operations tab → **Start Operation**. Name it anything. Notice you can't submit without a name — the button tells you why.
 - **+ Add Shore Point** → leave Division 1 → measurement **2′ 6″** (tap + on feet twice, + on inches six times — and try the eighths strip while you're in there) → **Add Shore Point**.
 - The card lands in Pending. Tap **Assign Equipment**.
-- *What to judge:* the recommendation cards. Gold bar = LongShore, model + adjusted range up top, the **deductions ledger on every card** (each line says "not selected" in red until you pick wood/plates — nothing is hidden), the **Effective** number big at the bottom, "Equipment from:" naming the rig. Load capacity is deliberately *not* on the card face. Every card carries the "planning aid" line.
+- *What to judge:* the recommendation cards (S12 anatomy). Centered identity — the system word in its color ("**Gold** · LS 203", LockStroke in cyan) with a **Fits / Unrated / Over capacity** badge top-right, the **deductions ledger on every card** (each line says "not selected" in red until you pick wood/plates — nothing is hidden), the **Required strut length** number big at the bottom, the rig named in the header. A quiet **"Rated capacity at …"** footer sits below Deploy (suppressed on gated cards). Every card carries the "planning aid" line.
 - Tap **Deploy** on the LS 203. The sheet closes, the card moves to **In Process** and now permanently shows **which strut from which rig**.
-- Move it forward: use the **slide** ("Slide to set Strut Set") or the plain **Advance to Strut Set** button below it — the button is the same commit, built for gloves and screen readers.
+- Move it forward: drag the **slide** ("Slide to set Strut Set") past its commit point — the slide is the only commit path (ADR-026; the S8 ruling removed the button twins). A press anywhere on the channel starts the drag.
 - At **Strut Set** there's deliberately no "advance to Cutting" — the cutting workflow is the next build phase. Step-back is there.
 
 ### 2 · Grouped shore points
@@ -79,7 +79,7 @@ Things you'll notice that are **deliberately not built yet**. The slice proves t
 8. **Plate/connector pickers show letter swatches, not photos** — real thumbnails come with the Inventory work.
 9. **Power Select** (the screen-reader fallback for pickers) is a placeholder.
 10. **The deduction ledger in Add Shore Point is always expanded** rather than collapsed-by-default (Principle 7 polish, later).
-11. **Sunlight theme: the card status stripe** uses a placeholder color mapping (cosmetic).
+11. ~~**Sunlight theme: the card status stripe** uses a placeholder color mapping (cosmetic).~~ **RESOLVED 2026-06-11 (S12):** `--sp-solid` minted on the `.is-{status}` hooks with the sunlight remap to the solid banner fill — the stripe (and value shelf, waiting callout, grouped-stack tabs/dots) now read the correct status hue on sunlight's white card. See [`color.md`](../07-design-system/color.md) §`--sp-solid` + [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md).
 12. **The full-screen picker behaves as an overlay, not a browser "page"** — back-button behavior comes when something actually uses an 8+ item list.
 13. **Strut Set can't advance to Cutting** — cutting/runner/secured/returned are the next workflows (#222–224, Phase I).
 14. **Cloud sync is off by design** — everything is local to this device; Firebase + multi-device is its own later session.

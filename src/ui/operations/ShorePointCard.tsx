@@ -25,7 +25,8 @@ const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
 
 // The lifecycle value shelf (handoff §1.2). Label + which length the number
 // reads per status. "Cut length" = effective (raw − deductions, floored to ⅛″
-// by the engine). "Set length" = the as-built opening (measurementEighths).
+// by the engine). "Set length" = the length the strut was SET to — the same
+// effective value (S12 SME review SF-1: the raw opening mislabels the setting).
 // "Required" = the raw opening pre-cut.
 const VALUE_LABEL: Record<ShorePointStatus, string> = {
   pending: 'Required',
@@ -116,14 +117,15 @@ export function ShorePointCard({
     ...(sp.area ? [sp.area] : []),
   ].join(' · ');
 
-  // The shelf number: effective (cut) length once cutting begins, else the raw
-  // opening. effectiveLengthFrom returns INCHES already floored to ⅛″ (ADR-012,
-  // reducer.ts:43) — × 8 lands on an exact eighth; round() only defends float
-  // noise. No double-floor.
+  // The shelf number: the raw opening pre-cut ("Required"), the effective
+  // length from cutting onward ("Cut length" / "Set length" — what the saw cuts
+  // and what the strut is set to). effectiveLengthFrom returns INCHES already
+  // floored to ⅛″ (ADR-012, reducer.ts:43) — × 8 lands on an exact eighth;
+  // round() only defends float noise. No double-floor.
   const valueEighths =
-    VALUE_LABEL[sp.status] === 'Cut length'
-      ? Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8)
-      : sp.measurementEighths;
+    VALUE_LABEL[sp.status] === 'Required'
+      ? sp.measurementEighths
+      : Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
 
   const headContent = (
     <>

@@ -5,7 +5,10 @@ import { commitHaptic } from './haptics';
  * Slider — slide-to-commit (slider.md / ADR-010). Commits ONE discrete
  * lifecycle step, never a value (FieldShore ships no value-range slider).
  * The gesture is deliberate by construction: a 1:1 drag past the commit
- * threshold, resistant to ghost taps on a wet screen. Advance slides
+ * threshold, resistant to ghost taps on a wet screen. The whole TRACK is the
+ * drag surface (S12 field review — gloved fingers miss a 36–44px knob); drag
+ * distance is measured from the press point, so a far-end tap still moves
+ * nothing and the threshold defense holds. Advance slides
  * rightward; step-back mirrors leftward and reads as secondary. Always
  * reversible from the card — reversal is a normal slide, not a special
  * animation. The slide gesture is the ONLY commit path (ADR-026, the Phase H
@@ -52,7 +55,7 @@ export function Slider({
   // past the offset is half each (22 / 18). (S12 handoff slide geometry.)
   const fillNudge = direction === 'advance' ? 22 : 18;
 
-  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled) return;
     const track = trackRef.current?.getBoundingClientRect();
     const thumb = thumbRef.current?.getBoundingClientRect();
@@ -61,12 +64,12 @@ export function Slider({
     setDragging(true);
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
-  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!drag.current || e.pointerId !== drag.current.pointerId) return;
     const raw = (e.clientX - drag.current.startX) * sign;
     setOffset(Math.min(Math.max(0, raw), drag.current.travelPx)); // 1:1, clamped
   };
-  const onPointerEnd = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onPointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!drag.current || e.pointerId !== drag.current.pointerId) return;
     const { travelPx } = drag.current;
     drag.current = null;
@@ -81,7 +84,16 @@ export function Slider({
 
   return (
     <div className={`fs-slide fs-slide--${direction}${disabled ? ' fs-slide--disabled' : ''}`}>
-      <div ref={trackRef} className="fs-slide-track">
+      {/* Pointer handlers live on the TRACK: a press anywhere in the channel
+          starts the drag (thumb presses bubble here too). */}
+      <div
+        ref={trackRef}
+        className="fs-slide-track"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
+      >
         <span
           className="fs-slide-fill"
           style={{
@@ -98,10 +110,6 @@ export function Slider({
           aria-hidden="true"
           tabIndex={-1}
           disabled={disabled}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
         >
           {direction === 'advance' ? '›' : '‹'}
         </button>

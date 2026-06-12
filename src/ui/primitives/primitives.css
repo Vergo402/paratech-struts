@@ -581,16 +581,23 @@ p.fs-gate--disclaimer {
   padding: 4px; /* the knob inset from the track edge */
   border-radius: 999px; /* pill: radius = height ÷ 2, not a --radius-* member */
   overflow: hidden;
+  touch-action: none; /* the whole track is the drag surface (R2 S-3) */
 }
-/* advance — primary, accent-tinted channel */
+/* advance — primary, accent-tinted channel. 56pt operational floor
+   (spacing-grid.md; R2 S-1) — the 44px knob centers in the taller channel. */
 .fs-slide--advance .fs-slide-track {
-  min-height: 52px;
+  min-height: 56px;
   background: color-mix(in srgb, var(--accent) 16%, var(--surface-card));
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
 }
-/* step-back — secondary, plain card surface, mirrored layout */
+/* Sunlight escalates the primary commit target to 60pt (spacing-grid.md). */
+[data-theme='sunlight'] .fs-slide--advance .fs-slide-track {
+  min-height: 60px;
+}
+/* step-back — secondary, plain card surface, mirrored layout. 48px: above the
+   44pt absolute floor — reversal is a safety affordance, not a tertiary tap. */
 .fs-slide--stepback .fs-slide-track {
-  min-height: 44px;
+  min-height: 48px;
   flex-direction: row-reverse;
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);

@@ -55,7 +55,9 @@ The shore-point object moves through the seven v4 states (`pending → process �
 
 ### Deployed strut — carried cradle to grave
 
-Once a strut is deployed, the card carries the **deployed-strut identity** through every state until equipment is returned: the **model** (mono — e.g. `AT 37-58`, or `LS 203 + 12"` with extensions) and the **apparatus it came from** (`from Rescue 2`, on its own sub-line beneath the model). This is the operational thread — at any point the team can see *what strut is in this hole and where it came from*. It appears from **In Process through Strut Equipment Returned**; **pending** shows no strut (nothing deployed yet), and the off-queue red-slash state suppresses it. External / mutual-aid equipment shows the source in the **runner/external hue** ("External · Dept 14") so it's flagged for return to the right agency. (Faithful to v3, which renders the model + `Equipment from: <apparatus>` on every deployed card.)
+Once a strut is deployed, the card carries the **deployed-strut identity** through every state until equipment is returned: the **model** (mono — e.g. `AT 37-58`, or `LS 203 + 12"` with extensions) and the **apparatus it came from**. This is the operational thread — at any point the team can see *what strut is in this hole and where it came from*. It appears from **In Process through Strut Equipment Returned**; **pending** shows no strut (nothing deployed yet), and the off-queue red-slash state suppresses it. (Faithful to v3, which renders the model + `Equipment from: <apparatus>` on every deployed card.)
+
+**The apparatus is a caption under the location** (S12), not a sub-line under the model: the source (`deployedStrut.source` — "from Rescue 2", external / mutual-aid as "External · Dept 14") sits on its own tertiary line in the identity column beneath the division/building/area, and the strut block below carries **the model only** — the duplicate "from X" sub-line is gone. External / mutual-aid equipment is still flagged for return to the right agency by that caption.
 
 ### The left-edge status stripe — and its hidden tap zone
 
@@ -65,7 +67,7 @@ The card's left edge is a **4pt status-color stripe** (the `--status-*` color fo
 
 The stripe color is **redundant**, never the sole status signal (Principle 9): the card also shows a status **badge with its label as text** (see [`badge.md`](badge.md)) and the status name.
 
-**Stripe hue across themes.** The stripe renders the status's *saturated identifying hue* in every theme — the status **text** color in light / dark / broadcast, and the **solid fill** in the sunlight theme (where the status text is white, for the banner, so the text color can't carry the stripe). The status identity is the same in all four; only the source token differs. (Captured in the styleguide as a single `--sp-solid` variable.)
+**Stripe hue across themes.** The stripe renders the status's *saturated identifying hue* in every theme — the status **text** color in light / dark / broadcast, and the **solid fill** in the sunlight theme (where the status text is white, for the banner, so the text color can't carry the stripe). The status identity is the same in all four; only the source token differs. This is now a real token, **`--sp-solid`** (S12), minted on the `.is-{status}` hooks beside `--sp-text` / `--sp-bg`: in light / dark / broadcast it resolves to the status text hue, and the sunlight theme remaps it to the solid banner *fill* hue so the stripe stays the status color on the all-white card. The stripe `::before` reads `--sp-solid`, which is why the sunlight stripe is no longer a placeholder (it closes the gate-script's sunlight-stripe gap — see [`color.md`](../07-design-system/color.md) §`--sp-solid`). The same hook drives the value shelf, the waiting callout, the grouped-stack tabs/dots, and the tablet status-summary dot — every place a status hue must survive sunlight's white card.
 
 ### Slide-to-advance — the status commit model (governed by ADR-010)
 
@@ -84,50 +86,83 @@ Status advances by a **deliberate slide gesture, not a tap.** This is deliberate
 
 When a `ShorePointCard` **regresses off an active work queue** — e.g., its status steps back out of `cutting` while it is shown in the Cutting Station list — the card **does not silently vanish** (Principle 10: visible state, not a silent change). It shows a passive **red diagonal slash across the whole card with "Removed from cut list" stated over the slash.** The operator sees *why* the card left the queue, then dismisses it from that view. Silent removal is forbidden — a card disappearing reads as data loss under stress.
 
-The slash runs **corner-to-corner — upper-right to lower-left — contained within the card** (it does not extend past the card edges), at a weight heavy enough to read as a deliberate strike (≈4px, `--danger`). The card body dims beneath it; the "Removed from cut list" label sits centered over the slash in `--danger` on a small chip so it stays legible across the line.
+The slash runs **corner-to-corner — upper-right to lower-left — contained within the card** (it does not extend past the card edges via a non-scaling stroke), at a weight heavy enough to read as a deliberate strike (≈5px, `--danger`). The card body dims to ~45% beneath it; the **"Removed from cut list"** label sits centered over the slash in `--danger` on a small chip so it stays legible across the line, and the pending action area + slide rows drop. **In sunlight the slash and chip flip to the solid red** (`--danger-bg`): there `--danger-text` is white and would vanish on the white card, so the stroke and chip ink take the saturated fill instead. **In v4.0 the `removed` prop is presentational only** (S12) — no slice schema state drives it yet; the gallery and the future cut-list workflow ([#222](https://github.com/Vergo402/paratech-struts/issues/222)) set it.
+
+### The meta row — type, group badge, status
+
+The header's right-hand meta column carries, in order: the **shore-type label** (T-Shore / Double-T / 3-Post), the **group badge** when the point is one strut of a grouped physical shore, the **status badge**, and the hazard pill (below). The **group badge is a mono tabular-figure pill** (S12) — `"1 / 3"` in `--font-mono` with `tabular-nums`, a quiet `--surface-elevated` fill and hairline border, no status-colored fill — so the member index reads as a precise counter, not a second status chip. (See [`badge.md`](badge.md) for the badge variants; the group badge is the `label` variant, restyled mono in the card's meta scope.)
 
 ### Hazard badge
 
-When the shore point's area has **unmitigated hazards** (the hazard log, synthesis §1.10), the card shows a hazard badge. The Safety Officer surfaces hazards; the app **does not** gate advancement on them (no `safety-hold` status — safety holds are a radio/face-to-face action, synthesis Q2). The badge is visible information, not a block.
+When the shore point's area has **unmitigated hazards** (the hazard log, synthesis §1.10), the card shows a **"⚠ Hazard" pill** — the danger pair (`--danger-text` on `--danger-bg`) at badge emphasis, after the status badge. The Safety Officer surfaces hazards; the app **does not** gate advancement on them (no `safety-hold` status — safety holds are a radio/face-to-face action, synthesis Q2). The badge is visible information, not a block. **In v4.0 the `hazard` prop is presentational only** (S12) — no slice schema state drives it yet; the gallery and the future hazard-log workflow set it. (Sunlight resolves the danger pair to white-on-solid-red, already the correct banner read.)
+
+### The lifecycle value shelf (Treatment C — the KB-6 answer)
+
+The card's one big number is the **measurement value shelf** — a full-bleed, status-tinted row that runs corner to corner across the card (its negative margins exactly cancel the card padding, then it re-pads its own content back in). It is the resolution of the KB-6 "cards read bland" kick-back: a B-class treatment would have tinted the whole card surface and needed an ADR-011 amendment; the shelf is the **C-class middle** — the status hue tints a *region*, not the surface, so the one-accent rule holds while the number finally pops at arm's length (recorded in [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)).
+
+**The shelf changes which length it reads, and its label, per phase** — the number is always the one length that matters at that moment:
+
+| Status | Shelf label | The number is… |
+|---|---|---|
+| `pending` / `process` / `strutset` | **Required** | the raw opening (`measurementEighths`) — what the strut must span |
+| `cutting` / `runner` | **Cut length** | the *effective* length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the number the cutter cuts to |
+| `secured` / `returned` | **Set length** | the length the strut was *set* to — the same effective value (S12 SME review: showing the raw opening here would mislabel the setting) |
+
+The number always renders in **`--sp-solid`** (the saturated status hue, sunlight-safe) in mono tabular figures; the label stays muted. The tint is built from `--sp-solid` via `color-mix`: **13% over the card** in light/dark, **10% on white** in sunlight, **18%** in broadcast; the top/bottom hairlines mix **22%** into the stroke. Color is never alone — the label words the phase and the badge carries the status text.
 
 ### Cut-table emphasis
 
-In the **`cutting` state**, the **cut length is the one number the cutter reads** at the Cutting Station, so the card promotes it: the measurement value renders **larger and bold, in the status hue** (`--sp-solid`), while its label stays muted. It should stand out at a glance without becoming the loudest thing on the screen — emphasis through size + weight + the cutting color, not a fill or a box. (This is the v3 "cut length stands out" behavior, carried forward into the v4 card.) Other lifecycle states keep the measurement at the normal mono body size; the promotion is specific to the cut-table moment.
+In the **`cutting` state** the value shelf is **promoted**: the **cut length is the one number the cutter reads** at the Cutting Station, so the number jumps to **28px / 700** (the larger digit-pair fraction metrics via `.fs-fr-display` — see [`typography.md`](../07-design-system/typography.md)) while the shelf's status tint, label, and `--sp-solid` ink carry over unchanged. It stands out at a glance without becoming a separate box or alarm — emphasis through size + weight on top of the same status-tinted shelf. (This is the v3 "cut length stands out" behavior, now landed as a real promotion, not a deferral.) Every other state keeps the shelf number at the body-lg mono size; the 28px/700 promotion is specific to the cut-table moment.
 
 ### Pending — no strut deployed yet (and its "waiting" reason)
 
 **Pending is the pre-deployment state: the shore point is measured (length + load recorded) but no strut is deployed.** v3 confirms a point only *becomes* pending when a strut can't be deployed at save time. Crucially, pending is **not** advanced by a slide — the action is **Deploy / Assign Equipment**, because reaching In Process *means* a strut was deployed. The card:
 
-- Shows **"⏳ No equipment assigned"** + a **reason line**, then one primary action: **"🔧 Assign Equipment"** (a deploy action, full-width, process-blue) — **not** a slide-to-advance. (Faithful to v3, where the pending card shows an Assign Equipment button, never a status slider.)
-- **"Waiting for inventory" is a *reason*, not a separate state.** v3 stores `pendingReason` — `no-match` (inventory exists but nothing fits the length + load) vs `no-inventory` (no apparatus stock to pull from at all) — and the reason line surfaces it ("No matching strut — nothing fits 84″ at this load" / "Waiting for inventory — no apparatus stock to pull from"). Same card, same Assign action; only the reason differs. (v3 stored the reason but never displayed it; v4 finally shows it.)
+- Shows **"No equipment assigned"** + a **waiting callout**, then one primary action: **"Assign Equipment"** (a deploy action, full-width, process-blue) — **not** a slide-to-advance. (Faithful to v3, where the pending card shows an Assign Equipment button, never a status slider.)
+- **"Waiting for inventory" is a *reason*, not a separate state.** v3 stores `pendingReason` — `no-match` (inventory exists but nothing fits the length + load) vs `no-inventory` (no apparatus stock to pull from at all). When a reason is present, v4 surfaces it as a **waiting callout** (S12): a pending-tinted box (`--sp-bg` ground, `--sp-solid` border) with a clamp/strut glyph, a **bold title** per reason ("No matching strut" / "Waiting for inventory") over the **verbatim reason copy** beneath it ("No matching strut — nothing fits this opening at this load" / "Waiting for inventory — no apparatus stock to pull from"). Same card, same Assign action; only the reason differs, and a pending point with no reason shows no callout. (v3 stored the reason but never displayed it; v4 finally shows it, framed.) The reason is live — it appears and clears as inventory changes (the board computes it, never persists it).
 - Uses the **pending status hue** like any pending point — *not* a separate gold "Waiting" badge/state. An earlier v4 pass split these into two cards (pending vs a gold "Waiting" state); that conflated a reason with a state and was reconciled back to v3's single pending model.
 - Keeps the shore-point identity (name, area, **Required** length + load) so the point is actionable the moment equipment arrives.
 - Clears when a strut is assigned: Assign Equipment deploys and advances the point to **In Process** with the strut attached. (At v5 federal scale a resource request would tie in here — out of v4.0 scope.)
+
+### The grouped rolodex stack (`GroupedShorePoint`)
+
+A grouped physical shore (KB-7: one 3-Post = three points sharing a `groupId`, one card per strut) would clutter a lane with three near-identical cards. The board collapses same-`groupId` members within a lane into one **rolodex stack** (S12) rather than showing them all. The stack is a composition *of* `ShorePointCard`s — it never re-implements card internals; each member is the same interactive card the board renders for a singleton, with that member's own `sp`, group gate, and slides. This section owns the card-side view; the **board-side rule** (which members stack, when a group splits across lanes) lives in [`20-operations.md`](../08-information-architecture/20-operations.md) §Grouped shore points.
+
+**Collapsed — the pile.** The active member's full card sits up front; the others fall **left** as **30px sliver tabs**, each a real `<button>` carrying that member's `--sp-solid` status stripe and a vertical "Post _n_" label reading bottom-to-top along the sliver. Tapping a tab brings that member to the front with a short **220ms cyclic roll** (the old front rotates to the bottom of the pile; direction follows the shorter way round, and `prefers-reduced-motion` drops the animation — the card still swaps). Beneath the front card, **status-tinted pager dots** (one per member, `--sp-solid`, the active one elongated) are `aria-hidden` decoration.
+
+**The "_n_ cards" chip stays banned as the primary affordance.** A grouped stack must not advertise itself as a bare count the operator can't act on. Expand is offered two ways instead: a **dead-space tap** on the front card (a `closest()` guard keeps slide thumbs, the stripe button, and other controls from triggering it — the pointer convenience) and a **quiet chevron-down `<button>` beside the dots** (the keyboard/AT-canonical control, 40px hit area). *(Reality note: the count `· N cards` does appear as a passive **label** in the expanded header title — it is descriptive there, never the collapsed entry point. The KB-7 framing is "_N_ struts of one physical shore"; the in-code label currently reads "cards" — flagged for the copy pass.)*
+
+**Expanded — the indented list.** Expanding swaps the pile for a **2px border-left indented column** of every member's full card (a 45ms-staggered entrance, reduced-motion-safe), headed by the group title and a **"Stack" pill** (chevron-up) that collapses it back. Now every member is reachable and advanceable at once.
+
+**Scroll-into-view / front member.** Every member carries `data-sp-id` on the front wrapper, its tab, and its expanded row, so the board's scroll-target query resolves to the right element whichever form the stack is in. When a commit lands a group in a lane the board scrolls there and **fronts the just-committed member** (the stack mounts with `initialActiveId` set to the scroll target) — the operator lands looking at the piece they just moved, not at member 1.
 
 ---
 
 ## `RecommendationCard` — the result card
 
-The output of Quick Find / shore search, and the card you Deploy from during an operation. **This card is grounded in the actual v3 deploy card** (`renderResults()`), not a simplification — it carries the full, safety-critical anatomy below, top to bottom.
+The output of Quick Find / shore search, and the card you Deploy from during an operation. **This card is grounded in the actual v3 deploy card** (`renderResults()`), not a simplification — it carries the full, safety-critical anatomy below, top to bottom. The S12 restyle gave it a **centered identity header** — the deliberate visual split from the left-aligned `ShorePointCard`, so the two never read as the same object (Principle 12).
 
 ### Card anatomy (top → bottom)
 
-1. **`COLOR — SYSTEM`** — e.g. **"GOLD — LONGSHORE"**, **"GREY — ACMETHREAD"**, **"GREY — LOCKSTROKE"** (uppercase, in the strut color). The color is a real Paratech field-ID attribute — `gold` = LongShore, `grey` = AcmeThread / LockStroke — and it's how the operator physically finds the right strut in the cache.
-2. **Model** — the real model number (e.g. **"AT 37-58"**, **"LS 203"**), `--type-headline-2`/700.
-3. **Range** — the reach range, **large and in the strut color** (e.g. **"37″ – 58″"**). With extensions this is the *adjusted* range (strut + extensions); without, the strut's own collapsed–extended range.
-4. **Extension block** — either **"No extensions needed"** (in the secured **green**, a positive signal) **or** **"Extensions: `12″`"** (chip per extension) followed by **"strut alone 26″ – 36″"**. Extensions are color-matched tubes the operator must also grab.
-5. **Deduction section** — *the most important part* (see below).
-6. **`Equipment from: <apparatus>`** + a primary **Deploy** button (operation mode only; Quick Find omits these).
+1. **Centered identity** — **`<Word> · <model>`**, e.g. **"LongShore · LS 203"**, **"Grey · AT 37-58"**, **"LockStroke · LK 30-2"** — the system word in the **system color** (bold), the product name on the face beside it (`--type-headline-2`). The word is keyed off the strut **system**, not its raw color, so a physically-grey LockStroke strut earns its own **cyan** word (see the LockStroke note below). Centered, with the fit badge floated top-right *outside* the centering flow so it never shoves the identity off-center.
+2. **Connectors line** — the selected top/bottom plate **names** joined " · " (from the SP's deduction selections), directly under the identity; omitted when neither plate is selected.
+3. **Apparatus line** — the source rig, one weight heavier (600) than location, operation-mode only (Quick Find omits it).
+4. **Location** — the optional shore-point identity (division · building · area), operation-mode only.
+5. **Fit badge** (top-right) — **"Fits"** as a process-status pill, or the gated **danger** variant **"Unrated"** / **"Over capacity"** (resolves [99-OQ #40](../99-open-questions.md) — the unmistakable danger tell; see below).
+6. **Extension block** — either **"No extensions needed"** (in the secured **green**, a positive signal) **or** **"Extensions: `12″`"** (chip per extension) followed by **"strut alone 26″ – 36″"**. Extensions are color-matched tubes the operator must also grab. *(The adjusted reach range moved off the card face into this block — it survives on the "strut alone" line; the face leads with identity, not range.)*
+7. **Deduction ledger** — *the most important part* (see below).
+8. A primary **Deploy** button (operation mode only; Quick Find omits it), then a **quiet rated-capacity footer**, then the permanent disclaimer (see Capacity, below). The apparatus source moved up to line 3, so there is no separate `Equipment from:` line.
 
-**The left accent bar IS the strut color** (Principle 9: color named *and* shown). The strut color bar is identity, not lifecycle status.
+**The left accent bar IS the strut color** (Principle 9: color named *and* shown). The strut color bar is identity, not lifecycle status — gold maps to `--accent`, grey to the secondary ink, and **LockStroke to its own cyan token** (`--sys-lockstroke`).
 
-### Deductions — fixed order, "N/S" when unselected
+> **LockStroke is keyed off the strut *system*, not its color.** Every LockStroke model is physically grey, so coloring it grey would make it indistinguishable from AcmeThread on the face. Instead the LockStroke identity word, the left bar, and the fit/LockStroke tells take **cyan** (`--sys-lockstroke`) — the opposite pole from the brand gold and unmistakable from grey on screen. Cyan is a **strut-system identity** color, not a second UI accent (the one-gold-accent rule still binds all chrome — [`color.md`](../07-design-system/color.md) §System colors / [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)).
 
-The deduction section shows the **Opening → Effective** math and the four component slots that produce the total deduction. **The slots ALWAYS display top-down in physical order** (a v4 correction to v3's wood-then-plates grouping):
+### The deduction ledger — fixed order, "N/S" when unselected
+
+The ledger shows the **Raw opening → Required strut length** math and the four component slots that produce the total deduction. **The slots ALWAYS display top-down in physical order** (a v4 correction to v3's wood-then-plates grouping). **There is no "Deductions" section title** (S12) — the signed rows are self-describing, so a heading would be noise:
 
 ```
-Deductions
-Opening                                       56"
+Raw opening                                   56"
   Header                                     −3½"
     4×4
   Top Connector                              −3⅜"     (≈)
@@ -137,18 +172,23 @@ Opening                                       56"
   Footer                                     N/S       (red)
     not selected
   ─────────────────────────────────────────────────
-Effective               ↓ floored to 1/8″    45 5/8"
+Required strut length   ↓ floored to 1/8″    45 5/8"
 ≈ plate heights to nearest 1/8″ — exact 3.4″ used in the math
 ```
 
-Each slot is **label + deduction value on one line** (values align in a right column), with the wood size / plate name on a **sub-line beneath** — so a long plate name never wraps and shoves the value column out of alignment (the v3 mid-column wrap problem).
+Each slot is **label + signed deduction value on one line** (values align in a right column, the value side never wraps), with the wood size / plate name on a **sub-line beneath** — so a long plate name never wraps and shoves the value column out of alignment (the v3 mid-column wrap problem). The deductions read as **signed measurements** — `−3½″`, never "deducts 3.5″".
 
+- **Ledger vocabulary** (S12): the top row is **"Raw opening"** and the total is **"Required strut length"** — the same words the [`DeductionPicker`](../03-primitives/input.md) speaks in Add Shore Point, so the read-only result card and the editable picker name the same quantities identically.
 - **Order is rigid: Header → Top Connector → Bottom Connector → Footer** (top of the assembly to the bottom). Never reorder or alphabetize.
 - **Every slot is always shown.** If a section is unselected, it renders **"N/S"** (not selected) in `--danger` so the gap is obvious at a glance — v3 silently omitted unselected slots; v4 surfaces them (visible state, Principle 7/10). The omission of a footer or a connector is a decision the operator should *see*, not infer.
 - `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″) — exact eighths. `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the sub-line shows the plate name. **Plate deductions display as the nearest-1/8″ fraction** (e.g., `≈3⅜″` for a 3.4″ plate) so the column reads as one consistent fraction set, **but the exact spec (3.4″) is used in the math** — a footnote marks the plate rows approximate ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs *in the math* would accumulate unsafe error).
-- Opening and Effective are emphasized (`--type-mono`); **Effective is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) with a `↓ floored to 1/8″` note beside it: short is taken up by wedge + strut thread, long is unsafe. Fractions render via the digit-pair component (stacked) per [`typography.md`](../07-design-system/typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
-- **Rated capacity is computed and available but is *not* on the card face** (synthesis §3.4 — demoted; it was a vehicle-stabilization aid, not the shoring core). The load tables / conservative-floor engine are unchanged; this is display-prominence only.
-- **Safety disclosures ride the result as the [`warning-gate`](warning-gate.md), never a toast.** An unrated-zone reach (LongShore > 16 ft), an over-capacity load (the qty>4 / 4:1 sentinel), and the standing *"Planning aid, not an engineering certification"* disclaimer render as the **persistent warning gate** on the `RecommendationCard` — inline, and they **never auto-dismiss** (Principle 7; copy in [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) §Warnings). The unrated zone additionally gates **Deploy** behind an explicit acknowledgment.
+- Raw opening and Required strut length are emphasized (`--type-mono`); **Required strut length is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) with a `↓ floored to 1/8″` note beside it: short is taken up by wedge + strut thread, long is unsafe. Fractions render via the digit-pair component (stacked) per [`typography.md`](../07-design-system/typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
+
+### Capacity — the quiet footer, and the safety gates
+
+- **Rated capacity is computed and available but never leads the card** (synthesis §3.4 — demoted; it was a vehicle-stabilization aid, not the shoring core). S12 lands it as a **quiet footer demoted below Deploy**: a full-bleed shelf reading **"Rated capacity at {effective}"** with `floor(combo.capacity)` lb in muted tertiary ink — it sits *under* the Deploy button and *above* the permanent disclaimer (which stays the card's final word). It is **suppressed on a gated card** (unrated or over-capacity) — a gated card has no honest number to print (0 for unrated; the per-strut best is meaningless once load exceeds 4-strut capacity). The load tables / conservative-floor engine are unchanged; this is display-prominence only.
+- **The fit badge is the gated danger tell** (resolves [99-OQ #40](../99-open-questions.md)). On a clean card it's a calm process-status **"Fits"** pill, top-right; on a gated card it swaps to the **danger pair** and reads **"Over capacity"** (which wins over) or **"Unrated"** — an accent and a word, never a full red fill (Principle 3). The whole card's left bar also goes to `--danger` (`is-gated`), so a dangerous option is visually distinct from a deployable one *before* the Deploy tap.
+- **Safety disclosures ride the result as the [`warning-gate`](warning-gate.md), never a toast.** An unrated-zone reach (LongShore > 16 ft), an over-capacity load (the qty>4 / 4:1 sentinel), and the standing *"Planning aid, not an engineering certification"* disclaimer render as the **persistent warning gate** on the `RecommendationCard` — inline, and they **never auto-dismiss** (Principle 7; copy in [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) §Warnings). The unrated zone additionally **gates Deploy behind an explicit acknowledgment**; over-capacity **closes the Deploy path outright** (the button is disabled, no override).
 
 > **Lesson recorded:** the first v4 pass mocked a generic "Required − plate − plate = Effective" ledger and missed the real structure (color/system, range, extension block, the four ordered deduction slots, equipment source, Deploy). Result cards are safety-critical — the v4 card is built from the v3 `renderResults()` anatomy, not from the design essays' abstraction.
 

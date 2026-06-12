@@ -114,6 +114,14 @@ describe('GroupedShorePoint', () => {
     ).toBeInTheDocument();
   });
 
+  it('re-fronts when initialActiveId changes on an already-mounted stack', () => {
+    const { rerender } = render(<GroupedShorePoint members={THREE} initialActiveId="sp-1" />);
+    expect(front().getAttribute('data-sp-id')).toBe('sp-1');
+    // Same lane, no remount — a later commit re-targets the scroll id (R3 fix).
+    rerender(<GroupedShorePoint members={THREE} initialActiveId="sp-3" />);
+    expect(front().getAttribute('data-sp-id')).toBe('sp-3');
+  });
+
   it('per-member advanceDisabledReason is applied to that member only', async () => {
     const user = userEvent.setup();
     const onAdvance = vi.fn();

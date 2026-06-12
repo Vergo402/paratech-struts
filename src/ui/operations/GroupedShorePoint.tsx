@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { ShorePointCard, SHORE_TYPE_LABELS, type ShorePointCardProps } from './ShorePointCard';
 
@@ -75,6 +75,19 @@ export function GroupedShorePoint({
   const [active, setActive] = useState(initialActive);
   const [dir, setDir] = useState<'r' | 'l'>('r');
   const [rollKey, setRollKey] = useState(0);
+
+  // Review fix (R3): re-front must work on an ALREADY-MOUNTED stack too — a
+  // fan-out that keeps the group in its lane changes initialActiveId with no
+  // remount, and the mount-only initializer above would silently keep a mate
+  // fronted. Deps are the id alone, deliberately: reacting to `active` would
+  // yank the front back after a manual tab rotation, and `members` is a fresh
+  // array every board render.
+  useEffect(() => {
+    if (!initialActiveId) return;
+    const i = members.findIndex((m) => m.id === initialActiveId);
+    if (i >= 0 && i !== active) jumpTo(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialActiveId]);
 
   if (n === 0) return null;
 

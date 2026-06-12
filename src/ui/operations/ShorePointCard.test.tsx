@@ -147,7 +147,7 @@ describe('ShorePointCard', () => {
     expect(valueShelfText()).toBe('Cut length4112″');
   });
 
-  it('value shelf: "Set length" reads the as-built opening once secured', () => {
+  it('value shelf: "Set length" reads the set (effective) length once secured', () => {
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -158,8 +158,9 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('Set length')).toBeInTheDocument();
-    // Set length is the opening (388), NOT the deducted cut length (332).
-    expect(valueShelfText()).toBe('Set length4812″');
+    // Set length = what the strut was SET to: the effective 41½″ (388 − 56
+    // eighths of 4x4+4x4 wood), NOT the raw opening 48½″ (SME review SF-1).
+    expect(valueShelfText()).toBe('Set length4112″');
   });
 
   it('waiting callout: title + verbatim copy for both pending reasons', () => {
