@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { ShorePoint, ShoreTypeId } from '@core/schema';
+import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
+import { effectiveLengthFrom } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -14,6 +15,44 @@ const PENDING_REASON_COPY = {
   'no-match': 'No matching strut — nothing fits this opening at this load',
   'no-inventory': 'Waiting for inventory — no apparatus stock to pull from',
 } as const;
+
+// Waiting-callout headline per reason (handoff §1.1). The description below it
+// stays the verbatim PENDING_REASON_COPY string — the title is the new framing.
+const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
+  'no-inventory': 'Waiting for inventory',
+  'no-match': 'No matching strut',
+};
+
+// The lifecycle value shelf (handoff §1.2). Label + which length the number
+// reads per status. "Cut length" = effective (raw − deductions, floored to ⅛″
+// by the engine). "Set length" = the as-built opening (measurementEighths).
+// "Required" = the raw opening pre-cut.
+const VALUE_LABEL: Record<ShorePointStatus, string> = {
+  pending: 'Required',
+  process: 'Required',
+  strutset: 'Required',
+  cutting: 'Cut length',
+  runner: 'Cut length',
+  secured: 'Set length',
+  returned: 'Set length',
+};
+
+// The clamp/strut glyph in the waiting callout (handoff JSX 212–215).
+function WaitIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 22h14M5 2h14M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2" />
+    </svg>
+  );
+}
 
 /**
  * ShorePointCard — the lifecycle card (card.md). Presentational: the board
@@ -43,6 +82,17 @@ export interface ShorePointCardProps {
   onStepBack?: (sp: ShorePoint) => void | Promise<void>;
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
   advanceDisabledReason?: string;
+  /**
+   * Presentational only — no slice schema state yet. The gallery and the future
+   * cut-list workflow (#222) drive these; struck through with a corner-to-corner
+   * slash + "Removed from cut list" chip; slides + the pending action area drop.
+   */
+  removed?: boolean;
+  /**
+   * Presentational only — no slice schema state yet. Surfaces a "⚠ Hazard" pill
+   * after the status badge (the gallery + future hazard-log workflow set it).
+   */
+  hazard?: boolean;
 }
 
 export function ShorePointCard({
@@ -53,9 +103,12 @@ export function ShorePointCard({
   onAdvance,
   onStepBack,
   advanceDisabledReason,
+  removed = false,
+  hazard = false,
 }: ShorePointCardProps) {
   const [expanded, setExpanded] = useState(false);
   const pending = sp.status === 'pending';
+  const promoted = sp.status === 'cutting';
 
   const identity = [
     divisionLabel(sp.division),
@@ -63,28 +116,49 @@ export function ShorePointCard({
     ...(sp.area ? [sp.area] : []),
   ].join(' · ');
 
+  // The shelf number: effective (cut) length once cutting begins, else the raw
+  // opening. effectiveLengthFrom returns INCHES already floored to ⅛″ (ADR-012,
+  // reducer.ts:43) — × 8 lands on an exact eighth; round() only defends float
+  // noise. No double-floor.
+  const valueEighths =
+    VALUE_LABEL[sp.status] === 'Cut length'
+      ? Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8)
+      : sp.measurementEighths;
+
   const headContent = (
     <>
       <span className="fs-spc-identity">
         {sp.label ? <span className="fs-spc-label">{sp.label}</span> : null}
         <span className="fs-spc-where">{identity}</span>
+        {sp.deployedStrut ? (
+          <span className="fs-spc-apparatus">{sp.deployedStrut.source}</span>
+        ) : null}
       </span>
       <span className="fs-spc-meta">
-        <MeasurementValue eighths={sp.measurementEighths} />
         <span className="fs-spc-type">{SHORE_TYPE_LABELS[sp.shoreType]}</span>
         {sp.groupIndex && sp.groupTotal ? (
           <Badge variant="label">{`${sp.groupIndex} / ${sp.groupTotal}`}</Badge>
         ) : null}
         <Badge variant="status" status={sp.status} />
+        {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
       </span>
     </>
   );
 
+  const valueShelf = (
+    <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
+      <span className="fs-spc-value-label">{VALUE_LABEL[sp.status]}</span>
+      <span className={`fs-spc-value-num${promoted ? ' fs-fr-display' : ''}`}>
+        <MeasurementValue eighths={valueEighths} />
+      </span>
+    </div>
+  );
+
   return (
     <Card
-      className={`fs-spc is-${sp.status}`}
+      className={`fs-spc is-${sp.status}${removed ? ' is-removed' : ''}`}
       edge={
-        pending ? (
+        pending && !removed ? (
           <button
             type="button"
             className="fs-spc-stripe"
@@ -96,7 +170,7 @@ export function ShorePointCard({
         )
       }
     >
-      {pending ? (
+      {pending && !removed ? (
         <button
           type="button"
           className="fs-spc-head"
@@ -109,21 +183,29 @@ export function ShorePointCard({
         <div className="fs-spc-head">{headContent}</div>
       )}
 
+      {valueShelf}
+
       {sp.deployedStrut && (
         <div className="fs-spc-strut">
+          {/* Apparatus moved to the header caption line — model only here now. */}
           <span className="fs-spc-strut-model">{sp.deployedStrut.model}</span>
-          <span className="fs-spc-strut-source">from {sp.deployedStrut.source}</span>
         </div>
       )}
 
-      {pending && (
+      {pending && !removed && (
         <div className="fs-spc-pending">
-          <p className="fs-spc-noequip">
-            No equipment assigned
-            {sp.pendingReason && (
-              <span className="fs-spc-reason">{PENDING_REASON_COPY[sp.pendingReason]}</span>
-            )}
-          </p>
+          <p className="fs-spc-noequip">No equipment assigned</p>
+          {sp.pendingReason && (
+            <div className="fs-spc-wait">
+              <span className="fs-spc-wait-ic" aria-hidden="true">
+                <WaitIcon />
+              </span>
+              <div>
+                <div className="fs-spc-wait-t">{PENDING_REASON_TITLE[sp.pendingReason]}</div>
+                <div className="fs-spc-wait-d">{PENDING_REASON_COPY[sp.pendingReason]}</div>
+              </div>
+            </div>
+          )}
           <Button variant="primary" fullWidth onPress={() => onAssignEquipment?.(sp)}>
             Assign Equipment
           </Button>
@@ -140,7 +222,7 @@ export function ShorePointCard({
         </div>
       )}
 
-      {sp.status === 'process' && (
+      {!removed && sp.status === 'process' && (
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Strut Set"
@@ -158,7 +240,7 @@ export function ShorePointCard({
         </div>
       )}
 
-      {sp.status === 'strutset' && (
+      {!removed && sp.status === 'strutset' && (
         <div className="fs-spc-slides">
           {/* Advance → Cutting is workflow #222 (role gates begin there). Step-back
               ships now: always reversible from the card, no confirm — no inventory
@@ -169,6 +251,20 @@ export function ShorePointCard({
             onCommit={() => onStepBack?.(sp)}
           />
         </div>
+      )}
+
+      {removed && (
+        <>
+          <svg
+            className="fs-spc-slash"
+            preserveAspectRatio="none"
+            viewBox="0 0 100 100"
+            aria-hidden="true"
+          >
+            <line x1="100" y1="0" x2="0" y2="100" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <span className="fs-spc-removed">Removed from cut list</span>
+        </>
       )}
     </Card>
   );

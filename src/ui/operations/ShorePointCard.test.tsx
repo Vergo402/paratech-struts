@@ -19,6 +19,13 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
+// The value shelf renders the measurement as fragmented nodes (stacked
+// fraction); textContent concatenates with no separators, e.g. "Required4812″"
+// for "Required" + 48 1/2″. Hand-verify the digits against the fixture.
+function valueShelfText(): string {
+  return document.querySelector('.fs-spc-value')?.textContent ?? '';
+}
+
 describe('ShorePointCard', () => {
   it('renders identity, measurement, type, and status badge', () => {
     render(<ShorePointCard shorePoint={makeSP({ area: 'NW corner', label: 'B-2' })} />);
@@ -46,10 +53,17 @@ describe('ShorePointCard', () => {
   });
 
   it('pending: surfaces both pendingReason copies when set', () => {
+    // The copy now rides the waiting callout (S12 §1.1) — both the title and the
+    // verbatim PENDING_REASON_COPY description share a substring, so assert the
+    // full unique string to disambiguate (the title split is covered below).
     const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
-    expect(screen.getByText(/No matching strut/)).toBeInTheDocument();
+    expect(
+      screen.getByText('No matching strut — nothing fits this opening at this load'),
+    ).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
-    expect(screen.getByText(/Waiting for inventory/)).toBeInTheDocument();
+    expect(
+      screen.getByText('Waiting for inventory — no apparatus stock to pull from'),
+    ).toBeInTheDocument();
   });
 
   it('pending: tap-to-expand reveals Edit and Delete, and the callbacks fire', async () => {
@@ -87,13 +101,122 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('LS 203')).toBeInTheDocument();
-    expect(screen.getByText('from Rescue 2')).toBeInTheDocument();
+    // Apparatus moved to the header caption line; the "from {source}" sub-line is gone (S12 §1.1).
+    expect(screen.getByText('Rescue 2')).toBeInTheDocument();
+    expect(screen.queryByText('from Rescue 2')).not.toBeInTheDocument();
     // No pending-only actions — the slide stack owns the card now (#221).
     expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Assign equipment' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     expect(screen.queryByText(/No equipment assigned/)).not.toBeInTheDocument();
+  });
+
+  // ---- S12 card restyle: value shelf, waiting callout, hazard, removed ----
+
+  it('value shelf: "Required" + raw opening on pending and process', () => {
+    const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
+    // 388 eighths = 48 1/2″; the shelf renders the label + the raw measurement.
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Required4812″');
+    rerender(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+      />,
+    );
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Required4812″');
+  });
+
+  it('value shelf: "Cut length" reads the effective (deducted) length while cutting', () => {
+    // 388 eighths = 48 1/2″; 4×4 header + 4×4 footer = 3.5 + 3.5 = 7″ deducted →
+    // floor((48.5 − 7) × 8)/8 = 41 1/2″ = 332 eighths.
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'cutting',
+          deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+      />,
+    );
+    expect(screen.getByText('Cut length')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Cut length4112″');
+  });
+
+  it('value shelf: "Set length" reads the as-built opening once secured', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'secured',
+          deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+      />,
+    );
+    expect(screen.getByText('Set length')).toBeInTheDocument();
+    // Set length is the opening (388), NOT the deducted cut length (332).
+    expect(valueShelfText()).toBe('Set length4812″');
+  });
+
+  it('waiting callout: title + verbatim copy for both pending reasons', () => {
+    const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
+    expect(screen.getByText('Waiting for inventory')).toBeInTheDocument();
+    expect(
+      screen.getByText('Waiting for inventory — no apparatus stock to pull from'),
+    ).toBeInTheDocument();
+    rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
+    expect(screen.getByText('No matching strut')).toBeInTheDocument();
+    expect(
+      screen.getByText('No matching strut — nothing fits this opening at this load'),
+    ).toBeInTheDocument();
+    // The "No equipment assigned" line + the Assign action survive the callout.
+    expect(screen.getByText('No equipment assigned')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Assign Equipment' })).toBeInTheDocument();
+  });
+
+  it('hazard: renders the hazard pill after the status badge', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        hazard
+      />,
+    );
+    expect(screen.getByText('⚠ Hazard')).toBeInTheDocument();
+  });
+
+  it('removed: shows the slash chip, drops the slides and the Assign action', () => {
+    const { container } = render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        onAdvance={vi.fn()}
+        onStepBack={vi.fn()}
+        removed
+      />,
+    );
+    expect(screen.getByText('Removed from cut list')).toBeInTheDocument();
+    expect(container.querySelector('.fs-spc-slash')).not.toBeNull();
+    // The slide stack is suppressed while removed.
+    expect(screen.queryByText('Slide to set Strut Set')).not.toBeInTheDocument();
+    expect(screen.queryByText('Slide back to Pending')).not.toBeInTheDocument();
+    // A removed pending point shows neither the Assign action nor the stripe button.
+    expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
+  });
+
+  it('removed (pending): the Assign Equipment action is suppressed', () => {
+    render(<ShorePointCard shorePoint={makeSP()} onAssignEquipment={vi.fn()} removed />);
+    expect(screen.getByText('Removed from cut list')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Assign equipment' })).not.toBeInTheDocument();
   });
 
   it('process: advance + step-back slides commit through the gesture — no button twins (ADR-026)', async () => {
