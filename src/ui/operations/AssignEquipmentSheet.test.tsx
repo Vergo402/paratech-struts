@@ -97,7 +97,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     // SP location (division · area, wired via §7) ride the header, not a footer.
     // The sheet portals to document.body — query the document, not the container.
     expect(document.querySelector('.fs-rec-identity')!.textContent).toContain('LS 406');
-    expect(document.querySelector('.fs-rec-apparatus')!.textContent).toBe('Rescue 2');
+    expect(document.querySelector('.fs-rec-apparatus')!.textContent).toBe('Equipment located on: Rescue 2');
     expect(document.querySelector('.fs-rec-loc')!.textContent).toBe('Div 1 · NW corner');
     expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
   });

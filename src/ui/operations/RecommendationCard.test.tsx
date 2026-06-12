@@ -68,8 +68,9 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(screen.queryByText('GOLD — LONGSHORE')).not.toBeInTheDocument();
     // The adjusted-range header value is gone from the face (survives in ext-alone).
     expect(screen.queryByText('36″ – 50″')).not.toBeInTheDocument();
-    // Apparatus now lives in the header, not the old "Equipment from:" footer line.
-    expect(container.querySelector('.fs-rec-apparatus')!.textContent).toBe('Rescue 2');
+    // Apparatus lives in the header with its label (Alex, post-S12), not the
+    // old "Equipment from:" footer line.
+    expect(container.querySelector('.fs-rec-apparatus')!.textContent).toBe('Equipment located on: Rescue 2');
     expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
     // Fit badge default + the permanent disclaimer (the card's last word).
     expect(screen.getByText('Fits')).toBeInTheDocument();

@@ -144,14 +144,14 @@ The output of Quick Find / shore search, and the card you Deploy from during an 
 
 ### Card anatomy (top → bottom)
 
-1. **Centered identity** — **`<Word> · <model>`**, e.g. **"LongShore · LS 203"**, **"Grey · AT 37-58"**, **"LockStroke · LK 30-2"** — the system word in the **system color** (bold), the product name on the face beside it (`--type-headline-2`). The word is keyed off the strut **system**, not its raw color, so a physically-grey LockStroke strut earns its own **cyan** word (see the LockStroke note below). Centered, with the fit badge floated top-right *outside* the centering flow so it never shoves the identity off-center.
+1. **Centered identity** — **`<Word> · <model>`**, e.g. **"Gold · LS 203"**, **"Grey · AT 37-58"**, **"LockStroke · LK 30-2"** — the system word in the **system color** (bold), the model beside it (`--type-headline-2`); the product/type name is off the face (the Deploy button's SR label keeps the full identity). The word is keyed off the strut **system**, not its raw color, so a physically-grey LockStroke strut earns its own **cyan** word (see the LockStroke note below). Centered, with the fit badge floated top-right *outside* the centering flow so it never shoves the identity off-center.
 2. **Connectors line** — the selected top/bottom plate **names** joined " · " (from the SP's deduction selections), directly under the identity; omitted when neither plate is selected.
-3. **Apparatus line** — the source rig, one weight heavier (600) than location, operation-mode only (Quick Find omits it).
+3. **Apparatus line** — **"Equipment located on: `<rig>`"** (labeled per Alex, post-S12), one weight heavier (600) than location, operation-mode only (Quick Find omits it).
 4. **Location** — the optional shore-point identity (division · building · area), operation-mode only.
 5. **Fit badge** (top-right) — **"Fits"** as a process-status pill, or the gated **danger** variant **"Unrated"** / **"Over capacity"** (resolves [99-OQ #40](../99-open-questions.md) — the unmistakable danger tell; see below).
 6. **Extension block** — either **"No extensions needed"** (in the secured **green**, a positive signal) **or** **"Extensions: `12″`"** (chip per extension) followed by **"strut alone 26″ – 36″"**. Extensions are color-matched tubes the operator must also grab. *(The adjusted reach range moved off the card face into this block — it survives on the "strut alone" line; the face leads with identity, not range.)*
 7. **Deduction ledger** — *the most important part* (see below).
-8. A primary **Deploy** button (operation mode only; Quick Find omits it), then a **quiet rated-capacity footer**, then the permanent disclaimer (see Capacity, below). The apparatus source moved up to line 3, so there is no separate `Equipment from:` line.
+8. A primary **Deploy** button (operation mode only; Quick Find omits it), then a **quiet rated-capacity footer**, then the permanent disclaimer (see Capacity, below). The apparatus source lives on header line 3 ("Equipment located on: …"), so there is no separate footer line for it.
 
 **The left accent bar IS the strut color** (Principle 9: color named *and* shown). The strut color bar is identity, not lifecycle status — gold maps to `--accent`, grey to the secondary ink, and **LockStroke to its own cyan token** (`--sys-lockstroke`).
 

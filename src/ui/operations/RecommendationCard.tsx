@@ -164,7 +164,7 @@ export function RecommendationCard({
             <b>{word}</b> · {model}
           </p>
           {spec && <p className="fs-rec-connectors">{spec}</p>}
-          {source && <p className="fs-rec-apparatus">{source}</p>}
+          {source && <p className="fs-rec-apparatus">Equipment located on: {source}</p>}
           {location && <p className="fs-rec-loc">{location}</p>}
         </div>
         <span className={`fs-rec-fit${gated ? ' fs-rec-fit--no' : ''}`}>{fitLabel}</span>
