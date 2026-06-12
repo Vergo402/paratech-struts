@@ -2,8 +2,6 @@
 
 > Phase E, design-system token file 6 of 8. Authored at the depth of [`03-primitives/picker.md`](../03-primitives/picker.md).
 > Source: essay [`05-essays/02-visual-language.md`](../05-essays/02-visual-language.md) "The 'P' Mark" — **superseded, not transcribed.** Open question #10 resolved to a **new identity, not a refresh** (Alex, 2026-05-31), and the identity is a **full-color emblem** per [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) (Alex, 2026-06-02) — which overrides the essay's "geometry-refresh the P" and amends [`color.md`](color.md)'s "no second brand color" rule. Artwork lives in [`assets/logo/`](assets/logo/); the rendered proof is the **Logo & Mark** panel in [`preview/`](../preview/index.html). Strut/timber depiction doctrine-checked by the `structural-collapse-sme` agent.
->
-> **Asset note (S12):** [`mark-mono.svg`](assets/logo/mark-mono.svg) and the `#mono` glyph embedded in [`brand-sheet.svg`](assets/logo/brand-sheet.svg) carry the F5 geometry (below). The static raster [`brand-sheet.png`](assets/logo/brand-sheet.png) was **not regenerated** — it still shows the pre-F5 mono glyph and is stale; no SVG→PNG tool (rsvg-convert / Inkscape / ImageMagick) was available in the docs-sweep environment. Re-export it from `brand-sheet.svg` when a renderer is at hand.
 
 ---
 
