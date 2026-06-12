@@ -56,9 +56,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 /* The strip cell shows the fraction ALONE (no baseline text to anchor to), so
-   drop the inline baseline offset and let flex center it. r=.8 keeps the old
-   visual size (height = .726/.8 + .294 = 1.20em). */
-.fs-eighth .fr { top: 0; font-size: 0.8em; height: 1.2em; }
+   drop the inline baseline offset and let flex center it. The .726/r + .294
+   formula is for INLINE anchoring to parent digit height — at r=.8 it yields
+   1.2em, less than the two stacked glyphs need, crushing n onto d. Standalone,
+   the stack keeps its own proportions: height/font = 1.75, the base .fr ratio. */
+.fs-eighth .fr { top: 0; font-size: 0.8em; height: 1.75em; }
 .fs-eighth[data-state='checked'] {
   border: 2px solid var(--accent);
   color: var(--text-primary);
