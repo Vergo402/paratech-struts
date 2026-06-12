@@ -124,7 +124,7 @@
   width: 100%;
   padding: 12px var(--space-4);
   min-height: 56px;
-  font: 400 16px/1.5 var(--font-base);
+  font: 400 16px/1.5 var(--font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
   background: var(--surface-card);
@@ -160,7 +160,7 @@
 }
 .fs-keypad-btn:active { background: var(--accent-subtle); }
 .fs-keypad-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
-.fs-keypad-btn:disabled { opacity: 0.3; cursor: not-allowed; background: var(--surface-disabled); }
+.fs-keypad-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .fs-keypad-backspace { grid-column: 1 / 2; font-size: 18px; }
 .fs-keypad-commit { grid-column: 2 / 3; background: var(--accent); color: var(--on-accent); font-weight: 600; }
