@@ -115,24 +115,24 @@ describe('MeasurementInput', () => {
     await user.type(field, '48');
     await user.keyboard('{Enter}');
     expect(eighths()).toBe(48 * 8); // applied
-    expect(field).toHaveValue('48'); // used to clear to '' on Enter — value invisible
+    expect(field).toHaveValue('48″'); // idle shows the value WITH its unit (used to clear to '')
 
     // Fractions round-trip through the same field.
     await user.clear(field);
     await user.type(field, '52 1/2');
     await user.keyboard('{Enter}');
     expect(eighths()).toBe(52 * 8 + 4);
-    expect(field).toHaveValue('52 1/2');
+    expect(field).toHaveValue('52 1/2″');
   });
 
   it('desktop: the idle field reflects stepper/strip changes (reads from value, not stale text)', async () => {
     const user = userEvent.setup();
     render(<Harness initial={48 * 8} />);
     const field = screen.getByRole('textbox');
-    expect(field).toHaveValue('48');
+    expect(field).toHaveValue('48″');
     await user.click(screen.getByRole('button', { name: 'Up one foot' }));
-    expect(field).toHaveValue('60'); // 48 + 12
+    expect(field).toHaveValue('60″'); // 48 + 12
     await user.click(screen.getByRole('radio', { name: '1/2 inch' }));
-    expect(field).toHaveValue('60 1/2');
+    expect(field).toHaveValue('60 1/2″');
   });
 });

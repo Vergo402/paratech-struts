@@ -23,12 +23,19 @@ export interface MeasurementInputProps {
 
 const EIGHTHS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
-/** Format exact eighths into a `parseMeasurement`-round-trippable string for the
- *  desktop field's idle display: "48", "48 1/2", or "" for zero (placeholder). */
+/** The editable buffer form — unitless so typed entry parses cleanly and the
+ *  ″ never lands mid-string: "48", "48 1/2", or "" for zero (placeholder). */
 function formatForInput(eighths: number): string {
   if (eighths <= 0) return '';
   const { totalInches, n, d } = eighthsToParts(eighths);
   return n > 0 ? `${totalInches} ${n}/${d}` : `${totalInches}`;
+}
+
+/** The idle display form — the buffer plus the inch unit, matching the ledger's
+ *  "12″" so the field reads as a measurement, not a bare number. */
+function formatDisplay(eighths: number): string {
+  const s = formatForInput(eighths);
+  return s ? `${s}″` : '';
 }
 
 export function MeasurementInput({
@@ -148,7 +155,7 @@ export function MeasurementInput({
           id={inputId}
           className="fs-meas-readout fs-meas-readout--input"
           placeholder="Type 68, 5 8 5/8, etc."
-          value={editing ? hardwareInput : formatForInput(value)}
+          value={editing ? hardwareInput : formatDisplay(value)}
           onFocus={onHardwareFocus}
           onChange={onHardwareChange}
           onBlur={commitHardware}
