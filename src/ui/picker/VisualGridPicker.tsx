@@ -67,6 +67,7 @@ export function VisualGridPicker({
   // Esc + outside-click close while open (v3 global handlers, scoped here).
   useEffect(() => {
     if (!open) return;
+    const grid = gridRef.current;
     const close = () => setOpen(false);
     // container + opener: opened from inside a modal (the #220 deduction
     // slots), the grid stacks as a child instead of closing its host.
@@ -74,6 +75,18 @@ export function VisualGridPicker({
       container: () => gridRef.current,
       opener: triggerRef.current,
     });
+    // The modal's scroll-lock (Radix Dialog → react-remove-scroll) adds
+    // bubble-phase, non-passive wheel/touchmove handlers on `document` that
+    // preventDefault scrolling anywhere outside Dialog.Content. This grid
+    // portals to <body> (to escape the modal's transformed stacking context,
+    // #82), so it's outside that allow-list and can't scroll on wheel OR touch.
+    // Stop the events at the grid so the lock's document handler never fires —
+    // native overflow scroll runs. (Verified: a wheel here is defaultPrevented
+    // without this.) The picker grid is a self-contained overlay, so swallowing
+    // its own scroll events from the document has no side effects.
+    const keepScroll = (e: Event) => e.stopPropagation();
+    grid?.addEventListener('wheel', keepScroll, { passive: false });
+    grid?.addEventListener('touchmove', keepScroll, { passive: false });
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
     };
@@ -90,6 +103,8 @@ export function VisualGridPicker({
         ?.scrollIntoView?.({ block: 'center' });
     }, SCROLL_TO_SELECTED_MS);
     return () => {
+      grid?.removeEventListener('wheel', keepScroll);
+      grid?.removeEventListener('touchmove', keepScroll);
       document.removeEventListener('keydown', onKeyDown);
       document.removeEventListener('click', onDocClick);
       clearTimeout(timer);
