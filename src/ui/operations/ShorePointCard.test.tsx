@@ -20,8 +20,8 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
 }
 
 // The value shelf renders the measurement as fragmented nodes (stacked
-// fraction); textContent concatenates with no separators, e.g. "Required4812″"
-// for "Required" + 48 1/2″. Hand-verify the digits against the fixture.
+// fraction); textContent concatenates with no separators, e.g. "Raw opening4812″"
+// for "Raw opening" + 48 1/2″. Hand-verify the digits against the fixture.
 function valueShelfText(): string {
   return document.querySelector('.fs-spc-value')?.textContent ?? '';
 }
@@ -148,11 +148,11 @@ describe('ShorePointCard', () => {
 
   // ---- S12 card restyle: value shelf, waiting callout, hazard, removed ----
 
-  it('value shelf: "Required" + raw opening on pending and process', () => {
+  it('value shelf: "Raw opening" + raw opening on pending and process', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
     // 388 eighths = 48 1/2″; the shelf renders the label + the raw measurement.
-    expect(screen.getByText('Required')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required4812″');
+    expect(screen.getByText('Raw opening')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Raw opening4812″');
     rerender(
       <ShorePointCard
         shorePoint={makeSP({
@@ -161,8 +161,8 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(screen.getByText('Required')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required4812″');
+    expect(screen.getByText('Raw opening')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Raw opening4812″');
   });
 
   it('value shelf: "Cut length" reads the effective (deducted) length while cutting', () => {

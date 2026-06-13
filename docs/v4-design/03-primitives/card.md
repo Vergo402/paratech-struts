@@ -112,7 +112,7 @@ The card's one big number is the **measurement value shelf** — a full-bleed, s
 
 | Status | Shelf label | The number is… |
 |---|---|---|
-| `pending` / `process` / `strutset` | **Required** | the raw opening (`measurementEighths`) — what the strut must span |
+| `pending` / `process` / `strutset` | **Raw opening** | the raw opening (`measurementEighths`) — what the strut must span. Named identically to the deduction ledger (S12 §3.2 rename "Required" → "Raw opening") so "Required" never labels two different quantities |
 | `cutting` / `runner` | **Cut length** | the *effective* length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the number the cutter cuts to |
 | `secured` / `returned` | **Set length** | the length the strut was *set* to — the same effective value (S12 SME review: showing the raw opening here would mislabel the setting) |
 
@@ -130,7 +130,7 @@ In the **`cutting` state** the value shelf is **promoted**: the **cut length is 
 - **"Waiting for inventory" is a *reason*, not a separate state.** v3 stores `pendingReason` — `no-match` (inventory exists but nothing fits the length + load) vs `no-inventory` (no apparatus stock to pull from at all). When a reason is present, v4 surfaces it as a **waiting callout** (S12): a waiting-tinted box (`--sp-bg` ground, `--sp-solid` border) with a clamp/strut glyph, a **bold title** per reason ("No matching strut" / "Waiting for inventory") over the **verbatim reason copy** beneath it ("No matching strut — nothing fits this opening at this load" / "Waiting for inventory — no apparatus stock to pull from"). Same card, same Assign action; only the reason differs, and a pending point with no reason shows no callout. (v3 stored the reason but never displayed it; v4 finally shows it, framed.) The reason is live — it appears and clears as inventory changes (the board computes it, never persists it).
 - **The waiting card presents AMBER** (full S12 design audit — the styleguide's waiting card). A pending point with a reason swaps its whole status presentation to the **waiting family** (`--status-waiting-*`, the `.is-waiting` hook riding beside `.is-pending`): the badge reads **"Waiting"**, and the stripe, value shelf, callout, and rolodex tabs/dots all take the amber. **Waiting is a presentation of pending, never a lifecycle status** — lanes, lockstep, and the reducer see only `pending`. Sunlight waiting is the one authored **pale-fill exception**: dark amber ink on pale amber, not a white-on-solid banner (the void speaking, not a lifecycle banner; the ink darkened from the design's value to clear sunlight's 7:1 contract — see `wcag-contrast.mjs`).
 - Uses the **pending status hue** like any pending point — *not* a separate gold "Waiting" badge/state. An earlier v4 pass split these into two cards (pending vs a gold "Waiting" state); that conflated a reason with a state and was reconciled back to v3's single pending model.
-- Keeps the shore-point identity (name, area, **Required** length + load) so the point is actionable the moment equipment arrives.
+- Keeps the shore-point identity (name, area, **Raw opening** + load) so the point is actionable the moment equipment arrives.
 - Clears when a strut is assigned: Assign Equipment deploys and advances the point to **In Process** with the strut attached. (At v5 federal scale a resource request would tie in here — out of v4.0 scope.)
 
 ### The grouped rolodex stack (`GroupedShorePoint`)

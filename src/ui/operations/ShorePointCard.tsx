@@ -27,11 +27,14 @@ const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
 // reads per status. "Cut length" = effective (raw − deductions, floored to ⅛″
 // by the engine). "Set length" = the length the strut was SET to — the same
 // effective value (S12 SME review SF-1: the raw opening mislabels the setting).
-// "Required" = the raw opening pre-cut.
+// "Raw opening" = the measured opening pre-cut — named identically to the
+// deduction ledger (S12 handoff §3.2 rename: "Required" → "Raw opening"), so
+// the word "Required" never means two different quantities across the card.
+const RAW_OPENING_LABEL = 'Raw opening';
 const VALUE_LABEL: Record<ShorePointStatus, string> = {
-  pending: 'Required',
-  process: 'Required',
-  strutset: 'Required',
+  pending: RAW_OPENING_LABEL,
+  process: RAW_OPENING_LABEL,
+  strutset: RAW_OPENING_LABEL,
   cutting: 'Cut length',
   runner: 'Cut length',
   secured: 'Set length',
@@ -148,7 +151,7 @@ export function ShorePointCard({
   // floored to ⅛″ (ADR-012, reducer.ts:43) — × 8 lands on an exact eighth;
   // round() only defends float noise. No double-floor.
   const valueEighths =
-    VALUE_LABEL[sp.status] === 'Required'
+    VALUE_LABEL[sp.status] === RAW_OPENING_LABEL
       ? sp.measurementEighths
       : Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
 
