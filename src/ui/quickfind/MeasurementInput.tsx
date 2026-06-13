@@ -23,6 +23,14 @@ export interface MeasurementInputProps {
 
 const EIGHTHS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
+/** Format exact eighths into a `parseMeasurement`-round-trippable string for the
+ *  desktop field's idle display: "48", "48 1/2", or "" for zero (placeholder). */
+function formatForInput(eighths: number): string {
+  if (eighths <= 0) return '';
+  const { totalInches, n, d } = eighthsToParts(eighths);
+  return n > 0 ? `${totalInches} ${n}/${d}` : `${totalInches}`;
+}
+
 export function MeasurementInput({
   label = 'Measurement',
   value,
@@ -34,6 +42,7 @@ export function MeasurementInput({
   const [bound, setBound] = useState<'min' | 'max' | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [hardwareInput, setHardwareInput] = useState('');
+  const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Detect phone vs desktop by checking media query
@@ -76,25 +85,35 @@ export function MeasurementInput({
     }
   };
 
+  // Desktop hardware-typing: the field shows the COMMITTED value (formatted)
+  // when idle and the raw typed text only while focused — so a typed entry
+  // stays visible after Enter. (It used to clear to the placeholder on commit:
+  // the value was applied but the field looked empty, i.e. "removed".) Idle
+  // display reads from `value`, so stepper / eighths-strip changes show through.
+  const onHardwareFocus = () => {
+    setEditing(true);
+    setHardwareInput(formatForInput(value));
+  };
+
   const onHardwareChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setHardwareInput(e.target.value);
   };
 
-  const onHardwareBlur = () => {
-    if (hardwareInput.trim()) {
-      const parsed = parseMeasurement(hardwareInput);
-      if (parsed !== null) {
-        apply(parsed);
-      } else {
-        setBound('max');
-      }
-      setHardwareInput('');
+  const commitHardware = () => {
+    const raw = hardwareInput.trim();
+    if (raw) {
+      const parsed = parseMeasurement(raw);
+      if (parsed !== null) apply(parsed);
+      else setBound('max');
     }
+    // Empty on blur → leave the measurement unchanged (never wipe it silently).
+    setEditing(false);
   };
 
   const onHardwareKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      onHardwareBlur();
+      e.preventDefault();
+      e.currentTarget.blur(); // commits via onBlur, then reverts to the formatted value
     }
   };
 
@@ -129,9 +148,10 @@ export function MeasurementInput({
           id={inputId}
           className="fs-meas-readout fs-meas-readout--input"
           placeholder="Type 68, 5 8 5/8, etc."
-          value={hardwareInput}
+          value={editing ? hardwareInput : formatForInput(value)}
+          onFocus={onHardwareFocus}
           onChange={onHardwareChange}
-          onBlur={onHardwareBlur}
+          onBlur={commitHardware}
           onKeyDown={onHardwareKeyDown}
           aria-labelledby={labelId}
           aria-invalid={bound === 'max' || bound === 'min'}

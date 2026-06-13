@@ -106,4 +106,33 @@ describe('MeasurementInput', () => {
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((n) => Number.isInteger(n))).toBe(true);
   });
+
+  // Desktop hardware-typing path (jsdom has no matchMedia → isPhone=false).
+  it('desktop: a typed measurement applies AND stays visible after Enter (regression)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={0} />);
+    const field = screen.getByRole('textbox');
+    await user.type(field, '48');
+    await user.keyboard('{Enter}');
+    expect(eighths()).toBe(48 * 8); // applied
+    expect(field).toHaveValue('48'); // used to clear to '' on Enter — value invisible
+
+    // Fractions round-trip through the same field.
+    await user.clear(field);
+    await user.type(field, '52 1/2');
+    await user.keyboard('{Enter}');
+    expect(eighths()).toBe(52 * 8 + 4);
+    expect(field).toHaveValue('52 1/2');
+  });
+
+  it('desktop: the idle field reflects stepper/strip changes (reads from value, not stale text)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={48 * 8} />);
+    const field = screen.getByRole('textbox');
+    expect(field).toHaveValue('48');
+    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
+    expect(field).toHaveValue('60'); // 48 + 12
+    await user.click(screen.getByRole('radio', { name: '1/2 inch' }));
+    expect(field).toHaveValue('60 1/2');
+  });
 });
