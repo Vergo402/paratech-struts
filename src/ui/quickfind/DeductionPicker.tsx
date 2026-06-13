@@ -13,8 +13,10 @@ import { InlineSegmented, VisualGridPicker } from '@ui/picker';
  * Required strut length floors to ⅛″ and turns --danger when the deductions
  * consume the opening.
  * Deductions read as signed measurements — −3½″, never "deducts 3.5″" (KB-4);
- * nearest ⅛″ with ≈ when the catalog height isn't eighths-exact (the
- * RecommendationCard precedent — the exact spec still drives the math).
+ * nearest ⅛″ with ≈ when the catalog height isn't eighths-exact. The editable
+ * ledger KEEPS the ≈ (picking-transparency — Alex, 2026-06-13); the read-only
+ * RecommendationCard DROPPED it in the #248 declutter. Intentional split, not
+ * an inconsistency to reconcile — the exact spec drives the math either way.
  */
 export interface DeductionPickerProps {
   /** The opening measurement the ledger deducts from (exact eighths). */
