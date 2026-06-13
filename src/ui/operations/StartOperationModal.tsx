@@ -116,9 +116,10 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
           label="Utilize Pending Card"
           helper={
             <>
-              <u>On</u>: save a Pending card; assign equipment from the board later.
+              <u>On</u>: save a Pending card; assign equipment from the board later. Best for large
+              incidents where struts are retrieved by a separate group.
               <br />
-              <u>Off</u>: find and deploy struts right in the form.
+              <u>Off</u>: find and deploy struts right in the form. Best for small incidents.
             </>
           }
           checked={!inlineDeploy}
