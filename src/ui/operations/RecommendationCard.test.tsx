@@ -107,19 +107,18 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(screen.getAllByText('Channel Base 4"x4"')).toHaveLength(2);
   });
 
-  it('ledger math: Raw opening, ≈-marked plate rows with the exact-math footnote, promoted Required strut length', () => {
+  it('ledger math: Raw opening and promoted Required strut length', () => {
     const { container } = render(
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
     );
     expect(container.querySelector('.fs-rec-opening')!.textContent).toBe('56″');
-    // Channel Base 3.4″ is not an exact eighth — both plate rows mark ≈.
-    expect(screen.getAllByText('≈')).toHaveLength(2);
-    expect(
-      screen.getByText('≈ plate heights to nearest 1/8″ — exact 3.4″ used in the math'),
-    ).toBeInTheDocument();
-    // 45⅝″ — digit-pair fraction (45, 5 over 8).
+    // 45⅝″ — digit-pair fraction (45, 5 over 8); effective uses exact plate
+    // heights (no on-card ≈/footnote/floor note any more — display declutter).
     expect(container.querySelector('.fs-rec-effective')!.textContent).toBe('4558″');
-    expect(screen.getByText('↓ floored to 1/8″')).toBeInTheDocument();
+    // Declutter (#248): no floor note, no plate-rounding footnote, no ≈ markers.
+    expect(screen.queryByText('↓ floored to 1/8″')).toBeNull();
+    expect(screen.queryByText(/plate heights to nearest/)).toBeNull();
+    expect(screen.queryByText('≈')).toBeNull();
   });
 
   it('no ledger danger marks when every slot is selected', () => {

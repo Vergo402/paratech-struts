@@ -108,10 +108,7 @@ export function DeductionPicker({
         }
       />
       <div className={`fs-ledger-row fs-ledger-effective${impossible ? ' fs-ledger-effective--danger' : ''}`}>
-        <span className="fs-ledger-label">
-          Required strut length
-          <span className="fs-ledger-note"> floored to ⅛″</span>
-        </span>
+        <span className="fs-ledger-label">Required strut length</span>
         <MeasurementValue eighths={effectiveEighths} className="fs-ledger-value fs-ledger-value--big" />
       </div>
       {impossible && (

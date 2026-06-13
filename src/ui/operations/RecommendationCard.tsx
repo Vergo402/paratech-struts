@@ -59,7 +59,7 @@ function connectorSpec(deductions: Deductions): string {
 function woodRow(label: string, id: WoodSizeId) {
   const wood = WOOD_SIZES.find((w) => w.id === id);
   const selected = wood && wood.id !== 'none';
-  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', eighths: selected ? Math.round(wood.height * 8) : 0, approx: false };
+  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', eighths: selected ? Math.round(wood.height * 8) : 0 };
 }
 
 function plateRow(label: string, id: string) {
@@ -69,10 +69,8 @@ function plateRow(label: string, id: string) {
     label,
     selected,
     name: selected ? plate.name : 'not selected',
-    eighths: selected ? Math.round(plate.height * 8) : 0,
     // Plate heights display to the nearest ⅛″; the exact spec is used in the math (ADR-012).
-    approx: !!selected && (plate.height * 8) % 1 !== 0,
-    exactHeight: selected ? plate.height : 0,
+    eighths: selected ? Math.round(plate.height * 8) : 0,
   };
 }
 
@@ -83,7 +81,6 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typ
         <span className="fs-rec-slot-label">{row.label}</span>
         {row.selected ? (
           <span className="fs-rec-slot-value">
-            {row.approx && <span className="fs-rec-approx">≈</span>}
             <MeasurementValue eighths={-row.eighths} />
           </span>
         ) : (
@@ -127,12 +124,6 @@ export function RecommendationCard({
     plateRow('Bottom Connector', deductions.bottomPlate),
     woodRow('Footer', deductions.footerWood),
   ];
-  const approxHeights = [
-    ...new Set(
-      slots.filter((s): s is ReturnType<typeof plateRow> => 'exactHeight' in s && s.approx).map((s) => s.exactHeight),
-    ),
-  ];
-
   const effectiveEighths = Math.round(combo.effectiveLength * 8);
   const openingEighths = Math.round(combo.openingLength * 8);
 
@@ -209,16 +200,9 @@ export function RecommendationCard({
           <LedgerSlot key={row.label} row={row} />
         ))}
         <div className="fs-rec-row fs-rec-effective-row">
-          <span className="fs-rec-slot-label">
-            Required strut length <span className="fs-rec-floor-note">↓ floored to 1/8″</span>
-          </span>
+          <span className="fs-rec-slot-label">Required strut length</span>
           <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
         </div>
-        {approxHeights.length > 0 && (
-          <p className="fs-rec-footnote">
-            ≈ plate heights to nearest 1/8″ — exact {approxHeights.map((h) => `${h}″`).join(' / ')} used in the math
-          </p>
-        )}
       </div>
 
       {combo.boundaryWarning === 'fully-extended' && (

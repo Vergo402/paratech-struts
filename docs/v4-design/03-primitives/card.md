@@ -174,15 +174,14 @@ The ledger shows the **Raw opening → Required strut length** math and the four
 Raw opening                                   56"
   Header                                     −3½"
     4×4
-  Top Connector                              −3⅜"     (≈)
+  Top Connector                              −3⅜"
     Channel Base 4×4
-  Bottom Connector                           −3⅜"     (≈)
+  Bottom Connector                           −3⅜"
     Channel Base 4×4
   Footer                                     N/S       (red)
     not selected
   ─────────────────────────────────────────────────
-Required strut length   ↓ floored to 1/8″    45 5/8"
-≈ plate heights to nearest 1/8″ — exact 3.4″ used in the math
+Required strut length                        45 5/8"
 ```
 
 Each slot is **label + signed deduction value on one line** (values align in a right column, the value side never wraps), with the wood size / plate name on a **sub-line beneath** — so a long plate name never wraps and shoves the value column out of alignment (the v3 mid-column wrap problem). The deductions read as **signed measurements** — `−3½″`, never "deducts 3.5″".
@@ -190,8 +189,8 @@ Each slot is **label + signed deduction value on one line** (values align in a r
 - **Ledger vocabulary** (S12): the top row is **"Raw opening"** and the total is **"Required strut length"** — the same words the [`DeductionPicker`](../03-primitives/input.md) speaks in Add Shore Point, so the read-only result card and the editable picker name the same quantities identically.
 - **Order is rigid: Header → Top Connector → Bottom Connector → Footer** (top of the assembly to the bottom). Never reorder or alphabetize.
 - **Every slot is always shown.** If a section is unselected, it renders **"N/S"** (not selected) in `--danger` so the gap is obvious at a glance — v3 silently omitted unselected slots; v4 surfaces them (visible state, Principle 7/10). The omission of a footer or a connector is a decision the operator should *see*, not infer.
-- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″) — exact eighths. `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the sub-line shows the plate name. **Plate deductions display as the nearest-1/8″ fraction** (e.g., `≈3⅜″` for a 3.4″ plate) so the column reads as one consistent fraction set, **but the exact spec (3.4″) is used in the math** — a footnote marks the plate rows approximate ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs *in the math* would accumulate unsafe error).
-- Raw opening and Required strut length are emphasized (`--type-mono`); **Required strut length is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) with a `↓ floored to 1/8″` note beside it: short is taken up by wedge + strut thread, long is unsafe. Fractions render via the digit-pair component (stacked) per [`typography.md`](../07-design-system/typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
+- `Header` / `Footer` are wood (`WOOD_SIZES`: 4×4 = 3½″, 6×6 = 5½″) — exact eighths. `Top Connector` / `Bottom Connector` are base plates (`BASE_PLATES`, each with a `height` deduction); the sub-line shows the plate name. **Plate deductions display as the nearest-1/8″ fraction** (e.g., `3⅜″` for a 3.4″ plate) so the column reads as one consistent fraction set, **but the exact spec (3.4″) is used in the math** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md); pre-rounding specs *in the math* would accumulate unsafe error). *(The on-card `≈` markers + the "≈ … exact … used in the math" footnote were removed in the #248 re-drive declutter — display-only; the exact-spec math is unchanged.)*
+- Raw opening and Required strut length are emphasized (`--type-mono`); **Required strut length is promoted (larger, in the strut color) — it is the cut-to answer.** It **floors DOWN to 1/8″** ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)): short is taken up by wedge + strut thread, long is unsafe. *(The visible `↓ floored to 1/8″` note was removed in the #248 re-drive declutter — the flooring behavior is unchanged.)* Fractions render via the digit-pair component (stacked) per [`typography.md`](../07-design-system/typography.md) — not `42 3/16`, and not the illegible `42³⁄₁₆` codepoint hack.
 
 ### Capacity — the quiet footer, and the safety gates
 
