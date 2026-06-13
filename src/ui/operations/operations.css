@@ -212,6 +212,14 @@ button.fs-spc-head {
   color: var(--text-tertiary);
 }
 
+/* Assigned crew/apparatus (assignedResource) — the accountability line: who is
+   working this point, distinct from the deployed strut's source apparatus.
+   Command roll-up ("who's on what") is Phase I; this is the per-card view. */
+.fs-spc-assigned {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
 .fs-spc-meta {
   display: flex;
   align-items: center;

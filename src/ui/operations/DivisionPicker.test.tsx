@@ -18,6 +18,7 @@ const OP: Operation = {
   id: 'op-1',
   name: 'Surfside',
   multiBuilding: false,
+  inlineDeploy: false,
   divisions: [1],
   status: 'active',
   createdAt: 1000,

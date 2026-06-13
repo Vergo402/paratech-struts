@@ -9,6 +9,8 @@ const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
 const mockOperation = vi.fn((): Operation | null => null);
 const mockShorePoints = vi.fn((): ShorePoint[] => []);
+const mockInventory = vi.fn(() => []);
+const mockRecommendations = vi.fn(() => []);
 
 vi.mock('@ui/hooks', () => ({
   useOperation: () => mockOperation(),
@@ -16,12 +18,26 @@ vi.mock('@ui/hooks', () => ({
   useCommit: () => mockCommit,
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
+  useInventory: () => mockInventory(),
+  useRecommendations: () => mockRecommendations(),
+}));
+
+// Inline mode renders RecommendationCards in the form — mock to a bare Deploy
+// button so the test drives the deploy path without fabricating a full combo.
+vi.mock('./RecommendationCard', () => ({
+  RecommendationCard: ({ combo, onDeploy }: { combo: { strut: { model: string } }; onDeploy: (c: unknown) => void }) => (
+    <button type="button" onClick={() => onDeploy(combo)}>
+      Deploy {combo.strut.model}
+    </button>
+  ),
+  comboModel: (combo: { strut: { model: string } }) => combo.strut.model,
 }));
 
 const OP: Operation = {
   id: 'op-1',
   name: 'Surfside',
   multiBuilding: false,
+  inlineDeploy: false,
   divisions: [1],
   status: 'active',
   createdAt: 1000,
@@ -276,5 +292,61 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     await user.clear(screen.getByRole('textbox', { name: 'Label' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(mockCommit.mock.calls[0]![0].patch).toEqual({ label: null });
+  });
+});
+
+describe('AddShorePointModal — one-step inline deploy', () => {
+  const INLINE_OP: Operation = { ...OP, inlineDeploy: true };
+  const INV = [
+    { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, available: 2 },
+  ];
+  const COMBO = { strut: { id: 's1', inventoryId: 'inv-1', model: 'LS 203' }, extensions: [] };
+
+  beforeEach(() => {
+    mockCommit.mockClear();
+    mockCommitMany.mockClear();
+    mockOperation.mockReturnValue(INLINE_OP);
+    mockShorePoints.mockReturnValue([]);
+    mockInventory.mockReturnValue(INV as never);
+    mockRecommendations.mockReturnValue([COMBO] as never);
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('shows Find + Save as Pending (not the two-step Add button)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    expect(screen.getByRole('button', { name: 'Find Available Struts' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Save as Pending' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Add Shore Point' })).toBeNull();
+  });
+
+  it('offers a Group picker built from on-scene apparatus', () => {
+    render(<AddShorePointModal open onClose={() => {}} />);
+    expect(screen.getByText('Group (assigned apparatus)')).toBeInTheDocument();
+  });
+
+  it('Find reveals recommendations; Deploy creates the point AND deploys the strut', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(<AddShorePointModal open onClose={onClose} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    // 1) the point is created via the atomic add batch …
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const adds = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(adds).toHaveLength(1);
+    const created = adds[0]!.shorePoint;
+
+    // 2) … then the chosen strut is deployed onto that same point (separate
+    //    commit — commitMany can't carry inventory events).
+    expect(mockCommit).toHaveBeenCalledTimes(1);
+    const deploy = mockCommit.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'StrutDeployed' }>;
+    expect(deploy.type).toBe('StrutDeployed');
+    expect(deploy.spId).toBe(created.id);
+    expect(deploy.deployedStrut).toMatchObject({ model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' });
+    expect(onClose).toHaveBeenCalled();
   });
 });

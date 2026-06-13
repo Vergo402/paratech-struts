@@ -191,4 +191,34 @@ describe('#220 field-lock — editable fields by status', () => {
     } satisfies FieldShoreEvent);
     expect(next.area).toBe('NW corner');
   });
+
+  it('crew assignment is reassignable past Pending (accountability, not locked)', () => {
+    const next = shorePointReducer(sp({ status: 'cutting', assignedResource: 'Engine 1' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { assignedResource: 'Rescue 2' },
+    } satisfies FieldShoreEvent);
+    expect(next.assignedResource).toBe('Rescue 2'); // changed even past Pending
+  });
+
+  it('crew assignment null-clears (the null convention) even past Pending', () => {
+    const next = shorePointReducer(sp({ status: 'secured', assignedResource: 'Engine 1' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { assignedResource: null },
+    } satisfies FieldShoreEvent);
+    expect('assignedResource' in next).toBe(false);
+  });
+
+  it('estimated load locks past Pending (it drives strut selection, like measurement)', () => {
+    const next = shorePointReducer(sp({ status: 'process', estimatedLoad: 10000 }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { estimatedLoad: 25000 },
+    } satisfies FieldShoreEvent);
+    expect(next.estimatedLoad).toBe(10000); // unchanged — locked
+  });
 });

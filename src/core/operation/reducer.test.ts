@@ -18,7 +18,7 @@ function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
 
 function stateWith(points: ShorePoint[]): OperationState {
   return {
-    operation: { id: 'op1', name: 'Test', multiBuilding: false, divisions: [1], status: 'active', createdAt: 1 },
+    operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], status: 'active', createdAt: 1 },
     shorePoints: points,
   };
 }
@@ -157,5 +157,47 @@ describe('divisions — the grow-the-building model (#220)', () => {
 
   it('DivisionAdded with no operation is a no-op', () => {
     expect(operationReducer(EMPTY_OPERATION_STATE, divAdded('e1', 2))).toEqual(EMPTY_OPERATION_STATE);
+  });
+});
+
+describe('inlineDeploy — deploy mode (per-op, flippable via Edit Operation)', () => {
+  const created = (inlineDeploy?: boolean): FieldShoreEvent => ({
+    type: 'OperationCreated',
+    id: 'e1',
+    opId: 'op1',
+    at: 1,
+    by: 'ic',
+    name: 'Test',
+    multiBuilding: false,
+    ...(inlineDeploy === undefined ? {} : { inlineDeploy }),
+  });
+
+  it('defaults to one-step inline when absent (old-event replay safety)', () => {
+    const s = operationReducer(EMPTY_OPERATION_STATE, created());
+    expect(s.operation!.inlineDeploy).toBe(true);
+  });
+
+  it('honors an explicit two-step (false) on create', () => {
+    const s = operationReducer(EMPTY_OPERATION_STATE, created(false));
+    expect(s.operation!.inlineDeploy).toBe(false);
+  });
+
+  it('OperationEdited flips the mode mid-incident', () => {
+    const s = operationReducer(EMPTY_OPERATION_STATE, created(true));
+    const flipped = operationReducer(s, {
+      type: 'OperationEdited',
+      id: 'e2',
+      opId: 'op1',
+      at: 2,
+      by: 'ic',
+      inlineDeploy: false,
+    });
+    expect(flipped.operation!.inlineDeploy).toBe(false);
+  });
+
+  it('OperationEdited without inlineDeploy leaves the mode untouched', () => {
+    const s = operationReducer(EMPTY_OPERATION_STATE, created(false));
+    const edited = operationReducer(s, { type: 'OperationEdited', id: 'e2', opId: 'op1', at: 2, by: 'ic', name: 'Renamed' });
+    expect(edited.operation!.inlineDeploy).toBe(false);
   });
 });

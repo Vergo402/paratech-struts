@@ -157,6 +157,9 @@ export function ShorePointCard({
       <span className="fs-spc-identity">
         <span className="fs-spc-title">{title}</span>
         <span className="fs-spc-where">{identity}</span>
+        {sp.assignedResource ? (
+          <span className="fs-spc-assigned">Assigned: {sp.assignedResource}</span>
+        ) : null}
         {sp.deployedStrut ? (
           <span className="fs-spc-apparatus">{sp.deployedStrut.source}</span>
         ) : null}

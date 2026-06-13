@@ -17,6 +17,7 @@ export const OperationCreated = z.object({
   ...base,
   name: z.string().min(1),
   multiBuilding: z.boolean(),
+  inlineDeploy: z.boolean().optional(), // absent on pre-feature events → reducer defaults true
   location: z.string().optional(),
 });
 
@@ -25,6 +26,7 @@ export const OperationEdited = z.object({
   ...base,
   name: z.string().min(1).optional(),
   multiBuilding: z.boolean().optional(),
+  inlineDeploy: z.boolean().optional(), // the mid-incident flip
   location: z.string().nullable().optional(), // null clears the location
 });
 

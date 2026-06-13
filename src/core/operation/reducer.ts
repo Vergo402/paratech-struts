@@ -63,6 +63,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           id: event.opId,
           name: event.name,
           multiBuilding: event.multiBuilding,
+          inlineDeploy: event.inlineDeploy ?? true, // absent (old events) → one-step inline
           location: event.location,
           divisions: [1], // Ground level — grown via DivisionAdded, never on the wire
           status: 'active',
@@ -75,6 +76,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       const op: Operation = { ...state.operation };
       if (event.name !== undefined) op.name = event.name;
       if (event.multiBuilding !== undefined) op.multiBuilding = event.multiBuilding;
+      if (event.inlineDeploy !== undefined) op.inlineDeploy = event.inlineDeploy;
       if (event.location !== undefined) op.location = event.location ?? undefined; // null clears
       return { ...state, operation: op };
     }

@@ -13,6 +13,11 @@ export const Operation = z.object({
   id: z.string(),
   name: z.string().min(1),
   multiBuilding: z.boolean(),
+  // Deploy mode (per-op, flippable mid-incident via Edit Operation). true = v3
+  // one-step: Find Available Struts + Deploy live in the Add Shore Point form.
+  // false = v4 two-step: describe → Pending → Assign Equipment sheet. The
+  // two-step Assign sheet stays available in BOTH modes.
+  inlineDeploy: z.boolean(),
   location: z.string().optional(),
   divisions: z.array(z.number().int()),
   status: OperationStatus,

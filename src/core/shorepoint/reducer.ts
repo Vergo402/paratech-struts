@@ -26,12 +26,20 @@ const SP_SAFETY_FACTOR_INDEX = 2;
 /**
  * Run the selection engine for a shore point. Passes the RAW required length
  * (measurementEighths / 8 — exact, not pre-deducted, L-2); the engine deducts
- * once and floors the effective length to ⅛″. estimatedLoad is 0 (capacity
- * demoted; not captured in the slice's add-SP flow).
+ * once and floors the effective length to ⅛″. estimatedLoad is the point's
+ * operator estimate (feeds the engine's capacity gating); absent = 0 (capacity
+ * demoted, ADR-012).
  */
 export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | null): StrutCombination[] {
   const requiredLength = sp.measurementEighths / 8;
-  return findStrutCombinations(requiredLength, 0, SP_SAFETY_FACTOR_INDEX, inventory ?? null, null, resolveDeductions(sp));
+  return findStrutCombinations(
+    requiredLength,
+    sp.estimatedLoad ?? 0,
+    SP_SAFETY_FACTOR_INDEX,
+    inventory ?? null,
+    null,
+    resolveDeductions(sp),
+  );
 }
 
 /**
@@ -63,6 +71,12 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     if (patch.label === null) delete next.label;
     else next.label = patch.label;
   }
+  // Crew assignment is reassignable throughout the op (accountability, not a
+  // lock) — applied before the Pending field-lock, alongside label.
+  if (patch.assignedResource !== undefined) {
+    if (patch.assignedResource === null) delete next.assignedResource;
+    else next.assignedResource = patch.assignedResource;
+  }
   if (sp.status !== 'pending') return next;
   if (patch.division !== undefined) next.division = patch.division;
   if (patch.building !== undefined) {
@@ -76,6 +90,10 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   if (patch.shoreType !== undefined) next.shoreType = patch.shoreType;
   if (patch.measurementEighths !== undefined) next.measurementEighths = patch.measurementEighths;
   if (patch.deductions !== undefined) next.deductions = patch.deductions;
+  if (patch.estimatedLoad !== undefined) {
+    if (patch.estimatedLoad === null) delete next.estimatedLoad;
+    else next.estimatedLoad = patch.estimatedLoad;
+  }
   return next;
 }
 

@@ -15,6 +15,7 @@ const MOCK_OP: Operation = {
   id: 'op-1',
   name: 'Surfside',
   multiBuilding: false,
+  inlineDeploy: false,
   location: '123 Main St',
   divisions: [1],
   status: 'active',
@@ -60,7 +61,7 @@ describe('StartOperationModal', () => {
     const onClose = vi.fn();
     render(<StartOperationModal open onClose={onClose} />);
     await user.type(screen.getByLabelText('Operation name'), 'Cascade Fire');
-    await user.click(screen.getByRole('switch'));
+    await user.click(screen.getByRole('switch', { name: /multi-building/i }));
     await user.type(screen.getByLabelText('Location / address'), '123 Main');
     await user.click(screen.getByRole('button', { name: 'Start Operation' }));
     expect(mockCommit).toHaveBeenCalledOnce();
@@ -68,9 +69,20 @@ describe('StartOperationModal', () => {
     expect(event.type).toBe('OperationCreated');
     expect(event.name).toBe('Cascade Fire');
     expect(event.multiBuilding).toBe(true);
+    expect(event.inlineDeploy).toBe(true); // new ops default to one-step inline
     expect(event.location).toBe('123 Main');
     expect(event.by).toBe('device-test');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('toggling "Find & deploy in the form" off creates a two-step op (inlineDeploy false)', async () => {
+    const user = userEvent.setup();
+    render(<StartOperationModal open onClose={() => {}} />);
+    await user.type(screen.getByLabelText('Operation name'), 'Big Op');
+    await user.click(screen.getByRole('switch', { name: /find & deploy in the form/i }));
+    await user.click(screen.getByRole('button', { name: 'Start Operation' }));
+    const event = mockCommit.mock.calls[0]![0];
+    expect(event.inlineDeploy).toBe(false);
   });
 
   it('edit mode shows "Edit Operation" and "Save", pre-populated', () => {

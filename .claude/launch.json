@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview", "--", "--port", "5198", "--strictPort"],
       "port": 5198
+    },
+    {
+      "name": "fieldshore-v4-verify",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd \"$(git rev-parse --show-toplevel)\" && npm run dev -- --port $PORT --strictPort"],
+      "autoPort": true
     }
   ]
 }

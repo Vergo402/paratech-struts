@@ -19,12 +19,14 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
 
   const [name, setName] = useState('');
   const [multiBuilding, setMultiBuilding] = useState(false);
+  const [inlineDeploy, setInlineDeploy] = useState(true); // new ops default to one-step inline
   const [location, setLocation] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setName(operation?.name ?? '');
     setMultiBuilding(operation?.multiBuilding ?? false);
+    setInlineDeploy(operation?.inlineDeploy ?? true);
     setLocation(operation?.location ?? '');
   }, [open, operation]);
 
@@ -39,6 +41,7 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
       const patch: Record<string, unknown> = {};
       if (trimmedName !== operation!.name) patch.name = trimmedName;
       if (multiBuilding !== operation!.multiBuilding) patch.multiBuilding = multiBuilding;
+      if (inlineDeploy !== operation!.inlineDeploy) patch.inlineDeploy = inlineDeploy;
       const newLoc = location.trim() || null;
       const oldLoc = operation!.location ?? null;
       if (newLoc !== oldLoc) patch.location = newLoc;
@@ -70,6 +73,7 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
         by: uid,
         name: trimmedName,
         multiBuilding,
+        inlineDeploy,
         location: location.trim() || undefined,
       });
 
@@ -104,6 +108,12 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
           value={name}
           onChange={setName}
           placeholder="e.g. Cascade Building Fire"
+        />
+        <Toggle
+          label="Find & deploy in the form"
+          helper="On: size, find struts, and deploy right in the shore point form — best for small ops. Off: save a Pending card and assign equipment from the board — best for large ops with a retrieval crew. Change anytime by editing the operation."
+          checked={inlineDeploy}
+          onChange={setInlineDeploy}
         />
         <Toggle
           label="Multi-building"

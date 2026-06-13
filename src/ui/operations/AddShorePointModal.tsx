@@ -1,15 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
+import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
-import { effectiveLengthFrom } from '@core/shorepoint';
-import { Button, Modal, TextField } from '@ui/primitives';
+import { divisionLabel } from '@core/operation';
+import { effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
+import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
-import { InlineSegmented } from '@ui/picker';
+import { BottomSheetPicker, InlineSegmented } from '@ui/picker';
 import { MeasurementInput, DeductionPicker } from '@ui/quickfind';
-import { useCommit, useCommitMany, useDeviceUid, useOperation, useShorePoints } from '@ui/hooks';
+import {
+  useCommit,
+  useCommitMany,
+  useDeviceUid,
+  useInventory,
+  useOperation,
+  useRecommendations,
+  useShorePoints,
+} from '@ui/hooks';
 import { DivisionPicker } from './DivisionPicker';
+import { RecommendationCard, comboModel } from './RecommendationCard';
 
 // Short labels for the form control; full names (`Vertical T-Shore`, …) stay in
 // the verbatim-ported SHORE_TYPES catalog (core/load/plates.ts) — display only.
@@ -29,6 +40,9 @@ const THREE_POST_WOOD: Pick<Deductions, 'headerWood' | 'footerWood'> = {
 
 /** Total-cards sanity threshold (shores × struts/shore) — warn, never block (#220 OQ2). */
 const QTY_WARN_THRESHOLD = 10;
+
+/** v3 MAX_LOAD_LBS — estimated load upper bound (planning input only). */
+const MAX_LOAD_LBS = 500_000;
 
 const shoreTypeLabel = (id: ShoreTypeId) => SHORE_TYPE_OPTIONS.find((o) => o.value === id)!.label;
 const strutsPerShoreOf = (id: ShoreTypeId) => SHORE_TYPES.find((t) => t.id === id)!.strutsPerShore;
@@ -53,19 +67,32 @@ export interface AddShorePointModalProps {
 export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddShorePointModalProps) {
   const operation = useOperation();
   const shorePoints = useShorePoints();
+  const inventory = useInventory();
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
   const editing = !!shorePoint;
+  // v3 one-step: Find Available Struts + Deploy live in this form. v4 two-step:
+  // describe → Pending → assign from the board (Assign Equipment sheet — which
+  // stays available in BOTH modes). Editing never finds/deploys, so the inline
+  // section is create-mode only.
+  const inlineMode = !!operation?.inlineDeploy && !editing;
 
   const [division, setDivision] = useState(1);
   const [building, setBuilding] = useState('');
   const [area, setArea] = useState('');
+  const [assignedResource, setAssignedResource] = useState('');
   const [shoreType, setShoreType] = useState<ShoreTypeId>('t-shore');
   const [qty, setQty] = useState('1');
   const [measurementEighths, setMeasurementEighths] = useState(0);
   const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
+  const [estimatedLoad, setEstimatedLoad] = useState('');
   const [label, setLabel] = useState('');
+
+  // Inline find/deploy UI state (create + one-step mode only).
+  const [found, setFound] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -73,23 +100,30 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       setDivision(parseDivision(shorePoint.division));
       setBuilding(shorePoint.building ?? '');
       setArea(shorePoint.area ?? '');
+      setAssignedResource(shorePoint.assignedResource ?? '');
       setShoreType(shorePoint.shoreType);
       setMeasurementEighths(shorePoint.measurementEighths);
       setDeductions(shorePoint.deductions);
+      setEstimatedLoad(shorePoint.estimatedLoad != null ? String(shorePoint.estimatedLoad) : '');
       setLabel(shorePoint.label ?? '');
     } else {
       // Last-used defaults (#220): the newest point in the op seeds division /
-      // shore type / building; first point of the op starts Div 1 / T-Shore.
+      // shore type / building / crew; first point of the op starts Div 1 / T-Shore.
       const last = shorePoints[shorePoints.length - 1];
       setDivision(parseDivision(last?.division));
       setBuilding(last?.building ?? '');
       setArea('');
+      setAssignedResource(last?.assignedResource ?? '');
       setShoreType(last?.shoreType ?? 't-shore');
       setMeasurementEighths(0);
       setDeductions(NO_DEDUCTIONS);
+      setEstimatedLoad('');
       setLabel('');
     }
     setQty('1');
+    setFound(false);
+    setDeploying(false);
+    setDeployError(null);
     // Deliberately keyed on open alone — the form must NOT re-seed itself from
     // a mid-edit store update (e.g. a peer event re-rendering the board).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,6 +141,13 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
   const strutsPerShore = strutsPerShoreOf(shoreType);
   const totalStruts = qtyValid ? qtyNum * strutsPerShore : 0;
   const effective = effectiveLengthFrom(measurementEighths, deductions);
+
+  // Estimated load (lbs) — optional planning input feeding the engine's capacity
+  // gating. Blank = 0 (no-load). Must be non-negative and within range.
+  const loadTrim = estimatedLoad.trim();
+  const loadNum = loadTrim === '' ? 0 : Number(loadTrim);
+  const loadValid = loadTrim === '' || (Number.isFinite(loadNum) && loadNum >= 0 && loadNum <= MAX_LOAD_LBS);
+
   const buildingRequired = !!operation?.multiBuilding;
 
   const disabledReason =
@@ -114,72 +155,59 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       ? 'Enter the opening measurement'
       : effective <= 0
         ? 'Deductions consume the whole opening'
-        : !editing && !qtyValid
-          ? 'Number of shores must be a whole number of 1 or more'
-          : buildingRequired && building.trim() === ''
-            ? 'Enter the building'
-            : null;
+        : !loadValid
+          ? 'Load must be between 0 and 500,000 lbs'
+          : !editing && !qtyValid
+            ? 'Number of shores must be a whole number of 1 or more'
+            : buildingRequired && building.trim() === ''
+              ? 'Enter the building'
+              : null;
   const canSubmit = disabledReason === null;
 
-  async function handleSubmit() {
-    if (!canSubmit || !operation) return;
-    const uid = await getUid();
+  // Group picker source: the distinct apparatus already on scene (40-inventory).
+  // assignedResource stores the rig NAME (what the card + Command roll-up show).
+  const apparatusOptions = useMemo(() => {
+    const names = [...new Set(inventory.map((i) => i.apparatus).filter(Boolean))].sort();
+    return [{ value: '', label: '— None —' }, ...names.map((n) => ({ value: n, label: n }))];
+  }, [inventory]);
 
-    if (editing) {
-      const sp = shorePoint!;
-      const patch: ShorePointPatch = {};
-      if (String(division) !== sp.division) patch.division = String(division);
-      const newBuilding = building.trim() || null;
-      if (newBuilding !== (sp.building ?? null)) patch.building = newBuilding;
-      const newArea = area.trim() || null;
-      if (newArea !== (sp.area ?? null)) patch.area = newArea;
-      if (shoreType !== sp.shoreType) patch.shoreType = shoreType;
-      if (measurementEighths !== sp.measurementEighths) patch.measurementEighths = measurementEighths;
-      if (
-        deductions.headerWood !== sp.deductions.headerWood ||
-        deductions.footerWood !== sp.deductions.footerWood ||
-        deductions.topPlate !== sp.deductions.topPlate ||
-        deductions.bottomPlate !== sp.deductions.bottomPlate
-      ) {
-        patch.deductions = deductions;
-      }
-      const newLabel = label.trim() || null;
-      if (newLabel !== (sp.label ?? null)) patch.label = newLabel;
+  // Draft shore point for the inline recommendation engine — same fields a saved
+  // point carries, so findForShorePoint computes identically (no UI-side math).
+  const draftSp = useMemo<ShorePoint | null>(() => {
+    if (!operation || measurementEighths <= 0) return null;
+    return {
+      id: 'draft',
+      opId: operation.id,
+      division: String(division),
+      ...(building.trim() ? { building: building.trim() } : {}),
+      ...(area.trim() ? { area: area.trim() } : {}),
+      shoreType,
+      measurementEighths,
+      deductions,
+      ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
+      status: 'pending',
+    };
+  }, [operation, division, building, area, shoreType, measurementEighths, deductions, loadNum]);
 
-      if (Object.keys(patch).length === 0) {
-        onClose();
-        return;
-      }
+  const recommendations = useRecommendations(inlineMode && found ? draftSp : null);
+  const noResultsReason =
+    inlineMode && found && draftSp && recommendations.length === 0 ? pendingReasonFor(draftSp, inventory) : undefined;
 
-      const result = await commit({
-        type: 'ShorePointEdited',
-        id: newId(),
-        opId: operation.id,
-        at: Date.now(),
-        by: uid,
-        spId: sp.id,
-        patch,
-      });
-      if (result.ok) {
-        commitHaptic();
-        onClose();
-      }
-      return;
-    }
+  const draftLocation = useMemo(
+    () => [divisionLabel(String(division)), building.trim() || undefined, area.trim() || undefined].filter(Boolean).join(' · '),
+    [division, building, area],
+  );
 
-    // Create (KB-7): one card per STRUT. Each multi-strut shore writes its
-    // struts as linked points sharing a groupId — one group per PHYSICAL shore,
-    // so pre-cutting lockstep and the board's group gate scope to the shore.
-    // Single-strut shores (T-Shore) stay ungrouped. The whole add — all shores —
-    // commits as ONE atomic batch (#220 "N cards in a single commit").
-    const at = Date.now();
+  // One add fans out to cards = shores × struts/shore (KB-7); multi-strut shores
+  // share one groupId per physical shore. Shared by Save-as-Pending and Deploy.
+  function buildPoints(): ShorePoint[] {
     const points: ShorePoint[] = [];
     for (let shore = 0; shore < qtyNum; shore++) {
       const groupId = strutsPerShore > 1 ? newId() : undefined;
       for (let strut = 0; strut < strutsPerShore; strut++) {
         points.push({
           id: newId(),
-          opId: operation.id,
+          opId: operation!.id,
           division: String(division),
           ...(building.trim() ? { building: building.trim() } : {}),
           ...(area.trim() ? { area: area.trim() } : {}),
@@ -188,20 +216,24 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
           measurementEighths,
           deductions,
           ...(label.trim() ? { label: label.trim() } : {}),
+          ...(assignedResource ? { assignedResource } : {}),
+          ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
           status: 'pending',
         });
       }
     }
+    return points;
+  }
 
+  // Create the Pending card(s) — the two-step "Add Shore Point" and the one-step
+  // "Save as Pending" both land here. One atomic batch (#220).
+  async function handleCreatePending() {
+    if (!canSubmit || !operation) return;
+    const uid = await getUid();
+    const at = Date.now();
+    const points = buildPoints();
     const result = await commitMany(
-      points.map((sp) => ({
-        type: 'ShorePointAdded',
-        id: newId(),
-        opId: operation.id,
-        at,
-        by: uid,
-        shorePoint: sp,
-      })),
+      points.map((sp) => ({ type: 'ShorePointAdded', id: newId(), opId: operation.id, at, by: uid, shorePoint: sp })),
     );
     if (result.ok) {
       commitHaptic();
@@ -210,45 +242,169 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
     }
   }
 
+  // One-step deploy: create the point(s), then put the chosen combo on each.
+  async function handleDeploy(combo: StrutCombination) {
+    if (!operation || deploying) return;
+    const inventoryId = combo.strut.inventoryId;
+    const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
+    if (!inventoryId || !item) {
+      setDeployError('That strut is no longer in inventory — re-check stock.');
+      return;
+    }
+    setDeploying(true);
+    setDeployError(null);
+    const uid = await getUid();
+    const at = Date.now();
+    const points = buildPoints();
+    const addResult = await commitMany(
+      points.map((sp) => ({ type: 'ShorePointAdded', id: newId(), opId: operation.id, at, by: uid, shorePoint: sp })),
+    );
+    if (!addResult.ok) {
+      setDeployError('Could not create the shore point — try again.');
+      setDeploying(false);
+      return;
+    }
+    // commitMany can't carry inventory events — deploy each created point with a
+    // single commit (its own pre-flight + decrement-abort-on-zero transaction).
+    // The chosen combo goes on every point of the add (same opening, same strut).
+    // ponytail: partial stock leaves the overflow points Pending on the board;
+    // a "deployed X of N" toast can come if field use asks — the board shows it.
+    const model = comboModel(combo);
+    for (const p of points) {
+      await commit({
+        type: 'StrutDeployed',
+        id: newId(),
+        opId: operation.id,
+        at: Date.now(),
+        by: uid,
+        spId: p.id,
+        deployedStrut: { model, source: item.apparatus, inventoryId },
+      });
+    }
+    commitHaptic();
+    onAdded?.(points);
+    onClose();
+  }
+
+  // Edit an existing Pending point (#220 3-R). assignedResource is reassignable
+  // throughout the op; measurement/shore type lock once past Pending (reducer).
+  async function handleSaveEdit() {
+    if (!canSubmit || !operation || !shorePoint) return;
+    const uid = await getUid();
+    const sp = shorePoint;
+    const patch: ShorePointPatch = {};
+    if (String(division) !== sp.division) patch.division = String(division);
+    const newBuilding = building.trim() || null;
+    if (newBuilding !== (sp.building ?? null)) patch.building = newBuilding;
+    const newArea = area.trim() || null;
+    if (newArea !== (sp.area ?? null)) patch.area = newArea;
+    const newResource = assignedResource || null;
+    if (newResource !== (sp.assignedResource ?? null)) patch.assignedResource = newResource;
+    if (shoreType !== sp.shoreType) patch.shoreType = shoreType;
+    if (measurementEighths !== sp.measurementEighths) patch.measurementEighths = measurementEighths;
+    const newLoad = loadNum > 0 ? loadNum : null;
+    if (newLoad !== (sp.estimatedLoad ?? null)) patch.estimatedLoad = newLoad;
+    if (
+      deductions.headerWood !== sp.deductions.headerWood ||
+      deductions.footerWood !== sp.deductions.footerWood ||
+      deductions.topPlate !== sp.deductions.topPlate ||
+      deductions.bottomPlate !== sp.deductions.bottomPlate
+    ) {
+      patch.deductions = deductions;
+    }
+    const newLabel = label.trim() || null;
+    if (newLabel !== (sp.label ?? null)) patch.label = newLabel;
+
+    if (Object.keys(patch).length === 0) {
+      onClose();
+      return;
+    }
+
+    const result = await commit({
+      type: 'ShorePointEdited',
+      id: newId(),
+      opId: operation.id,
+      at: Date.now(),
+      by: uid,
+      spId: sp.id,
+      patch,
+    });
+    if (result.ok) {
+      commitHaptic();
+      onClose();
+    }
+  }
+
+  // Footer: edit → Save; one-step create → Save as Pending (Deploy lives on the
+  // result cards); two-step create → Add Shore Point.
+  const footer = editing ? (
+    <Button
+      variant="primary"
+      fullWidth
+      disabled={!canSubmit}
+      disabledReason={disabledReason ?? undefined}
+      onPress={handleSaveEdit}
+    >
+      Save
+    </Button>
+  ) : inlineMode ? (
+    <Button
+      variant="secondary"
+      fullWidth
+      disabled={!canSubmit}
+      disabledReason={disabledReason ?? undefined}
+      onPress={handleCreatePending}
+    >
+      Save as Pending
+    </Button>
+  ) : (
+    <Button
+      variant="primary"
+      fullWidth
+      disabled={!canSubmit}
+      disabledReason={disabledReason ?? undefined}
+      onPress={handleCreatePending}
+    >
+      Add Shore Point
+    </Button>
+  );
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       title={editing ? 'Edit Shore Point' : 'Add Shore Point'}
       variant="form"
-      footer={
-        <Button
-          variant="primary"
-          fullWidth
-          disabled={!canSubmit}
-          disabledReason={disabledReason ?? undefined}
-          onPress={handleSubmit}
-        >
-          {editing ? 'Save' : 'Add Shore Point'}
-        </Button>
-      }
+      footer={footer}
     >
+      {/* v3 field order: Shore Type → Label → Building → Division · Area · Group
+          → Measurement → Deductions → Est. Load → Quantity → (inline) Find. */}
       <div className="fs-ops-form">
+        <InlineSegmented label="Shore type" options={SHORE_TYPE_OPTIONS} value={shoreType} onChange={selectShoreType} />
+        <TextField label="Label" value={label} onChange={setLabel} placeholder="Optional — e.g. West Wall Window" />
         {buildingRequired && (
-          <TextField
-            label="Building"
-            value={building}
-            onChange={setBuilding}
-            placeholder="e.g. North tower"
-          />
+          <TextField label="Building" value={building} onChange={setBuilding} placeholder="e.g. North tower" />
         )}
         <DivisionPicker value={division} onChange={setDivision} />
+        <TextField label="Area" value={area} onChange={setArea} placeholder='Optional — e.g. "Northwest corner"' />
+        {(apparatusOptions.length > 1 || assignedResource) && (
+          <BottomSheetPicker
+            label="Group (assigned apparatus)"
+            options={apparatusOptions}
+            value={assignedResource}
+            onSelect={setAssignedResource}
+          />
+        )}
+        <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
+        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
         <TextField
-          label="Area"
-          value={area}
-          onChange={setArea}
-          placeholder='Optional — e.g. "Northwest corner"'
-        />
-        <InlineSegmented
-          label="Shore type"
-          options={SHORE_TYPE_OPTIONS}
-          value={shoreType}
-          onChange={selectShoreType}
+          label="Estimated load (lbs) — optional"
+          value={estimatedLoad}
+          onChange={setEstimatedLoad}
+          inputMode="numeric"
+          maxLength={7}
+          placeholder="e.g. 15000"
+          helper="Leave blank if unknown"
         />
         {!editing && (
           <TextField
@@ -266,18 +422,60 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
             }
           />
         )}
-        <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
-        <DeductionPicker
-          measurementEighths={measurementEighths}
-          value={deductions}
-          onChange={setDeductions}
-        />
-        <TextField
-          label="Label"
-          value={label}
-          onChange={setLabel}
-          placeholder="Optional — appears on the card"
-        />
+
+        {inlineMode && (
+          <>
+            {!found && (
+              <Button
+                variant="primary"
+                fullWidth
+                disabled={!canSubmit}
+                disabledReason={disabledReason ?? undefined}
+                onPress={() => setFound(true)}
+              >
+                Find Available Struts
+              </Button>
+            )}
+            {found && recommendations.length > 0 && (
+              <div className="fs-assign-list">
+                {recommendations.map((combo) => (
+                  <RecommendationCard
+                    key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
+                    combo={combo}
+                    deductions={deductions}
+                    source={
+                      combo.strut.inventoryId
+                        ? inventory.find((i) => i.id === combo.strut.inventoryId)?.apparatus
+                        : undefined
+                    }
+                    location={draftLocation}
+                    onDeploy={handleDeploy}
+                    deployDisabled={deploying}
+                  />
+                ))}
+              </div>
+            )}
+            {found && recommendations.length === 0 && noResultsReason === 'no-match' && (
+              <EmptyState
+                variant="filtered"
+                headline="No matching struts"
+                reason="Nothing fits this opening at this load — adjust deductions or re-measure"
+              />
+            )}
+            {found && recommendations.length === 0 && noResultsReason === 'no-inventory' && (
+              <EmptyState
+                variant="upstream-blocked"
+                headline="No apparatus stock available"
+                reason="A strut that fits exists, but none is available on scene"
+              />
+            )}
+            {deployError && (
+              <p role="alert" className="fs-assign-error">
+                {deployError}
+              </p>
+            )}
+          </>
+        )}
       </div>
     </Modal>
   );

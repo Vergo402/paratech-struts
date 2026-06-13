@@ -73,6 +73,14 @@ export const ShorePoint = z.object({
   measurementEighths: Eighths,
   deductions: Deductions,
   label: z.string().optional(),
+  // The crew/apparatus assigned to work this point (v3 `group`; ADR-008
+  // `assignedResource`). Crew accountability — reassignable throughout the op,
+  // NOT locked at Pending. The Command roll-up ("who's on what") is Phase I.
+  assignedResource: z.string().optional(),
+  // Operator's estimated load (lbs) — planning input to the strut search's
+  // capacity gating (findForShorePoint passes it to the engine). Absent = 0
+  // (capacity demoted, ADR-012). Locked post-Pending like the measurement.
+  estimatedLoad: z.number().nonnegative().optional(),
   status: ShorePointStatus,
   deployedStrut: DeployedStrut.optional(),
   pendingReason: PendingReason.optional(),
@@ -92,6 +100,8 @@ export const ShorePointPatch = z
     measurementEighths: Eighths,
     deductions: Deductions,
     label: z.string().nullable(),
+    assignedResource: z.string().nullable(),
+    estimatedLoad: z.number().nonnegative().nullable(),
   })
   .partial();
 export type ShorePointPatch = z.infer<typeof ShorePointPatch>;
