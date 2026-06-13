@@ -1,5 +1,5 @@
 import * as Switch from '@radix-ui/react-switch';
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { tapHaptic } from './haptics';
 
 /**
@@ -13,8 +13,8 @@ import { tapHaptic } from './haptics';
 export interface ToggleProps {
   /** Stable noun-phrase label — identical in both states. */
   label: string;
-  /** Optional quiet helper clause under the label. */
-  helper?: string;
+  /** Optional quiet helper clause under the label (text or light markup). */
+  helper?: ReactNode;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;

@@ -75,11 +75,11 @@ describe('StartOperationModal', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('toggling "Find & deploy in the form" off creates a two-step op (inlineDeploy false)', async () => {
+  it('"Utilize Pending Card" on creates a two-step op (inlineDeploy false)', async () => {
     const user = userEvent.setup();
     render(<StartOperationModal open onClose={() => {}} />);
     await user.type(screen.getByLabelText('Operation name'), 'Big Op');
-    await user.click(screen.getByRole('switch', { name: /find & deploy in the form/i }));
+    await user.click(screen.getByRole('switch', { name: /utilize pending card/i }));
     await user.click(screen.getByRole('button', { name: 'Start Operation' }));
     const event = mockCommit.mock.calls[0]![0];
     expect(event.inlineDeploy).toBe(false);

@@ -109,11 +109,20 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
           onChange={setName}
           placeholder="e.g. Cascade Building Fire"
         />
+        {/* "Utilize Pending Card" is the user-facing inverse of inlineDeploy:
+            ON = use the Pending card (two-step), OFF = find + deploy in the form
+            (one-step). The data field stays inlineDeploy; only the display flips. */}
         <Toggle
-          label="Find & deploy in the form"
-          helper="On: size, find struts, and deploy right in the shore point form — best for small ops. Off: save a Pending card and assign equipment from the board — best for large ops with a retrieval crew. Change anytime by editing the operation."
-          checked={inlineDeploy}
-          onChange={setInlineDeploy}
+          label="Utilize Pending Card"
+          helper={
+            <>
+              <u>On</u>: save a Pending card; assign equipment from the board later.
+              <br />
+              <u>Off</u>: find and deploy struts right in the form.
+            </>
+          }
+          checked={!inlineDeploy}
+          onChange={(next) => setInlineDeploy(!next)}
         />
         <Toggle
           label="Multi-building"
