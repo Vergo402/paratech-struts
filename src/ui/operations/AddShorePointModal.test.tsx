@@ -323,7 +323,7 @@ describe('AddShorePointModal — one-step inline deploy', () => {
 
   it('offers a Group picker built from on-scene apparatus', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
-    expect(screen.getByText('Group (assigned apparatus)')).toBeInTheDocument();
+    expect(screen.getByText('Group')).toBeInTheDocument();
   });
 
   it('Find reveals recommendations; Deploy creates the point AND deploys the strut', async () => {

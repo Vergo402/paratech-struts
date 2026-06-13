@@ -123,6 +123,24 @@
   gap: var(--space-4);
 }
 
+/* Division · Area · Group share one line (v3 form-row-3). Children shrink
+   equally; min-width:0 + ellipsis on the picker value keeps a long division
+   label ("Div 1 (Ground level)") from forcing the row wider than the modal. */
+.fs-ops-row3 {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.fs-ops-row3 > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.fs-ops-row3 .fs-picker-trigger-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- shore point card (card.md — the lifecycle card) ---------------------- */
 /* Status hues arrive via the shared is-{status} hooks (--sp-text / --sp-bg)
    declared in primitives.css. */

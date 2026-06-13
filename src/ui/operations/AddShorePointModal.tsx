@@ -385,16 +385,19 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
         {buildingRequired && (
           <TextField label="Building" value={building} onChange={setBuilding} placeholder="e.g. North tower" />
         )}
-        <DivisionPicker value={division} onChange={setDivision} />
-        <TextField label="Area" value={area} onChange={setArea} placeholder='Optional — e.g. "Northwest corner"' />
-        {(apparatusOptions.length > 1 || assignedResource) && (
-          <BottomSheetPicker
-            label="Group (assigned apparatus)"
-            options={apparatusOptions}
-            value={assignedResource}
-            onSelect={setAssignedResource}
-          />
-        )}
+        {/* v3 form-row-3: Division · Area · Group share one line. */}
+        <div className="fs-ops-row3">
+          <DivisionPicker value={division} onChange={setDivision} />
+          <TextField label="Area" value={area} onChange={setArea} placeholder="Optional" />
+          {(apparatusOptions.length > 1 || assignedResource) && (
+            <BottomSheetPicker
+              label="Group"
+              options={apparatusOptions}
+              value={assignedResource}
+              onSelect={setAssignedResource}
+            />
+          )}
+        </div>
         <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
         <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
         <TextField
