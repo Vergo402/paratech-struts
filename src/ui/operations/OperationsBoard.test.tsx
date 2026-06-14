@@ -342,6 +342,38 @@ describe('OperationsBoard', () => {
     expect(mockCommit).not.toHaveBeenCalled();
   });
 
+  it('a soft-deleted Pending mate no longer gates the survivors’ advance (audit W2)', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    const grouped = (id: string, status: ShorePointStatus, groupIndex: number, deletedAt?: number): ShorePoint => ({
+      ...makeSP(id, status),
+      shoreType: '3-post',
+      groupId: 'g1',
+      groupIndex,
+      groupTotal: 3,
+      ...(deletedAt != null ? { deletedAt } : {}),
+      ...(status !== 'pending'
+        ? { deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } }
+        : {}),
+    });
+    // sp-3 was deleted while still Pending (#319) — it keeps status:'pending' but
+    // is out of the lanes, so it must NOT hold the group gate. The two deployed
+    // survivors can advance. (Before the fix this gated them forever.)
+    mockShorePoints.mockReturnValue([
+      grouped('sp-1', 'process', 1),
+      grouped('sp-2', 'process', 2),
+      grouped('sp-3', 'pending', 3, 5000),
+    ]);
+    render(<OperationsBoard />);
+
+    expect(screen.queryByText(/Waiting on group/)).toBeNull();
+    const advance = getSlide('Slide to set Strut Set');
+    expect(advance).not.toHaveClass('fs-slide--disabled');
+    await slideToCommit(advance);
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', from: 'process', to: 'strutset' }),
+    );
+  });
+
   // A 3-Post in one lane now collapses into ONE GroupedShorePoint rolodex (S12
   // §2): only the front member shows its slide. The single slide commit still
   // fans out to the whole group (the reducer's lockstep) and announces the

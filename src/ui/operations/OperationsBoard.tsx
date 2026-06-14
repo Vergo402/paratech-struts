@@ -329,7 +329,9 @@ export function OperationsBoard() {
   /** The reducer's pre-cutting fan-out set: same-status lockstep group mates. */
   const lockstepCount = useCallback(
     (sp: ShorePoint) =>
-      sp.groupId ? shorePoints.filter((s) => s.groupId === sp.groupId && s.status === sp.status).length : 1,
+      sp.groupId
+        ? shorePoints.filter((s) => s.groupId === sp.groupId && s.status === sp.status && s.deletedAt == null).length
+        : 1,
     [shorePoints],
   );
 
@@ -340,6 +342,36 @@ export function OperationsBoard() {
       setScrollToId(sp.id);
       const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
       setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
+    },
+    [expandLane],
+  );
+
+  /** One-step (inline) deploy outcome from Add Shore Point: stock can run out
+   *  mid-batch, leaving some points Pending — announce the partial honestly so it
+   *  is never reported as a full success (audit W1). */
+  const handleInlineDeployed = useCallback(
+    (deployed: ShorePoint[], pending: ShorePoint[], model: string) => {
+      const ref = deployed[0] ?? pending[0];
+      if (!ref) return;
+      const where = [ref.building, divisionLabel(ref.division), ref.area].filter(Boolean).join(', ');
+      if (deployed.length) {
+        expandLane('process');
+        setScrollToId(deployed[0]!.id);
+      }
+      if (pending.length) {
+        expandLane('pending');
+        if (!deployed.length) setScrollToId(pending[0]!.id);
+      }
+      if (pending.length === 0) {
+        setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
+      } else {
+        const total = deployed.length + pending.length;
+        setAnnouncement(
+          deployed.length === 0
+            ? `Out of stock — ${total} shore ${total === 1 ? 'point' : 'points'} stayed Pending.`
+            : `Deployed ${deployed.length} of ${total} — ${pending.length} stayed Pending, out of stock.`,
+        );
+      }
     },
     [expandLane],
   );
@@ -442,7 +474,9 @@ export function OperationsBoard() {
   const advanceDisabledReasonFor = useCallback(
     (sp: ShorePoint) => {
       if (sp.status !== 'process' || !sp.groupId) return undefined;
-      const mates = shorePoints.filter((s) => s.groupId === sp.groupId);
+      // Exclude soft-deleted (#319) mates — a deleted-while-Pending member keeps
+      // status:'pending' and would gate the survivors forever (audit W2).
+      const mates = shorePoints.filter((s) => s.groupId === sp.groupId && s.deletedAt == null);
       const stillPending = mates.filter((s) => s.status === 'pending').length;
       if (stillPending === 0) return undefined;
       return `Waiting on group — ${stillPending} of ${mates.length} still Pending`;
@@ -680,6 +714,7 @@ export function OperationsBoard() {
         onClose={() => setSpModal(null)}
         shorePoint={spModal?.mode === 'edit' ? spModal.shorePoint : undefined}
         onAdded={handleAdded}
+        onDeployed={handleInlineDeployed}
       />
 
       <DeleteShorePointModal shorePoint={deleteSp} onClose={() => setDeleteSp(null)} />

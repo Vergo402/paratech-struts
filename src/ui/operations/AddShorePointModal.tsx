@@ -63,9 +63,12 @@ export interface AddShorePointModalProps {
   shorePoint?: ShorePoint | null;
   /** Create mode only — receives the committed points (board scroll + announce). */
   onAdded?: (added: ShorePoint[]) => void;
+  /** One-step deploy outcome: which points deployed vs stayed Pending (out of
+   *  stock), so the board can announce "deployed X of N" honestly (audit W1). */
+  onDeployed?: (deployed: ShorePoint[], pending: ShorePoint[], model: string) => void;
 }
 
-export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddShorePointModalProps) {
+export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeployed }: AddShorePointModalProps) {
   const operation = useOperation();
   const shorePoints = useShorePoints();
   const inventory = useInventory();
@@ -286,11 +289,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
     // commitMany can't carry inventory events — deploy each created point with a
     // single commit (its own pre-flight + decrement-abort-on-zero transaction).
     // The chosen combo goes on every point of the add (same opening, same strut).
-    // ponytail: partial stock leaves the overflow points Pending on the board;
-    // a "deployed X of N" toast can come if field use asks — the board shows it.
+    // Honor each result: when stock runs out mid-batch the overflow points stay
+    // Pending — surface "deployed X of N" instead of a silent success (audit W1).
     const model = comboModel(combo);
+    const deployed: ShorePoint[] = [];
     for (const p of points) {
-      await commit({
+      const result = await commit({
         type: 'StrutDeployed',
         id: newId(),
         opId: operation.id,
@@ -299,9 +303,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
         spId: p.id,
         deployedStrut: { model, source: item.apparatus, inventoryId },
       });
+      if (result.ok) deployed.push(p);
+      else break; // stock exhausted — every remaining point stays Pending
     }
-    commitHaptic();
-    onAdded?.(points);
+    const pending = points.slice(deployed.length);
+    if (deployed.length > 0) commitHaptic(); // no success buzz when nothing deployed
+    onDeployed?.(deployed, pending, model); // board owns the lane focus + announce
     onClose();
   }
 

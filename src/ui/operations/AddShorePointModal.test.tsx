@@ -400,4 +400,61 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     expect(deploy.deployedStrut).toMatchObject({ model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' });
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('full success: onDeployed reports every point deployed, none Pending (audit W1)', async () => {
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    expect(onDeployed).toHaveBeenCalledTimes(1);
+    const [deployed, pending, model] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(1);
+    expect(pending).toHaveLength(0);
+    expect(model).toBe('LS 203');
+  });
+
+  it('partial stock: deploys what it can, reports the rest Pending — never a silent full success (audit W1)', async () => {
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    const onClose = vi.fn();
+    // One LS 203 on scene, but a 3-Post needs three struts.
+    mockInventory.mockReturnValue([{ ...INV[0], quantity: 1, available: 1 }] as never);
+    mockCommit
+      .mockResolvedValueOnce({ ok: true }) // 1st strut deploys
+      .mockResolvedValueOnce({ ok: false, reason: 'inventory item inv-1 has none available (L-8 abort)' });
+    render(<AddShorePointModal open onClose={onClose} onDeployed={onDeployed} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    // The loop stops at the first abort — 1 success + 1 failed attempt, no blind 3rd.
+    expect(mockCommit).toHaveBeenCalledTimes(2);
+    expect(onDeployed).toHaveBeenCalledTimes(1);
+    const [deployed, pending, model] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(1);
+    expect(pending).toHaveLength(2);
+    expect(model).toBe('LS 203');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('total failure: nothing deploys → all Pending, modal still closes, no false success (audit W1)', async () => {
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    const onClose = vi.fn();
+    mockCommit.mockResolvedValueOnce({ ok: false, reason: 'inventory item inv-1 has none available (L-8 abort)' });
+    render(<AddShorePointModal open onClose={onClose} onDeployed={onDeployed} />);
+    await setMeasurementFeet(user, 4); // single T-Shore
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    expect(mockCommit).toHaveBeenCalledTimes(1); // first attempt fails, loop breaks
+    const [deployed, pending] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(0);
+    expect(pending).toHaveLength(1);
+    expect(onClose).toHaveBeenCalled();
+  });
 });
