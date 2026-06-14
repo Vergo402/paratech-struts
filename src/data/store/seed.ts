@@ -58,10 +58,18 @@ export function buildSeedInventory(): InventoryItem[] {
 
 /** Seed the inventory table if (and only if) it is empty. True when seeded. */
 export async function seedIfEmpty(db: FieldShoreDB = defaultDb): Promise<boolean> {
-  return db.transaction('rw', db.inventory, async () => {
-    const count = await db.inventory.count();
-    if (count > 0) return false;
-    await db.inventory.bulkAdd(buildSeedInventory());
-    return true;
-  });
+  try {
+    return await db.transaction('rw', db.inventory, async () => {
+      const count = await db.inventory.count();
+      if (count > 0) return false;
+      await db.inventory.bulkAdd(buildSeedInventory());
+      return true;
+    });
+  } catch (err) {
+    // Seeding is a first-run convenience, not a hard requirement — an empty
+    // inventory is a viable department. A storage/quota failure here must not
+    // dead-end boot (audit W6); a DB that truly can't open still rejects upstream.
+    console.error('seedIfEmpty failed — booting with empty inventory:', err);
+    return false;
+  }
 }

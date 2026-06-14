@@ -5,6 +5,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
+import { ErrorBoundary } from './ErrorBoundary';
 import { router } from './router';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/inter'; // numeral/value font (--font-mono role); ADR-028
@@ -22,15 +23,26 @@ const queryClient = new QueryClient();
 function App() {
   const [booted, setBooted] = useState(false);
   const [bootError, setBootError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    // bootData is idempotent — StrictMode's double-invoke is expected.
+    // bootData is idempotent — StrictMode's double-invoke (and a retry bump of
+    // `attempt`) re-run it safely (audit W6).
+    let cancelled = false;
+    setBootError(null);
     bootData()
-      .then(() => setBooted(true))
-      .catch((err: unknown) => setBootError(err instanceof Error ? err.message : String(err)));
-  }, []);
+      .then(() => {
+        if (!cancelled) setBooted(true);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setBootError(err instanceof Error ? err.message : String(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
 
-  if (!booted) return <Splash error={bootError} />;
+  if (!booted) return <Splash error={bootError} onRetry={() => setAttempt((n) => n + 1)} />;
   return <RouterProvider router={router} />;
 }
 
@@ -39,10 +51,12 @@ if (!rootEl) throw new Error('FieldShore: #root element not found');
 
 createRoot(rootEl).render(
   <StrictMode>
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

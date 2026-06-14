@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDB, type FieldShoreDB } from './db';
 import { getDeviceUid } from './auth';
 import { buildSeedInventory, seedIfEmpty } from './seed';
@@ -51,6 +51,16 @@ describe('seed inventory', () => {
     expect(count).toBe(buildSeedInventory().length);
     expect(await seedIfEmpty(db)).toBe(false);
     expect(await db.inventory.count()).toBe(count);
+  });
+
+  it('degrades to empty inventory when seeding throws, instead of dead-ending boot (audit W6)', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const throwingDb = {
+      transaction: () => Promise.reject(new Error('QuotaExceededError')),
+    } as unknown as FieldShoreDB;
+    await expect(seedIfEmpty(throwingDb)).resolves.toBe(false);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it('is schema-valid, models resolve against STRUTS, and stock is sane', () => {

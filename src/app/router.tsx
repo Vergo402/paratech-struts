@@ -13,6 +13,7 @@ import { InventoryScreen } from './routes/inventory';
 import { CommandScreen } from './routes/command';
 import { SettingsScreen } from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
+import { EmptyState } from '@ui/primitives';
 
 /**
  * Route tree — the locked 5-tab spine (ADR-014) + the /gallery dev surface.
@@ -51,7 +52,36 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: '/gallery', component: GalleryScreen }),
 ]);
 
-export const router = createRouter({ routeTree });
+// A render throw inside a route shows a recoverable screen instead of a blank
+// page; an unknown path points back to Operations (audit W6). The App-root
+// ErrorBoundary backstops anything outside the router.
+function RouteError({ error }: { error: Error }) {
+  return (
+    <EmptyState
+      variant="upstream-blocked"
+      headline="Something went wrong on this screen"
+      reason={error instanceof Error ? error.message : 'An unexpected error occurred'}
+      action={{ label: 'Reload', onPress: () => window.location.reload() }}
+    />
+  );
+}
+
+function RouteNotFound() {
+  return (
+    <EmptyState
+      variant="filtered"
+      headline="Screen not found"
+      reason="That view doesn't exist — head back to Operations"
+      action={{ label: 'Go to Operations', onPress: () => window.location.assign('/operations') }}
+    />
+  );
+}
+
+export const router = createRouter({
+  routeTree,
+  defaultErrorComponent: RouteError,
+  defaultNotFoundComponent: RouteNotFound,
+});
 
 declare module '@tanstack/react-router' {
   interface Register {
