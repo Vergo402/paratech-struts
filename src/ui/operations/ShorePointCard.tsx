@@ -15,6 +15,7 @@ export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
 const PENDING_REASON_COPY = {
   'no-match': 'No matching strut — nothing fits this opening at this load',
   'no-inventory': 'Waiting for inventory — no apparatus stock to pull from',
+  'over-capacity': 'Over capacity — estimated load exceeds the 4-strut limit; escalate to engineering',
 } as const;
 
 // Waiting-callout headline per reason (handoff §1.1). The description below it
@@ -22,6 +23,7 @@ const PENDING_REASON_COPY = {
 const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
   'no-inventory': 'Waiting for inventory',
   'no-match': 'No matching strut',
+  'over-capacity': 'Over capacity',
 };
 
 // The lifecycle value shelf. The shelf number is ALWAYS the effective length

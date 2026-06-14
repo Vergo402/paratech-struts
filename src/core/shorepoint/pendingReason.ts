@@ -12,6 +12,8 @@ import { findForShorePoint } from './reducer';
  *                      sentinel does NOT — its deploy path is closed)
  *   'no-inventory'   — a strut that fits exists in the Paratech catalog, but
  *                      none is available on scene (stock problem)
+ *   'over-capacity'  — a strut fits geometrically, but every option exceeds the
+ *                      4-strut capacity cap at this load (escalate, not a miss)
  *   'no-match'       — nothing fits this opening geometrically at all
  *
  * Deliberate broadening of the v3 semantics: v3 (app.js deployPendingShorePoint)
@@ -25,5 +27,9 @@ export function pendingReasonFor(sp: ShorePoint, inventory: InventoryItem[]): Pe
   const stocked = findForShorePoint(sp, inventory);
   if (stocked.some((c) => !c.exceedsCapacity)) return undefined;
   const catalog = findForShorePoint(sp, null);
-  return catalog.some((c) => !c.exceedsCapacity) ? 'no-inventory' : 'no-match';
+  if (catalog.some((c) => !c.exceedsCapacity)) return 'no-inventory';
+  // A geometric fit exists but every option is over the 4-strut capacity cap →
+  // the load is too high (needs more capacity / engineering), NOT a geometry
+  // miss. Only an empty catalog is a true no-match (audit W3).
+  return catalog.length > 0 ? 'over-capacity' : 'no-match';
 }

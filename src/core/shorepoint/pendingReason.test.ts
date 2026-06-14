@@ -69,4 +69,11 @@ describe('pendingReasonFor — live reason for a Pending point (#221)', () => {
   it('no-match wins over no-inventory when geometry is the blocker', () => {
     expect(pendingReasonFor(sp({ measurementEighths: 16 * 8 }), [])).toBe('no-match');
   });
+
+  it('over-capacity when the opening fits but the estimated load exceeds the 4-strut cap', () => {
+    // 132″ reaches on an LS 1016, but 60,000 lb needs > 4 struts → every combo
+    // comes back as an exceedsCapacity sentinel: a load problem, not a geometry miss.
+    const inv = [strut('inv-ls1016', 'LS 1016', 'LongShore', 4)];
+    expect(pendingReasonFor(sp({ measurementEighths: 132 * 8, estimatedLoad: 60000 }), inv)).toBe('over-capacity');
+  });
 });

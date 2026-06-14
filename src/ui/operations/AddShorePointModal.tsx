@@ -542,6 +542,13 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                 reason="A strut that fits exists, but none is available on scene"
               />
             )}
+            {found && recommendations.length === 0 && noResultsReason === 'over-capacity' && (
+              <EmptyState
+                variant="upstream-blocked"
+                headline="Over capacity"
+                reason="A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering"
+              />
+            )}
             {deployError && (
               <p role="alert" className="fs-assign-error">
                 {deployError}

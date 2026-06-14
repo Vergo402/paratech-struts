@@ -135,6 +135,13 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           reason="A strut that fits exists, but none is available on scene"
         />
       )}
+      {sp && recommendations.length === 0 && reason === 'over-capacity' && (
+        <EmptyState
+          variant="upstream-blocked"
+          headline="Over capacity"
+          reason="A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering"
+        />
+      )}
     </Sheet>
   );
 }

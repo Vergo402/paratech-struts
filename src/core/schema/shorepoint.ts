@@ -53,7 +53,7 @@ export const DeployedStrut = z.object({
 });
 export type DeployedStrut = z.infer<typeof DeployedStrut>;
 
-export const PendingReason = z.enum(['no-match', 'no-inventory']);
+export const PendingReason = z.enum(['no-match', 'no-inventory', 'over-capacity']);
 export type PendingReason = z.infer<typeof PendingReason>;
 
 export const ShorePoint = z.object({
