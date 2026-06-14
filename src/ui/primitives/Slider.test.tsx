@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react';
 import { Slider, shouldCommit } from './Slider';
-import { dragSlide, slideToCommit } from './Slider.testkit';
+import { cancelSlide, dragSlide, slideToCommit } from './Slider.testkit';
 
 describe('shouldCommit (the pure threshold)', () => {
   it('commits only past the threshold fraction of travel (0.6, finalized in S12)', () => {
@@ -29,6 +29,15 @@ describe('Slider', () => {
     const { container } = render(<Slider label="Slide to set Runner" onCommit={onCommit} />);
     await slideToCommit(container.querySelector('.fs-slide') as HTMLElement);
     expect(onCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it('a past-threshold drag that ends in pointercancel does NOT commit (audit W4)', async () => {
+    const onCommit = vi.fn();
+    const { container } = render(<Slider label="Slide to set Runner" onCommit={onCommit} />);
+    await cancelSlide(container.querySelector('.fs-slide') as HTMLElement);
+    expect(onCommit).not.toHaveBeenCalled();
+    const thumb = container.querySelector('.fs-slide-thumb') as HTMLElement;
+    expect(thumb.style.transform).toBe('translateX(0px)'); // snapped back, never committed
   });
 
   it('step-back mirrors the drag leftward and commits', async () => {

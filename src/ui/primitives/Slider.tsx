@@ -82,6 +82,16 @@ export function Slider({
     }
   };
 
+  // A cancel (vertical-pan reclassification, palm rejection, an interrupting
+  // second touch, edge-swipe) must NEVER commit — even past the threshold. Snap
+  // back only; the drag is abandoned, not completed (audit W4).
+  const onPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current || e.pointerId !== drag.current.pointerId) return;
+    drag.current = null;
+    setDragging(false);
+    setOffset(0);
+  };
+
   return (
     <div className={`fs-slide fs-slide--${direction}${disabled ? ' fs-slide--disabled' : ''}`}>
       {/* Pointer handlers live on the TRACK: a press anywhere in the channel
@@ -92,7 +102,7 @@ export function Slider({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
-        onPointerCancel={onPointerEnd}
+        onPointerCancel={onPointerCancel}
       >
         <span
           className="fs-slide-fill"

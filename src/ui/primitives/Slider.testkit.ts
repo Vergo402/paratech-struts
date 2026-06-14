@@ -33,7 +33,11 @@ export function getSlide(label: string): HTMLElement {
  * Async: commit handlers may await (e.g. device uid → commit) — the trailing
  * act() flushes those microtasks the way an awaited user-event click would.
  */
-export async function dragSlide(target: string | HTMLElement, distancePx = 184): Promise<void> {
+export async function dragSlide(
+  target: string | HTMLElement,
+  distancePx = 184,
+  endEvent: 'pointerup' | 'pointercancel' = 'pointerup',
+): Promise<void> {
   const el = typeof target === 'string' ? getSlide(target) : target;
   const root = (el.classList.contains('fs-slide') ? el : el.closest('.fs-slide')) as HTMLElement | null;
   if (!root) throw new Error('dragSlide target is not inside a .fs-slide');
@@ -47,7 +51,7 @@ export async function dragSlide(target: string | HTMLElement, distancePx = 184):
   try {
     fireEvent(thumb, pointer('pointerdown', 400));
     fireEvent(thumb, pointer('pointermove', 400 + sign * distancePx));
-    fireEvent(thumb, pointer('pointerup', 400 + sign * distancePx));
+    fireEvent(thumb, pointer(endEvent, 400 + sign * distancePx));
     await act(async () => {});
   } finally {
     trackSpy.mockRestore();
@@ -58,4 +62,9 @@ export async function dragSlide(target: string | HTMLElement, distancePx = 184):
 /** A full drag past the commit threshold. */
 export async function slideToCommit(target: string | HTMLElement): Promise<void> {
   await dragSlide(target, 184);
+}
+
+/** A full past-threshold drag that ends in pointercancel — must NOT commit. */
+export async function cancelSlide(target: string | HTMLElement): Promise<void> {
+  await dragSlide(target, 184, 'pointercancel');
 }
