@@ -235,7 +235,7 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { name: '+ Add Shore Point' }));
     const upFoot = screen.getByRole('button', { name: 'Up one foot' });
     for (let i = 0; i < 4; i++) await user.click(upFoot);
-    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');
     await user.click(screen.getByRole('button', { name: 'Add Shore Point' }));

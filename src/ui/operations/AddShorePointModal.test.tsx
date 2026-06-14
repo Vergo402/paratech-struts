@@ -105,7 +105,7 @@ describe('AddShorePointModal — create', () => {
     const onAdded = vi.fn();
     render(<AddShorePointModal open onClose={() => {}} onAdded={onAdded} />);
     await setMeasurementFeet(user, 4);
-    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');
     await user.click(submitButton());
@@ -148,7 +148,7 @@ describe('AddShorePointModal — create', () => {
     render(<AddShorePointModal open onClose={() => {}} onAdded={onAdded} />);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'Double-T' }));
     await setMeasurementFeet(user, 4);
-    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '2');
     await user.click(submitButton());
@@ -173,12 +173,12 @@ describe('AddShorePointModal — create', () => {
     expect(screen.queryByText(/= \d+ struts/)).not.toBeInTheDocument(); // 1 × T-Shore: silent
 
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
-    expect(screen.getByText('1 × 3-Post = 3 struts')).toBeInTheDocument();
+    expect(screen.getByText('i.e. 1 3-Post = 3 struts')).toBeInTheDocument();
 
-    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');
-    expect(screen.getByText('3 × 3-Post = 9 struts')).toBeInTheDocument();
+    expect(screen.getByText('i.e. 3 3-Post = 9 struts')).toBeInTheDocument();
   });
 
   it('the warn threshold reads TOTAL struts — 4 × 3-Post = 12 trips it, never blocks (#220 OQ2)', async () => {
@@ -186,10 +186,10 @@ describe('AddShorePointModal — create', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
     await setMeasurementFeet(user, 4);
-    const qty = screen.getByRole('textbox', { name: 'Number of shores' });
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '4');
-    expect(screen.getByText('4 × 3-Post = 12 struts — double-check the count')).toBeInTheDocument();
+    expect(screen.getByText('i.e. 4 3-Post = 12 struts — double-check the count')).toBeInTheDocument();
     expect(submitButton()).toBeEnabled();
   });
 
@@ -197,7 +197,7 @@ describe('AddShorePointModal — create', () => {
     const user = userEvent.setup();
     render(<AddShorePointModal open onClose={() => {}} />);
     await setMeasurementFeet(user, 4);
-    await user.clear(screen.getByRole('textbox', { name: 'Number of shores' }));
+    await user.clear(screen.getByRole('textbox', { name: 'Number of Shore Sets' }));
     expect(submitButton()).toBeDisabled();
     expect(screen.getByText(/whole number of 1 or more/)).toBeInTheDocument();
   });
@@ -233,18 +233,19 @@ describe('AddShorePointModal — create', () => {
     expect(submitButton()).toBeEnabled();
   });
 
-  it('seeds division / shore type / building from the newest shore point', () => {
+  it('seeds building / division / area / shore type from the newest shore point', () => {
     mockOperation.mockReturnValue({ ...OP, multiBuilding: true, divisions: [1, 2] });
     mockShorePoints.mockReturnValue([
       makeSP({ id: 'a', division: '1' }),
-      makeSP({ id: 'b', division: '2', shoreType: 'double-t', building: 'North tower' }),
+      makeSP({ id: 'b', division: '2', shoreType: 'double-t', building: 'North tower', area: 'NW corner' }),
     ]);
     render(<AddShorePointModal open onClose={() => {}} />);
     expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('2'); // compact: bare floor number
     const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
     expect(within(shoreType).getByRole('radio', { name: 'Double-T' })).toHaveAttribute('aria-checked', 'true');
-    // Building carries over from the newest point — shown as the picker's value.
+    // The whole location block carries over from the newest point (#248 re-drive).
     expect(screen.getByRole('button', { name: /Building/ })).toHaveTextContent('North tower');
+    expect(screen.getByRole('textbox', { name: 'Area / Room #' })).toHaveValue('NW corner');
   });
 });
 
@@ -259,10 +260,10 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('pre-populates, hides Number of shores, and titles "Edit Shore Point"', () => {
+  it('pre-populates, hides Number of Shore Sets, and titles "Edit Shore Point"', () => {
     render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
     expect(screen.getByRole('dialog', { name: 'Edit Shore Point' })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox', { name: 'Number of shores' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Number of Shore Sets' })).not.toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Area / Room #' })).toHaveValue('NW corner');
     expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('B-2');
   });

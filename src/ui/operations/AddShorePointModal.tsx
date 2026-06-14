@@ -108,12 +108,14 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       setEstimatedLoad(shorePoint.estimatedLoad != null ? String(shorePoint.estimatedLoad) : '');
       setLabel(shorePoint.label ?? '');
     } else {
-      // Last-used defaults (#220): the newest point in the op seeds division /
-      // shore type / building / crew; first point of the op starts Div 1 / T-Shore.
+      // Last-used defaults (#220, #248 re-drive): the newest point in the op seeds
+      // building / division / area / crew / shore type — the whole location block
+      // carries over so a new point in the same spot is near-zero effort. First
+      // point of the op starts Div 1 / T-Shore / blank.
       const last = shorePoints[shorePoints.length - 1];
       setDivision(parseDivision(last?.division));
       setBuilding(last?.building ?? '');
-      setArea('');
+      setArea(last?.area ?? '');
       setAssignedResource(last?.assignedResource ?? '');
       setShoreType(last?.shoreType ?? 't-shore');
       setMeasurementEighths(0);
@@ -166,7 +168,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
         : !loadValid
           ? 'Load must be between 0 and 500,000 lbs'
           : !editing && !qtyValid
-            ? 'Number of shores must be a whole number of 1 or more'
+            ? 'Number of Shore Sets must be a whole number of 1 or more'
             : buildingRequired && building.trim() === ''
               ? 'Enter the building'
               : null;
@@ -459,14 +461,14 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
         <InlineSegmented label="Shore type" options={SHORE_TYPE_OPTIONS} value={shoreType} onChange={selectShoreType} />
         {!editing && (
           <TextField
-            label="Number of shores"
+            label="Number of Shore Sets"
             value={qty}
             onChange={setQty}
             inputMode="numeric"
             maxLength={3}
             helper={
               qtyValid && totalStruts > 1
-                ? `${qtyNum} × ${shoreTypeLabel(shoreType)} = ${totalStruts} struts${
+                ? `i.e. ${qtyNum} ${shoreTypeLabel(shoreType)} = ${totalStruts} struts${
                     totalStruts > QTY_WARN_THRESHOLD ? ' — double-check the count' : ''
                   }`
                 : undefined
