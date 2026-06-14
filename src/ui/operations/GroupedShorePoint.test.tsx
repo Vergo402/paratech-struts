@@ -53,6 +53,15 @@ describe('GroupedShorePoint', () => {
     expect(dots[1]).not.toHaveClass('is-on');
   });
 
+  it('a tab activation moves focus onto the newly-fronted card (audit W7)', async () => {
+    const user = userEvent.setup();
+    render(<GroupedShorePoint members={THREE} />);
+    await user.click(screen.getByRole('button', { name: 'Bring Post 2 to front' }));
+    expect(front().getAttribute('data-sp-id')).toBe('sp-2');
+    // Keyboard/switch users aren't dropped to <body>: focus rides the new front.
+    expect(document.activeElement).toBe(front());
+  });
+
   it('collapsed: exposes the group context on the container', () => {
     render(<GroupedShorePoint members={THREE} />);
     expect(

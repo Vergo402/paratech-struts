@@ -136,13 +136,17 @@ function Lane({
   const items = groupLanePoints(points);
   return (
     <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
+      {/* Heading lives OUTSIDE the toggle button: a heading nested inside a button
+          isn't exposed for heading navigation by several screen readers (audit W7).
+          sr-only keeps the visual row unchanged; the button stays fully tappable. */}
+      <h2 className="fs-sr-only">{STATUS_LABELS[status]}</h2>
       <button
         className="fs-lane-header"
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
       >
-        <h2 className="fs-lane-title">{STATUS_LABELS[status]}</h2>
+        <span className="fs-lane-title">{STATUS_LABELS[status]}</span>
         <Badge variant="count" value={points.length} srLabel={`${points.length} shore points`} />
         <Chevron />
       </button>
@@ -204,8 +208,10 @@ interface DeletedSectionProps {
 function DeletedSection({ points, open, onToggle, onRestore }: DeletedSectionProps) {
   return (
     <section className="fs-deleted" aria-label="Deleted shore points">
+      {/* Heading outside the toggle button (audit W7) — see the lane header note. */}
+      <h2 className="fs-sr-only">Deleted</h2>
       <button className="fs-lane-header" type="button" onClick={onToggle} aria-expanded={open}>
-        <h2 className="fs-lane-title">Deleted</h2>
+        <span className="fs-lane-title">Deleted</span>
         <Badge variant="count" value={points.length} srLabel={`${points.length} deleted shore points`} />
         <Chevron />
       </button>

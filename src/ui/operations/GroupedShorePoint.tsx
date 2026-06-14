@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { ShorePointCard, SHORE_TYPE_LABELS, statusClasses, type ShorePointCardProps } from './ShorePointCard';
 
@@ -88,6 +88,19 @@ export function GroupedShorePoint({
     if (i >= 0 && i !== active) jumpTo(i);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialActiveId]);
+
+  // After a USER tab activation re-fronts a card, move focus onto it so a
+  // keyboard/switch user isn't dropped to <body> (audit W7). Only user jumps set
+  // the flag — a programmatic re-front (initialActiveId scroll-into-view) never
+  // grabs focus.
+  const frontRef = useRef<HTMLDivElement>(null);
+  const focusFrontRef = useRef(false);
+  useEffect(() => {
+    if (focusFrontRef.current && frontRef.current) {
+      frontRef.current.focus();
+      focusFrontRef.current = false;
+    }
+  }, [active, rollKey]);
 
   if (n === 0) return null;
 
@@ -193,6 +206,7 @@ export function GroupedShorePoint({
               aria-label={`Bring ${memberLabel(member, i)} to front`}
               onClick={(e) => {
                 e.stopPropagation();
+                focusFrontRef.current = true; // user jump → move focus to the fronted card
                 jumpTo(i);
               }}
             >
@@ -203,6 +217,8 @@ export function GroupedShorePoint({
 
         <div
           key={rollKey}
+          ref={frontRef}
+          tabIndex={-1}
           data-sp-id={activeMember.id}
           style={{ marginLeft: (n - 1) * TAB_W }}
           className={`fs-gs-front${rollKey > 0 ? (dir === 'r' ? ' fs-gs-roll-r' : ' fs-gs-roll-l') : ''}`}
