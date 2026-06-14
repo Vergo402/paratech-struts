@@ -3,3 +3,4 @@
 export * from './reducer';
 export * from './projection';
 export * from './division';
+export * from './seq';

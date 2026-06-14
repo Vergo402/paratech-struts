@@ -59,6 +59,12 @@ export type PendingReason = z.infer<typeof PendingReason>;
 export const ShorePoint = z.object({
   id: z.string(),
   opId: z.string(),
+  // Per-op created-order number — the crew's stable radio handle ("shore point 7").
+  // Assigned at creation as max(existing seq)+1 so it SURVIVES deletion (a deleted
+  // number is never reused); SHARED across a grouped shore's members (one physical
+  // shore = one number; the groupIndex badge distinguishes its struts). Optional for
+  // event-replay safety — every runtime point gets one (AddShorePointModal).
+  seq: z.number().int().positive().optional(),
   division: z.string(), // floor-based, e.g. "1", "2", "Roof"
   building: z.string().optional(), // only when the operation is multi-building
   area: z.string().optional(),

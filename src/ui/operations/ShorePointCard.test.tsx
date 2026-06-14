@@ -356,3 +356,37 @@ describe('ShorePointCard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
+
+describe('ShorePointCard — created-order number tab (#318)', () => {
+  const tab = () => document.querySelector('.fs-spc-tab');
+
+  it('renders #seq and is hidden when seq is absent', () => {
+    const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
+    expect(tab()).toBeNull(); // makeSP has no seq
+    rerender(<ShorePointCard shorePoint={makeSP({ seq: 7 })} />);
+    expect(tab()!.textContent).toBe('#7');
+    expect(tab()).toHaveAttribute('aria-label', 'Shore point number 7');
+  });
+
+  it('is a ghost (is-empty) while no strut is assigned', () => {
+    render(<ShorePointCard shorePoint={makeSP({ seq: 1 })} />);
+    expect(tab()).toHaveClass('fs-spc-tab', 'is-empty');
+  });
+
+  it('fills with the deployed strut system: gold / grey / lockstroke', () => {
+    const deploy = (model: string) => ({ model, source: 'Rescue 2', inventoryId: 'inv-1' });
+    const { rerender } = render(
+      <ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('LS 203') })} />,
+    );
+    expect(tab()).toHaveClass('is-gold'); // LongShore
+    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('AT 19-25') })} />);
+    expect(tab()).toHaveClass('is-grey'); // AcmeThread
+    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('LK 19-25') })} />);
+    expect(tab()).toHaveClass('is-lockstroke'); // LockStroke (grey-colored, cyan identity)
+  });
+
+  it('a 3-digit number renders (Surfside scale)', () => {
+    render(<ShorePointCard shorePoint={makeSP({ seq: 147 })} />);
+    expect(tab()!.textContent).toBe('#147');
+  });
+});

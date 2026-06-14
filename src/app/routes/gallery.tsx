@@ -557,23 +557,26 @@ export function GalleryScreen() {
           lifecycle state, the rolodex stack, and the LockStroke rec. ---- */}
       <Section title="S12 — Card treatments (#316): ShorePointCard lifecycle">
         {/* Pending — plain (no reason), then both waiting-callout reasons. */}
-        <ShorePointCard shorePoint={spFixture({ label: 'A-1', area: 'A side' })} />
-        <ShorePointCard shorePoint={spFixture({ label: 'A-2', pendingReason: 'no-inventory' })} />
-        <ShorePointCard shorePoint={spFixture({ label: 'A-3', pendingReason: 'no-match' })} />
+        {/* Number tab (#318): ghost on pending (A-*), fills with the deployed
+            strut's system — gold (LS), grey (AT), LockStroke-cyan (LK). */}
+        <ShorePointCard shorePoint={spFixture({ seq: 1, label: 'A-1', area: 'A side' })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 2, label: 'A-2', pendingReason: 'no-inventory' })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 3, label: 'A-3', pendingReason: 'no-match' })} />
         {/* In Process — the advance + step-back slide stack. */}
         <ShorePointCard
-          shorePoint={spFixture({ label: 'B-1', status: 'process', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 4, label: 'B-1', status: 'process', deployedStrut: DEPLOYED })}
           onAdvance={() => setCommits((c) => c + 1)}
           onStepBack={() => setCommits((c) => c + 1)}
         />
         {/* Strut Set — step-back slide only (advance is workflow #222). */}
         <ShorePointCard
-          shorePoint={spFixture({ label: 'B-2', status: 'strutset', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 5, label: 'B-2', status: 'strutset', deployedStrut: DEPLOYED })}
           onStepBack={() => setCommits((c) => c + 1)}
         />
         {/* Cutting — the promoted (28px) value shelf reading the cut length. */}
         <ShorePointCard
           shorePoint={spFixture({
+            seq: 6,
             label: 'B-3',
             status: 'cutting',
             deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
@@ -581,23 +584,27 @@ export function GalleryScreen() {
           })}
         />
         {/* Runner · Secured · Returned. */}
-        <ShorePointCard shorePoint={spFixture({ label: 'B-4', status: 'runner', deployedStrut: DEPLOYED })} />
-        <ShorePointCard shorePoint={spFixture({ label: 'B-5', status: 'secured', deployedStrut: DEPLOYED })} />
-        <ShorePointCard shorePoint={spFixture({ label: 'B-6', status: 'returned', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 7, label: 'B-4', status: 'runner', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 8, label: 'B-5', status: 'secured', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 9, label: 'B-6', status: 'returned', deployedStrut: DEPLOYED })} />
         {/* Hazard pill + removed slash (presentational props, #222 surfaces). */}
         <ShorePointCard
-          shorePoint={spFixture({ label: 'C-1', status: 'process', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 10, label: 'C-1', status: 'process', deployedStrut: DEPLOYED })}
           hazard
           onAdvance={() => {}}
           onStepBack={() => {}}
         />
         <ShorePointCard
-          shorePoint={spFixture({ label: 'C-2', status: 'cutting', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 11, label: 'C-2', status: 'cutting', deployedStrut: DEPLOYED })}
           removed
         />
-        {/* Deployed card showing the apparatus caption line under location. */}
+        {/* Grey-system tab (AcmeThread) — apparatus caption line under location. */}
         <ShorePointCard
-          shorePoint={spFixture({ label: 'C-3', area: 'Stairwell B', status: 'secured', deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' } })}
+          shorePoint={spFixture({ seq: 12, label: 'C-3', area: 'Stairwell B', status: 'secured', deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' } })}
+        />
+        {/* LockStroke-cyan tab + a 3-digit number (Surfside scale). */}
+        <ShorePointCard
+          shorePoint={spFixture({ seq: 147, label: 'C-4', area: 'Stairwell B', status: 'process', deployedStrut: { model: 'LK 37-58', source: 'Rescue 41', inventoryId: 'demo-inv-3' } })}
         />
         {/* Design-audit additions: active (accent focus border) + the caption
             explainer line (design-system ShorePointCard props). The waiting

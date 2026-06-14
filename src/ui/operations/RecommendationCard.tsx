@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BASE_PLATES, WOOD_SIZES, type StrutCombination } from '@core/load';
+import { BASE_PLATES, WOOD_SIZES, sysKeyOf, type StrutCombination } from '@core/load';
 import type { Deductions, WoodSizeId } from '@core/schema';
 import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
 
@@ -107,8 +107,8 @@ export function RecommendationCard({
   const gated = !!combo.unrated || !!combo.exceedsCapacity;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
   // Identity keys off the SYSTEM: LockStroke struts are grey-colored but carry
-  // their own cyan word + stripe (struts.ts — every lk-* is color:'grey').
-  const sys = combo.strut.system === 'LockStroke' ? 'lockstroke' : color;
+  // their own cyan word + stripe (sysKeyOf in struts.ts — every lk-* is color:'grey').
+  const sys = sysKeyOf(combo.strut.system, color);
   const word = SYS_WORD[sys];
   const model = comboModel(combo);
   const spec = connectorSpec(deductions);

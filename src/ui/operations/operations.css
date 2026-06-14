@@ -199,6 +199,52 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+/* Top clearance so the header never underlaps the corner number tab. */
+.fs-spc:has(.fs-spc-tab) {
+  padding-top: var(--space-6);
+}
+
+/* Created-order number tab (top-left corner) — the crew's stable radio handle.
+   Ghost outline while no strut is assigned; FILLS with the deployed strut's
+   system color once equipped (gold/grey/lockstroke). Outline-vs-fill keeps a
+   Grey-system point distinct from a pending one. card.md + ADR-029. */
+.fs-spc-tab {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  padding: 2px 11px;
+  border-radius: var(--radius-card) 0 9px 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+/* no strut yet — hollow, neutral; never reads as a Grey-system fill. */
+.fs-spc-tab.is-empty {
+  background: transparent;
+  border: var(--stroke-width) solid color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+  color: var(--text-secondary);
+}
+/* deployed — solid system fill; inks are theme-paired for AA (wcag-contrast.mjs). */
+.fs-spc-tab.is-gold {
+  background: var(--accent);
+  color: var(--on-accent, #1c1f23); /* broadcast omits --on-accent; dark ink clears its bright gold */
+}
+.fs-spc-tab.is-grey {
+  background: var(--text-secondary);
+  color: var(--surface-card);
+}
+.fs-spc-tab.is-lockstroke {
+  background: var(--sys-lockstroke);
+  color: var(--sys-lockstroke-bg);
+}
+/* broadcast mints --sys-lockstroke-bg: transparent — give the ink a real dark. */
+[data-theme='broadcast'] .fs-spc-tab.is-lockstroke {
+  color: #04201f;
+}
 
 /* The 4pt visible stripe with the 16pt full-height tap zone (card.md §stripe).
    A real <button> on pending (one-handed primary-action reach); a decorative

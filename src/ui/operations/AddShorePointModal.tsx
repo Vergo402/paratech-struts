@@ -4,7 +4,7 @@ import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
-import { divisionLabel } from '@core/operation';
+import { divisionLabel, nextSeqBase } from '@core/operation';
 import { effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -202,12 +202,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
   // share one groupId per physical shore. Shared by Save-as-Pending and Deploy.
   function buildPoints(): ShorePoint[] {
     const points: ShorePoint[] = [];
+    // Stable per-op number: max(existing)+1, one per PHYSICAL shore (a grouped
+    // shore's struts share it). max — not count — so a deleted number is never reused.
+    const baseSeq = nextSeqBase(shorePoints);
     for (let shore = 0; shore < qtyNum; shore++) {
       const groupId = strutsPerShore > 1 ? newId() : undefined;
+      const seq = baseSeq + shore + 1;
       for (let strut = 0; strut < strutsPerShore; strut++) {
         points.push({
           id: newId(),
           opId: operation!.id,
+          seq,
           division: String(division),
           ...(building.trim() ? { building: building.trim() } : {}),
           ...(area.trim() ? { area: area.trim() } : {}),

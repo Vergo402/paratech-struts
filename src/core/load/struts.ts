@@ -47,3 +47,19 @@ export const LOCKSTROKE_EXTENSIONS: Record<string, number[]> = {
   'lk-37-58': [6, 12, 24, 36],
   'lk-55-89': [6, 12, 24, 36],
 };
+
+// Strut-SYSTEM identity key (field-color, not lifecycle): LockStroke struts are
+// physically grey but earn their own cyan identity, so the key is the SYSTEM
+// for LockStroke and the physical color otherwise. One source for the rec card's
+// system word/stripe and the shore-point number tab (ShorePointCard).
+export type StrutSysKey = 'gold' | 'grey' | 'lockstroke';
+
+export function sysKeyOf(system: System, color: 'grey' | 'gold'): StrutSysKey {
+  return system === 'LockStroke' ? 'lockstroke' : color;
+}
+
+/** Resolve a deployed strut's system key from its model; null if not in the catalog. */
+export function strutSysKey(model: string): StrutSysKey | null {
+  const s = STRUTS.find((x) => x.model === model);
+  return s ? sysKeyOf(s.system, s.color) : null;
+}

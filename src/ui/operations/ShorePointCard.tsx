@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
+import { strutSysKey } from '@core/load';
 import { deductionTotalInches, effectiveLengthFrom } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
@@ -136,6 +137,22 @@ export function ShorePointCard({
   const promoted = sp.status === 'cutting';
   const waiting = pending && !!sp.pendingReason;
 
+  // Created-order number tab (top-left): a ghost outline while no strut is
+  // assigned, then FILLS with the deployed strut's SYSTEM color (gold/grey/
+  // lockstroke) once equipped — outline-vs-fill keeps a Grey-system point distinct
+  // from a pending one. The number is text, so identity is never color-only
+  // (Principle 9). Stable across deletion + shared within a group (schema seq).
+  const tabSysKey = sp.deployedStrut ? strutSysKey(sp.deployedStrut.model) : null;
+  const numberTab =
+    sp.seq != null ? (
+      <span
+        className={`fs-spc-tab${tabSysKey ? ` is-${tabSysKey}` : ' is-empty'}`}
+        aria-label={`Shore point number ${sp.seq}`}
+      >
+        #{sp.seq}
+      </span>
+    ) : null;
+
   // The headline is "label · type" — "B-2 · 3-Post" — at headline-2 (the
   // design-system ShorePointCard title; the type no longer rides the meta row).
   const title = sp.label
@@ -230,6 +247,7 @@ export function ShorePointCard({
         )
       }
     >
+      {numberTab}
       {pending && !removed ? (
         <button
           type="button"
