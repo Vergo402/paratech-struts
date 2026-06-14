@@ -395,9 +395,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
     }
   }
 
-  // Footer: edit → Save; one-step create → Save as Pending (Deploy lives on the
-  // result cards); two-step create → Add Shore Point.
-  const footer = editing ? (
+  // The submit action: edit → Save; one-step create → Save as Pending (Deploy
+  // lives on the result cards); two-step create → Add Shore Point. It rides at the
+  // BOTTOM OF THE FORM CONTENT (#248 re-drive) — NOT the modal's pinned footer — so
+  // a long form reads as scrollable. A pinned bar capped the form and hid the
+  // measurement / deductions / load fields below it.
+  const submitAction = editing ? (
     <Button
       variant="primary"
       fullWidth
@@ -435,7 +438,6 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       onClose={onClose}
       title={editing ? 'Edit Shore Point' : 'Add Shore Point'}
       variant="form"
-      footer={footer}
     >
       {/* Field order (#248 re-drive 2): Building → Division · Area/Room # · Group →
           Label → Shore Type → Quantity → Measurement → Deductions → Est. Load →
@@ -540,6 +542,8 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
             )}
           </>
         )}
+        {/* Submit rides at the end of the scrolling form, not a pinned footer (#248). */}
+        {submitAction}
       </div>
     </Modal>
   );

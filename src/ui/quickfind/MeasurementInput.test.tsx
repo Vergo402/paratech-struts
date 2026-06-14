@@ -15,19 +15,38 @@ function Harness({ initial = 0 }: { initial?: number }) {
 }
 
 const eighths = () => Number(screen.getByTestId('eighths').textContent);
+const feetField = () => screen.getByRole('textbox', { name: 'Feet' });
+const inchesField = () => screen.getByRole('textbox', { name: 'Inches' });
 
 describe('MeasurementInput', () => {
-  it('steppers move by exact eighths: ±1″ = 8, ±1 ft = 96', async () => {
+  it('feet and inches type straight into exact eighths (#248)', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={40 * 8} />);
+    render(<Harness initial={0} />);
 
-    await user.click(screen.getByRole('button', { name: 'Up one inch' }));
-    expect(eighths()).toBe(40 * 8 + 8);
-    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
-    expect(eighths()).toBe(40 * 8 + 8 + 96);
-    await user.click(screen.getByRole('button', { name: 'Down one inch' }));
-    await user.click(screen.getByRole('button', { name: 'Down one foot' }));
-    expect(eighths()).toBe(40 * 8);
+    await user.type(feetField(), '4');
+    expect(eighths()).toBe(4 * 96); // 4 ft
+    await user.type(inchesField(), '6');
+    expect(eighths()).toBe(4 * 96 + 6 * 8); // 4 ft 6 in
+  });
+
+  it('feet / inches / strip-fraction compose into one exact value', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={0} />);
+    await user.type(feetField(), '5');
+    await user.type(inchesField(), '2');
+    await user.click(screen.getByRole('radio', { name: '1/2 inch' }));
+    expect(eighths()).toBe(5 * 96 + 2 * 8 + 4); // 5 ft 2 1/2 in
+  });
+
+  it('the typed fields reflect the committed value (derived, not stale text)', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={48 * 8} />); // 4 ft exactly
+    expect(feetField()).toHaveValue('4');
+    expect(inchesField()).toHaveValue(''); // 0 in → placeholder
+    await user.type(inchesField(), '3');
+    expect(feetField()).toHaveValue('4');
+    expect(inchesField()).toHaveValue('3');
+    expect(eighths()).toBe(48 * 8 + 3 * 8);
   });
 
   it('the tap-strip sets the eighths remainder and keeps the whole inches', async () => {
@@ -64,24 +83,16 @@ describe('MeasurementInput', () => {
     expect(eighths()).toBe(40 * 8 + 6);
   });
 
-  it('clamps at 0 with an inline message — no negative value ever emitted', async () => {
+  it('holds at the 30 ft ceiling with an inline message — never over max', async () => {
     const user = userEvent.setup();
-    render(<Harness initial={0} />);
-    await user.click(screen.getByRole('button', { name: 'Down one inch' }));
-    expect(eighths()).toBe(0);
-    expect(screen.getByText(/go below 0/i)).toBeInTheDocument();
-  });
-
-  it('clamps at the 30 ft ceiling with an inline message — never over max', async () => {
-    const user = userEvent.setup();
-    render(<Harness initial={2880} />);
-    await user.click(screen.getByRole('button', { name: 'Up one inch' }));
+    render(<Harness initial={2880} />); // exactly 30 ft
+    await user.type(inchesField(), '5'); // 30 ft + 5 in would exceed → rejected
     expect(eighths()).toBe(2880);
     expect(screen.getByText(/maximum opening is 30 ft/i)).toBeInTheDocument();
 
     // A legal change clears the message.
-    await user.click(screen.getByRole('button', { name: 'Down one foot' }));
-    expect(eighths()).toBe(2880 - 96);
+    await user.clear(feetField()); // 30 ft → 0
+    expect(eighths()).toBe(0);
     expect(screen.queryByText(/maximum opening is 30 ft/i)).toBeNull();
   });
 
@@ -101,38 +112,9 @@ describe('MeasurementInput', () => {
       );
     }
     render(<Capture />);
-    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
+    await user.type(screen.getByRole('textbox', { name: 'Feet' }), '4');
     await user.click(screen.getByRole('radio', { name: '7/8 inch' }));
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((n) => Number.isInteger(n))).toBe(true);
-  });
-
-  // Desktop hardware-typing path (jsdom has no matchMedia → isPhone=false).
-  it('desktop: a typed measurement applies AND stays visible after Enter (regression)', async () => {
-    const user = userEvent.setup();
-    render(<Harness initial={0} />);
-    const field = screen.getByRole('textbox');
-    await user.type(field, '48');
-    await user.keyboard('{Enter}');
-    expect(eighths()).toBe(48 * 8); // applied
-    expect(field).toHaveValue('48″'); // idle shows the value WITH its unit (used to clear to '')
-
-    // Fractions round-trip through the same field.
-    await user.clear(field);
-    await user.type(field, '52 1/2');
-    await user.keyboard('{Enter}');
-    expect(eighths()).toBe(52 * 8 + 4);
-    expect(field).toHaveValue('52 1/2″');
-  });
-
-  it('desktop: the idle field reflects stepper/strip changes (reads from value, not stale text)', async () => {
-    const user = userEvent.setup();
-    render(<Harness initial={48 * 8} />);
-    const field = screen.getByRole('textbox');
-    expect(field).toHaveValue('48″');
-    await user.click(screen.getByRole('button', { name: 'Up one foot' }));
-    expect(field).toHaveValue('60″'); // 48 + 12
-    await user.click(screen.getByRole('radio', { name: '1/2 inch' }));
-    expect(field).toHaveValue('60 1/2″');
   });
 });

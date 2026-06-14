@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { MeasurementEntryModal } from './MeasurementEntryModal';
-import { MeasurementInput } from './MeasurementInput';
 
 function Harness({ initial = 0 }: { initial?: number }) {
   const [v, setV] = useState(initial);
@@ -116,46 +115,5 @@ describe('MeasurementEntryModal', () => {
     await user.click(screen.getByRole('button', { name: 'Confirm measurement' }));
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((n) => Number.isInteger(n))).toBe(true);
-  });
-});
-
-describe('MeasurementInput (phone path)', () => {
-  // jsdom has no matchMedia — a stub that answers "phone" flips the readout
-  // to the button + entry-modal path that MeasurementEntryModal serves.
-  const originalMatchMedia = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = ((query: string) =>
-      ({
-        matches: query === '(max-width: 768px)',
-        media: query,
-        onchange: null,
-        addEventListener: () => undefined,
-        removeEventListener: () => undefined,
-        addListener: () => undefined,
-        removeListener: () => undefined,
-        dispatchEvent: () => false,
-      }) as unknown as MediaQueryList) as typeof window.matchMedia;
-  });
-  afterEach(() => {
-    window.matchMedia = originalMatchMedia;
-  });
-
-  it('the readout button opens the entry modal; OK commits back to the field', async () => {
-    const user = userEvent.setup();
-    function Phone() {
-      const [v, setV] = useState(96);
-      return (
-        <>
-          <span data-testid="ph">{v}</span>
-          <MeasurementInput value={v} onChange={setV} />
-        </>
-      );
-    }
-    render(<Phone />);
-    await user.click(screen.getByRole('button', { name: 'Measurement' }));
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: '2' })); // replaces the seeded 1′
-    await user.click(screen.getByRole('button', { name: 'Confirm measurement' }));
-    expect(screen.getByTestId('ph').textContent).toBe(String(2 * 96));
   });
 });

@@ -1,17 +1,14 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
-import { useId, useState, useRef, useEffect } from 'react';
+import { useId, useState } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
-import { MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
-import { MeasurementEntryModal } from './MeasurementEntryModal';
-import { parseMeasurement } from './parseMeasurement';
+import { eighthsToParts, tapHaptic } from '@ui/primitives';
 
 /**
- * MeasurementInput — the gloved measurement entry (KB-3, S10).
- * Phone: readout is a button that opens MeasurementEntryModal (56pt keypad).
- * Desktop: readout is a focusable field for hardware typing (parser on blur/Enter).
- * Both: steppers (feet/inches) and eighths strip for quick-adjust.
- * Value is EXACT eighths int end-to-end (ADR-012) — never float, never outside bounds;
- * bound hits surface inline, never toast.
+ * MeasurementInput — the gloved measurement entry (KB-3).
+ * Feet and inches are TYPED directly (numeric keyboard — faster than the old
+ * +/- steppers, #248 re-drive); the eighths tap-strip sets the fraction. Value
+ * is EXACT eighths int end-to-end (ADR-012) — never float, never above the
+ * ceiling; an over-max entry surfaces inline and keeps the last good value.
  */
 export interface MeasurementInputProps {
   label?: string;
@@ -23,21 +20,6 @@ export interface MeasurementInputProps {
 
 const EIGHTHS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
 
-/** The editable buffer form — unitless so typed entry parses cleanly and the
- *  ″ never lands mid-string: "48", "48 1/2", or "" for zero (placeholder). */
-function formatForInput(eighths: number): string {
-  if (eighths <= 0) return '';
-  const { totalInches, n, d } = eighthsToParts(eighths);
-  return n > 0 ? `${totalInches} ${n}/${d}` : `${totalInches}`;
-}
-
-/** The idle display form — the buffer plus the inch unit, matching the ledger's
- *  "12″" so the field reads as a measurement, not a bare number. */
-function formatDisplay(eighths: number): string {
-  const s = formatForInput(eighths);
-  return s ? `${s}″` : '';
-}
-
 export function MeasurementInput({
   label = 'Measurement',
   value,
@@ -45,91 +27,30 @@ export function MeasurementInput({
   maxEighths = MAX_MEASUREMENT_EIGHTHS,
 }: MeasurementInputProps) {
   const labelId = useId();
-  const inputId = useId();
-  const [bound, setBound] = useState<'min' | 'max' | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [hardwareInput, setHardwareInput] = useState('');
-  const [editing, setEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const feetId = useId();
+  const inchesId = useId();
+  const [overMax, setOverMax] = useState(false);
 
-  // Detect phone vs desktop by checking media query
-  const [isPhone, setIsPhone] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) {
-      setIsPhone(false);
-      return;
-    }
-    const media = window.matchMedia('(max-width: 768px)');
-    setIsPhone(media.matches);
-    const handler = (e: MediaQueryListEvent) => setIsPhone(e.matches);
-    media.addEventListener('change', handler);
-    return () => media.removeEventListener('change', handler);
-  }, []);
+  // value (exact eighths) splits into whole feet + whole inches + the eighths
+  // remainder. The two fields own feet/inches; the strip owns the remainder.
+  const feet = Math.floor(value / 96);
+  const inches = Math.floor((value % 96) / 8);
+  const frac = value % 8;
 
+  // Typed entry never goes negative (parseInt + max 0), so the only bound that
+  // can trip is the ceiling. Over-max keeps the last good value, never a toast.
   const apply = (next: number) => {
-    if (next < 0) {
-      setBound('min');
-      onChange(0);
-      return;
-    }
     if (next > maxEighths) {
-      setBound('max');
+      setOverMax(true);
       onChange(Math.min(value, maxEighths));
       return;
     }
-    setBound(null);
+    setOverMax(false);
     onChange(next);
   };
 
-  const step = (deltaEighths: number) => {
-    tapHaptic();
-    apply(value + deltaEighths);
-  };
-
-  const onReadoutClick = () => {
-    if (isPhone) {
-      setSheetOpen(true);
-    }
-  };
-
-  // Desktop hardware-typing: the field shows the COMMITTED value (formatted)
-  // when idle and the raw typed text only while focused — so a typed entry
-  // stays visible after Enter. (It used to clear to the placeholder on commit:
-  // the value was applied but the field looked empty, i.e. "removed".) Idle
-  // display reads from `value`, so stepper / eighths-strip changes show through.
-  const onHardwareFocus = () => {
-    setEditing(true);
-    setHardwareInput(formatForInput(value));
-  };
-
-  const onHardwareChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setHardwareInput(e.target.value);
-  };
-
-  const commitHardware = () => {
-    const raw = hardwareInput.trim();
-    if (raw) {
-      const parsed = parseMeasurement(raw);
-      if (parsed !== null) apply(parsed);
-      else setBound('max');
-    }
-    // Empty on blur → leave the measurement unchanged (never wipe it silently).
-    setEditing(false);
-  };
-
-  const onHardwareKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      e.currentTarget.blur(); // commits via onBlur, then reverts to the formatted value
-    }
-  };
-
-  const boundMessage =
-    bound === 'max'
-      ? `Maximum opening is 30 ft (${maxEighths / 8} inches)`
-      : bound === 'min'
-        ? 'Measurement cannot go below 0 inches'
-        : null;
+  const onFeet = (s: string) => apply(Math.max(0, parseInt(s, 10) || 0) * 96 + inches * 8 + frac);
+  const onInches = (s: string) => apply(feet * 96 + Math.max(0, parseInt(s, 10) || 0) * 8 + frac);
 
   return (
     <div className="fs-meas-input">
@@ -137,61 +58,45 @@ export function MeasurementInput({
         {label}
       </span>
 
-      {/* Phone: readout is a button that opens the entry sheet */}
-      {isPhone ? (
-        <button
-          type="button"
-          className="fs-meas-readout fs-meas-readout--button"
-          onClick={onReadoutClick}
-          aria-labelledby={labelId}
-        >
-          <MeasurementValue eighths={value} form="feet-inches" />
-        </button>
-      ) : (
-        /* Desktop: readout is a focusable input field for hardware typing */
-        <input
-          ref={inputRef}
-          type="text"
-          id={inputId}
-          className="fs-meas-readout fs-meas-readout--input"
-          placeholder="Type 68, 5 8 5/8, etc."
-          value={editing ? hardwareInput : formatDisplay(value)}
-          onFocus={onHardwareFocus}
-          onChange={onHardwareChange}
-          onBlur={commitHardware}
-          onKeyDown={onHardwareKeyDown}
-          aria-labelledby={labelId}
-          aria-invalid={bound === 'max' || bound === 'min'}
-        />
-      )}
-
-      {/* Steppers: quick-adjust via +/- buttons (both phone and desktop) */}
-      <div className="fs-steppers">
-        <div className="fs-step-group">
-          <span className="fs-step-label">Feet</span>
-          <div className="fs-step-row">
-            <button type="button" className="fs-step-btn" aria-label="Down one foot" onClick={() => step(-96)}>
-              −
-            </button>
-            <button type="button" className="fs-step-btn" aria-label="Up one foot" onClick={() => step(96)}>
-              +
-            </button>
-          </div>
+      {/* Typed feet + inches — the fast path (#248): no steppers, no keypad modal. */}
+      <div className="fs-meas-fields" role="group" aria-labelledby={labelId}>
+        <div className="fs-meas-field">
+          <input
+            id={feetId}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="fs-meas-field-input"
+            value={feet > 0 ? String(feet) : ''}
+            placeholder="0"
+            onChange={(e) => onFeet(e.target.value)}
+            aria-label="Feet"
+            aria-invalid={overMax}
+          />
+          <label htmlFor={feetId} className="fs-meas-unit">
+            ft
+          </label>
         </div>
-        <div className="fs-step-group">
-          <span className="fs-step-label">Inches</span>
-          <div className="fs-step-row">
-            <button type="button" className="fs-step-btn" aria-label="Down one inch" onClick={() => step(-8)}>
-              −
-            </button>
-            <button type="button" className="fs-step-btn" aria-label="Up one inch" onClick={() => step(8)}>
-              +
-            </button>
-          </div>
+        <div className="fs-meas-field">
+          <input
+            id={inchesId}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="fs-meas-field-input"
+            value={inches > 0 ? String(inches) : ''}
+            placeholder="0"
+            onChange={(e) => onInches(e.target.value)}
+            aria-label="Inches"
+            aria-invalid={overMax}
+          />
+          <label htmlFor={inchesId} className="fs-meas-unit">
+            in
+          </label>
         </div>
       </div>
 
-      {/* Eighths strip: quick-adjust (both phone and desktop) */}
+      {/* Eighths tap-strip — the fraction (KB-2): 1/8 1/4 3/8 1/2 5/8 3/4 7/8. */}
       <RadioGroup.Root
         className="fs-eighths-strip"
         aria-label={`${label} — eighths of an inch`}
@@ -202,7 +107,6 @@ export function MeasurementInput({
         }}
       >
         {EIGHTHS.map((n) => {
-          // Tape-measure form (KB-2): cells read 1/8 1/4 3/8 1/2 5/8 3/4 7/8
           const p = eighthsToParts(n);
           return (
             <RadioGroup.Item
@@ -217,22 +121,10 @@ export function MeasurementInput({
         })}
       </RadioGroup.Root>
 
-      {boundMessage && (
+      {overMax && (
         <span className="fs-field-msg fs-field-msg--error" role="status">
-          {boundMessage}
+          Maximum opening is 30 ft ({maxEighths / 8} inches)
         </span>
-      )}
-
-      {/* Phone: the big-key entry modal (ft/in slots + 56pt dialer keypad) */}
-      {isPhone && (
-        <MeasurementEntryModal
-          open={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          value={value}
-          onChange={apply}
-          maxEighths={maxEighths}
-          label={label}
-        />
       )}
     </div>
   );

@@ -58,10 +58,11 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
 
 const submitButton = () => screen.getByRole('button', { name: 'Add Shore Point' });
 
-/** Drive the measurement to 4 ft via the foot stepper (96 eighths per tap). */
+/** Drive the measurement to N ft by typing into the Feet field (#248 re-drive). */
 async function setMeasurementFeet(user: ReturnType<typeof userEvent.setup>, feet: number) {
-  const up = screen.getByRole('button', { name: 'Up one foot' });
-  for (let i = 0; i < feet; i++) await user.click(up);
+  const ft = screen.getByRole('textbox', { name: 'Feet' });
+  await user.clear(ft);
+  await user.type(ft, String(feet));
 }
 
 describe('AddShorePointModal — create', () => {

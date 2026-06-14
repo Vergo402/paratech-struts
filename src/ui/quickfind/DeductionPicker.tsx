@@ -59,7 +59,7 @@ export function DeductionPicker({
 
   return (
     <div className="fs-ledger">
-      <div className="fs-ledger-row">
+      <div className="fs-ledger-row fs-ledger-raw">
         <span className="fs-ledger-label">Raw opening</span>
         <MeasurementValue eighths={measurementEighths} className="fs-ledger-value" />
       </div>

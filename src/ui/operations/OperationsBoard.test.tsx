@@ -230,11 +230,12 @@ describe('OperationsBoard', () => {
     await user.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
 
-    // Drive the real Add flow: 4 ft via the foot stepper, 3 shores (T-Shore ×3
-    // = 3 independent cards under KB-7), submit.
+    // Drive the real Add flow: type 4 ft, 3 shores (T-Shore ×3 = 3 independent
+    // cards under KB-7), submit.
     await user.click(screen.getByRole('button', { name: '+ Add Shore Point' }));
-    const upFoot = screen.getByRole('button', { name: 'Up one foot' });
-    for (let i = 0; i < 4; i++) await user.click(upFoot);
+    const feet = screen.getByRole('textbox', { name: 'Feet' });
+    await user.clear(feet);
+    await user.type(feet, '4');
     const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');
