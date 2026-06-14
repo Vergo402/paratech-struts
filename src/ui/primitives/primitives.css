@@ -460,20 +460,59 @@ p.fs-gate--disclaimer {
   font-weight: calc(600 + var(--type-weight-bump));
   color: var(--text-primary);
   margin: 0 0 var(--space-4);
+  padding-right: var(--space-6); /* clear the top-right close button */
+}
+/* Explicit close (X), top-right — 44px touch target, anchored to the fixed
+   .fs-modal. The deliberate way out now that form modals ignore outside taps. */
+.fs-modal-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-button);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-modal-close:hover {
+  color: var(--text-primary);
+}
+.fs-modal-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .fs-modal-body {
   flex: 1;
   min-height: 0;
   overflow-y: auto; /* form variant: body scrolls, header/footer stay pinned */
+  /* iOS scroll hardening (verbatim from .fs-sheet-body, L-9) — without it the
+     modal body scroll is flaky on iPhone and the pinned footer drifts. */
+  touch-action: pan-y;
+  transform: translateZ(0);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   font: var(--type-body);
   color: var(--text-primary);
 }
+/* Footer is LOCKED to the modal bottom — the body above it scrolls (flex: none so
+   it never shrinks); a hairline + the modal's own surface keep it reading as a
+   pinned action bar over the scrolling form. */
 .fs-modal-footer {
+  flex: none;
   display: flex;
   gap: var(--space-2);
   justify-content: flex-end;
   flex-wrap: wrap;
   padding-top: var(--space-4);
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--surface-stroke);
+  background: var(--surface-elevated);
 }
 .fs-modal-footer .fs-button { min-width: 120px; } /* modal.md: ≥120pt wide */
 
@@ -555,7 +594,10 @@ p.fs-gate--disclaimer {
   padding: 4px; /* the knob inset from the track edge */
   border-radius: 999px; /* pill: radius = height ÷ 2, not a --radius-* member */
   overflow: hidden;
-  touch-action: none; /* the whole track is the drag surface (R2 S-3) */
+  /* pan-y, not none: the slide is a HORIZONTAL gesture, so let a vertical drag
+     scroll the board through the track (the card was a dead zone otherwise). A
+     vertical pan fires pointercancel → the Slider snaps back, never commits. */
+  touch-action: pan-y;
 }
 /* advance — primary, accent-tinted channel. 56pt operational floor
    (spacing-grid.md; R2 S-1) — the 44px knob centers in the taller channel. */
@@ -593,7 +635,7 @@ p.fs-gate--disclaimer {
   justify-content: center;
   border: none;
   cursor: grab;
-  touch-action: none; /* the thumb is the drag surface */
+  touch-action: pan-y; /* horizontal drag = slide; vertical = scroll the board */
   transition: transform var(--motion-micro) var(--ease-micro); /* snap-back */
   -webkit-tap-highlight-color: transparent;
 }

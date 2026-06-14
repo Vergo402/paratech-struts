@@ -22,6 +22,17 @@ export function formatDivisionShort(n: number): string {
 }
 
 /**
+ * Compact trigger label for the Add-form Division picker, whose field is already
+ * headed "Division" — so the bare floor number reads for ground-and-above ("1",
+ * "2"), and basements get a "B" so a negative is never ambiguous ("B1"). Avoids
+ * the "Division · Div 1" duplication and fits the narrow row-of-three column.
+ */
+export function formatDivisionCompact(n: number): string {
+  if (!Number.isInteger(n) || n === 0) return '';
+  return n > 0 ? String(n) : `B${-n}`;
+}
+
+/**
  * Display label for a ShorePoint.division string. An integer string renders the
  * short form; anything else (legacy free text, e.g. "Roof") passes through raw.
  */
@@ -87,11 +98,31 @@ export function compareAreaValues(a: string | undefined, b: string | undefined):
   return ea.localeCompare(eb);
 }
 
-/** Board sort key (#248): division (floor, descending) then area (ascending). */
+/**
+ * Compare two `building` names for board order: ASCENDING with natural numeric
+ * order ("Tower 2" before "Tower 10"). Blank sorts last. Single-building ops have
+ * no buildings, so every point ties here and the sort falls through to division.
+ */
+export function compareBuildingValues(a: string | undefined, b: string | undefined): number {
+  const ea = (a ?? '').trim();
+  const eb = (b ?? '').trim();
+  if (!ea) return eb ? 1 : 0;
+  if (!eb) return -1;
+  return ea.localeCompare(eb, undefined, { numeric: true });
+}
+
+/**
+ * Board sort key (#248): building (grouped together) → division (floor,
+ * descending) → area (ascending). Building leads so a multi-building op keeps
+ * each building's points adjacent within a lane; single-building ops are
+ * unaffected (all buildings blank → tie → falls through to division/area).
+ */
 export function compareShorePointsByLocation(
-  a: { division: string; area?: string },
-  b: { division: string; area?: string },
+  a: { division: string; building?: string; area?: string },
+  b: { division: string; building?: string; area?: string },
 ): number {
+  const bldg = compareBuildingValues(a.building, b.building);
+  if (bldg !== 0) return bldg;
   const d = compareDivisionValues(a.division, b.division);
   return d !== 0 ? d : compareAreaValues(a.area, b.area);
 }

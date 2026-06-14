@@ -218,14 +218,18 @@ describe('AddShorePointModal — create', () => {
   it('Building shows only on a multi-building op, and is required there', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<AddShorePointModal open onClose={() => {}} />);
-    expect(screen.queryByRole('textbox', { name: 'Building' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Building/ })).not.toBeInTheDocument();
 
     mockOperation.mockReturnValue({ ...OP, multiBuilding: true });
     rerender(<AddShorePointModal open onClose={() => {}} />);
     await setMeasurementFeet(user, 4);
     expect(submitButton()).toBeDisabled();
     expect(screen.getByText('Enter the building')).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: 'Building' }), 'North tower');
+
+    // Name a building via the picker's "Add building" input — required-gate clears.
+    await user.click(screen.getByRole('button', { name: /Building/ }));
+    await user.type(screen.getByRole('textbox', { name: 'Add building' }), 'North tower');
+    await user.click(screen.getByRole('button', { name: '+ Add building' }));
     expect(submitButton()).toBeEnabled();
   });
 
@@ -236,10 +240,11 @@ describe('AddShorePointModal — create', () => {
       makeSP({ id: 'b', division: '2', shoreType: 'double-t', building: 'North tower' }),
     ]);
     render(<AddShorePointModal open onClose={() => {}} />);
-    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('Div 2 (+1 floor up)');
+    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('2'); // compact: bare floor number
     const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
     expect(within(shoreType).getByRole('radio', { name: 'Double-T' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByRole('textbox', { name: 'Building' })).toHaveValue('North tower');
+    // Building carries over from the newest point — shown as the picker's value.
+    expect(screen.getByRole('button', { name: /Building/ })).toHaveTextContent('North tower');
   });
 });
 
@@ -258,7 +263,7 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
     expect(screen.getByRole('dialog', { name: 'Edit Shore Point' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Number of shores' })).not.toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Area' })).toHaveValue('NW corner');
+    expect(screen.getByRole('textbox', { name: 'Area / Room #' })).toHaveValue('NW corner');
     expect(screen.getByRole('textbox', { name: 'Label' })).toHaveValue('B-2');
   });
 
@@ -275,7 +280,7 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
   it('a diff-only patch: area change emits only { area }', async () => {
     const user = userEvent.setup();
     render(<AddShorePointModal open onClose={() => {}} shorePoint={EDIT_SP} />);
-    const area = screen.getByRole('textbox', { name: 'Area' });
+    const area = screen.getByRole('textbox', { name: 'Area / Room #' });
     await user.clear(area);
     await user.type(area, 'Stairwell B');
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -292,6 +297,50 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     await user.clear(screen.getByRole('textbox', { name: 'Label' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(mockCommit.mock.calls[0]![0].patch).toEqual({ label: null });
+  });
+
+  it('changing the type to MORE struts rebuilds the shore (hard-remove old, add new group, keep #)', async () => {
+    const user = userEvent.setup();
+    const sp = makeSP({ id: 'sp-1', seq: 5 }); // T-Shore = 1 strut
+    mockShorePoints.mockReturnValue([sp]);
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={sp} />);
+
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'Double-T' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(mockCommit).not.toHaveBeenCalled(); // a restructure, not a patch
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const events = mockCommitMany.mock.calls[0]![0] as FieldShoreEvent[];
+    const deletes = events.filter((e) => e.type === 'ShorePointDeleted');
+    const adds = events.filter((e) => e.type === 'ShorePointAdded') as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(deletes).toEqual([expect.objectContaining({ spId: 'sp-1', hard: true })]); // hard, not soft
+    expect(adds).toHaveLength(2); // Double-T = 2 struts
+    expect(adds.every((e) => e.shorePoint.shoreType === 'double-t')).toBe(true);
+    expect(adds.every((e) => e.shorePoint.seq === 5)).toBe(true); // number preserved
+    expect(adds.every((e) => e.shorePoint.groupTotal === 2)).toBe(true);
+    expect(new Set(adds.map((e) => e.shorePoint.groupId)).size).toBe(1); // one shared group
+  });
+
+  it('changing the type to FEWER struts drops the extras hard (3-Post → T-Shore)', async () => {
+    const user = userEvent.setup();
+    const member = (id: string, i: number) =>
+      makeSP({ id, seq: 7, shoreType: '3-post', groupId: 'g1', groupIndex: i, groupTotal: 3 });
+    const members = [member('a', 1), member('b', 2), member('c', 3)];
+    mockShorePoints.mockReturnValue(members);
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={members[0]} />);
+
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'T-Shore' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    const events = mockCommitMany.mock.calls[0]![0] as FieldShoreEvent[];
+    const deletes = events.filter((e) => e.type === 'ShorePointDeleted');
+    const adds = events.filter((e) => e.type === 'ShorePointAdded') as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>[];
+    expect(deletes).toHaveLength(3); // all 3 old struts removed
+    expect(deletes.every((e) => 'hard' in e && e.hard === true)).toBe(true);
+    expect(adds).toHaveLength(1); // T-Shore = 1 strut
+    expect(adds[0]!.shorePoint.shoreType).toBe('t-shore');
+    expect(adds[0]!.shorePoint.seq).toBe(7); // number preserved
+    expect(adds[0]!.shorePoint.groupId).toBeUndefined(); // no longer grouped
   });
 });
 

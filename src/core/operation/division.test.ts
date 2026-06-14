@@ -2,12 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   formatDivision,
   formatDivisionShort,
+  formatDivisionCompact,
   divisionLabel,
   nextFloorAbove,
   nextFloorBelow,
   sortDivisionsForDisplay,
   compareDivisionValues,
   compareAreaValues,
+  compareBuildingValues,
   compareShorePointsByLocation,
 } from './division';
 
@@ -32,6 +34,14 @@ describe('formatDivisionShort + divisionLabel', () => {
   it('short forms', () => {
     expect(formatDivisionShort(2)).toBe('Div 2');
     expect(formatDivisionShort(-1)).toBe('Sub Div 1');
+  });
+
+  it('compact trigger form: bare number for ground+, B-prefixed for basements', () => {
+    expect(formatDivisionCompact(1)).toBe('1');
+    expect(formatDivisionCompact(3)).toBe('3');
+    expect(formatDivisionCompact(-1)).toBe('B1');
+    expect(formatDivisionCompact(-2)).toBe('B2');
+    expect(formatDivisionCompact(0)).toBe('');
   });
 
   it('divisionLabel parses integer strings to the short form', () => {
@@ -89,6 +99,25 @@ describe('board sort order (#248) — v3 compareLevelValues carried over', () =>
       { division: '2', area: 'Down' },
       { division: '1', area: 'Down' },
       { division: '1', area: 'Up' },
+    ]);
+  });
+
+  it('compareBuildingValues sorts ASCENDING with natural numeric order; blank last', () => {
+    expect(['Tower 10', 'Tower 2'].sort(compareBuildingValues)).toEqual(['Tower 2', 'Tower 10']);
+    expect(['South', 'North'].sort(compareBuildingValues)).toEqual(['North', 'South']);
+    expect([undefined, 'A'].sort(compareBuildingValues)).toEqual(['A', undefined]);
+  });
+
+  it('compareShorePointsByLocation groups by building FIRST, then division desc, then area asc', () => {
+    const pts = [
+      { division: '1', building: 'B', area: 'x' },
+      { division: '2', building: 'A', area: 'x' },
+      { division: '1', building: 'A', area: 'x' },
+    ];
+    expect(pts.sort(compareShorePointsByLocation)).toEqual([
+      { division: '2', building: 'A', area: 'x' },
+      { division: '1', building: 'A', area: 'x' },
+      { division: '1', building: 'B', area: 'x' },
     ]);
   });
 });

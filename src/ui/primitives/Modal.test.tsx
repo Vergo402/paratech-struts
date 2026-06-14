@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 
-function Harness({ variant }: { variant?: 'confirm' | 'destructive' }) {
+function Harness({ variant }: { variant?: 'confirm' | 'destructive' | 'form' }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -61,4 +61,16 @@ describe('Modal', () => {
       expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus(),
     );
   });
+
+  it('the top-right X closes the modal', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'open it' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+  // The form-variant "ignore outside tap" gate is a one-line onInteractOutside
+  // branch; Radix's outside-dismiss doesn't fire via a synthetic body click in
+  // jsdom, so it's verified live rather than with a flaky unit test.
 });

@@ -30,9 +30,10 @@ describe('DivisionPicker', () => {
     mockOperation.mockReturnValue(OP);
   });
 
-  it('the trigger shows the formatted selected division', () => {
+  it('the trigger shows the compact floor number ("Division" label already names it)', () => {
     render(<DivisionPicker value={1} onChange={() => {}} />);
-    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('Div 1 (Ground level)');
+    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('1');
+    expect(screen.getByRole('button', { name: /Division/ })).not.toHaveTextContent('Div 1');
   });
 
   it('lists divisions top-floor-first with v3 labels; row select commits nothing', async () => {

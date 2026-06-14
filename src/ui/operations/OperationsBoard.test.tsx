@@ -205,7 +205,7 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { expanded: false, name: /Div 2/ }));
     await user.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getByRole('dialog', { name: 'Edit Shore Point' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('Div 2 (+1 floor up)');
+    expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('2'); // compact trigger
   });
 
   it('a pending card expands to Delete, which opens the destructive confirm', async () => {
@@ -477,5 +477,86 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']);
     expect(laneCardIds('Cutting')).toEqual(['sp-3']);
+  });
+
+  // ---- #319 — soft-delete + restore ------------------------------------------
+
+  it('a soft-deleted point leaves its lane (count excludes it) and surfaces in the Deleted section', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending'),
+      { ...makeSP('sp-2', 'pending'), seq: 2, label: 'B-2', deletedAt: 5000 },
+    ]);
+    render(<OperationsBoard />);
+
+    // Excluded from the Pending lane and its count.
+    expect(laneCardIds('Pending')).toEqual(['sp-1']);
+    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    expect(within(pendingSection).getByText('1')).toBeInTheDocument();
+
+    // Present in the Deleted section, retaining its #N, once expanded.
+    const deleted = screen.getByRole('region', { name: 'Deleted shore points' });
+    expect(within(deleted).getByText('1')).toBeInTheDocument(); // count badge
+    await user.click(within(deleted).getByRole('button', { name: /Deleted/ }));
+    expect(within(deleted).getByText('#2')).toBeInTheDocument();
+    expect(within(deleted).getByText(/B-2/)).toBeInTheDocument();
+  });
+
+  it('Restore commits ShorePointRestored and announces the reclaimed number', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-2', 'pending'), seq: 2, label: 'B-2', deletedAt: 5000 },
+    ]);
+    render(<OperationsBoard />);
+
+    const deleted = screen.getByRole('region', { name: 'Deleted shore points' });
+    await user.click(within(deleted).getByRole('button', { name: /Deleted/ }));
+    await user.click(within(deleted).getByRole('button', { name: 'Restore' }));
+
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointRestored', spId: 'sp-2', opId: 'op-1', by: 'device-test' }),
+    );
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point #2 restored — Pending.');
+  });
+
+  // ---- End Operation (#220 lifecycle) ----------------------------------------
+
+  it('End Operation commits OperationEnded and closes the modal', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    render(<OperationsBoard />);
+
+    await user.click(screen.getByRole('button', { name: 'End Operation' })); // board trigger
+    const dialog = screen.getByRole('dialog', { name: 'End Operation?' });
+    await user.click(within(dialog).getByRole('button', { name: 'End Operation' })); // modal confirm
+
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'OperationEnded', opId: 'op-1', by: 'device-test' }),
+    );
+  });
+
+  // ---- multi-building — group + filter by building ---------------------------
+
+  it('groups by building (building-first sort) and filters by building; Clear restores', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue({ ...ACTIVE_OP, multiBuilding: true });
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-south', 'pending', '1'), building: 'South tower' },
+      { ...makeSP('sp-north-2', 'pending', '2'), building: 'North tower' },
+      { ...makeSP('sp-north-1', 'pending', '1'), building: 'North tower' },
+    ]);
+    render(<OperationsBoard />);
+
+    // Building groups first (North before South); within North, Div 2 before Div 1.
+    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
+
+    // Filter to North tower drops the South point.
+    await user.selectOptions(screen.getByLabelText('Building'), 'North tower');
+    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1']);
+
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
   });
 });

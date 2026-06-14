@@ -4,7 +4,7 @@ import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
-import { divisionLabel, nextSeqBase } from '@core/operation';
+import { compareBuildingValues, divisionLabel, nextSeqBase } from '@core/operation';
 import { effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -20,6 +20,7 @@ import {
   useShorePoints,
 } from '@ui/hooks';
 import { DivisionPicker } from './DivisionPicker';
+import { BuildingPicker } from './BuildingPicker';
 import { RecommendationCard, comboModel } from './RecommendationCard';
 
 // Short labels for the form control; full names (`Vertical T-Shore`, …) stay in
@@ -149,6 +150,13 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
   const loadValid = loadTrim === '' || (Number.isFinite(loadNum) && loadNum >= 0 && loadNum <= MAX_LOAD_LBS);
 
   const buildingRequired = !!operation?.multiBuilding;
+  // Distinct buildings already placed in this op — the BuildingPicker's list. A
+  // new name joins it once its first shore point is saved (building is per-point,
+  // not operation-level — it rides the same carry-over as division/shore type).
+  const buildingsUsed = useMemo(
+    () => [...new Set(shorePoints.map((sp) => sp.building).filter((b): b is string => !!b))].sort(compareBuildingValues),
+    [shorePoints],
+  );
 
   const disabledReason =
     measurementEighths <= 0
@@ -198,34 +206,38 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
     [division, building, area],
   );
 
+  // The struts of ONE physical shore (KB-7: T-Shore=1, Double-T=2, 3-Post=3,
+  // sharing a groupId), carrying the given created-order number. Shared by the add
+  // flow (one call per shore) and the edit-time type-change rebuild (handleSaveEdit).
+  function buildShoreStruts(seq: number | undefined): ShorePoint[] {
+    const groupId = strutsPerShore > 1 ? newId() : undefined;
+    return Array.from({ length: strutsPerShore }, (_, strut) => ({
+      id: newId(),
+      opId: operation!.id,
+      ...(seq != null ? { seq } : {}),
+      division: String(division),
+      ...(building.trim() ? { building: building.trim() } : {}),
+      ...(area.trim() ? { area: area.trim() } : {}),
+      shoreType,
+      ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: strutsPerShore } : {}),
+      measurementEighths,
+      deductions,
+      ...(label.trim() ? { label: label.trim() } : {}),
+      ...(assignedResource ? { assignedResource } : {}),
+      ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
+      status: 'pending',
+    }));
+  }
+
   // One add fans out to cards = shores × struts/shore (KB-7); multi-strut shores
   // share one groupId per physical shore. Shared by Save-as-Pending and Deploy.
+  // Stable per-op number: max(existing)+1 per PHYSICAL shore (max, not count, so a
+  // deleted number is never reused).
   function buildPoints(): ShorePoint[] {
-    const points: ShorePoint[] = [];
-    // Stable per-op number: max(existing)+1, one per PHYSICAL shore (a grouped
-    // shore's struts share it). max — not count — so a deleted number is never reused.
     const baseSeq = nextSeqBase(shorePoints);
+    const points: ShorePoint[] = [];
     for (let shore = 0; shore < qtyNum; shore++) {
-      const groupId = strutsPerShore > 1 ? newId() : undefined;
-      const seq = baseSeq + shore + 1;
-      for (let strut = 0; strut < strutsPerShore; strut++) {
-        points.push({
-          id: newId(),
-          opId: operation!.id,
-          seq,
-          division: String(division),
-          ...(building.trim() ? { building: building.trim() } : {}),
-          ...(area.trim() ? { area: area.trim() } : {}),
-          shoreType,
-          ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: strutsPerShore } : {}),
-          measurementEighths,
-          deductions,
-          ...(label.trim() ? { label: label.trim() } : {}),
-          ...(assignedResource ? { assignedResource } : {}),
-          ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
-          status: 'pending',
-        });
-      }
+      points.push(...buildShoreStruts(baseSeq + shore + 1));
     }
     return points;
   }
@@ -297,6 +309,47 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
     if (!canSubmit || !operation || !shorePoint) return;
     const uid = await getUid();
     const sp = shorePoint;
+
+    // A shore-type change that changes the STRUT COUNT can't be a simple patch — it
+    // restructures the physical shore (T-Shore=1, Double-T=2, 3-Post=3 struts). When
+    // the whole physical shore is still Pending, rebuild it: hard-remove the old
+    // struts and recreate the group at the new count, KEEPING the shore's number
+    // (seq) and applying the edited location/measurement. Grow adds struts; shrink
+    // drops the extras (Alex's call). A mate already deployed (mixed-status group)
+    // falls through to the plain patch below — never tear down a deployed strut.
+    const members = sp.groupId
+      ? shorePoints.filter((p) => p.groupId === sp.groupId && p.deletedAt == null)
+      : [sp];
+    if (members.every((m) => m.status === 'pending') && strutsPerShore !== members.length) {
+      const at = Date.now();
+      const rebuilt = buildShoreStruts(sp.seq);
+      const result = await commitMany([
+        ...members.map((m) => ({
+          type: 'ShorePointDeleted' as const,
+          id: newId(),
+          opId: operation.id,
+          at,
+          by: uid,
+          spId: m.id,
+          hard: true,
+        })),
+        ...rebuilt.map((p) => ({
+          type: 'ShorePointAdded' as const,
+          id: newId(),
+          opId: operation.id,
+          at,
+          by: uid,
+          shorePoint: p,
+        })),
+      ]);
+      if (result.ok) {
+        commitHaptic();
+        onAdded?.(rebuilt);
+        onClose();
+      }
+      return;
+    }
+
     const patch: ShorePointPatch = {};
     if (String(division) !== sp.division) patch.division = String(division);
     const newBuilding = building.trim() || null;
@@ -382,18 +435,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
       variant="form"
       footer={footer}
     >
-      {/* v3 field order: Shore Type → Label → Building → Division · Area · Group
-          → Measurement → Deductions → Est. Load → Quantity → (inline) Find. */}
+      {/* Field order (#248 re-drive 2): Building → Division · Area/Room # · Group →
+          Label → Shore Type → Quantity → Measurement → Deductions → Est. Load →
+          (inline) Find. Location first, then identity, then sizing. */}
       <div className="fs-ops-form">
-        <InlineSegmented label="Shore type" options={SHORE_TYPE_OPTIONS} value={shoreType} onChange={selectShoreType} />
-        <TextField label="Label" value={label} onChange={setLabel} placeholder="Optional — e.g. West Wall Window" />
         {buildingRequired && (
-          <TextField label="Building" value={building} onChange={setBuilding} placeholder="e.g. North tower" />
+          <BuildingPicker value={building} onChange={setBuilding} buildings={buildingsUsed} />
         )}
-        {/* v3 form-row-3: Division · Area · Group share one line. */}
+        {/* Division · Area/Room # · Group share one line. */}
         <div className="fs-ops-row3">
           <DivisionPicker value={division} onChange={setDivision} />
-          <TextField label="Area" value={area} onChange={setArea} placeholder="Optional" />
+          <TextField label="Area / Room #" value={area} onChange={setArea} placeholder="Optional" />
           {(apparatusOptions.length > 1 || assignedResource) && (
             <BottomSheetPicker
               label="Group"
@@ -403,17 +455,8 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
             />
           )}
         </div>
-        <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
-        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
-        <TextField
-          label="Estimated load (lbs) — optional"
-          value={estimatedLoad}
-          onChange={setEstimatedLoad}
-          inputMode="numeric"
-          maxLength={7}
-          placeholder="e.g. 15000"
-          helper="Leave blank if unknown"
-        />
+        <TextField label="Label" value={label} onChange={setLabel} placeholder="Optional — e.g. West Wall Window" />
+        <InlineSegmented label="Shore type" options={SHORE_TYPE_OPTIONS} value={shoreType} onChange={selectShoreType} />
         {!editing && (
           <TextField
             label="Number of shores"
@@ -430,6 +473,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded }: AddSh
             }
           />
         )}
+        <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
+        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
+        <TextField
+          label="Estimated load (lbs) — optional"
+          value={estimatedLoad}
+          onChange={setEstimatedLoad}
+          inputMode="numeric"
+          maxLength={7}
+          placeholder="e.g. 15000"
+          helper="Leave blank if unknown"
+        />
 
         {inlineMode && (
           <>

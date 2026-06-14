@@ -3,7 +3,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
+  /* Phone: NO board padding — the scroll pane (.fs-shell-main) already supplies
+     the page gutter, so a board padding here double-margined the cards and ate
+     ~32px of a 375px screen. Tablet/laptop re-add a page margin below (≥768px). */
+  padding: 0;
 }
 
 /* ---- header (name + edit) ------------------------------------------------ */
@@ -154,6 +157,58 @@
   margin: 0;
 }
 
+/* ---- deleted section (#319, ADR-030) ------------------------------------- */
+/* Soft-deleted points — set apart from the workflow lanes (muted title, extra
+   top gap) so it never reads as an eighth status. Collapsed by default. */
+.fs-deleted {
+  margin-top: var(--space-4);
+}
+.fs-deleted .fs-lane-title {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.fs-deleted-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-deleted-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+}
+.fs-deleted-seq {
+  flex-shrink: 0;
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.fs-deleted-id {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fs-deleted-title {
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-deleted-where {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
 /* ---- end operation row --------------------------------------------------- */
 .fs-ops-end {
   padding: var(--space-6) 0 var(--space-4);
@@ -172,15 +227,29 @@
    equally; min-width:0 + ellipsis on the picker value keeps a long division
    label ("Div 1 (Ground level)") from forcing the row wider than the modal. */
 .fs-ops-row3 {
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-start;
+  display: grid;
+  /* Division is just a number — keep it tight. Area/Room # needs only its label
+     width (values are short room #s); GROUP gets the most room — apparatus names
+     ("Engine 1", "Task Force 1") are the longest values. align-items: end seats
+     the three controls on one baseline even if a label wraps. */
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: var(--space-2);
+  align-items: end;
 }
 .fs-ops-row3 > * {
-  flex: 1 1 0;
   min-width: 0;
 }
+/* Compact, single-line labels so "Area / Room #" fits the narrow phone cell
+   and the three labels sit on one line (keeps the inputs aligned). */
+.fs-ops-row3 .fs-field-label {
+  font: var(--type-caption);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Slightly smaller value text in the tight row so apparatus names fit. */
 .fs-ops-row3 .fs-picker-trigger-value {
+  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -559,14 +628,19 @@ button.fs-spc-head {
   border-color: var(--danger-bg);
 }
 
-/* ---- division picker sheet footer ----------------------------------------- */
-.fs-division-actions {
+/* ---- division / building picker sheet footer ------------------------------ */
+.fs-division-actions,
+.fs-building-add {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3) 0 var(--space-2);
   border-top: 1px solid var(--surface-stroke);
   margin-top: var(--space-2);
+}
+/* Building trigger shows a muted "Select building" until one is chosen. */
+.fs-picker-trigger-placeholder {
+  color: var(--text-tertiary);
 }
 
 /* ---- recommendation card (card.md §RecommendationCard — the result card) --- */

@@ -129,9 +129,17 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: var(--space-4);
+  /* Phone: tight 8px side gutter so cards run nearly edge-to-edge (the board adds
+     no padding of its own — operations.css). Vertical stays 16px for header/nav
+     breathing room. Tablet/laptop restore the 16px side margin just below. */
+  padding: var(--space-4) var(--space-2);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+@media (min-width: 768px) {
+  .fs-shell-main {
+    padding-inline: var(--space-4);
+  }
 }
 .fs-nav {
   flex: none;

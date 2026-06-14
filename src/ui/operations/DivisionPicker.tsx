@@ -2,6 +2,7 @@ import { useId, useState } from 'react';
 import { newId } from '@core/id';
 import {
   formatDivision,
+  formatDivisionCompact,
   nextFloorAbove,
   nextFloorBelow,
   sortDivisionsForDisplay,
@@ -66,7 +67,7 @@ export function DivisionPicker({ value, onChange }: DivisionPickerProps) {
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <span className="fs-picker-trigger-value">{formatDivision(value)}</span>
+        <span className="fs-picker-trigger-value">{formatDivisionCompact(value)}</span>
         <span className="fs-picker-trigger-chevron" aria-hidden="true">
           ▾
         </span>

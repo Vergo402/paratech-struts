@@ -159,9 +159,12 @@ export function ShorePointCard({
     ? `${sp.label} · ${SHORE_TYPE_LABELS[sp.shoreType]}`
     : SHORE_TYPE_LABELS[sp.shoreType];
 
+  // Location reads Building · Division · Area (broad → narrow). Building leads in
+  // multi-building ops; single-building points have no building, so it opens on
+  // the division (e.g. "Div 1 · West Wall").
   const identity = [
-    divisionLabel(sp.division),
     ...(sp.building ? [sp.building] : []),
+    divisionLabel(sp.division),
     ...(sp.area ? [sp.area] : []),
   ].join(' · ');
 

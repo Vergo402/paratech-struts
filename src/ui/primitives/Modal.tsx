@@ -68,7 +68,10 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
           }}
           onInteractOutside={(e) => {
             // A tap inside a portaled child overlay is not an outside-dismiss.
-            if (overlayContains(e.target as Node)) e.preventDefault();
+            // Form modals hold entered data — an outside tap must never discard
+            // it (close via the X or a footer Cancel only). Confirms still
+            // dismiss on an outside tap, which IS the safe cancel.
+            if (variant === 'form' || overlayContains(e.target as Node)) e.preventDefault();
           }}
           onOpenAutoFocus={(e) => {
             if (variant !== 'destructive') return;
@@ -98,6 +101,17 @@ export function Modal({ open, onClose, title, variant = 'confirm', children, foo
             <div className="fs-modal-body">{children}</div>
           </Dialog.Description>
           {footer && <div className="fs-modal-footer">{footer}</div>}
+          {/* Explicit close, top-right. DOM-last so it never steals the initial
+              focus from a form's first field; absolute-positioned via CSS. With
+              form modals no longer dismissing on an outside tap, this is the
+              deliberate way out. */}
+          <Dialog.Close asChild>
+            <button type="button" className="fs-modal-close" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </Dialog.Close>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

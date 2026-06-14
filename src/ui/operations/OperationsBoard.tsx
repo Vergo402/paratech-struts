@@ -3,6 +3,7 @@ import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor } from '@core/shorepoint';
 import {
   compareAreaValues,
+  compareBuildingValues,
   compareDivisionValues,
   compareShorePointsByLocation,
   divisionLabel,
@@ -13,7 +14,7 @@ import { useCommit, useDeviceUid, useInventory, useOperation, useShorePoints } f
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
-import { ShorePointCard } from './ShorePointCard';
+import { ShorePointCard, SHORE_TYPE_LABELS } from './ShorePointCard';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
@@ -188,6 +189,52 @@ function Lane({
   );
 }
 
+// ---- Deleted section (#319, ADR-030) ----------------------------------------
+// Soft-deleted points live here — out of the workflow lanes and off the counts,
+// but visible and one-tap restorable. A deleted point keeps its #N (seq survives,
+// #318) so Restore reclaims its original number. A slim row, not the full card:
+// the card's slides/Edit/Delete don't apply once a point is deleted.
+interface DeletedSectionProps {
+  points: ShorePoint[];
+  open: boolean;
+  onToggle: () => void;
+  onRestore: (sp: ShorePoint) => void;
+}
+
+function DeletedSection({ points, open, onToggle, onRestore }: DeletedSectionProps) {
+  return (
+    <section className="fs-deleted" aria-label="Deleted shore points">
+      <button className="fs-lane-header" type="button" onClick={onToggle} aria-expanded={open}>
+        <h2 className="fs-lane-title">Deleted</h2>
+        <Badge variant="count" value={points.length} srLabel={`${points.length} deleted shore points`} />
+        <Chevron />
+      </button>
+      {open && (
+        <ul className="fs-deleted-list" role="list">
+          {points.map((sp) => {
+            const title = sp.label
+              ? `${sp.label} · ${SHORE_TYPE_LABELS[sp.shoreType]}`
+              : SHORE_TYPE_LABELS[sp.shoreType];
+            const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(' · ');
+            return (
+              <li key={sp.id} className="fs-deleted-row" data-sp-id={sp.id}>
+                {sp.seq != null && <span className="fs-deleted-seq">#{sp.seq}</span>}
+                <span className="fs-deleted-id">
+                  <span className="fs-deleted-title">{title}</span>
+                  {where && <span className="fs-deleted-where">{where}</span>}
+                </span>
+                <Button variant="secondary" onPress={() => onRestore(sp)}>
+                  Restore
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 // ---- OperationsBoard --------------------------------------------------------
 export function OperationsBoard() {
   const operation = useOperation();
@@ -211,6 +258,9 @@ export function OperationsBoard() {
   const [sortMode, setSortMode] = useState<SortMode>('location');
   const [filterDivision, setFilterDivision] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string | null>(null);
+  const [filterBuilding, setFilterBuilding] = useState<string | null>(null);
+  // Deleted section (#319) — collapsed by default, out of the way until needed.
+  const [deletedOpen, setDeletedOpen] = useState(false);
 
   // After a commit lands, bring the first new card into view. Optional-call
   // guarded — jsdom has no scrollIntoView (the Sheet pointer-capture rule).
@@ -264,7 +314,7 @@ export function OperationsBoard() {
       const first = added[0];
       if (!first) return;
       setScrollToId(first.id);
-      const where = [divisionLabel(first.division), first.building, first.area].filter(Boolean).join(', ');
+      const where = [first.building, divisionLabel(first.division), first.area].filter(Boolean).join(', ');
       setAnnouncement(
         added.length === 1
           ? `Shore point added — ${where}, Pending.`
@@ -288,7 +338,7 @@ export function OperationsBoard() {
       setAssignSpId(null);
       expandLane('process');
       setScrollToId(sp.id);
-      const where = [divisionLabel(sp.division), sp.building, sp.area].filter(Boolean).join(', ');
+      const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
       setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
     },
     [expandLane],
@@ -348,6 +398,46 @@ export function OperationsBoard() {
     [commitStatusChange],
   );
 
+  // Restore a soft-deleted point (#319) — one tap, no confirm (it's reversible).
+  // The point returns to whatever status it held (delete is Pending-only, so
+  // ~always Pending) with its original #N reclaimed.
+  const handleRestore = useCallback(
+    async (sp: ShorePoint) => {
+      const result = await commit({
+        type: 'ShorePointRestored',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: await getUid(),
+        spId: sp.id,
+      });
+      if (!result.ok) return;
+      expandLane(sp.status);
+      setScrollToId(sp.id);
+      setPoliteAnnouncement(
+        `Shore point ${sp.seq != null ? `#${sp.seq} ` : ''}restored — ${STATUS_LABELS[sp.status]}.`,
+      );
+    },
+    [commit, getUid, expandLane],
+  );
+
+  // End the operation (#220 lifecycle) — commits OperationEnded; the board then
+  // falls to the no-active-operation empty state, ready to Start a fresh op. Shore
+  // points are retained in the event log (archived, not deleted), so the ended op
+  // can still be read back. (The ADR-018 after-action email hangs off this event
+  // when real sync lands; inert in this local-only slice.)
+  const endOperation = useCallback(async () => {
+    if (!operation) return;
+    const result = await commit({
+      type: 'OperationEnded',
+      id: newId(),
+      opId: operation.id,
+      at: Date.now(),
+      by: await getUid(),
+    });
+    if (result.ok) setEndOpOpen(false);
+  }, [commit, getUid, operation]);
+
   /** Group gate (#221 OQ2): a grouped point's advance waits until every mate has left Pending. */
   const advanceDisabledReasonFor = useCallback(
     (sp: ShorePoint) => {
@@ -374,13 +464,19 @@ export function OperationsBoard() {
   // same way the board sorts (division descending, area ascending).
   const divisionsPresent = useMemo(() => {
     const set = new Set<string>();
-    for (const sp of shorePoints) if (sp.division) set.add(sp.division);
+    for (const sp of shorePoints) if (sp.deletedAt == null && sp.division) set.add(sp.division);
     return [...set].sort(compareDivisionValues);
   }, [shorePoints]);
   const areasPresent = useMemo(() => {
     const set = new Set<string>();
-    for (const sp of shorePoints) if (sp.area) set.add(sp.area);
+    for (const sp of shorePoints) if (sp.deletedAt == null && sp.area) set.add(sp.area);
     return [...set].sort(compareAreaValues);
+  }, [shorePoints]);
+  // Distinct buildings present (multi-building ops only) — the building filter list.
+  const buildingsPresent = useMemo(() => {
+    const set = new Set<string>();
+    for (const sp of shorePoints) if (sp.deletedAt == null && sp.building) set.add(sp.building);
+    return [...set].sort(compareBuildingValues);
   }, [shorePoints]);
 
   const byStatus = useMemo(() => {
@@ -390,7 +486,10 @@ export function OperationsBoard() {
     };
     for (let i = shorePoints.length - 1; i >= 0; i--) {
       const sp = shorePoints[i]!;
-      // Board filter (#248): hide points outside the chosen division/area.
+      // Soft-deleted (#319): out of the lanes entirely, so counts/summary exclude it.
+      if (sp.deletedAt != null) continue;
+      // Board filter (#248): hide points outside the chosen building/division/area.
+      if (filterBuilding && (sp.building ?? '') !== filterBuilding) continue;
       if (filterDivision && sp.division !== filterDivision) continue;
       if (filterArea && (sp.area ?? '') !== filterArea) continue;
       // Display-only enrichment — the computed reason never re-serializes
@@ -403,7 +502,16 @@ export function OperationsBoard() {
       for (const lane of Object.values(map)) lane.sort(compareShorePointsByLocation);
     }
     return map;
-  }, [shorePoints, pendingReasons, filterDivision, filterArea, sortMode]);
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, sortMode]);
+
+  // Soft-deleted points (#319), most-recently-deleted first.
+  const deleted = useMemo(
+    () =>
+      shorePoints
+        .filter((sp) => sp.deletedAt != null)
+        .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)),
+    [shorePoints],
+  );
 
   const toggleLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
@@ -472,6 +580,19 @@ export function OperationsBoard() {
               <option value="added">Added order</option>
             </select>
           </label>
+          {buildingsPresent.length > 0 && (
+            <label className="fs-ops-filter">
+              <span className="fs-ops-filter-label">Building</span>
+              <select value={filterBuilding ?? ''} onChange={(e) => setFilterBuilding(e.target.value || null)}>
+                <option value="">All</option>
+                {buildingsPresent.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {divisionsPresent.length > 0 && (
             <label className="fs-ops-filter">
               <span className="fs-ops-filter-label">Division</span>
@@ -498,11 +619,12 @@ export function OperationsBoard() {
               </select>
             </label>
           )}
-          {(filterDivision || filterArea) && (
+          {(filterBuilding || filterDivision || filterArea) && (
             <button
               type="button"
               className="fs-ops-filter-clear"
               onClick={() => {
+                setFilterBuilding(null);
                 setFilterDivision(null);
                 setFilterArea(null);
               }}
@@ -531,6 +653,15 @@ export function OperationsBoard() {
           />
         ))}
       </div>
+
+      {deleted.length > 0 && (
+        <DeletedSection
+          points={deleted}
+          open={deletedOpen}
+          onToggle={() => setDeletedOpen((v) => !v)}
+          onRestore={handleRestore}
+        />
+      )}
 
       <div className="fs-ops-end">
         <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
@@ -571,13 +702,13 @@ export function OperationsBoard() {
             <Button variant="secondary" onPress={() => setEndOpOpen(false)}>
               <span data-modal-cancel>Cancel</span>
             </Button>
-            <Button variant="primary" destructive disabled disabledReason="Arrives in a later session" onPress={() => {}}>
+            <Button variant="primary" destructive onPress={endOperation}>
               End Operation
             </Button>
           </>
         }
       >
-        <p>This will archive every shore point and end the active operation. End Operation arrives in a later build session.</p>
+        <p>This archives every shore point and ends the active operation. You can start a new one afterward.</p>
       </Modal>
     </div>
   );
