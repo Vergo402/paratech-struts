@@ -879,11 +879,6 @@ button.fs-spc-head {
   color: var(--text-primary);
 }
 
-.fs-rec-approx {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
-
 /* A slot's wood size / plate name on its own sub-line — a long plate name
    never wraps mid-column and shoves the value column out of alignment. */
 .fs-rec-slot-name {
@@ -914,16 +909,6 @@ button.fs-spc-head {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--rec-color);
-}
-.fs-rec-floor-note {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
-
-.fs-rec-footnote {
-  margin: 0;
-  font: var(--type-caption);
-  color: var(--text-tertiary);
 }
 
 /* F-4B-1 zero-margin caution — informational, not a gate. */

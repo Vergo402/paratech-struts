@@ -120,6 +120,11 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
       return applyPatch(sp, event.patch);
 
     case 'ShorePointStatusChanged': {
+      // Off the live path: operationReducer routes status changes through
+      // groupAdvance (operation/reducer.ts), never through here — so this branch
+      // runs only in this reducer's own unit tests as a single-member guard spec.
+      // Kept for that coverage; keep its guards in lockstep with groupAdvance's
+      // if either changes (audit W9).
       if (event.spId !== sp.id) return sp;
       // The pending↔process boundary is owned by deploy/return, not this event.
       if (event.from === 'pending' || event.to === 'pending') return sp;

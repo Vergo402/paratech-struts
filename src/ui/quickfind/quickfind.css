@@ -84,7 +84,6 @@
   font-weight: calc(500 + var(--type-weight-bump));
   color: var(--text-primary);
 }
-.fs-ledger-note { font: var(--type-caption); color: var(--text-secondary); }
 .fs-ledger-value {
   font-size: 16px;
   font-weight: 600;
@@ -104,42 +103,8 @@
 .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-text); }
 
 /* ---- measurement entry modal (KB-3, S10) -------------------------------------- */
-.fs-meas-readout--button {
-  display: block;
-  width: 100%;
-  padding: 12px var(--space-4);
-  min-height: 56px;
-  font: 400 34px/1.1 var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-  text-align: center;
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-input);
-  cursor: pointer;
-  transition: background-color var(--motion-micro) var(--ease-micro), border-color var(--motion-micro) var(--ease-micro);
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-meas-readout--button:active { background: var(--accent-subtle); border-color: var(--accent); }
-.fs-meas-readout--button:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
-
-.fs-meas-readout--input {
-  display: block;
-  width: 100%;
-  padding: 12px var(--space-4);
-  min-height: 56px;
-  font: 400 16px/1.5 var(--font-sans);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-input);
-  transition: border-color var(--motion-micro) var(--ease-micro);
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-meas-readout--input::placeholder { color: var(--text-tertiary); }
-.fs-meas-readout--input:focus-visible { outline: none; border-color: var(--accent); }
-.fs-meas-readout--input[aria-invalid='true'] { border-color: var(--danger-text); }
+/* The readout-as-button + free-text input classes were retired with the typed
+   Feet/Inches rewrite (audit W9 — zero references). The keypad below stays. */
 
 /* the big-key dialer keypad (56pt minimum keys, 3-col: 1–9, back/0/OK) */
 .fs-meas-keypad {

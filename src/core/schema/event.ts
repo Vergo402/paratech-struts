@@ -122,6 +122,3 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   StrutReturned,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;
-
-/** Discriminant union of the event `type` literals. */
-export type FieldShoreEventType = FieldShoreEvent['type'];

@@ -7,17 +7,11 @@ export { Badge, type BadgeProps } from './Badge';
 export { Button, type ButtonProps } from './Button';
 export { Card, type CardProps } from './Card';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
-export {
-  fractionText,
-  MeasurementValue,
-  eighthsToParts,
-  type MeasurementParts,
-  type MeasurementValueProps,
-} from './Measurement';
+export { MeasurementValue, eighthsToParts, type MeasurementValueProps } from './Measurement';
 export { Modal, type ModalProps } from './Modal';
 export { Segmented, type SegmentedProps, type SegmentedOption } from './Segmented';
 export { Sheet, type SheetProps } from './Sheet';
-export { Slider, shouldCommit, type SliderProps } from './Slider';
+export { Slider, type SliderProps } from './Slider';
 export { TextField, type TextFieldProps } from './Input';
 export { Toggle, type ToggleProps } from './Toggle';
 export { WarningGate, GATE_COPY, type WarningGateProps } from './WarningGate';
