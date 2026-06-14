@@ -90,6 +90,12 @@ export const ShorePoint = z.object({
   status: ShorePointStatus,
   deployedStrut: DeployedStrut.optional(),
   pendingReason: PendingReason.optional(),
+  // Soft-delete flag (#319, ADR-030). Set = the point is deleted but RETAINED in
+  // the projection so it can be restored and so its seq stays a high-water mark
+  // (a deleted number is never reused). Reducer-managed via ShorePointDeleted /
+  // ShorePointRestored only — NOT user-editable, so absent from ShorePointPatch.
+  // Distinct from the card's presentational `removed` (the #222 cut-list sense).
+  deletedAt: z.number().int().nonnegative().optional(),
 });
 export type ShorePoint = z.infer<typeof ShorePoint>;
 

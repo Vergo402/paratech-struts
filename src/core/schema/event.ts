@@ -62,8 +62,23 @@ export const ShorePointEdited = z.object({
   patch: ShorePointPatch,
 });
 
+// Soft-delete (#319, ADR-030): the point is RETAINED in the projection with a
+// deletedAt stamp, not filtered out — so it stays restorable and its seq remains
+// a high-water mark (a deleted number is never reused). Pending-only, like before.
+// `hard: true` is the exception — a STRUCTURAL removal (a strut dropped when a
+// shore's type changes to fewer struts) that filters the point out for good; not
+// user-facing, never surfaces in the Deleted list.
 export const ShorePointDeleted = z.object({
   type: z.literal('ShorePointDeleted'),
+  ...base,
+  spId: z.string(),
+  hard: z.boolean().optional(),
+});
+
+// Undo of ShorePointDeleted (#319) — clears the deletedAt stamp, returning the
+// point to its lane. No time limit (always-reversible, ADR-010); not a timed undo.
+export const ShorePointRestored = z.object({
+  type: z.literal('ShorePointRestored'),
   ...base,
   spId: z.string(),
 });
@@ -101,6 +116,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   ShorePointAdded,
   ShorePointEdited,
   ShorePointDeleted,
+  ShorePointRestored,
   ShorePointStatusChanged,
   StrutDeployed,
   StrutReturned,

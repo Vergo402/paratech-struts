@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type ShorePointStatus, type FieldShoreEvent } from '../schema';
 import { operationReducer, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
 import { projectOperation } from './projection';
+import { nextSeqBase } from './seq';
 
 function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
   return {
@@ -129,6 +130,54 @@ describe('projection — current state is a fold of the event log', () => {
   it('ignores events that arrive before their operation exists', () => {
     const orphan = projectOperation([statusEvent('sp1', 'process', 'strutset')]);
     expect(orphan).toEqual(EMPTY_OPERATION_STATE);
+  });
+});
+
+describe('soft-delete + restore (#319)', () => {
+  const del = (spId: string, at = 200): FieldShoreEvent => ({ type: 'ShorePointDeleted', id: 'd', opId: 'op1', at, by: 't', spId });
+  const restore = (spId: string, at = 201): FieldShoreEvent => ({ type: 'ShorePointRestored', id: 'r', opId: 'op1', at, by: 't', spId });
+
+  it('ShorePointDeleted flags the point but keeps it in the array (status unchanged)', () => {
+    const state = stateWith([sp('a', { seq: 1 }), sp('b', { seq: 2 })]);
+    const next = operationReducer(state, del('b', 250));
+    expect(next.shorePoints).toHaveLength(2); // retained, not filtered
+    expect(byId(next, 'b').deletedAt).toBe(250);
+    expect(byId(next, 'b').status).toBe('pending'); // untouched
+    expect(byId(next, 'a').deletedAt).toBeUndefined();
+  });
+
+  it('ShorePointRestored clears the flag', () => {
+    const state = stateWith([sp('b', { seq: 2, deletedAt: 250 })]);
+    const next = operationReducer(state, restore('b'));
+    expect(byId(next, 'b').deletedAt).toBeUndefined();
+  });
+
+  it('a hard ShorePointDeleted removes the point outright (structural, not soft)', () => {
+    const state = stateWith([sp('a', { seq: 1 }), sp('b', { seq: 2 })]);
+    const next = operationReducer(state, {
+      type: 'ShorePointDeleted', id: 'd', opId: 'op1', at: 9, by: 't', spId: 'b', hard: true,
+    });
+    expect(next.shorePoints).toHaveLength(1); // filtered out, not flagged
+    expect(next.shorePoints.find((p) => p.id === 'b')).toBeUndefined();
+  });
+
+  it('delete → restore round-trips through the event log', () => {
+    const events: FieldShoreEvent[] = [
+      { type: 'OperationCreated', id: 'e1', opId: 'op1', at: 1, by: 'ic', name: 'Op', multiBuilding: false },
+      { type: 'ShorePointAdded', id: 'e2', opId: 'op1', at: 2, by: 'o', shorePoint: sp('sp1', { seq: 1 }) },
+      del('sp1', 3),
+      restore('sp1', 4),
+    ];
+    const state = projectOperation(events);
+    expect(state.shorePoints).toHaveLength(1);
+    expect(byId(state, 'sp1').deletedAt).toBeUndefined();
+  });
+
+  it('a deleted number is never reused — seq stays a high-water mark', () => {
+    // #1,#2,#3 added; delete #2 → the next add must be #4, never #2.
+    const state = stateWith([sp('a', { seq: 1 }), sp('b', { seq: 2 }), sp('c', { seq: 3 })]);
+    const afterDelete = operationReducer(state, del('b'));
+    expect(nextSeqBase(afterDelete.shorePoints)).toBe(3); // the deleted point still counts
   });
 });
 

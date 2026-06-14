@@ -99,7 +99,25 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       return { ...state, shorePoints: [...state.shorePoints, event.shorePoint] };
 
     case 'ShorePointDeleted':
-      return { ...state, shorePoints: state.shorePoints.filter((sp) => sp.id !== event.spId) };
+      // hard (structural, e.g. a strut dropped on a type change): filter it out
+      // for good. Default soft-delete (#319): flag, don't filter — the point stays
+      // in the array so it's restorable and its seq stays a high-water mark.
+      return event.hard
+        ? { ...state, shorePoints: state.shorePoints.filter((sp) => sp.id !== event.spId) }
+        : {
+            ...state,
+            shorePoints: state.shorePoints.map((sp) =>
+              sp.id === event.spId ? { ...sp, deletedAt: event.at } : sp,
+            ),
+          };
+
+    case 'ShorePointRestored':
+      return {
+        ...state,
+        shorePoints: state.shorePoints.map((sp) =>
+          sp.id === event.spId ? { ...sp, deletedAt: undefined } : sp,
+        ),
+      };
 
     case 'ShorePointStatusChanged':
       return { ...state, shorePoints: groupAdvance(state.shorePoints, event.spId, event.from, event.to) };

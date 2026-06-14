@@ -6,10 +6,10 @@ import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid } from '@ui/hooks';
 
 /**
- * Delete confirm (#220) — Pending-only and TERMINAL, so it earns the
- * destructive modal gate (ADR-016; everyday advances never confirm).
- * Delete is removed from the card after the first advance — the board only
- * offers it on Pending cards.
+ * Delete confirm (#220) — Pending-only. Soft-delete since #319: the point is
+ * recoverable from the board's Deleted section, but removing active work is a
+ * deliberate move, so it keeps the confirm gate (ADR-016; everyday advances
+ * never confirm). Delete is offered only on Pending cards.
  */
 export interface DeleteShorePointModalProps {
   /** The point to delete; null renders nothing (closed). */
@@ -59,8 +59,8 @@ export function DeleteShorePointModal({ shorePoint, onClose }: DeleteShorePointM
       }
     >
       <p>
-        This permanently removes <strong>{identity}</strong> from the operation. A shore point can
-        only be deleted while it is Pending.
+        This deletes <strong>{identity}</strong> from the board. You can restore it from the{' '}
+        <strong>Deleted</strong> section below. A shore point can only be deleted while it is Pending.
       </p>
     </Modal>
   );
