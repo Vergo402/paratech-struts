@@ -17,6 +17,20 @@ export default defineConfig({
     outDir: abs('./dist'),
     emptyOutDir: true,
   },
+  // Phone-on-LAN dev: pinned so the same URL works every session. `host: true`
+  // binds all interfaces (reach it from a phone on the same Wi-Fi); the fixed
+  // port + strictPort keep the bookmark http://<your-mac>.local:5199 valid
+  // (without strictPort Vite would silently drift to 5200 if 5199 is busy).
+  server: {
+    host: true,
+    port: 5199,
+    strictPort: true,
+    // Vite's DNS-rebinding guard 403s any Host it doesn't recognise. Raw IPs are
+    // allowed by default; this also allows Bonjour `.local` names so the phone
+    // bookmark http://<your-mac>.local:5199 works (the leading dot = any *.local,
+    // so it survives a computer rename). `.local` can't be hit by a rebind attack.
+    allowedHosts: ['.local'],
+  },
   resolve: {
     alias: {
       '@core': abs('./src/core'),
