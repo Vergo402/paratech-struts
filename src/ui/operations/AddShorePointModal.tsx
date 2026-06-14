@@ -4,7 +4,7 @@ import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
-import { compareBuildingValues, divisionLabel, nextSeqBase } from '@core/operation';
+import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -47,14 +47,6 @@ const MAX_LOAD_LBS = 500_000;
 
 const shoreTypeLabel = (id: ShoreTypeId) => SHORE_TYPE_OPTIONS.find((o) => o.value === id)!.label;
 const strutsPerShoreOf = (id: ShoreTypeId) => SHORE_TYPES.find((t) => t.id === id)!.strutsPerShore;
-
-function parseDivision(division: string | undefined): number {
-  if (division && /^-?\d{1,3}$/.test(division.trim())) {
-    const n = parseInt(division, 10);
-    if (n !== 0) return n;
-  }
-  return 1;
-}
 
 export interface AddShorePointModalProps {
   open: boolean;
@@ -101,7 +93,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   useEffect(() => {
     if (!open) return;
     if (shorePoint) {
-      setDivision(parseDivision(shorePoint.division));
+      setDivision(parseDivisionNumber(shorePoint.division) ?? 1);
       setBuilding(shorePoint.building ?? '');
       setArea(shorePoint.area ?? '');
       setAssignedResource(shorePoint.assignedResource ?? '');
@@ -116,7 +108,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       // carries over so a new point in the same spot is near-zero effort. First
       // point of the op starts Div 1 / T-Shore / blank.
       const last = shorePoints[shorePoints.length - 1];
-      setDivision(parseDivision(last?.division));
+      setDivision(parseDivisionNumber(last?.division) ?? 1);
       setBuilding(last?.building ?? '');
       setArea(last?.area ?? '');
       setAssignedResource(last?.assignedResource ?? '');

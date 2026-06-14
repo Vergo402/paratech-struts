@@ -23,8 +23,6 @@ export interface DeductionPickerProps {
   measurementEighths: number;
   value: Deductions;
   onChange: (next: Deductions) => void;
-  /** Ops mode: stocked plate ids — passed through to the plate pickers. */
-  plateAvailability?: ReadonlySet<string>;
 }
 
 function DeductionAmount({ heightInches }: { heightInches: number }) {
@@ -44,12 +42,7 @@ const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
   sub: <DeductionAmount heightInches={p.height} />,
 }));
 
-export function DeductionPicker({
-  measurementEighths,
-  value,
-  onChange,
-  plateAvailability,
-}: DeductionPickerProps) {
+export function DeductionPicker({ measurementEighths, value, onChange }: DeductionPickerProps) {
   const effectiveInches = effectiveLengthFrom(measurementEighths, value);
   const effectiveEighths = Math.round(effectiveInches * 8); // exact — already ⅛″-floored
   const impossible = effectiveInches <= 0;
@@ -79,7 +72,6 @@ export function DeductionPicker({
         options={PLATE_OPTIONS}
         value={value.topPlate}
         onSelect={(id) => set('topPlate', id)}
-        availableIds={plateAvailability}
         trailing={
           <span className="fs-ledger-value">
             <DeductionAmount heightInches={plateHeight(value.topPlate)} />
@@ -91,7 +83,6 @@ export function DeductionPicker({
         options={PLATE_OPTIONS}
         value={value.bottomPlate}
         onSelect={(id) => set('bottomPlate', id)}
-        availableIds={plateAvailability}
         trailing={
           <span className="fs-ledger-value">
             <DeductionAmount heightInches={plateHeight(value.bottomPlate)} />

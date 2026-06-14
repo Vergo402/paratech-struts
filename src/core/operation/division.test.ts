@@ -4,6 +4,7 @@ import {
   formatDivisionShort,
   formatDivisionCompact,
   divisionLabel,
+  parseDivisionNumber,
   nextFloorAbove,
   nextFloorBelow,
   sortDivisionsForDisplay,
@@ -119,5 +120,15 @@ describe('board sort order (#248) — v3 compareLevelValues carried over', () =>
       { division: '1', building: 'A', area: 'x' },
       { division: '1', building: 'B', area: 'x' },
     ]);
+  });
+
+  it('parseDivisionNumber parses valid signed integers and rejects everything else (audit W10)', () => {
+    expect(parseDivisionNumber('1')).toBe(1);
+    expect(parseDivisionNumber('-2')).toBe(-2);
+    expect(parseDivisionNumber(' 3 ')).toBe(3);
+    expect(parseDivisionNumber('0')).toBeNull();
+    expect(parseDivisionNumber('Roof')).toBeNull();
+    expect(parseDivisionNumber('')).toBeNull();
+    expect(parseDivisionNumber(undefined)).toBeNull();
   });
 });

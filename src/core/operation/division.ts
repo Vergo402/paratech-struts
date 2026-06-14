@@ -36,13 +36,22 @@ export function formatDivisionCompact(n: number): string {
  * Display label for a ShorePoint.division string. An integer string renders the
  * short form; anything else (legacy free text, e.g. "Roof") passes through raw.
  */
-export function divisionLabel(division: string): string {
+/**
+ * Parse a `division` string to its signed floor number, or null if it isn't a
+ * valid nonzero integer division (blank or legacy free text like "Roof"). The
+ * one place division-string parsing lives — callers reuse it (audit W10).
+ */
+export function parseDivisionNumber(division: string | undefined): number | null {
+  if (!division) return null;
   const trimmed = division.trim();
-  if (/^-?\d{1,3}$/.test(trimmed)) {
-    const n = parseInt(trimmed, 10);
-    if (n !== 0) return formatDivisionShort(n);
-  }
-  return division;
+  if (!/^-?\d{1,3}$/.test(trimmed)) return null;
+  const n = parseInt(trimmed, 10);
+  return n === 0 ? null : n;
+}
+
+export function divisionLabel(division: string): string {
+  const n = parseDivisionNumber(division);
+  return n !== null ? formatDivisionShort(n) : division;
 }
 
 /** The next floor above: max positive (or 0 when none) + 1. */

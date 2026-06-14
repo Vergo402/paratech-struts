@@ -53,18 +53,19 @@ export const WOOD_SIZES: readonly WoodSize[] = [
 export interface ShoreTypeDef {
   id: ShoreTypeId;
   name: string;
-  desc: string;
-  defaultHeader: WoodSizeId;
-  defaultFooter: WoodSizeId;
   /** Struts in ONE physical shore (KB-7, v4-new — not in the v3 catalog): the
    *  Add form's quantity means shores; cards created = shores × strutsPerShore. */
   strutsPerShore: 1 | 2 | 3;
 }
 
+// 3-Post wood auto-fill lives in AddShorePointModal (THREE_POST_WOOD), the one
+// type that auto-fills — catalog defaultHeader/defaultFooter/desc fields removed
+// as dead (audit W10): nothing read them, and per-type defaults here would re-fill
+// T-Shore/Double-T, the v3.9.1 regression.
 export const SHORE_TYPES: readonly ShoreTypeDef[] = [
-  { id: 't-shore', name: 'Vertical T-Shore', desc: 'Single strut with header and footer', defaultHeader: '4x4', defaultFooter: '4x4', strutsPerShore: 1 },
-  { id: 'double-t', name: 'Double-T Vertical Shore', desc: 'Two struts with shared header', defaultHeader: '4x4', defaultFooter: '4x4', strutsPerShore: 2 },
-  { id: '3-post', name: '3-Post Vertical Shore', desc: 'Three struts with 6×6 header and footer', defaultHeader: '6x6', defaultFooter: '6x6', strutsPerShore: 3 },
+  { id: 't-shore', name: 'Vertical T-Shore', strutsPerShore: 1 },
+  { id: 'double-t', name: 'Double-T Vertical Shore', strutsPerShore: 2 },
+  { id: '3-post', name: '3-Post Vertical Shore', strutsPerShore: 3 },
 ];
 
 export const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
