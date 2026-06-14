@@ -695,9 +695,12 @@ button.fs-spc-head {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  /* leave room for the absolutely-positioned fit badge so the centered
-     identity never collides with it. */
-  max-width: calc(100% - 56px);
+  max-width: 100%; /* full width — a clean recommendation carries no badge (#248) */
+}
+/* Only a gated card shows the absolutely-positioned danger badge; reserve its
+   room so the centered identity never collides with it. */
+.fs-rec.is-gated .fs-rec-headcol {
+  max-width: calc(100% - 64px);
 }
 
 .fs-rec-identity {
@@ -710,7 +713,6 @@ button.fs-spc-head {
   font-weight: 700;
 }
 
-.fs-rec-connectors,
 .fs-rec-loc {
   margin: 4px 0 0;
   font: var(--type-body);
@@ -720,6 +722,21 @@ button.fs-spc-head {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+/* Connectors: each plate name is a whole, fully-readable unit (#248). The pair
+   sits on one line when it fits (separated by the column-gap), else splits
+   top/bottom across two clean lines — never truncated, no stray separator. */
+.fs-rec-connectors {
+  margin: 4px 0 0;
+  font: var(--type-body);
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+  column-gap: var(--space-4);
+  max-width: 100%;
+}
+.fs-rec-conn { white-space: nowrap; }
 
 /* Apparatus sits bigger + bolder than location by decision (S12 §3.1). */
 .fs-rec-apparatus {

@@ -44,14 +44,14 @@ export function comboModel(combo: StrutCombination): string {
   return `${combo.strut.model} + ${combo.extensions.map((e) => `${e}″`).join(' + ')}`;
 }
 
-/** The connectors face line: selected top/bottom plate NAMES (as catalogued),
- *  joined " · "; empty when neither plate is selected (S12 §3.1). */
-function connectorSpec(deductions: Deductions): string {
+/** The selected top/bottom connector NAMES (as catalogued), top first; empty when
+ *  neither plate is selected (S12 §3.1). Each is rendered as a whole, readable unit
+ *  — the card lays the pair on one line, or splits top/bottom across two (#248). */
+function connectorSpecs(deductions: Deductions): string[] {
   return [deductions.topPlate, deductions.bottomPlate]
     .map((id) => BASE_PLATES.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p && p.id !== 'none')
-    .map((p) => p.name)
-    .join(' · ');
+    .map((p) => p.name);
 }
 
 // ---- Ledger rows ------------------------------------------------------------
@@ -111,10 +111,7 @@ export function RecommendationCard({
   const sys = sysKeyOf(combo.strut.system, color);
   const word = SYS_WORD[sys];
   const model = comboModel(combo);
-  const spec = connectorSpec(deductions);
-  // The gated fit badge is the unmistakable danger tell (99-OQ #40): over-capacity
-  // wins over unrated; otherwise a clean "Fits".
-  const fitLabel = combo.exceedsCapacity ? 'Over capacity' : combo.unrated ? 'Unrated' : 'Fits';
+  const specs = connectorSpecs(deductions);
 
   // Fixed physical order — Header → Top Connector → Bottom Connector → Footer.
   // Never reorder (card.md: top of the assembly to the bottom).
@@ -154,11 +151,25 @@ export function RecommendationCard({
           <p className="fs-rec-identity">
             <b>{word}</b> · {model}
           </p>
-          {spec && <p className="fs-rec-connectors">{spec}</p>}
+          {specs.length > 0 && (
+            <p className="fs-rec-connectors">
+              {specs.map((name, i) => (
+                <span key={i} className="fs-rec-conn">
+                  {name}
+                </span>
+              ))}
+            </p>
+          )}
           {source && <p className="fs-rec-apparatus">Equipment located on: {source}</p>}
           {location && <p className="fs-rec-loc">{location}</p>}
         </div>
-        <span className={`fs-rec-fit${gated ? ' fs-rec-fit--no' : ''}`}>{fitLabel}</span>
+        {/* Badge only on a gated card — the #40 danger tell. A clean recommendation
+            needs no "Fits" flag: being recommended IS fitting (#248). */}
+        {gated && (
+          <span className="fs-rec-fit fs-rec-fit--no">
+            {combo.exceedsCapacity ? 'Over capacity' : 'Unrated'}
+          </span>
+        )}
       </div>
 
       {combo.extensions.length === 0 ? (

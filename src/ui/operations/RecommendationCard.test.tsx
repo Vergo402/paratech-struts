@@ -72,8 +72,10 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // old "Equipment from:" footer line.
     expect(container.querySelector('.fs-rec-apparatus')!.textContent).toBe('Equipment located on: Rescue 2');
     expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
-    // Fit badge default + the permanent disclaimer (the card's last word).
-    expect(screen.getByText('Fits')).toBeInTheDocument();
+    // A clean recommendation shows NO fit badge — it fits by definition (#248);
+    // the badge is reserved for the gated danger tells (Unrated / Over capacity).
+    expect(screen.queryByText('Fits')).toBeNull();
+    expect(container.querySelector('.fs-rec-fit')).toBeNull();
     expect(screen.getByText('No extensions needed')).toBeInTheDocument();
     expect(screen.getByText('Planning aid, not an engineering certification.')).toBeInTheDocument();
   });
@@ -102,9 +104,11 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // Footer is unselected → N/S + "not selected".
     expect(screen.getByText('N/S')).toBeInTheDocument();
     expect(screen.getByText('not selected')).toBeInTheDocument();
-    // Selected slots carry their names on the sub-line.
+    // Selected slots carry their names on the sub-line (scoped to the ledger —
+    // the connectors line also shows the plate names now, #248).
     expect(screen.getByText('4×4')).toBeInTheDocument();
-    expect(screen.getAllByText('Channel Base 4"x4"')).toHaveLength(2);
+    const slotNames = [...container.querySelectorAll('.fs-rec-slot-name')].map((el) => el.textContent);
+    expect(slotNames.filter((n) => n === 'Channel Base 4"x4"')).toHaveLength(2);
   });
 
   it('ledger math: Raw opening and promoted Required strut length', () => {
@@ -134,9 +138,12 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     const { container, rerender } = render(
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
     );
-    expect(container.querySelector('.fs-rec-connectors')!.textContent).toBe(
-      'Channel Base 4"x4" · Channel Base 4"x4"',
-    );
+    // Each plate is its own whole unit (#248 — splits across lines, never truncates);
+    // the " · " separator is a CSS pseudo-element, so it's not in the DOM text.
+    expect([...container.querySelectorAll('.fs-rec-conn')].map((s) => s.textContent)).toEqual([
+      'Channel Base 4"x4"',
+      'Channel Base 4"x4"',
+    ]);
     // No plates selected → no connectors line at all.
     rerender(<RecommendationCard combo={STANDARD} deductions={NO_DEDUCTIONS} source="Rescue 2" onDeploy={vi.fn()} />);
     expect(container.querySelector('.fs-rec-connectors')).toBeNull();
