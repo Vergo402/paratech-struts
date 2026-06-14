@@ -8,7 +8,7 @@ export { Button, type ButtonProps } from './Button';
 export { Card, type CardProps } from './Card';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export {
-  Fraction,
+  fractionText,
   MeasurementValue,
   eighthsToParts,
   type MeasurementParts,

@@ -7,7 +7,7 @@ import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { router } from './router';
 import '@fontsource-variable/geist';
-import '@fontsource-variable/geist-mono';
+import '@fontsource-variable/inter'; // numeral/value font (--font-mono role); ADR-028
 import './styles.css';
 
 // Composition root — the one place outside ui/hooks that may touch @data

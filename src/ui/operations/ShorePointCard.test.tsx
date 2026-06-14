@@ -19,9 +19,9 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
-// The value shelf renders the measurement as fragmented nodes (stacked
-// fraction); textContent concatenates with no separators, e.g. "Raw opening4812″"
-// for "Raw opening" + 48 1/2″. Hand-verify the digits against the fixture.
+// The value shelf renders the measurement as plain text the value font composes
+// diagonally (ADR-028): "48 1/2″" with a space before the fraction. textContent
+// concatenates label + value with no separator, e.g. "Required strut length48 1/2″".
 function valueShelfText(): string {
   return document.querySelector('.fs-spc-value')?.textContent ?? '';
 }
@@ -160,8 +160,8 @@ describe('ShorePointCard', () => {
     // the required strut length; the detail line carries the raw opening + load
     // (deduction segment omitted when zero — v3 behaviour).
     expect(screen.getByText('Required strut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required strut length4812″');
-    expect(detailLineText()).toBe('Raw opening 4812″ · 0 lbs');
+    expect(valueShelfText()).toBe('Required strut length48 1/2″');
+    expect(detailLineText()).toBe('Raw opening 48 1/2″ · 0 lbs');
     rerender(
       <ShorePointCard
         shorePoint={makeSP({
@@ -171,7 +171,7 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('Required strut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required strut length4812″');
+    expect(valueShelfText()).toBe('Required strut length48 1/2″');
   });
 
   it('detail line (#248): shows the (−deduction) + load when present', () => {
@@ -187,8 +187,8 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(valueShelfText()).toBe('Required strut length4112″');
-    expect(detailLineText()).toBe('Raw opening 4812″ (−7″) · 2,000 lbs');
+    expect(valueShelfText()).toBe('Required strut length41 1/2″');
+    expect(detailLineText()).toBe('Raw opening 48 1/2″ (−7″) · 2,000 lbs');
   });
 
   it('value shelf: "Cut length" reads the effective (deducted) length while cutting; no detail line', () => {
@@ -204,7 +204,7 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('Cut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Cut length4112″');
+    expect(valueShelfText()).toBe('Cut length41 1/2″');
     // Cutting onward, the shelf number IS the cut length — the detail line drops.
     expect(detailLineText()).toBe('');
   });
@@ -222,7 +222,7 @@ describe('ShorePointCard', () => {
     expect(screen.getByText('Set length')).toBeInTheDocument();
     // Set length = what the strut was SET to: the effective 41½″ (388 − 56
     // eighths of 4x4+4x4 wood), NOT the raw opening 48½″ (SME review SF-1).
-    expect(valueShelfText()).toBe('Set length4112″');
+    expect(valueShelfText()).toBe('Set length41 1/2″');
     expect(detailLineText()).toBe('');
   });
 

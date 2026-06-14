@@ -67,7 +67,7 @@ Tick each; note the screen-specific application where relevant. (Full statements
 - [ ] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)); assistive tech gets Advance/Step-back buttons.
 - [ ] **NIMS terminology** — titles spelled out, no acronyms ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - [ ] **Capacity demoted** — the deduction ledger leads any `RecommendationCard`; capacity is secondary.
-- [ ] **Measurements** — 1/8″ floored, digit-pair fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
+- [ ] **Measurements** — 1/8″ floored, diagonal fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
 - [ ] **No safety-hold / no in-app comms / no push** (Principle 10).
 - [ ] **Tap geometry** — 56pt / 60pt status / 8pt dead zone (48pt on non-operational surfaces).
 - [ ] **Modal-vs-sheet** per this screen's [application-table row](00-ia-foundation.md#the-per-screen-application-table-each-screen-spec-cites-its-row).

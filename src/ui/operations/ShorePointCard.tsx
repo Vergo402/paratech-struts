@@ -208,7 +208,7 @@ export function ShorePointCard({
   const valueShelf = (
     <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
       <span className="fs-spc-value-label">{VALUE_LABEL[sp.status]}</span>
-      <span className={`fs-spc-value-num${promoted ? ' fs-fr-display' : ''}`}>
+      <span className="fs-spc-value-num">
         <MeasurementValue eighths={valueEighths} />
       </span>
     </div>

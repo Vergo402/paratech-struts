@@ -1,7 +1,7 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useId, useState, useRef, useEffect } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
-import { Fraction, MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
+import { MeasurementValue, eighthsToParts, tapHaptic } from '@ui/primitives';
 import { MeasurementEntryModal } from './MeasurementEntryModal';
 import { parseMeasurement } from './parseMeasurement';
 
@@ -211,7 +211,7 @@ export function MeasurementInput({
               value={String(n)}
               aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
             >
-              {n === 0 ? '0' : <Fraction n={p.n} d={p.d} />}
+              {n === 0 ? '0' : `${p.n}/${p.d}`}
             </RadioGroup.Item>
           );
         })}

@@ -1,8 +1,11 @@
 /**
  * Measurement display (input.md §The measurement-display component +
- * typography.md). Eighths are built from REAL digits in the locked stacked
- * tape-measure form — numerator over a ruled bar over denominator — never
- * super/subscript codepoints (the v3 45¹¹⁄₁₆ hack rendered illegibly tiny).
+ * typography.md; ADR-028). Eighths render as DIAGONAL fractions — plain
+ * "48 1/2″" text that the value font (Inter, via --font-mono) composes into
+ * a real diagonal glyph through `font-variant-numeric: diagonal-fractions`
+ * (set on .fs-meas). The space before the fraction is required so the OpenType
+ * frac feature composes "1/2" and not "481/2". This replaces the hand-stacked
+ * digit form, which tested illegibly tiny at field distance (ADR-028).
  * One renderer for every measurement keeps the look consistent and big.
  * Values are EXACT eighths ints end-to-end (ADR-012); nothing here rounds.
  */
@@ -40,14 +43,10 @@ export function eighthsToParts(eighths: number): MeasurementParts {
   return { feet, inches, totalInches, n: rem / g, d: 8 / g, negative };
 }
 
-/** The stacked digit-pair fraction — numerator over ruled bar over denominator. */
-export function Fraction({ n, d }: { n: number; d: number }) {
-  return (
-    <span className="fr">
-      <span className="n">{n}</span>
-      <span className="d">{d}</span>
-    </span>
-  );
+/** Plain "n/d" text — the font composes the diagonal glyph (ADR-028). The
+ *  leading space keeps the fraction from fusing with a preceding integer. */
+export function fractionText(n: number, d: number): string {
+  return n > 0 ? ` ${n}/${d}` : '';
 }
 
 export interface MeasurementValueProps {
@@ -58,24 +57,14 @@ export interface MeasurementValueProps {
   className?: string;
 }
 
-/** Read-only measurement — Geist Mono, tabular figures, stacked ⅛″ fraction. */
+/** Read-only measurement — Inter value font, tabular figures, diagonal ⅛″ fraction. */
 export function MeasurementValue({ eighths, form = 'inches', className }: MeasurementValueProps) {
   const p = eighthsToParts(eighths);
-  const frac = p.n > 0 ? <Fraction n={p.n} d={p.d} /> : null;
-  return (
-    <span className={`fs-meas${className ? ` ${className}` : ''}`}>
-      {p.negative && '−'}
-      {form === 'feet-inches' && p.feet > 0 ? (
-        <>
-          {p.feet}′ {p.inches}
-          {frac}″
-        </>
-      ) : (
-        <>
-          {p.totalInches}
-          {frac}″
-        </>
-      )}
-    </span>
-  );
+  const sign = p.negative ? '−' : '';
+  const frac = fractionText(p.n, p.d);
+  const text =
+    form === 'feet-inches' && p.feet > 0
+      ? `${sign}${p.feet}′ ${p.inches}${frac}″`
+      : `${sign}${p.totalInches}${frac}″`;
+  return <span className={`fs-meas${className ? ` ${className}` : ''}`}>{text}</span>;
 }

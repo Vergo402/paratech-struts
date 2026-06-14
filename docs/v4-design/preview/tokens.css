@@ -20,7 +20,11 @@
 /* ---- Type ramp + spacing + radius (theme-independent) ---------------------- */
 :root {
   --font-sans: "Geist Variable", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  /* numeral/value font — Inter; diagonal fractions + tabular figures (ADR-028).
+     Named "mono" historically; it's the value-font role, not literally
+     monospace (alignment = tabular-nums, not fixed pitch). UI text = --font-sans
+     (Geist). All ~18 --font-mono / --type-mono sites are numeral sites. */
+  --font-mono: "Inter Variable", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* type ramp — size / weight / line-height / tracking (typography.md) */
   --type-display-1: 700 40px/1.10 var(--font-sans);

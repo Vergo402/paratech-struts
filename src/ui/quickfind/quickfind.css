@@ -11,13 +11,6 @@
   color: var(--text-primary);
   text-align: center;
 }
-/* 34px is a display-size context — re-derive the stacked fraction at r=.36
-   (height = .726/.36 + .294 = 2.31em); mirrors primitives.css .fs-fr-display. */
-.fs-meas-readout .fr,
-.fs-meas-readout--button .fr {
-  font-size: 0.36em;
-  height: 2.31em;
-}
 .fs-steppers { display: flex; gap: var(--space-3); }
 .fs-step-group { flex: 1 1 0; display: flex; flex-direction: column; gap: var(--space-1); }
 .fs-step-label { font: var(--type-caption); color: var(--text-secondary); text-align: center; }
@@ -47,7 +40,7 @@
   align-items: center;
   justify-content: center;
   font: 500 17px/1 var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: diagonal-fractions tabular-nums; /* "1/2" → ½ (ADR-028) */
   color: var(--text-secondary);
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
@@ -55,12 +48,6 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-/* The strip cell shows the fraction ALONE (no baseline text to anchor to), so
-   drop the inline baseline offset and let flex center it. The .726/r + .294
-   formula is for INLINE anchoring to parent digit height — at r=.8 it yields
-   1.2em, less than the two stacked glyphs need, crushing n onto d. Standalone,
-   the stack keeps its own proportions: height/font = 1.75, the base .fr ratio. */
-.fs-eighth .fr { top: 0; font-size: 0.8em; height: 1.75em; }
 .fs-eighth[data-state='checked'] {
   border: 2px solid var(--accent);
   color: var(--text-primary);
@@ -201,7 +188,7 @@
 .fs-meas-slot .fs-field-label { font-size: 12px; }
 .fs-meas-slot-value {
   font: 400 26px/1.1 var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: diagonal-fractions tabular-nums; /* "8 1/2″" → 8 ½ (ADR-028) */
   color: var(--text-primary);
 }
 

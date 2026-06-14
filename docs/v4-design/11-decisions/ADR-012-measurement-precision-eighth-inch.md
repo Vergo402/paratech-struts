@@ -61,7 +61,7 @@ This ADR replaces the ragged 0.1″-decimal output with a clean, tape-readable *
 - **Keep 1/16″ input→output.** Rejected — false precision (internal math was 0.1″ decimal, never true sixteenths), and the sixteenth fraction is illegible at field distance.
 - **Round to *nearest* 1/8″.** Rejected — can round a cut/set length *up*, the unsafe direction (gap, eccentric load, unreachable config). The whole point of the SME review was to forbid this.
 - **Round each spec dimension to 1/8″ before subtracting.** Rejected — accumulates up to ±1/4″ over four deduction terms, possibly unsafe-side, and displays a figure (3⅜″) that contradicts the manufacturer O&M (3.4″).
-- **Use precomposed Unicode fraction glyphs only.** Rejected — they exist only for halves/quarters/eighths, render smaller than the digit-pair form, and would be inconsistent the moment any other denominator appears. The digit-pair renderer is uniform and bigger.
+- **Use precomposed Unicode fraction glyphs only.** Rejected — they exist only for halves/quarters/eighths, render smaller than a font-composed fraction, and would be inconsistent the moment any other denominator appears. *(The render form was later settled as diagonal fractions via the value font — [ADR-028](ADR-028-inter-numerals-diagonal-fractions.md) — superseding the digit-pair renderer this ADR assumed.)*
 
 ---
 
@@ -76,7 +76,7 @@ This ADR replaces the ragged 0.1″-decimal output with a clean, tape-readable *
 
 ## References
 
-- [`typography.md`](../07-design-system/typography.md) — fraction display spec (digit-pair renderer; stacked/diagonal house style).
+- [`typography.md`](../07-design-system/typography.md) — fraction display spec (diagonal fractions via the value font, [ADR-028](ADR-028-inter-numerals-diagonal-fractions.md)).
 - [`card.md`](../03-primitives/card.md) — RecommendationCard anatomy (effective length floored to 1/8″).
 - Styleguide proof: `docs/v4-design/preview/` — RecommendationCard rendering both fraction modes (toolbar **Fraction** toggle).
 - Domain basis: Paratech O&M Manual (continuous strut adjustment; base-plate Table 2-1 heights); FEMA US&R / USACE shoring "cut-to-fit, wedge-to-finish" practice. `WEDGE_DEDUCTION = 1.5″` (app.js:131).

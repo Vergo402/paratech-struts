@@ -35,7 +35,7 @@ describe('DeductionPicker', () => {
     expect(expected).toBe(52.5);
 
     const effective = container.querySelector('.fs-ledger-effective .fs-ledger-value');
-    expect(effective!.textContent).toBe('5212″'); // 52 + stacked ½ + ″
+    expect(effective!.textContent).toBe('52 1/2″'); // 52 + diagonal ½ + ″ (ADR-028)
   });
 
   it('turns danger when deductions consume the opening', async () => {
@@ -64,7 +64,7 @@ describe('DeductionPicker', () => {
 
     const headerGroup = screen.getByRole('radiogroup', { name: 'Header wood' });
     await user.click(within(headerGroup).getByRole('radio', { name: '4×4' }));
-    expect(rowValues()[0]).toBe('−312″'); // −3 + stacked ½ + ″
+    expect(rowValues()[0]).toBe('−3 1/2″'); // −3 + diagonal ½ + ″ (ADR-028)
   });
 
   it('plate options read as signed deductions, ≈ when not eighths-exact (KB-4)', async () => {
@@ -73,7 +73,7 @@ describe('DeductionPicker', () => {
     await user.click(screen.getByRole('button', { name: /top plate/i }));
     // Swivel Base 6" is 1.8″ — not eighths-exact → ≈ −1¾″ (nearest ⅛″).
     const swivel = screen.getAllByRole('option', { name: /swivel base 6/i })[0]!;
-    expect(swivel.querySelector('.fs-plate-sub')!.textContent).toBe('≈−134″');
+    expect(swivel.querySelector('.fs-plate-sub')!.textContent).toBe('≈−1 3/4″');
     // None deducts nothing — still a signed amount, no prose.
     const none = screen.getAllByRole('option', { name: /^none/i })[0]!;
     expect(none.querySelector('.fs-plate-sub')!.textContent).toBe('−0″');

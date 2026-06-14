@@ -121,7 +121,7 @@ How grouped members render on the lanes (the card-side rolodex view is owned by 
 - [x] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)); the slide gesture is the **only** commit path — no button twins, no AT/keyboard commit ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md), the recorded exception in [`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide).
 - [x] **NIMS terminology** — spelled-out titles; `group` → **assignedResource**; the renamed status labels above ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md)).
 - [x] **Capacity demoted** — the card never leads with rated capacity; it rides the deduction context only.
-- [x] **Measurements** — 1/8″ floored, digit-pair fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
+- [x] **Measurements** — 1/8″ floored, diagonal fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
 - [x] **No safety-hold / no in-app comms / no push** (Principle 10) — hazards show as a card badge; advancement is never gated on them.
 - [x] **Tap geometry** — 60pt status cards, 56pt primary actions, 8pt dead zones ([`spacing-grid.md`](../07-design-system/spacing-grid.md)).
 - [x] **Modal-vs-sheet** per the ADR-016 Operations row ([`00-ia-foundation.md`](00-ia-foundation.md)): Start Op + Add SP = modal; Assign Equipment = sheet; End Op + return = modal; advance = slide.

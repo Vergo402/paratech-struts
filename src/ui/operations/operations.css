@@ -731,8 +731,8 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 
-/* Ledger numbers run at body-lg (16px) — the size the .fr stacked-fraction
-   metrics in primitives.css are tuned for (r=.5). */
+/* Ledger numbers run at body-lg (16px). Fractions render diagonally via the
+   value font (ADR-028), so the line needs no extra height. */
 .fs-rec-slot-value {
   display: inline-flex;
   align-items: baseline;
@@ -764,7 +764,7 @@ button.fs-spc-head {
 
 .fs-rec-opening {
   font: var(--type-mono);
-  font-size: 1rem; /* body-lg — matches the deduction rows + tuned .fr metrics */
+  font-size: 1rem; /* body-lg — matches the deduction rows */
 }
 
 /* Effective is the cut-to answer — promoted: larger, in the strut color. */

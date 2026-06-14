@@ -60,7 +60,7 @@ This is the load-bearing domain rule of the primitive, and it is a deliberate **
 | Section label | 14 / 500 | `--type-body-medium` — [`typography.md`](../07-design-system/typography.md) |
 | Leaf label | 14 / 400 | `--type-body` — [`typography.md`](../07-design-system/typography.md) |
 | Progress count | A **count badge** — "8 / 13", tabular figures so it does not jitter as it climbs | [`badge.md`](badge.md) §Count badge; `font-variant-numeric: tabular-nums` [`typography.md`](../07-design-system/typography.md) |
-| Attribution line | role + time beneath a checked leaf; time in **Geist Mono** | `--type-caption` + `--type-mono` — [`typography.md`](../07-design-system/typography.md) |
+| Attribution line | role + time beneath a checked leaf; time in the **value font** (`--type-mono` = Inter, ADR-028) | `--type-caption` + `--type-mono` — [`typography.md`](../07-design-system/typography.md) |
 | Completion mark | the **Checkmark** glyph at section level when 100% | "Checkmark" utility glyph — [`iconography.md`](../07-design-system/iconography.md) |
 
 The checklist is a **flat surface, not an elevated one**: it lives inline on its screen, never casts a shadow (shadows are the sheet's and modal's — [`spacing-grid.md`](../07-design-system/spacing-grid.md) §Elevation), and it mints no geometry of its own — every dimension above is a value a sibling already owns.
@@ -99,7 +99,7 @@ leaf record (reserved):
 ```
 
 - D6 v1 stored `by: deviceId` only. v4 expands it per D6's own "v4 expansion" note (*role-attributed checking … instead of just device*) and D7.5 (UID + role + device + timestamp). The primitive renders, and reserves, the fuller record.
-- **The attribution is visible on the card, not buried in a log.** A checked leaf shows a caption beneath its label: the **role spelled out** (per [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) / [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) — "Rescue Group Supervisor," never "RGS") and the time in Geist Mono ("Rescue Group Supervisor · 14:32"). At-a-glance, the IC sees not just *what* is done but *who* attested it — the operational thread, the checklist analog of [`card.md`](card.md)'s cradle-to-grave deployed-strut line.
+- **The attribution is visible on the card, not buried in a log.** A checked leaf shows a caption beneath its label: the **role spelled out** (per [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) / [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) — "Rescue Group Supervisor," never "RGS") and the time in the value font (`--type-mono`, now Inter — ADR-028) ("Rescue Group Supervisor · 14:32"). At-a-glance, the IC sees not just *what* is done but *who* attested it — the operational thread, the checklist analog of [`card.md`](card.md)'s cradle-to-grave deployed-strut line.
 - **Un-checking clears the attribution and is itself an audited event** (the log records the un-check, its actor, and time — D7.5). A check is never silently erasable.
 
 ---

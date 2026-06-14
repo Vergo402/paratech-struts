@@ -112,9 +112,9 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
     );
     expect(container.querySelector('.fs-rec-opening')!.textContent).toBe('56″');
-    // 45⅝″ — digit-pair fraction (45, 5 over 8); effective uses exact plate
-    // heights (no on-card ≈/footnote/floor note any more — display declutter).
-    expect(container.querySelector('.fs-rec-effective')!.textContent).toBe('4558″');
+    // 45 5/8″ — diagonal fraction the value font composes (ADR-028); effective
+    // uses exact plate heights (no on-card ≈/footnote/floor note — declutter).
+    expect(container.querySelector('.fs-rec-effective')!.textContent).toBe('45 5/8″');
     // Declutter (#248): no floor note, no plate-rounding footnote, no ≈ markers.
     expect(screen.queryByText('↓ floored to 1/8″')).toBeNull();
     expect(screen.queryByText(/plate heights to nearest/)).toBeNull();
@@ -177,7 +177,7 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // STANDARD is rated 22,000 lb at the 45⅝″ effective length.
     expect(cap.querySelector('.fs-rec-cap-val')!.textContent).toBe('22,000 lb');
     expect(cap.querySelector('.fs-rec-cap-label')!.textContent).toContain('Rated capacity at');
-    expect(cap.querySelector('.fs-rec-cap-label')!.textContent).toContain('4558″'); // 45⅝″ digit-pair
+    expect(cap.querySelector('.fs-rec-cap-label')!.textContent).toContain('45 5/8″'); // 45⅝″ diagonal
     // Doctrine: the footer sits BELOW Deploy and ABOVE the permanent disclaimer
     // (the disclaimer is always the card's last word).
     const order = [...container.querySelectorAll('button, .fs-rec-cap, .fs-gate--disclaimer')];

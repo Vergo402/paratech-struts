@@ -64,7 +64,7 @@ v3 renders three stacked sections (`renderCutTableView()`): **Ready to Cut** →
 
 ## The cut card
 
-- **Cut length is the one promoted number** ([`card.md`](../03-primitives/card.md) cut-table emphasis — v3 renders it 36px bold; v4 promotes via size + weight + the cutting hue, never a loud fill). Shown as **opening → expected cut** with the 1/8″ digit-pair fraction ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md), [`typography.md`](../07-design-system/typography.md)).
+- **Cut length is the one promoted number** ([`card.md`](../03-primitives/card.md) cut-table emphasis — v3 renders it 36px bold; v4 promotes via size + weight + the cutting hue, never a loud fill). Shown as **opening → expected cut** with the 1/8″ diagonal fraction ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md), [`typography.md`](../07-design-system/typography.md)).
 - **Optional actual-cut [`input`](../03-primitives/input.md):** the cutter may record what they actually cut; if it differs from expected, the card shows the **expected-vs-actual diff** (faithful to v3) as a [`badge`](../03-primitives/badge.md), not an error.
 - **Deduction context** (header/footer/connectors) is available for the cutter to verify the math, demoted beneath the cut length.
 - **Capacity is not shown** (demoted, [`00-ia-foundation.md`](00-ia-foundation.md)).
@@ -84,7 +84,7 @@ The role gate (who may commit a cut) is the D7 authorization work; the screen re
 - [x] **Phone is the floor** — the full cut workflow works phone-only; drag-reorder is the tablet-only enhancement (G-16).
 - [x] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)); AT gets Advance/Step-back buttons ([`accessibility.md`](../07-design-system/accessibility.md) §Assistive tech cannot slide).
 - [x] **No silent removal** — off-queue = the red-slash card state, never a disappearance (Principle 10, [`card.md`](../03-primitives/card.md)).
-- [x] **Measurements** — 1/8″ floored, digit-pair fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
+- [x] **Measurements** — 1/8″ floored, diagonal fractions ([ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)).
 - [x] **NIMS terminology** — Cutting Station is a workstation under Operations; runner is a task/resource, not an org box ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - [x] **Capacity demoted** — never shown on the cut card.
 - [x] **Tap geometry** — 60pt status cards, 56pt actions, 8pt dead zones; the actual-cut field is a 56pt gloved input ([`input.md`](../03-primitives/input.md), [`spacing-grid.md`](../07-design-system/spacing-grid.md)).

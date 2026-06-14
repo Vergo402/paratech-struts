@@ -27,25 +27,23 @@ describe('eighthsToParts', () => {
 });
 
 describe('MeasurementValue', () => {
-  it('renders stacked real-digit fraction markup, never codepoint glyphs', () => {
+  it('emits plain "n/d" text for the font to compose diagonally — never stacked markup or codepoint glyphs (ADR-028)', () => {
     const { container } = render(<MeasurementValue eighths={749} />);
-    expect(container.textContent).toBe('9358″');
-    const fr = container.querySelector('.fr');
-    expect(fr).not.toBeNull();
-    expect(fr!.querySelector('.n')!.textContent).toBe('5');
-    expect(fr!.querySelector('.d')!.textContent).toBe('8');
+    // 93 5/8″ — the space before the fraction lets diagonal-fractions compose "5/8", not "935/8".
+    expect(container.textContent).toBe('93 5/8″');
+    expect(container.querySelector('.fs-meas')).not.toBeNull();
+    expect(container.querySelector('.fr')).toBeNull(); // stacked form retired (ADR-028)
   });
 
   it('omits the fraction for whole values', () => {
     const { container } = render(<MeasurementValue eighths={8 * 24} />);
     expect(container.textContent).toBe('24″');
-    expect(container.querySelector('.fr')).toBeNull();
   });
 
   it('renders feet-inches form and a leading minus for negatives', () => {
     const { container: a } = render(<MeasurementValue eighths={749} form="feet-inches" />);
-    expect(a.textContent).toBe('7′ 958″');
+    expect(a.textContent).toBe('7′ 9 5/8″');
     const { container: b } = render(<MeasurementValue eighths={-12} />);
-    expect(b.textContent).toBe('−112″');
+    expect(b.textContent).toBe('−1 1/2″');
   });
 });

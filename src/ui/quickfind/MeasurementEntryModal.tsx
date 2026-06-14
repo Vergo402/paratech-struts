@@ -1,7 +1,7 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useEffect, useState } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
-import { Modal, Fraction, eighthsToParts, tapHaptic } from '@ui/primitives';
+import { Modal, eighthsToParts, tapHaptic } from '@ui/primitives';
 
 /**
  * MeasurementEntryModal — the big-key gloved entry surface (KB-3, S10).
@@ -121,9 +121,9 @@ export function MeasurementEntryModal({
             onClick={() => focusSlot('in')}
           >
             <span className="fs-field-label">Inches</span>
+            {/* one text run so diagonal-fractions composes "8 1/2″" (ADR-028) */}
             <span className="fs-meas-slot-value">
-              {inches}
-              {eighth > 0 && <Fraction n={frac.n} d={frac.d} />}″
+              {`${inches}${eighth > 0 ? ` ${frac.n}/${frac.d}` : ''}″`}
             </span>
           </button>
         </div>
@@ -184,7 +184,7 @@ export function MeasurementEntryModal({
                   value={String(n)}
                   aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
                 >
-                  {n === 0 ? '0' : <Fraction n={p.n} d={p.d} />}
+                  {n === 0 ? '0' : `${p.n}/${p.d}`}
                 </RadioGroup.Item>
               );
             })}

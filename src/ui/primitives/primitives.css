@@ -89,52 +89,18 @@
 .fs-badge--dot-accent .fs-badge-dot { background: var(--accent); }
 .fs-badge--dot-danger .fs-badge-dot { background: var(--danger-text); }
 
-/* ---- measurement fraction (input.md; S12 handoff §1.6 + ShorePointCard spec) --
-   The locked house style is the STACKED tape-measure form — numerator over a
-   ruled bar over denominator, real digits, never super/subscript codepoints.
-   Mechanism: inline-block + overflow:hidden anchors the box baseline to its
-   BOTTOM edge (CSS2.1), so the denominator sits ON the text baseline and the
-   numerator tops out near cap height — independent of font metrics. The box
-   height scales with the size ratio r (font-size:.Xem) by:
-       height = .726 / r + .294  (em)
-   so r=.5 → 1.75em (ledger / 16px numbers, the default below) and
-   r=.36 → 2.31em (display / 28px+ numbers, the .fs-fr-display hook). */
-.fr {
-  display: inline-block;
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-  height: 1.75em;
-  top: 0.151em;
-  font-size: 0.5em;
-  line-height: 1.02;
-  font-weight: 700;
-  vertical-align: baseline;
-  margin: 0 0.06em;
-  letter-spacing: 0;
-  font-variant-numeric: tabular-nums;
-}
-.fr .n {
-  display: block;
-}
-.fr .d {
-  display: block;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-top: 0.09em solid currentcolor;
-  padding-top: 0.04em;
-}
-/* Display-size contexts (28px+ numbers, e.g. the 34px measurement readouts and
-   the promoted cutting-card shelf a later wave reuses): re-derive at r=.36. */
-.fs-fr-display .fr {
-  font-size: 0.36em;
-  height: 2.31em;
-}
+/* ---- measurement value (input.md; typography.md §Fractions; ADR-028) ----------
+   Eighths render as DIAGONAL fractions: MeasurementValue emits plain "48 1/2″"
+   text and the value font (Inter, via --font-mono) composes it through the
+   OpenType frac feature (font-variant-numeric: diagonal-fractions). The space
+   before the fraction keeps the integer separate. This replaced the
+   hand-stacked digit form, which tested illegibly tiny at field distance. The
+   diagonal glyph scales with font-size automatically — no per-size
+   re-derivation, so display contexts (the 28px promoted shelf, the 34px
+   readouts) need nothing extra. tabular-nums keeps columns aligned. */
 .fs-meas {
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: diagonal-fractions tabular-nums;
   white-space: nowrap;
 }
 
