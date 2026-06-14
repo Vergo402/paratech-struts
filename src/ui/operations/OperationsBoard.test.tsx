@@ -422,4 +422,60 @@ describe('OperationsBoard', () => {
     );
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — back to In Process.');
   });
+
+  // ---- #248 — division/area sort + filter ------------------------------------
+
+  function laneCardIds(regionName: string): string[] {
+    const region = screen.getByRole('region', { name: regionName });
+    return Array.from(region.querySelectorAll('[data-sp-id]')).map((el) => el.getAttribute('data-sp-id')!);
+  }
+
+  it('default sort: cards order by division (desc) then area (asc) within a lane', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    // Added scrambled; expect Div 2 first, then Div 1 with area "A" before "B".
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-d1b', 'pending', '1'), area: 'B' },
+      { ...makeSP('sp-d2', 'pending', '2'), area: 'A' },
+      { ...makeSP('sp-d1a', 'pending', '1'), area: 'A' },
+    ]);
+    render(<OperationsBoard />);
+    expect(laneCardIds('Pending')).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
+  });
+
+  it('the Sort control switches between division/area and added (insertion) order', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending', '2'), // added first, higher floor
+      makeSP('sp-2', 'pending', '1'), // added second, lower floor
+    ]);
+    render(<OperationsBoard />);
+    // Default = division/area: Div 2 (sp-1) before Div 1 (sp-2).
+    expect(laneCardIds('Pending')).toEqual(['sp-1', 'sp-2']);
+    await user.selectOptions(screen.getByLabelText('Sort'), 'added');
+    // Added = newest-first insertion order: sp-2 then sp-1.
+    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']);
+  });
+
+  it('filtering by division narrows every lane and updates the lane count; Clear restores', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending', '1'),
+      makeSP('sp-2', 'pending', '2'),
+      makeSP('sp-3', 'cutting', '2'),
+    ]);
+    render(<OperationsBoard />);
+    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
+
+    await user.selectOptions(screen.getByLabelText('Division'), '1');
+    expect(laneCardIds('Pending')).toEqual(['sp-1']);
+    expect(laneCardIds('Cutting')).toEqual([]); // sp-3 is Div 2 — filtered out
+    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    expect(within(pendingSection).getByText('1')).toBeInTheDocument(); // count now 1
+
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']);
+    expect(laneCardIds('Cutting')).toEqual(['sp-3']);
+  });
 });

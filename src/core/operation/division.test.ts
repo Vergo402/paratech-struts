@@ -6,6 +6,9 @@ import {
   nextFloorAbove,
   nextFloorBelow,
   sortDivisionsForDisplay,
+  compareDivisionValues,
+  compareAreaValues,
+  compareShorePointsByLocation,
 } from './division';
 
 describe('formatDivision — v3-faithful labels (app.js formatDivision)', () => {
@@ -58,5 +61,34 @@ describe('next-floor math (app.js addFloorAbove/Below)', () => {
 describe('sortDivisionsForDisplay — building cross-section, top first', () => {
   it('sorts descending, dedupes, drops 0', () => {
     expect(sortDivisionsForDisplay([1, 3, -1, 2, 3, 0])).toEqual([3, 2, 1, -1]);
+  });
+});
+
+describe('board sort order (#248) — v3 compareLevelValues carried over', () => {
+  it('compareDivisionValues sorts floors DESCENDING (top floor first)', () => {
+    expect(['1', '3', '2'].sort(compareDivisionValues)).toEqual(['3', '2', '1']);
+    // basements after ground; numeric before legacy free text; blank last.
+    expect(['1', '-1', '2'].sort(compareDivisionValues)).toEqual(['2', '1', '-1']);
+    expect(['Roof', '2'].sort(compareDivisionValues)).toEqual(['2', 'Roof']);
+    expect(['', '1'].sort(compareDivisionValues)).toEqual(['1', '']);
+  });
+
+  it('compareAreaValues sorts ASCENDING (numeric then locale; blank last)', () => {
+    expect(['Up', 'Down'].sort(compareAreaValues)).toEqual(['Down', 'Up']);
+    expect(['2', '10', '1'].sort(compareAreaValues)).toEqual(['1', '2', '10']);
+    expect([undefined, 'A'].sort(compareAreaValues)).toEqual(['A', undefined]);
+  });
+
+  it('compareShorePointsByLocation = division desc, then area asc', () => {
+    const pts = [
+      { division: '1', area: 'Up' },
+      { division: '2', area: 'Down' },
+      { division: '1', area: 'Down' },
+    ];
+    expect(pts.sort(compareShorePointsByLocation)).toEqual([
+      { division: '2', area: 'Down' },
+      { division: '1', area: 'Down' },
+      { division: '1', area: 'Up' },
+    ]);
   });
 });

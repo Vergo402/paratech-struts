@@ -26,6 +26,12 @@ function valueShelfText(): string {
   return document.querySelector('.fs-spc-value')?.textContent ?? '';
 }
 
+// The #248 Design-2 detail line above the shelf (pre-cutting only): raw opening
+// + (−deduction) + load. Empty string when absent (cutting onward).
+function detailLineText(): string {
+  return document.querySelector('.fs-spc-detail')?.textContent ?? '';
+}
+
 describe('ShorePointCard', () => {
   it('renders the "label · type" headline, location, and status badge', () => {
     render(<ShorePointCard shorePoint={makeSP({ area: 'NW corner', label: 'B-2' })} />);
@@ -148,11 +154,14 @@ describe('ShorePointCard', () => {
 
   // ---- S12 card restyle: value shelf, waiting callout, hazard, removed ----
 
-  it('value shelf: "Raw opening" + raw opening on pending and process', () => {
+  it('value shelf (#248 Design 2): "Required strut length" + effective on pending and process', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
-    // 388 eighths = 48 1/2″; the shelf renders the label + the raw measurement.
-    expect(screen.getByText('Raw opening')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Raw opening4812″');
+    // No deductions: effective == raw == 48½″ (388 eighths). The shelf carries
+    // the required strut length; the detail line carries the raw opening + load
+    // (deduction segment omitted when zero — v3 behaviour).
+    expect(screen.getByText('Required strut length')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Required strut length4812″');
+    expect(detailLineText()).toBe('Raw opening 4812″ · 0 lbs');
     rerender(
       <ShorePointCard
         shorePoint={makeSP({
@@ -161,11 +170,28 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(screen.getByText('Raw opening')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Raw opening4812″');
+    expect(screen.getByText('Required strut length')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Required strut length4812″');
   });
 
-  it('value shelf: "Cut length" reads the effective (deducted) length while cutting', () => {
+  it('detail line (#248): shows the (−deduction) + load when present', () => {
+    // 4×4 header + 4×4 footer = 7″ = 56 eighths deducted. Raw 48½″ (388),
+    // effective 41½″ (332). The detail line carries raw + (−deduction) + load.
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'strutset',
+          estimatedLoad: 2000,
+          deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+      />,
+    );
+    expect(valueShelfText()).toBe('Required strut length4112″');
+    expect(detailLineText()).toBe('Raw opening 4812″ (−7″) · 2,000 lbs');
+  });
+
+  it('value shelf: "Cut length" reads the effective (deducted) length while cutting; no detail line', () => {
     // 388 eighths = 48 1/2″; 4×4 header + 4×4 footer = 3.5 + 3.5 = 7″ deducted →
     // floor((48.5 − 7) × 8)/8 = 41 1/2″ = 332 eighths.
     render(
@@ -179,6 +205,8 @@ describe('ShorePointCard', () => {
     );
     expect(screen.getByText('Cut length')).toBeInTheDocument();
     expect(valueShelfText()).toBe('Cut length4112″');
+    // Cutting onward, the shelf number IS the cut length — the detail line drops.
+    expect(detailLineText()).toBe('');
   });
 
   it('value shelf: "Set length" reads the set (effective) length once secured', () => {
@@ -195,6 +223,7 @@ describe('ShorePointCard', () => {
     // Set length = what the strut was SET to: the effective 41½″ (388 − 56
     // eighths of 4x4+4x4 wood), NOT the raw opening 48½″ (SME review SF-1).
     expect(valueShelfText()).toBe('Set length4112″');
+    expect(detailLineText()).toBe('');
   });
 
   it('waiting callout: title + verbatim copy for both pending reasons', () => {

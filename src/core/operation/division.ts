@@ -51,3 +51,47 @@ export function nextFloorBelow(divisions: readonly number[]): number {
 export function sortDivisionsForDisplay(divisions: readonly number[]): number[] {
   return [...new Set(divisions)].filter((n) => n !== 0).sort((a, b) => b - a);
 }
+
+// ---- Board sort order (#248) — v3 compareLevelValues (app.js:1575) carried over.
+
+/**
+ * Compare two `division` strings for board order: numeric DESCENDING so the
+ * lanes read top floor → ground → basement, matching the building cross-section.
+ * Numeric divisions sort before legacy free text ("Roof"); blank sorts last.
+ */
+export function compareDivisionValues(a: string, b: string): number {
+  const ea = a.trim();
+  const eb = b.trim();
+  if (!ea) return eb ? 1 : 0;
+  if (!eb) return -1;
+  const aNum = /^-?\d{1,3}$/.test(ea) && parseInt(ea, 10) !== 0;
+  const bNum = /^-?\d{1,3}$/.test(eb) && parseInt(eb, 10) !== 0;
+  if (aNum && bNum) return parseInt(eb, 10) - parseInt(ea, 10);
+  if (aNum) return -1;
+  if (bNum) return 1;
+  return ea.localeCompare(eb);
+}
+
+/**
+ * Compare two `area` strings for board order: ASCENDING (numeric then locale).
+ * Blank sorts last.
+ */
+export function compareAreaValues(a: string | undefined, b: string | undefined): number {
+  const ea = (a ?? '').trim();
+  const eb = (b ?? '').trim();
+  if (!ea) return eb ? 1 : 0;
+  if (!eb) return -1;
+  const na = parseInt(ea, 10);
+  const nb = parseInt(eb, 10);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+  return ea.localeCompare(eb);
+}
+
+/** Board sort key (#248): division (floor, descending) then area (ascending). */
+export function compareShorePointsByLocation(
+  a: { division: string; area?: string },
+  b: { division: string; area?: string },
+): number {
+  const d = compareDivisionValues(a.division, b.division);
+  return d !== 0 ? d : compareAreaValues(a.area, b.area);
+}

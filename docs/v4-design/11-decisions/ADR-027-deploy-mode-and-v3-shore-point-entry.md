@@ -55,3 +55,11 @@ Alex's call: restore v3's order and context, keep the new KB-3 measurement keypa
 - **Amends:** workflow [#220](https://github.com/Vergo402/paratech-struts/issues/220) Step 2 (the location-first order and "engine runs after submit, not inline" are now mode-dependent); [ADR-016](ADR-016-modal-vs-sheet-rules.md) (the Assign Equipment sheet is the two-step surface, not the only deploy surface).
 - **Phase I owes** the Command roll-up of `assignedResource`. Tracked as a follow-up to the Command screen build.
 - 346 unit/component tests pass; typecheck + lint clean. Live-verified on the slice (Start Operation toggle; v3-order form; inline engine run).
+
+### #248 re-drive follow-ons (2026-06-13 — card + board pass)
+
+Same re-drive, two more v3-feel restorations Alex found while driving the live board:
+
+- **Card dual-length (Design 2, chosen from rendered mockups).** The [`ShorePointCard`](../03-primitives/card.md) value shelf now promotes the **Required strut length** (effective, the cut-to number) in every phase; pre-cutting a `.fs-spc-detail` line above it restores the v3 **Raw opening + (−total deduction) + load** context. Cutting onward, the shelf number *is* the cut/set length, so the detail line drops. **Amends the S12 "one length that matters" shelf** ([`card.md`](../03-primitives/card.md) value-shelf table / [ADR-011 Addendum 2](ADR-011-color-token-system.md)). New core helper `deductionTotalInches` (exact sum; `effectiveLengthFrom` now calls it). The deduction displays to the nearest ⅛″ ([ADR-012](ADR-012-measurement-precision-eighth-inch.md)) — may differ slightly from v3's sixteenths; exact spec stays in the math.
+- **Board sort + filter.** Operations lanes default-sort by **division → area** (`compareShorePointsByLocation`, ported from v3 `compareLevelValues` — division descending, area ascending). A filter/sort bar above the lanes switches sort (Division/area ↔ Added order) and filters the board by division/area; in-memory per session, hidden until ≥1 shore point. ([`20-operations.md`](../08-information-architecture/20-operations.md); Sheet-picker upgrade + persistence docketed.)
+- 356 unit/component tests pass; typecheck + lint clean. Live-verified on the slice (both detail-line branches, Required-strut-length shelf, filter bar).

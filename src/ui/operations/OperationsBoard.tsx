@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor } from '@core/shorepoint';
-import { divisionLabel } from '@core/operation';
+import {
+  compareAreaValues,
+  compareDivisionValues,
+  compareShorePointsByLocation,
+  divisionLabel,
+} from '@core/operation';
 import { newId } from '@core/id';
 import { Badge, Button, EmptyState, Modal } from '@ui/primitives';
 import { useCommit, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
@@ -14,6 +19,9 @@ import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
 
 type ModalMode = null | 'create' | 'edit';
+
+/** Board sort (#248): by division→area (default) or insertion ("added") order. */
+type SortMode = 'location' | 'added';
 
 /** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
@@ -198,6 +206,11 @@ export function OperationsBoard() {
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
+  // Sort/filter board controls (#248) — in-memory, like v3's drilldown (reset on
+  // reload; persistence deferred, see 98-design-docket).
+  const [sortMode, setSortMode] = useState<SortMode>('location');
+  const [filterDivision, setFilterDivision] = useState<string | null>(null);
+  const [filterArea, setFilterArea] = useState<string | null>(null);
 
   // After a commit lands, bring the first new card into view. Optional-call
   // guarded — jsdom has no scrollIntoView (the Sheet pointer-capture rule).
@@ -357,6 +370,19 @@ export function OperationsBoard() {
     return m;
   }, [shorePoints, inventory]);
 
+  // Distinct divisions/areas present, for the filter dropdowns — ordered the
+  // same way the board sorts (division descending, area ascending).
+  const divisionsPresent = useMemo(() => {
+    const set = new Set<string>();
+    for (const sp of shorePoints) if (sp.division) set.add(sp.division);
+    return [...set].sort(compareDivisionValues);
+  }, [shorePoints]);
+  const areasPresent = useMemo(() => {
+    const set = new Set<string>();
+    for (const sp of shorePoints) if (sp.area) set.add(sp.area);
+    return [...set].sort(compareAreaValues);
+  }, [shorePoints]);
+
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
       pending: [], process: [], strutset: [], cutting: [],
@@ -364,12 +390,20 @@ export function OperationsBoard() {
     };
     for (let i = shorePoints.length - 1; i >= 0; i--) {
       const sp = shorePoints[i]!;
+      // Board filter (#248): hide points outside the chosen division/area.
+      if (filterDivision && sp.division !== filterDivision) continue;
+      if (filterArea && (sp.area ?? '') !== filterArea) continue;
       // Display-only enrichment — the computed reason never re-serializes
       // (ShorePointPatch has no such field; events are built from live SPs).
       map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
     }
+    // Default sort (#248): division → area within each lane; 'added' keeps the
+    // newest-first insertion order the loop builds.
+    if (sortMode === 'location') {
+      for (const lane of Object.values(map)) lane.sort(compareShorePointsByLocation);
+    }
     return map;
-  }, [shorePoints, pendingReasons]);
+  }, [shorePoints, pendingReasons, filterDivision, filterArea, sortMode]);
 
   const toggleLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
@@ -428,6 +462,56 @@ export function OperationsBoard() {
       </div>
 
       <StatusSummaryBar byStatus={byStatus} />
+
+      {shorePoints.length > 0 && (
+        <div className="fs-ops-filterbar">
+          <label className="fs-ops-filter">
+            <span className="fs-ops-filter-label">Sort</span>
+            <select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)}>
+              <option value="location">Division / area</option>
+              <option value="added">Added order</option>
+            </select>
+          </label>
+          {divisionsPresent.length > 0 && (
+            <label className="fs-ops-filter">
+              <span className="fs-ops-filter-label">Division</span>
+              <select value={filterDivision ?? ''} onChange={(e) => setFilterDivision(e.target.value || null)}>
+                <option value="">All</option>
+                {divisionsPresent.map((d) => (
+                  <option key={d} value={d}>
+                    {divisionLabel(d)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {areasPresent.length > 0 && (
+            <label className="fs-ops-filter">
+              <span className="fs-ops-filter-label">Area</span>
+              <select value={filterArea ?? ''} onChange={(e) => setFilterArea(e.target.value || null)}>
+                <option value="">All</option>
+                {areasPresent.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {(filterDivision || filterArea) && (
+            <button
+              type="button"
+              className="fs-ops-filter-clear"
+              onClick={() => {
+                setFilterDivision(null);
+                setFilterArea(null);
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="fs-ops-lanes">
         {STATUS_ORDER.map((status) => (

@@ -56,7 +56,7 @@ Major v3 screens/features mapped to their v4 design home. 🟡 Pending = the scr
 | v3 surface / feature | v4 | v4 design ref |
 |---|---|---|
 | Quick Find | ✅ | [`10-quick-find.md`](../08-information-architecture/10-quick-find.md) |
-| Operations (ops, shore points, deploy) | ✅ | [`20-operations.md`](../08-information-architecture/20-operations.md); v3 Add-Shore-Point parity (field order, inline Find+Deploy as a per-op mode, Group/`assignedResource`, Estimated Load) restored per [ADR-027](../11-decisions/ADR-027-deploy-mode-and-v3-shore-point-entry.md). Command roll-up of `assignedResource` = Phase I |
+| Operations (ops, shore points, deploy) | ✅ | [`20-operations.md`](../08-information-architecture/20-operations.md); v3 Add-Shore-Point parity (field order, inline Find+Deploy as a per-op mode, Group/`assignedResource`, Estimated Load) restored per [ADR-027](../11-decisions/ADR-027-deploy-mode-and-v3-shore-point-entry.md). **Shore-point card dual-length** (Raw opening + Required strut length + deduction + load) and **division/area sort + filter** restored ([#248](https://github.com/Vergo402/paratech-struts/issues/248) re-drive — [`card.md`](../03-primitives/card.md) value-shelf + ADR-027). Command roll-up of `assignedResource` = Phase I |
 | Cutting Station (cut → runner → secured → returned) | ✅ | [`21-cutting-station.md`](../08-information-architecture/21-cutting-station.md) |
 | Command / SitStat | ✅ | [`30-command-sitstat.md`](../08-information-architecture/30-command-sitstat.md) |
 | Org Chart (ICS roles, drag-assign, command transfer) | ✅ | [`31-org-chart.md`](../08-information-architecture/31-org-chart.md) |

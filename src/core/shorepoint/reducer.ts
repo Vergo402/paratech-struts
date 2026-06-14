@@ -43,18 +43,27 @@ export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | 
 }
 
 /**
+ * Total deduction (inches) — the EXACT sum of the four component heights (not
+ * rounded; L-2). The card detail line (#248) displays it (rounded to ⅛″ at the
+ * UI), and effectiveLengthFrom subtracts it before the single final floor.
+ */
+export function deductionTotalInches(deductions: Deductions): number {
+  return (
+    woodHeight(deductions.headerWood) +
+    woodHeight(deductions.footerWood) +
+    plateHeight(deductions.topPlate) +
+    plateHeight(deductions.bottomPlate)
+  );
+}
+
+/**
  * Effective strut length (inches) after deductions, floored to ⅛″ — for
  * display. Takes the raw selections so pre-SP UI (the deduction ledger in
  * Quick Find / Add Shore Point) computes with the SAME math as a saved point —
  * no UI-side constants ever (L-2).
  */
 export function effectiveLengthFrom(measurementEighths: number, deductions: Deductions): number {
-  const totalDed =
-    woodHeight(deductions.headerWood) +
-    woodHeight(deductions.footerWood) +
-    plateHeight(deductions.topPlate) +
-    plateHeight(deductions.bottomPlate);
-  return Math.floor((measurementEighths / 8 - totalDed) * 8) / 8;
+  return Math.floor((measurementEighths / 8 - deductionTotalInches(deductions)) * 8) / 8;
 }
 
 /** Effective strut length (inches) after deductions, floored to ⅛″ — for display. */

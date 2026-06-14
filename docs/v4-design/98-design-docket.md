@@ -39,6 +39,10 @@
 | Item | Canonical home | Added |
 |---|---|---|
 | `--motion-loop` — continuous-loop timing (spinner/shimmer): behavior value vs ADR-gated 7th duration token; decide when a spinner first ships | [`99-open-questions.md`](99-open-questions.md) #19 | 2026-06-11 (seed) |
+| Operations sort/filter: upgrade native `<select>` dropdowns to the v4 Sheet picker (`DivisionPicker` pattern) for full design-system feel | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
+| Operations sort/filter: persist the choice (per-op / across reload) — currently in-memory per session like v3's drilldown | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
+| Operations filter: cascade the Area options to the selected Division (v1 lists them independently) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
+| ShorePointCard: consider promoting the pre-cutting Required-strut-length number (size/weight), as cutting already does — Design 2 keeps it at normal shelf size for now | [#248](https://github.com/Vergo402/paratech-struts/issues/248) card Design 2 | 2026-06-13 |
 
 ## Resolved (struck rows land here)
 

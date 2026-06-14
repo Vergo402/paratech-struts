@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
-import { effectiveLengthFrom } from '@core/shorepoint';
+import { deductionTotalInches, effectiveLengthFrom } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -23,18 +23,21 @@ const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
   'no-match': 'No matching strut',
 };
 
-// The lifecycle value shelf (handoff §1.2). Label + which length the number
-// reads per status. "Cut length" = effective (raw − deductions, floored to ⅛″
-// by the engine). "Set length" = the length the strut was SET to — the same
-// effective value (S12 SME review SF-1: the raw opening mislabels the setting).
-// "Raw opening" = the measured opening pre-cut — named identically to the
-// deduction ledger (S12 handoff §3.2 rename: "Required" → "Raw opening"), so
-// the word "Required" never means two different quantities across the card.
+// The lifecycle value shelf. The shelf number is ALWAYS the effective length
+// (raw − deductions, floored to ⅛″ by the engine); only the LABEL changes per
+// phase: pre-cut it is the "Required strut length" (the cut-to answer), "Cut
+// length" while cutting, "Set length" once set (S12 SME review SF-1: the raw
+// opening would mislabel the setting). #248 Design 2 (re-drive) promotes the
+// required strut length into the shelf and moves the raw opening + deduction +
+// load to the detail line above (RAW_OPENING_LABEL), restoring the v3 dual-
+// length context. Amends the S12 "one length that matters" shelf (card.md /
+// ADR-011 Addendum 2), per Alex's re-drive direction.
 const RAW_OPENING_LABEL = 'Raw opening';
+const REQUIRED_LABEL = 'Required strut length';
 const VALUE_LABEL: Record<ShorePointStatus, string> = {
-  pending: RAW_OPENING_LABEL,
-  process: RAW_OPENING_LABEL,
-  strutset: RAW_OPENING_LABEL,
+  pending: REQUIRED_LABEL,
+  process: REQUIRED_LABEL,
+  strutset: REQUIRED_LABEL,
   cutting: 'Cut length',
   runner: 'Cut length',
   secured: 'Set length',
@@ -145,15 +148,20 @@ export function ShorePointCard({
     ...(sp.area ? [sp.area] : []),
   ].join(' · ');
 
-  // The shelf number: the raw opening pre-cut ("Required"), the effective
-  // length from cutting onward ("Cut length" / "Set length" — what the saw cuts
-  // and what the strut is set to). effectiveLengthFrom returns INCHES already
-  // floored to ⅛″ (ADR-012, reducer.ts:43) — × 8 lands on an exact eighth;
-  // round() only defends float noise. No double-floor.
-  const valueEighths =
-    VALUE_LABEL[sp.status] === RAW_OPENING_LABEL
-      ? sp.measurementEighths
-      : Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
+  // The shelf number is the effective length in every phase (Required / Cut /
+  // Set name the same value; only the label differs). effectiveLengthFrom
+  // returns INCHES already floored to ⅛″ (ADR-012) — × 8 lands on an exact
+  // eighth; round() only defends float noise. No double-floor.
+  const valueEighths = Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
+
+  // Pre-cutting detail line (#248 Design 2): the raw opening, the total
+  // deduction (nearest ⅛″ for display; the exact spec stays in the math,
+  // ADR-012), and the estimated load — the v3 context the promoted shelf no
+  // longer carries. Cutting onward, the shelf number IS the cut/set length, so
+  // the detail line drops away.
+  const preCut = sp.status === 'pending' || sp.status === 'process' || sp.status === 'strutset';
+  const dedEighths = Math.round(deductionTotalInches(sp.deductions) * 8);
+  const estLoad = sp.estimatedLoad ?? 0;
 
   const headContent = (
     <>
@@ -182,6 +190,20 @@ export function ShorePointCard({
       </span>
     </>
   );
+
+  const detailLine = preCut ? (
+    <div className="fs-spc-detail">
+      {RAW_OPENING_LABEL} <MeasurementValue eighths={sp.measurementEighths} />
+      {dedEighths > 0 ? (
+        <>
+          {' ('}
+          <MeasurementValue eighths={-dedEighths} />
+          {')'}
+        </>
+      ) : null}
+      {` · ${estLoad.toLocaleString()} lbs`}
+    </div>
+  ) : null;
 
   const valueShelf = (
     <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
@@ -221,6 +243,7 @@ export function ShorePointCard({
         <div className="fs-spc-head">{headContent}</div>
       )}
 
+      {detailLine}
       {valueShelf}
 
       {sp.deployedStrut && (

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent } from '../schema';
-import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom } from './reducer';
+import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom, deductionTotalInches } from './reducer';
 import { canTransition } from './status';
 
 function sp(over: Partial<ShorePoint> = {}): ShorePoint {
@@ -39,6 +39,17 @@ describe('L-2 — effective length deducts once and floors to ⅛″', () => {
     const point = sp({ measurementEighths: 48 * 8, deductions });
     expect(effectiveLengthFrom(48 * 8, deductions)).toBe(effectiveLengthInches(point));
     expect(effectiveLengthFrom(40 * 8, { headerWood: '4x4', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' })).toBe(36.5);
+  });
+
+  it('deductionTotalInches sums the four slots EXACTLY (no rounding — #248 card detail)', () => {
+    expect(deductionTotalInches(NO_DEDUCTIONS)).toBe(0);
+    expect(
+      deductionTotalInches({ headerWood: '4x4', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' }),
+    ).toBe(3.5);
+    // header 4×4 (3.5) + footer 6×6 (5.5) + top threadedconn (3.5) + bottom swivel6 (1.8) = 14.3 exact.
+    expect(
+      deductionTotalInches({ headerWood: '4x4', footerWood: '6x6', topPlate: 'threadedconn', bottomPlate: 'swivel6' }),
+    ).toBeCloseTo(14.3, 10);
   });
 });
 

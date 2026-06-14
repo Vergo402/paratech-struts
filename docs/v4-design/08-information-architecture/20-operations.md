@@ -73,7 +73,8 @@ The shore point moves through the **seven v4 states** ([`card.md`](../03-primiti
 | 7 | `returned` | **Strut Equipment Returned** | "Removed & Returned" → renamed |
 
 - Points are grouped into **collapsible lanes in lifecycle order** (never alphabetical — [`list.md`](../03-primitives/list.md) doctrine), each with a **count badge**. Lane order follows `STATUS_ORDER` verbatim.
-- Lane collapse is ephemeral per-session (faithful to v3 `laneCollapsedState`). Cards within a lane are newest-first.
+- Lane collapse is ephemeral per-session (faithful to v3 `laneCollapsedState`).
+- **Cards within a lane default-sort by division → area** ([#248](https://github.com/Vergo402/paratech-struts/issues/248) re-drive — restores v3's by-floor organization in the lane model; division **descending** per the floor-order doctrine in [`list.md`](../03-primitives/list.md), then area ascending). A **filter / sort bar** above the lanes lets the operator switch sort (**Division / area** ↔ **Added order**, newest-first) and **filter** the whole board by division and/or area — a **Clear** appears while filtering, and the lane count badges report the *filtered* count. State is in-memory per session (like v3's drilldown); the bar is hidden until the operation has at least one shore point. *(Native selects in v4.0; a Sheet-picker upgrade is docketed.)*
 - **Per-status card behavior is owned by [`card.md`](../03-primitives/card.md)** — this spec does not restate it. What this screen fixes is *which slide each lane commits* and *the role gate on it*:
 
 | Lane | Primary action on the card | Role gate (IC / Safety override) |

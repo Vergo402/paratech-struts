@@ -108,13 +108,15 @@ When the shore point's area has **unmitigated hazards** (the hazard log, synthes
 
 The card's one big number is the **measurement value shelf** — a full-bleed, status-tinted row that runs corner to corner across the card (its negative margins exactly cancel the card padding, then it re-pads its own content back in). It is the resolution of the KB-6 "cards read bland" kick-back: a B-class treatment would have tinted the whole card surface and needed an ADR-011 amendment; the shelf is the **C-class middle** — the status hue tints a *region*, not the surface, so the one-accent rule holds while the number finally pops at arm's length (recorded in [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)).
 
-**The shelf changes which length it reads, and its label, per phase** — the number is always the one length that matters at that moment:
+**The shelf number is the effective length in every phase; only the LABEL changes** (#248 Design 2 re-drive — amends the S12 "one length that matters" framing per Alex's direction). Pre-cutting the shelf is the **Required strut length** (the cut-to answer), and a **detail line above it** carries the v3 dual-length context — **Raw opening + (−total deduction) + load**:
 
-| Status | Shelf label | The number is… |
-|---|---|---|
-| `pending` / `process` / `strutset` | **Raw opening** | the raw opening (`measurementEighths`) — what the strut must span. Named identically to the deduction ledger (S12 §3.2 rename "Required" → "Raw opening") so "Required" never labels two different quantities |
-| `cutting` / `runner` | **Cut length** | the *effective* length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the number the cutter cuts to |
-| `secured` / `returned` | **Set length** | the length the strut was *set* to — the same effective value (S12 SME review: showing the raw opening here would mislabel the setting) |
+| Status | Shelf label | The shelf number is… | Detail line above the shelf |
+|---|---|---|---|
+| `pending` / `process` / `strutset` | **Required strut length** | the effective length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the cut-to answer | **Raw opening** (`measurementEighths`) + the total deduction in parens + the estimated load (`Raw opening 48″ (−3½″) · 0 lbs`). The deduction is rendered to the nearest ⅛″ (exact spec stays in the math, ADR-012); the `(−…)` segment is omitted when zero (v3 behaviour). |
+| `cutting` / `runner` | **Cut length** | the *effective* length — the number the cutter cuts to | — (none; the shelf number IS the cut length) |
+| `secured` / `returned` | **Set length** | the *effective* length the strut was set to (S12 SME review: showing the raw opening here would mislabel the setting) | — (none) |
+
+> **#248 re-drive — restoring the v3 dual-length card.** v3 showed both lengths on every pre-cut card (`81" → Eff: 67⅛" (−13¹³⁄₁₆") @ 0 lbs`). The S12 shelf showed only one ("the one length that matters"); the re-drive brings the pair back as a promoted **Required strut length** shelf + a **Raw opening / deduction / load** detail line above (`.fs-spc-detail`). Terminology stays v4 ("Raw opening" = measured opening; "Required strut length" = after deductions). Recorded against [ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md).
 
 The number always renders in **`--sp-solid`** (the saturated status hue, sunlight-safe) in mono tabular figures; the label stays muted. The tint is built from `--sp-solid` via `color-mix`: **13% over the card** in light/dark, **10% on white** in sunlight, **18%** in broadcast; the top/bottom hairlines mix **22%** into the stroke. Color is never alone — the label words the phase and the badge carries the status text.
 

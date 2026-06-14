@@ -46,6 +46,51 @@
   padding: var(--space-1) 0;
 }
 
+/* ---- filter / sort bar (#248) -------------------------------------------- */
+/* Brings v3's by-division/area organization into the v4 lane model: lanes
+   default-sort division → area; the operator can switch sort or filter the
+   board. Native selects styled to the token system (Sheet-picker upgrade
+   deferred — see 98-design-docket). */
+.fs-ops-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.fs-ops-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.fs-ops-filter-label {
+  font: var(--type-label);
+  color: var(--text-secondary);
+}
+.fs-ops-filterbar select {
+  font: var(--type-body);
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  padding: var(--space-2) var(--space-3);
+  min-height: 40px;
+}
+.fs-ops-filterbar select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.fs-ops-filter-clear {
+  font: var(--type-body-medium);
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  min-height: 40px;
+  cursor: pointer;
+}
+
 /* ---- lane grid ----------------------------------------------------------- */
 .fs-ops-lanes {
   display: flex;
@@ -328,6 +373,18 @@ button.fs-spc-head {
 .fs-spc-value.is-promoted .fs-spc-value-num {
   font-size: 28px;
   font-weight: 700;
+}
+
+/* Pre-cutting detail line above the value shelf (#248 Design 2): the v3 context
+   the promoted shelf no longer carries — raw opening, total deduction, load.
+   Caption size, muted, mono numbers; sits between the header and the shelf. */
+.fs-spc-detail {
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-spc-detail .fs-meas {
+  color: var(--text-secondary);
 }
 
 /* Deployed strut identity — cradle to grave (card.md). Model only; the
