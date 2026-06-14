@@ -75,4 +75,29 @@ describe('findStrutCombinations — selection, deductions, warnings', () => {
     const res = findStrutCombinations(400, 0, 2, null, null, null);
     expect(res).toEqual([]);
   });
+
+  it('accepts two same-size extensions split across separate inventory rows (audit W8)', () => {
+    const SF = 2;
+    const len = 45;
+    // A catalog combo at this length that needs two identical extensions (only
+    // AcmeThread/LockStroke carry two; same size ⇒ a qty-2 need of one length).
+    const doubled = findStrutCombinations(len, 0, SF, null).find(
+      (c) => c.extensions.length === 2 && c.extensions[0] === c.extensions[1],
+    );
+    expect(doubled).toBeDefined();
+    const size = doubled!.extensions[0]!;
+    const { model, system } = doubled!.strut;
+    const strutRow = { id: 's', type: 'strut', model, system, apparatus: 'R2', apparatusId: 'a', quantity: 1, available: 1 };
+    const extRow = (id: string) => ({ id, type: 'extension', system, length: size, apparatus: 'R2', apparatusId: 'a', quantity: 1, available: 1 });
+
+    // Two rows of one each → the qty-2 need is met (the fix).
+    const split = findStrutCombinations(len, 0, SF, [strutRow, extRow('e1'), extRow('e2')] as never);
+    expect(split.some((c) => c.strut.model === model && c.extensions.length === 2)).toBe(true);
+
+    // A single row of one is still correctly short.
+    const single = findStrutCombinations(len, 0, SF, [strutRow, extRow('e1')] as never);
+    expect(
+      single.some((c) => c.strut.model === model && c.extensions.length === 2 && c.extensions[0] === size),
+    ).toBe(false);
+  });
 });

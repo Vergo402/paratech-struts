@@ -25,9 +25,10 @@ export function SettingsScreen() {
     () => localStorage.getItem(NATIVE_CONTROLS_KEY) === 'true',
   );
 
-  // Broadcast can be active via the gallery; the 4-option picker shows none selected then.
+  // Broadcast can be active via the gallery; show NO pill selected then — never a
+  // misleading "Dark" highlight (audit W8). '' matches no option → nothing checked.
   const pickerValue = (
-    THEME_OPTIONS.some((o) => o.value === preference) ? preference : 'dark'
+    THEME_OPTIONS.some((o) => o.value === preference) ? preference : ''
   ) as ThemePreference & (typeof THEME_OPTIONS)[number]['value'];
 
   return (

@@ -176,16 +176,21 @@ export function findStrutCombinations(
         if (e2 > 0) needed[e2] = (needed[e2] || 0) + 1;
         let extAvailable = true;
         for (const [size, qty] of Object.entries(needed)) {
-          const invExts = inv.filter(
-            (i) =>
-              i.type === 'extension' &&
-              i.length === parseInt(size) &&
-              (i.system === strut.system ||
-                (strut.system === 'LockStroke' && i.system === 'AcmeThread') ||
-                (strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
-              i.available >= qty,
-          );
-          if (invExts.length === 0) {
+          // Sum availability across matching rows: two same-size extensions split
+          // over two inventory records (each available:1) satisfy a qty-2 need.
+          // Diverges from the verbatim v3 port (which required one row ≥ qty) — it
+          // only ever WIDENS availability, never over-rates capacity (audit W8).
+          const avail = inv
+            .filter(
+              (i) =>
+                i.type === 'extension' &&
+                i.length === parseInt(size) &&
+                (i.system === strut.system ||
+                  (strut.system === 'LockStroke' && i.system === 'AcmeThread') ||
+                  (strut.system === 'AcmeThread' && i.system === 'LockStroke')),
+            )
+            .reduce((sum, i) => sum + i.available, 0);
+          if (avail < qty) {
             extAvailable = false;
             break;
           }
