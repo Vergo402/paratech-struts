@@ -554,6 +554,34 @@ describe('OperationsBoard', () => {
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point #2 restored — Pending.');
   });
 
+  it('restoring one member of a deleted group brings the whole shore back (audit W5)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    const m = (id: string, i: number): ShorePoint => ({
+      ...makeSP(id, 'pending'),
+      seq: i,
+      groupId: 'g1',
+      groupIndex: i,
+      groupTotal: 3,
+      shoreType: '3-post',
+      deletedAt: 5000,
+    });
+    mockShorePoints.mockReturnValue([m('sp-1', 1), m('sp-2', 2), m('sp-3', 3)]);
+    render(<OperationsBoard />);
+
+    const deleted = screen.getByRole('region', { name: 'Deleted shore points' });
+    await user.click(within(deleted).getByRole('button', { name: /Deleted/ }));
+    // Restore on ANY row reclaims all three at once — no partial shore.
+    await user.click(within(deleted).getAllByRole('button', { name: 'Restore' })[0]!);
+
+    expect(mockCommit).not.toHaveBeenCalled();
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const events = mockCommitMany.mock.calls[0]![0] as { type: string; spId: string }[];
+    expect(events).toHaveLength(3);
+    expect(events.every((e) => e.type === 'ShorePointRestored')).toBe(true);
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points restored — Pending.');
+  });
+
   // ---- End Operation (#220 lifecycle) ----------------------------------------
 
   it('End Operation commits OperationEnded and closes the modal', async () => {

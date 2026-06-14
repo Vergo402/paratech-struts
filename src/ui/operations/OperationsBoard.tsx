@@ -10,7 +10,7 @@ import {
 } from '@core/operation';
 import { newId } from '@core/id';
 import { Badge, Button, EmptyState, Modal } from '@ui/primitives';
-import { useCommit, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
+import { useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
@@ -241,6 +241,7 @@ export function OperationsBoard() {
   const shorePoints = useShorePoints();
   const inventory = useInventory();
   const commit = useCommit();
+  const commitMany = useCommitMany();
   const getUid = useDeviceUid();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
@@ -435,22 +436,37 @@ export function OperationsBoard() {
   // ~always Pending) with its original #N reclaimed.
   const handleRestore = useCallback(
     async (sp: ShorePoint) => {
-      const result = await commit({
-        type: 'ShorePointRestored',
-        id: newId(),
-        opId: sp.opId,
-        at: Date.now(),
-        by: await getUid(),
-        spId: sp.id,
-      });
+      // Group-aware to match the group-aware delete (audit W5): restoring any
+      // member of a deleted shore brings back ALL its deleted members, so a
+      // partial shore is never reconstructed.
+      const members = sp.groupId
+        ? shorePoints.filter((s) => s.groupId === sp.groupId && s.deletedAt != null)
+        : [sp];
+      const uid = await getUid();
+      const at = Date.now();
+      const result =
+        members.length > 1
+          ? await commitMany(
+              members.map((m) => ({
+                type: 'ShorePointRestored' as const,
+                id: newId(),
+                opId: m.opId,
+                at,
+                by: uid,
+                spId: m.id,
+              })),
+            )
+          : await commit({ type: 'ShorePointRestored', id: newId(), opId: sp.opId, at, by: uid, spId: sp.id });
       if (!result.ok) return;
       expandLane(sp.status);
       setScrollToId(sp.id);
       setPoliteAnnouncement(
-        `Shore point ${sp.seq != null ? `#${sp.seq} ` : ''}restored — ${STATUS_LABELS[sp.status]}.`,
+        members.length > 1
+          ? `${members.length} shore points restored — ${STATUS_LABELS[sp.status]}.`
+          : `Shore point ${sp.seq != null ? `#${sp.seq} ` : ''}restored — ${STATUS_LABELS[sp.status]}.`,
       );
     },
-    [commit, getUid, expandLane],
+    [commit, commitMany, getUid, expandLane, shorePoints],
   );
 
   // End the operation (#220 lifecycle) — commits OperationEnded; the board then
