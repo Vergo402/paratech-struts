@@ -96,6 +96,16 @@ describe('MeasurementInput', () => {
     expect(screen.queryByText(/maximum opening is 30 ft/i)).toBeNull();
   });
 
+  it('clears the ceiling note on blur — it never lingers stale beside a kept value', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={2880} />); // exactly 30 ft
+    await user.type(inchesField(), '5'); // overshoot → rejected, note shows
+    expect(screen.getByText(/maximum opening is 30 ft/i)).toBeInTheDocument();
+    expect(eighths()).toBe(2880); // value stays the last good 30 ft
+    await user.tab(); // move on — the kept value (30 ft) is valid
+    expect(screen.queryByText(/maximum opening is 30 ft/i)).toBeNull();
+  });
+
   it('every emission is an integer (exact eighths, never a float)', async () => {
     const user = userEvent.setup();
     const seen: number[] = [];
@@ -116,5 +126,23 @@ describe('MeasurementInput', () => {
     await user.click(screen.getByRole('radio', { name: '7/8 inch' }));
     expect(seen.length).toBeGreaterThan(0);
     expect(seen.every((n) => Number.isInteger(n))).toBe(true);
+  });
+
+  it('takes the whole opening typed in inches — 72 in = 6 ft, digits stay put, never compounding', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={0} />);
+
+    // Type the whole opening in inches. The 72 must NOT roll into the feet box
+    // and vanish, and each digit must NOT re-add the feet (the wild-growth bug).
+    await user.type(inchesField(), '72');
+    expect(eighths()).toBe(72 * 8); // 576 eighths = exactly 6 ft, not compounded
+    expect(inchesField()).toHaveValue('72'); // the digits stay where you typed them
+    expect(feetField()).toHaveValue(''); // feet box left empty — inches holds it all
+
+    // Keep going: 88 in is still exact, never feet*96 stacked on top.
+    await user.clear(inchesField());
+    await user.type(inchesField(), '88');
+    expect(eighths()).toBe(88 * 8);
+    expect(inchesField()).toHaveValue('88');
   });
 });
