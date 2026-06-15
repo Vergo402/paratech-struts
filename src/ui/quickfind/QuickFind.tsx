@@ -3,7 +3,7 @@ import type { Deductions, ShorePoint } from '@core/schema';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { sysKeyOf, type StrutSysKey } from '@core/load';
 import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
-import { Button, EmptyState, TextField } from '@ui/primitives';
+import { Button, EmptyState, Sheet, TextField } from '@ui/primitives';
 // Deep import (not the @ui/operations barrel) — Add Shore Point already imports
 // from @ui/quickfind, so going through the barrel would close an import cycle.
 import { RecommendationCard } from '@ui/operations/RecommendationCard';
@@ -17,12 +17,14 @@ const MAX_LOAD_LBS = 500_000;
 /**
  * QuickFind — the standalone strut calculator and the app's guest cold-open
  * (IA spec 10-quick-find.md). Enter an opening measurement → the Paratech struts
- * that fit, ranked as display-only RecommendationCards. Pinned to v3 parity
- * (runQuickSelect, app.js:420): catalog mode (no inventory / no Deploy), the
- * measurement drives the fit, load is an optional capacity check, and the
- * Gold/Grey/LockStroke chips narrow the systems. The v3 hold-to-start FAB is
- * retired (button.md Principle 4); Start-Operation placement is deferred to the
- * Operations workflow.
+ * that fit, ranked as display-only RecommendationCards **in a dismissible results
+ * sheet** (ADR-031): the calculator's output is terminal and non-actionable (no
+ * Deploy here — that lives in Operations), so a sheet segregates the lookup from
+ * the workspace and guarantees the result rises into view on any viewport. The
+ * Gold/Grey/LockStroke filter rides in the sheet so you narrow within the result.
+ * Pinned to v3 parity otherwise (runQuickSelect, app.js:420): catalog mode (no
+ * inventory / no Deploy), the measurement drives the fit, load is an optional
+ * capacity check. The v3 hold-to-start FAB is retired (button.md Principle 4).
  */
 export function QuickFind() {
   const [measurementEighths, setMeasurementEighths] = useState(0);
@@ -65,12 +67,13 @@ export function QuickFind() {
   }, [measurementEighths, effective, deductions, loadNum]);
 
   // Catalog mode (v3 parity — runQuickSelect passes null inventory): rate against
-  // the whole Paratech catalog, not on-scene stock. Results stay hidden until the
-  // first Find Struts, then live-update as the inputs change (Alex's call).
+  // the whole Paratech catalog, not on-scene stock. Computed only while the result
+  // sheet is open; closing it (re-search model) resets to nothing.
   const combos = useMemo(() => (found && draftSp ? findForShorePoint(draftSp, null) : []), [found, draftSp]);
 
   // System filter (v3 getActiveSystemFilter): empty = all systems; otherwise keep
-  // only the selected ones. Client-side — the engine already returns every fit.
+  // only the selected ones. Client-side and live inside the sheet — the engine
+  // already returns every fit.
   const filtered = useMemo(
     () => (systems.size === 0 ? combos : combos.filter((c) => systems.has(sysKeyOf(c.strut.system, c.strut.color)))),
     [combos, systems],
@@ -106,8 +109,6 @@ export function QuickFind() {
         helper="Leave blank if unknown — load doesn't change which strut fits"
       />
 
-      <SystemFilter value={systems} onChange={setSystems} />
-
       <Button
         variant="primary"
         fullWidth
@@ -118,20 +119,27 @@ export function QuickFind() {
         Find Struts
       </Button>
 
-      {found && filtered.length > 0 && (
-        <div className="fs-qf-results">
-          {filtered.map((combo) => (
-            <RecommendationCard
-              key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
-              combo={combo}
-              deductions={deductions}
-            />
-          ))}
+      {/* Results = a dismissible sheet (ADR-031). Find Struts raises it; it always
+          rises into view, so the result can't land below the fold on a short
+          Safari viewport. The filter lives here so you narrow within the result. */}
+      <Sheet open={found} onClose={() => setFound(false)} title="Struts that fit">
+        <div className="fs-qf-sheet">
+          <SystemFilter value={systems} onChange={setSystems} />
+          {filtered.length > 0 ? (
+            <div className="fs-qf-results">
+              {filtered.map((combo) => (
+                <RecommendationCard
+                  key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
+                  combo={combo}
+                  deductions={deductions}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState variant="filtered" headline="No matching struts" reason={emptyReason} />
+          )}
         </div>
-      )}
-      {found && draftSp && filtered.length === 0 && (
-        <EmptyState variant="filtered" headline="No matching struts" reason={emptyReason} />
-      )}
+      </Sheet>
     </div>
   );
 }

@@ -113,6 +113,8 @@
 }
 .fs-qf-deductions { display: flex; flex-direction: column; gap: var(--space-3); }
 .fs-qf-results { display: flex; flex-direction: column; gap: var(--space-4); }
+/* The result sheet body (ADR-031): filter chips above the result-card stack. */
+.fs-qf-sheet { display: flex; flex-direction: column; gap: var(--space-3); }
 
 /* ---- system filter chips (v3 .system-toggle, carried forward) --------------- */
 /* Multi-select: none active = all systems. The dot color IS the strut-system

@@ -2,6 +2,8 @@
 
 > Phase F information-architecture spec. Cites [`00-ia-foundation.md`](00-ia-foundation.md) for all cross-cutting rules and does not re-derive them.
 > Source: [`06-synthesis.md`](../06-synthesis.md) §1.3 (cold-open), §1.6, §3.4 (capacity demoted); [`03-primitives/card.md`](../03-primitives/card.md) (the `RecommendationCard` is specified there — this screen hosts it, it does not re-spec it); recs F-24, K-4, K-5; [ADR-015](../11-decisions/ADR-015-navigation-pattern.md) (guest-first cold-open), [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md), [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md); GitHub [#198](https://github.com/Vergo402/paratech-struts/issues/198). Grounded in v3 `runQuickSelect()` (app.js:418), `renderResults()` (438), the input flow (index.html:116–212), `getActiveSystemFilter()` (410), `openPlatePicker()` (8618), `initQuickStartFab()` (8432).
+>
+> **Amended by [ADR-031](../11-decisions/ADR-031-quick-find-results-sheet.md) (2026-06-15, Phase I Block 0 build [#320](https://github.com/Vergo402/paratech-struts/issues/320)):** results render in a **dismissible sheet** raised by Find Struts (not an in-column card stack), with the system filter relocated **into the sheet**. Rationale: the calculator's output is terminal and non-actionable (no Deploy here), so the sheet's modality segregates the lookup from the workspace and guarantees the result rises into view on a short Safari viewport. The in-column-results passages below are superseded accordingly; per-screen OQ1 is resolved.
 
 ---
 
@@ -60,7 +62,7 @@ The standalone strut calculator: enter an opening measurement — **the single i
 
 ## The results
 
-The output is a stack of [`RecommendationCard`](../03-primitives/card.md)s — **specified in `card.md`; cited, not restated here**. What this screen fixes:
+The output is a stack of [`RecommendationCard`](../03-primitives/card.md)s **presented in a dismissible result [`sheet`](../03-primitives/sheet.md) raised by Find Struts, with the system filter in the sheet** (ADR-031) — the cards are **specified in `card.md`; cited, not restated here**. What this screen fixes:
 - **Calculator mode:** Quick Find renders the card **without** the Deploy action or apparatus-source line (those appear only in operation mode, where the same engine backs Add-Shore-Point). The **unrated-zone acknowledgment gate** still renders (it's a safety disclosure, not a deploy control).
 - **Capacity demoted, deduction ledger leads** (§3.4) — the card never headlines rated capacity; the [`warning-gate`](../03-primitives/warning-gate.md) carries the unrated/over-capacity/disclaimer.
 - **Ordering** is the engine's fit ranking (faithful to v3's result order); when results exceed the comfortable list span, search/scroll applies per [`list.md`](../03-primitives/list.md).
@@ -106,6 +108,6 @@ v3's **"Hold to start" FAB** (the arc speed-dial, `initQuickStartFab()`) is **re
 
 ## Open questions (per-screen)
 
-1. **Filter-chip vs. result-list precedence on phone** — whether the system filter sits above the results or in a compact header row when results are long; affordance geometry, finalized in the Phase H slice.
+1. ~~**Filter-chip vs. result-list precedence on phone**~~ — **Resolved ([ADR-031](../11-decisions/ADR-031-quick-find-results-sheet.md)):** the system filter rides **in the result sheet**, above the card stack.
 2. **Measurement-field fraction sub-control** — inline strip vs. small picker-sheet for the eight ⅛″ values ([`input.md`](../03-primitives/input.md) OQ1 / [`99-open-questions.md`](../99-open-questions.md) #20); Phase H.
 3. **Start-Operation entry placement** — button in the Quick Find header vs. a persistent shell affordance; resolved with the Operations start-operation workflow (Phase G).
