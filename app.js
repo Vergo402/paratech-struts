@@ -18,7 +18,7 @@ const STRUTS = [
   // LockStroke (Grey — same load table as AcmeThread)
   { id:'lk-19-25', model:'LK 19-25', system:'LockStroke', color:'grey', collapsed:19, extended:25 },
   { id:'lk-25-36', model:'LK 25-36', system:'LockStroke', color:'grey', collapsed:25, extended:36 },
-  { id:'lk-37-58', model:'LK 37-58', system:'LockStroke', color:'grey', collapsed:37, extended:58 },
+  { id:'lk-36-57', model:'LK 36-57', system:'LockStroke', color:'grey', collapsed:36, extended:57 },
   { id:'lk-55-89', model:'LK 55-89', system:'LockStroke', color:'grey', collapsed:55, extended:89 },
 ];
 
@@ -34,7 +34,7 @@ const EXTENSIONS = {
 const LOCKSTROKE_EXTENSIONS = {
   'lk-19-25': [6, 12],
   'lk-25-36': [6, 12],
-  'lk-37-58': [6, 12, 24, 36],
+  'lk-36-57': [6, 12, 24, 36],
   'lk-55-89': [6, 12, 24, 36],
 };
 
@@ -129,7 +129,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.22.0';
+const APP_VERSION = '3.22.1';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
