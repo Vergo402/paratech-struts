@@ -11,14 +11,17 @@ export interface BasePlate {
   height: number; // inches, from O&M Manual Table 2-1
 }
 
-// Base plate heights from manufacturer O&M Manual Table 2-1
+// Base plate heights from manufacturer O&M Manual Table 2-1 ("Base, End Plate &
+// Fittings Increase in Overall Length"). Full table reconciled 2026-06-14: every
+// height below matches the manual exactly; the two metric channel bases were added
+// and "Multi-Tip" corrected to the manual's "Multi-Base". Pinned in plates.test.ts.
 export const BASE_PLATES: readonly BasePlate[] = [
   { id: 'none', name: 'None', height: 0 },
   { id: 'rigid6', name: 'Rigid Base 6"', height: 1.0 },
   { id: 'swivel6', name: 'Swivel Base 6"', height: 1.8 },
   { id: 'hinged6', name: 'Hinged Base 6"', height: 3.2 },
   { id: 'hinged6ring', name: 'Hinged Base 6" w/Anchor Ring', height: 3.2 },
-  { id: 'multi', name: 'Multi-Tip', height: 4.2 },
+  { id: 'multi', name: 'Multi-Base', height: 4.2 },
   { id: 'chainwedge', name: 'Chain Wedge 3/8"', height: 4.0 },
   { id: 'vbase', name: 'V-Base', height: 1.9 },
   { id: 'contour', name: 'Contour Base', height: 1.7 },
@@ -32,6 +35,8 @@ export const BASE_PLATES: readonly BasePlate[] = [
   { id: 'base45', name: '45° Base', height: 5.4 },
   { id: 'channel4x4', name: 'Channel Base 4"x4"', height: 3.4 },
   { id: 'channel6x6', name: 'Channel Base 6"x6"', height: 3.4 },
+  { id: 'channelmetric4x6', name: 'Channel Base Metric 4.3"x6"', height: 3.4 },
+  { id: 'channelmetric6x7', name: 'Channel Base Metric 6.3"x7"', height: 4.2 },
   { id: 'rubberangle', name: 'Angled Rubber Base (ESU)', height: 2.7 },
   { id: 'elevatorsupport', name: 'Elevator Support L&R Arm', height: 6.0 },
   { id: 'springloaded', name: 'Spring Loaded Connector', height: 3.9 },
