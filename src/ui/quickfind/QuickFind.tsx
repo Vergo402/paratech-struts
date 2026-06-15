@@ -1,0 +1,137 @@
+import { useMemo, useState } from 'react';
+import type { Deductions, ShorePoint } from '@core/schema';
+import { NO_DEDUCTIONS } from '@core/schema';
+import { sysKeyOf, type StrutSysKey } from '@core/load';
+import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
+import { Button, EmptyState, TextField } from '@ui/primitives';
+// Deep import (not the @ui/operations barrel) — Add Shore Point already imports
+// from @ui/quickfind, so going through the barrel would close an import cycle.
+import { RecommendationCard } from '@ui/operations/RecommendationCard';
+import { MeasurementInput } from './MeasurementInput';
+import { DeductionPicker } from './DeductionPicker';
+import { SystemFilter } from './SystemFilter';
+
+/** v3 MAX_LOAD_LBS — estimated load upper bound (planning input only). */
+const MAX_LOAD_LBS = 500_000;
+
+/**
+ * QuickFind — the standalone strut calculator and the app's guest cold-open
+ * (IA spec 10-quick-find.md). Enter an opening measurement → the Paratech struts
+ * that fit, ranked as display-only RecommendationCards. Pinned to v3 parity
+ * (runQuickSelect, app.js:420): catalog mode (no inventory / no Deploy), the
+ * measurement drives the fit, load is an optional capacity check, and the
+ * Gold/Grey/LockStroke chips narrow the systems. The v3 hold-to-start FAB is
+ * retired (button.md Principle 4); Start-Operation placement is deferred to the
+ * Operations workflow.
+ */
+export function QuickFind() {
+  const [measurementEighths, setMeasurementEighths] = useState(0);
+  const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
+  const [estimatedLoad, setEstimatedLoad] = useState('');
+  const [systems, setSystems] = useState<Set<StrutSysKey>>(() => new Set());
+  const [dedOpen, setDedOpen] = useState(false);
+  const [found, setFound] = useState(false);
+
+  const effective = effectiveLengthFrom(measurementEighths, deductions);
+  const loadTrim = estimatedLoad.trim();
+  const loadNum = loadTrim === '' ? 0 : Number(loadTrim);
+  const loadValid = loadTrim === '' || (Number.isFinite(loadNum) && loadNum >= 0 && loadNum <= MAX_LOAD_LBS);
+
+  const disabledReason =
+    measurementEighths <= 0
+      ? 'Enter the opening measurement'
+      : effective <= 0
+        ? 'Deductions consume the whole opening'
+        : !loadValid
+          ? 'Load must be between 0 and 500,000 lbs'
+          : null;
+  const canSearch = disabledReason === null;
+
+  // Minimal draft shore point — only measurement / deductions / load drive the
+  // engine, so opId / division / shoreType are required-by-type placeholders the
+  // calc never reads. Null when the inputs can't produce a real search.
+  const draftSp = useMemo<ShorePoint | null>(() => {
+    if (measurementEighths <= 0 || effective <= 0) return null;
+    return {
+      id: 'draft',
+      opId: '',
+      division: '1',
+      shoreType: 't-shore',
+      measurementEighths,
+      deductions,
+      ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
+      status: 'pending',
+    };
+  }, [measurementEighths, effective, deductions, loadNum]);
+
+  // Catalog mode (v3 parity — runQuickSelect passes null inventory): rate against
+  // the whole Paratech catalog, not on-scene stock. Results stay hidden until the
+  // first Find Struts, then live-update as the inputs change (Alex's call).
+  const combos = useMemo(() => (found && draftSp ? findForShorePoint(draftSp, null) : []), [found, draftSp]);
+
+  // System filter (v3 getActiveSystemFilter): empty = all systems; otherwise keep
+  // only the selected ones. Client-side — the engine already returns every fit.
+  const filtered = useMemo(
+    () => (systems.size === 0 ? combos : combos.filter((c) => systems.has(sysKeyOf(c.strut.system, c.strut.color)))),
+    [combos, systems],
+  );
+
+  const emptyReason =
+    combos.length > 0
+      ? 'Nothing in the selected systems fits this opening — clear the filter or pick another system'
+      : 'Nothing fits this opening at this load — adjust the deductions or re-measure';
+
+  return (
+    <div className="fs-quickfind">
+      <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
+
+      {/* Deductions collapsed by default (IA spec) — the optional refinement; the
+          measurement alone drives the fit. */}
+      <div className="fs-qf-deductions">
+        <Button variant="tertiary" fullWidth onPress={() => setDedOpen((o) => !o)}>
+          {dedOpen ? 'Hide deductions' : 'Add deductions (header, footer, plates)'}
+        </Button>
+        {dedOpen && (
+          <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
+        )}
+      </div>
+
+      <TextField
+        label="Estimated load (lbs) — optional"
+        value={estimatedLoad}
+        onChange={setEstimatedLoad}
+        inputMode="numeric"
+        maxLength={7}
+        placeholder="e.g. 15000"
+        helper="Leave blank if unknown — load doesn't change which strut fits"
+      />
+
+      <SystemFilter value={systems} onChange={setSystems} />
+
+      <Button
+        variant="primary"
+        fullWidth
+        disabled={!canSearch}
+        disabledReason={disabledReason ?? undefined}
+        onPress={() => setFound(true)}
+      >
+        Find Struts
+      </Button>
+
+      {found && filtered.length > 0 && (
+        <div className="fs-qf-results">
+          {filtered.map((combo) => (
+            <RecommendationCard
+              key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
+              combo={combo}
+              deductions={deductions}
+            />
+          ))}
+        </div>
+      )}
+      {found && draftSp && filtered.length === 0 && (
+        <EmptyState variant="filtered" headline="No matching struts" reason={emptyReason} />
+      )}
+    </div>
+  );
+}

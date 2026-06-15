@@ -5,3 +5,5 @@ import './quickfind.css';
 
 export { DeductionPicker, type DeductionPickerProps } from './DeductionPicker';
 export { MeasurementInput, type MeasurementInputProps } from './MeasurementInput';
+export { SystemFilter, type SystemFilterProps } from './SystemFilter';
+export { QuickFind } from './QuickFind';
