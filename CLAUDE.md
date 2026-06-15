@@ -17,7 +17,28 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 - **Service worker:** `sw.js` — offline caching with stale-while-revalidate
 - **Backend:** Firebase Realtime Database (compat SDK v9.23.0) — project `paratech-c3ab4`
 - **Hosting:** GitHub Pages (auto-deploys on push to `main`)
-- **No build step.** Edit files, push, done.
+- **No build step (v3 root app).** Edit files, push, done. **v4 under `src/` is a Vite/TS build — see "v4 Build & Architecture" below.**
+
+### v4 Build & Architecture (active on `v4-redesign`)
+
+This branch is a **dual-app repo** (`package.json`: "v3 ships from root; v4 lives under src/"):
+
+- **v3** — the root `index.html` / `app.js` / `style.css` / `sw.js` above. Still ships to GitHub Pages. No build step.
+- **v4** — a **Vite 6 + TypeScript + React 18** app rooted at `src/app/`, not yet deployed (Phase I). Stack: TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Tests via Vitest + Testing Library. `vite-plugin-pwa` (Workbox) replaces the hand-written `sw.js` for v4 — the one invariant kept: Firebase realtime traffic is never cached.
+
+**Commands (from repo root):**
+
+| Command | Does |
+|---|---|
+| `npm run dev` | Vite dev server on **:5199**, `host: true` (reach from a phone at `http://<mac>.local:5199`) |
+| `npm test` / `npm run test:watch` | Vitest once / watch mode |
+| `npm run build` | `tsc --noEmit && vite build` → `dist/` (gitignored) |
+| `npm run typecheck` / `npm run lint` | Types only / ESLint |
+
+**Layout & gotchas:**
+- `src/core` (pure logic: load tables, reducers, schema) · `src/data` (store + data/sync seam) · `src/ui` (components by feature) · `src/app` (shell + routes). Path aliases: `@core` `@data` `@ui` `@app`.
+- Tests are colocated `*.test.ts(x)`. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **Installing an npm dep (e.g. a font) needs a Vite dev-server restart** — HMR won't re-optimize. Preview MCP can't drive TanStack `<Link>` (use `location.assign`) or Sheet scrim-close (reload).
 
 ### Key Files
 
