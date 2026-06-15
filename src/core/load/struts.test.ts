@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { strutSysKey, sysKeyOf } from './struts';
+import { STRUTS, strutSysKey, sysKeyOf } from './struts';
 
 describe('strut system key (rec card + shore-point number tab)', () => {
   it('keys off the SYSTEM for LockStroke (grey-colored, cyan identity), else the color', () => {
@@ -16,5 +16,22 @@ describe('strut system key (rec card + shore-point number tab)', () => {
 
   it('returns null for an unknown model (tab falls back to the ghost state)', () => {
     expect(strutSysKey('NOT A REAL STRUT')).toBeNull();
+  });
+});
+
+describe('LongShore (gold) catalog matches the Paratech spec sheet', () => {
+  it('lists exactly the five available models with their published collapsed–extended ranges', () => {
+    const gold = STRUTS.filter((s) => s.system === 'LongShore').map((s) => `${s.model} ${s.collapsed}-${s.extended}`);
+    expect(gold).toEqual([
+      'LS 203 26-36',
+      'LS 304 36-50',
+      'LS 406 48-73',
+      'LS 610 72-116',
+      'LS 1016 114-198',
+    ]);
+  });
+
+  it('does not carry the phantom LS 812 (not in Paratech’s available lineup)', () => {
+    expect(STRUTS.some((s) => s.model === 'LS 812')).toBe(false);
   });
 });

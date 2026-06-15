@@ -1,6 +1,9 @@
 import type { System } from '../schema';
 
-// Strut models + extension compatibility. Ported VERBATIM from v3 app.js (lines 4-39).
+// Strut models + extension compatibility. Ported from v3 app.js (lines 4-39).
+// LS 812 removed 2026-06-14 — not in Paratech's available LongShore lineup (per
+// the manufacturer spec sheet); recommending a strut nobody stocks is worse than
+// the coverage gap LS 610 (+ext) / LS 1016 already fill. (v3 likely still carries it.)
 
 export interface Strut {
   id: string;
@@ -23,7 +26,6 @@ export const STRUTS: readonly Strut[] = [
   { id: 'ls-304', model: 'LS 304', system: 'LongShore', color: 'gold', collapsed: 36, extended: 50 },
   { id: 'ls-406', model: 'LS 406', system: 'LongShore', color: 'gold', collapsed: 48, extended: 73 },
   { id: 'ls-610', model: 'LS 610', system: 'LongShore', color: 'gold', collapsed: 72, extended: 116 },
-  { id: 'ls-812', model: 'LS 812', system: 'LongShore', color: 'gold', collapsed: 92, extended: 147 },
   { id: 'ls-1016', model: 'LS 1016', system: 'LongShore', color: 'gold', collapsed: 114, extended: 198 },
   // LockStroke (Grey — same load table as AcmeThread)
   { id: 'lk-19-25', model: 'LK 19-25', system: 'LockStroke', color: 'grey', collapsed: 19, extended: 25 },
