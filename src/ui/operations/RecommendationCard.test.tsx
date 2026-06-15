@@ -108,7 +108,7 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // the connectors line also shows the plate names now, #248).
     expect(screen.getByText('4×4')).toBeInTheDocument();
     const slotNames = [...container.querySelectorAll('.fs-rec-slot-name')].map((el) => el.textContent);
-    expect(slotNames.filter((n) => n === 'Channel Base 4"x4"')).toHaveLength(2);
+    expect(slotNames.filter((n) => n === '4"x4" Channel Base')).toHaveLength(2);
   });
 
   it('ledger math: Raw opening and promoted Required strut length', () => {
@@ -141,8 +141,8 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // Each plate is its own whole unit (#248 — splits across lines, never truncates);
     // the " · " separator is a CSS pseudo-element, so it's not in the DOM text.
     expect([...container.querySelectorAll('.fs-rec-conn')].map((s) => s.textContent)).toEqual([
-      'Channel Base 4"x4"',
-      'Channel Base 4"x4"',
+      '4"x4" Channel Base',
+      '4"x4" Channel Base',
     ]);
     // No plates selected → no connectors line at all.
     rerender(<RecommendationCard combo={STANDARD} deductions={NO_DEDUCTIONS} source="Rescue 2" onDeploy={vi.fn()} />);

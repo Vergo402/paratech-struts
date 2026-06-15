@@ -71,8 +71,8 @@ describe('DeductionPicker', () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: /top plate/i }));
-    // Swivel Base 6" is 1.8″ — not eighths-exact → ≈ −1¾″ (nearest ⅛″).
-    const swivel = screen.getAllByRole('option', { name: /swivel base 6/i })[0]!;
+    // 6" Swivel Base is 1.8″ — not eighths-exact → ≈ −1¾″ (nearest ⅛″).
+    const swivel = screen.getAllByRole('option', { name: /6" swivel/i })[0]!;
     expect(swivel.querySelector('.fs-plate-sub')!.textContent).toBe('≈−1 3/4″');
     // None deducts nothing — still a signed amount, no prose.
     const none = screen.getAllByRole('option', { name: /^none/i })[0]!;
@@ -83,9 +83,9 @@ describe('DeductionPicker', () => {
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: /top plate/i }));
-    await user.click(screen.getAllByRole('option', { name: /swivel base 6/i })[0]!);
+    await user.click(screen.getAllByRole('option', { name: /6" swivel/i })[0]!);
     expect(screen.getByRole('button', { name: /top plate/i }).textContent).toContain(
-      'Swivel Base 6',
+      '6" Swivel Base',
     );
   });
 });

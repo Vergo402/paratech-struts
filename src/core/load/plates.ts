@@ -12,35 +12,42 @@ export interface BasePlate {
 }
 
 // Base plate heights from manufacturer O&M Manual Table 2-1 ("Base, End Plate &
-// Fittings Increase in Overall Length"). Full table reconciled 2026-06-14: every
-// height below matches the manual exactly; the two metric channel bases were added
-// and "Multi-Tip" corrected to the manual's "Multi-Base". Pinned in plates.test.ts.
+// Fittings Increase in Overall Length"). Full table reconciled 2026-06-14; heights
+// pinned in plates.test.ts (by stable id, against the manual's verbatim product
+// names — the two metric channel bases were added and "Multi-Tip" corrected to the
+// manual's "Multi-Base").
+//
+// DISPLAY NAME = dimension first, then type (Alex, 2026-06-15): `6" Swivel Base`,
+// `4"x4" Channel Base`; an item with no dimension keeps its name alone (`V-Base`).
+// The array is ordered None-first, then ALPHABETICALLY by that name (numeric-aware,
+// so 6" sorts before 12") — VisualGridPicker renders in array order, so THIS list is
+// the picker's listing order. plates.test.ts guards both the heights and the order.
 export const BASE_PLATES: readonly BasePlate[] = [
   { id: 'none', name: 'None', height: 0 },
-  { id: 'rigid6', name: 'Rigid Base 6"', height: 1.0 },
-  { id: 'swivel6', name: 'Swivel Base 6"', height: 1.8 },
-  { id: 'hinged6', name: 'Hinged Base 6"', height: 3.2 },
-  { id: 'hinged6ring', name: 'Hinged Base 6" w/Anchor Ring', height: 3.2 },
-  { id: 'multi', name: 'Multi-Base', height: 4.2 },
-  { id: 'chainwedge', name: 'Chain Wedge 3/8"', height: 4.0 },
-  { id: 'vbase', name: 'V-Base', height: 1.9 },
-  { id: 'contour', name: 'Contour Base', height: 1.7 },
-  { id: 'offsetcone', name: 'Offset Cone Base', height: 2.6 },
-  { id: 'rubber4', name: 'Rubber Base 4"', height: 2.8 },
-  { id: 'rigid12', name: 'Rigid Base 12"', height: 1.2 },
-  { id: 'swivel12', name: 'Swivel Base 12"', height: 2.3 },
-  { id: 'hinged12', name: 'Hinged Base 12"', height: 3.4 },
-  { id: 'hinged12ring', name: 'Hinged Base 12" w/Anchor Ring', height: 3.4 },
-  { id: 'angle3x4', name: 'Angle Base 3"x4"', height: 3.4 },
+  { id: 'angle3x4', name: '3"x4" Angle Base', height: 3.4 },
+  { id: 'chainwedge', name: '3/8" Chain Wedge', height: 4.0 },
+  { id: 'channelmetric4x6', name: '4.3"x6" Channel Base Metric', height: 3.4 },
+  { id: 'rubber4', name: '4" Rubber Base', height: 2.8 },
+  { id: 'channel4x4', name: '4"x4" Channel Base', height: 3.4 },
+  { id: 'channelmetric6x7', name: '6.3"x7" Channel Base Metric', height: 4.2 },
+  { id: 'hinged6', name: '6" Hinged Base', height: 3.2 },
+  { id: 'hinged6ring', name: '6" Hinged Base w/Anchor Ring', height: 3.2 },
+  { id: 'rigid6', name: '6" Rigid Base', height: 1.0 },
+  { id: 'swivel6', name: '6" Swivel Base', height: 1.8 },
+  { id: 'channel6x6', name: '6"x6" Channel Base', height: 3.4 },
+  { id: 'hinged12', name: '12" Hinged Base', height: 3.4 },
+  { id: 'hinged12ring', name: '12" Hinged Base w/Anchor Ring', height: 3.4 },
+  { id: 'rigid12', name: '12" Rigid Base', height: 1.2 },
+  { id: 'swivel12', name: '12" Swivel Base', height: 2.3 },
   { id: 'base45', name: '45° Base', height: 5.4 },
-  { id: 'channel4x4', name: 'Channel Base 4"x4"', height: 3.4 },
-  { id: 'channel6x6', name: 'Channel Base 6"x6"', height: 3.4 },
-  { id: 'channelmetric4x6', name: 'Channel Base Metric 4.3"x6"', height: 3.4 },
-  { id: 'channelmetric6x7', name: 'Channel Base Metric 6.3"x7"', height: 4.2 },
-  { id: 'rubberangle', name: 'Angled Rubber Base (ESU)', height: 2.7 },
-  { id: 'elevatorsupport', name: 'Elevator Support L&R Arm', height: 6.0 },
-  { id: 'springloaded', name: 'Spring Loaded Connector', height: 3.9 },
   { id: 'threadedconn', name: 'Adjustable Threaded Connector', height: 3.5 },
+  { id: 'rubberangle', name: 'Angled Rubber Base (ESU)', height: 2.7 },
+  { id: 'contour', name: 'Contour Base', height: 1.7 },
+  { id: 'elevatorsupport', name: 'Elevator Support L&R Arm', height: 6.0 },
+  { id: 'multi', name: 'Multi-Base', height: 4.2 },
+  { id: 'offsetcone', name: 'Offset Cone Base', height: 2.6 },
+  { id: 'springloaded', name: 'Spring Loaded Connector', height: 3.9 },
+  { id: 'vbase', name: 'V-Base', height: 1.9 },
 ];
 
 export interface WoodSize {
