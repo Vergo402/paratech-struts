@@ -1,12 +1,15 @@
-import { useId, useState } from 'react';
-import { Sheet } from '@ui/primitives';
+import { useId, useRef, useState } from 'react';
+import { PickerSurface } from '@ui/primitives';
 
 /**
- * BottomSheetPicker — picker variant 2 (picker.md): 5–7 options,
- * single-select, parent stays visible behind the sheet. The collapsed trigger
- * always shows the current value (picker rule 3); a row tap commits
- * immediately and dismisses (rule 2 — no Apply). Rows are 56pt; the selected
- * row carries a check + weight, never fill alone (Principle 9).
+ * BottomSheetPicker — picker variant 2 (picker.md): 5–7 options, single-select,
+ * parent stays visible. Surface-adaptive (ADR-032): a bottom sheet on phone, an
+ * anchored dropdown on desktop — the name is kept (renaming ripples through the
+ * barrel, gallery, and the `SheetPickerOption` re-exports) but the surface is
+ * chosen by PickerSurface. The collapsed trigger always shows the current value
+ * (picker rule 3); a row tap commits immediately and dismisses (rule 2 — no
+ * Apply). Rows are 56pt; the selected row carries a check + weight, never fill
+ * alone (Principle 9).
  */
 export interface SheetPickerOption<T extends string> {
   value: T;
@@ -30,6 +33,7 @@ export function BottomSheetPicker<T extends string>({
 }: BottomSheetPickerProps<T>) {
   const [open, setOpen] = useState(false);
   const labelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const current = options.find((o) => o.value === value);
 
   if (import.meta.env.DEV && options.length > 7) {
@@ -44,6 +48,7 @@ export function BottomSheetPicker<T extends string>({
         {label}
       </span>
       <button
+        ref={triggerRef}
         type="button"
         className="fs-picker-trigger"
         aria-labelledby={labelId}
@@ -55,7 +60,7 @@ export function BottomSheetPicker<T extends string>({
           ▾
         </span>
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title={label}>
+      <PickerSurface open={open} onClose={() => setOpen(false)} title={label} anchor={triggerRef}>
         <div role="listbox" aria-labelledby={labelId}>
           {options.map((opt) => (
             <button
@@ -81,7 +86,7 @@ export function BottomSheetPicker<T extends string>({
             </button>
           ))}
         </div>
-      </Sheet>
+      </PickerSurface>
     </div>
   );
 }

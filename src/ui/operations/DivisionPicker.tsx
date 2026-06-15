@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { newId } from '@core/id';
 import {
   formatDivision,
@@ -7,7 +7,7 @@ import {
   nextFloorBelow,
   sortDivisionsForDisplay,
 } from '@core/operation';
-import { Button, Sheet } from '@ui/primitives';
+import { Button, PickerSurface } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useOperation } from '@ui/hooks';
 
@@ -16,8 +16,9 @@ import { useCommit, useDeviceUid, useOperation } from '@ui/hooks';
  * The v3 grow-the-building model carried verbatim (app.js addFloorAbove/Below):
  * the operation owns its division list; "Add floor above / below" extends it
  * via a DivisionAdded event (persists + syncs) and selects the new floor.
- * Composes the Sheet primitive + the global fs-picker-* row classes — a
- * BottomSheetPicker won't do because the add-floor actions live in the sheet.
+ * Surface-adaptive via PickerSurface (ADR-032) — bottom sheet on phone, anchored
+ * dropdown on desktop; a BottomSheetPicker won't do because the add-floor actions
+ * live in the surface alongside the rows.
  */
 export interface DivisionPickerProps {
   /** The selected division number (1 = Ground, negative = Sub Division). */
@@ -31,6 +32,7 @@ export function DivisionPicker({ value, onChange }: DivisionPickerProps) {
   const getUid = useDeviceUid();
   const [open, setOpen] = useState(false);
   const labelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const divisions = sortDivisionsForDisplay(operation?.divisions ?? [1]);
 
@@ -61,6 +63,7 @@ export function DivisionPicker({ value, onChange }: DivisionPickerProps) {
         Division
       </span>
       <button
+        ref={triggerRef}
         type="button"
         className="fs-picker-trigger"
         aria-labelledby={labelId}
@@ -75,7 +78,7 @@ export function DivisionPicker({ value, onChange }: DivisionPickerProps) {
       <span className="fs-sr-only" aria-live="polite">
         {formatDivision(value)}
       </span>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Division">
+      <PickerSurface open={open} onClose={() => setOpen(false)} title="Division" anchor={triggerRef}>
         <div role="listbox" aria-labelledby={labelId}>
           {divisions.map((n) => (
             <button
@@ -108,7 +111,7 @@ export function DivisionPicker({ value, onChange }: DivisionPickerProps) {
             + Add floor below
           </Button>
         </div>
-      </Sheet>
+      </PickerSurface>
     </div>
   );
 }

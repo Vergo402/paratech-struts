@@ -102,6 +102,8 @@ The v3 plate picker was hardened for iOS Safari across several patches. v4 inher
 | **Laptop (Toughbook)** | A **floating panel** beside the trigger; **keyboard-first** — Esc dismisses, Tab cycles, arrow keys move within a picker, Enter commits (see Accessibility). |
 | **Broadcast TV** | **Never renders.** Sheets are interactive primitives and broadcast is read-only ([`picker.md`](picker.md) / [`card.md`](card.md)); the current value renders large, the sheet affordance does not. `--shadow-sheet` is `none` here regardless. |
 
+> **Implemented ([ADR-032](../11-decisions/ADR-032-surface-adaptive-pickers.md)):** the desktop "floating panel / center popover" ships as the `Popover` primitive (Sheet's API twin), chosen over `Sheet` by `useIsDesktop()` (≥768px) inside `PickerSurface` — for the **list** pickers. Shipped scrimless (one ≥768px branch serves tablet + laptop; the scrim/placement nuance is a deferred CSS tunable).
+
 ---
 
 ## Accessibility floor

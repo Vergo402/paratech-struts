@@ -573,6 +573,31 @@ p.fs-gate--disclaimer {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ---- popover (the desktop dropdown surface — ADR-032) ----------------------
+   Sheet's desktop twin: an anchored dropdown for single-select pickers at
+   ≥768px (picker.md/sheet.md §Surface adaptations). Matches the trigger width,
+   the input radius (reads as a dropdown, not a sheet), no scrim — the parent
+   stays in context. The same .fs-picker-row rows render inside; the add-action
+   blocks (Division/Building) ride below them, both inset by the popover padding. */
+.fs-popover {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--radix-popover-trigger-width);
+  max-height: min(60vh, var(--radix-popover-content-available-height));
+  overflow-y: auto;
+  padding: var(--space-2);
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-sheet);
+  z-index: 400; /* the picker-overlay tier — above the form modal (300) */
+}
+@keyframes fs-popover-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fs-popover[data-state='open'] { animation: fs-popover-in var(--motion-micro) var(--ease-standard); }
+
 /* ---- slide-to-commit (slider.md / S12 handoff slide geometry) --------------
    A pill channel with a circular knob inset 4px from the edge. Advance is the
    primary, accent-tinted track with a 44px accent knob; step-back mirrors

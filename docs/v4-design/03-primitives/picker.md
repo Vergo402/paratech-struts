@@ -70,6 +70,8 @@ v4 inherits the plate picker's behavior verbatim. The picker doctrine names the 
 | **Laptop (Toughbook)** | Full screen lists become floating panels next to the triggering control. Keyboard first; Tab cycles options. |
 | **Broadcast TV** | Pickers never render. Pickers are interactive primitives, and broadcast view is read only. Current selected value renders large; the picker affordance does not. |
 
+> **Implemented ([ADR-032](../11-decisions/ADR-032-surface-adaptive-pickers.md)):** the phone→desktop swap ships for the **list** pickers via `useIsDesktop()` + the `Popover` / `PickerSurface` primitives — bottom sheet on phone, anchored dropdown at ≥768px (one branch serves tablet + laptop). The visual-grid plate/wood picker is **deferred** (it keeps the bottom sheet on desktop for now — the preserved-verbatim L-9 grid, not a "list").
+
 ---
 
 ## Accessibility Floor

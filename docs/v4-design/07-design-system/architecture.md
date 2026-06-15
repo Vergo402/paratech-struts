@@ -129,7 +129,7 @@ Both are lint/CI errors, not conventions — a contributor *could* violate the b
 
 ## Surface & context notes
 
-- **Four surfaces, one build.** Phone (team officer), tablet (CP), Toughbook (deep CP view), broadcast TV (read-only board) all render from `src/app/` — the PWA serves all four, which is why v4.0 stays PWA, not React Native ([ADR-005](../11-decisions/ADR-005-single-package-pwa.md); the phone is the floor for every workflow). Layout adapts by surface; the seams do not fork.
+- **Four surfaces, one build.** Phone (team officer), tablet (CP), Toughbook (deep CP view), broadcast TV (read-only board) all render from `src/app/` — the PWA serves all four, which is why v4.0 stays PWA, not React Native ([ADR-005](../11-decisions/ADR-005-single-package-pwa.md); the phone is the floor for every workflow). Layout adapts by surface; the seams do not fork. The sanctioned mechanism for a *structural* surface choice (a different overlay primitive, not just styling) is the `useIsDesktop()` hook in `ui/primitives` — CSS handles styling adaptations, JS only the structural swap ([ADR-032](../11-decisions/ADR-032-surface-adaptive-pickers.md); first applied to make pickers anchored dropdowns on desktop via the `Popover` primitive).
 - **Storage:** `localStorage` → **IndexedDB (Dexie)** in this cutover — the 5 MB localStorage cap is a real constraint at task-force scale ([ADR-024](../11-decisions/ADR-024-d5-multi-device-build-a.md)). Independent of the backend choice; ships in the same v4.0 cutover.
 - **Backend:** RTDB stays for v4.0 behind the `data/sync` seam; a future swap is a transport change, with Supabase + PowerSync the named second choice if field tests surface conflict loss ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md)).
 

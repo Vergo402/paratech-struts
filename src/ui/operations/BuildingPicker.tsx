@@ -1,13 +1,15 @@
-import { useId, useState } from 'react';
-import { Button, Sheet, TextField } from '@ui/primitives';
+import { useId, useRef, useState } from 'react';
+import { Button, PickerSurface, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 
 /**
  * BuildingPicker — the building picker for the Add Shore Point form, multi-
  * building operations only. Mirrors DivisionPicker's UX (a labeled trigger that
- * opens a Sheet listing the choices) so building "operates like the division":
- * pick a building already used in this op, or "Add building" by name. The choice
- * carries over to the next shore point via the modal's seed-from-last-point logic.
+ * opens a picker surface listing the choices) so building "operates like the
+ * division": pick a building already used in this op, or "Add building" by name.
+ * The choice carries over to the next shore point via the modal's seed-from-last-
+ * point logic. Surface-adaptive via PickerSurface (ADR-032) — bottom sheet on
+ * phone, anchored dropdown on desktop.
  *
  * Unlike DivisionPicker, building is NOT operation-level state — it stays a per-
  * point string. The list is simply the distinct buildings already placed in the
@@ -25,6 +27,7 @@ export function BuildingPicker({ value, onChange, buildings }: BuildingPickerPro
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const labelId = useId();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   function select(building: string) {
     onChange(building);
@@ -46,6 +49,7 @@ export function BuildingPicker({ value, onChange, buildings }: BuildingPickerPro
         Building
       </span>
       <button
+        ref={triggerRef}
         type="button"
         className="fs-picker-trigger"
         aria-labelledby={labelId}
@@ -62,7 +66,7 @@ export function BuildingPicker({ value, onChange, buildings }: BuildingPickerPro
       <span className="fs-sr-only" aria-live="polite">
         {value || 'No building selected'}
       </span>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Building">
+      <PickerSurface open={open} onClose={() => setOpen(false)} title="Building" anchor={triggerRef}>
         {buildings.length > 0 && (
           <div role="listbox" aria-labelledby={labelId}>
             {buildings.map((b) => (
@@ -98,7 +102,7 @@ export function BuildingPicker({ value, onChange, buildings }: BuildingPickerPro
             + Add building
           </Button>
         </div>
-      </Sheet>
+      </PickerSurface>
     </div>
   );
 }
