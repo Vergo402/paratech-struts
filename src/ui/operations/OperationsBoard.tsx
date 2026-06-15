@@ -299,6 +299,16 @@ export function OperationsBoard() {
   useEffect(() => {
     if (stepBackSpId && !stepBackSp) setStepBackSpId(null);
   }, [stepBackSpId, stepBackSp]);
+  // The full In-Process set to un-deploy together: a grouped physical shore
+  // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
+  // to Pending" never leaves orphaned standing struts — the set is married
+  // cradle-to-grave. A partial-deployed group (out of stock) returns only the
+  // members actually In Process. Singleton → just itself.
+  const stepBackMembers = !stepBackSp
+    ? []
+    : stepBackSp.groupId
+      ? shorePoints.filter((s) => s.groupId === stepBackSp.groupId && s.status === 'process' && s.deletedAt == null)
+      : [stepBackSp];
 
   const openEdit = useCallback((sp: ShorePoint) => setSpModal({ mode: 'edit', shorePoint: sp }), []);
   const openDelete = useCallback((sp: ShorePoint) => setDeleteSp(sp), []);
@@ -384,10 +394,14 @@ export function OperationsBoard() {
   );
 
   const handleReturned = useCallback(
-    (sp: ShorePoint) => {
+    (sp: ShorePoint, count = 1) => {
       expandLane('pending');
       setScrollToId(sp.id);
-      setPoliteAnnouncement(`${sp.deployedStrut?.model ?? 'Strut'} returned — back to Pending.`);
+      setPoliteAnnouncement(
+        count > 1
+          ? `${count} struts returned — back to Pending.`
+          : `${sp.deployedStrut?.model ?? 'Strut'} returned — back to Pending.`,
+      );
     },
     [expandLane],
   );
@@ -745,6 +759,7 @@ export function OperationsBoard() {
 
       <StepBackConfirmModal
         shorePoint={stepBackSp}
+        groupMembers={stepBackMembers}
         onClose={() => setStepBackSpId(null)}
         onReturned={handleReturned}
       />

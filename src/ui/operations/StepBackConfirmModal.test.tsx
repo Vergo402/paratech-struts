@@ -61,8 +61,35 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'StrutReturned', spId: 'sp-1', opId: 'op-1', by: 'device-test' }),
     );
-    expect(onReturned).toHaveBeenCalledWith(SP);
+    expect(onReturned).toHaveBeenCalledWith(SP, 1);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('a grouped shore un-deploys EVERY member together (married cradle-to-grave)', async () => {
+    const user = userEvent.setup();
+    const onReturned = vi.fn();
+    // Three struts of one physical 3-Post, all In Process (same groupId).
+    const members: ShorePoint[] = [1, 2, 3].map((i) => ({
+      ...SP,
+      id: `sp-${i}`,
+      groupId: 'g1',
+      groupIndex: i,
+      groupTotal: 3,
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: `inv-${i}` },
+    }));
+    render(
+      <StepBackConfirmModal shorePoint={members[0]!} groupMembers={members} onClose={vi.fn()} onReturned={onReturned} />,
+    );
+
+    // Copy pluralizes; the action returns ALL three.
+    expect(screen.getByRole('dialog', { name: 'Return 3 struts to inventory?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Return All & Step Back' }));
+
+    expect(mockCommit).toHaveBeenCalledTimes(3);
+    for (const id of ['sp-1', 'sp-2', 'sp-3']) {
+      expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'StrutReturned', spId: id }));
+    }
+    expect(onReturned).toHaveBeenCalledWith(members[0], 3);
   });
 
   it('a failed return surfaces the reason and stays open', async () => {
