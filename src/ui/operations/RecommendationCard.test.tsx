@@ -30,7 +30,7 @@ const INVENTORY: InventoryItem[] = [
 const STANDARD = findStrutCombinations(56, 0, 2, INVENTORY, null, { header: 3.5, topPlate: 3.4, bottomPlate: 3.4 })[0]!;
 // A LockStroke combo (catalog mode, system-filtered) — physically grey, but the
 // face must carry the cyan "LockStroke" word + .fs-rec--lockstroke (S12 §3.1).
-// LK 37-58 @45″, rated 20,000 lb, no extensions.
+// LK 36-57 @45″, rated 20,000 lb, no extensions.
 const LOCKSTROKE = findStrutCombinations(45, 0, 2, null, ['LockStroke'], null)[0]!;
 // 200″ — past the 192″ LongShore chart: deployable-with-acknowledgment.
 const UNRATED = findStrutCombinations(200, 0, 2, null, null, null)[0]!;
@@ -155,7 +155,7 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(container.querySelector('.fs-rec--grey')).toBeNull();
     const identity = container.querySelector('.fs-rec-identity')!;
     expect(identity.querySelector('b')!.textContent).toBe('LockStroke');
-    expect(identity.textContent).toContain('LK 37-58');
+    expect(identity.textContent).toContain('LK 36-57');
   });
 
   it('location prop renders as a header line; absent by default', () => {

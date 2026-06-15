@@ -36,3 +36,28 @@ describe('LongShore (gold) catalog matches the Paratech brochure', () => {
     expect(STRUTS.some((s) => s.model === 'LS 812')).toBe(true);
   });
 });
+
+describe('AcmeThread (grey) catalog matches the Paratech brochure', () => {
+  it('lists the five published sizes with their ranges', () => {
+    const at = STRUTS.filter((s) => s.system === 'AcmeThread').map((s) => `${s.model} ${s.collapsed}-${s.extended}`);
+    expect(at).toEqual([
+      'AT 12-15 12-15',
+      'AT 19-25 19-25',
+      'AT 25-36 25-36',
+      'AT 37-58 37-58',
+      'AT 56-88 56-88',
+    ]);
+  });
+});
+
+describe('LockStroke (grey) catalog matches the Paratech brochure', () => {
+  it('lists the four published sizes — the third is 36-57, NOT 37-58 (that is AcmeThread)', () => {
+    const lk = STRUTS.filter((s) => s.system === 'LockStroke').map((s) => `${s.model} ${s.collapsed}-${s.extended}`);
+    expect(lk).toEqual([
+      'LK 19-25 19-25',
+      'LK 25-36 25-36',
+      'LK 36-57 36-57',
+      'LK 55-89 55-89',
+    ]);
+  });
+});

@@ -604,7 +604,7 @@ export function GalleryScreen() {
         />
         {/* LockStroke-cyan tab + a 3-digit number (Surfside scale). */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 147, label: 'C-4', area: 'Stairwell B', status: 'process', deployedStrut: { model: 'LK 37-58', source: 'Rescue 41', inventoryId: 'demo-inv-3' } })}
+          shorePoint={spFixture({ seq: 147, label: 'C-4', area: 'Stairwell B', status: 'process', deployedStrut: { model: 'LK 36-57', source: 'Rescue 41', inventoryId: 'demo-inv-3' } })}
         />
         {/* Design-audit additions: active (accent focus border) + the caption
             explainer line (design-system ShorePointCard props). The waiting

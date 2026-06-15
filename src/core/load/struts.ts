@@ -35,7 +35,7 @@ export const STRUTS: readonly Strut[] = [
   // LockStroke (Grey — same load table as AcmeThread)
   { id: 'lk-19-25', model: 'LK 19-25', system: 'LockStroke', color: 'grey', collapsed: 19, extended: 25 },
   { id: 'lk-25-36', model: 'LK 25-36', system: 'LockStroke', color: 'grey', collapsed: 25, extended: 36 },
-  { id: 'lk-37-58', model: 'LK 37-58', system: 'LockStroke', color: 'grey', collapsed: 37, extended: 58 },
+  { id: 'lk-36-57', model: 'LK 36-57', system: 'LockStroke', color: 'grey', collapsed: 36, extended: 57 },
   { id: 'lk-55-89', model: 'LK 55-89', system: 'LockStroke', color: 'grey', collapsed: 55, extended: 89 },
 ];
 
@@ -51,7 +51,7 @@ export const EXTENSIONS: Record<System, number[]> = {
 export const LOCKSTROKE_EXTENSIONS: Record<string, number[]> = {
   'lk-19-25': [6, 12],
   'lk-25-36': [6, 12],
-  'lk-37-58': [6, 12, 24, 36],
+  'lk-36-57': [6, 12, 24, 36],
   'lk-55-89': [6, 12, 24, 36],
 };
 
