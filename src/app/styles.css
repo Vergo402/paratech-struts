@@ -125,6 +125,42 @@ body {
   font-family: var(--font-mono); /* re-set: the font shorthand resets family */
   color: var(--text-tertiary);
 }
+/* "Sign in to sync" — guest-only nudge between header and scroll pane
+   (workflow 06). flex:none pins it under the header; it never scrolls. */
+.fs-sync-banner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  background: var(--accent-subtle);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-sync-banner-cta {
+  flex: 1;
+  min-height: 44px;
+  text-align: left;
+  background: none;
+  border: none;
+  font: var(--type-body-medium);
+  color: var(--accent);
+  cursor: pointer;
+}
+.fs-sync-banner-dismiss {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  font: var(--type-body-lg);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.fs-sync-banner-cta:focus-visible,
+.fs-sync-banner-dismiss:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
 .fs-shell-main {
   flex: 1;
   min-height: 0;

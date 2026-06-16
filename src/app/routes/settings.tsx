@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
-import { Toggle } from '@ui/primitives';
+import { Button, Modal, Toggle } from '@ui/primitives';
+import { useSession } from '@ui/hooks';
 import { useTheme, type ThemePreference } from '../theme';
 
 const THEME_OPTIONS = [
@@ -21,6 +23,9 @@ const NATIVE_CONTROLS_KEY = 'fieldshore_native_controls';
  */
 export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
+  const { identity, signOut } = useSession();
+  const navigate = useNavigate();
+  const [confirmOut, setConfirmOut] = useState(false);
   const [nativeControls, setNativeControls] = useState(
     () => localStorage.getItem(NATIVE_CONTROLS_KEY) === 'true',
   );
@@ -53,9 +58,61 @@ export function SettingsScreen() {
           }
         }}
       />
+      <section className="flex flex-col gap-3">
+        <h2 style={{ font: 'var(--type-headline-2)' }}>Account</h2>
+        {identity.kind === 'member' ? (
+          <>
+            <p style={{ font: 'var(--type-body-lg)' }}>
+              Signed in as <strong>{identity.displayName}</strong>
+            </p>
+            <Button variant="secondary" destructive onPress={() => setConfirmOut(true)}>
+              Log Out
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
+              You&rsquo;re using FieldShore as a guest. Sign in to sync with your department.
+            </p>
+            <Button variant="primary" onPress={() => navigate({ to: '/auth' })}>
+              Sign In
+            </Button>
+          </>
+        )}
+      </section>
+
       <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
         FieldShore v4 — vertical slice build
       </p>
+
+      <Modal
+        open={confirmOut}
+        onClose={() => setConfirmOut(false)}
+        title="Log out?"
+        variant="destructive"
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => setConfirmOut(false)}>
+              <span data-modal-cancel>Cancel</span>
+            </Button>
+            <Button
+              variant="primary"
+              destructive
+              onPress={async () => {
+                await signOut();
+                setConfirmOut(false);
+              }}
+            >
+              Log Out
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Your work on this device stays put. You&rsquo;ll return to guest mode and can sign back in
+          anytime.
+        </p>
+      </Modal>
     </div>
   );
 }

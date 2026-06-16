@@ -409,6 +409,23 @@ p.fs-gate--disclaimer {
 .fs-field-input:disabled { opacity: 0.5; }
 .fs-field-msg { font: var(--type-caption); color: var(--text-secondary); }
 .fs-field-msg--error { color: var(--danger-text); }
+/* secure-text reveal: toggle sits over the input's trailing edge */
+.fs-field-inputwrap { position: relative; display: flex; }
+.fs-field-inputwrap .fs-field-input { padding-right: 72px; }
+.fs-field-pw-toggle {
+  position: absolute;
+  right: var(--space-2);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  font: var(--type-body-medium);
+  color: var(--accent);
+  cursor: pointer;
+}
+.fs-field-pw-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; border-radius: var(--radius-input); }
+.fs-field-pw-toggle:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- overlays: scrim + modal + sheet (modal.md / sheet.md) ----------------- */
 @keyframes fs-fade-in {
