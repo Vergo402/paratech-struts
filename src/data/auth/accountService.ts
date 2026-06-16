@@ -1,23 +1,24 @@
-import { newId } from '@core/id';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+  signOut as fbSignOut,
+} from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
+import { firebaseAuth } from './firebase';
 
-// data/auth — the account seam: the ONE path a member creates an account / signs
-// in / signs out. This slice ships it as a STUB behind the real seam (mirrors
-// data/sync/syncService.ts): the method signatures and the mandatory
-// display-name guard (ADR-025) are real; the TRANSPORT (Firebase Auth — email +
-// password, magic-link) is a no-op a later session fills WITHOUT touching any
-// caller. That session also quarantines its Firebase import to this data/auth/
-// folder (mirrors data/sync/firebase.ts being the only Firebase importer).
+// data/auth — the account seam: the ONE path a member creates an account /
+// signs in / signs out. Firebase Auth (email+password, ADR-025) is the
+// transport; the seam interface is unchanged so callers (AuthScreen, useSession)
+// needed no edits when the stub was replaced. Magic-link and password-reset
+// land here in a later session — their UI buttons already render greyed-out.
 //
-// Offline auth window (ADR-025): signing in must never block. Locally there is
-// no network, so nothing blocks and there is nothing to queue — the
-// queued-intent behavior belongs to the Firebase session, NOT built here.
+// Offline auth window (ADR-025): signing in must never block a returning member
+// who last signed in online. The Firebase SDK handles its own credential cache;
+// we don't build a separate offline queue here.
 //
-// Dependency is one-directional: accountService → session (data/store never
-// imports data/auth), so there is no real init-time import cycle to guard here.
-// The lazy session() accessor still mirrors syncService's ops() — for uniformity
-// with the sync seam and as the test-injection seam (tests pass their own
-// session) — not because a cycle needs breaking.
+// Invariant: this file and data/sync/firebase.ts are the ONLY v4 Firebase
+// importers. Callers go through the seam, never Firebase directly.
 
 export interface CreateAccountInput {
   email: string;
@@ -37,39 +38,60 @@ export type AuthResult =
 export interface AccountServiceApi {
   /** Create an account → member session. Rejects an empty display name (ADR-025). */
   createAccount(input: CreateAccountInput): Promise<AuthResult>;
-  /** Sign in → member session. STUB — no real credential check until Firebase. */
+  /** Sign in → member session. */
   signIn(input: SignInInput): Promise<AuthResult>;
   /** Sign out → guest. Never discards local work. */
   signOut(): Promise<void>;
 }
 
+function mapFirebaseError(err: unknown): string {
+  const code = (err as { code?: string }).code ?? '';
+  if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
+    return "That email and password don't match.";
+  }
+  if (code === 'auth/email-already-in-use') return 'An account with that email already exists.';
+  if (code === 'auth/invalid-email') return "That doesn't look like a valid email address.";
+  if (code === 'auth/weak-password') return 'Password must be at least 6 characters.';
+  if (code === 'auth/too-many-requests') return 'Too many attempts — try again in a moment.';
+  if (code === 'auth/network-request-failed') return 'No network connection — check your signal and try again.';
+  return 'Something went wrong. Try again.';
+}
+
 export function createAccountService(deps: { session: () => SessionStoreApi }): AccountServiceApi {
   return {
-    async createAccount({ displayName }) {
-      // The display name is the accountability anchor — the audit log and signed
-      // attestations attribute to it, so it can never be empty (ADR-025). Guard
-      // FIRST; nothing is written on reject.
+    async createAccount({ email, password, displayName }) {
+      // The display name is the accountability anchor (ADR-025) — guard FIRST,
+      // nothing written on reject.
       const name = displayName.trim();
       if (!name) return { ok: false, reason: 'display name is required' };
 
-      const member = { accountId: newId(), displayName: name };
-      await deps.session().setMember(member);
-      return { ok: true, member };
+      try {
+        const cred = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+        await updateProfile(cred.user, { displayName: name });
+        const member = { accountId: cred.user.uid, displayName: name };
+        await deps.session().setMember(member);
+        return { ok: true, member };
+      } catch (err: unknown) {
+        return { ok: false, reason: mapFirebaseError(err) };
+      }
     },
 
-    async signIn({ email }) {
-      // STUB: with no cloud account store yet there is nothing to authenticate
-      // against. Mint a local member so the future UI can be built + tested
-      // against the seam; the real session checks the credential and reads the
-      // display name from the Auth profile (this placeholder derives it from the
-      // email local-part).
-      const displayName = email.split('@')[0]?.trim() || 'Member';
-      const member = { accountId: newId(), displayName };
-      await deps.session().setMember(member);
-      return { ok: true, member };
+    async signIn({ email, password }) {
+      try {
+        const cred = await signInWithEmailAndPassword(firebaseAuth, email, password);
+        const displayName = cred.user.displayName || email.split('@')[0]?.trim() || 'Member';
+        const member = { accountId: cred.user.uid, displayName };
+        await deps.session().setMember(member);
+        return { ok: true, member };
+      } catch (err: unknown) {
+        return { ok: false, reason: mapFirebaseError(err) };
+      }
     },
 
     async signOut() {
+      // Best-effort Firebase sign-out — local guest state is set regardless so
+      // the UI never gets stuck in a signed-in limbo on network failure.
+      await fbSignOut(firebaseAuth).catch(() => {});
       await deps.session().setGuest();
     },
   };
