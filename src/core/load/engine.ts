@@ -45,6 +45,11 @@ export interface StrutCombination {
   boundaryWarning?: 'fully-extended' | null;
   exceedsCapacity?: boolean;
   exceedsCapacityReason?: string;
+  // ADR-033 Phase 0 — the stock record the deploy path would source for each
+  // extension instance (one entry per element of `extensions`). Lets the deploy
+  // path commit the BOM without re-deriving the pooling done below. Present only
+  // when inventory was passed AND the combo uses extensions; absent in catalog mode.
+  extensionSources?: { length: number; inventoryId: string }[];
 }
 
 interface ExceedsCombo {
@@ -245,9 +250,37 @@ export function findStrutCombinations(
       // settling or shift puts the strut at risk. Fires regardless of load.
       const atExtendedBoundary = !isUnratedZone && Math.abs(searchLength - adjExtended) < 0.05;
 
+      // ADR-033 Phase 0: surface the stock id the deploy path would source for
+      // each extension instance. Greedy allocate a distinct row per instance so a
+      // qty-2 need split over two `available:1` rows yields two ids, not one twice
+      // (mirrors the W8 pooling that gated this combo above). Availability is
+      // already guaranteed by that gate, so every instance resolves a row.
+      let extensionSources: { length: number; inventoryId: string }[] | undefined;
+      if (inv && extCount > 0) {
+        const taken: Record<string, number> = {};
+        extensionSources = [e1, e2]
+          .filter((e) => e > 0)
+          .map((size) => {
+            const row = inv.find(
+              (i) =>
+                i.type === 'extension' &&
+                i.length === size &&
+                (i.system === strut.system ||
+                  (strut.system === 'LockStroke' && i.system === 'AcmeThread') ||
+                  (strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
+                i.available - (taken[i.id] || 0) > 0,
+            );
+            if (!row) return null;
+            taken[row.id] = (taken[row.id] || 0) + 1;
+            return { length: size, inventoryId: row.id };
+          })
+          .filter((s): s is { length: number; inventoryId: string } => s !== null);
+      }
+
       results.push({
         strut,
         extensions: [e1, e2].filter((e) => e > 0),
+        extensionSources,
         extTotal,
         adjCollapsed,
         adjExtended,

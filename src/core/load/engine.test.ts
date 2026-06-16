@@ -101,3 +101,47 @@ describe('findStrutCombinations — selection, deductions, warnings', () => {
     ).toBe(false);
   });
 });
+
+// ADR-033 Phase 0 — the engine surfaces the stock record it would source for each
+// extension instance, so the deploy path can commit the BOM without re-deriving the
+// pooling. Strictly additive: the selection math and every assertion above are untouched.
+describe('ADR-033 Phase 0 — extension inventory ids on the result', () => {
+  it('catalog mode (no inventory) → extension combos carry no extensionSources', () => {
+    const res = findStrutCombinations(45, 0, 2, null);
+    expect(res.some((c) => c.extensions.length > 0)).toBe(true); // extensions are in play at 45″
+    expect(res.every((c) => c.extensionSources === undefined)).toBe(true);
+  });
+
+  it('strut-only combos carry no extensionSources even when inventory is passed', () => {
+    const c0 = findStrutCombinations(30, 0, 2, null).find((c) => c.extensions.length === 0);
+    expect(c0).toBeDefined();
+    const { model, system } = c0!.strut;
+    const strutRow = { id: 's', type: 'strut', model, system, apparatus: 'R2', apparatusId: 'a', quantity: 1, available: 1 };
+    const res = findStrutCombinations(30, 0, 2, [strutRow] as never);
+    const combo = res.find((c) => c.strut.model === model && c.extensions.length === 0);
+    expect(combo).toBeDefined();
+    expect(combo!.extensionSources).toBeUndefined();
+  });
+
+  it('surfaces one source per extension instance, splitting a qty-2 need across two rows (W8)', () => {
+    const SF = 2;
+    const len = 45;
+    const doubled = findStrutCombinations(len, 0, SF, null).find(
+      (c) => c.extensions.length === 2 && c.extensions[0] === c.extensions[1],
+    );
+    expect(doubled).toBeDefined();
+    const size = doubled!.extensions[0]!;
+    const { model, system } = doubled!.strut;
+    const strutRow = { id: 's', type: 'strut', model, system, apparatus: 'R2', apparatusId: 'a', quantity: 1, available: 1 };
+    const extRow = (id: string) => ({ id, type: 'extension', system, length: size, apparatus: 'R2', apparatusId: 'a', quantity: 1, available: 1 });
+
+    const res = findStrutCombinations(len, 0, SF, [strutRow, extRow('e1'), extRow('e2')] as never);
+    const combo = res.find((c) => c.strut.model === model && c.extensions.length === 2);
+    expect(combo).toBeDefined();
+    expect(combo!.extensionSources).toHaveLength(2);
+    expect(combo!.extensionSources!.every((s) => s.length === size)).toBe(true);
+    // the two instances resolve to the two DISTINCT rows, not the same row twice
+    const ids = combo!.extensionSources!.map((s) => s.inventoryId).sort();
+    expect(ids).toEqual(['e1', 'e2']);
+  });
+});
