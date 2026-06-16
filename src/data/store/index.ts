@@ -16,5 +16,13 @@ export {
   type InventoryStoreApi,
   type InventoryState,
 } from './inventoryStore';
+export {
+  sessionStore,
+  createSessionStore,
+  SESSION_KEY,
+  type SessionStoreApi,
+  type SessionState,
+  type Identity,
+} from './session';
 export { buildSeedInventory, seedIfEmpty } from './seed';
 export { bootData, type BootResult } from './boot';

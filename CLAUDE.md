@@ -242,6 +242,11 @@ code-review explanations, summaries of what an agent found:
   instead of calling vendors directly — swap the vendor, Ops never knows.)
 - **The glossary is the bridge.** `docs/PLAIN-LANGUAGE-GLOSSARY.md` translates the
   recurring engineering terms. Point Alex there; add new ones as they come up.
+- **This applies to `AskUserQuestion` too — the question AND every option's label and
+  description (reinforced 2026-06-16).** A multiple-choice question is conversation: if
+  Alex can't decide from the option text because it's full of jargon ("headless auth
+  core", "RBAC", "the seam"), the question failed. Frame each option in plain language —
+  what he'd see or do and why — before offering the choice.
 
 **Scope — conversation only.** This does NOT change how design docs, plans, specs,
 ADRs, commit messages, or code comments are written — those keep their precise
