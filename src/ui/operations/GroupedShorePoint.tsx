@@ -35,6 +35,7 @@ export interface GroupedShorePointProps {
   onAssignEquipment?: ShorePointCardProps['onAssignEquipment'];
   onAdvance?: ShorePointCardProps['onAdvance'];
   onStepBack?: ShorePointCardProps['onStepBack'];
+  onRemoveReturn?: ShorePointCardProps['onRemoveReturn'];
   /** Per-member group gate (#221 OQ2) — resolved against the member's own sp. */
   advanceDisabledReasonFor?: (sp: ShorePoint) => string | undefined;
 }
@@ -64,6 +65,7 @@ export function GroupedShorePoint({
   onAssignEquipment,
   onAdvance,
   onStepBack,
+  onRemoveReturn,
   advanceDisabledReasonFor,
 }: GroupedShorePointProps) {
   const n = members.length;
@@ -138,6 +140,7 @@ export function GroupedShorePoint({
         onAssignEquipment={onAssignEquipment}
         onAdvance={onAdvance}
         onStepBack={onStepBack}
+        onRemoveReturn={onRemoveReturn}
         advanceDisabledReason={advanceDisabledReasonFor?.(member)}
         // The member's own group badge ("2 / 3") rides the card header already.
         key={`spc-${member.id}-${fallbackIndex}`}

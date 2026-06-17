@@ -517,6 +517,67 @@ describe('OperationsBoard', () => {
     expect(ids).toEqual(['sp-1', 'sp-2']); // sorted by cuttingStartedAt
   });
 
+  // ---- #223 / #224 — Runner → Shore Secured → Strut Equipment Returned --------
+
+  it('Runner: the advance slide commits runner → secured (#223)', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+    await slideToCommit('Slide to set Shore Secured');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'runner', to: 'secured' }),
+    );
+  });
+
+  it('Runner: the step-back slide commits runner → cutting (re-enters the cut queue)', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+    await slideToCommit('Slide back to Cutting');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'runner', to: 'cutting' }),
+    );
+  });
+
+  it('Shore Secured: Remove & Return opens the confirm modal, committing nothing yet; Confirm commits EquipmentReclaimed (#224)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+
+    await user.click(screen.getByRole('button', { name: /Remove & Return Equipment/ }));
+    expect(screen.getByRole('dialog', { name: 'Return equipment to inventory?' })).toBeInTheDocument();
+    expect(mockCommit).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Confirm Return' }));
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'EquipmentReclaimed', spId: 'sp-1' }),
+    );
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 returned to Rescue 2.');
+  });
+
+  it('Shore Secured: the step-back slide commits secured → runner — no confirm (no inventory change)', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+    await slideToCommit('Slide back to Runner');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'secured', to: 'runner' }),
+    );
+  });
+
+  it('Strut Equipment Returned: terminal — the marker, no slides or buttons on the card', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'returned'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+    expect(screen.getByText('✓ Equipment returned')).toBeInTheDocument();
+    // Scope to the CARD (the lane's own header is a toggle button).
+    const card = document.querySelector('[data-sp-id="sp-1"]') as HTMLElement;
+    expect(within(card).queryByText(/Slide/)).not.toBeInTheDocument();
+    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+  });
+
   // ---- #248 — division/area sort + filter ------------------------------------
 
   function laneCardIds(regionName: string): string[] {

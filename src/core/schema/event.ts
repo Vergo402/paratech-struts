@@ -108,6 +108,21 @@ export const StrutReturned = z.object({
   spId: z.string(),
 });
 
+// The terminal, inventory-consequential move (#224): Shore Secured → Strut
+// Equipment Returned. Like StrutReturned it restores stock through the same L-8
+// transaction, but it KEEPS deployedStrut on the point (the returned card shows
+// the equipment as history) and the status it lands on is `returned`, not
+// `pending`. Strut-only restore today (mirrors today's deploy footprint); widens
+// to the full bill-of-materials (extensions + connectors + base plates) when the
+// inventory build lands (#330 / ADR-033), symmetric with deploy at one seam.
+// Named `Reclaimed` to leave the `Equipment*` deploy/return names free for that
+// build (ADR-033 renames StrutDeployed/Returned → EquipmentDeployed/Returned).
+export const EquipmentReclaimed = z.object({
+  type: z.literal('EquipmentReclaimed'),
+  ...base,
+  spId: z.string(),
+});
+
 export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
@@ -120,5 +135,6 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   ShorePointStatusChanged,
   StrutDeployed,
   StrutReturned,
+  EquipmentReclaimed,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

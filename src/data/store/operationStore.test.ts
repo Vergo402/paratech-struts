@@ -29,6 +29,7 @@ const deploy = (spId: string, inventoryId: string): FieldShoreEvent => ({
   type: 'StrutDeployed', ...base(), spId, deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId },
 });
 const returned = (spId: string): FieldShoreEvent => ({ type: 'StrutReturned', ...base(), spId });
+const reclaimed = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReclaimed', ...base(), spId });
 
 const makeSp = (id: string, over: Partial<ShorePoint> = {}): ShorePoint => ({
   id, opId: OP, division: '1', shoreType: 't-shore',
@@ -249,6 +250,66 @@ describe('operationStore.commit', () => {
       const res = await ops.commit(returned('sp-1'));
       expect(res.ok).toBe(false);
       expect((await db.inventory.get('inv-1'))!.available).toBe(2); // clamped state intact
+    });
+  });
+
+  describe('EquipmentReclaimed (L-8) — terminal Remove & Return (#224)', () => {
+    // Deploy, then walk to Shore Secured (the terminal return's precondition).
+    beforeEach(async () => {
+      await ops.commit(deploy('sp-1', 'inv-1')); // pending → process, available 2 → 1
+      for (const [from, to] of [
+        ['process', 'strutset'],
+        ['strutset', 'cutting'],
+        ['cutting', 'runner'],
+        ['runner', 'secured'],
+      ] as [ShorePointStatus, ShorePointStatus][]) {
+        await ops.commit(statusChanged('sp-1', from, to));
+      }
+    });
+
+    it('restores stock, lands returned, and KEEPS the strut as history', async () => {
+      const before = getSp('sp-1')!.deployedStrut;
+      expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // restored
+      expect(getSp('sp-1')!.status).toBe('returned');
+      expect(getSp('sp-1')!.deployedStrut).toEqual(before); // retained as history (NOT cleared)
+    });
+
+    it('in-memory state ≡ projection of the durable log after the terminal return', async () => {
+      await ops.commit(reclaimed('sp-1'));
+      const rows = await db.events.toArray();
+      expect(projectOperation(rows)).toEqual(ops.store.getState());
+    });
+
+    it('clamps available to quantity — never over-increments', async () => {
+      await db.inventory.put(invItem('inv-1', 2)); // drifted full (concurrent peer correction)
+      await inventory.boot();
+      expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // min(2+1, quantity 2)
+    });
+
+    it('aborts on a missing inventory node — no phantom item, no event, no state change', async () => {
+      await db.inventory.delete('inv-1');
+      const before = await db.events.count();
+      const res = await ops.commit(reclaimed('sp-1'));
+      expect(res.ok).toBe(false);
+      expect(await db.events.count()).toBe(before);
+      expect(await db.inventory.get('inv-1')).toBeUndefined(); // L-8: not recreated
+      expect(getSp('sp-1')!.status).toBe('secured'); // unchanged
+      expect(getSp('sp-1')!.deployedStrut).toBeDefined();
+    });
+
+    it('rejects a terminal return on a non-Shore-Secured shore point', async () => {
+      await ops.commit(reclaimed('sp-1')); // secured → returned
+      const res = await ops.commit(reclaimed('sp-1')); // now returned, not secured
+      expect(res.ok).toBe(false);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // not re-incremented
+    });
+
+    it('commitMany rejects it — inventory-consequential, one at a time', async () => {
+      const res = await ops.commitMany([reclaimed('sp-1')]);
+      expect(res.ok).toBe(false);
+      expect(getSp('sp-1')!.status).toBe('secured'); // unchanged
     });
   });
 });

@@ -140,6 +140,25 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next.status).toBe('pending');
     expect(next.deployedStrut).toBeUndefined();
   });
+
+  it('EquipmentReclaimed (#224) moves Shore Secured → Returned and KEEPS the strut as history', () => {
+    const point = sp({ status: 'secured', deployedStrut: deployed });
+    const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
+    expect(next.status).toBe('returned');
+    expect(next.deployedStrut).toEqual(deployed); // retained, NOT cleared
+  });
+
+  it('EquipmentReclaimed is rejected if the point is not Shore Secured', () => {
+    const point = sp({ status: 'runner', deployedStrut: deployed });
+    const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
+  it('EquipmentReclaimed ignores an event for another shore point', () => {
+    const point = sp({ status: 'secured', deployedStrut: deployed });
+    const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'other' } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
 });
 
 describe('#220 field-lock — editable fields by status', () => {

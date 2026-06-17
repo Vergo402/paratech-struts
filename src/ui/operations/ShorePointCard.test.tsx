@@ -395,15 +395,84 @@ describe('ShorePointCard', () => {
     expect(onClearCutDone).toHaveBeenCalledWith(sp);
   });
 
-  it('later states (secured/returned): no slides at all this slice', () => {
+  it('Runner on the BOARD (#223): advance → Shore Secured + step-back → Cutting both commit', async () => {
+    const onAdvance = vi.fn();
+    const onStepBack = vi.fn();
+    const sp = makeSP({
+      status: 'runner',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
+    expect(screen.getByText('Slide to set Shore Secured')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to Cutting')).toBeInTheDocument();
+    await slideToCommit('Slide to set Shore Secured');
+    expect(onAdvance).toHaveBeenCalledWith(sp);
+    await slideToCommit('Slide back to Cutting');
+    expect(onStepBack).toHaveBeenCalledWith(sp);
+  });
+
+  it('Shore Secured on the BOARD (#224): Remove & Return is a BUTTON (not a slide) + step-back → Runner', async () => {
+    const onRemoveReturn = vi.fn();
+    const onStepBack = vi.fn();
+    const sp = makeSP({
+      status: 'secured',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(<ShorePointCard shorePoint={sp} onRemoveReturn={onRemoveReturn} onStepBack={onStepBack} />);
+    // Inventory-consequential + terminal → a button that raises the confirm modal,
+    // NOT an advance slide.
+    expect(screen.queryByText(/Slide to/)).not.toBeInTheDocument();
+    const btn = screen.getByRole('button', { name: /Remove & Return Equipment/ });
+    await userEvent.click(btn);
+    expect(onRemoveReturn).toHaveBeenCalledWith(sp);
+    expect(screen.getByText('Slide back to Runner')).toBeInTheDocument();
+    await slideToCommit('Slide back to Runner');
+    expect(onStepBack).toHaveBeenCalledWith(sp);
+  });
+
+  it('Returned (#224): terminal — the marker, no slides, no buttons', () => {
     render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'returned',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        onAdvance={vi.fn()}
+        onStepBack={vi.fn()}
+        onRemoveReturn={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('✓ Equipment returned')).toBeInTheDocument();
+    expect(screen.queryByText(/Slide/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('runner/secured in the Cutting Station sent tail (cuttingStation): read-only', () => {
+    const { rerender } = render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'runner',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        cuttingStation
+        onAdvance={vi.fn()}
+        onStepBack={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/Slide/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    rerender(
       <ShorePointCard
         shorePoint={makeSP({
           status: 'secured',
           deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
         })}
+        cuttingStation
+        onRemoveReturn={vi.fn()}
+        onStepBack={vi.fn()}
       />,
     );
+    expect(screen.queryByText(/Slide/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

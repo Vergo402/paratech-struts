@@ -18,6 +18,7 @@ import { ShorePointCard, SHORE_TYPE_LABELS } from './ShorePointCard';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
+import { ReturnEquipmentModal } from './ReturnEquipmentModal';
 import { CuttingStation } from './CuttingStation';
 
 type ModalMode = null | 'create' | 'edit';
@@ -118,6 +119,8 @@ interface LaneProps {
   onAssignEquipment: (sp: ShorePoint) => void;
   onAdvance: (sp: ShorePoint) => void;
   onStepBack: (sp: ShorePoint) => void;
+  /** Shore Secured → open the Remove & Return confirm modal (#224). */
+  onRemoveReturn: (sp: ShorePoint) => void;
   /** Group gate (#221 OQ2): set while a grouped In Process point has mates still Pending. */
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
@@ -134,6 +137,7 @@ function Lane({
   onAssignEquipment,
   onAdvance,
   onStepBack,
+  onRemoveReturn,
   advanceDisabledReasonFor,
   activeStackId,
 }: LaneProps) {
@@ -173,6 +177,7 @@ function Lane({
                     onAssignEquipment={onAssignEquipment}
                     onAdvance={onAdvance}
                     onStepBack={onStepBack}
+                    onRemoveReturn={onRemoveReturn}
                     advanceDisabledReasonFor={advanceDisabledReasonFor}
                   />
                 </div>
@@ -185,6 +190,7 @@ function Lane({
                     onAssignEquipment={onAssignEquipment}
                     onAdvance={onAdvance}
                     onStepBack={onStepBack}
+                    onRemoveReturn={onRemoveReturn}
                     advanceDisabledReason={advanceDisabledReasonFor(item.sp)}
                   />
                 </div>
@@ -262,6 +268,7 @@ export function OperationsBoard() {
   const [deleteSp, setDeleteSp] = useState<ShorePoint | null>(null);
   const [assignSpId, setAssignSpId] = useState<string | null>(null);
   const [stepBackSpId, setStepBackSpId] = useState<string | null>(null);
+  const [returnSpId, setReturnSpId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
@@ -296,6 +303,11 @@ export function OperationsBoard() {
   const stepBackSp = stepBackSpId
     ? (shorePoints.find((s) => s.id === stepBackSpId && s.status === 'process') ?? null)
     : null;
+  // Remove & Return target (#224): the Shore Secured point whose equipment is being
+  // returned. Derives LIVE by id and self-closes the instant the point leaves secured.
+  const returnSp = returnSpId
+    ? (shorePoints.find((s) => s.id === returnSpId && s.status === 'secured') ?? null)
+    : null;
   // Drop a stale id once its target derives null, so the overlay cannot
   // spontaneously reopen if the point later re-enters that state.
   useEffect(() => {
@@ -304,6 +316,9 @@ export function OperationsBoard() {
   useEffect(() => {
     if (stepBackSpId && !stepBackSp) setStepBackSpId(null);
   }, [stepBackSpId, stepBackSp]);
+  useEffect(() => {
+    if (returnSpId && !returnSp) setReturnSpId(null);
+  }, [returnSpId, returnSp]);
   // The full In-Process set to un-deploy together: a grouped physical shore
   // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
   // to Pending" never leaves orphaned standing struts — the set is married
@@ -318,6 +333,7 @@ export function OperationsBoard() {
   const openEdit = useCallback((sp: ShorePoint) => setSpModal({ mode: 'edit', shorePoint: sp }), []);
   const openDelete = useCallback((sp: ShorePoint) => setDeleteSp(sp), []);
   const assignEquipment = useCallback((sp: ShorePoint) => setAssignSpId(sp.id), []);
+  const openRemoveReturn = useCallback((sp: ShorePoint) => setReturnSpId(sp.id), []);
 
   const expandLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
@@ -406,6 +422,20 @@ export function OperationsBoard() {
         count > 1
           ? `${count} struts returned — back to Pending.`
           : `${sp.deployedStrut?.model ?? 'Strut'} returned — back to Pending.`,
+      );
+    },
+    [expandLane],
+  );
+
+  // Terminal Remove & Return (#224): the SP advanced to Strut Equipment Returned and
+  // its strut went back to the source apparatus's available count. Open the Returned
+  // lane and announce.
+  const handleReclaimed = useCallback(
+    (sp: ShorePoint) => {
+      expandLane('returned');
+      setScrollToId(sp.id);
+      setPoliteAnnouncement(
+        `${sp.deployedStrut?.model ?? 'Equipment'} returned to ${sp.deployedStrut?.source ?? 'inventory'}.`,
       );
     },
     [expandLane],
@@ -796,6 +826,7 @@ export function OperationsBoard() {
             onAssignEquipment={assignEquipment}
             onAdvance={handleAdvance}
             onStepBack={handleStepBack}
+            onRemoveReturn={openRemoveReturn}
             advanceDisabledReasonFor={advanceDisabledReasonFor}
             activeStackId={scrollToId}
           />
@@ -842,6 +873,12 @@ export function OperationsBoard() {
         groupMembers={stepBackMembers}
         onClose={() => setStepBackSpId(null)}
         onReturned={handleReturned}
+      />
+
+      <ReturnEquipmentModal
+        shorePoint={returnSp}
+        onClose={() => setReturnSpId(null)}
+        onReturned={handleReclaimed}
       />
 
       <Modal

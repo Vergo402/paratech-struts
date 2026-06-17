@@ -93,7 +93,9 @@ export function CuttingStation({
               <div role="list">
                 {sent.map((sp) => (
                   <div key={sp.id} role="listitem">
-                    <ShorePointCard shorePoint={sp} />
+                    {/* cuttingStation keeps this tail READ-ONLY: it gates out the
+                        board's interactive runner/secured controls (#223/#224). */}
+                    <ShorePointCard shorePoint={sp} cuttingStation />
                   </div>
                 ))}
               </div>

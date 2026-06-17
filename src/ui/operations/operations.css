@@ -1330,6 +1330,13 @@ button.fs-spc-head {
   margin: 0;
 }
 
+/* Terminal "✓ Equipment returned" marker on the returned card (#224). */
+.fs-spc-returned {
+  font: var(--type-body-medium);
+  color: var(--status-returned-text);
+  margin: 0;
+}
+
 /* ---- Cutting Station screen (21-cutting-station.md, #222) ---------------- */
 .fs-cutstation {
   display: flex;

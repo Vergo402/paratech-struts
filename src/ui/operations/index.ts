@@ -9,4 +9,5 @@ export { DivisionPicker, type DivisionPickerProps } from './DivisionPicker';
 export { RecommendationCard, comboModel, type RecommendationCardProps } from './RecommendationCard';
 export { AssignEquipmentSheet, type AssignEquipmentSheetProps } from './AssignEquipmentSheet';
 export { StepBackConfirmModal, type StepBackConfirmModalProps } from './StepBackConfirmModal';
+export { ReturnEquipmentModal, type ReturnEquipmentModalProps } from './ReturnEquipmentModal';
 export { CuttingStation, type CuttingStationProps } from './CuttingStation';

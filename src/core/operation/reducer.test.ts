@@ -97,6 +97,32 @@ describe('L-7 group fan-out', () => {
   });
 });
 
+describe('EquipmentReclaimed (#224) — terminal Remove & Return routes to the SP reducer', () => {
+  const deployed = { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' };
+  const reclaim = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReclaimed', id: 'e', opId: 'op1', at: 1, by: 't', spId });
+
+  it('moves Shore Secured → Returned, keeping the strut, and never touches a different point', () => {
+    const state = stateWith([
+      sp('a', { status: 'secured', deployedStrut: deployed }),
+      sp('b', { status: 'secured', deployedStrut: deployed }),
+    ]);
+    const next = operationReducer(state, reclaim('a'));
+    expect(byId(next, 'a').status).toBe('returned');
+    expect(byId(next, 'a').deployedStrut).toEqual(deployed); // retained as history
+    expect(byId(next, 'b').status).toBe('secured'); // individual — not swept
+  });
+
+  it('is individual even within a group (terminal is per-card)', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'secured', deployedStrut: deployed }),
+      sp('b', { groupId: 'g', status: 'secured', deployedStrut: deployed }),
+    ]);
+    const next = operationReducer(state, reclaim('a'));
+    expect(byId(next, 'a').status).toBe('returned');
+    expect(byId(next, 'b').status).toBe('secured');
+  });
+});
+
 describe('projection — current state is a fold of the event log', () => {
   const events: FieldShoreEvent[] = [
     { type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false },

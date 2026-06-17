@@ -109,6 +109,9 @@ export interface ShorePointCardProps {
   onMarkCutDone?: (sp: ShorePoint) => void | Promise<void>;
   /** Cutting Station only — clears the Mark Cut Done flag (step-back from cut-done). */
   onClearCutDone?: (sp: ShorePoint) => void | Promise<void>;
+  /** Shore Secured only — opens the Remove & Return confirm modal (#224). The only
+   *  forward path from secured; inventory-consequential and terminal. */
+  onRemoveReturn?: (sp: ShorePoint) => void;
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
   advanceDisabledReason?: string;
   /**
@@ -139,6 +142,7 @@ export function ShorePointCard({
   cuttingStation = false,
   onMarkCutDone,
   onClearCutDone,
+  onRemoveReturn,
   advanceDisabledReason,
   removed = false,
   hazard = false,
@@ -291,6 +295,10 @@ export function ShorePointCard({
         <p className="fs-spc-cutdone">✓ Cut done</p>
       )}
 
+      {sp.status === 'returned' && (
+        <p className="fs-spc-returned">✓ Equipment returned</p>
+      )}
+
       {pending && !removed && (
         <div className="fs-spc-pending">
           <p className="fs-spc-noequip">No equipment assigned</p>
@@ -391,6 +399,43 @@ export function ShorePointCard({
               />
             </>
           )}
+        </div>
+      )}
+
+      {/* Runner (#223) — interactive on the BOARD only (gated !cuttingStation so the
+          station's read-only "sent to runner" tail stays read-only). Individual
+          (post-cutting phase split): one slide → Shore Secured, step-back → Cutting
+          (re-enters the Cutting Station queue Cut-Done-intact). No confirm — non-
+          inventory status slides (ADR-010). */}
+      {!removed && !cuttingStation && sp.status === 'runner' && (
+        <div className="fs-spc-slides">
+          <Slider
+            label="Slide to set Shore Secured"
+            revealColor="var(--status-secured-bg)"
+            onCommit={() => onAdvance?.(sp)}
+          />
+          <Slider
+            label="Slide back to Cutting"
+            direction="stepback"
+            onCommit={() => onStepBack?.(sp)}
+          />
+        </div>
+      )}
+
+      {/* Shore Secured (#224) — the only forward path is Remove & Return Equipment, an
+          inventory-consequential + terminal action, so it is a BUTTON that raises the
+          confirm modal (ADR-016), not a slide. Step-back → Runner is the last
+          reversible move (ADR-010). Board only (!cuttingStation). */}
+      {!removed && !cuttingStation && sp.status === 'secured' && (
+        <div className="fs-spc-slides">
+          <Button variant="primary" fullWidth onPress={() => onRemoveReturn?.(sp)}>
+            Remove &amp; Return Equipment
+          </Button>
+          <Slider
+            label="Slide back to Runner"
+            direction="stepback"
+            onCommit={() => onStepBack?.(sp)}
+          />
         </div>
       )}
 

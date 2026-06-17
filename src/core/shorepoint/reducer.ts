@@ -184,6 +184,15 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
       return next;
     }
 
+    case 'EquipmentReclaimed': {
+      // Terminal return (#224): secured → returned. KEEP deployedStrut — the
+      // returned card shows the equipment as history (unlike StrutReturned, which
+      // clears it). The inventory restore is the store's transaction, not here.
+      if (event.spId !== sp.id) return sp;
+      if (sp.status !== 'secured') return sp;
+      return { ...sp, status: 'returned' };
+    }
+
     default:
       return sp;
   }

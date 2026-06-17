@@ -90,6 +90,23 @@ export function createOperationStore(opts?: {
           await db.events.add({ ...event });
         });
         inventory.applyLocal(updated!);
+      } else if (event.type === 'EquipmentReclaimed') {
+        // Terminal return (#224): secured → returned. Same L-8 transaction as
+        // StrutReturned, but the point stays `returned` (the reducer keeps the
+        // strut as history). Strut-only restore today; widens to the full
+        // bill-of-materials when the inventory build lands (#330 / ADR-033).
+        const sp = state.shorePoints.find((s) => s.id === event.spId);
+        if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
+        if (sp.status !== 'secured' || !sp.deployedStrut) {
+          return { ok: false, reason: 'return requires a Shore Secured shore point with a deployed strut' };
+        }
+        const inventoryId = sp.deployedStrut.inventoryId; // L-8 ID round-trip
+        let updated: InventoryItem | undefined;
+        await db.transaction('rw', db.events, db.inventory, async () => {
+          updated = await applyReturnTxn(db, inventoryId);
+          await db.events.add({ ...event });
+        });
+        inventory.applyLocal(updated!);
       } else {
         // Plain append — the reducers already no-op illegal/stale events
         // deterministically, so projection can never crash on a logged event.
@@ -118,7 +135,11 @@ export function createOperationStore(opts?: {
       if (!parsed.success) {
         return { ok: false, reason: `invalid event: ${parsed.error.issues[0]?.message ?? 'schema mismatch'}` };
       }
-      if (parsed.data.type === 'StrutDeployed' || parsed.data.type === 'StrutReturned') {
+      if (
+        parsed.data.type === 'StrutDeployed' ||
+        parsed.data.type === 'StrutReturned' ||
+        parsed.data.type === 'EquipmentReclaimed'
+      ) {
         return { ok: false, reason: 'inventory-consequential events commit one at a time' };
       }
       events.push(parsed.data);
