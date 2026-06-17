@@ -46,8 +46,20 @@ export function Slider({
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ pointerId: number; startX: number; travelPx: number } | null>(null);
-  const [offset, setOffset] = useState(0);
+  // The live travel, tracked imperatively. The commit decision MUST read this,
+  // not the `offset` state: on a fast flick the final pointermove and the
+  // pointerup land in one frame, so React hasn't re-rendered and the state
+  // `offset` is still stale (0) when onPointerEnd runs — the drag would snap
+  // back without committing. The ref is written synchronously in pointermove,
+  // so it is always current at release regardless of render timing.
+  const offsetRef = useRef(0);
+  const [offset, setOffsetState] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // One setter keeps the ref and the render state in lockstep.
+  const setOffset = (next: number) => {
+    offsetRef.current = next;
+    setOffsetState(next);
+  };
 
   const sign = direction === 'advance' ? 1 : -1;
   // Fill reaches the thumb CENTRE as it travels: track inset (4px) + half the
@@ -57,6 +69,13 @@ export function Slider({
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (disabled) return;
+    // The press IS the authoritative zero baseline. Reset travel here, every
+    // drag — never trust the prior gesture to have cleaned up. An orphaned drag
+    // (lost pointer capture, an interleaved second touch, a pointerup with a
+    // mismatched id) leaves the last travel hot; without this reset a later bare
+    // TAP would read it and commit with no deliberate slide — the ghost-tap this
+    // primitive exists to prevent.
+    setOffset(0);
     const track = trackRef.current?.getBoundingClientRect();
     const thumb = thumbRef.current?.getBoundingClientRect();
     const travelPx = track && thumb ? Math.max(0, track.width - thumb.width - 8) : 0;
@@ -74,7 +93,7 @@ export function Slider({
     const { travelPx } = drag.current;
     drag.current = null;
     setDragging(false);
-    const committed = shouldCommit(offset, travelPx);
+    const committed = shouldCommit(offsetRef.current, travelPx); // live travel, not stale state
     setOffset(0); // snap back (CSS micro transition when not dragging)
     if (committed) {
       commitHaptic();

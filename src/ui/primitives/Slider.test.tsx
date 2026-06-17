@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { Slider, shouldCommit } from './Slider';
 import { cancelSlide, dragSlide, slideToCommit } from './Slider.testkit';
+
+// jsdom has no PointerEvent; MouseEvent carries clientX (which the handlers read).
+const ptr = (type: string, clientX: number) =>
+  new MouseEvent(type, { bubbles: true, cancelable: true, clientX });
+const rect = (width: number): DOMRect =>
+  ({ width, height: 56, top: 0, left: 0, right: width, bottom: 56, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
 
 describe('shouldCommit (the pure threshold)', () => {
   it('commits only past the threshold fraction of travel (0.6, finalized in S12)', () => {
@@ -29,6 +36,83 @@ describe('Slider', () => {
     const { container } = render(<Slider label="Slide to set Runner" onCommit={onCommit} />);
     await slideToCommit(container.querySelector('.fs-slide') as HTMLElement);
     expect(onCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it('FAST flick commits: move + release before a re-render, so onPointerEnd must read the ref not the state', () => {
+    // The field bug. The down/move/up handlers here are all the SAME instances
+    // from the initial render, so they close over `offset === 0`. The move's
+    // setOffsetState(184) does not change THAT closed-over value — only a
+    // re-render would mint handlers closing over 184. So a state-reading
+    // onPointerEnd computes shouldCommit(0, …) → false and never commits (the
+    // fast-flick: the user slid the whole way, nothing happened). The ref is
+    // written synchronously in the move, so onPointerEnd reads 184 → commits.
+    //   IMPORTANT for whoever maintains this: do NOT wrap each event in its own
+    //   act(). A flush between move and up re-renders, mints a handler closing
+    //   over 184, and the buggy state-read version would then pass too — silently
+    //   gutting this guard. One act(), three events, is the point.
+    const onCommit = vi.fn();
+    const { container } = render(<Slider label="Slide to send to Runner" onCommit={onCommit} />);
+    const track = container.querySelector('.fs-slide-track') as HTMLElement;
+    const thumb = container.querySelector('.fs-slide-thumb') as HTMLElement;
+    const trackSpy = vi.spyOn(track, 'getBoundingClientRect').mockReturnValue(rect(240));
+    const thumbSpy = vi.spyOn(thumb, 'getBoundingClientRect').mockReturnValue(rect(48));
+    try {
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerdown', 400));
+        thumb.dispatchEvent(ptr('pointermove', 400 + 184)); // full travel
+        thumb.dispatchEvent(ptr('pointerup', 400 + 184));
+      });
+      expect(onCommit).toHaveBeenCalledTimes(1);
+    } finally {
+      trackSpy.mockRestore();
+      thumbSpy.mockRestore();
+    }
+  });
+
+  it('a bare TAP on the track (press + release, no travel) does not commit', () => {
+    const onCommit = vi.fn();
+    const { container } = render(<Slider label="Slide to send to Runner" onCommit={onCommit} />);
+    const track = container.querySelector('.fs-slide-track') as HTMLElement;
+    const thumb = container.querySelector('.fs-slide-thumb') as HTMLElement;
+    const trackSpy = vi.spyOn(track, 'getBoundingClientRect').mockReturnValue(rect(240));
+    const thumbSpy = vi.spyOn(thumb, 'getBoundingClientRect').mockReturnValue(rect(48));
+    try {
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerdown', 200));
+        thumb.dispatchEvent(ptr('pointerup', 200)); // no pointermove — zero travel
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+    } finally {
+      trackSpy.mockRestore();
+      thumbSpy.mockRestore();
+    }
+  });
+
+  it('a bare tap AFTER an orphaned full drag does not commit (the press re-zeroes the ref)', () => {
+    // Orphaned drag = full travel with no matching pointerup (lost pointer
+    // capture / interleaved second touch). Without re-zeroing on the next press,
+    // the ref stays hot at 184 and a later TAP would commit with no slide.
+    const onCommit = vi.fn();
+    const { container } = render(<Slider label="Slide to send to Runner" onCommit={onCommit} />);
+    const track = container.querySelector('.fs-slide-track') as HTMLElement;
+    const thumb = container.querySelector('.fs-slide-thumb') as HTMLElement;
+    const trackSpy = vi.spyOn(track, 'getBoundingClientRect').mockReturnValue(rect(240));
+    const thumbSpy = vi.spyOn(thumb, 'getBoundingClientRect').mockReturnValue(rect(48));
+    try {
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerdown', 400));
+        thumb.dispatchEvent(ptr('pointermove', 400 + 184)); // full travel — ref now hot
+        // no pointerup: the gesture is orphaned
+      });
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerdown', 100)); // fresh press must re-zero the ref
+        thumb.dispatchEvent(ptr('pointerup', 100)); // bare tap — no travel
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+    } finally {
+      trackSpy.mockRestore();
+      thumbSpy.mockRestore();
+    }
   });
 
   it('a past-threshold drag that ends in pointercancel does NOT commit (audit W4)', async () => {
