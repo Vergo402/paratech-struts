@@ -23,6 +23,12 @@ import { db as defaultDb, type FieldShoreDB } from './db';
 // and is reconciled on boot by authSession.ts — not here.
 
 export const SESSION_KEY = 'fieldshore_session';
+// Account-keyed dept memory — survives sign-out so a returning member re-discovers
+// their department (+ invite code) on re-sign-in WITHOUT a cloud uid→org lookup
+// (that's deferred to #232). Keyed by accountId so a shared device never leaks one
+// account's dept/code to the next (setGuest wipes the session row but leaves THIS
+// row intact; setMember restores from it).
+export const MEMBERSHIPS_KEY = 'fieldshore_dept_memberships';
 
 export type Identity =
   | { kind: 'guest' }
@@ -33,7 +39,16 @@ export interface SessionState {
   departmentId: string | null;
   departmentName: string | null;
   role: string | null;
+  inviteCode: string | null;
   deviceUid: string;
+}
+
+/** One remembered department per account (the account-keyed memory above). */
+interface RememberedDept {
+  id: string;
+  name: string;
+  role: string;
+  inviteCode: string;
 }
 
 export interface SessionStoreApi {
@@ -44,8 +59,8 @@ export interface SessionStoreApi {
   setMember(member: { accountId: string; displayName: string }): Promise<void>;
   /** Sign out → guest. Keeps deviceUid; clears the dept; never touches events. */
   setGuest(): Promise<void>;
-  /** Workflow 07 — attach the founded department + the member's role. */
-  setDepartment(dept: { id: string; name: string; role: string }): Promise<void>;
+  /** Workflow 07 — attach the founded department + the member's role + invite code. */
+  setDepartment(dept: { id: string; name: string; role: string; inviteCode: string }): Promise<void>;
 }
 
 const GUEST: Identity = { kind: 'guest' };
@@ -56,6 +71,7 @@ interface PersistedSession {
   departmentId: string | null;
   departmentName: string | null;
   role: string | null;
+  inviteCode: string | null;
 }
 
 const GUEST_SESSION: PersistedSession = {
@@ -63,6 +79,7 @@ const GUEST_SESSION: PersistedSession = {
   departmentId: null,
   departmentName: null,
   role: null,
+  inviteCode: null,
 };
 
 // Validate the persisted row on read — boot() is a trust boundary: a future
@@ -86,6 +103,7 @@ const PersistedSchema = z.object({
   // upgrade. A wrong-typed value also degrades to null (safe; re-set on create).
   departmentName: z.string().nullable().catch(null),
   role: z.string().nullable().catch(null),
+  inviteCode: z.string().nullable().catch(null),
 });
 
 export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreApi {
@@ -97,8 +115,32 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
     return db.meta.put({ key: SESSION_KEY, value: JSON.stringify(next) });
   }
 
-  function deptOf(s: SessionState): Pick<PersistedSession, 'departmentId' | 'departmentName' | 'role'> {
-    return { departmentId: s.departmentId, departmentName: s.departmentName, role: s.role };
+  function deptOf(
+    s: SessionState,
+  ): Pick<PersistedSession, 'departmentId' | 'departmentName' | 'role' | 'inviteCode'> {
+    return {
+      departmentId: s.departmentId,
+      departmentName: s.departmentName,
+      role: s.role,
+      inviteCode: s.inviteCode,
+    };
+  }
+
+  // The account-keyed dept memory. A wrong-shape blob degrades to {} (re-learned on
+  // the next setDepartment) — same trust-boundary stance as the session row.
+  async function readMemberships(): Promise<Record<string, RememberedDept>> {
+    const row = await db.meta.get(MEMBERSHIPS_KEY);
+    if (!row) return {};
+    try {
+      const parsed = JSON.parse(row.value);
+      return parsed && typeof parsed === 'object' ? (parsed as Record<string, RememberedDept>) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeMemberships(map: Record<string, RememberedDept>): Promise<unknown> {
+    return db.meta.put({ key: MEMBERSHIPS_KEY, value: JSON.stringify(map) });
   }
 
   return {
@@ -124,10 +166,21 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
 
     async setMember(member) {
       const identity: Identity = { kind: 'member', ...member };
-      // Preserve the department projection — a plain reload re-confirms a member
-      // who already has a department (boot restores it from the meta row).
-      await persist({ identity, ...deptOf(store.getState()) });
-      store.setState((s) => ({ ...s, identity }), true);
+      // Re-discover this account's department from the account-keyed memory: a
+      // sign-out cleared the session row, but the memory survived. If we remember
+      // this accountId, restore its dept (+ code); otherwise preserve whatever's in
+      // state (covers the plain-reload re-confirm, where boot already restored it).
+      const remembered = (await readMemberships())[member.accountId];
+      const dept = remembered
+        ? {
+            departmentId: remembered.id,
+            departmentName: remembered.name,
+            role: remembered.role,
+            inviteCode: remembered.inviteCode,
+          }
+        : deptOf(store.getState());
+      await persist({ identity, ...dept });
+      store.setState((s) => ({ ...s, identity, ...dept }), true);
     },
 
     async setGuest() {
@@ -137,9 +190,17 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
       store.setState((s) => ({ ...s, ...GUEST_SESSION }), true);
     },
 
-    async setDepartment({ id, name, role }) {
-      const next = { departmentId: id, departmentName: name, role };
-      await persist({ identity: store.getState().identity, ...next });
+    async setDepartment({ id, name, role, inviteCode }) {
+      const next = { departmentId: id, departmentName: name, role, inviteCode };
+      const identity = store.getState().identity;
+      await persist({ identity, ...next });
+      // Remember it under the founding member's account so a later sign-out → sign-in
+      // restores it (the service guards member-only, so identity is a member here).
+      if (identity.kind === 'member') {
+        const map = await readMemberships();
+        map[identity.accountId] = { id, name, role, inviteCode };
+        await writeMemberships(map);
+      }
       store.setState((s) => ({ ...s, ...next }), true);
     },
   };

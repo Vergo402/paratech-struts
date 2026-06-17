@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createDB, type FieldShoreDB } from './db';
-import { createSessionStore, SESSION_KEY, type SessionStoreApi } from './session';
+import { createSessionStore, SESSION_KEY, MEMBERSHIPS_KEY, type SessionStoreApi } from './session';
 import { newId } from '@core/id';
 import type { InventoryItem } from '@core/schema';
 
@@ -83,6 +83,7 @@ describe('session store (guest ⇄ member, persisted)', () => {
       departmentId: null,
       departmentName: null,
       role: null,
+      inviteCode: null,
     });
   });
 
@@ -113,14 +114,15 @@ describe('session store (guest ⇄ member, persisted)', () => {
     }
   });
 
-  it('setDepartment attaches the dept + role and survives a hydrate round-trip', async () => {
+  it('setDepartment attaches the dept + role + invite code and survives a hydrate round-trip', async () => {
     await session.boot(UID);
     await session.setMember(member);
-    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
     const s = session.store.getState();
     expect(s.departmentId).toBe('dept-1');
     expect(s.departmentName).toBe('Hamden Fire Rescue');
     expect(s.role).toBe('admin');
+    expect(s.inviteCode).toBe('ABCD-2345');
 
     const reopened = createDB(name);
     const next = createSessionStore(reopened);
@@ -130,26 +132,62 @@ describe('session store (guest ⇄ member, persisted)', () => {
     expect(r.departmentId).toBe('dept-1');
     expect(r.departmentName).toBe('Hamden Fire Rescue');
     expect(r.role).toBe('admin');
+    expect(r.inviteCode).toBe('ABCD-2345'); // the code is retrievable after the success sheet closes
     reopened.close();
   });
 
   it('setGuest clears the department projection', async () => {
     await session.boot(UID);
     await session.setMember(member);
-    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
     await session.setGuest();
     const s = session.store.getState();
     expect(s.identity).toEqual({ kind: 'guest' });
     expect(s.departmentId).toBeNull();
     expect(s.departmentName).toBeNull();
     expect(s.role).toBeNull();
+    expect(s.inviteCode).toBeNull();
   });
 
   it('setMember preserves an already-attached department (the auth-restore re-confirm)', async () => {
     await session.boot(UID);
     await session.setMember(member);
-    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
     await session.setMember(member); // re-confirm the same member
     expect(session.store.getState().departmentId).toBe('dept-1');
+  });
+
+  it('restores the dept + invite code on sign-out → sign-in (account-keyed memory)', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
+    await session.setGuest();              // sign out wipes the session row...
+    await session.setMember(member);       // ...but signing back in re-discovers it
+    const s = session.store.getState();
+    expect(s.departmentId).toBe('dept-1');
+    expect(s.departmentName).toBe('Hamden Fire Rescue');
+    expect(s.role).toBe('admin');
+    expect(s.inviteCode).toBe('ABCD-2345');
+  });
+
+  it('keeps the account-keyed memory account-scoped (account B never inherits A’s dept/code)', async () => {
+    const accountB = { accountId: 'acc-2', displayName: 'Lt. R. Okafor' };
+    await session.boot(UID);
+    await session.setMember(member);       // account A
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
+    await session.setGuest();
+    await session.setMember(accountB);     // a different account on the same device
+    const s = session.store.getState();
+    expect(s.identity).toEqual({ kind: 'member', ...accountB });
+    expect(s.departmentId).toBeNull();
+    expect(s.inviteCode).toBeNull();
+  });
+
+  it('setGuest leaves the account-keyed memory intact (so re-sign-in can restore it)', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
+    await session.setGuest();
+    expect(await db.meta.get(MEMBERSHIPS_KEY)).toBeDefined();
   });
 });

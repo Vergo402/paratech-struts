@@ -84,8 +84,9 @@ export function createDepartmentService(deps: {
       }
 
       // Local-first — the dept projection persists immediately (offline / before
-      // the rules deploy). The cloud push follows, best-effort.
-      await session.setDepartment({ id, name, role: ADMIN_ROLE_ID });
+      // the rules deploy). The cloud push follows, best-effort. The invite code is
+      // persisted with it so Settings can show it again after the success sheet closes.
+      await session.setDepartment({ id, name, role: ADMIN_ROLE_ID, inviteCode });
 
       // One atomic set at the dept node: the create-only .write grant cascades to
       // the whole subtree, so members/roles need no per-child .write (rules.ts).

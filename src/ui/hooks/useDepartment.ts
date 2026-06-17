@@ -11,6 +11,7 @@ import { departmentService, type DepartmentServiceApi } from '@data/dept';
 export interface DepartmentApi {
   department: { id: string; name: string } | null;
   role: string | null;
+  inviteCode: string | null;
   createDepartment: DepartmentServiceApi['createDepartment'];
 }
 
@@ -18,9 +19,11 @@ export function useDepartment(): DepartmentApi {
   const departmentId = useStore(sessionStore.store, (s) => s.departmentId);
   const departmentName = useStore(sessionStore.store, (s) => s.departmentName);
   const role = useStore(sessionStore.store, (s) => s.role);
+  const inviteCode = useStore(sessionStore.store, (s) => s.inviteCode);
   return {
     department: departmentId ? { id: departmentId, name: departmentName ?? '' } : null,
     role,
+    inviteCode,
     createDepartment: departmentService.createDepartment,
   };
 }
