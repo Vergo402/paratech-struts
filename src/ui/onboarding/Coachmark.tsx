@@ -67,7 +67,14 @@ export function Coachmark({ steps, onComplete, onExit }: CoachmarkProps) {
   // no room below. No overlay claim, no outside-dismiss.
   useLayoutEffect(() => {
     if (!target) return;
-    const place = () => {
+    let raf = 0;
+    // Track the anchor every frame so the bubble follows it through ANY layout
+    // change — scroll, resize, and (the one that bit us) the deduction ledger
+    // expanding, which grows the box: the tip rides down to its new bottom edge
+    // instead of being left sitting over the freshly-revealed content. Cheap:
+    // setPos no-ops when the position is unchanged, so it only re-renders on a
+    // real move, not every frame.
+    const tick = () => {
       const r = target.getBoundingClientRect();
       const b = bubbleRef.current;
       const bh = b?.offsetHeight ?? 0;
@@ -78,17 +85,11 @@ export function Coachmark({ steps, onComplete, onExit }: CoachmarkProps) {
       const fitsBelow = r.bottom + m + bh <= vh;
       const top = fitsBelow ? r.bottom + m : Math.max(m, r.top - m - bh);
       const left = Math.max(m, Math.min(r.left, vw - bw - m));
-      setPos({ top, left });
+      setPos((prev) => (prev && prev.top === top && prev.left === left ? prev : { top, left }));
+      raf = requestAnimationFrame(tick);
     };
-    place();
-    const raf = requestAnimationFrame(place);
-    window.addEventListener('scroll', place, true);
-    window.addEventListener('resize', place);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('scroll', place, true);
-      window.removeEventListener('resize', place);
-    };
+    tick();
+    return () => cancelAnimationFrame(raf);
   }, [target, i]);
 
   if (!target || !step) return null;

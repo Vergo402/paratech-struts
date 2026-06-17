@@ -29,16 +29,19 @@ export function MeasureOpeningDiagram() {
   );
 }
 
-/** A strut braced between two surfaces with end plates — "the strut that fits." */
+/** A vertical strut braced between a top header and the floor, with end plates
+ *  top and bottom — "the strut that fits." */
 export function StrutFitDiagram() {
   return (
     <svg {...COMMON}>
-      <line x1="14" y1="12" x2="14" y2="64" />
-      <line x1="82" y1="12" x2="82" y2="64" />
-      <line x1="6" y1="64" x2="90" y2="64" />
-      <line x1="20" y1="38" x2="76" y2="38" strokeWidth={3} />
-      <rect x="16" y="31" width="5" height="14" rx="1" />
-      <rect x="75" y="31" width="5" height="14" rx="1" />
+      {/* header surface (top) + floor surface (bottom) */}
+      <line x1="24" y1="13" x2="72" y2="13" />
+      <line x1="16" y1="60" x2="80" y2="60" />
+      {/* the strut runs vertically between them */}
+      <line x1="48" y1="20" x2="48" y2="53" strokeWidth={3} />
+      {/* end plates, perpendicular to the strut */}
+      <rect x="40" y="15" width="16" height="5" rx="1" />
+      <rect x="40" y="53" width="16" height="5" rx="1" />
     </svg>
   );
 }
