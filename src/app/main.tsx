@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
+import { authSessionSync } from '@data/auth';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -32,6 +33,11 @@ function App() {
     setBootError(null);
     bootData()
       .then(() => {
+        // Reconcile the session with Firebase Auth's restored user (a returning
+        // member → authenticated cloud writes). Fire-and-forget: the listener
+        // updates the session store reactively and the persisted meta-row
+        // session covers the first paint; start() is StrictMode-safe.
+        authSessionSync.start();
         if (!cancelled) setBooted(true);
       })
       .catch((err: unknown) => {

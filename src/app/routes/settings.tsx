@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
-import { Button, Modal, Toggle } from '@ui/primitives';
-import { useSession } from '@ui/hooks';
+import { Badge, Button, Modal, Toggle } from '@ui/primitives';
+import { useSession, useDepartment } from '@ui/hooks';
 import { useTheme, type ThemePreference } from '../theme';
 
 const THEME_OPTIONS = [
@@ -24,6 +24,7 @@ const NATIVE_CONTROLS_KEY = 'fieldshore_native_controls';
 export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
   const { identity, signOut } = useSession();
+  const { department, role } = useDepartment();
   const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
   const [nativeControls, setNativeControls] = useState(
@@ -80,6 +81,27 @@ export function SettingsScreen() {
           </>
         )}
       </section>
+
+      {identity.kind === 'member' && (
+        <section className="flex flex-col gap-3">
+          <h2 style={{ font: 'var(--type-headline-2)' }}>Department</h2>
+          {department ? (
+            <p className="flex items-center gap-2" style={{ font: 'var(--type-body-lg)' }}>
+              <strong>{department.name}</strong>
+              {role === 'admin' && <Badge variant="label">Admin</Badge>}
+            </p>
+          ) : (
+            <>
+              <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
+                You&rsquo;re not part of a department yet.
+              </p>
+              <Button variant="primary" onPress={() => navigate({ to: '/create-department' })}>
+                Create new department
+              </Button>
+            </>
+          )}
+        </section>
+      )}
 
       <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
         FieldShore v4 — vertical slice build

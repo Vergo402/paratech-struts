@@ -78,7 +78,12 @@ describe('session store (guest ⇄ member, persisted)', () => {
     const row = await db.meta.get(SESSION_KEY);
     expect(row).toBeDefined();
     // deviceUid has its own meta row — it must NOT be duplicated into the session blob.
-    expect(JSON.parse(row!.value)).toEqual({ identity: { kind: 'member', ...member }, departmentId: null });
+    expect(JSON.parse(row!.value)).toEqual({
+      identity: { kind: 'member', ...member },
+      departmentId: null,
+      departmentName: null,
+      role: null,
+    });
   });
 
   it('a sign-out survives a hydrate round-trip (reopen stays guest, not back to member)', async () => {
@@ -106,5 +111,45 @@ describe('session store (guest ⇄ member, persisted)', () => {
       await expect(session.boot(UID)).resolves.toBeUndefined();
       expect(session.store.getState().identity).toEqual({ kind: 'guest' });
     }
+  });
+
+  it('setDepartment attaches the dept + role and survives a hydrate round-trip', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    const s = session.store.getState();
+    expect(s.departmentId).toBe('dept-1');
+    expect(s.departmentName).toBe('Hamden Fire Rescue');
+    expect(s.role).toBe('admin');
+
+    const reopened = createDB(name);
+    const next = createSessionStore(reopened);
+    await next.boot(UID);
+    const r = next.store.getState();
+    expect(r.identity).toEqual({ kind: 'member', ...member });
+    expect(r.departmentId).toBe('dept-1');
+    expect(r.departmentName).toBe('Hamden Fire Rescue');
+    expect(r.role).toBe('admin');
+    reopened.close();
+  });
+
+  it('setGuest clears the department projection', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    await session.setGuest();
+    const s = session.store.getState();
+    expect(s.identity).toEqual({ kind: 'guest' });
+    expect(s.departmentId).toBeNull();
+    expect(s.departmentName).toBeNull();
+    expect(s.role).toBeNull();
+  });
+
+  it('setMember preserves an already-attached department (the auth-restore re-confirm)', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin' });
+    await session.setMember(member); // re-confirm the same member
+    expect(session.store.getState().departmentId).toBe('dept-1');
   });
 });

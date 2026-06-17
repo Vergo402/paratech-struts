@@ -137,6 +137,82 @@
         ".validate": "newData.isString() && newData.val().matches(/^[0-9]+\\.[0-9]+\\.[0-9]+$/)"
       }
     },
+    "orgs": {
+      "$deptId": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+        },
+        "createdBy": {
+          ".validate": "newData.isString() && newData.val().length >= 1"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "members": {
+          "$uid": {
+            ".validate": "newData.hasChildren(['role','displayName','joinedAt'])",
+            "role": {
+              ".validate": "newData.isString() && newData.val().length >= 1"
+            },
+            "displayName": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 80"
+            },
+            "joinedAt": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "roles": {
+          "$roleId": {
+            ".validate": "newData.hasChildren(['name','permissions'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 60"
+            },
+            "builtIn": {
+              ".validate": "!newData.exists() || (newData.isBoolean())"
+            },
+            "permissions": {
+              ".validate": "newData.hasChildren(['read','runFieldWork','manageOperations','manageInventory','manageRoster','manageSettings','manageUsers','manageData'])",
+              "read": {
+                ".validate": "newData.isBoolean()"
+              },
+              "runFieldWork": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageOperations": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageInventory": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageRoster": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageSettings": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageUsers": {
+                ".validate": "newData.isBoolean()"
+              },
+              "manageData": {
+                ".validate": "newData.isBoolean()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
     "$other": {
       ".read": false,
       ".write": false

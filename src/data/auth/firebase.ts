@@ -16,4 +16,7 @@ const config = {
 
 // HMR-safe: don't re-initialize if Vite re-runs this module during hot reload.
 const app = getApps().length ? getApps()[0] : initializeApp(config);
+// The single initialized app. data/sync/firebase.ts reuses it for the RTDB
+// handle (don't re-init) — these two files are the ONLY v4 Firebase importers.
+export const firebaseApp = app;
 export const firebaseAuth = getAuth(app);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Segmented, TextField } from '@ui/primitives';
-import { useSession } from '@ui/hooks';
+import { useSession, useDepartment } from '@ui/hooks';
 
 /**
  * AuthScreen — the pre-shell sign-in / create-account route (workflow 06,
@@ -28,6 +28,7 @@ const MODES = [
 export function AuthScreen() {
   const navigate = useNavigate();
   const { createAccount, signIn } = useSession();
+  const { department } = useDepartment();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +48,12 @@ export function AuthScreen() {
       setError(result.reason);
       return;
     }
-    navigate({ to: HOME });
+    // Forward to department setup when the member has none yet (workflow 07 §Step
+    // 1); a member who already has one drops straight into the app. Skippable —
+    // never a gate (ADR-015). (Re-discovering a returning member's department
+    // after sign-in is deferred with #232; until then a sign-in has no local
+    // department and forwards here, which Skip-for-now exits.)
+    navigate({ to: department ? HOME : '/create-department' });
   }
 
   return (

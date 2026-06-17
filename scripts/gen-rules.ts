@@ -1,0 +1,43 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { buildV4OrgsRules } from '../src/core/schema/rules';
+
+// Splice the generated v4 `orgs` block into database.rules.json WITHOUT
+// re-serializing the file — every v3 byte (including the inline `.indexOn`
+// array) is preserved exactly, so `git diff` shows ONLY the orgs block. Run via
+// `npm run gen:rules` whenever the department schemas change (L-11). v3 and v4
+// share one Firebase project + one rules file; if the diff ever touches a v3
+// key, do not deploy.
+//
+// Idempotent: an existing orgs block is brace-matched and removed first, then a
+// fresh one is inserted. (The rule expressions contain no { } characters, so the
+// naive brace count below is safe for this file.)
+
+const rulesPath = fileURLToPath(new URL('../database.rules.json', import.meta.url));
+let raw = readFileSync(rulesPath, 'utf8');
+
+// 1. Remove a previously-generated orgs block, if present.
+const start = raw.match(/\n {4}"orgs": \{/);
+if (start && start.index !== undefined) {
+  let i = start.index + start[0].length; // just past the opening brace
+  let depth = 1;
+  while (depth > 0 && i < raw.length) {
+    const c = raw[i++];
+    if (c === '{') depth++;
+    else if (c === '}') depth--;
+  }
+  if (raw[i] === ',') i++; // consume the trailing comma
+  raw = raw.slice(0, start.index) + raw.slice(i);
+}
+
+// 2. Build the orgs block, indented to nest as a sibling under "rules" (4 spaces).
+const orgsValue = JSON.stringify(buildV4OrgsRules(), null, 2).split('\n').join('\n    ');
+const orgsBlock = `    "orgs": ${orgsValue},\n`;
+
+// 3. Insert it just before the top-level "$other" catch-all (4-space — unique).
+const marker = '    "$other": {';
+if (!raw.includes(marker)) throw new Error('gen-rules: $other marker not found in database.rules.json');
+raw = raw.replace(marker, orgsBlock + marker);
+
+writeFileSync(rulesPath, raw, 'utf8');
+console.log('database.rules.json regenerated (v3 preserved verbatim + /orgs).');

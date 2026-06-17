@@ -8,3 +8,8 @@ export {
   type SignInInput,
   type AuthResult,
 } from './accountService';
+export {
+  authSessionSync,
+  createAuthSessionSync,
+  type AuthSessionSync,
+} from './authSession';

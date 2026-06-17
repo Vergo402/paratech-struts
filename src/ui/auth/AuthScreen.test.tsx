@@ -4,11 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockUseSession = vi.fn();
+const mockUseDepartment = vi.fn();
 const mockSignIn = vi.fn();
 const mockCreateAccount = vi.fn();
 const mockNavigate = vi.fn();
 
-vi.mock('@ui/hooks', () => ({ useSession: () => mockUseSession() }));
+vi.mock('@ui/hooks', () => ({
+  useSession: () => mockUseSession(),
+  useDepartment: () => mockUseDepartment(),
+}));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useNavigate: () => mockNavigate,
@@ -27,6 +31,12 @@ beforeEach(() => {
     signIn: mockSignIn,
     createAccount: mockCreateAccount,
     signOut: vi.fn(),
+  });
+  // Default: a freshly-authed member has no department → forward to setup.
+  mockUseDepartment.mockReset().mockReturnValue({
+    department: null,
+    role: null,
+    createDepartment: vi.fn(),
   });
 });
 
@@ -56,13 +66,27 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     expect(submit).toBeEnabled();
   });
 
-  it('Sign In calls the seam and navigates home on success', async () => {
+  it('Sign In calls the seam and forwards to department setup when none exists', async () => {
     const user = userEvent.setup();
     render(<AuthScreen />);
     await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
     await user.type(screen.getByLabelText('Password'), 'hunter2');
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
     expect(mockSignIn).toHaveBeenCalledWith({ email: 'reyes@dept14.gov', password: 'hunter2' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/create-department' });
+  });
+
+  it('Sign In goes straight to the app when the member already has a department', async () => {
+    mockUseDepartment.mockReturnValue({
+      department: { id: 'd1', name: 'Hamden Fire Rescue' },
+      role: 'admin',
+      createDepartment: vi.fn(),
+    });
+    const user = userEvent.setup();
+    render(<AuthScreen />);
+    await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
+    await user.type(screen.getByLabelText('Password'), 'hunter2');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' });
   });
 

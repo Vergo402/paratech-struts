@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:rules": "vite-node scripts/gen-rules.ts"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

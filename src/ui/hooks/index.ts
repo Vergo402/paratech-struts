@@ -8,3 +8,4 @@ export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';
 export { useSession, type SessionApi } from './useSession';
+export { useDepartment, type DepartmentApi } from './useDepartment';

@@ -5,11 +5,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockUseTheme = vi.fn();
 const mockUseSession = vi.fn();
+const mockUseDepartment = vi.fn();
 const mockSignOut = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock('../theme', () => ({ useTheme: () => mockUseTheme() }));
-vi.mock('@ui/hooks', () => ({ useSession: () => mockUseSession() }));
+vi.mock('@ui/hooks', () => ({
+  useSession: () => mockUseSession(),
+  useDepartment: () => mockUseDepartment(),
+}));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useNavigate: () => mockNavigate,
@@ -26,6 +30,11 @@ beforeEach(() => {
     signIn: vi.fn(),
     createAccount: vi.fn(),
     signOut: mockSignOut,
+  });
+  mockUseDepartment.mockReset().mockReturnValue({
+    department: null,
+    role: null,
+    createDepartment: vi.fn(),
   });
 });
 
@@ -68,5 +77,41 @@ describe('SettingsScreen account section (workflow 06)', () => {
     const dialog = screen.getByRole('dialog', { name: 'Log out?' });
     await user.click(within(dialog).getByRole('button', { name: 'Log Out' }));
     expect(mockSignOut).toHaveBeenCalled();
+  });
+});
+
+describe('SettingsScreen department section (workflow 07)', () => {
+  function asMember() {
+    mockUseSession.mockReturnValue({
+      identity: { kind: 'member', accountId: 'a1', displayName: 'Capt. Marchetti' },
+      signIn: vi.fn(),
+      createAccount: vi.fn(),
+      signOut: mockSignOut,
+    });
+  }
+
+  it('a member without a department sees Create new department → /create-department', async () => {
+    const user = userEvent.setup();
+    asMember();
+    render(<SettingsScreen />);
+    await user.click(screen.getByRole('button', { name: 'Create new department' }));
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/create-department' });
+  });
+
+  it('a member with a department sees its name and the Admin badge', () => {
+    asMember();
+    mockUseDepartment.mockReturnValue({
+      department: { id: 'd1', name: 'Hamden Fire Rescue' },
+      role: 'admin',
+      createDepartment: vi.fn(),
+    });
+    render(<SettingsScreen />);
+    expect(screen.getByText('Hamden Fire Rescue')).toBeInTheDocument();
+    expect(screen.getByText('Admin')).toBeInTheDocument();
+  });
+
+  it('a guest sees no department section', () => {
+    render(<SettingsScreen />); // default mock = guest
+    expect(screen.queryByRole('heading', { name: 'Department' })).not.toBeInTheDocument();
   });
 });

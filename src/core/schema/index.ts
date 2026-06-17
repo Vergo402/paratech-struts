@@ -6,3 +6,4 @@ export * from './operation';
 export * from './shorepoint';
 export * from './inventory';
 export * from './event';
+export * from './department';

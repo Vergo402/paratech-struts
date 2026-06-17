@@ -15,6 +15,7 @@ import { CommandScreen } from './routes/command';
 import { SettingsScreen } from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
 import { AuthRoute } from './routes/auth';
+import { CreateDepartmentRoute } from './routes/create-department';
 import { EmptyState } from '@ui/primitives';
 
 /**
@@ -70,8 +71,15 @@ const routeTree = rootRoute.addChildren([
     createRoute({ getParentRoute: () => shellRoute, path: '/settings', component: SettingsScreen }),
     createRoute({ getParentRoute: () => shellRoute, path: '/gallery', component: GalleryScreen }),
   ]),
-  // Pre-shell, chrome-free (workflow 06) — a direct child of root, not the shell.
+  // Pre-shell, chrome-free — direct children of root, not the shell. /auth is
+  // workflow 06; /create-department is workflow 07 (reached forward from sign-in
+  // or Settings, never a cold-open gate — ADR-015).
   createRoute({ getParentRoute: () => rootRoute, path: '/auth', component: AuthRoute }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/create-department',
+    component: CreateDepartmentRoute,
+  }),
 ]);
 
 // A render throw inside a route shows a recoverable screen instead of a blank
