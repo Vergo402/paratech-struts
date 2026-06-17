@@ -97,10 +97,18 @@ export interface ShorePointCardProps {
   onDelete?: (sp: ShorePoint) => void;
   /** Pending primary action — opens the Assign Equipment sheet (#221). */
   onAssignEquipment?: (sp: ShorePoint) => void;
-  /** In Process only — commits the advance to Strut Set. */
+  /** Advance to the next lifecycle status — Strut Set (from process), Cutting (from
+   *  strutset, group-wide), Runner (Send to Runner, from a cut-done cutting card). */
   onAdvance?: (sp: ShorePoint) => void | Promise<void>;
-  /** In Process + Strut Set — the board routes: process → confirm modal, strutset → direct commit. */
+  /** Step back one status — the board routes: process → confirm modal, others → direct. */
   onStepBack?: (sp: ShorePoint) => void | Promise<void>;
+  /** Cutting Station only — render the cutter's controls (Mark Cut Done → Send to
+   *  Runner) instead of leaving the `cutting` card read-only on the board (#222). */
+  cuttingStation?: boolean;
+  /** Cutting Station only — commits the Mark Cut Done flag (cuttingDone:true). */
+  onMarkCutDone?: (sp: ShorePoint) => void | Promise<void>;
+  /** Cutting Station only — clears the Mark Cut Done flag (step-back from cut-done). */
+  onClearCutDone?: (sp: ShorePoint) => void | Promise<void>;
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
   advanceDisabledReason?: string;
   /**
@@ -128,6 +136,9 @@ export function ShorePointCard({
   onAssignEquipment,
   onAdvance,
   onStepBack,
+  cuttingStation = false,
+  onMarkCutDone,
+  onClearCutDone,
   advanceDisabledReason,
   removed = false,
   hazard = false,
@@ -276,6 +287,10 @@ export function ShorePointCard({
         </div>
       )}
 
+      {sp.status === 'cutting' && sp.cuttingDone && (
+        <p className="fs-spc-cutdone">✓ Cut done</p>
+      )}
+
       {pending && !removed && (
         <div className="fs-spc-pending">
           <p className="fs-spc-noequip">No equipment assigned</p>
@@ -326,14 +341,56 @@ export function ShorePointCard({
 
       {!removed && sp.status === 'strutset' && (
         <div className="fs-spc-slides">
-          {/* Advance → Cutting is workflow #222 (role gates begin there). Step-back
-              ships now: always reversible from the card, no confirm — no inventory
-              change on strutset → process (ADR-010). */}
+          {/* Advance → Cutting is the last group-wide advance (#222): one member's
+              slide moves all lockstep mates to Cutting (reducer groupAdvance). No
+              confirm — non-inventory status slide (ADR-010). */}
+          <Slider
+            label="Slide to set Cutting"
+            revealColor="var(--status-cutting-bg)"
+            onCommit={() => onAdvance?.(sp)}
+          />
           <Slider
             label="Slide back to In Process"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />
+        </div>
+      )}
+
+      {/* Cutting Station controls (#222) — only when this card is rendered in the
+          station; on the Operations board the `cutting` lane card stays read-only
+          (the cutter works the station). Two-step: Mark Cut Done (a flag on the
+          `cutting` state, card stays put) → Send to Runner (advances individually
+          and the card leaves the queue). Step-back out of cutting → Strut Set. */}
+      {!removed && cuttingStation && sp.status === 'cutting' && (
+        <div className="fs-spc-slides">
+          {sp.cuttingDone ? (
+            <>
+              <Slider
+                label="Slide to send to Runner"
+                revealColor="var(--status-runner-bg)"
+                onCommit={() => onAdvance?.(sp)}
+              />
+              <Slider
+                label="Slide back — clear Cut Done"
+                direction="stepback"
+                onCommit={() => onClearCutDone?.(sp)}
+              />
+            </>
+          ) : (
+            <>
+              <Slider
+                label="Slide to mark Cut Done"
+                revealColor="var(--status-cutting-bg)"
+                onCommit={() => onMarkCutDone?.(sp)}
+              />
+              <Slider
+                label="Slide back to Strut Set"
+                direction="stepback"
+                onCommit={() => onStepBack?.(sp)}
+              />
+            </>
+          )}
         </div>
       )}
 

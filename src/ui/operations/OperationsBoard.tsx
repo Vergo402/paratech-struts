@@ -9,7 +9,7 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, Modal } from '@ui/primitives';
+import { Badge, Button, EmptyState, Modal, Segmented } from '@ui/primitives';
 import { useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
@@ -18,8 +18,12 @@ import { ShorePointCard, SHORE_TYPE_LABELS } from './ShorePointCard';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
+import { CuttingStation } from './CuttingStation';
 
 type ModalMode = null | 'create' | 'edit';
+
+/** Operations sub-nav (#222): the board, or the Cutting Station workstation. */
+type OpsView = 'board' | 'cutting';
 
 /** Board sort (#248): by division→area (default) or insertion ("added") order. */
 type SortMode = 'location' | 'added';
@@ -251,6 +255,7 @@ export function OperationsBoard() {
   const getUid = useDeviceUid();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [view, setView] = useState<OpsView>('board');
   const [endOpOpen, setEndOpOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<ShorePointStatus>>(new Set());
   const [spModal, setSpModal] = useState<SpModalState>(null);
@@ -451,6 +456,27 @@ export function OperationsBoard() {
     [commitStatusChange],
   );
 
+  // Mark Cut Done / clear (#222) — toggles the internal cuttingDone flag on the
+  // `cutting` state via a ShorePointEdited patch (no lane change, no inventory).
+  const commitCutDone = useCallback(
+    async (sp: ShorePoint, done: boolean) => {
+      const result = await commit({
+        type: 'ShorePointEdited',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: await getUid(),
+        spId: sp.id,
+        patch: { cuttingDone: done },
+      });
+      if (!result.ok) return;
+      setPoliteAnnouncement(done ? 'Cut done marked. Slide to send to runner.' : 'Cut done cleared.');
+    },
+    [commit, getUid],
+  );
+  const markCutDone = useCallback((sp: ShorePoint) => commitCutDone(sp, true), [commitCutDone]);
+  const clearCutDone = useCallback((sp: ShorePoint) => commitCutDone(sp, false), [commitCutDone]);
+
   // Restore a soft-deleted point (#319) — one tap, no confirm (it's reversible).
   // The point returns to whatever status it held (delete is Pending-only, so
   // ~always Pending) with its original #N reclaimed.
@@ -583,6 +609,30 @@ export function OperationsBoard() {
     [shorePoints],
   );
 
+  // Cutting Station queue (#222): the cuts in work order — FIFO by cuttingStartedAt,
+  // group-mates tie-broken by groupIndex (1/3 → 2/3 → 3/3).
+  const cuttingQueue = useMemo(
+    () =>
+      shorePoints
+        .filter((sp) => sp.status === 'cutting' && sp.deletedAt == null)
+        .sort((a, b) => (a.cuttingStartedAt ?? 0) - (b.cuttingStartedAt ?? 0) || (a.groupIndex ?? 0) - (b.groupIndex ?? 0)),
+    [shorePoints],
+  );
+  // The read-only sent-to-runner tail: points that came through the station (have a
+  // cuttingStartedAt) and are now Runner / Shore Secured — visible until returned.
+  const cuttingSent = useMemo(
+    () =>
+      shorePoints
+        .filter(
+          (sp) =>
+            sp.cuttingStartedAt != null &&
+            sp.deletedAt == null &&
+            (sp.status === 'runner' || sp.status === 'secured'),
+        )
+        .sort((a, b) => (a.cuttingStartedAt ?? 0) - (b.cuttingStartedAt ?? 0)),
+    [shorePoints],
+  );
+
   const toggleLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -625,10 +675,21 @@ export function OperationsBoard() {
         </button>
       </header>
 
-      <div className="fs-ops-actions">
-        <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
-          + Add Shore Point
-        </Button>
+      {/* Operations ↔ Cutting Station sub-nav (#222 / 21-cutting-station.md) — a
+          workstation under Operations, not a sixth tab (ADR-008 / ADR-014). */}
+      <div className="fs-ops-subnav">
+        <Segmented
+          aria-label="Operations view"
+          options={[
+            { value: 'board', label: 'Operations' },
+            {
+              value: 'cutting',
+              label: cuttingQueue.length ? `Cutting Station (${cuttingQueue.length})` : 'Cutting Station',
+            },
+          ]}
+          value={view}
+          onChange={setView}
+        />
       </div>
 
       <div className="fs-sr-only" role="status" aria-live="assertive">
@@ -639,7 +700,24 @@ export function OperationsBoard() {
         {politeAnnouncement}
       </div>
 
-      <StatusSummaryBar byStatus={byStatus} />
+      {view === 'cutting' ? (
+        <CuttingStation
+          queue={cuttingQueue}
+          sent={cuttingSent}
+          onMarkCutDone={markCutDone}
+          onClearCutDone={clearCutDone}
+          onSendToRunner={handleAdvance}
+          onStepBack={handleStepBack}
+        />
+      ) : (
+        <>
+          <div className="fs-ops-actions">
+            <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
+              + Add Shore Point
+            </Button>
+          </div>
+
+          <StatusSummaryBar byStatus={byStatus} />
 
       {shorePoints.length > 0 && (
         <div className="fs-ops-filterbar">
@@ -733,11 +811,13 @@ export function OperationsBoard() {
         />
       )}
 
-      <div className="fs-ops-end">
-        <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
-          End Operation
-        </Button>
-      </div>
+          <div className="fs-ops-end">
+            <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
+              End Operation
+            </Button>
+          </div>
+        </>
+      )}
 
       <StartOperationModal
         open={modalMode === 'create' || modalMode === 'edit'}

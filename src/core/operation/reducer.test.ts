@@ -250,3 +250,49 @@ describe('inlineDeploy — deploy mode (per-op, flippable via Edit Operation)', 
     expect(edited.operation!.inlineDeploy).toBe(false);
   });
 });
+
+// ---- Cutting-queue bookkeeping (#222) — cuttingStartedAt + cuttingDone ride
+// the strutset↔cutting edges; cutting↔runner preserves both (the saw ran). ----
+function statusAt(spId: string, from: ShorePointStatus, to: ShorePointStatus, at: number): FieldShoreEvent {
+  return { type: 'ShorePointStatusChanged', id: 'e', opId: 'op1', at, by: 't', spId, from, to };
+}
+
+describe('cutting-queue bookkeeping (#222)', () => {
+  it('strutset → cutting stamps cuttingStartedAt for every lockstep group member', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'strutset' }),
+      sp('b', { groupId: 'g', status: 'strutset' }),
+    ]);
+    const next = operationReducer(state, statusAt('a', 'strutset', 'cutting', 4242));
+    expect(byId(next, 'a').cuttingStartedAt).toBe(4242);
+    expect(byId(next, 'b').cuttingStartedAt).toBe(4242);
+  });
+
+  it('cutting → strutset (step-back) clears cuttingStartedAt AND cuttingDone', () => {
+    const state = stateWith([sp('a', { status: 'cutting', cuttingStartedAt: 100, cuttingDone: true })]);
+    const next = operationReducer(state, statusAt('a', 'cutting', 'strutset', 200));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'a').cuttingStartedAt).toBeUndefined();
+    expect(byId(next, 'a').cuttingDone).toBeUndefined();
+  });
+
+  it('cutting → runner (Send to Runner) preserves cuttingStartedAt + cuttingDone', () => {
+    const state = stateWith([sp('a', { status: 'cutting', cuttingStartedAt: 100, cuttingDone: true })]);
+    const next = operationReducer(state, statusAt('a', 'cutting', 'runner', 300));
+    expect(byId(next, 'a').status).toBe('runner');
+    expect(byId(next, 'a').cuttingStartedAt).toBe(100);
+    expect(byId(next, 'a').cuttingDone).toBe(true);
+  });
+
+  it('Mark Cut Done patch sets cuttingDone on a cutting point; false clears it', () => {
+    const base = stateWith([sp('a', { status: 'cutting', cuttingStartedAt: 100 })]);
+    const marked = operationReducer(base, {
+      type: 'ShorePointEdited', id: 'e', opId: 'op1', at: 5, by: 't', spId: 'a', patch: { cuttingDone: true },
+    });
+    expect(byId(marked, 'a').cuttingDone).toBe(true);
+    const cleared = operationReducer(marked, {
+      type: 'ShorePointEdited', id: 'e2', opId: 'op1', at: 6, by: 't', spId: 'a', patch: { cuttingDone: false },
+    });
+    expect(cleared.shorePoints[0]!.cuttingDone).toBeUndefined();
+  });
+});

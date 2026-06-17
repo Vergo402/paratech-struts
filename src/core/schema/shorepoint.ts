@@ -90,6 +90,13 @@ export const ShorePoint = z.object({
   status: ShorePointStatus,
   deployedStrut: DeployedStrut.optional(),
   pendingReason: PendingReason.optional(),
+  // Cutting-queue bookkeeping (#222). cuttingStartedAt stamps FIFO order when the
+  // point enters `cutting` (the Cutting Station orders by it); cuttingDone is the
+  // internal "saw ran" flag ON the `cutting` state — NOT a lane. Both are reducer-
+  // managed on the status change (entering cutting stamps; stepping out clears),
+  // except cuttingDone which the cutter toggles via a ShorePointEdited patch.
+  cuttingStartedAt: z.number().int().nonnegative().optional(),
+  cuttingDone: z.boolean().optional(),
   // Soft-delete flag (#319, ADR-030). Set = the point is deleted but RETAINED in
   // the projection so it can be restored and so its seq stays a high-water mark
   // (a deleted number is never reused). Reducer-managed via ShorePointDeleted /
@@ -114,6 +121,9 @@ export const ShorePointPatch = z
     label: z.string().nullable(),
     assignedResource: z.string().nullable(),
     estimatedLoad: z.number().nonnegative().nullable(),
+    // The cutter's "Mark Cut Done" toggle (#222) — applies on the `cutting` state,
+    // not gated by the Pending field-lock. true = saw ran; false = clear it.
+    cuttingDone: z.boolean(),
   })
   .partial();
 export type ShorePointPatch = z.infer<typeof ShorePointPatch>;

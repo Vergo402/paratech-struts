@@ -1317,3 +1317,61 @@ button.fs-spc-head {
   width: 13px;
   height: 13px;
 }
+
+/* ---- Operations ↔ Cutting Station sub-nav (#222) ------------------------- */
+.fs-ops-subnav {
+  padding: var(--space-1) 0 var(--space-2);
+}
+
+/* ---- "✓ Cut done" flag marker on a cutting card (#222) ------------------- */
+.fs-spc-cutdone {
+  font: var(--type-body-medium);
+  color: var(--status-cutting-text);
+  margin: 0;
+}
+
+/* ---- Cutting Station screen (21-cutting-station.md, #222) ---------------- */
+.fs-cutstation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.fs-cutstation-title {
+  font: var(--type-headline-1);
+  color: var(--text-primary);
+  margin: 0;
+}
+.fs-cutstation-count {
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  margin: 0;
+}
+.fs-cutstation-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* A stepped-back card lingers as a red-slash signal + its Dismiss control. */
+.fs-cutstation-removed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-cutstation-sent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--surface-stroke);
+}
+.fs-cutstation-sent > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-cutstation-subhead {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  margin: 0;
+}

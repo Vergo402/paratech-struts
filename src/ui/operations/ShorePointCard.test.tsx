@@ -330,18 +330,69 @@ describe('ShorePointCard', () => {
     expect(onStepBack).toHaveBeenCalled();
   });
 
-  it('strutset: step-back slide only — advance to Cutting is workflow #222', () => {
+  it('strutset: advance → Cutting + step-back slides both commit through the gesture (#222)', async () => {
+    const onAdvance = vi.fn();
+    const onStepBack = vi.fn();
+    const sp = makeSP({
+      status: 'strutset',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
+    expect(screen.getByText('Slide to set Cutting')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to In Process')).toBeInTheDocument();
+    await slideToCommit('Slide to set Cutting');
+    expect(onAdvance).toHaveBeenCalledWith(sp);
+    await slideToCommit('Slide back to In Process');
+    expect(onStepBack).toHaveBeenCalledWith(sp);
+  });
+
+  it('cutting on the BOARD (no cuttingStation): read-only — the cutter works the station', () => {
     render(
       <ShorePointCard
         shorePoint={makeSP({
-          status: 'strutset',
+          status: 'cutting',
           deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
         })}
+        onAdvance={vi.fn()}
         onStepBack={vi.fn()}
       />,
     );
-    expect(screen.getByText('Slide back to In Process')).toBeInTheDocument();
-    expect(screen.queryByText(/Slide to set/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Slide/)).not.toBeInTheDocument();
+  });
+
+  it('Cutting Station — not cut done: Mark Cut Done + step-back-to-Strut-Set slides commit', async () => {
+    const onMarkCutDone = vi.fn();
+    const onStepBack = vi.fn();
+    const sp = makeSP({
+      status: 'cutting',
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(
+      <ShorePointCard shorePoint={sp} cuttingStation onMarkCutDone={onMarkCutDone} onStepBack={onStepBack} />,
+    );
+    expect(screen.queryByText('✓ Cut done')).not.toBeInTheDocument();
+    await slideToCommit('Slide to mark Cut Done');
+    expect(onMarkCutDone).toHaveBeenCalledWith(sp);
+    await slideToCommit('Slide back to Strut Set');
+    expect(onStepBack).toHaveBeenCalledWith(sp);
+  });
+
+  it('Cutting Station — cut done: shows the marker, Send to Runner + clear-cut-done slides commit', async () => {
+    const onAdvance = vi.fn();
+    const onClearCutDone = vi.fn();
+    const sp = makeSP({
+      status: 'cutting',
+      cuttingDone: true,
+      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    });
+    render(
+      <ShorePointCard shorePoint={sp} cuttingStation onAdvance={onAdvance} onClearCutDone={onClearCutDone} />,
+    );
+    expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
+    await slideToCommit('Slide to send to Runner');
+    expect(onAdvance).toHaveBeenCalledWith(sp);
+    await slideToCommit('Slide back — clear Cut Done');
+    expect(onClearCutDone).toHaveBeenCalledWith(sp);
   });
 
   it('later states (secured/returned): no slides at all this slice', () => {

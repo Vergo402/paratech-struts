@@ -1,4 +1,11 @@
-import type { Deductions, ShorePoint, ShorePointPatch, FieldShoreEvent, InventoryItem } from '../schema';
+import type {
+  Deductions,
+  ShorePoint,
+  ShorePointPatch,
+  ShorePointStatus,
+  FieldShoreEvent,
+  InventoryItem,
+} from '../schema';
 import {
   findStrutCombinations,
   woodHeight,
@@ -86,6 +93,12 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     if (patch.assignedResource === null) delete next.assignedResource;
     else next.assignedResource = patch.assignedResource;
   }
+  // Mark Cut Done (#222) — a cutting-state toggle, not a Pending-locked field, so
+  // it too applies before the early return. false clears the flag entirely.
+  if (patch.cuttingDone !== undefined) {
+    if (patch.cuttingDone) next.cuttingDone = true;
+    else delete next.cuttingDone;
+  }
   if (sp.status !== 'pending') return next;
   if (patch.division !== undefined) next.division = patch.division;
   if (patch.building !== undefined) {
@@ -104,6 +117,31 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     else next.estimatedLoad = patch.estimatedLoad;
   }
   return next;
+}
+
+/**
+ * Cutting-queue bookkeeping that rides a status change (#222). Entering `cutting`
+ * from `strutset` stamps the FIFO order; stepping back OUT of cutting (→ strutset)
+ * clears the stamp AND the cut-done flag (the card leaves the queue). The
+ * cutting↔runner edges preserve both — the saw already ran, a Send-to-Runner
+ * step-back is "runner not ready," not "re-cut" (#223). Applied by BOTH the live
+ * path (operation/reducer groupAdvance) and the single-member guard below, so the
+ * two stay in lockstep (audit W9).
+ */
+export function applyCuttingFields(
+  sp: ShorePoint,
+  from: ShorePointStatus,
+  to: ShorePointStatus,
+  at: number,
+): ShorePoint {
+  if (to === 'cutting' && from === 'strutset') return { ...sp, cuttingStartedAt: at };
+  if (to === 'strutset' && from === 'cutting') {
+    const next = { ...sp };
+    delete next.cuttingStartedAt;
+    delete next.cuttingDone;
+    return next;
+  }
+  return sp;
 }
 
 /**
@@ -130,7 +168,7 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
       if (event.from === 'pending' || event.to === 'pending') return sp;
       if (sp.status !== event.from) return sp; // stale / out-of-order — skip (L-7)
       if (!canTransition(event.from, event.to)) return sp;
-      return { ...sp, status: event.to };
+      return applyCuttingFields({ ...sp, status: event.to }, event.from, event.to, event.at);
     }
 
     case 'StrutDeployed':

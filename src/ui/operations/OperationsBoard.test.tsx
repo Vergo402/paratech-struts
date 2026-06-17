@@ -456,6 +456,67 @@ describe('OperationsBoard', () => {
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — back to In Process.');
   });
 
+  // ---- #222 — Cutting + the Cutting Station sub-nav ---------------------------
+
+  const deployed = (model = 'LS 304') => ({ model, source: 'Rescue 2', inventoryId: 'inv-1' });
+
+  it('strut set: the advance slide commits strutset → cutting (#222 entry)', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'strutset'), deployedStrut: deployed() }]);
+    render(<OperationsBoard />);
+    await slideToCommit('Slide to set Cutting');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'strutset', to: 'cutting' }),
+    );
+  });
+
+  it('Cutting Station sub-nav: switches to the queue and Mark Cut Done commits the flag', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, deployedStrut: deployed() },
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
+    expect(screen.getByText('1 cut in queue')).toBeInTheDocument();
+    await slideToCommit('Slide to mark Cut Done');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointEdited', spId: 'sp-1', patch: { cuttingDone: true } }),
+    );
+  });
+
+  it('Cutting Station: Send to Runner advances a cut-done card to Runner', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, cuttingDone: true, deployedStrut: deployed() },
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
+    await slideToCommit('Slide to send to Runner');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'cutting', to: 'runner' }),
+    );
+  });
+
+  it('the cutting queue counts only cutting points, in FIFO order', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-2', 'cutting'), cuttingStartedAt: 200, deployedStrut: deployed() },
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 100, deployedStrut: deployed() },
+      { ...makeSP('sp-3', 'strutset'), deployedStrut: deployed() }, // not in the queue
+    ]);
+    render(<OperationsBoard />);
+    // The sub-nav shows the live queue count.
+    expect(screen.getByRole('radio', { name: 'Cutting Station (2)' })).toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
+    const ids = Array.from(document.querySelectorAll('.fs-cutstation-queue [data-sp-id]')).map((el) =>
+      el.getAttribute('data-sp-id'),
+    );
+    expect(ids).toEqual(['sp-1', 'sp-2']); // sorted by cuttingStartedAt
+  });
+
   // ---- #248 — division/area sort + filter ------------------------------------
 
   function laneCardIds(regionName: string): string[] {

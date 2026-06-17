@@ -1,5 +1,5 @@
 import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent } from '../schema';
-import { shorePointReducer, canTransition } from '../shorepoint';
+import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
 
 // The projected current state of one operation: the operation record + its shore
 // points in insertion order. Built from the event log by projectOperation().
@@ -34,6 +34,7 @@ function groupAdvance(
   spId: string,
   from: ShorePointStatus,
   to: ShorePointStatus,
+  at: number,
 ): ShorePoint[] {
   const trigger = shorePoints.find((sp) => sp.id === spId);
   if (!trigger) return shorePoints;
@@ -49,7 +50,9 @@ function groupAdvance(
   return shorePoints.map((m) => {
     if (!affected.has(m.id)) return m;
     if (m.status !== from) return m; // only lockstep members move; ahead/behind untouched (L-7)
-    return { ...m, status: to };
+    // applyCuttingFields stamps/clears the cutting-queue bookkeeping for the
+    // strutset↔cutting edges (#222); a no-op on every other transition.
+    return applyCuttingFields({ ...m, status: to }, from, to, at);
   });
 }
 
@@ -120,7 +123,10 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       };
 
     case 'ShorePointStatusChanged':
-      return { ...state, shorePoints: groupAdvance(state.shorePoints, event.spId, event.from, event.to) };
+      return {
+        ...state,
+        shorePoints: groupAdvance(state.shorePoints, event.spId, event.from, event.to, event.at),
+      };
 
     case 'ShorePointEdited':
     case 'StrutDeployed':
