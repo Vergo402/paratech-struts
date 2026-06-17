@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Segmented, TextField } from '@ui/primitives';
-import { useSession, useDepartment } from '@ui/hooks';
+import { useSession, useDepartment, useOnboarding } from '@ui/hooks';
 
 /**
  * AuthScreen — the pre-shell sign-in / create-account route (workflow 06,
@@ -29,6 +29,7 @@ export function AuthScreen() {
   const navigate = useNavigate();
   const { createAccount, signIn } = useSession();
   const { department } = useDepartment();
+  const { start: startOnboarding } = useOnboarding();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,6 +49,11 @@ export function AuthScreen() {
       setError(result.reason);
       return;
     }
+    // First account creation arms the first-run tour (it surfaces once the new
+    // member reaches a shell screen — never on the pre-shell dept-setup leg, and
+    // never for a returning sign-in). Always skippable; start() no-ops if the
+    // tour was already seen (onboardingStore — Principle-11 reconciliation).
+    if (isCreate) await startOnboarding();
     // Forward to department setup when the member has none yet (workflow 07 §Step
     // 1); a member who already has one drops straight into the app. Skippable —
     // never a gate (ADR-015). (Re-discovering a returning member's department

@@ -16,7 +16,9 @@ import { SettingsScreen } from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
 import { AuthRoute } from './routes/auth';
 import { CreateDepartmentRoute } from './routes/create-department';
+import { HelpRoute } from './routes/help';
 import { EmptyState } from '@ui/primitives';
+import { OnboardingHost } from '@ui/onboarding';
 
 /**
  * Route tree — the locked 5-tab spine (ADR-014) + the /gallery dev surface,
@@ -40,6 +42,9 @@ function RootLayout() {
         <Outlet />
       </main>
       <BottomNav />
+      {/* First-run tour — renders only when active (account-creation or a Settings
+          replay); mounted here so it survives tab changes and overlays the chrome. */}
+      <OnboardingHost />
     </div>
   );
 }
@@ -69,6 +74,7 @@ const routeTree = rootRoute.addChildren([
     createRoute({ getParentRoute: () => shellRoute, path: '/inventory', component: InventoryScreen }),
     createRoute({ getParentRoute: () => shellRoute, path: '/command', component: CommandScreen }),
     createRoute({ getParentRoute: () => shellRoute, path: '/settings', component: SettingsScreen }),
+    createRoute({ getParentRoute: () => shellRoute, path: '/help', component: HelpRoute }),
     createRoute({ getParentRoute: () => shellRoute, path: '/gallery', component: GalleryScreen }),
   ]),
   // Pre-shell, chrome-free — direct children of root, not the shell. /auth is

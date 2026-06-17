@@ -13,6 +13,12 @@ vi.mock('../theme', () => ({ useTheme: () => mockUseTheme() }));
 vi.mock('@ui/hooks', () => ({
   useSession: () => mockUseSession(),
   useDepartment: () => mockUseDepartment(),
+  useOnboarding: () => ({
+    roleFocus: null,
+    replayTour: vi.fn(),
+    startLesson: vi.fn(),
+    setRoleFocus: vi.fn(),
+  }),
 }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -34,6 +40,7 @@ beforeEach(() => {
   mockUseDepartment.mockReset().mockReturnValue({
     department: null,
     role: null,
+    inviteCode: null,
     createDepartment: vi.fn(),
   });
 });
@@ -103,11 +110,31 @@ describe('SettingsScreen department section (workflow 07)', () => {
     mockUseDepartment.mockReturnValue({
       department: { id: 'd1', name: 'Hamden Fire Rescue' },
       role: 'admin',
+      inviteCode: 'ABCD-2345',
       createDepartment: vi.fn(),
     });
     render(<SettingsScreen />);
     expect(screen.getByText('Hamden Fire Rescue')).toBeInTheDocument();
     expect(screen.getByText('Admin')).toBeInTheDocument();
+  });
+
+  it('a member with a department sees the invite code and a Copy button that copies it', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    asMember();
+    mockUseDepartment.mockReturnValue({
+      department: { id: 'd1', name: 'Hamden Fire Rescue' },
+      role: 'admin',
+      inviteCode: 'ABCD-2345',
+      createDepartment: vi.fn(),
+    });
+    render(<SettingsScreen />);
+    expect(screen.getByText('ABCD-2345')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Copy' }));
+    expect(writeText).toHaveBeenCalledWith('ABCD-2345');
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
   });
 
   it('a guest sees no department section', () => {

@@ -1,0 +1,70 @@
+/* /help — themed prose for the rendered user manual. Token-driven so all four
+   themes carry; intentionally plain (a reference doc, not a marketing page). */
+.fs-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+.fs-help-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+.fs-help-doc {
+  font: var(--type-body, 400 15px/1.55 sans-serif);
+  color: var(--text-primary);
+  max-width: 72ch;
+}
+.fs-help-doc h1,
+.fs-help-doc h2,
+.fs-help-doc h3 {
+  color: var(--text-primary);
+  margin: var(--space-5, 20px) 0 var(--space-2, 8px);
+  line-height: 1.25;
+}
+.fs-help-doc h1 {
+  font-size: 1.5rem;
+}
+.fs-help-doc h2 {
+  font-size: 1.25rem;
+}
+.fs-help-doc h3 {
+  font-size: 1.05rem;
+}
+.fs-help-doc p,
+.fs-help-doc li {
+  color: var(--text-secondary);
+}
+.fs-help-doc ul,
+.fs-help-doc ol {
+  padding-left: var(--space-5, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1, 4px);
+}
+.fs-help-doc a {
+  color: var(--accent);
+}
+.fs-help-doc code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  background: var(--accent-subtle, rgba(0, 0, 0, 0.06));
+  padding: 1px 5px;
+  border-radius: var(--radius-input, 6px);
+}
+.fs-help-doc table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--space-3, 12px) 0;
+}
+.fs-help-doc th,
+.fs-help-doc td {
+  border: 1px solid var(--surface-stroke, rgba(0, 0, 0, 0.15));
+  padding: var(--space-2, 8px);
+  text-align: left;
+  font-size: 0.9rem;
+}
+.fs-help-doc hr {
+  border: none;
+  border-top: 1px solid var(--surface-stroke, rgba(0, 0, 0, 0.15));
+  margin: var(--space-5, 20px) 0;
+}

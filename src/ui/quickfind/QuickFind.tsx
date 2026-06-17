@@ -86,11 +86,15 @@ export function QuickFind() {
 
   return (
     <div className="fs-quickfind">
-      <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
+      {/* data-tour anchors feed the first-run guided tips (OnboardingHost). Plain
+          wrappers — they add no layout, just a stable target the coachmark queries. */}
+      <div data-tour="qf-measurement">
+        <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
+      </div>
 
       {/* Deductions collapsed by default (IA spec) — the optional refinement; the
           measurement alone drives the fit. */}
-      <div className="fs-qf-deductions">
+      <div className="fs-qf-deductions" data-tour="qf-deductions">
         <Button variant="tertiary" fullWidth onPress={() => setDedOpen((o) => !o)}>
           {dedOpen ? 'Hide deductions' : 'Add deductions (header, footer, plates)'}
         </Button>
@@ -99,25 +103,29 @@ export function QuickFind() {
         )}
       </div>
 
-      <TextField
-        label="Estimated load (lbs) — optional"
-        value={estimatedLoad}
-        onChange={setEstimatedLoad}
-        inputMode="numeric"
-        maxLength={7}
-        placeholder="e.g. 15000"
-        helper="Leave blank if unknown — load doesn't change which strut fits"
-      />
+      <div data-tour="qf-load">
+        <TextField
+          label="Estimated load (lbs) — optional"
+          value={estimatedLoad}
+          onChange={setEstimatedLoad}
+          inputMode="numeric"
+          maxLength={7}
+          placeholder="e.g. 15000"
+          helper="Leave blank if unknown — load doesn't change which strut fits"
+        />
+      </div>
 
-      <Button
-        variant="primary"
-        fullWidth
-        disabled={!canSearch}
-        disabledReason={disabledReason ?? undefined}
-        onPress={() => setFound(true)}
-      >
-        Find Struts
-      </Button>
+      <div data-tour="qf-find">
+        <Button
+          variant="primary"
+          fullWidth
+          disabled={!canSearch}
+          disabledReason={disabledReason ?? undefined}
+          onPress={() => setFound(true)}
+        >
+          Find Struts
+        </Button>
+      </div>
 
       {/* Results = a dismissible sheet (ADR-031). Find Struts raises it; it always
           rises into view, so the result can't land below the fold on a short

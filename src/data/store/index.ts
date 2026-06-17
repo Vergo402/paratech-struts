@@ -24,5 +24,13 @@ export {
   type SessionState,
   type Identity,
 } from './session';
+export {
+  onboardingStore,
+  createOnboardingStore,
+  ONBOARDING_KEY,
+  type OnboardingStoreApi,
+  type OnboardingState,
+  type OnboardingStatus,
+} from './onboardingStore';
 export { buildSeedInventory, seedIfEmpty } from './seed';
 export { bootData, type BootResult } from './boot';

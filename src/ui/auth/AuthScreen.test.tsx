@@ -12,6 +12,7 @@ const mockNavigate = vi.fn();
 vi.mock('@ui/hooks', () => ({
   useSession: () => mockUseSession(),
   useDepartment: () => mockUseDepartment(),
+  useOnboarding: () => ({ start: vi.fn() }),
 }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),

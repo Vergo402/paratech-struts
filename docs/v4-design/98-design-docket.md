@@ -33,6 +33,7 @@
 | Deduction ledger collapsed-by-default in Add Shore Point (Principle 7 disclosure) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #10 | 2026-06-11 (seed) |
 | Focus lands on the moved card after Deploy (keyboard parity polish) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #6 | 2026-06-11 (seed) |
 | "Waiting for inventory" pendingReason wording — broader than v3's; copy pass owns the nuance | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) footnote / S6 OQ1 | 2026-06-11 (seed) |
+| First-run onboarding (welcome → checklist hub → guided Quick Find tips, all practice) — **built this session** (off-the-cuff ask, no tracking issue — this row is the record). Account-creation-gated + always skippable, so the guest cold-open is untouched. **Bends Principle 11** ("no tutorials between user and work") and revives a scoped practice sandbox the dropped demo-mode call excluded → owed **ADR-034** to formalize the new-member-welcome exception (pattern: ADR-010 amending Principle 6) if the feature is kept. Decision: *build now, formalize later* (Alex, 2026-06-17). | ad hoc — **ADR-034 owed** | 2026-06-17 |
 
 ## Unscheduled / watch
 

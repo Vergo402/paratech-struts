@@ -4,6 +4,7 @@ import { seedIfEmpty } from './seed';
 import { inventoryStore } from './inventoryStore';
 import { operationStore } from './operationStore';
 import { sessionStore, type Identity } from './session';
+import { onboardingStore } from './onboardingStore';
 
 // Boot the data layer (called once from src/app/main.tsx): open the DB, mint or
 // read the device uid, seed the fixture inventory on first run, then hydrate the
@@ -25,6 +26,7 @@ export async function bootData(): Promise<BootResult> {
   await inventoryStore.boot();
   await operationStore.boot();
   await sessionStore.boot(uid); // after getDeviceUid — reuses the minted uid
+  await onboardingStore.boot();
   return {
     uid,
     seeded,
