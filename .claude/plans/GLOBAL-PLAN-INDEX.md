@@ -123,6 +123,8 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 | humble-doodling-hamming | v3-feedback-review-may-17 |
 | create-a-markdown-file-misty-journal | v3-issue-54-command-page-v2 |
 | do-we-have-a-cheeky-seahorse | v4-design-docket-creation |
+| as-long-as-the-compiled-breeze | v4-ops-lifecycle-cutting-to-end-of-op (2026-06-17) — the Operations lifecycle build arc (Cutting → Runner → Secured/Returned → End-of-op), Sessions 1–3 |
+| hashed-soaring-bumblebee | v4-ops-session-3-end-of-op-archive-reopen (2026-06-17) — Session 3 build plan: end-of-op archive + read-only drill-in + re-open (ADR-036, #238/#339); shipped at commit 918d509 |
 
 ## This migration's own plan file
 - Renamed at session end (68th FieldShore file): `is-there-a-reason-dazzling-russell.md` → `fieldshore-plan-file-rename-migration.md`.
