@@ -178,7 +178,7 @@ These drew praise from multiple reviewers and should be defended against any "si
 - **Audit log as the immutable event stream and the single export convergence point** (ICS-201/203/207/208/209 + PAR snapshot + CSV), with **role-at-time** captured. *"The after-action backbone most tools fail to keep."*
 - **Governance bones:** anti-lockout enforced in security rules (not just UI), back-office role and ICS command position kept as two orthogonal axes (*"app-admin does NOT outrank the IC"*), sub-two-minute one-field department setup, paste-a-code join with plain-English errors.
 - **Guest-first cold-open with offline auth queueing** — calculator-first, no auth wall, usable in ten seconds, won't strand a crew in a no-signal basement. Loved by every trench reviewer as the reason they didn't quit.
-- **Plain-language "why nothing fits" messages** on the Pending card.
+- **Plain-language "why nothing fits" messages** on the Pending Equipment card.
 - **Spelled-out NIMS titles** (no IC/SO/Ops acronyms) and the **informational, never-blocking span-of-control badge.**
 
 ---

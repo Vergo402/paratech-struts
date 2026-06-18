@@ -260,8 +260,8 @@ img, svg { display: block; }
 [data-theme="sunlight"] .sg-removed-label span { color: var(--danger-bg);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger-bg) 30%, transparent); }
 
-/* PENDING = a measured shore point with NO strut deployed (v3 model). The action is
-   "Assign Equipment" (deploy) — NOT a status slide; reaching In Process *means* a strut
+/* PENDING EQUIPMENT = a measured shore point with NO strut deployed (v3 model). The action is
+   "Assign Equipment" (deploy) — NOT a status slide; reaching Equipment Assigned *means* a strut
    was deployed. A reason line surfaces WHY it's pending — v3 stored this as
    `pendingReason` but never showed it: "no matching strut" vs "waiting for inventory". */
 .sg-sp-noequip { font: var(--type-body-medium); font-weight: 600; color: var(--text-primary); margin-top: 10px; }

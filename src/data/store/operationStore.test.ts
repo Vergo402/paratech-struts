@@ -394,7 +394,7 @@ describe('operationStore.commit', () => {
   });
 
   describe('EquipmentReclaimed (L-8) — terminal Remove & Return (#224)', () => {
-    // Deploy, then walk to Shore Secured (the terminal return's precondition).
+    // Deploy, then walk to Wood Shore Secured (the terminal return's precondition).
     beforeEach(async () => {
       await ops.commit(deploy('sp-1', 'inv-1')); // pending → process, available 2 → 1
       for (const [from, to] of [
@@ -526,7 +526,7 @@ describe('operationStore.commit', () => {
     it('serializes concurrent deploys for one Pending point — exactly one decrement + one event', async () => {
       const before = await db.events.count();
       const [a, b] = await Promise.all([ops.commit(deploy('sp-1', 'inv-1')), ops.commit(deploy('sp-1', 'inv-1'))]);
-      expect([a, b].filter((r) => r.ok)).toHaveLength(1); // the second sees sp-1 already In Process
+      expect([a, b].filter((r) => r.ok)).toHaveLength(1); // the second sees sp-1 already Equipment Assigned
       expect(await durable('inv-1')).toBe(1); // decremented exactly once
       expect(await db.events.count()).toBe(before + 1);
     });

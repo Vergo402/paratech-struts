@@ -17,7 +17,7 @@ import { SHORE_TYPE_LABELS } from './ShorePointCard';
  * the officer reads RecommendationCards and taps Deploy. Deploy commits
  * EquipmentDeployed — the full bill of materials (ADR-033) — through the store's
  * inventory transaction (pre-flight + per-component decrement-abort-on-zero, S2);
- * on success the sheet dismisses and the board announces the In Process move.
+ * on success the sheet dismisses and the board announces the Equipment Assigned move.
  * Dismissing without deploying changes nothing. Warning-gated cards never dismiss
  * the sheet (#247 state 5).
  */
@@ -25,7 +25,7 @@ export interface AssignEquipmentSheetProps {
   /** The Pending point to equip; null renders closed. The board derives this LIVE by id. */
   shorePoint: ShorePoint | null;
   onClose: () => void;
-  /** Fires after a successful deploy — the board closes the sheet, expands In Process, announces. */
+  /** Fires after a successful deploy — the board closes the sheet, expands Equipment Assigned, announces. */
   onDeployed: (sp: ShorePoint, model: string) => void;
 }
 

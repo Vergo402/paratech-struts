@@ -115,7 +115,7 @@ When 2FA lands ([User Manager](51-user-manager.md) policy; mechanism in [Login/R
 ## Accessibility / screen-reader notes
 
 **Cite [`accessibility.md`](../07-design-system/accessibility.md), do not restate.**
-- Each event row announces *actor · role · action · time* ("Rescue Group Supervisor advanced Shore Point B-2 to Cutting, 14:32"); action + role are text + badge, never color alone ([`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts — extend the registry with the audit-row script).
+- Each event row announces *actor · role · action · time* ("Rescue Group Supervisor advanced Shore Point B-2 to Cutting Station, 14:32"); action + role are text + badge, never color alone ([`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts — extend the registry with the audit-row script).
 - The scope [`segmented`](../03-primitives/segmented.md) + filter [`input`](../03-primitives/input.md) are keyboard-navigable; the export announces progress via `aria-live`; the laptop ICS-assembly is a labeled, keyboard-reachable region ([`accessibility.md`](../07-design-system/accessibility.md) §Focus & keyboard).
 
 ## Open questions (per-screen)

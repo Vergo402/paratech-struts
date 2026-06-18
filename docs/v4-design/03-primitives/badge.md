@@ -21,7 +21,7 @@ v4 ships **five read-only badge variants**. Which one you reach for is determine
 
 | Variant | Carries | Examples | v3 origin |
 |---|---|---|---|
-| **Status badge** | The shore-point lifecycle state, as its label word | "Cutting", "Shore Secured" on a `ShorePointCard`; status pills in the drill-down | `.status-badge`+7, `.di-status-pill` |
+| **Status badge** | The shore-point lifecycle state, as its label word | "Cutting Station", "Wood Shore Secured" on a `ShorePointCard`; status pills in the drill-down | `.status-badge`+7, `.di-status-pill` |
 | **Count badge** | A number — *inline count* (in a header/row) or *notification count* (superscript on a control) | "12" in a lane header; the quantity superscript on a quick-add button; SP count per status | `.lane-count`, `.ops-tree-count`, `.app-count`, `.quick-add-qty`, `.qv-count`, `.sp-number` |
 | **Label / tag badge** | A short categorical word or abbreviation — an attribute, not a status | a NIMS position abbreviation, "External", group index "1 / 3", equipment source | `.role-badge`, `.task-force-label`, `.ext-badge`, `.group-label`, `.apparatus-source` |
 | **Severity badge** | A condition needing attention, in the feedback palette, always with a word | "HIGH" / "MITIGATED" on a hazard; "⚠ UNRATED" on a deployed point; a cut-length mismatch | `.hazard-badge` ×4, `.sp-unrated-badge`, `.cut-diff-warning`, `.span-warning` |
@@ -75,12 +75,12 @@ The shore-point status badge is the spine of the app and the one badge that is s
 
   | enum key | badge label |
   |---|---|
-  | `pending` | Pending |
-  | `process` | In Process |
+  | `pending` | Pending Equipment |
+  | `process` | Equipment Assigned |
   | `strutset` | **Strut Set** |
-  | `cutting` | Cutting |
+  | `cutting` | Cutting Station |
   | `runner` | Runner |
-  | `secured` | **Shore Secured** |
+  | `secured` | **Wood Shore Secured** |
   | `returned` | **Strut Equipment Returned** |
 
 - **Its color is locked, per theme, by [`color.md`](../07-design-system/color.md)** — `--status-{key}-text` on `--status-{key}-bg`. The badge cites; it never picks a hex.
@@ -143,11 +143,11 @@ The **sunlight** theme is the other escalation: the status badge grows from tint
 
 ## Accessibility floor
 
-- **The status badge reads as its label word, never as a color** — "Cutting," not "yellow." This is already registered in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts and is the load-bearing accessibility behavior of the primitive.
+- **The status badge reads as its label word, never as a color** — "Cutting Station," not "yellow." This is already registered in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts and is the load-bearing accessibility behavior of the primitive.
 - **An indicator dot must have adjacent text.** A bare color dot is mystery meat (Principle 9); the dot is decoration *beside* the word ("Active"), and the screen reader announces the word.
-- **A count badge announces what it counts**, not a bare number — "12 shore points in Cutting," not "12" — so the figure has a referent for a non-visual user.
+- **A count badge announces what it counts**, not a bare number — "12 shore points in Cutting Station," not "12" — so the figure has a referent for a non-visual user.
 - **A severity badge announces its level as a word** — "High severity hazard," "Unrated zone" — and is paired with the consequence text it flags ([`voice-and-tone.md`](../07-design-system/voice-and-tone.md) warning copy), never a red fill alone.
-- **Badges are not in the focus order.** They carry no action, so they are not tab stops; the *card or control they sit on* is focusable and speaks the badge inline as part of its own announcement (e.g. the `ShorePointCard` script "Shore point B-2, **Shore Secured**, Division 2").
+- **Badges are not in the focus order.** They carry no action, so they are not tab stops; the *card or control they sit on* is focusable and speaks the badge inline as part of its own announcement (e.g. the `ShorePointCard` script "Shore point B-2, **Wood Shore Secured**, Division 2").
 - **Reduced motion loses nothing.** The status cross-fade collapses to an instant swap ([`motion.md`](../07-design-system/motion.md)); because the badge is a word, the new state is fully legible the instant it switches.
 - Per-variant VoiceOver / TalkBack scripts are registered in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts.
 

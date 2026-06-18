@@ -282,7 +282,7 @@ describe('OperationsBoard', () => {
     expect(within(sheet).getByText('No apparatus stock available')).toBeInTheDocument();
   });
 
-  it('Deploy commits EquipmentDeployed and the board announces the In Process move politely', async () => {
+  it('Deploy commits EquipmentDeployed and the board announces the Equipment Assigned move politely', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
@@ -427,7 +427,7 @@ describe('OperationsBoard', () => {
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points — now Strut Set.');
   });
 
-  it('step-back from In Process opens the inventory-consequential confirm, committing nothing yet', async () => {
+  it('step-back from Equipment Assigned opens the inventory-consequential confirm, committing nothing yet', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
@@ -520,7 +520,7 @@ describe('OperationsBoard', () => {
     expect(ids).toEqual(['sp-1', 'sp-2']); // sorted by cuttingStartedAt
   });
 
-  // ---- #223 / #224 — Runner → Shore Secured → Strut Equipment Returned --------
+  // ---- #223 / #224 — Runner → Wood Shore Secured → Strut Equipment Returned --------
 
   it('Runner: the advance slide commits runner → secured (#223)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
@@ -542,7 +542,7 @@ describe('OperationsBoard', () => {
     );
   });
 
-  it('Shore Secured: Remove & Return opens the confirm modal, committing nothing yet; Confirm commits EquipmentReclaimed (#224)', async () => {
+  it('Wood Shore Secured: Remove & Return opens the confirm modal, committing nothing yet; Confirm commits EquipmentReclaimed (#224)', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
@@ -559,7 +559,7 @@ describe('OperationsBoard', () => {
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 returned to Rescue 2.');
   });
 
-  it('Shore Secured: the step-back slide commits secured → runner — no confirm (no inventory change)', async () => {
+  it('Wood Shore Secured: the step-back slide commits secured → runner — no confirm (no inventory change)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);

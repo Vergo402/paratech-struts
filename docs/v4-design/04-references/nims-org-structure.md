@@ -332,7 +332,7 @@ In every FEMA US&R depiction and in practice at structural collapse incidents, t
 - Cutting Station does NOT appear as a node in the ICS position hierarchy.
 - Cutting Station appears as a labeled work area under Operations (at the same visual level as Staging Area, not nested under a Group Supervisor node).
 - Personnel assigned to the Cutting Station are tracked as Shoring Group resources with a workstation tag of "Cutting Station."
-- The shore-point workflow status "Cutting" means lumber is being cut at the Cutting Station for that specific point. That status is a shore-point state, not an org-chart position.
+- The shore-point workflow status "Cutting Station" means lumber is being cut at the Cutting Station for that specific point. That status is a shore-point state, not an org-chart position.
 
 Source for classification as a workstation: MANUAL 12-001, Chapter 3, which describes the lumber support function as a logistics task supporting the Rescue/Shoring Group, not as a supervisory position in its own right.
 

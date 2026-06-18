@@ -243,19 +243,19 @@
 
       <div class="sg-subhead">Lifecycle status set (7 + danger)</div>
       <div class="sg-flex" style="gap:8px">
-        <span class="sg-badge is-pending">Pending</span>
-        <span class="sg-badge is-process">In Process</span>
+        <span class="sg-badge is-pending">Pending Equipment</span>
+        <span class="sg-badge is-process">Equipment Assigned</span>
         <span class="sg-badge is-strutset">Strut Set</span>
-        <span class="sg-badge is-cutting">Cutting</span>
+        <span class="sg-badge is-cutting">Cutting Station</span>
         <span class="sg-badge is-runner">Runner</span>
-        <span class="sg-badge is-secured">Shore Secured</span>
+        <span class="sg-badge is-secured">Wood Shore Secured</span>
         <span class="sg-badge is-returned">Strut Equipment Returned</span>
       </div>
 
       <div class="sg-subhead">ShorePointCard — 7 lifecycle states (pending → returned)</div>
       <div class="sg-cardstack">
 
-        <!-- 1 · Pending — measured, no strut deployed. Action = Assign Equipment (deploy), not a slide. -->
+        <!-- 1 · Pending Equipment — measured, no strut deployed. Action = Assign Equipment (deploy), not a slide. -->
         <article class="sg-card sg-sp-card is-pending">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -263,16 +263,16 @@
               <div class="sg-sp-name">C-3 · Single Upright</div>
               <div class="sg-sp-loc">Division 1 · B side · Eng 12</div>
             </div>
-            <span class="sg-badge is-pending">Pending</span>
+            <span class="sg-badge is-pending">Pending Equipment</span>
           </div>
           <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span> <span class="lbl">@ 6,000 lbs</span></div>
           <div class="sg-sp-noequip"><span class="ic">⏳</span>No equipment assigned</div>
           <div class="sg-sp-reason">No matching strut — nothing in inventory fits 84″ at this load.</div>
           <button class="sg-assign" type="button">🔧 Assign Equipment</button>
-          <div class="sg-cap">Pending = measured, no strut deployed. The action is <b>Assign Equipment</b> (deploy) — not a status slide; reaching In Process <i>means</i> a strut was deployed.</div>
+          <div class="sg-cap">Pending Equipment = measured, no strut deployed. The action is <b>Assign Equipment</b> (deploy) — not a status slide; reaching Equipment Assigned <i>means</i> a strut was deployed.</div>
         </article>
 
-        <!-- 2 · In Process -->
+        <!-- 2 · Equipment Assigned -->
         <article class="sg-card sg-sp-card is-process">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -280,7 +280,7 @@
               <div class="sg-sp-name">C-1 · Raker Shore</div>
               <div class="sg-sp-loc">Division 1 · A side · Truck 4</div>
             </div>
-            <span class="sg-badge is-process">In Process</span>
+            <span class="sg-badge is-process">Equipment Assigned</span>
           </div>
           <div class="sg-sp-strut">
             <div class="strut-id"><span class="model">AT 58-96</span></div>
@@ -289,7 +289,7 @@
           <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">96"</span></div>
           <div class="sg-slide">
             <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Strut Set</span></div>
-            <div class="back">Slide back to Pending<span class="rhandle">‹</span></div>
+            <div class="back">Slide back to Pending Equipment<span class="rhandle">‹</span></div>
           </div>
         </article>
 
@@ -309,12 +309,12 @@
           </div>
           <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">72"</span></div>
           <div class="sg-slide">
-            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Cutting</span></div>
-            <div class="back">Slide back to In Process<span class="rhandle">‹</span></div>
+            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Cutting Station</span></div>
+            <div class="back">Slide back to Equipment Assigned<span class="rhandle">‹</span></div>
           </div>
         </article>
 
-        <!-- 4 · Cutting (cut-table emphasis + hazard) -->
+        <!-- 4 · Cutting Station (cut-table emphasis + hazard) -->
         <article class="sg-card sg-sp-card is-cutting">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -323,7 +323,7 @@
               <div class="sg-sp-loc">Division 2 · C side · Eng 7</div>
             </div>
             <div class="sg-badges">
-              <span class="sg-badge is-cutting">Cutting</span>
+              <span class="sg-badge is-cutting">Cutting Station</span>
               <span class="sg-hazard" title="Unmitigated hazard in area">⚠ Hazard</span>
             </div>
           </div>
@@ -355,12 +355,12 @@
           </div>
           <div class="sg-sp-meas"><span class="lbl">Cut length</span> <span class="frac">88<span class="fr"><span class="n">1</span><span class="d">4</span></span>"</span></div>
           <div class="sg-slide">
-            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Shore Secured</span></div>
-            <div class="back">Slide back to Cutting<span class="rhandle">‹</span></div>
+            <div class="track"><span class="handle">›</span><span class="lbl">Slide to set Wood Shore Secured</span></div>
+            <div class="back">Slide back to Cutting Station<span class="rhandle">‹</span></div>
           </div>
         </article>
 
-        <!-- 6 · Shore Secured (green) -->
+        <!-- 6 · Wood Shore Secured (green) -->
         <article class="sg-card sg-sp-card is-secured">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -368,7 +368,7 @@
               <div class="sg-sp-name">A-1 · T-Shore</div>
               <div class="sg-sp-loc">Division 1 · A side · Rescue 2</div>
             </div>
-            <span class="sg-badge is-secured">Shore Secured</span>
+            <span class="sg-badge is-secured">Wood Shore Secured</span>
           </div>
           <div class="sg-sp-strut">
             <div class="strut-id"><span class="model">LS 203</span><span class="ext">+ 24"</span></div>
@@ -397,7 +397,7 @@
           </div>
           <div class="sg-sp-meas"><span class="lbl">Set length</span> <span class="frac">120"</span></div>
           <div class="sg-slide">
-            <div class="back">Slide back to Shore Secured<span class="rhandle">‹</span></div>
+            <div class="back">Slide back to Wood Shore Secured<span class="rhandle">‹</span></div>
           </div>
           <div class="sg-cap">Strut Equipment Returned is terminal — no forward slide. Equipment is back in inventory; the only move is a step back.</div>
         </article>
@@ -415,7 +415,7 @@
               <div class="sg-sp-name">B-2 · Single Upright</div>
               <div class="sg-sp-loc">Division 2 · C side · Eng 7</div>
             </div>
-            <span class="sg-badge is-cutting">Cutting</span>
+            <span class="sg-badge is-cutting">Cutting Station</span>
           </div>
           <div class="sg-sp-strut">
             <div class="strut-id"><span class="model">AT 37-58</span></div>
@@ -440,7 +440,7 @@
           <div class="sg-removed-label"><span>Removed from cut list</span></div>
         </article>
 
-        <!-- Pending · waiting for inventory — SAME state as lifecycle #1, different reason (no stock to pull) -->
+        <!-- Pending Equipment · waiting for inventory — SAME state as lifecycle #1, different reason (no stock to pull) -->
         <article class="sg-card sg-sp-card is-pending">
           <span class="sg-stripe" aria-hidden="true"></span>
           <div class="sg-sp-head">
@@ -448,13 +448,13 @@
               <div class="sg-sp-name">D-1 · Single Upright</div>
               <div class="sg-sp-loc">Division 1 · A side · unassigned</div>
             </div>
-            <span class="sg-badge is-pending">Pending</span>
+            <span class="sg-badge is-pending">Pending Equipment</span>
           </div>
           <div class="sg-sp-meas"><span class="lbl">Required</span> <span class="num">84"</span> <span class="lbl">@ 6,000 lbs</span></div>
           <div class="sg-sp-noequip"><span class="ic">⏳</span>No equipment assigned</div>
           <div class="sg-sp-reason">Waiting for inventory — no apparatus stock to pull from yet.</div>
           <button class="sg-assign" type="button">🔧 Assign Equipment</button>
-          <div class="sg-cap">The "waiting for inventory" case is just Pending with a different reason (v3 stored it as <code>pendingReason</code>) — same card, same Assign action.</div>
+          <div class="sg-cap">The "waiting for inventory" case is just Pending Equipment with a different reason (v3 stored it as <code>pendingReason</code>) — same card, same Assign action.</div>
         </article>
 
       </div>

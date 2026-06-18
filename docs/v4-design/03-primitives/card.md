@@ -43,7 +43,7 @@ All variants share the base shell; the table is which behaviors layer on.
 | Elevation (rest) | **no drop shadow** | 1pt top inner highlight at 6% (`inset 0 1pt 0 …`) — a lifted lip, not a shadow |
 | Touch target | full width tappable | **56pt** min height for any tappable card (60pt for `ShorePointCard`); 44pt is the never-below WCAG floor, not a design target; any in-card **primary action ≥56pt** |
 
-**Focus card (selected state):** border becomes `--accent` at 60% opacity, background `--surface-card-hover`. **No size change, no scale animation** — scale/zoom on cards during an operation is nauseating when the user is watching a live list. The focus signal is border + fill only. (The styleguide class is `is-focus` — deliberately *not* `is-active`, to avoid colliding with the "In Process" lifecycle status.)
+**Focus card (selected state):** border becomes `--accent` at 60% opacity, background `--surface-card-hover`. **No size change, no scale animation** — scale/zoom on cards during an operation is nauseating when the user is watching a live list. The focus signal is border + fill only. (The styleguide class is `is-focus` — deliberately *not* `is-active`, to avoid colliding with the "Equipment Assigned" lifecycle status.)
 
 Elevation discipline: **shadows are for sheets and modals, never cards.** A card that floats (rare) uses the 1pt top inner highlight to simulate a lifted lip. (Sunlight theme is the one exception — cards there gain a 2pt offset shadow because glare washes edges flat; see [`color.md`](../07-design-system/color.md).)
 
@@ -51,11 +51,11 @@ Elevation discipline: **shadows are for sheets and modals, never cards.** A card
 
 ## `ShorePointCard` — the lifecycle card
 
-The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending → In Process → Strut Set → Cutting → Runner → Shore Secured → Strut Equipment Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
+The shore-point object moves through the seven v4 states (`pending → process → strutset → cutting → runner → secured → returned`, displayed Pending Equipment → Equipment Assigned → Strut Set → Cutting Station → Runner → Wood Shore Secured → Strut Equipment Returned; see [`color.md`](../07-design-system/color.md) status palette). The card is where that lifecycle is read and advanced.
 
 ### Deployed strut — carried cradle to grave
 
-Once a strut is deployed, the card carries the **deployed-strut identity** through every state until equipment is returned: the **model** (mono — e.g. `AT 37-58`, or `LS 203 + 12"` with extensions) and the **apparatus it came from**. This is the operational thread — at any point the team can see *what strut is in this hole and where it came from*. It appears from **In Process through Strut Equipment Returned**; **pending** shows no strut (nothing deployed yet), and the off-queue red-slash state suppresses it. (Faithful to v3, which renders the model + `Equipment from: <apparatus>` on every deployed card.)
+Once a strut is deployed, the card carries the **deployed-strut identity** through every state until equipment is returned: the **model** (mono — e.g. `AT 37-58`, or `LS 203 + 12"` with extensions) and the **apparatus it came from**. This is the operational thread — at any point the team can see *what strut is in this hole and where it came from*. It appears from **Equipment Assigned through Strut Equipment Returned**; **pending** shows no strut (nothing deployed yet), and the off-queue red-slash state suppresses it. (Faithful to v3, which renders the model + `Equipment from: <apparatus>` on every deployed card.)
 
 **The apparatus is a caption under the location** (S12), not a sub-line under the model: the source (`deployedStrut.source` — "from Rescue 2", external / mutual-aid as "External · Dept 14") sits on its own tertiary line in the identity column beneath the division/building/area, and the strut block below carries **the model only** — the duplicate "from X" sub-line is gone. External / mutual-aid equipment is still flagged for return to the right agency by that caption.
 
@@ -132,16 +132,16 @@ The number always renders in **`--sp-solid`** (the saturated status hue, sunligh
 
 In the **`cutting` state** the value shelf is **promoted**: the **cut length is the one number the cutter reads** at the Cutting Station, so the number jumps to **28px / 700** (the diagonal fraction scales with `font-size` automatically — no per-size re-derivation, [ADR-028](../11-decisions/ADR-028-inter-numerals-diagonal-fractions.md)) while the shelf's status tint, label, and `--sp-solid` ink carry over unchanged. It stands out at a glance without becoming a separate box or alarm — emphasis through size + weight on top of the same status-tinted shelf. (This is the v3 "cut length stands out" behavior, now landed as a real promotion, not a deferral.) Every other state keeps the shelf number at the body-lg mono size; the 28px/700 promotion is specific to the cut-table moment.
 
-### Pending — no strut deployed yet (and its "waiting" reason)
+### Pending Equipment — no strut deployed yet (and its "waiting" reason)
 
-**Pending is the pre-deployment state: the shore point is measured (length + load recorded) but no strut is deployed.** v3 confirms a point only *becomes* pending when a strut can't be deployed at save time. Crucially, pending is **not** advanced by a slide — the action is **Deploy / Assign Equipment**, because reaching In Process *means* a strut was deployed. The card:
+**Pending Equipment is the pre-deployment state: the shore point is measured (length + load recorded) but no strut is deployed.** v3 confirms a point only *becomes* pending when a strut can't be deployed at save time. Crucially, pending is **not** advanced by a slide — the action is **Deploy / Assign Equipment**, because reaching Equipment Assigned *means* a strut was deployed. The card:
 
 - Shows **"No equipment assigned"** + a **waiting callout**, then one primary action: **"Assign Equipment"** (a deploy action, full-width, process-blue) — **not** a slide-to-advance. (Faithful to v3, where the pending card shows an Assign Equipment button, never a status slider.)
 - **"Waiting for inventory" is a *reason*, not a separate state.** v3 stores `pendingReason` — `no-match` (inventory exists but nothing fits the length + load) vs `no-inventory` (no apparatus stock to pull from at all). When a reason is present, v4 surfaces it as a **waiting callout** (S12): a waiting-tinted box (`--sp-bg` ground, `--sp-solid` border) with a clamp/strut glyph, a **bold title** per reason ("No matching strut" / "Waiting for inventory") over the **verbatim reason copy** beneath it ("No matching strut — nothing fits this opening at this load" / "Waiting for inventory — no apparatus stock to pull from"). Same card, same Assign action; only the reason differs, and a pending point with no reason shows no callout. (v3 stored the reason but never displayed it; v4 finally shows it, framed.) The reason is live — it appears and clears as inventory changes (the board computes it, never persists it).
 - **The waiting card presents AMBER** (full S12 design audit — the styleguide's waiting card). A pending point with a reason swaps its whole status presentation to the **waiting family** (`--status-waiting-*`, the `.is-waiting` hook riding beside `.is-pending`): the badge reads **"Waiting"**, and the stripe, value shelf, callout, and rolodex tabs/dots all take the amber. **Waiting is a presentation of pending, never a lifecycle status** — lanes, lockstep, and the reducer see only `pending`. Sunlight waiting is the one authored **pale-fill exception**: dark amber ink on pale amber, not a white-on-solid banner (the void speaking, not a lifecycle banner; the ink darkened from the design's value to clear sunlight's 7:1 contract — see `wcag-contrast.mjs`).
 - Uses the **pending status hue** like any pending point — *not* a separate gold "Waiting" badge/state. An earlier v4 pass split these into two cards (pending vs a gold "Waiting" state); that conflated a reason with a state and was reconciled back to v3's single pending model.
 - Keeps the shore-point identity (name, area, **Raw opening** + load) so the point is actionable the moment equipment arrives.
-- Clears when a strut is assigned: Assign Equipment deploys and advances the point to **In Process** with the strut attached. (At v5 federal scale a resource request would tie in here — out of v4.0 scope.)
+- Clears when a strut is assigned: Assign Equipment deploys and advances the point to **Equipment Assigned** with the strut attached. (At v5 federal scale a resource request would tie in here — out of v4.0 scope.)
 
 ### The grouped rolodex stack (`GroupedShorePoint`)
 
@@ -244,9 +244,9 @@ Base card + content. An operation card leads with operation name (`--type-body-l
 
 ## Accessibility floor
 
-- A tappable card is a real button (or `role="button"` + `tabindex="0"`) with an accessible name describing the object and its state ("Shore point B-2, Cutting, area Division 2").
+- A tappable card is a real button (or `role="button"` + `tabindex="0"`) with an accessible name describing the object and its state ("Shore point B-2, Cutting Station, area Division 2").
 - **The slide-to-advance gesture is the ONLY status commit path** ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md) — the recorded exception to *assistive tech cannot slide*). No Advance/Step-back buttons, visible or AT-only. Assistive tech reads every card and hears every transition (below); it does not drive the lifecycle. Deploy/return/End-Op stay fully operable buttons/modals.
-- **`aria-live="polite"`** announces status changes: "Shore point B-2, now Cutting." Reversal announces likewise.
+- **`aria-live="polite"`** announces status changes: "Shore point B-2, now Cutting Station." Reversal announces likewise.
 - The **off-queue red-slash** state is conveyed by the real text "Removed from cut list" (announced), not the slash alone.
 - **Color never alone** (Principle 9): stripe + badge text + status label; the deduction ledger labels every row in text.
 - Touch targets: card ≥60pt (`ShorePointCard`), in-card primary action ≥56pt, 8pt dead zone between adjacent targets ([`spacing-grid.md`](../07-design-system/spacing-grid.md)).

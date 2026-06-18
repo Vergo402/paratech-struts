@@ -1,7 +1,7 @@
 # Design System: Voice & Tone
 
 > Phase E, design-system file 7 of 8. Authored at the depth of [`03-primitives/picker.md`](../03-primitives/picker.md).
-> Source: [`02-principles.md`](../02-principles.md) (the constraints) + [`04-references/positioning.md`](../04-references/positioning.md) (the brand voice, in Alex's words) + essays [`05-essays/05-nims-doctrine.md`](../05-essays/05-nims-doctrine.md) (terminology) and [`05-essays/06-domain-ux.md`](../05-essays/06-domain-ux.md) (warning / empty-state copy) — **reconciled, not transcribed.** The seven status display labels are **ratified** here from [`color.md`](color.md), which fixed two words ("In Process", "Shore Secured") and deferred the full set + all UI copy to this file; terminology follows [ADR-008](../11-decisions/ADR-008-nims-org-structure.md); status and measurement wording follow [ADR-010](../11-decisions/ADR-010-status-commit-model.md) / [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md). This is the **one** design-system file that mints **no CSS tokens** — copy is prose, not a token scale; it references the color / type / spacing tokens its siblings own.
+> Source: [`02-principles.md`](../02-principles.md) (the constraints) + [`04-references/positioning.md`](../04-references/positioning.md) (the brand voice, in Alex's words) + essays [`05-essays/05-nims-doctrine.md`](../05-essays/05-nims-doctrine.md) (terminology) and [`05-essays/06-domain-ux.md`](../05-essays/06-domain-ux.md) (warning / empty-state copy) — **reconciled, not transcribed.** The seven status display labels are **ratified** here from [`color.md`](color.md), which fixed two words ("Equipment Assigned", "Wood Shore Secured") and deferred the full set + all UI copy to this file; terminology follows [ADR-008](../11-decisions/ADR-008-nims-org-structure.md); status and measurement wording follow [ADR-010](../11-decisions/ADR-010-status-commit-model.md) / [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md). This is the **one** design-system file that mints **no CSS tokens** — copy is prose, not a token scale; it references the color / type / spacing tokens its siblings own.
 
 ---
 
@@ -45,23 +45,23 @@ The shore-point lifecycle is the spine of the app, so its words are fixed here a
 
 | Display label | Lifecycle meaning | enum key |
 |---|---|---|
-| Pending | created, not yet worked | `pending` |
-| In Process | work underway | `process` |
+| Pending Equipment | created, not yet worked | `pending` |
+| Equipment Assigned | work underway | `process` |
 | **Strut Set** | strut placed, pre-cut | `strutset` (was `strutplaced`) |
-| Cutting | wood being cut to length | `cutting` |
+| Cutting Station | wood being cut to length | `cutting` |
 | Runner | cut piece in transit | `runner` |
-| **Shore Secured** | installed and locked | `secured` |
+| **Wood Shore Secured** | installed and locked | `secured` |
 | **Strut Equipment Returned** | equipment back in inventory (terminal) | `returned` |
 
 Three labels are renamed from v3, and the why matters:
 
 - **Strut Installed → Strut Set.** "Set" is what shoring crews say for an installed, loaded prop — shorter and less ambiguous than "Installed." The enum renamed with it (`strutplaced` → `strutset`), accepted as matrix **E-14** and locked in [ADR-011](../11-decisions/ADR-011-color-token-system.md), per [`nims-org-structure.md`](../04-references/nims-org-structure.md) §10.
-- **Secured → Shore Secured.** Names *what* is secured. "Secured" alone could read as a scene-security state; "Shore Secured" is unambiguously the shore.
+- **Secured → Wood Shore Secured.** Names *what* is secured. "Secured" alone could read as a scene-security state; "Wood Shore Secured" is unambiguously the shore.
 - **Returned → Strut Equipment Returned.** Spells out that the *equipment* (strut + plates) is back in inventory — the terminal accounting state, not a person or a scene returning.
 
 These are the words. The verbs that move *between* them — the slide-action copy — are in "How the app talks," below.
 
-> "In Process" replaced essay 02's proposed "Active" because Alex reverted it (2026-06-01); "Active" was never a doctrine term. The reversal is the rule: a status word changes only with a reason on the record, never for style.
+> "Equipment Assigned" replaced essay 02's proposed "Active" because Alex reverted it (2026-06-01); "Active" was never a doctrine term. The reversal is the rule: a status word changes only with a reason on the record, never for style.
 
 ---
 
@@ -72,7 +72,7 @@ The rule per kind of copy, each with a real before/after from v3 so the change i
 **Actions / buttons.** Imperative verb, doctrine-exact, no emoji. Forward motion through the lifecycle is a *slide*, and the label says what the slide sets:
 - `🔧 Assign Equipment` → **Assign Equipment** (`app.js:5363`)
 - `→ Strut Installed` → **Slide to set Strut Set** (the control is a slide track, not a tap — [ADR-010](../11-decisions/ADR-010-status-commit-model.md))
-- `← Send Back` → **Slide back to In Process** (reversal names the destination state, not a generic "back")
+- `← Send Back` → **Slide back to Equipment Assigned** (reversal names the destination state, not a generic "back")
 
 **The off-queue state.** A card pulled off an active work queue does not vanish — silent disappearance reads as data loss under stress. It shows a passive red-slash treatment with the words **Removed from cut list** across it (Principle 10 — *visible state, not a push*; [ADR-010](../11-decisions/ADR-010-status-commit-model.md)). The words are a state, not a notification.
 
@@ -124,7 +124,7 @@ The voice is authored for the phone and inherited by the larger surfaces (Princi
 
 Copy is the accessibility layer of last resort — when color is defeated by colorblindness or glare, the *word* still carries the state (Principle 9; [`color.md`](color.md)).
 
-- **Every status is a word, not only a hue.** The badge text ("Cutting," "Shore Secured") is the signal; the color is redundant.
+- **Every status is a word, not only a hue.** The badge text ("Cutting Station," "Wood Shore Secured") is the signal; the color is redundant.
 - **Screen readers announce label + role.** A control reads as "Button, Assign Equipment," never "Button" or a bare icon. Icon-only controls are forbidden in primary actions — every glyph has backing label text (Principle 9).
 - **Abbreviations expand.** Any abbreviation in the chrome carries an `<abbr>` expansion so assistive tech and first-time users both resolve it.
 

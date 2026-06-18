@@ -23,8 +23,8 @@ The live shoring job board: every shore point in the active operation, grouped b
 ## Information hierarchy (above / below fold) — per surface
 
 ### Phone (the floor)
-- **Above fold:** persistent chrome (Safety Officer + OP-period header, sync dot — see [`00-ia-foundation.md`](00-ia-foundation.md) §Persistent chrome); the operation name + a **drilldown scope control**; then the **active-status lanes** — the lanes with work needing attention (Pending, In Process, Cutting, Runner) lead, each a [`list`](../03-primitives/list.md) section of [`ShorePointCard`](../03-primitives/card.md)s with a count.
-- **Below fold:** later-lifecycle lanes (Shore Secured, Strut Equipment Returned), archived operations.
+- **Above fold:** persistent chrome (Safety Officer + OP-period header, sync dot — see [`00-ia-foundation.md`](00-ia-foundation.md) §Persistent chrome); the operation name + a **drilldown scope control**; then the **active-status lanes** — the lanes with work needing attention (Pending Equipment, Equipment Assigned, Cutting Station, Runner) lead, each a [`list`](../03-primitives/list.md) section of [`ShorePointCard`](../03-primitives/card.md)s with a count.
+- **Below fold:** later-lifecycle lanes (Wood Shore Secured, Strut Equipment Returned), archived operations.
 
 ### Tablet (CP)
 - **Above fold:** a **status-summary bar** with counts per lane (rec G-15 — phone omits this); lanes as a multi-column board; the drilldown tree expanded in the left rail (per [`00-ia-foundation.md`](00-ia-foundation.md) navigation table). Glance-across-the-room status read via the card's left stripe ([`card.md`](../03-primitives/card.md)).
@@ -38,7 +38,7 @@ The live shoring job board: every shore point in the active operation, grouped b
 
 ## Primary action + secondary actions
 
-- **Primary action (one — Principle 4):** advance a shore point to its next status — a **slide-to-advance** on the [`ShorePointCard`](../03-primitives/card.md) / [`slider`](../03-primitives/slider.md) ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)). The exception is **Pending**, whose primary action is **Assign Equipment** (a deploy, not a slide — see below).
+- **Primary action (one — Principle 4):** advance a shore point to its next status — a **slide-to-advance** on the [`ShorePointCard`](../03-primitives/card.md) / [`slider`](../03-primitives/slider.md) ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)). The exception is **Pending Equipment**, whose primary action is **Assign Equipment** (a deploy, not a slide — see below).
 - **Secondary actions:** **Step back** (the reverse slide, below the track); **Add Shore Point** (full-screen-form modal); **Start / End Operation**; **Begin Briefing** — the [ORM / TCRM](23-orm-tcrm.md) crew-briefing entry, a button-bar action on this active-operation screen (not a navigated screen); drill into building → division → area; switch to the [Cutting Station](21-cutting-station.md). None competes with the slide for the card face.
 - **Destructive / terminal / inventory-mutating:** **End Operation** and an inventory-decrementing **return** raise a [`modal`](../03-primitives/modal.md) confirm (the ADR-016 Operations row); everyday advances never confirm.
 
@@ -64,12 +64,12 @@ The shore point moves through the **seven v4 states** ([`card.md`](../03-primiti
 
 | # | Internal id | v4 display label | v3 label (changed) |
 |---|---|---|---|
-| 1 | `pending` | **Pending** | "Pending — No Equipment" |
-| 2 | `process` | **In Process** | "In Process" |
+| 1 | `pending` | **Pending Equipment** | "Pending — No Equipment" |
+| 2 | `process` | **Equipment Assigned** | "In Process" |
 | 3 | `strutset` | **Strut Set** | "Strut Installed" → renamed |
-| 4 | `cutting` | **Cutting** | "Cutting" |
+| 4 | `cutting` | **Cutting Station** | "Cutting" |
 | 5 | `runner` | **Runner** | "Runner" |
-| 6 | `secured` | **Shore Secured** | "Secured" → renamed |
+| 6 | `secured` | **Wood Shore Secured** | "Secured" → renamed |
 | 7 | `returned` | **Strut Equipment Returned** | "Removed & Returned" → renamed |
 
 - Points are grouped into **collapsible lanes in lifecycle order** (never alphabetical — [`list.md`](../03-primitives/list.md) doctrine), each with a **count badge**. Lane order follows `STATUS_ORDER` verbatim.
@@ -79,12 +79,12 @@ The shore point moves through the **seven v4 states** ([`card.md`](../03-primiti
 
 | Lane | Primary action on the card | Role gate (IC / Safety override) |
 |---|---|---|
-| **Pending** | **Assign Equipment** (deploy → In Process) — a [`sheet`](../03-primitives/sheet.md), **not a slide** (reaching In Process *means* a strut was deployed; faithful to v3's Assign-Equipment button) | — |
-| **In Process** | slide → **Strut Set** | — |
-| **Strut Set** | slide → **Cutting** (and step-back → In Process) | — |
-| **Cutting** | (advanced from the [Cutting Station](21-cutting-station.md): Mark Cut Done → Send to Runner) | Cutting |
-| **Runner** | slide → **Shore Secured** | Runner (the v3 `mark-secured` gate) |
-| **Shore Secured** | **Remove & Return Equipment** → Strut Equipment Returned — an inventory-decrementing [`modal`](../03-primitives/modal.md) confirm | Entry / Rescue / Shoring (the v3 `return-equipment` gate) |
+| **Pending Equipment** | **Assign Equipment** (deploy → Equipment Assigned) — a [`sheet`](../03-primitives/sheet.md), **not a slide** (reaching Equipment Assigned *means* a strut was deployed; faithful to v3's Assign-Equipment button) | — |
+| **Equipment Assigned** | slide → **Strut Set** | — |
+| **Strut Set** | slide → **Cutting Station** (and step-back → Equipment Assigned) | — |
+| **Cutting Station** | (advanced from the [Cutting Station](21-cutting-station.md): Mark Cut Done → Send to Runner) | Cutting |
+| **Runner** | slide → **Wood Shore Secured** | Runner (the v3 `mark-secured` gate) |
+| **Wood Shore Secured** | **Remove & Return Equipment** → Strut Equipment Returned — an inventory-decrementing [`modal`](../03-primitives/modal.md) confirm | Entry / Rescue / Shoring (the v3 `return-equipment` gate) |
 | **Strut Equipment Returned** | none (terminal; de-emphasized — resolves [`card.md`](../03-primitives/card.md) OQ2: warm-neutral hue + reduced emphasis, collapsible archive lane, no opacity trick) | — |
 
 The role-gate model (who may advance what) is the D7 authorization work; this screen renders whatever that model permits and shows a disabled affordance with a reason when it doesn't (faithful to v3's gated buttons + tooltip).
@@ -102,8 +102,8 @@ v3 risked one card per fitting strut per shore point (synthesis §2.7 predicted 
 ## Grouped shore points (per-shore groups + the phase-split)
 
 **KB-7 per-shore strut math ([#248](https://github.com/Vergo402/paratech-struts/issues/248) / [#313](https://github.com/Vergo402/paratech-struts/issues/313), 2026-06-11):** quantity = number of **shores**, and the shore type drives **struts per shore** (T-Shore 1, Double-T 2, 3-Post 3). Each **physical multi-strut shore** writes one card per strut sharing a `groupId` — one 3-Post = three cards badged **1/3 · 2/3 · 3/3**, rendered as **individual cards in the same lane** ([`card.md`](../03-primitives/card.md)). Single-strut shores are never grouped — a T-Shore ×3 = three independent cards. The Add form pre-states the math ("3 × 3-Post = 9 struts"). *(Corrects this section's earlier qty-as-cards model — which is also how v3 behaves; the v3 shore type is label + wood only. Per-shore strut math is a v4 improvement, not parity restoration.)* The v3.8/3.9 **phase-based split crosses unchanged**, now scoped to the physical shore:
-- **Pre-cutting** (Pending → In Process → Strut Set → Cutting) — a slide advances **all struts of the shore at once** (the v3 `getGroupMembers()` fan-out), and a step-back never regresses a mate already further along (the v3 `STATUS_ORDER` guard).
-- **Cutting onward** (Cutting → Runner → Shore Secured → Strut Equipment Returned) — each piece advances **individually** (its own cut length, its own slide).
+- **Pre-cutting** (Pending Equipment → Equipment Assigned → Strut Set → Cutting Station) — a slide advances **all struts of the shore at once** (the v3 `getGroupMembers()` fan-out), and a step-back never regresses a mate already further along (the v3 `STATUS_ORDER` guard).
+- **Cutting onward** (Cutting Station → Runner → Wood Shore Secured → Strut Equipment Returned) — each piece advances **individually** (its own cut length, its own slide).
 The card signposts which mode applies via the group badge; the full grouped-shore interaction is finalized in the Phase G workflow.
 
 ### On the board — within-lane stacking + the split-on-divergence rule (S12)
@@ -112,7 +112,7 @@ How grouped members render on the lanes (the card-side rolodex view is owned by 
 
 - **Stacking is per-lane.** Within a single lane, the board collapses **2+ members of the same `groupId`** into one **rolodex stack** (`GroupedShorePoint`) rather than showing them as loose siblings; a lone member present in a lane renders as a plain `ShorePointCard`. The stack appears at its **earliest member's** position (first-appearance order preserved), and members inside it are ordered by `groupIndex`.
 - **Lockstep keeps a group whole pre-cutting.** Because the pre-cutting fan-out moves every member together, all members of a group share one status and therefore sit in **one lane** — the whole shore reads as a single stack the operator advances at once.
-- **Divergence splits the stack across lanes.** Once the cutting workflow begins and members advance **individually**, their statuses diverge — so they land in **different lanes**, and each lane stacks only the members that are *in it*. A 3-Post mid-cut might show one card in Cutting and a 2-member stack in Runner. This falls straight out of the per-lane grouping rule; nothing special-cases it.
+- **Divergence splits the stack across lanes.** Once the cutting workflow begins and members advance **individually**, their statuses diverge — so they land in **different lanes**, and each lane stacks only the members that are *in it*. A 3-Post mid-cut might show one card in Cutting Station and a 2-member stack in Runner. This falls straight out of the per-lane grouping rule; nothing special-cases it.
 - **Scroll-into-view fronts the committed member.** After a commit the board scrolls to the affected group and **fronts the just-moved member** in its stack: every member carries `data-sp-id` on the stack's front wrapper, its sliver tab, *and* its expanded row, so the scroll-target query resolves whichever form the stack is in, and the stack mounts with that member up front (`initialActiveId`). When a fan-out lands a freshly-split group in a new lane, the operator arrives looking at the piece they moved, not at member 1.
 
 ## Locked cross-cutting rules this screen honors
@@ -150,7 +150,7 @@ How grouped members render on the lanes (the card-side rolodex view is owned by 
 
 **Cite [`accessibility.md`](../07-design-system/accessibility.md), do not restate.**
 - The `ShorePointCard` slide is **pointer-only — no button or keyboard equivalent** ([ADR-026](../11-decisions/ADR-026-slide-only-status-commit.md), the recorded exception to "assistive tech cannot slide"); transitions announce via the polite live region and a gated slide shows its reason as visible text — script registry in [`accessibility.md`](../07-design-system/accessibility.md) §Screen-reader scripts.
-- Lanes are landmarks; each card announces *object · status · area* ("Shore point B-2, Cutting, Division 2"); status changes announce via `aria-live` (per [`card.md`](../03-primitives/card.md)).
+- Lanes are landmarks; each card announces *object · status · area* ("Shore point B-2, Cutting Station, Division 2"); status changes announce via `aria-live` (per [`card.md`](../03-primitives/card.md)).
 - Drilldown rows are buttons with the level name + count; the breadcrumb is a navigable back-path → [`accessibility.md`](../07-design-system/accessibility.md) §Focus & keyboard.
 - Power Select applies to the Assign Equipment picker under VoiceOver/TalkBack-or-Settings.
 

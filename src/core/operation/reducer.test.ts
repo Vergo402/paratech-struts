@@ -125,7 +125,7 @@ describe('EquipmentReclaimed (#224) — terminal Remove & Return routes to the S
   const deployedBom = [{ role: 'strut' as const, ...deployed }];
   const reclaim = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReclaimed', id: 'e', opId: 'op1', at: 1, by: 't', spId });
 
-  it('moves Shore Secured → Returned, keeping the strut, and never touches a different point', () => {
+  it('moves Wood Shore Secured → Returned, keeping the strut, and never touches a different point', () => {
     const state = stateWith([
       sp('a', { status: 'secured', deployedBom }),
       sp('b', { status: 'secured', deployedBom }),

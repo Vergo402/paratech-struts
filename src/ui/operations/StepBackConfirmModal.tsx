@@ -14,10 +14,10 @@ import { useCommit, useDeviceUid } from '@ui/hooks';
  * each component's stock count and the reducer reverts the point to Pending.
  */
 export interface StepBackConfirmModalProps {
-  /** The In Process point to un-deploy; null renders nothing (closed). */
+  /** The Equipment Assigned point to un-deploy; null renders nothing (closed). */
   shorePoint: ShorePoint | null;
   /**
-   * The full In-Process set to un-deploy together. For a grouped physical shore
+   * The full Equipment Assigned set to un-deploy together. For a grouped physical shore
    * (Double-T / 3-Post) this is every deployed member, so the shore is never
    * left as orphaned standing struts — the set stays married cradle-to-grave.
    * Omitted / empty falls back to just `shorePoint`.

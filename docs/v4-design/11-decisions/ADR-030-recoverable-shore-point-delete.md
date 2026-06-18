@@ -48,6 +48,6 @@ A timed undo toast was rejected — the status-commit model already rejected tim
 - **Schema:** `ShorePoint.deletedAt?` (epoch ms; presence = deleted). Reducer-managed only — absent from `ShorePointPatch` (not user-editable). Distinct from the card's presentational `removed`.
 - **Events:** new `ShorePointRestored` (mirror of `ShorePointDeleted`: `spId`). `ShorePointDeleted` reducer semantics change from filter to soft-flag.
 - **Board:** `byStatus` and the division/area filter lists skip `deletedAt`-set points; a new `deleted` memo (most-recent-first) feeds the `DeletedSection`. `.fs-deleted*` styles reuse the lane header/chevron, muted so the section never reads as an eighth status.
-- **Grouping:** delete granularity is unchanged — per card, Pending-only. A soft-deleted grouped-shore member is filtered from its stack upstream in `byStatus`; Restore returns it. The shared `seq` (ADR-029) is untouched.
+- **Grouping:** delete granularity is unchanged — per card, Pending Equipment-only. A soft-deleted grouped-shore member is filtered from its stack upstream in `byStatus`; Restore returns it. The shared `seq` (ADR-029) is untouched.
 - **Numbering quirk (ADR-029) stands** — gaps are still gappy; this ADR makes them *recoverable*, not gone.
 - Tests: reducer round-trip (delete → restore) + no-number-reuse; board delete-leaves-lane + Restore-commits-and-announces. Typecheck + lint clean. Live-verified on the slice.

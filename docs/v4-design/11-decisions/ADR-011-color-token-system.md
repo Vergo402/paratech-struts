@@ -59,7 +59,7 @@ The one synthesis-pinned value — dark `--accent` `#D4A017` — is **kept**; on
 
 - **Positive:** every token is AA-verified for its use class and reproducible; status semantics are field-correct and complete; broadcast clears AAA.
 - **Negative:** the committed hexes diverge from essay 02's literal values in the places enumerated above. This ADR is the record of *why*, so the divergence is auditable rather than silent.
-- **Neutral:** the dark-theme differentiator (`--surface-bg #1C1F23`, `--accent #D4A017`) is unchanged; the corrections touch the light accent, dark tertiary, light pending, sunlight accent, and the two broadcast hues only. `badge.md`, `voice-and-tone.md`, and the data model inherit the renamed enum and the resolved display labels noted in color.md (the in-progress state displays "In Process" — v3 key `process`, reverting essay 02's "Active"; the locked state displays "Shore Secured", key `secured`).
+- **Neutral:** the dark-theme differentiator (`--surface-bg #1C1F23`, `--accent #D4A017`) is unchanged; the corrections touch the light accent, dark tertiary, light pending, sunlight accent, and the two broadcast hues only. `badge.md`, `voice-and-tone.md`, and the data model inherit the renamed enum and the resolved display labels noted in color.md (the in-progress state displays "Equipment Assigned" — v3 key `process`, reverting essay 02's "Active"; the locked state displays "Wood Shore Secured", key `secured`).
 
 ---
 
@@ -99,7 +99,7 @@ The `preview/tokens.css` mirror and `src/app/tokens.css` were synced in the same
 - **Principles:** 9 (color is never the only signal), 7 (visible safety), 3 (calm/muted palette).
 - **Other ADRs:** ADR-008 (renamed status enum — `strutset`); pairs with ADR-010 (the status *commit* model, which `card.md` renders in these colors).
 - **Synthesis:** §4 visual language (palette anchors, "document the ratio" rule), §3.4 (capacity demoted — affects which colors lead a card, not the tokens).
-- **Open questions:** #9 typeface is resolved separately (Geist); this ADR resolves the color portion of the §4 visual direction. Surfaced then resolved (2026-06-01): the in-progress state displays **"In Process"** (v3 key `process`, reverting essay 02's "Active"), the locked state **"Shore Secured"** (key `secured`). Still open: sunlight `process`/`--danger` banner at 6.47–6.70 vs. a stricter 7:1 (gate question in color.md).
+- **Open questions:** #9 typeface is resolved separately (Geist); this ADR resolves the color portion of the §4 visual direction. Surfaced then resolved (2026-06-01): the in-progress state displays **"Equipment Assigned"** (v3 key `process`, reverting essay 02's "Active"), the locked state **"Wood Shore Secured"** (key `secured`). Still open: sunlight `process`/`--danger` banner at 6.47–6.70 vs. a stricter 7:1 (gate question in color.md).
 
 ---
 

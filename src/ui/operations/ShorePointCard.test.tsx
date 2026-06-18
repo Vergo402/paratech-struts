@@ -430,7 +430,7 @@ describe('ShorePointCard', () => {
     expect(onClearCutDone).toHaveBeenCalledWith(sp);
   });
 
-  it('Runner on the BOARD (#223): advance → Shore Secured + step-back → Cutting both commit', async () => {
+  it('Runner on the BOARD (#223): advance → Wood Shore Secured + step-back → Cutting Station both commit', async () => {
     const onAdvance = vi.fn();
     const onStepBack = vi.fn();
     const sp = makeSP({
@@ -446,7 +446,7 @@ describe('ShorePointCard', () => {
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 
-  it('Shore Secured on the BOARD (#224): Remove & Return is a BUTTON (not a slide) + step-back → Runner', async () => {
+  it('Wood Shore Secured on the BOARD (#224): Remove & Return is a BUTTON (not a slide) + step-back → Runner', async () => {
     const onRemoveReturn = vi.fn();
     const onStepBack = vi.fn();
     const sp = makeSP({

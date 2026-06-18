@@ -68,7 +68,7 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
   it('a grouped shore un-deploys EVERY member together (married cradle-to-grave)', async () => {
     const user = userEvent.setup();
     const onReturned = vi.fn();
-    // Three struts of one physical 3-Post, all In Process (same groupId).
+    // Three struts of one physical 3-Post, all Equipment Assigned (same groupId).
     const members: ShorePoint[] = [1, 2, 3].map((i) => ({
       ...SP,
       id: `sp-${i}`,
@@ -95,11 +95,11 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
   it('a failed return surfaces the reason and stays open', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    mockCommit.mockResolvedValue({ ok: false, reason: 'shore point is not In Process' });
+    mockCommit.mockResolvedValue({ ok: false, reason: 'shore point is not Equipment Assigned' });
     render(<StepBackConfirmModal shorePoint={SP} onClose={onClose} />);
 
     await user.click(screen.getByRole('button', { name: 'Return & Step Back' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('shore point is not In Process');
+    expect(screen.getByRole('alert')).toHaveTextContent('shore point is not Equipment Assigned');
     expect(onClose).not.toHaveBeenCalled();
   });
 });

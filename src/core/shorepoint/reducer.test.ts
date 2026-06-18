@@ -116,7 +116,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
   const deployedComponent = { role: 'strut' as const, ...deployed };
 
   // --- LEGACY-projection coverage (StrutDeployed / StrutReturned, replay only) ---
-  it('LEGACY deploy moves Pending → In Process and projects the strut into a one-element BOM', () => {
+  it('LEGACY deploy moves Pending Equipment → Equipment Assigned and projects the strut into a one-element BOM', () => {
     const next = shorePointReducer(sp({ status: 'pending' }), {
       type: 'StrutDeployed',
       ...meta,
@@ -127,7 +127,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(deployedStrutOf(next)).toEqual(deployedComponent);
   });
 
-  it('LEGACY deploy is rejected if the point is not Pending', () => {
+  it('LEGACY deploy is rejected if the point is not Pending Equipment', () => {
     const point = sp({ status: 'strutset' });
     const next = shorePointReducer(point, {
       type: 'StrutDeployed',
@@ -138,7 +138,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next).toBe(point);
   });
 
-  it('LEGACY return (step-back) moves In Process → Pending and clears the BOM', () => {
+  it('LEGACY return (step-back) moves Equipment Assigned → Pending Equipment and clears the BOM', () => {
     const point = sp({ status: 'process', deployedBom: [deployedComponent] });
     const next = shorePointReducer(point, { type: 'StrutReturned', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next.status).toBe('pending');
@@ -152,7 +152,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     { role: 'extension', length: 18, source: 'Engine 1', inventoryId: 'inv3' },
   ];
 
-  it('EquipmentDeployed moves Pending → In Process and records the full BOM', () => {
+  it('EquipmentDeployed moves Pending Equipment → Equipment Assigned and records the full BOM', () => {
     const next = shorePointReducer(sp({ status: 'pending' }), {
       type: 'EquipmentDeployed',
       ...meta,
@@ -163,7 +163,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next.deployedBom).toEqual(bom);
   });
 
-  it('EquipmentDeployed is rejected if the point is not Pending', () => {
+  it('EquipmentDeployed is rejected if the point is not Pending Equipment', () => {
     const point = sp({ status: 'strutset' });
     const next = shorePointReducer(point, {
       type: 'EquipmentDeployed',
@@ -174,21 +174,21 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next).toBe(point);
   });
 
-  it('EquipmentReturned moves In Process → Pending and clears the BOM', () => {
+  it('EquipmentReturned moves Equipment Assigned → Pending Equipment and clears the BOM', () => {
     const point = sp({ status: 'process', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReturned', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next.status).toBe('pending');
     expect(next.deployedBom).toBeUndefined();
   });
 
-  it('EquipmentReclaimed (#224) moves Shore Secured → Returned and KEEPS the BOM as history', () => {
+  it('EquipmentReclaimed (#224) moves Wood Shore Secured → Returned and KEEPS the BOM as history', () => {
     const point = sp({ status: 'secured', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next.status).toBe('returned');
     expect(next.deployedBom).toEqual(bom); // retained, NOT cleared
   });
 
-  it('EquipmentReclaimed is rejected if the point is not Shore Secured', () => {
+  it('EquipmentReclaimed is rejected if the point is not Wood Shore Secured', () => {
     const point = sp({ status: 'runner', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next).toBe(point);
@@ -258,7 +258,7 @@ describe('deploy / return — the inventory-consequential boundary', () => {
 });
 
 describe('#220 field-lock — editable fields by status', () => {
-  it('allows editing shore type + measurement while Pending', () => {
+  it('allows editing shore type + measurement while Pending Equipment', () => {
     const next = shorePointReducer(sp({ status: 'pending' }), {
       type: 'ShorePointEdited',
       ...meta,
@@ -270,7 +270,7 @@ describe('#220 field-lock — editable fields by status', () => {
     expect(next.label).toBe('NW corner');
   });
 
-  it('locks shore type + measurement once past Pending — only label changes', () => {
+  it('locks shore type + measurement once past Pending Equipment — only label changes', () => {
     const next = shorePointReducer(sp({ status: 'process', measurementEighths: 40 * 8 }), {
       type: 'ShorePointEdited',
       ...meta,
@@ -297,7 +297,7 @@ describe('#220 field-lock — editable fields by status', () => {
     expect('label' in next).toBe(false);
   });
 
-  it('label null-clear still works past Pending; locked optionals do not clear', () => {
+  it('label null-clear still works past Pending Equipment; locked optionals do not clear', () => {
     const next = shorePointReducer(sp({ status: 'cutting', area: 'NW corner', label: 'tagged' }), {
       type: 'ShorePointEdited',
       ...meta,
@@ -318,17 +318,17 @@ describe('#220 field-lock — editable fields by status', () => {
     expect(next.area).toBe('NW corner');
   });
 
-  it('crew assignment is reassignable past Pending (accountability, not locked)', () => {
+  it('crew assignment is reassignable past Pending Equipment (accountability, not locked)', () => {
     const next = shorePointReducer(sp({ status: 'cutting', assignedResource: 'Engine 1' }), {
       type: 'ShorePointEdited',
       ...meta,
       spId: 'sp1',
       patch: { assignedResource: 'Rescue 2' },
     } satisfies FieldShoreEvent);
-    expect(next.assignedResource).toBe('Rescue 2'); // changed even past Pending
+    expect(next.assignedResource).toBe('Rescue 2'); // changed even past Pending Equipment
   });
 
-  it('crew assignment null-clears (the null convention) even past Pending', () => {
+  it('crew assignment null-clears (the null convention) even past Pending Equipment', () => {
     const next = shorePointReducer(sp({ status: 'secured', assignedResource: 'Engine 1' }), {
       type: 'ShorePointEdited',
       ...meta,
@@ -338,7 +338,7 @@ describe('#220 field-lock — editable fields by status', () => {
     expect('assignedResource' in next).toBe(false);
   });
 
-  it('estimated load locks past Pending (it drives strut selection, like measurement)', () => {
+  it('estimated load locks past Pending Equipment (it drives strut selection, like measurement)', () => {
     const next = shorePointReducer(sp({ status: 'process', estimatedLoad: 10000 }), {
       type: 'ShorePointEdited',
       ...meta,

@@ -69,11 +69,11 @@ describe('ReturnEquipmentModal (#224 — terminal Remove & Return)', () => {
   it('a failed return surfaces the reason and stays open', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
-    mockCommit.mockResolvedValue({ ok: false, reason: 'shore point is not Shore Secured' });
+    mockCommit.mockResolvedValue({ ok: false, reason: 'shore point is not Wood Shore Secured' });
     render(<ReturnEquipmentModal shorePoint={SP} onClose={onClose} />);
 
     await user.click(screen.getByRole('button', { name: 'Confirm Return' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('shore point is not Shore Secured');
+    expect(screen.getByRole('alert')).toHaveTextContent('shore point is not Wood Shore Secured');
     expect(onClose).not.toHaveBeenCalled();
   });
 });

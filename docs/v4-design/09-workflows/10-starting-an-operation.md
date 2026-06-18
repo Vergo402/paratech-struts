@@ -137,8 +137,8 @@ The keyboard dismisses with the platform back gesture on phone; no state is lost
 │─────────────────────────────────────│
 │  [ + Add Shore Point ]              │  ← primary action (replaces Start Op button)
 │─────────────────────────────────────│
-│  Pending                        (0) │  ← status lane — empty on open
-│  In Process                     (0) │
+│  Pending Equipment              (0) │  ← status lane — empty on open
+│  Equipment Assigned             (0) │
 │  …                                  │
 │─────────────────────────────────────│
 │  [ End Operation ]                  │  ← secondary; raises destructive modal (ADR-016)
@@ -265,7 +265,7 @@ Screen-reader behavior particular to this workflow:
   `aria-live="assertive"` on the field's error slot.
 - Successful commit: the Operations board becomes the focus target; VoiceOver reads the
   first landmark: **"Cascade Building Fire, Operations board, no shore points"** (operation
-  name + screen title + Pending lane count).
+  name + screen title + Pending Equipment lane count).
 - No new SR script row in [`accessibility.md`](../07-design-system/accessibility.md) —
   modal focus + form field labeling are covered by existing registry entries.
 

@@ -32,7 +32,7 @@ This is not the rejected scenario. ADR-026 rejected a button **beside** the slid
 
 **Detection is `useHasMouse()` = `(hover: hover) and (pointer: fine)`** — "the primary input is a mouse/trackpad." Width (`useIsDesktop`, ≥768px) is deliberately **not** used: a field tablet is wide but touch, and must keep the slide. The problem is the pointer, not the screen size (Alex's ruling, 2026-06-17). Test/SSR/jsdom (no `matchMedia`) defaults to **no mouse** → the slide branch, so every existing slide test stays on the gesture path.
 
-**The button label is derived from the slide label** (`buttonLabelFrom`: "Slide to set Shore Secured" → "Set Shore Secured", "Slide back to Cutting" → "Back to Cutting"), so all call sites stay single-labelled. **Scope guard unchanged:** this is the status-commit control only; deploy / un-deploy / Remove & Return / End Operation remain their own buttons and modals on every surface.
+**The button label is derived from the slide label** (`buttonLabelFrom`: "Slide to set Wood Shore Secured" → "Set Wood Shore Secured", "Slide back to Cutting Station" → "Back to Cutting Station"), so all call sites stay single-labelled. **Scope guard unchanged:** this is the status-commit control only; deploy / un-deploy / Remove & Return / End Operation remain their own buttons and modals on every surface.
 
 ---
 

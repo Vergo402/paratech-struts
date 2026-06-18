@@ -192,19 +192,19 @@ The status colors are the most consequential color decision in the file. Three s
 ### The v4 lifecycle status set
 | Token group | Display label | Lifecycle meaning | v3 key |
 |---|---|---|---|
-| `--status-pending` | Pending | created, not yet worked | `pending` |
-| `--status-process` | In Process | work underway | `process` |
+| `--status-pending` | Pending Equipment | created, not yet worked | `pending` |
+| `--status-process` | Equipment Assigned | work underway | `process` |
 | `--status-strutset` | **Strut Set** | strut placed, pre-cut | `strutplaced` (renamed) |
-| `--status-cutting` | Cutting | wood being cut to length | `cutting` |
+| `--status-cutting` | Cutting Station | wood being cut to length | `cutting` |
 | `--status-runner` | Runner | cut piece in transit | `runner` |
-| `--status-secured` | Shore Secured | installed and locked | `secured` |
+| `--status-secured` | Wood Shore Secured | installed and locked | `secured` |
 | `--status-returned` | Strut Equipment Returned | equipment back in inventory (terminal) | `returned` |
 
 `--danger` is a **feedback** color (errors, destructive actions, the `WarningGate` unrated-zone / over-capacity disclosures), **not** a lifecycle status. Success and info reuse the `secured` green and `process` blue hues respectively rather than introducing new tokens.
 
 **`--status-waiting-*` — the amber waiting PRESENTATION (full S12 design audit).** A pending point with a `pendingReason` presents as **Waiting**: amber badge, stripe, value shelf, callout, rolodex tabs/dots (the `.is-waiting` hook rides beside `.is-pending` — [`card.md`](../03-primitives/card.md) §Pending). It is a presentation of `pending`, **never an eighth lifecycle status** — lanes, lockstep, and the reducer see only `pending`, so the table above stays seven rows. Values per theme: light `#7A5A00`/`#FBEFC4` (5.55), dark `#E6BE55`/`#2A2410` (8.73), sunlight `#5C4300`/`#FAE9B8` (7.71 — the one authored **pale-fill exception** to the banner treatment, dark ink on pale amber; the ink darkened from the design's `#6E5000` (6.20) to clear the 7:1 contract), broadcast `#E6BE55`/transparent (10.25). All proven in `wcag-contrast.mjs`.
 
-> **Display labels (resolved 2026-06-01):** the in-progress state keeps the v3 key `process` and displays **"In Process"** — Alex reverted essay 02's "Active," which was never a doctrine decision. The locked state displays **"Shore Secured"** (key `secured`). Token names follow the keys (`--status-process`, `--status-secured`); only the displayed words are fixed here — full copy lives in [`voice-and-tone.md`](voice-and-tone.md).
+> **Display labels (resolved 2026-06-01):** the in-progress state keeps the v3 key `process` and displays **"Equipment Assigned"** — Alex reverted essay 02's "Active," which was never a doctrine decision. The locked state displays **"Wood Shore Secured"** (key `secured`). Token names follow the keys (`--status-process`, `--status-secured`); only the displayed words are fixed here — full copy lives in [`voice-and-tone.md`](voice-and-tone.md).
 
 ---
 
@@ -262,7 +262,7 @@ This resolves the one token [`button.md`](../03-primitives/button.md) flagged fo
 ## Color is never the only signal (Principle 9)
 
 A hard rule the status palette must honor, because color-blind operators and sunlight-washed screens both defeat hue:
-- Every status **badge carries its label as text** ("Cutting", "Secured" — see [`badge.md`](../03-primitives/badge.md)). A color-blind user reads the word.
+- Every status **badge carries its label as text** ("Cutting Station", "Secured" — see [`badge.md`](../03-primitives/badge.md)). A color-blind user reads the word.
 - Every **selected** state in a picker carries a checkmark, weight change, or border — not just `--accent-subtle` fill.
 - The shore-point **card left-edge status stripe** is reinforced by the badge text and the card's status label; the stripe color is redundant, not load-bearing ([`card.md`](../03-primitives/card.md)).
 - Sunlight theme escalates status from tinted badge to **solid banner** so the signal survives glare even before hue is read.
@@ -330,6 +330,6 @@ The **sync indicator** maps to existing tokens, no new color: synced = `--status
 
 ## Open questions for the gate
 
-1. ~~**`process` → "Active" display label.**~~ **Resolved (2026-06-01):** displays **"In Process"** (v3 key `process`, reverting essay 02's "Active"); the locked state displays **"Shore Secured"** (key `secured`). `badge.md` / `voice-and-tone.md` inherit these.
+1. ~~**`process` → "Active" display label.**~~ **Resolved (2026-06-01):** displays **"Equipment Assigned"** (v3 key `process`, reverting essay 02's "Active"); the locked state displays **"Wood Shore Secured"** (key `secured`). `badge.md` / `voice-and-tone.md` inherit these.
 2. **Sunlight `process`/`--danger` banners at 6.47–6.70:1.** They clear the essay's ≥4.5 banner floor but not 7:1. Acceptable, or tighten the fills to clear 7:1 for full sunlight-contract consistency?
 3. **`returned` visibility.** As a terminal/archival state, should its card be de-emphasized further (e.g., reduced opacity) beyond the warm-neutral hue? Resolved in `card.md` interaction, noted here for the color choice.

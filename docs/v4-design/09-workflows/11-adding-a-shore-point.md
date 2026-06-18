@@ -2,9 +2,9 @@
 
 > Phase G workflow spec — [#220](https://github.com/Vergo402/paratech-struts/issues/220). Sub-issue of epic [#135](https://github.com/Vergo402/paratech-struts/issues/135).
 > **Amended 2026-06-11 (Phase H S9 — KB-7, [#313](https://github.com/Vergo402/paratech-struts/issues/313)):** quantity = number of **shores**; the shore type drives **struts per shore** (T-Shore 1, Double-T 2, 3-Post 3); cards created = shores × struts/shore, with **one linked group per physical shore**. Replaces this spec's earlier conditional-qty model throughout.
-> **Amended 2026-06-13 (Phase H re-drive — [ADR-027](../11-decisions/ADR-027-deploy-mode-and-v3-shore-point-entry.md), [#248](https://github.com/Vergo402/paratech-struts/issues/248)):** the field order returns to **v3** (Shore Type → Label → Building → Division · Area · **Group** → Measurement → Deductions → **Estimated Load** → Number of shores); **Group (`assignedResource`)** + **Estimated Load** are restored (Group = on-scene apparatus, crew accountability, reassignable through the op; Command roll-up is Phase I). **Strut-finding is now a per-operation mode** (`Operation.inlineDeploy`, set at Start/Edit Operation, default one-step): **one-step** carries Find Available Struts → Deploy → *Save as Pending* inline in this form; **two-step** keeps the describe-only → Pending → Assign Equipment flow specced below. The Assign Equipment sheet stays available in **both** modes. KB-3 keypad retained. Step 2's "engine runs after submit, not inline" applies to two-step only.
+> **Amended 2026-06-13 (Phase H re-drive — [ADR-027](../11-decisions/ADR-027-deploy-mode-and-v3-shore-point-entry.md), [#248](https://github.com/Vergo402/paratech-struts/issues/248)):** the field order returns to **v3** (Shore Type → Label → Building → Division · Area · **Group** → Measurement → Deductions → **Estimated Load** → Number of shores); **Group (`assignedResource`)** + **Estimated Load** are restored (Group = on-scene apparatus, crew accountability, reassignable through the op; Command roll-up is Phase I). **Strut-finding is now a per-operation mode** (`Operation.inlineDeploy`, set at Start/Edit Operation, default one-step): **one-step** carries Find Available Struts → Deploy → *Save as Pending Equipment* inline in this form; **two-step** keeps the describe-only → Pending Equipment → Assign Equipment flow specced below. The Assign Equipment sheet stays available in **both** modes. KB-3 keypad retained. Step 2's "engine runs after submit, not inline" applies to two-step only.
 > Cites [`00-workflow-foundation.md`](00-workflow-foundation.md) for all shared conventions — does not re-derive them.
-> Source: [`20-operations.md`](../08-information-architecture/20-operations.md) (Operations board, Add Shore Point modal, lane/card structure, grouped SP behavior, drilldown); [`10-quick-find.md`](../08-information-architecture/10-quick-find.md) (measurement input + deduction picker — same component reused here); [`00-ia-foundation.md`](../08-information-architecture/00-ia-foundation.md) (four-surface framework, persistent chrome); [`card.md`](../03-primitives/card.md) (ShorePointCard, group badge, field-lock post-Pending); [`sheet.md`](../03-primitives/sheet.md) (Assign Equipment sheet — referenced but not owned here); [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) (assignedResource, ICS titles); [ADR-010](../11-decisions/ADR-010-status-commit-model.md) (reversibility); [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md) (Add Shore Point = full-screen-form modal).
+> Source: [`20-operations.md`](../08-information-architecture/20-operations.md) (Operations board, Add Shore Point modal, lane/card structure, grouped SP behavior, drilldown); [`10-quick-find.md`](../08-information-architecture/10-quick-find.md) (measurement input + deduction picker — same component reused here); [`00-ia-foundation.md`](../08-information-architecture/00-ia-foundation.md) (four-surface framework, persistent chrome); [`card.md`](../03-primitives/card.md) (ShorePointCard, group badge, field-lock post-Pending Equipment); [`sheet.md`](../03-primitives/sheet.md) (Assign Equipment sheet — referenced but not owned here); [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) (assignedResource, ICS titles); [ADR-010](../11-decisions/ADR-010-status-commit-model.md) (reversibility); [ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md) (Add Shore Point = full-screen-form modal).
 > **Precondition:** an active operation exists (see workflow [#219 — Starting an operation](10-starting-an-operation.md)).
 
 ---
@@ -12,11 +12,11 @@
 ## Purpose and goal
 
 Give the team officer a fast, one-handed path from "we need a shore point here" to a
-named Pending card on the board — with the right location, shore type, and measurement
+named Pending Equipment card on the board — with the right location, shore type, and measurement
 captured — so the IC can see it immediately and equipment can be assigned.
 
 **Goal:** team officer opens the Add Shore Point form, fills location + shore type +
-measurement, and confirms. One or more Pending cards appear on the board. The recommendation
+measurement, and confirms. One or more Pending Equipment cards appear on the board. The recommendation
 engine runs in the background; the actual strut assignment happens separately, in workflow
 [#221 — Deploying a strut](../09-workflows/).
 
@@ -45,21 +45,21 @@ stateDiagram-v2
     AddSPModal --> ActiveOperation : officer/IC · tap Cancel → modal (no SP created)
     AddSPModal --> PendingSP : officer/IC · tap Add Shore Point → modal (commit, full-screen form)
 
-    PendingSP --> ActiveOperation : ⇩ SP visible in Pending lane (one card per strut, linked per shore)
+    PendingSP --> ActiveOperation : ⇩ SP visible in Pending Equipment lane (one card per strut, linked per shore)
 
-    PendingSP --> EditSPModal : officer/IC · tap Edit → modal (Pending-only)
+    PendingSP --> EditSPModal : officer/IC · tap Edit → modal (Pending-Equipment-only)
     EditSPModal --> PendingSP : officer/IC · tap Save → modal (non-destructive)
     EditSPModal --> PendingSP : officer/IC · tap Cancel → modal (no change)
 
-    PendingSP --> DeleteConfirm : officer/IC · tap Delete → modal (destructive gate, Pending-only)
+    PendingSP --> DeleteConfirm : officer/IC · tap Delete → modal (destructive gate, Pending-Equipment-only)
     DeleteConfirm --> PendingSP : officer/IC · tap Cancel → modal
-    DeleteConfirm --> ActiveOperation : officer/IC · tap Confirm Delete → modal (terminal while Pending)
+    DeleteConfirm --> ActiveOperation : officer/IC · tap Confirm Delete → modal (terminal while Pending Equipment)
 
-    PendingSP --> [*] : SP advances past Pending → enters deploy arc (workflow #221)
+    PendingSP --> [*] : SP advances past Pending Equipment → enters deploy arc (workflow #221)
 ```
 
 `[PendingSP]` is the committed state this workflow produces. Once the SP advances past
-Pending (→ In Process), it exits this workflow and enters the deploy arc in
+Pending Equipment (→ Equipment Assigned), it exits this workflow and enters the deploy arc in
 [workflow #221](../09-workflows/).
 
 ---
@@ -74,11 +74,11 @@ Pending (→ In Process), it exits this workflow and enters the deploy arc in
 │─────────────────────────────────────│
 │  [ + Add Shore Point ]              │  ← primary button; always visible during active op
 │─────────────────────────────────────│
-│  Pending                        (2) │
+│  Pending Equipment              (2) │
 │  ┌─────────────────────────────┐    │
 │  │ SP: Div 1 · Area A          │    │  ← existing ShorePointCards (cites card.md)
 │  └─────────────────────────────┘    │
-│  In Process                     (1) │
+│  Equipment Assigned             (1) │
 │  …                                  │
 └─────────────────────────────────────┘
 ```
@@ -146,8 +146,8 @@ here.
 **Measurement + deduction reuse note:** the fraction measurement input and the deduction
 picker sheet are the same components used in Quick Find. The recommendation engine
 (`findForShorePoint()`) runs **after** this form is submitted — it is not inline in this
-modal. The results appear on the Pending card's **Assign Equipment** sheet
-([`sheet.md`](../03-primitives/sheet.md)), not here. This workflow ends at Pending;
+modal. The results appear on the Pending Equipment card's **Assign Equipment** sheet
+([`sheet.md`](../03-primitives/sheet.md)), not here. This workflow ends at Pending Equipment;
 [workflow #221](../09-workflows/) owns assignment and deployment.
 
 **Commit:** **Add Shore Point** primary button; disabled until measurement field is
@@ -159,7 +159,7 @@ non-empty and valid (client-side, local-first — no server round-trip before co
 
 ---
 
-### Step 3 — App response: SP(s) land in Pending
+### Step 3 — App response: SP(s) land in Pending Equipment
 
 **Single shore type (non-grouped):**
 
@@ -169,10 +169,10 @@ non-empty and valid (client-side, local-first — no server round-trip before co
 │─────────────────────────────────────│
 │  [ + Add Shore Point ]              │
 │─────────────────────────────────────│
-│  Pending                        (3) │  ← count incremented
+│  Pending Equipment              (3) │  ← count incremented
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │  ← new card, scrolled into view
-│  │ T-Shore · Pending           │    │
+│  │ T-Shore · Pending Equipment │    │
 │  └─────────────────────────────┘    │
 │  ┌─────────────────────────────┐    │
 │  │ … existing cards …          │    │
@@ -184,32 +184,32 @@ non-empty and valid (client-side, local-first — no server round-trip before co
 
 ```
 ┌─────────────────────────────────────┐
-│  Pending                        (5) │  ← count reflects all 3 new cards
+│  Pending Equipment              (5) │  ← count reflects all 3 new cards
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ 3-Post · Pending   [1 / 3]  │    │  ← group badge (cites card.md)
+│  │ 3-Post · Pending Eqp [1 / 3]│    │  ← group badge (cites card.md)
 │  └─────────────────────────────┘    │
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ 3-Post · Pending   [2 / 3]  │    │
+│  │ 3-Post · Pending Eqp [2 / 3]│    │
 │  └─────────────────────────────┘    │
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · 48-1/2"    │    │
-│  │ 3-Post · Pending   [3 / 3]  │    │
+│  │ 3-Post · Pending Eqp [3 / 3]│    │
 │  └─────────────────────────────┘    │
 └─────────────────────────────────────┘
 ```
 
-The modal closes. The new card(s) appear in the Pending lane and the board scrolls to
-bring the first new card into view (or the Pending lane opens if it was collapsed).
+The modal closes. The new card(s) appear in the Pending Equipment lane and the board scrolls to
+bring the first new card into view (or the Pending Equipment lane opens if it was collapsed).
 
 For multi-strut shore types (Double-T, 3-Post), **each physical shore** writes one linked
-Pending card per strut — all sharing that shore's `groupId`, badged `[N / total]` per
+Pending Equipment card per strut — all sharing that shore's `groupId`, badged `[N / total]` per
 [`card.md`](../03-primitives/card.md). A multi-shore add (Number of shores > 1) repeats
 this per shore — 2 × 3-Post = 6 cards in two groups of 3 — and the whole add commits as
 one atomic batch. Single-strut shores (T-Shore) are never grouped: T-Shore ×3 = 3
-independent cards. Pre-cutting status advances (Pending → In Process → Strut Set →
-Cutting) apply to the whole shore at once; Cutting → Runner → Secured → Returned advance
+independent cards. Pre-cutting status advances (Pending Equipment → Equipment Assigned → Strut Set →
+Cutting Station) apply to the whole shore at once; Cutting Station → Runner → Wood Shore Secured → Strut Equipment Returned advance
 individually. This is pre-specified group behavior from `card.md` — this workflow does
 not re-derive it.
 
@@ -219,7 +219,7 @@ is a v4 improvement, not parity restoration.)*
 
 ---
 
-### Step 3-R — Edit SP (permanent reverse, Pending only)
+### Step 3-R — Edit SP (permanent reverse, Pending Equipment only)
 
 ```
 ┌─────────────────────────────────────┐
@@ -227,8 +227,8 @@ is a v4 improvement, not parity restoration.)*
 │─────────────────────────────────────│
 │  Division  [ Div 1 (Ground) ▾ ]    │  ← pre-populated
 │  Area      [ Northwest corner ]    │  ← pre-populated
-│  Shore type  [ T-Shore      ▾ ]    │  ← pre-populated; editable while Pending
-│  Measurement  48 ─ 1/2 "           │  ← pre-populated; editable while Pending
+│  Shore type  [ T-Shore      ▾ ]    │  ← pre-populated; editable while Pending Equipment
+│  Measurement  48 ─ 1/2 "           │  ← pre-populated; editable while Pending Equipment
 │  Deductions  ▶ (collapsed)          │
 │  Label  [ _____________________ ]  │
 │                                     │
@@ -238,8 +238,8 @@ is a v4 improvement, not parity restoration.)*
 
 The Edit button lives in the SP card (overflow or tap-to-expand). Same modal, pre-populated.
 Division, area, shore type, measurement, and label are all editable while the SP is in
-Pending. **Number of shores is structurally absent in edit mode** — group membership is
-fixed at creation (KB-7). Once the SP advances past Pending, **shore type and measurement lock** — only
+Pending Equipment. **Number of shores is structurally absent in edit mode** — group membership is
+fixed at creation (KB-7). Once the SP advances past Pending Equipment, **shore type and measurement lock** — only
 label remains editable. Cites [`card.md`](../03-primitives/card.md) for which fields lock
 at which status — this spec names the rule, not the field-by-field matrix.
 
@@ -254,14 +254,14 @@ No timed undo — this is the permanent reverse per [ADR-010](../11-decisions/AD
 | Device | Step | What it sees |
 |---|---|---|
 | Officer's **phone** | 1–3 | Drives the full flow. Taps Add Shore Point, fills the form, confirms. |
-| IC's **tablet** (CP board) | — | On next sync: new Pending card(s) appear in the Pending lane; count badge increments. |
-| Any connected **phone/tablet** | — | On next sync: Pending lane updates. |
-| **Broadcast** display | — | On next sync: Pending lane count updates; card is visible read-only. |
+| IC's **tablet** (CP board) | — | On next sync: new Pending Equipment card(s) appear in the Pending Equipment lane; count badge increments. |
+| Any connected **phone/tablet** | — | On next sync: Pending Equipment lane updates. |
+| **Broadcast** display | — | On next sync: Pending Equipment lane count updates; card is visible read-only. |
 
 **Alternate actor: IC at tablet CP**
 
 The IC may add shore points remotely while directing the team. The team officer's phone
-sees the new Pending card(s) on next sync — the card appears without any action on their
+sees the new Pending Equipment card(s) on next sync — the card appears without any action on their
 end. Both actors can add SPs simultaneously during an active operation; the app assigns
 distinct IDs per SP, so concurrent adds do not collide.
 
@@ -275,31 +275,31 @@ the latency framing ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md
 
 | Action | Reversible? | Mechanism |
 |---|---|---|
-| Add Shore Point (all fields) | Yes — edit while Pending | Step 3-R — Edit SP modal, pre-populated |
-| Shore type / measurement (post-Pending) | **Locked** | Cannot edit after advancing to In Process; cite `card.md` |
-| Delete SP | **Terminal** while Pending | Destructive modal gate ([ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md)) |
-| Delete SP after Pending | Not available | Delete is removed from the card after first advance (field-use safety gate) |
+| Add Shore Point (all fields) | Yes — edit while Pending Equipment | Step 3-R — Edit SP modal, pre-populated |
+| Shore type / measurement (post-Pending Equipment) | **Locked** | Cannot edit after advancing to Equipment Assigned; cite `card.md` |
+| Delete SP | **Terminal** while Pending Equipment | Destructive modal gate ([ADR-016](../11-decisions/ADR-016-modal-vs-sheet-rules.md)) |
+| Delete SP after Pending Equipment | Not available | Delete is removed from the card after first advance (field-use safety gate) |
 
 ---
 
 ## Composed screens and primitives
 
 - [`20-operations.md`](../08-information-architecture/20-operations.md) — the Operations
-  board hosting the Add Shore Point button and Pending lane; drilldown structure; division
+  board hosting the Add Shore Point button and Pending Equipment lane; drilldown structure; division
   picker behavior.
 - [`10-quick-find.md`](../08-information-architecture/10-quick-find.md) — the measurement
   fraction input and deduction picker sheet, reused verbatim.
 - [`card.md`](../03-primitives/card.md) — ShorePointCard; group badge `[N / total]`;
-  field-lock post-Pending; pre-cutting vs. individual advance behavior.
+  field-lock post-Pending Equipment; pre-cutting vs. individual advance behavior.
 - [`modal.md`](../03-primitives/modal.md) — Add Shore Point form; Edit SP form; Delete SP
   confirm.
 - [`sheet.md`](../03-primitives/sheet.md) — deduction picker (reused from Quick Find);
   Assign Equipment (owned by workflow #221, referenced here as the downstream step).
 - [`input.md`](../03-primitives/input.md) — measurement field; label field; area field.
 - [`button.md`](../03-primitives/button.md) — Add Shore Point (board + modal); Save; Delete.
-- [`badge.md`](../03-primitives/badge.md) — group badge; Pending lane count badge.
-- [`empty-state.md`](../03-primitives/empty-state.md) — Pending lane when all SPs have
-  advanced past Pending.
+- [`badge.md`](../03-primitives/badge.md) — group badge; Pending Equipment lane count badge.
+- [`empty-state.md`](../03-primitives/empty-state.md) — Pending Equipment lane when all SPs have
+  advanced past Pending Equipment.
 
 No new primitives.
 
@@ -319,7 +319,7 @@ No new primitives.
   as queued writes per card, not a partial group. Phase H sync implementation owns the
   retry semantics.
 - **Loading:** no loading state on the commit path — local-first renders instantly.
-- **Pending lane empty (all SPs advanced):** `empty-state` filtered variant in the lane;
+- **Pending Equipment lane empty (all SPs advanced):** `empty-state` filtered variant in the lane;
   this is expected state mid-operation, not an error.
 
 ---
@@ -340,9 +340,9 @@ Screen-reader behavior particular to this workflow:
   the count changes (KB-7).
 - **Successful single SP commit:** on return to the board, focus lands on the new card;
   VoiceOver reads: **"Shore point added. Div 1, Area A, 48 and a half inches, T-Shore,
-  Pending."**
+  Pending Equipment."**
 - **Successful multi-card commit (total cards > 1):** **"9 shore points added — Div 1,
-  Pending."** (3 × 3-Post; the count is total cards = struts; `aria-live="assertive"` on
+  Pending Equipment."** (3 × 3-Post; the count is total cards = struts; `aria-live="assertive"` on
   the board landmark after modal closes).
 - **Measurement input:** carries the existing Quick Find SR script (registered in
   [`accessibility.md`](../07-design-system/accessibility.md)).
@@ -364,7 +364,7 @@ component.
    struts/shore) exceed 10, carried on the strut-math helper line.
 3. **Building field ordering** — when multi-building is on, whether building appears before
    or after division in the form resolves with the Phase H form-layout pass.
-4. **Assign Equipment entry point from this workflow** — the Pending card's primary action
+4. **Assign Equipment entry point from this workflow** — the Pending Equipment card's primary action
    is Assign Equipment (a `sheet` — `20-operations.md §Primary action`); that path is
-   owned by workflow [#221](../09-workflows/). This workflow ends at Pending; the handoff
+   owned by workflow [#221](../09-workflows/). This workflow ends at Pending Equipment; the handoff
    is the card's natural next action.

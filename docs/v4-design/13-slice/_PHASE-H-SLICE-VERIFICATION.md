@@ -30,30 +30,30 @@ Screenshots in [`screenshots/`](screenshots/) were captured by [`capture-screens
 |---|---|
 | Cold open `/operations` | First-run empty state ("No active operation"), single Start Operation CTA |
 | Start Operation | Modal; name required (disabled-reason "Enter an operation name"); created → board header "Maple St Collapse" |
-| Board | All 7 lanes with ADR-008 names (**Strut Set**, Shore Secured, Strut Equipment Returned), per-lane counts, two `aria-live` regions |
-| Add Shore Point (30″) | Division picker (Div 1 default) · shore-type segmented · qty · **eighths tap-strip + ft/in steppers** (#20/#38) · fixed-order deduction ledger with live Effective math + "floored to ⅛″" · readout `2′ 6″` · assertive announce "Shore point added — Div 1, Pending." |
+| Board | All 7 lanes with ADR-008 names (**Strut Set**, Wood Shore Secured, Strut Equipment Returned), per-lane counts, two `aria-live` regions |
+| Add Shore Point (30″) | Division picker (Div 1 default) · shore-type segmented · qty · **eighths tap-strip + ft/in steppers** (#20/#38) · fixed-order deduction ledger with live Effective math + "floored to ⅛″" · readout `2′ 6″` · assertive announce "Shore point added — Div 1, Pending Equipment." |
 | Assign Equipment (sheet, ADR-016) | Context header "Div 1 · T-Shore · 30″". **4 recommendations**: LS 203 (gold LongShore, Rescue 2) · AT 25-36 (Engine 1) · AT 25-36 (Rescue 2 — **per-rig duplicate as separate card**) · AT 19-25 + 6″ (**extension combo**). Every card: COLOR—SYSTEM header, strut-color accent bar, adjusted range, **rigid always-shown ledger** (Opening → Header → Top Connector → Bottom Connector → Footer → Effective; N/S rows in danger style + "not selected"), capacity demoted (not on the card face), `Equipment from:` line, full-identity sr-only Deploy label ("Deploy LS 203, gold LongShore, effective 30 inches, from Rescue 2"), **disclaimer on every card** ("Planning aid, not an engineering certification.") |
-| Deploy LS 203 | Sheet closed · polite announce "LS 203 deployed — Div 1, In Process." · **inventory decremented 4 → 3** (verified in IndexedDB) · card in In Process with **cradle-to-grave identity "LS 203 / from Rescue 2"** · advance + step-back slides each with #37 button equivalents |
-| Advance to Strut Set (#37 button) | Card → Strut Set lane · announce "Shore point — now Strut Set." · identity persists · **step-back slide only** (advance→Cutting is workflow #222, correctly absent) |
+| Deploy LS 203 | Sheet closed · polite announce "LS 203 deployed — Div 1, Equipment Assigned." · **inventory decremented 4 → 3** (verified in IndexedDB) · card in Equipment Assigned with **cradle-to-grave identity "LS 203 / from Rescue 2"** · advance + step-back slides each with #37 button equivalents |
+| Advance to Strut Set (#37 button) | Card → Strut Set lane · announce "Shore point — now Strut Set." · identity persists · **step-back slide only** (advance→Cutting Station is workflow #222, correctly absent) |
 
 ### State 2 — Grouped T-Shore ×3 ✅
 `07-group-three-pending`, `08-group-gate-waiting`
 
-- One Add (qty 3, 30″) → **3 linked Pending cards [1/3] [2/3] [3/3]**; event log grew **exactly 3 events in one commit** (4 → 7); single announce "3 shore points added — Div 1, Pending."
-- **Group advance gate (workflow #221 OQ2):** after deploying member 1/3 only, its In-Process card shows advance **disabled** with live reason "**Waiting on group — 2 of 3 still Pending**"; step-back stays active. Deployed members 2/3 + 3/3 → gate released on all three simultaneously.
-- **Lockstep fan-out:** ONE advance on any member moved **all 3** to Strut Set; announce "3 shore points — now Strut Set." (Also observed in reverse: a Strut Set step-back fanned all 3 back to In Process — pre-cutting transitions are group-wide both directions; un-deploy is not.)
+- One Add (qty 3, 30″) → **3 linked Pending Equipment cards [1/3] [2/3] [3/3]**; event log grew **exactly 3 events in one commit** (4 → 7); single announce "3 shore points added — Div 1, Pending Equipment."
+- **Group advance gate (workflow #221 OQ2):** after deploying member 1/3 only, its Equipment Assigned card shows advance **disabled** with live reason "**Waiting on group — 2 of 3 still Pending Equipment**"; step-back stays active. Deployed members 2/3 + 3/3 → gate released on all three simultaneously.
+- **Lockstep fan-out:** ONE advance on any member moved **all 3** to Strut Set; announce "3 shore points — now Strut Set." (Also observed in reverse: a Strut Set step-back fanned all 3 back to Equipment Assigned — pre-cutting transitions are group-wide both directions; un-deploy is not.)
 
 ### State 3 — Step-back un-deploy ✅
 `09-stepback-confirm-modal`
 
-- In Process [1/3] → "Step back to Pending" → **StepBackConfirmModal**: "Return LS 203 to inventory?" / "Stepping back will un-deploy this strut and return it to Rescue 2's available count. The shore point goes back to Pending." / **Cancel autofocused** (safe default) + danger "Return & Step Back".
-- Confirmed → card back to Pending, identity cleared ("No equipment assigned"), **inventory restored 1 → 2**, announce "LS 203 returned — back to Pending."
-- The un-deploy was **individual** — its 2 group mates stayed In Process (inventory-consequential transitions never fan out).
+- Equipment Assigned [1/3] → "Step back to Pending Equipment" → **StepBackConfirmModal**: "Return LS 203 to inventory?" / "Stepping back will un-deploy this strut and return it to Rescue 2's available count. The shore point goes back to Pending Equipment." / **Cancel autofocused** (safe default) + danger "Return & Step Back".
+- Confirmed → card back to Pending Equipment, identity cleared ("No equipment assigned"), **inventory restored 1 → 2**, announce "LS 203 returned — back to Pending Equipment."
+- The un-deploy was **individual** — its 2 group mates stayed Equipment Assigned (inventory-consequential transitions never fan out).
 
 ### State 4 — Empty states ✅
 `12-pending-reasons-board`, `13-empty-state-no-match`, `14-empty-state-no-inventory`
 
-- **No-match (16″):** Pending card carries the live reason "**No matching strut — nothing fits this opening at this load**". Sheet **still opens** → `fs-empty--filtered`: "No matching struts / Nothing fits this opening at this load — adjust deductions or re-measure".
+- **No-match (16″):** Pending Equipment card carries the live reason "**No matching strut — nothing fits this opening at this load**". Sheet **still opens** → `fs-empty--filtered`: "No matching struts / Nothing fits this opening at this load — adjust deductions or re-measure".
 - **No-inventory (190″ ×3):** the 190″ opening fits only LS 1016; deployed both (2 → 0), third 190″ SP shows "**Waiting for inventory — no apparatus stock to pull from**". Sheet still opens → `fs-empty--upstream-blocked`: "No apparatus stock available / A strut that fits exists, but none is available on scene".
 - **Live `pendingReason` self-clear, on camera:** the 200″ card read "Waiting for inventory" while LS 1016 stock was 0; the moment a step-back returned one (0 → 1), the reason line **vanished without any user action** — the Alex-approved compute-it-live behavior. (It flipped back once both 1016s were re-deployed.)
 
@@ -67,7 +67,7 @@ Screenshots in [`screenshots/`](screenshots/) were captured by [`capture-screens
 ### State 6 — Edit reversibility ✅
 
 - **Operation edit (StartOperationModal reuse):** pencil → "Edit Operation", both fields pre-filled, submit relabeled "Save". Renamed → header updated live; re-opened → reverted. Multi-building toggle present and editable.
-- **Pending SP edit:** card "Edit" → "Edit Shore Point", pre-filled at 2′ 6″. **Quantity is structurally absent in edit mode** (group size locked after creation); division/area/shore-type/measurement/deductions/label editable. 30″ → 31″ → Save → card shows 31″ → edited back → 30″. Round-trip clean.
+- **Pending Equipment SP edit:** card "Edit" → "Edit Shore Point", pre-filled at 2′ 6″. **Quantity is structurally absent in edit mode** (group size locked after creation); division/area/shore-type/measurement/deductions/label editable. 30″ → 31″ → Save → card shows 31″ → edited back → 30″. Round-trip clean.
 
 ## Console + network (whole drive)
 
@@ -90,7 +90,7 @@ Paratech's direct vertical-shoring chart (O&M Table 2-7) tops out at **12′**; 
 |---|---|---|
 | 01 | `01-fresh-empty-state.png` | First-run empty state, fresh seed |
 | 02 | `02-start-operation-modal.png` | Start Operation form |
-| 03 | `03-board-pending-30.png` | Pending card, 30″ |
+| 03 | `03-board-pending-30.png` | Pending Equipment card, 30″ |
 | 04 | `04-assign-sheet-recommendations.png` | Recommendation cards + rigid ledger |
 | 05 | `05-in-process-deployed.png` | Deployed identity + slides + #37 buttons |
 | 06 | `06-strut-set.png` | Strut Set; step-back only |

@@ -189,7 +189,7 @@ Every primary action icon has a visible text label alongside it. The icon carrie
 
 **Navigation bar:** icons always have a label below them — consistent with the v3 bottom tab bar and standard iOS/Android navigation conventions. "Mystery meat navigation" (unlabeled icon bars) is the anti-pattern that Principle 9 exists to prevent.
 
-**Status icons:** always paired with badge text. A "Cutting" badge says "Cutting." A color-blind user, a user in sunlight-washed glare, or a user who simply hasn't memorized the icon vocabulary reads the word. The icon is supplemental, not load-bearing.
+**Status icons:** always paired with badge text. A "Cutting Station" badge says "Cutting Station." A color-blind user, a user in sunlight-washed glare, or a user who simply hasn't memorized the icon vocabulary reads the word. The icon is supplemental, not load-bearing.
 
 **Shore type picker:** every shore type entry shows the `--icon-size-xl` detail diagram **and** the shore type name. The diagram identifies; the name confirms.
 

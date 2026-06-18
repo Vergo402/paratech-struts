@@ -65,7 +65,7 @@ toggles a leaf, re-tap un-checks. Reversible and audited, **never an "Are you su
 ┌─────────────────────────────────────┐──┐
 │  Operations · Cascade…    [sync ●]  │☑ │  ← persistent edge tab (checkmark-box + label)
 │─────────────────────────────────────│  │
-│  Pending (2) · In Process (1) · …   │  │  ← the Operations board stays live behind/beside
+│  Pending Equipment (2) · …          │  │  ← the Operations board stays live behind/beside
 └─────────────────────────────────────┘──┘
 ```
 

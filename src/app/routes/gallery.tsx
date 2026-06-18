@@ -562,7 +562,7 @@ export function GalleryScreen() {
         <ShorePointCard shorePoint={spFixture({ seq: 1, label: 'A-1', area: 'A side' })} />
         <ShorePointCard shorePoint={spFixture({ seq: 2, label: 'A-2', pendingReason: 'no-inventory' })} />
         <ShorePointCard shorePoint={spFixture({ seq: 3, label: 'A-3', pendingReason: 'no-match' })} />
-        {/* In Process — the advance + step-back slide stack. */}
+        {/* Equipment Assigned — the advance + step-back slide stack. */}
         <ShorePointCard
           shorePoint={spFixture({ seq: 4, label: 'B-1', status: 'process', deployedBom: DEPLOYED_BOM })}
           onAdvance={() => setCommits((c) => c + 1)}

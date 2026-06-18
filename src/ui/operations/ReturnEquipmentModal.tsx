@@ -8,10 +8,10 @@ import { useCommit, useDeviceUid } from '@ui/hooks';
 
 /**
  * Remove & Return confirm (#224) — the terminal, inventory-consequential move:
- * Shore Secured → Strut Equipment Returned. Like the un-deploy step-back it earns
+ * Wood Shore Secured → Strut Equipment Returned. Like the un-deploy step-back it earns
  * the destructive modal gate (ADR-010/ADR-016: the only moves that confirm are the
  * ones that mutate inventory), but this one is FINAL — "This cannot be undone"
- * (Shore Secured is the last reversible state). Confirm commits EquipmentReclaimed:
+ * (Wood Shore Secured is the last reversible state). Confirm commits EquipmentReclaimed:
  * the store transaction restores the strut to its source apparatus's available
  * count and the reducer flips the point to `returned`, keeping the strut on the
  * card as history.
@@ -20,7 +20,7 @@ import { useCommit, useDeviceUid } from '@ui/hooks';
  * un-deploy in StepBackConfirmModal, there is no group loop here.
  */
 export interface ReturnEquipmentModalProps {
-  /** The Shore Secured point to return; null renders nothing (closed). */
+  /** The Wood Shore Secured point to return; null renders nothing (closed). */
   shorePoint: ShorePoint | null;
   onClose: () => void;
   /** Fires after a successful return — the board announces + opens the Returned lane. */

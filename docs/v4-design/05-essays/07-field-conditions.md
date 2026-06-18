@@ -64,7 +64,7 @@ The type weight bump from 400 to 500 on body text is about stroke width survival
 
 The status badge growing to a full-width banner is the most operationally significant change in sunlight mode. In the standard theme, a 22pt badge in the upper right of a shore point card is readable at normal contrast. In direct sun, that badge is approximately 7mm tall on the screen with text at 11pt. The glare reduces effective contrast to 40 to 60 percent. The full-width banner at the top of the card is 36pt tall with text at 16pt. The operator reads it in a glance, no squinting required.
 
-WCAG AAA contrast is 7:1. The sunlight theme targets 7:1 minimum for all text. Any status token pair that does not reach 7:1 on white communicates status through the label word only, not color, in sunlight mode. The status badge says "Cutting" or "Runner" and that word is the signal, not the color behind it.
+WCAG AAA contrast is 7:1. The sunlight theme targets 7:1 minimum for all text. Any status token pair that does not reach 7:1 on white communicates status through the label word only, not color, in sunlight mode. The status badge says "Cutting Station" or "Runner" and that word is the signal, not the color behind it.
 
 ## Wet Screen and Ghost Taps
 
@@ -82,7 +82,7 @@ The visual language essay specifies 5 seconds for the undo window, modeled on Ap
 
 In the void, 5 seconds is not enough.
 
-The team officer is looking at the collapse zone when a status transition happens. The toast appears at the bottom of the screen. The operator is not looking at the bottom of the screen. The toast starts its countdown while the operator's eyes are on the rubble. By the time the operator looks back at the phone, 3 to 5 seconds may already have elapsed. A missed undo on a status transition means a shore point shows as Strut Placed when the strut has not been placed, or Cutting when the wood is not cut. Those are not cosmetic errors. They affect the IC's view of the operation and can drive incorrect resource decisions.
+The team officer is looking at the collapse zone when a status transition happens. The toast appears at the bottom of the screen. The operator is not looking at the bottom of the screen. The toast starts its countdown while the operator's eyes are on the rubble. By the time the operator looks back at the phone, 3 to 5 seconds may already have elapsed. A missed undo on a status transition means a shore point shows as Strut Placed when the strut has not been placed, or Cutting Station when the wood is not cut. Those are not cosmetic errors. They affect the IC's view of the operation and can drive incorrect resource decisions.
 
 The specific recommendation is 8 seconds for the undo window on all status transitions during an active operation. The toast progress line runs for 8 seconds from right to left. Outside an active operation, in setup or review, 5 seconds is sufficient. The undo window duration is contextual.
 
@@ -146,7 +146,7 @@ What the tablet does not do is receive raw input. The IC does not type measureme
 
 The cross-surface story for a status transition: the team officer taps "Strut Placed" on the phone. The write goes to IndexedDB, the toast appears, Firebase sync queues the write. The IC's tablet, connected via the same Firebase listener, receives the state update within 2 to 4 seconds on a working connection. The IC sees the shore point card change state without any action on their end.
 
-What the tablet needs that the phone does not: a status summary bar above the shore point list showing counts by status. "3 Cutting / 2 Runner / 1 Secured" gives the IC a triage view without scrolling through 12 cards to count. On the phone, that summary is unnecessary because the team officer is tracking one or two shore points personally. On the tablet, it is the IC's primary situational awareness panel.
+What the tablet needs that the phone does not: a status summary bar above the shore point list showing counts by status. "3 Cutting Station / 2 Runner / 1 Secured" gives the IC a triage view without scrolling through 12 cards to count. On the phone, that summary is unnecessary because the team officer is tracking one or two shore points personally. On the tablet, it is the IC's primary situational awareness panel.
 
 The one tablet-primary interaction is cutting queue reorder. The IC drags shore point cards in the cutting queue to set the carpenter's priority sequence. A team officer can see the cutting queue on a phone but cannot reorder it. Reorder is a CP action. The phone shows the current queue order in a read-only list. The tablet shows the queue with drag handles.
 

@@ -123,9 +123,9 @@ interface LaneProps {
   onAssignEquipment: (sp: ShorePoint) => void;
   onAdvance: (sp: ShorePoint) => void;
   onStepBack: (sp: ShorePoint) => void;
-  /** Shore Secured → open the Remove & Return confirm modal (#224). */
+  /** Wood Shore Secured → open the Remove & Return confirm modal (#224). */
   onRemoveReturn: (sp: ShorePoint) => void;
-  /** Group gate (#221 OQ2): set while a grouped In Process point has mates still Pending. */
+  /** Group gate (#221 OQ2): set while a grouped Equipment Assigned point has mates still Pending Equipment. */
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
   activeStackId: string | null;
@@ -315,7 +315,7 @@ export function OperationsBoard() {
   const stepBackSp = stepBackSpId
     ? (shorePoints.find((s) => s.id === stepBackSpId && s.status === 'process') ?? null)
     : null;
-  // Remove & Return target (#224): the Shore Secured point whose equipment is being
+  // Remove & Return target (#224): the Wood Shore Secured point whose equipment is being
   // returned. Derives LIVE by id and self-closes the instant the point leaves secured.
   const returnSp = returnSpId
     ? (shorePoints.find((s) => s.id === returnSpId && s.status === 'secured') ?? null)
@@ -339,11 +339,11 @@ export function OperationsBoard() {
   useEffect(() => {
     if (detailSpId && !detailSp) setDetailSpId(null);
   }, [detailSpId, detailSp]);
-  // The full In-Process set to un-deploy together: a grouped physical shore
+  // The full Equipment Assigned set to un-deploy together: a grouped physical shore
   // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
   // to Pending" never leaves orphaned standing struts — the set is married
   // cradle-to-grave. A partial-deployed group (out of stock) returns only the
-  // members actually In Process. Singleton → just itself.
+  // members actually Equipment Assigned. Singleton → just itself.
   const stepBackMembers = !stepBackSp
     ? []
     : stepBackSp.groupId
@@ -689,7 +689,7 @@ export function OperationsBoard() {
     [shorePoints],
   );
   // The read-only sent-to-runner tail: points that came through the station (have a
-  // cuttingStartedAt) and are now Runner / Shore Secured — visible until returned.
+  // cuttingStartedAt) and are now Runner / Wood Shore Secured — visible until returned.
   const cuttingSent = useMemo(
     () =>
       shorePoints

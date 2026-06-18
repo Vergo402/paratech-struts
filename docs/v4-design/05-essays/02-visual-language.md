@@ -293,7 +293,7 @@ Status indicators, role pills, measurement unit labels.
 - Corner radius: `6pt` (half of card radius, maintains hierarchy)
 - Font: `--type-label` (11pt, 500 weight)
 - Background + text: status token pair
-- Color is never the only differentiator: every status badge has a status label text inside it. A "Cutting" badge says "Cutting." A color-blind user reads the word.
+- Color is never the only differentiator: every status badge has a status label text inside it. A "Cutting Station" badge says "Cutting Station." A color-blind user reads the word.
 
 In sunlight theme, badge height grows to `28pt` and font bumps to `--type-body-medium` (14pt, 500). The label still fits.
 
@@ -488,7 +488,7 @@ The sync status dot is a `8pt` circle in the header. It is `--status-active` (bl
 
 11. Set undo toast duration to **`200ms ease-out`** in, **`180ms ease-in`** out. Progress line runs at constant speed for exactly **5 seconds**. No pulsing. One toast maximum visible at once.
 
-12. Status badge text must always include the status label as text, never color only. Specifically: "Cutting", "Runner", "Secured", "Pending", "Active" spelled out. Color change alone does not communicate status to a color-blind user or in a sunlight-washed screen.
+12. Status badge text must always include the status label as text, never color only. Specifically: "Cutting Station", "Runner", "Secured", "Pending Equipment", "Active" spelled out. Color change alone does not communicate status to a color-blind user or in a sunlight-washed screen.
 
 13. Commission or author **custom SVG icons** at 24px grid, 1.5pt stroke, 2px corner joins. The nine USACE shore type diagrams are the first priority in the set. Shore type diagrams get a 48px detail variant and a 24px badge variant.
 

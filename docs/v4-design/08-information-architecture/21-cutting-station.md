@@ -40,7 +40,7 @@ The cut-the-strut-to-length workstation: the queue of shore points whose struts 
 
 - **Primary action (one — Principle 4):** advance the cut through its workstation steps — **Mark Cut Done**, then **Send to Runner** — each a **slide-to-advance** on the card ([ADR-010](../11-decisions/ADR-010-status-commit-model.md), [`slider`](../03-primitives/slider.md)), **not the v3 buttons**. Role-gated to **Cutting** (IC / Safety override).
 - **Secondary actions:** **priority reorder** (tablet drag / read-only on phone); **enter the actual cut length** (optional [`input`](../03-primitives/input.md)); **step back** (reverse slide).
-- **Destructive / inventory-mutating:** none originate here — the inventory-decrementing return happens on the [Operations](20-operations.md) Shore Secured card. Advancing here never raises a confirm overlay.
+- **Destructive / inventory-mutating:** none originate here — the inventory-decrementing return happens on the [Operations](20-operations.md) Wood Shore Secured card. Advancing here never raises a confirm overlay.
 
 ## Composed primitives
 
@@ -104,7 +104,7 @@ The role gate (who may commit a cut) is the D7 authorization work; the screen re
 
 ## Empty / error / loading states
 
-- **Empty — no cuts queued:** the [`empty-state`](../03-primitives/empty-state.md) "all-clear"/first-run variant with specific copy — **"No cuts in queue"** + a line pointing back to Operations ("Move a shore point to Cutting to queue it") — faithful to v3's empty cut-table message, made specific (rec K-4).
+- **Empty — no cuts queued:** the [`empty-state`](../03-primitives/empty-state.md) "all-clear"/first-run variant with specific copy — **"No cuts in queue"** + a line pointing back to Operations ("Move a shore point to Cutting Station to queue it") — faithful to v3's empty cut-table message, made specific (rec K-4).
 - **Error:** a failed write queues locally (sync indicator), never `alert()`.
 - **Loading:** local-first — renders instantly from local state; show nothing ([`loading-state.md`](../03-primitives/loading-state.md)).
 

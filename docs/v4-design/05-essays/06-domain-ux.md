@@ -128,7 +128,7 @@ The cut table card appears on the tablet in the cutting foreman view. On the pho
 
 The group-versus-individual phase split (v3.8.0) is architecturally correct and must carry forward. Pre-cutting transitions advance all group members at once. Cutting, Runner, and Secured transitions operate individually. The logic lives in `updateShoreStatus` and is keyed on `individualPhase = ['cutting', 'runner', 'secured']`.
 
-v3 makes this split invisible to the operator. A shore point in the Cutting status looks the same as a shore point in the In Process status — same card layout, same tap behavior — except that one advances the group and one advances only itself. The operator cannot tell from looking at the card which mode they are in.
+v3 makes this split invisible to the operator. A shore point in the Cutting Station status looks the same as a shore point in the Equipment Assigned status — same card layout, same tap behavior — except that one advances the group and one advances only itself. The operator cannot tell from looking at the card which mode they are in.
 
 v4 surfaces the split. Cards in a pre-cutting group status carry a compact group badge in the card header: "Group of 2" or "Group of 3" in 11pt --text-secondary, with a small multiple-struts icon at 14pt. When the operator taps "Advance" on any card in this state, a 2-second toast appears: "Advancing all 2 group members." This is not a confirmation — per Principle 6, there is no confirmation modal. It is the doubt-free escape notification: immediate commit, 5-second undo window.
 

@@ -10,9 +10,9 @@
 ## Purpose and goal
 
 The strut is cut and in hand. The runner carries it from the saw station to the shore point.
-When the strut is physically set in the opening, the runner slides the card to Shore Secured.
+When the strut is physically set in the opening, the runner slides the card to Wood Shore Secured.
 
-**Goal:** runner advances the SP from Runner → Shore Secured. One slide; individual (post-cutting
+**Goal:** runner advances the SP from Runner → Wood Shore Secured. One slide; individual (post-cutting
 phase split is in effect). The card carries the deployed strut identity throughout.
 
 ---
@@ -28,7 +28,7 @@ phase split is in effect). The card carries the deployed strut identity througho
 Phone is the floor (Principle 2). The runner's slide happens on arrival at the shore point —
 one handed, at the opening.
 
-**Role gate:** Runner role required to advance Runner → Shore Secured. IC / Safety override.
+**Role gate:** Runner role required to advance Runner → Wood Shore Secured. IC / Safety override.
 
 ---
 
@@ -38,7 +38,7 @@ one handed, at the opening.
 stateDiagram-v2
     [*] --> Runner
 
-    Runner --> ShoreSecured : runner · slide → Shore Secured → slider (individual; role-gated Runner)
+    Runner --> ShoreSecured : runner · slide → Wood Shore Secured → slider (individual; role-gated Runner)
     Runner --> Cutting : runner/IC · step-back slide → slider (individual; returns card to Cutting Station)
 
     ShoreSecured --> [*] : exits this workflow → enters workflow #224 (Secured / Returned)
@@ -51,7 +51,7 @@ step-back. Individual (post-cutting phase split is in full effect; no group-wide
 
 ## Step-by-step
 
-### Step 1 — Runner lane: slide → Shore Secured
+### Step 1 — Runner lane: slide → Wood Shore Secured
 
 ```
 ┌─────────────────────────────────────┐
@@ -62,8 +62,8 @@ step-back. Individual (post-cutting phase split is in full effect; no group-wide
 │  │ Div 1 · Area A              │    │
 │  │ T-Shore [1/3] · Runner      │    │  ← group badge for context; individual behavior
 │  │ LS 203 · from Rescue 2      │    │  ← deployed strut identity (persists cradle-to-grave)
-│  │ ●───────────────────────○   │    │  ← advance slide → Shore Secured
-│  │      ○──────────────────●   │    │  ← step-back slide → Cutting
+│  │ ●───────────────────────○   │    │  ← advance slide → Wood Shore Secured
+│  │      ○──────────────────●   │    │  ← step-back slide → Cutting Station
 │  └─────────────────────────────┘    │
 └─────────────────────────────────────┘
 ```
@@ -77,14 +77,14 @@ immediately on slide-past-threshold.
 
 ---
 
-### Step 1-R — Step back to Cutting
+### Step 1-R — Step back to Cutting Station
 
 ```
 ┌─────────────────────────────────────┐
-│  Cutting                        (1) │  ← card moves back to Cutting lane on Operations board
+│  Cutting Station                (1) │  ← card moves back to Cutting Station lane on Operations board
 │  ┌─────────────────────────────┐    │
 │  │ Div 1 · Area A · T-Shore    │    │
-│  │ LS 203 · Cutting            │    │
+│  │ LS 203 · Cutting Station    │    │
 │  │ … (returns to Cutting queue)│    │  ← re-enters Cutting Station queue at current position
 │  └─────────────────────────────┘    │
 └─────────────────────────────────────┘
@@ -105,10 +105,10 @@ Single-actor story (Runner on phone):
 
 | Device | Step | What it sees |
 |---|---|---|
-| Runner's **phone** | 1 | Drives the slide; SP advances to Shore Secured |
-| Team officer's **phone** (Operations) | — | On next sync: Runner lane decrements; Shore Secured lane increments |
+| Runner's **phone** | 1 | Drives the slide; SP advances to Wood Shore Secured |
+| Team officer's **phone** (Operations) | — | On next sync: Runner lane decrements; Wood Shore Secured lane increments |
 | IC's **tablet** | — | On next sync: Operations board updates |
-| **Broadcast** | — | On next sync: Runner count decrements; Shore Secured count increments |
+| **Broadcast** | — | On next sync: Runner count decrements; Wood Shore Secured count increments |
 
 No push (Principle 10).
 
@@ -118,8 +118,8 @@ No push (Principle 10).
 
 | Action | Reversible? | Mechanism |
 |---|---|---|
-| Runner → Shore Secured | Yes (step-back from #224) | Step-back slide on Shore Secured card (workflow #224 owns that) |
-| Runner → Cutting (step-back) | Yes | Step-back slide on Runner card; re-enters Cutting queue with `cuttingDone` intact |
+| Runner → Wood Shore Secured | Yes (step-back from #224) | Step-back slide on Wood Shore Secured card (workflow #224 owns that) |
+| Runner → Cutting Station (step-back) | Yes | Step-back slide on Runner card; re-enters Cutting Station queue with `cuttingDone` intact |
 
 ---
 
@@ -129,8 +129,8 @@ No push (Principle 10).
   Operations board.
 - [`card.md`](../03-primitives/card.md) — ShorePointCard (`runner` state, deployed-strut
   identity, group badge for context).
-- [`slider.md`](../03-primitives/slider.md) — advance (→ Shore Secured) and step-back
-  (→ Cutting) slides.
+- [`slider.md`](../03-primitives/slider.md) — advance (→ Wood Shore Secured) and step-back
+  (→ Cutting Station) slides.
 
 No new primitives.
 
@@ -144,9 +144,9 @@ Screen-reader behavior particular to this workflow:
 
 - **Runner card:** VoiceOver reads **"Shore point Runner. Div 1, Area A, T-Shore, LS 203,
   Rescue 2. Group 1 of 3."**
-- **Advance slide commit:** **"Shore point Shore Secured. Div 1, Area A."**
+- **Advance slide commit:** **"Shore point Wood Shore Secured. Div 1, Area A."**
   (`aria-live="polite"` on the card after transition)
-- **Step-back commit:** **"Shore point returned to Cutting. Div 1, Area A."**
+- **Step-back commit:** **"Shore point returned to Cutting Station. Div 1, Area A."**
 - **Role gate block:** **"Runner role required to advance. Contact IC or Safety Officer."**
   (`aria-live="assertive"`)
 - Slide controls have Advance / Step-back button equivalents per the *assistive-tech-cannot-slide*
@@ -156,7 +156,7 @@ Screen-reader behavior particular to this workflow:
 
 ## Open questions
 
-1. **`cuttingDone` flag preservation on step-back from Runner → Cutting:** the stated rule is
+1. **`cuttingDone` flag preservation on step-back from Runner → Cutting Station:** the stated rule is
    that the flag is preserved (saw already ran). Phase H confirms this is the correct UX
    (cutter sees "Cut done — slide to send to runner" immediately without re-marking).
 2. **Role gate scope:** whether the Runner role gate applies only to the slide or also to

@@ -41,7 +41,7 @@ The driver is field physics (synthesis §1.5): structural-glove fingertips conta
 ## Alternatives Considered
 
 - **Keep the 5-second undo toast (Principle 6 as written).** Rejected — the timer assumes eyes-on-screen, which the in-building role does not have; the window is the weakest link in the field (synthesis §1.5).
-- **Confirm modal per advance ("Advance to Cutting?").** Rejected — Principle 6 explicitly forbids "Are you sure?" modals; modal-stacking under stress is the exact failure the principle was written against.
+- **Confirm modal per advance ("Advance to Cutting Station?").** Rejected — Principle 6 explicitly forbids "Are you sure?" modals; modal-stacking under stress is the exact failure the principle was written against.
 - **Undo toast *plus* always-reversible.** Rejected — two mechanisms for one concern; the toast adds motion noise (Principle 3) and implies the reversal window is time-bound when it isn't. The toast primitive is better repurposed to confirmations/notifications.
 - **Tap-to-advance (no slide).** Rejected — ghost taps on wet screens would advance safety-critical state.
 

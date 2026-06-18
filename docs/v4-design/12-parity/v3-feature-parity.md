@@ -68,7 +68,7 @@ Major v3 screens/features mapped to their v4 design home. 🟡 Pending = the scr
 | **Roster** (Apparatus / External / Individuals / My-Role) | 🟡 Pending spec | [#297](https://github.com/Vergo402/paratech-struts/issues/297) (unwritten) |
 | **Settings** (dept connect, data mgmt, feedback, theme) | 🟡 Pending spec | [#202](https://github.com/Vergo402/paratech-struts/issues/202) (unwritten) |
 | **Checklists** — IC Command / Task Level / ORM-TCRM | 🟡 Pending spec | [#203](https://github.com/Vergo402/paratech-struts/issues/203) / [#204](https://github.com/Vergo402/paratech-struts/issues/204) / [#205](https://github.com/Vergo402/paratech-struts/issues/205) (Phase F next) |
-| NIMS terminology (Strut Set / Shore Secured / `assignedResource`) | ✅ | [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) |
+| NIMS terminology (Strut Set / Wood Shore Secured / `assignedResource`) | ✅ | [ADR-008](../11-decisions/ADR-008-nims-org-structure.md), [`voice-and-tone.md`](../07-design-system/voice-and-tone.md) |
 | Firebase RTDB + offline / local-first | ✅ retained | [ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md) |
 | Anonymous Auth → per-device UID | ✅ inherited from the v3.x train | `.claude/plans/v4.0.0-plan.md` |
 | Capacity / load-table ratings | ⚪ Demoted by design (not deleted) | [`06-synthesis.md`](../06-synthesis.md) §3.4 |

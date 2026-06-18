@@ -83,7 +83,7 @@ function WaitIcon() {
 
 /**
  * ShorePointCard — the lifecycle card (card.md). Presentational: the board
- * owns every modal and commit. Pending shipped with #220; In Process and the
+ * owns every modal and commit. Pending Equipment shipped with #220; Equipment Assigned and the
  * Strut Set step-back ship with the deploy workflow (S6, #221): the advance
  * slide commits the next status, the step-back slide mirrors it (ADR-010
  * always-reversible — the board decides whether a step-back needs the
@@ -119,7 +119,7 @@ export interface ShorePointCardProps {
   onMarkCutDone?: (sp: ShorePoint) => void | Promise<void>;
   /** Cutting Station only — clears the Mark Cut Done flag (step-back from cut-done). */
   onClearCutDone?: (sp: ShorePoint) => void | Promise<void>;
-  /** Shore Secured only — opens the Remove & Return confirm modal (#224). The only
+  /** Wood Shore Secured only — opens the Remove & Return confirm modal (#224). The only
    *  forward path from secured; inventory-consequential and terminal. */
   onRemoveReturn?: (sp: ShorePoint) => void;
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
@@ -442,7 +442,7 @@ export function ShorePointCard({
 
       {/* Runner (#223) — interactive on the BOARD only (gated !cuttingStation so the
           station's read-only "sent to runner" tail stays read-only). Individual
-          (post-cutting phase split): one slide → Shore Secured, step-back → Cutting
+          (post-cutting phase split): one slide → Wood Shore Secured, step-back → Cutting Station
           (re-enters the Cutting Station queue Cut-Done-intact). No confirm — non-
           inventory status slides (ADR-010). */}
       {interactive && !removed && !cuttingStation && sp.status === 'runner' && (
@@ -460,7 +460,7 @@ export function ShorePointCard({
         </div>
       )}
 
-      {/* Shore Secured (#224) — the only forward path is Remove & Return Equipment, an
+      {/* Wood Shore Secured (#224) — the only forward path is Remove & Return Equipment, an
           inventory-consequential + terminal action, so it is a BUTTON that raises the
           confirm modal (ADR-016), not a slide. Step-back → Runner is the last
           reversible move (ADR-010). Board only (!cuttingStation). */}

@@ -47,8 +47,8 @@
   /* ---- COLOR section: single source of truth for the palette reference ----
      Values mirror tokens.css / color.md exactly; ratios are from wcag-contrast.mjs. */
   var STATUS = ['pending', 'process', 'strutset', 'cutting', 'runner', 'secured', 'returned', 'danger'];
-  var LABEL = { pending: 'Pending', process: 'In Process', strutset: 'Strut Set', cutting: 'Cutting',
-    runner: 'Runner', secured: 'Shore Secured', returned: 'Strut Equipment Returned', danger: 'Danger' };
+  var LABEL = { pending: 'Pending Equipment', process: 'Equipment Assigned', strutset: 'Strut Set', cutting: 'Cutting Station',
+    runner: 'Runner', secured: 'Wood Shore Secured', returned: 'Strut Equipment Returned', danger: 'Danger' };
 
   var PALETTE = {
     light: {

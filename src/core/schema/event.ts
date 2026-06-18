@@ -149,7 +149,7 @@ export const ComponentResourced = z.object({
   inventoryId: z.string().optional(), // absent ⟺ now untracked
 });
 
-// The terminal, inventory-consequential move (#224): Shore Secured → Equipment
+// The terminal, inventory-consequential move (#224): Wood Shore Secured → Equipment
 // Returned. Like EquipmentReturned it restores stock through the same L-8
 // transaction (looping every tracked component of the BOM), but it KEEPS
 // deployedBom on the point (the returned card shows the equipment as history) and

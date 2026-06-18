@@ -17,7 +17,7 @@
 
 [ADR-010](ADR-010-status-commit-model.md) locked the status commit model: a deliberate slide gesture, always reversible from the card. The accessibility doctrine then built a load-bearing contract on top of it — *assistive tech cannot slide* ([`accessibility.md`](../07-design-system/accessibility.md)) — promising that **every slide carries a focusable, labeled Advance / Step-back button pair** committing the same event. The Phase G gate review escalated that promise to the phone for everyone (OQ #37, "near-must": four trench reviewers distrusted a precise drag as the primary gloved commit), and the Phase H slice shipped it structurally: the `Slider` primitive rendered a plain visible button below every track.
 
-Alex drove the slice at the Phase H gate (2026-06-10) and **kicked it back** ([#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-5): the slide + button doubling is **"GOD AWFUL"** — two affordances for one action doubled the visual weight of every In-Process card, muddied the one-gesture mental model, and reintroduced exactly the ghost-tappable commit surface the slide exists to prevent. His ruling, recorded on #248 and final: **slider gesture only, period.**
+Alex drove the slice at the Phase H gate (2026-06-10) and **kicked it back** ([#248](https://github.com/Vergo402/paratech-struts/issues/248) KB-5): the slide + button doubling is **"GOD AWFUL"** — two affordances for one action doubled the visual weight of every Equipment Assigned card, muddied the one-gesture mental model, and reintroduced exactly the ghost-tappable commit surface the slide exists to prevent. His ruling, recorded on #248 and final: **slider gesture only, period.**
 
 ---
 
@@ -27,7 +27,7 @@ Alex drove the slice at the Phase H gate (2026-06-10) and **kicked it back** ([#
 
 - **No visible button twin** — the #37 plain-button equivalent is removed from the `Slider` primitive and never reintroduced per call site.
 - **No hidden assistive-tech or keyboard commit path** — no screen-reader-only button, no keyboard Enter/Space commit, no switch-access target. A hidden twin would be the same doubled model wearing an accessibility fig leaf, and Alex ruled against the twin as such.
-- **The disabled gate reason stays visible** — when a slide is gated (e.g. "Waiting on group — 2 of 3 still Pending"), the reason renders as a visible text line under the track (`.fs-slide-reason`), owned by the Slider itself. The track fades when disabled; the reason does not.
+- **The disabled gate reason stays visible** — when a slide is gated (e.g. "Waiting on group — 2 of 3 still Pending Equipment"), the reason renders as a visible text line under the track (`.fs-slide-reason`), owned by the Slider itself. The track fades when disabled; the reason does not.
 - **Transitions still announce** — the polite live region speaks every commit ("Shore point — now Strut Set."). Assistive tech can **observe** the lifecycle fully; it cannot **drive** it.
 
 **Scope guard — status transitions only.** Deploy (Assign Equipment), un-deploy, return, End Operation, and every other consequential action remain ordinary buttons and modals with full keyboard/AT operability. Broadcast is read-only and unaffected. Nothing else in the product inherits this exception; *assistive tech cannot slide* remains the governing rule for every other gesture (sheets keep their Close button, the side-drawer keeps its tab, pickers keep Power Select).
@@ -38,7 +38,7 @@ Alex drove the slice at the Phase H gate (2026-06-10) and **kicked it back** ([#
 
 - **The field test outranks the trench prediction.** OQ #37's button-beside-slide was a reviewer hypothesis; the gate drive is the product's actual acceptance test, and it failed there decisively.
 - **Two affordances for one action is a worse control, not a safer one.** The button reintroduces the wet-screen ghost-tap commit the slide was chosen to eliminate (synthesis §1.5, ADR-010) — pairing them gives every card the vulnerability back.
-- **One mental model:** slide forward, slide back, anytime. The doubled control made every In-Process card read as four actions.
+- **One mental model:** slide forward, slide back, anytime. The doubled control made every Equipment Assigned card read as four actions.
 - **A hidden AT-only path was considered and rejected by the ruling itself** — "no button twins" with an invisible twin is not the decision; it is the decision evaded.
 
 ## Trade-off accepted (stated plainly)

@@ -82,7 +82,7 @@ filtering, and exporting are read-only; an export is itself a logged event but c
 │  14:31  Lt. Cho (Rescue Grp Sup)    │
 │         Deployed LS 203 → Div 1 A   │
 │  13:22  FF Okafor (Runner)          │
-│         Shore secured · Div 2 NE    │
+│    Wood Shore secured · Div 2 NE    │
 │  … (virtualized; 1000+ events)      │
 └─────────────────────────────────────┘
 ```
@@ -202,7 +202,7 @@ Screen-reader behavior particular to this workflow:
 - **Scope segmented:** **"All, selected"** / **"By user, selected"** etc.
 - **Event row:** **"14:31. Lieutenant Cho, Rescue Group Supervisor. Deployed LS 203 to Division 1 Area A."**
   (role-at-time spelled out).
-- **Entry detail:** **"Before and after. Status was Pending, now In Process."** (inline panel; read-only).
+- **Entry detail:** **"Before and after. Status was Pending Equipment, now Equipment Assigned."** (inline panel; read-only).
 - **Export:** **"Export CSV"** / **"Export PDF. Assembled ICS forms."**
 - **Position-gate (non-IC/Ops):** **"Audit Log. Incident Commander or Operations Section Chief access
   required."** (the entry is visible; content is locked — `aria-live="polite"`).
