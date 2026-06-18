@@ -11,6 +11,7 @@ export { MeasurementValue, eighthsToParts, type MeasurementValueProps } from './
 export { Modal, type ModalProps } from './Modal';
 export { Segmented, type SegmentedProps, type SegmentedOption } from './Segmented';
 export { Sheet, type SheetProps } from './Sheet';
+export { SideDrawer, type SideDrawerProps } from './SideDrawer';
 export { Popover, type PopoverProps } from './Popover';
 export { PickerSurface, type PickerSurfaceProps } from './PickerSurface';
 export { useMediaQuery, useIsDesktop } from './useMediaQuery';

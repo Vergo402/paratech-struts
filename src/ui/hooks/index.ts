@@ -13,3 +13,4 @@ export { useSession, type SessionApi } from './useSession';
 export { useDepartment, type DepartmentApi } from './useDepartment';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
+export { useShorePointHistory, type ShorePointHistory } from './useShorePointHistory';

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import type { Apparatus, Deductions, DeployedComponent, InventoryItem, ShorePoint } from '@core/schema';
 import { UNTRACKED_SOURCE } from '@core/schema';
-import { BASE_PLATES, type StrutCombination } from '@core/load';
+import type { StrutCombination } from '@core/load';
 import { assembleBom, componentLabel, findForShorePoint } from '@core/shorepoint';
 import { Button, MeasurementValue } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
 import { useApparatus, useInventory, useInventoryActions } from '@ui/hooks';
+import { pieceIdentity, sameExtensions } from './pieceIdentity';
 
 /**
  * DeployResolution — the swaps-in-place "Review sources" step (#330 Phase 3b,
@@ -48,17 +49,6 @@ interface WorkPiece {
   offBook: boolean;
 }
 
-function plateName(id?: string): string {
-  return BASE_PLATES.find((p) => p.id === id)?.name ?? 'Base plate';
-}
-
-/** The piece's field-readable identity — "LS 406", "12″ extension", "6\" Swivel Base". */
-function pieceIdentity(c: DeployedComponent): string {
-  if (c.role === 'strut') return c.model ?? 'Strut';
-  if (c.role === 'extension') return `${c.length}″ extension`;
-  return plateName(c.plateId);
-}
-
 /** Inventory rows that physically match this component (by catalog identity). */
 function matchRows(c: DeployedComponent, inventory: InventoryItem[]): InventoryItem[] {
   if (c.role === 'extension') {
@@ -84,13 +74,6 @@ function sourceOptions(c: DeployedComponent, inventory: InventoryItem[]): Source
     else byApp.set(r.apparatusId, { apparatusId: r.apparatusId, apparatus: r.apparatus, inventoryId: r.id, available: r.available });
   }
   return [...byApp.values()];
-}
-
-function sameExtensions(a: number[], b: number[]): boolean {
-  if (a.length !== b.length) return false;
-  const x = [...a].sort((m, n) => m - n);
-  const y = [...b].sort((m, n) => m - n);
-  return x.every((v, i) => v === y[i]);
 }
 
 function Stepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {

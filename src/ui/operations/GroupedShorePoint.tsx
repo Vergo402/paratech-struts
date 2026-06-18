@@ -32,6 +32,7 @@ export interface GroupedShorePointProps {
   initialActiveId?: string;
   onEdit?: ShorePointCardProps['onEdit'];
   onDelete?: ShorePointCardProps['onDelete'];
+  onOpenDetail?: ShorePointCardProps['onOpenDetail'];
   onAssignEquipment?: ShorePointCardProps['onAssignEquipment'];
   onAdvance?: ShorePointCardProps['onAdvance'];
   onStepBack?: ShorePointCardProps['onStepBack'];
@@ -62,6 +63,7 @@ export function GroupedShorePoint({
   initialActiveId,
   onEdit,
   onDelete,
+  onOpenDetail,
   onAssignEquipment,
   onAdvance,
   onStepBack,
@@ -137,6 +139,7 @@ export function GroupedShorePoint({
         shorePoint={member}
         onEdit={onEdit}
         onDelete={onDelete}
+        onOpenDetail={onOpenDetail}
         onAssignEquipment={onAssignEquipment}
         onAdvance={onAdvance}
         onStepBack={onStepBack}

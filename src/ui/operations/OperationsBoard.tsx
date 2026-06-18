@@ -9,12 +9,13 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, Modal, Segmented } from '@ui/primitives';
+import { Badge, Button, EmptyState, Modal, Segmented, SideDrawer } from '@ui/primitives';
 import { useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
-import { ShorePointCard, SHORE_TYPE_LABELS } from './ShorePointCard';
+import { ShorePointCard, SHORE_TYPE_LABELS, shorePointDrawerTitle } from './ShorePointCard';
+import { ShorePointDetail } from './ShorePointDetail';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
@@ -118,6 +119,7 @@ interface LaneProps {
   onToggle: () => void;
   onEdit: (sp: ShorePoint) => void;
   onDelete: (sp: ShorePoint) => void;
+  onOpenDetail: (sp: ShorePoint) => void;
   onAssignEquipment: (sp: ShorePoint) => void;
   onAdvance: (sp: ShorePoint) => void;
   onStepBack: (sp: ShorePoint) => void;
@@ -136,6 +138,7 @@ function Lane({
   onToggle,
   onEdit,
   onDelete,
+  onOpenDetail,
   onAssignEquipment,
   onAdvance,
   onStepBack,
@@ -176,6 +179,7 @@ function Lane({
                     }
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onOpenDetail={onOpenDetail}
                     onAssignEquipment={onAssignEquipment}
                     onAdvance={onAdvance}
                     onStepBack={onStepBack}
@@ -189,6 +193,7 @@ function Lane({
                     shorePoint={item.sp}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    onOpenDetail={onOpenDetail}
                     onAssignEquipment={onAssignEquipment}
                     onAdvance={onAdvance}
                     onStepBack={onStepBack}
@@ -274,6 +279,8 @@ export function OperationsBoard() {
   const [assignSpId, setAssignSpId] = useState<string | null>(null);
   const [stepBackSpId, setStepBackSpId] = useState<string | null>(null);
   const [returnSpId, setReturnSpId] = useState<string | null>(null);
+  // Quick View drawer (ADR-019) — the deployed point being inspected, or null.
+  const [detailSpId, setDetailSpId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
@@ -313,6 +320,9 @@ export function OperationsBoard() {
   const returnSp = returnSpId
     ? (shorePoints.find((s) => s.id === returnSpId && s.status === 'secured') ?? null)
     : null;
+  // Quick View target — derived LIVE by id, NOT status-gated: a point may advance
+  // (or be re-sourced) while its drawer is open, and the panel should track it.
+  const detailSp = detailSpId ? (shorePoints.find((s) => s.id === detailSpId) ?? null) : null;
   // Drop a stale id once its target derives null, so the overlay cannot
   // spontaneously reopen if the point later re-enters that state.
   useEffect(() => {
@@ -324,6 +334,11 @@ export function OperationsBoard() {
   useEffect(() => {
     if (returnSpId && !returnSp) setReturnSpId(null);
   }, [returnSpId, returnSp]);
+  // Drop a stale detail id once its point is gone (deleted, or a returned point's
+  // BOM cleared) so the drawer can't spontaneously reopen.
+  useEffect(() => {
+    if (detailSpId && !detailSp) setDetailSpId(null);
+  }, [detailSpId, detailSp]);
   // The full In-Process set to un-deploy together: a grouped physical shore
   // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
   // to Pending" never leaves orphaned standing struts — the set is married
@@ -339,6 +354,7 @@ export function OperationsBoard() {
   const openDelete = useCallback((sp: ShorePoint) => setDeleteSp(sp), []);
   const assignEquipment = useCallback((sp: ShorePoint) => setAssignSpId(sp.id), []);
   const openRemoveReturn = useCallback((sp: ShorePoint) => setReturnSpId(sp.id), []);
+  const openDetail = useCallback((sp: ShorePoint) => setDetailSpId(sp.id), []);
 
   const expandLane = useCallback((status: ShorePointStatus) => {
     setCollapsed((prev) => {
@@ -774,7 +790,8 @@ export function OperationsBoard() {
           onStepBack={handleStepBack}
         />
       ) : (
-        <>
+        <div className="fs-ops-shell">
+        <div className="fs-ops-main">
           <div className="fs-ops-actions">
             <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
               + Add Shore Point
@@ -857,6 +874,7 @@ export function OperationsBoard() {
             onToggle={() => toggleLane(status)}
             onEdit={openEdit}
             onDelete={openDelete}
+            onOpenDetail={openDetail}
             onAssignEquipment={assignEquipment}
             onAdvance={handleAdvance}
             onStepBack={handleStepBack}
@@ -881,7 +899,15 @@ export function OperationsBoard() {
               End Operation
             </Button>
           </div>
-        </>
+        </div>
+        <SideDrawer
+          open={!!detailSp}
+          onClose={() => setDetailSpId(null)}
+          title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
+        >
+          {detailSp && <ShorePointDetail sp={detailSp} />}
+        </SideDrawer>
+        </div>
       )}
 
       <StartOperationModal

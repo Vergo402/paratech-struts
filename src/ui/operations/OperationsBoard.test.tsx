@@ -24,6 +24,7 @@ vi.mock('@ui/hooks', () => ({
   useDeviceUid: () => () => Promise.resolve('device-test'),
   usePastOperations: () => ({ data: [] }),
   useArchivedOperation: () => ({ data: undefined }),
+  useShorePointHistory: () => ({ events: [], deviceUid: 'device-test' }),
 }));
 
 const ACTIVE_OP: Operation = {
@@ -569,7 +570,7 @@ describe('OperationsBoard', () => {
     );
   });
 
-  it('Strut Equipment Returned: terminal — the marker, no slides or buttons on the card', () => {
+  it('Strut Equipment Returned: terminal — the marker, no slides or action buttons on the card', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'returned'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
@@ -577,7 +578,31 @@ describe('OperationsBoard', () => {
     // Scope to the CARD (the lane's own header is a toggle button).
     const card = document.querySelector('[data-sp-id="sp-1"]') as HTMLElement;
     expect(within(card).queryByText(/Slide/)).not.toBeInTheDocument();
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+    // The only affordance is the read-only Quick View entry (ADR-019) — no slides,
+    // no advance/step-back/remove. A returned card keeps its BOM as history.
+    const buttons = within(card).queryAllByRole('button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveTextContent('Details');
+  });
+
+  it('Quick View: a deployed card opens the detail drawer; a pending card has no Details', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-1', 'process'), deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] },
+      makeSP('sp-2', 'pending'),
+    ]);
+    const user = userEvent.setup();
+    render(<OperationsBoard />);
+
+    const deployed = document.querySelector('[data-sp-id="sp-1"]') as HTMLElement;
+    const pending = document.querySelector('[data-sp-id="sp-2"]') as HTMLElement;
+    expect(within(deployed).getByRole('button', { name: 'Details' })).toBeInTheDocument();
+    expect(within(pending).queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+
+    await user.click(within(deployed).getByRole('button', { name: 'Details' }));
+    const drawer = screen.getByRole('dialog');
+    expect(within(drawer).getByText('Bill of materials')).toBeInTheDocument();
+    expect(within(drawer).getByText('Measurement & load')).toBeInTheDocument();
   });
 
   // ---- #248 — division/area sort + filter ------------------------------------

@@ -590,6 +590,89 @@ p.fs-gate--disclaimer {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ---- side drawer (the companion panel — side-drawer.md / ADR-019) ----------
+   Phone: a MODAL drawer — the sheet's chrome with a horizontal origin (slides in
+   from the right edge over the scrim). Desktop: a NON-MODAL docked column whose
+   geometry (width, sticky, beside-the-board) lives in operations.css; the head/
+   body/surface chrome is shared here. The right-edge anchor casts --shadow-drawer
+   inward (sideways, x-negative — minted for all 4 themes in tokens.css). */
+@keyframes fs-drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes fs-drawer-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+.fs-drawer {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-sheet) 0 0 var(--radius-sheet); /* left corners — anchored to the right edge */
+  box-shadow: var(--shadow-drawer);
+}
+
+/* Phone — the modal overlay drawer, anchored to the right edge, full height. */
+.fs-drawer--phone {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(calc(100vw - 40px), 420px);
+  border-right: none;
+  z-index: 300;
+}
+.fs-drawer--phone[data-state='open'] { animation: fs-drawer-in var(--motion-transition) var(--ease-standard); }
+.fs-drawer--phone[data-state='closed'] { animation: fs-drawer-out var(--motion-exit) var(--ease-exit); }
+
+.fs-drawer-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.fs-drawer-title {
+  margin: 0;
+  font: var(--type-headline-2);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+.fs-drawer-close {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-button);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-drawer-close:hover { color: var(--text-primary); }
+.fs-drawer-close:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.fs-drawer-body {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-4);
+  overflow-y: auto;
+  /* iOS scroll hardening — verbatim from .fs-sheet-body (L-9). */
+  touch-action: pan-y;
+  transform: translateZ(0);
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  font: var(--type-body);
+  color: var(--text-primary);
+}
+
 /* ---- popover (the desktop dropdown surface — ADR-032) ----------------------
    Sheet's desktop twin: an anchored dropdown for single-select pickers at
    ≥768px (picker.md/sheet.md §Surface adaptations). Matches the trigger width,

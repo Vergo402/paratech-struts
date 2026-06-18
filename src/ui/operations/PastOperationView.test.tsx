@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { OperationState } from '@core/operation';
@@ -12,6 +12,8 @@ vi.mock('@ui/hooks', () => ({
   useArchivedOperation: () => mockArchived(),
   useCommit: () => mockCommit,
   useDeviceUid: () => () => Promise.resolve('device-test'),
+  useInventory: () => [],
+  useShorePointHistory: () => ({ events: [], deviceUid: 'device-test' }),
 }));
 
 const op: Operation = {
@@ -59,6 +61,16 @@ describe('PastOperationView (#238)', () => {
       expect.objectContaining({ type: 'OperationReopened', opId: 'op1', by: 'device-test' }),
     );
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('Quick View: an archived deployed card opens the read-only detail drawer', async () => {
+    render(<PastOperationView opId="op1" onClose={vi.fn()} />);
+    // Only the deployed card ('a', with a BOM) carries Details; the returned card
+    // ('b', no BOM) does not — so this is unambiguous.
+    await userEvent.click(screen.getByRole('button', { name: 'Details' }));
+    const drawer = screen.getByRole('dialog');
+    expect(within(drawer).getByText('Bill of materials')).toBeInTheDocument();
+    expect(within(drawer).getAllByText('LS 203').length).toBeGreaterThanOrEqual(1);
   });
 
   it('Cancel in the confirm does not commit', async () => {

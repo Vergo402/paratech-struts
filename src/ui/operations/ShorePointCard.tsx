@@ -12,6 +12,12 @@ export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
   '3-post': '3-Post',
 };
 
+/** The Quick View drawer title for a shore point — "#7 · B-2 · 3-Post" (the #N and
+ *  label are optional). One source of truth for the OperationsBoard + archive drawers. */
+export function shorePointDrawerTitle(sp: Pick<ShorePoint, 'seq' | 'label' | 'shoreType'>): string {
+  return `${sp.seq != null ? `#${sp.seq} · ` : ''}${sp.label ? `${sp.label} · ` : ''}${SHORE_TYPE_LABELS[sp.shoreType]}`;
+}
+
 const PENDING_REASON_COPY = {
   'no-match': 'No matching strut — nothing fits this opening at this load',
   'no-inventory': 'Waiting for inventory — no apparatus stock to pull from',
@@ -95,6 +101,10 @@ export interface ShorePointCardProps {
   onEdit?: (sp: ShorePoint) => void;
   /** Pending only — opens the destructive Delete confirm. */
   onDelete?: (sp: ShorePoint) => void;
+  /** Deployed only — opens the read-only Quick View detail (ADR-019 drawer). Does
+   *  no mutation, so it renders under readOnly (archive) too. Absent on cards that
+   *  don't host the drawer (e.g. the Cutting Station). */
+  onOpenDetail?: (sp: ShorePoint) => void;
   /** Pending primary action — opens the Assign Equipment sheet (#221). */
   onAssignEquipment?: (sp: ShorePoint) => void;
   /** Advance to the next lifecycle status — Strut Set (from process), Cutting (from
@@ -144,6 +154,7 @@ export function ShorePointCard({
   shorePoint: sp,
   onEdit,
   onDelete,
+  onOpenDetail,
   onAssignEquipment,
   onAdvance,
   onStepBack,
@@ -307,6 +318,15 @@ export function ShorePointCard({
               full per-component list + the subtle re-source marker). */}
           <span className="fs-spc-strut-model">{bomModelLabel(sp)}</span>
         </div>
+      )}
+
+      {/* Quick View entry (ADR-019) — a quiet read-only affordance on every
+          deployed card, away from the status stripe + slides. Read-only, so it
+          shows under readOnly (archive) too; absent when no handler is wired. */}
+      {deployedStrut && !removed && onOpenDetail && (
+        <button type="button" className="fs-spc-details" onClick={() => onOpenDetail(sp)}>
+          Details
+        </button>
       )}
 
       {sp.status === 'cutting' && sp.cuttingDone && (

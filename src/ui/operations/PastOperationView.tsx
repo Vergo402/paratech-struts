@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { newId } from '@core/id';
-import { Badge, Button, Modal } from '@ui/primitives';
+import { Badge, Button, Modal, SideDrawer } from '@ui/primitives';
 import { useArchivedOperation, useCommit, useDeviceUid } from '@ui/hooks';
-import { ShorePointCard } from './ShorePointCard';
+import { ShorePointCard, shorePointDrawerTitle } from './ShorePointCard';
+import { ShorePointDetail } from './ShorePointDetail';
 
 /** Back chevron for the archive header. */
 function BackIcon() {
@@ -27,9 +28,12 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
   const getUid = useDeviceUid();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [reopening, setReopening] = useState(false);
+  // Quick View drawer (ADR-019) — read-only here, like the cards.
+  const [detailSpId, setDetailSpId] = useState<string | null>(null);
 
   const operation = data?.operation ?? null;
   const points = (data?.shorePoints ?? []).filter((sp) => sp.deletedAt == null);
+  const detailSp = detailSpId ? (points.find((sp) => sp.id === detailSpId) ?? null) : null;
 
   const reopen = async () => {
     setReopening(true);
@@ -54,6 +58,8 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         Viewing a closed incident — read-only
       </p>
 
+      <div className="fs-ops-shell">
+      <div className="fs-ops-main">
       {/* Per-status count strip — the SitStat glance for a frozen incident. */}
       <div className="fs-ops-summary" aria-hidden="true">
         {STATUS_ORDER.map((status) => (
@@ -77,7 +83,7 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
             <div className="fs-lane-cards" role="list">
               {laneItems.map((sp) => (
                 <div key={sp.id} role="listitem">
-                  <ShorePointCard shorePoint={sp} readOnly />
+                  <ShorePointCard shorePoint={sp} readOnly onOpenDetail={(s) => setDetailSpId(s.id)} />
                 </div>
               ))}
             </div>
@@ -91,6 +97,15 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         <Button variant="secondary" onPress={() => setConfirmOpen(true)}>
           Re-open this incident
         </Button>
+      </div>
+      </div>
+      <SideDrawer
+        open={!!detailSp}
+        onClose={() => setDetailSpId(null)}
+        title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
+      >
+        {detailSp && <ShorePointDetail sp={detailSp} />}
+      </SideDrawer>
       </div>
 
       <Modal
