@@ -239,6 +239,30 @@ A dependency-aware, four-phase plan. The slice has no production data, so every 
 
 ---
 
+## Addendum — Phase 3 build & gate decisions (2026-06-18)
+
+**Status: Phases 0–3 SHIPPED.** Phase 0 (engine extension sourcing) was already in place; Phase 1 (three-type stock) shipped with the Inventory block [#200](https://github.com/Vergo402/paratech-struts/issues/200) (`dfc6139`); Phase 2 (BOM data core) `b3a093b`; Phase 3 split into **3a** (card stock-readiness chip, `a8732c6`) + **3b** (interactive deploy resolution, `a09f9bf`). [#330](https://github.com/Vergo402/paratech-struts/issues/330) closed 2026-06-18.
+
+The 2026-06-18 gate refined the resolved product calls above as follows (these supersede where they conflict):
+
+1. **Resolution UX = a swaps-in-place "Review sources" step**, hosted ONLY on the operations board's Assign Equipment sheet (`DeployResolution.tsx`). The recommendation list is replaced in place by the per-piece source panel (a Back control returns to it) — chosen over a layered modal, which fights the one-peer-overlay stacking model on phone. The one-step add+deploy in `AddShorePointModal` stays quick: a piece that can't be cleanly sourced there just leaves the point Pending (resolve it from the board). A `complete` BOM (every piece on the strut's own rig) still deploys in **one tap** — the panel only opens for cross-truck or missing.
+
+2. **Missing-piece resolution = one chooser, three inline options, fixed order:** (a) **quick-add** (a quantity stepper, default 1, + a truck picker defaulting to the strut's rig) → writes stock then re-points the piece; (b) **deploy off-book** (`source:'untracked'`, no `inventoryId`); (c) **drop the plate** (set to None). This replaces item 1's separate confirmation-popup for untracked: the guardrail is now the explicit chooser tap + a persistent "Off-book — won't draw from stock" marker on the row + the final Confirm — no nested popup. **No silent untracked deploy:** Confirm is blocked until every missing piece is explicitly resolved.
+
+3. **Drop-a-plate amends the persisted deductions.** Dropping a plate commits a `ShorePointEdited` (that slot → `'none'`) **before** the `EquipmentDeployed`, so the deployed point never records a plate it didn't use (the displayed effective length / any re-validation stays honest). It then re-runs the real engine fit; **only on a confirmed no-reach** does it warn + require an acknowledge tick — it never hard-blocks (field judgment may compensate in ways the app can't model). "No longer reaches" is a determination, not a guess (Alex, 2026-06-18).
+
+4. **Over-claim guard.** The per-piece truck picker lets an operator re-point two pieces at one stock row; that is caught **pre-Confirm** with a plain message ("Not enough X on Rig — re-point one piece") rather than surfacing the store's internal all-or-nothing abort. The store transaction remains the integrity backstop (verified: no partial decrement, no event on abort).
+
+5. **Grouped shore.** Per-member atomic deploy is unchanged (each member already deploys via its own sheet + transaction); 3b adds a whole-group **up-front advisory** stock warning (sum the model's on-scene availability vs `groupTotal`) — advisory only, never blocks.
+
+6. **`inventoryStore.addOne` now returns the affected row id** (the one data-layer change) so the quick-add path re-points the BOM component deterministically rather than racing reactive inventory.
+
+**Deferred BEYOND #330 (new follow-ups under #200):**
+- **Post-deploy re-sourcing** (`ComponentResourced`) — the event + store/reducer guards already shipped in Phase 2 and are tested; the editing UI is deferred **pending field evaluation** (Alex, 2026-06-18: "test it and see how it goes"). Use cases: correcting a mis-logged source, tying an off-book piece to real stock, a physical reseat, mutual-aid/cache demob reconciliation.
+- **Quick View** — a read-only deployed-shore detail surface (ADR-019 side-drawer); port of the v3 Quick View (`app.js`).
+
+---
+
 ## Related
 
 - **Principles:** 4 (one primary action — deploy stays one tap on the floor case), 9 (labeled controls — the source step), 10 (no silent data loss — atomic deploy, restore-each-on-return).
