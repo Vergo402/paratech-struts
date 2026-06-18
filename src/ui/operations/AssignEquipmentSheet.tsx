@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ShorePoint } from '@core/schema';
+import type { Deductions, DeployedComponent, ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
-import { assembleBom, bomSourceStatus, pendingReasonFor } from '@core/shorepoint';
+import { bomSourceStatus, pendingReasonFor } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Sheet } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
 import { RecommendationCard, comboModel } from './RecommendationCard';
+import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 
 /**
@@ -40,15 +41,72 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   const inFlight = useRef(false);
   const [deploying, setDeploying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The combo being resolved in the swaps-in-place "Review sources" step (#330
+  // Phase 3b) — null = showing the recommendation list. Set when a deploy isn't a
+  // clean one-rig assembly (cross-truck or a piece not on scene).
+  const [resolving, setResolving] = useState<StrutCombination | null>(null);
 
   // Stale-state reset when the sheet retargets/reopens.
   useEffect(() => {
     setError(null);
     setDeploying(false);
+    setResolving(null);
     inFlight.current = false;
   }, [sp?.id]);
 
-  async function handleDeploy(combo: StrutCombination) {
+  // The atomic deploy — single-flight, EquipmentDeployed, report back. Shared by
+  // the one-tap complete path and the resolution panel's Confirm. When the operator
+  // dropped a plate in the panel, `deductions` differs from the point's and is
+  // persisted FIRST (while still Pending), so the deployed point never records a
+  // plate it didn't use. Returns the store result so the panel shows failures inline.
+  async function commitBom(
+    deployedBom: DeployedComponent[],
+    model: string,
+    deductions?: Deductions,
+  ): Promise<{ ok: boolean; reason?: string }> {
+    if (!sp || inFlight.current) return { ok: false, reason: 'A deploy is already in flight.' };
+    inFlight.current = true;
+    setDeploying(true);
+    setError(null);
+    const uid = await getUid();
+    if (deductions && deductions !== sp.deductions) {
+      const edit = await commit({
+        type: 'ShorePointEdited',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: uid,
+        spId: sp.id,
+        patch: { deductions },
+      });
+      if (!edit.ok) {
+        setError(edit.reason);
+        inFlight.current = false;
+        setDeploying(false);
+        return edit;
+      }
+    }
+    const result = await commit({
+      type: 'EquipmentDeployed',
+      id: newId(),
+      opId: sp.opId,
+      at: Date.now(),
+      by: uid,
+      spId: sp.id,
+      deployedBom,
+    });
+    if (result.ok) {
+      commitHaptic();
+      onDeployed(sp, model);
+      return { ok: true };
+    }
+    setError(result.reason);
+    inFlight.current = false;
+    setDeploying(false);
+    return { ok: false, reason: result.reason };
+  }
+
+  function handleDeploy(combo: StrutCombination) {
     if (!sp || inFlight.current) return;
     const inventoryId = combo.strut.inventoryId;
     const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
@@ -56,31 +114,16 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       setError('That strut is no longer in inventory — pull down to re-check stock.');
       return;
     }
-    inFlight.current = true;
-    setDeploying(true);
-    setError(null);
-    const model = comboModel(combo);
-    // ADR-033 — deploy the full bill of materials (strut + plates + extensions),
-    // each auto-sourced from its rig; the store decrements every tracked component
-    // atomically. Phase 3 layers the multi-rig confirm + missing-piece chooser on
-    // top of this assembly.
-    const deployedBom = assembleBom(combo, sp.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
-    const result = await commit({
-      type: 'EquipmentDeployed',
-      id: newId(),
-      opId: sp.opId,
-      at: Date.now(),
-      by: await getUid(),
-      spId: sp.id,
-      deployedBom,
-    });
-    if (result.ok) {
-      commitHaptic();
-      onDeployed(sp, model);
+    // ADR-033 — a deployed shore is a sourced bill of materials. A clean assembly
+    // (strut + every piece on its own rig) deploys in one tap; anything else opens
+    // the Review sources step so the operator confirms each source / resolves a
+    // missing piece before commit.
+    const status = bomSourceStatus(combo, sp.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
+    if (status.status === 'complete') {
+      void commitBom(status.bom, comboModel(combo));
     } else {
-      setError(result.reason);
-      inFlight.current = false;
-      setDeploying(false);
+      setError(null);
+      setResolving(combo);
     }
   }
 
@@ -101,14 +144,23 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   ) : null;
 
   return (
-    <Sheet open={!!sp} onClose={onClose} title="Assign Equipment">
+    <Sheet open={!!sp} onClose={onClose} title={resolving ? 'Review sources' : 'Assign Equipment'}>
       {context}
       {error && (
         <p role="alert" className="fs-assign-error">
           {error}
         </p>
       )}
-      {sp && recommendations.length > 0 && (
+      {sp && resolving && (
+        <DeployResolution
+          sp={sp}
+          combo={resolving}
+          submitting={deploying}
+          onBack={() => setResolving(null)}
+          onConfirm={(bom, deductions) => commitBom(bom, comboModel(resolving), deductions)}
+        />
+      )}
+      {sp && !resolving && recommendations.length > 0 && (
         <div className="fs-assign-list">
           {recommendations.map((combo) => {
             const strutItem = combo.strut.inventoryId

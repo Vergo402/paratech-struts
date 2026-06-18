@@ -93,13 +93,14 @@ export function StepBackConfirmModal({ shorePoint, groupMembers, onClose, onRetu
     >
       {count > 1 ? (
         <p>
-          Stepping back will un-deploy all {count} struts in this shore and return them to inventory&rsquo;s
-          available count. The whole shore goes back to Pending.
+          Stepping back will un-deploy all {count} struts in this shore — with their plates and extensions — and return
+          every piece to its source truck&rsquo;s available count. The whole shore goes back to Pending.
         </p>
       ) : (
         <p>
-          Stepping back will un-deploy this strut and return it to {source ? <strong>{source}</strong> : 'inventory'}
-          &rsquo;s available count. The shore point goes back to Pending.
+          Stepping back will un-deploy this shore — strut, plates, and extensions — and return each piece to its source
+          truck&rsquo;s available count{source ? <> (the strut to <strong>{source}</strong>)</> : ''}. The shore point
+          goes back to Pending.
         </p>
       )}
       {error && <p role="alert" className="fs-modal-error">{error}</p>}

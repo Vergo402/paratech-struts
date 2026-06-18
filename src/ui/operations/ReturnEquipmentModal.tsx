@@ -78,7 +78,8 @@ export function ReturnEquipmentModal({ shorePoint, onClose, onReturned }: Return
       }
     >
       <p>
-        {model} will be returned to {source ? <strong>{source}</strong> : 'inventory'}&rsquo;s available count.
+        {model} — with its plates and extensions — will be returned, each piece to its source truck
+        {source ? <> (the strut to <strong>{source}</strong>)</> : ''}&rsquo;s available count.
       </p>
       <p>This cannot be undone.</p>
       {error && <p role="alert" className="fs-modal-error">{error}</p>}

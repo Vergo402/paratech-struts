@@ -1007,6 +1007,143 @@ button.fs-spc-head {
   color: var(--danger-text);
 }
 
+/* ---- deploy resolution — "Review sources" step (#330 Phase 3b, ADR-033) ----- */
+.fs-resolve {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.fs-resolve-back {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: var(--space-1) 0;
+  font: var(--type-body-medium);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.fs-resolve-banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-badge);
+  font: var(--type-caption);
+  font-weight: 600;
+}
+.fs-resolve-banner--cross { color: var(--status-process-text); background: var(--status-process-bg); }
+.fs-resolve-banner--advisory { color: var(--status-cutting-text); background: var(--status-cutting-bg); }
+
+.fs-resolve-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.fs-resolve-piece {
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fs-resolve-piece-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.fs-resolve-piece-kind {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.fs-resolve-piece-id {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-resolve-piece-src {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-resolve-piece-offbook {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--status-cutting-text);
+}
+.fs-resolve-undo {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Missing-piece chooser — three explicit ways out, never a silent untracked deploy. */
+.fs-chooser {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-chooser-head {
+  margin: 0;
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--status-cutting-text);
+}
+.fs-chooser-opt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+}
+.fs-chooser-opt-title {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-chooser-addrow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.fs-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-stepper-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.fs-stepper-btn:disabled { opacity: 0.4; cursor: default; }
+.fs-stepper-val {
+  min-width: 1.5em;
+  text-align: center;
+  font: var(--type-body-medium);
+}
+
 /* ---- visually hidden (live regions, SR-only announcements) ---------------- */
 .fs-sr-only {
   position: absolute;

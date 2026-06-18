@@ -39,8 +39,9 @@ export interface InventoryStoreApi {
   /** Drop one item from the mirror. */
   removeLocal(id: string): void;
   // ---- stock mutators (Inventory screen) ----
-  /** Quick-add: increment the matching row on the rig, or create it at quantity 1. */
-  addOne(spec: AddSpec): Promise<void>;
+  /** Quick-add: increment the matching row on the rig, or create it at quantity 1.
+   *  Resolves to the affected row's id. */
+  addOne(spec: AddSpec): Promise<string>;
   /** ± up: one more physical unit (q+1, a+1). */
   incrementItem(id: string): Promise<void>;
   /** ± down: one fewer unit (q−1, a−1); no-op if all are deployed; removes the row
@@ -94,7 +95,10 @@ export function createInventoryStore(db: FieldShoreDB = defaultDb): InventorySto
   // Each mutator RETURNS its outcome from the Dexie transaction (rather than mutating a
   // captured variable) — the value is correctly typed and the read+write stay in one txn.
 
-  async function addOne(spec: AddSpec): Promise<void> {
+  // Returns the affected row's id — the created row, or the incremented match —
+  // so a caller (the deploy missing-piece quick-add, #330 Phase 3b) can re-point a
+  // BOM component at the exact stock record it just added, no reactive round-trip.
+  async function addOne(spec: AddSpec): Promise<string> {
     const result = await db.transaction('rw', db.inventory, async () => {
       const rigItems = await db.inventory.where('apparatusId').equals(spec.apparatusId).toArray();
       const match = rigItems.find((i) => sameIdentity(i, spec));
@@ -108,6 +112,7 @@ export function createInventoryStore(db: FieldShoreDB = defaultDb): InventorySto
       return created;
     });
     applyLocal(result);
+    return result.id;
   }
 
   async function incrementItem(id: string): Promise<void> {

@@ -128,8 +128,22 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
   it('an extension combo decomposes into a strut + extension BOM (cradle-to-grave identity)', async () => {
     const user = userEvent.setup();
     const onDeployed = vi.fn();
-    mockRecommendations.mockReturnValue([{ ...COMBO, extensions: [12], extTotal: 12, adjCollapsed: 60, adjExtended: 85 }]);
-    mockInventory.mockReturnValue([INV_ITEM]);
+    // The extension is in stock on the SAME rig as the strut (engine resolved its
+    // source) → a clean one-rig assembly that deploys in one tap.
+    const EXT_ITEM: InventoryItem = {
+      id: 'inv-ext',
+      type: 'extension',
+      system: 'LongShore',
+      length: 12,
+      apparatus: 'Rescue 2',
+      apparatusId: 'app-r2',
+      quantity: 1,
+      available: 1,
+    };
+    mockRecommendations.mockReturnValue([
+      { ...COMBO, extensions: [12], extTotal: 12, adjCollapsed: 60, adjExtended: 85, extensionSources: [{ length: 12, inventoryId: 'inv-ext' }] },
+    ]);
+    mockInventory.mockReturnValue([INV_ITEM, EXT_ITEM]);
     render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={onDeployed} />);
 
     await user.click(screen.getByRole('button', { name: /^Deploy/ }));

@@ -13,7 +13,8 @@ export interface ImportOutcome {
 }
 
 export interface InventoryActionsApi {
-  addOne(spec: AddSpec): Promise<void>;
+  /** Add one unit; resolves to the affected stock record's id (created or incremented). */
+  addOne(spec: AddSpec): Promise<string>;
   increment(id: string): Promise<void>;
   decrement(id: string): Promise<void>;
   setQuantity(id: string, quantity: number): Promise<void>;
