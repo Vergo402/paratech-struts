@@ -10,19 +10,26 @@ export interface OperationState {
 
 export const EMPTY_OPERATION_STATE: OperationState = { operation: null, shorePoints: [] };
 
-// v3 `individualPhase` — once a point is AT cutting or beyond, its lifecycle is
-// per-card (its own cut length, its own slide). Before that (pending/process/
-// strutset, including the strutset→cutting entry), a grouped transition moves all
-// members at once.
-const INDIVIDUAL_PHASE: readonly ShorePointStatus[] = ['cutting', 'runner', 'secured'];
+// The pre-runner "group zone": process ↔ strutset ↔ cutting. A grouped transition
+// whose BOTH endpoints sit in this zone moves every lockstep member at once —
+// which makes the strutset↔cutting edge group-wide in BOTH directions, including
+// the cutting→strutset step-back (13-cutting.md; Alex's ruling 2026-06-17 — a
+// 3-Post is one physical shore, so re-cutting it pulls the whole set back). The
+// individual phase begins at the runner handoff: Send to Runner (cutting→runner)
+// and every runner/secured move is per-card, so those edges leave the zone and
+// fan out to the trigger alone. Keying on the EDGE (from+to), not the from-status,
+// is what lets one `cutting` node be group-wide back yet individual forward.
+const GROUP_ZONE: readonly ShorePointStatus[] = ['process', 'strutset', 'cutting'];
 
 /**
- * L-7 group fan-out. A status change on a grouped, pre-cutting point moves every
- * group member that is IN LOCKSTEP with the trigger (same current status); an
- * individual-phase (or ungrouped) point moves only itself. A mate that is ahead
- * or behind is left untouched — so a grouped transition can never regress a mate
- * that has advanced (the L-7 invariant), and never force-jumps a laggard across
- * the pending/deploy boundary. Both directions are symmetric (ADR-010).
+ * L-7 group fan-out. A status change on a grouped point whose edge stays inside
+ * the GROUP_ZONE (process↔strutset↔cutting) moves every group member that is IN
+ * LOCKSTEP with the trigger (same current status); an edge that leaves the zone
+ * (Send to Runner and beyond) or an ungrouped point moves only itself. A mate that
+ * is ahead or behind is left untouched — so a grouped transition can never regress
+ * a mate that has advanced (the L-7 invariant), and never force-jumps a laggard
+ * across the pending/deploy boundary. Both directions are symmetric (ADR-010), so
+ * the cutting→strutset step-back fans out exactly like the strutset→cutting entry.
  *
  * This is a deliberate refinement of v3's advance-only "catch up to target" rule:
  * v4 moves only lockstep members, which is safer and reads identically when the
@@ -42,7 +49,7 @@ function groupAdvance(
   if (!canTransition(from, to)) return shorePoints; // single-step only
   if (trigger.status !== from) return shorePoints; // stale / out-of-order trigger
 
-  const individual = !trigger.groupId || INDIVIDUAL_PHASE.includes(trigger.status);
+  const individual = !trigger.groupId || !(GROUP_ZONE.includes(from) && GROUP_ZONE.includes(to));
   const affected = new Set(
     individual ? [trigger.id] : shorePoints.filter((sp) => sp.groupId === trigger.groupId).map((sp) => sp.id),
   );

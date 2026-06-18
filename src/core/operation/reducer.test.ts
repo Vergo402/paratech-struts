@@ -69,14 +69,36 @@ describe('L-7 group fan-out', () => {
     expect(byId(next, 'c').status).toBe('process');
   });
 
-  it('once at cutting, transitions are individual (cutting onward is per-card)', () => {
+  it('Send to Runner (cutting → runner) is individual — leaves the group zone', () => {
     const state = stateWith([
       sp('a', { groupId: 'g', status: 'cutting' }),
       sp('b', { groupId: 'g', status: 'cutting' }),
     ]);
     const next = operationReducer(state, statusEvent('a', 'cutting', 'runner'));
     expect(byId(next, 'a').status).toBe('runner');
-    expect(byId(next, 'b').status).toBe('cutting'); // not swept along
+    expect(byId(next, 'b').status).toBe('cutting'); // not swept along — per-card from here
+  });
+
+  it('the cutting → strutset step-back is GROUP-wide (Alex 2026-06-17; 13-cutting.md)', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'cutting' }),
+      sp('b', { groupId: 'g', status: 'cutting' }),
+      sp('c', { groupId: 'g', status: 'cutting' }),
+    ]);
+    const next = operationReducer(state, statusEvent('a', 'cutting', 'strutset'));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'b').status).toBe('strutset'); // whole set pulled back
+    expect(byId(next, 'c').status).toBe('strutset');
+  });
+
+  it('cutting → strutset step-back never regresses a mate already sent to the runner (L-7)', () => {
+    const state = stateWith([
+      sp('a', { groupId: 'g', status: 'cutting' }),
+      sp('b', { groupId: 'g', status: 'runner' }), // already sent — ahead
+    ]);
+    const next = operationReducer(state, statusEvent('a', 'cutting', 'strutset'));
+    expect(byId(next, 'a').status).toBe('strutset');
+    expect(byId(next, 'b').status).toBe('runner'); // untouched — only lockstep members move
   });
 
   it('an ungrouped point advances only itself', () => {
