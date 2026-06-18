@@ -108,6 +108,48 @@ export function assembleBom(
   return bom;
 }
 
+/** A field-readable name for a component's role (top/bottom plate both read as
+ *  "Base plate" — the crew doesn't distinguish them when scanning a card). */
+export function componentLabel(c: DeployedComponent): string {
+  if (c.role === 'strut') return 'Strut';
+  if (c.role === 'extension') return 'Extension';
+  return 'Base plate';
+}
+
+export interface BomSourceStatus {
+  /** complete = strut + every piece on the strut's own rig; cross-truck = all
+   *  pieces on scene but ≥2 rigs; missing = ≥1 piece in no on-scene rig's stock. */
+  status: 'complete' | 'cross-truck' | 'missing';
+  /** One-line card detail, e.g. "All on Rescue 2" / "Base plate from Engine 1" /
+   *  "Base plate not on scene". */
+  detail: string;
+  /** The auto-sourced BOM the status was derived from (reused by the deploy flow). */
+  bom: DeployedComponent[];
+}
+
+/** Classify a recommendation's stock readiness for the result card (decisions 5–6,
+ *  Q2 "show the gap on the card"). Derives from assembleBom's auto-source so the
+ *  card and the deploy share one source of truth. */
+export function bomSourceStatus(
+  combo: StrutCombination,
+  deductions: Pick<Deductions, 'topPlate' | 'bottomPlate'>,
+  strutSource: { apparatus: string; inventoryId: string },
+  inventory: InventoryItem[],
+): BomSourceStatus {
+  const bom = assembleBom(combo, deductions, strutSource, inventory);
+  const more = (n: number) => (n > 1 ? ` (+${n - 1})` : '');
+
+  const missing = bom.filter(isUntracked);
+  if (missing.length > 0) {
+    return { status: 'missing', detail: `${componentLabel(missing[0]!)} not on scene${more(missing.length)}`, bom };
+  }
+  const offRig = bom.filter((c) => c.source !== strutSource.apparatus);
+  if (offRig.length > 0) {
+    return { status: 'cross-truck', detail: `${componentLabel(offRig[0]!)} from ${offRig[0]!.source}${more(offRig.length)}`, bom };
+  }
+  return { status: 'complete', detail: `All on ${strutSource.apparatus}`, bom };
+}
+
 function pushPlate(
   bom: DeployedComponent[],
   role: 'top-plate' | 'bottom-plate',

@@ -3,7 +3,7 @@ import type { ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
-import { assembleBom, pendingReasonFor } from '@core/shorepoint';
+import { assembleBom, bomSourceStatus, pendingReasonFor } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Sheet } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
@@ -110,21 +110,32 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       )}
       {sp && recommendations.length > 0 && (
         <div className="fs-assign-list">
-          {recommendations.map((combo) => (
-            <RecommendationCard
-              key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
-              combo={combo}
-              deductions={sp.deductions}
-              source={
-                combo.strut.inventoryId
-                  ? inventory.find((i) => i.id === combo.strut.inventoryId)?.apparatus
-                  : undefined
-              }
-              location={spLocation}
-              onDeploy={handleDeploy}
-              deployDisabled={deploying}
-            />
-          ))}
+          {recommendations.map((combo) => {
+            const strutItem = combo.strut.inventoryId
+              ? inventory.find((i) => i.id === combo.strut.inventoryId)
+              : undefined;
+            const stock =
+              strutItem && combo.strut.inventoryId
+                ? bomSourceStatus(
+                    combo,
+                    sp.deductions,
+                    { apparatus: strutItem.apparatus, inventoryId: combo.strut.inventoryId },
+                    inventory,
+                  )
+                : undefined;
+            return (
+              <RecommendationCard
+                key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
+                combo={combo}
+                deductions={sp.deductions}
+                source={strutItem?.apparatus}
+                location={spLocation}
+                stock={stock}
+                onDeploy={handleDeploy}
+                deployDisabled={deploying}
+              />
+            );
+          })}
         </div>
       )}
       {sp && recommendations.length === 0 && reason === 'no-match' && (

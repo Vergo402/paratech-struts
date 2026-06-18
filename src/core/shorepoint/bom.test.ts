@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assembleBom, bomModelLabel, deployedRigs, hasUntracked } from './bom';
+import { assembleBom, bomModelLabel, bomSourceStatus, deployedRigs, hasUntracked } from './bom';
 import type { StrutCombination } from '../load';
 import type { InventoryItem, ShorePoint } from '../schema';
 
@@ -64,6 +64,28 @@ describe('assembleBom — ADR-033 deploy assembly', () => {
     const ext = bom.find((c) => c.role === 'extension')!;
     expect(ext.inventoryId).toBe('inv-ext');
     expect(ext.source).toBe('Ladder 1');
+  });
+});
+
+describe('bomSourceStatus — card stock readiness (decisions 5–6)', () => {
+  const ded = { topPlate: 'plate-x', bottomPlate: 'none' };
+
+  it('complete: strut + plate both on the strut’s rig', () => {
+    const s = bomSourceStatus(combo({}), ded, strutSrc, [plateRow('inv-p', 'Rescue 2', 1)]);
+    expect(s.status).toBe('complete');
+    expect(s.detail).toBe('All on Rescue 2');
+  });
+
+  it('cross-truck: a piece is on scene but on another rig', () => {
+    const s = bomSourceStatus(combo({}), ded, strutSrc, [plateRow('inv-p', 'Engine 4', 1)]);
+    expect(s.status).toBe('cross-truck');
+    expect(s.detail).toBe('Base plate from Engine 4');
+  });
+
+  it('missing: a needed piece is in no on-scene rig’s stock', () => {
+    const s = bomSourceStatus(combo({}), ded, strutSrc, []);
+    expect(s.status).toBe('missing');
+    expect(s.detail).toBe('Base plate not on scene');
   });
 });
 

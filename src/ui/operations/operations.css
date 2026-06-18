@@ -780,6 +780,29 @@ button.fs-spc-head {
   border-color: transparent;
 }
 
+/* Stock-readiness chip (ADR-033, Q2 "show the gap on the card"): complete = the
+   strut + every piece on its own rig (secured green); cross-truck = all on scene
+   but ≥2 rigs (process blue, informational); missing = a piece in no on-scene
+   rig's stock (cutting amber, a heads-up — not the danger pair, which is reserved
+   for the gated fit tell). Inline + centered under the header, not the corner. */
+.fs-rec-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: var(--space-2) 0 0;
+  font: var(--type-caption);
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-rec-stock--complete { color: var(--status-secured-text); background: var(--status-secured-bg); }
+.fs-rec-stock--cross-truck { color: var(--status-process-text); background: var(--status-process-bg); }
+.fs-rec-stock--missing { color: var(--status-cutting-text); background: var(--status-cutting-bg); }
+
 /* Extension block — "none needed" is a positive signal (secured green). */
 .fs-rec-noext {
   margin: 0;

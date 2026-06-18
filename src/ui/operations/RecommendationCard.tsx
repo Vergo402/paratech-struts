@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, sysKeyOf, type StrutCombination } from '@core/load';
 import type { Deductions, WoodSizeId } from '@core/schema';
+import type { BomSourceStatus } from '@core/shorepoint';
 import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
 
 /**
@@ -30,6 +31,10 @@ export interface RecommendationCardProps {
   location?: string;
   /** Operation mode: Deploy commits. Absent = Quick Find display-only card. */
   onDeploy?: (combo: StrutCombination) => void | Promise<void>;
+  /** Operation/deploy mode — stock readiness of the full assembly (strut + plates
+   *  + extensions): complete / cross-truck / missing. Shown as a chip so the
+   *  officer picks with eyes open (ADR-033 decisions 5–6). Absent in Quick Find. */
+  stock?: BomSourceStatus;
   /** Sheet-level single-flight lock while a deploy is in flight. */
   deployDisabled?: boolean;
 }
@@ -100,6 +105,7 @@ export function RecommendationCard({
   source,
   location,
   onDeploy,
+  stock,
   deployDisabled,
 }: RecommendationCardProps) {
   const [acknowledged, setAcknowledged] = useState(false);
@@ -162,6 +168,7 @@ export function RecommendationCard({
           )}
           {source && <p className="fs-rec-apparatus">Equipment located on: {source}</p>}
           {location && <p className="fs-rec-loc">{location}</p>}
+          {stock && <span className={`fs-rec-stock fs-rec-stock--${stock.status}`}>{stock.detail}</span>}
         </div>
         {/* Badge only on a gated card — the #40 danger tell. A clean recommendation
             needs no "Fits" flag: being recommended IS fitting (#248). */}
