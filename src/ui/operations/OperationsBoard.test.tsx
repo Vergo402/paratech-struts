@@ -122,7 +122,7 @@ describe('OperationsBoard', () => {
   it('renders all 7 status lanes with correct labels', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     render(<OperationsBoard />);
-    const expected = ['Pending', 'In Process', 'Strut Set', 'Cutting', 'Runner', 'Shore Secured', 'Strut Equipment Returned'];
+    const expected = ['Pending Equipment', 'Equipment Assigned', 'Strut Set', 'Cutting Station', 'Runner', 'Wood Shore Secured', 'Strut Equipment Returned'];
     for (const label of expected) {
       expect(screen.getByRole('heading', { name: label })).toBeInTheDocument();
     }
@@ -136,9 +136,9 @@ describe('OperationsBoard', () => {
       makeSP('sp-3', 'cutting'),
     ]);
     render(<OperationsBoard />);
-    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(within(pendingSection).getByText('2')).toBeInTheDocument();
-    const cuttingSection = screen.getByRole('region', { name: 'Cutting' });
+    const cuttingSection = screen.getByRole('region', { name: 'Cutting Station' });
     expect(within(cuttingSection).getByText('1')).toBeInTheDocument();
   });
 
@@ -156,9 +156,9 @@ describe('OperationsBoard', () => {
     expect(bar).toHaveAttribute('aria-hidden', 'true');
     const items = bar!.querySelectorAll('.fs-ops-summary-item');
     expect(items).toHaveLength(7);
-    expect(items[0]!.textContent).toBe('Pending2');
-    expect(items[1]!.textContent).toBe('In Process0');
-    expect(items[3]!.textContent).toBe('Cutting1');
+    expect(items[0]!.textContent).toBe('Pending Equipment2');
+    expect(items[1]!.textContent).toBe('Equipment Assigned0');
+    expect(items[3]!.textContent).toBe('Cutting Station1');
   });
 
   it('lane collapse toggles card visibility', async () => {
@@ -166,7 +166,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending', '2')]);
     render(<OperationsBoard />);
-    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(within(pendingSection).getByText('Div 2')).toBeInTheDocument();
     // The lane header is the first /Pending/ button — the ShorePointCard's
     // expand head also carries the status badge text now.
@@ -228,7 +228,7 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
 
     // Collapse the (empty) Pending lane first.
-    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     const header = within(pendingSection).getAllByRole('button', { name: /Pending/ })[0]!;
     await user.click(header);
     expect(header).toHaveAttribute('aria-expanded', 'false');
@@ -247,7 +247,7 @@ describe('OperationsBoard', () => {
     expect(mockCommitMany).toHaveBeenCalledTimes(1);
     expect(header).toHaveAttribute('aria-expanded', 'true');
     // Two live regions now (assertive add + polite status) — the add announce is the first.
-    expect(screen.getAllByRole('status')[0]).toHaveTextContent('3 shore points added — Div 1, Pending.');
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('3 shore points added — Div 1, Pending Equipment.');
   });
 
   // ---- S6 (#221) — deploy / advance / step-back ------------------------------
@@ -301,7 +301,7 @@ describe('OperationsBoard', () => {
         deployedBom: [{ role: 'strut', model: 'LS 304', system: 'LongShore', source: 'Rescue 2', inventoryId: 'inv-1' }],
       }),
     );
-    expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 deployed — Div 1, In Process.');
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 deployed — Div 1, Equipment Assigned.');
   });
 
   it('the advance slide commits the status change and announces politely (gesture only — ADR-026)', async () => {
@@ -435,13 +435,13 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
 
-    await slideToCommit('Slide back to Pending');
+    await slideToCommit('Slide back to Pending Equipment');
     expect(screen.getByRole('dialog', { name: 'Return LS 304 to inventory?' })).toBeInTheDocument();
     expect(mockCommit).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Return & Step Back' }));
     expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'EquipmentReturned', spId: 'sp-1' }));
-    expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 returned — back to Pending.');
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 returned — back to Pending Equipment.');
   });
 
   it('step-back from Strut Set commits directly — no confirm (no inventory change)', async () => {
@@ -451,12 +451,12 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
 
-    await slideToCommit('Slide back to In Process');
+    await slideToCommit('Slide back to Equipment Assigned');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'strutset', to: 'process' }),
     );
-    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — back to In Process.');
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — back to Equipment Assigned.');
   });
 
   // ---- #222 — Cutting + the Cutting Station sub-nav ---------------------------
@@ -467,7 +467,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'strutset'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
-    await slideToCommit('Slide to set Cutting');
+    await slideToCommit('Slide to send to Cutting Station');
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'strutset', to: 'cutting' }),
     );
@@ -526,7 +526,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
-    await slideToCommit('Slide to set Shore Secured');
+    await slideToCommit('Slide to set Wood Shore Secured');
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'runner', to: 'secured' }),
     );
@@ -536,7 +536,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
-    await slideToCommit('Slide back to Cutting');
+    await slideToCommit('Slide back to Cutting Station');
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'runner', to: 'cutting' }),
     );
@@ -621,7 +621,7 @@ describe('OperationsBoard', () => {
       { ...makeSP('sp-d1a', 'pending', '1'), area: 'A' },
     ]);
     render(<OperationsBoard />);
-    expect(laneCardIds('Pending')).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
   });
 
   it('the Sort control switches between division/area and added (insertion) order', async () => {
@@ -633,10 +633,10 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
     // Default = division/area: Div 2 (sp-1) before Div 1 (sp-2).
-    expect(laneCardIds('Pending')).toEqual(['sp-1', 'sp-2']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-1', 'sp-2']);
     await user.selectOptions(screen.getByLabelText('Sort'), 'added');
     // Added = newest-first insertion order: sp-2 then sp-1.
-    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
 
   it('filtering by division narrows every lane and updates the lane count; Clear restores', async () => {
@@ -648,17 +648,17 @@ describe('OperationsBoard', () => {
       makeSP('sp-3', 'cutting', '2'),
     ]);
     render(<OperationsBoard />);
-    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
 
     await user.selectOptions(screen.getByLabelText('Division'), '1');
-    expect(laneCardIds('Pending')).toEqual(['sp-1']);
-    expect(laneCardIds('Cutting')).toEqual([]); // sp-3 is Div 2 — filtered out
-    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
+    expect(laneCardIds('Cutting Station')).toEqual([]); // sp-3 is Div 2 — filtered out
+    const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(within(pendingSection).getByText('1')).toBeInTheDocument(); // count now 1
 
     await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(laneCardIds('Pending')).toEqual(['sp-2', 'sp-1']);
-    expect(laneCardIds('Cutting')).toEqual(['sp-3']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
+    expect(laneCardIds('Cutting Station')).toEqual(['sp-3']);
   });
 
   // ---- #319 — soft-delete + restore ------------------------------------------
@@ -673,8 +673,8 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
 
     // Excluded from the Pending lane and its count.
-    expect(laneCardIds('Pending')).toEqual(['sp-1']);
-    const pendingSection = screen.getByRole('region', { name: 'Pending' });
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
+    const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(within(pendingSection).getByText('1')).toBeInTheDocument();
 
     // Present in the Deleted section, retaining its #N, once expanded.
@@ -700,7 +700,7 @@ describe('OperationsBoard', () => {
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointRestored', spId: 'sp-2', opId: 'op-1', by: 'device-test' }),
     );
-    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point #2 restored — Pending.');
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point #2 restored — Pending Equipment.');
   });
 
   it('restoring one member of a deleted group brings the whole shore back (audit W5)', async () => {
@@ -728,7 +728,7 @@ describe('OperationsBoard', () => {
     const events = mockCommitMany.mock.calls[0]![0] as { type: string; spId: string }[];
     expect(events).toHaveLength(3);
     expect(events.every((e) => e.type === 'ShorePointRestored')).toBe(true);
-    expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points restored — Pending.');
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('3 shore points restored — Pending Equipment.');
   });
 
   // ---- End Operation (#220 lifecycle) ----------------------------------------
@@ -799,13 +799,13 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
 
     // Building groups first (North before South); within North, Div 2 before Div 1.
-    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
 
     // Filter to North tower drops the South point.
     await user.selectOptions(screen.getByLabelText('Building'), 'North tower');
-    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1']);
 
     await user.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(laneCardIds('Pending')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
   });
 });

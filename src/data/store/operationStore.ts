@@ -146,7 +146,7 @@ export function createOperationStore(opts?: {
         if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
         const need = event.type === 'EquipmentReturned' ? 'process' : 'secured';
         if (sp.status !== need || !sp.deployedBom) {
-          const label = need === 'process' ? 'In-Process' : 'Shore Secured';
+          const label = need === 'process' ? 'Equipment Assigned' : 'Wood Shore Secured';
           return { ok: false, reason: `return requires a ${label} shore point with deployed equipment` };
         }
         const bom = sp.deployedBom;

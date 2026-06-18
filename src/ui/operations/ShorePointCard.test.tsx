@@ -39,7 +39,7 @@ describe('ShorePointCard', () => {
     const title = screen.getByText('B-2 · T-Shore');
     expect(title).toHaveClass('fs-spc-title');
     expect(screen.getByText('Div 1 · NW corner')).toBeInTheDocument();
-    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText('Pending Equipment')).toBeInTheDocument();
   });
 
   it('headline falls back to the bare type when the point has no label', () => {
@@ -82,14 +82,14 @@ describe('ShorePointCard', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
     // The badge presents "Waiting" (amber); the operational status stays pending.
     expect(screen.getByText('Waiting')).toHaveClass('fs-badge--status', 'is-waiting');
-    expect(screen.queryByText('Pending')).not.toBeInTheDocument();
+    expect(screen.queryByText('Pending Equipment')).not.toBeInTheDocument();
     // The card carries BOTH hooks — is-pending (lifecycle) + is-waiting (presentation).
     const card = document.querySelector('.fs-spc')!;
     expect(card.className).toContain('is-pending');
     expect(card.className).toContain('is-waiting');
     // A reasonless pending card presents normally.
     rerender(<ShorePointCard shorePoint={makeSP()} />);
-    expect(screen.getByText('Pending')).toBeInTheDocument();
+    expect(screen.getByText('Pending Equipment')).toBeInTheDocument();
     expect(document.querySelector('.fs-spc')!.className).not.toContain('is-waiting');
   });
 
@@ -271,7 +271,7 @@ describe('ShorePointCard', () => {
     expect(container.querySelector('.fs-spc-slash')).not.toBeNull();
     // The slide stack is suppressed while removed.
     expect(screen.queryByText('Slide to set Strut Set')).not.toBeInTheDocument();
-    expect(screen.queryByText('Slide back to Pending')).not.toBeInTheDocument();
+    expect(screen.queryByText('Slide back to Pending Equipment')).not.toBeInTheDocument();
     // A removed pending point shows neither the Assign action nor the stripe button.
     expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
   });
@@ -293,12 +293,12 @@ describe('ShorePointCard', () => {
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
 
     expect(screen.getByText('Slide to set Strut Set')).toBeInTheDocument();
-    expect(screen.getByText('Slide back to Pending')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to Pending Equipment')).toBeInTheDocument();
     // The slide gesture is the ONLY status commit path — no Advance/Step-back buttons.
     expect(screen.queryByRole('button', { name: /Advance|Step back/ })).toBeNull();
     await slideToCommit('Slide to set Strut Set');
     expect(onAdvance).toHaveBeenCalledWith(sp);
-    await slideToCommit('Slide back to Pending');
+    await slideToCommit('Slide back to Pending Equipment');
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 
@@ -316,7 +316,7 @@ describe('ShorePointCard', () => {
     );
     // No slides, no stripe button.
     expect(screen.queryByText('Slide to set Strut Set')).not.toBeInTheDocument();
-    expect(screen.queryByText('Slide back to Pending')).not.toBeInTheDocument();
+    expect(screen.queryByText('Slide back to Pending Equipment')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Assign equipment' })).toBeNull();
     // Presentational content stays.
     expect(screen.getByText('B-2 · T-Shore')).toBeInTheDocument();
@@ -361,7 +361,7 @@ describe('ShorePointCard', () => {
     expect(screen.getByText('Waiting on group — 2 of 3 still Pending')).toBeInTheDocument();
     await slideToCommit(advance);
     expect(onAdvance).not.toHaveBeenCalled();
-    await slideToCommit('Slide back to Pending');
+    await slideToCommit('Slide back to Pending Equipment');
     expect(onStepBack).toHaveBeenCalled();
   });
 
@@ -373,11 +373,11 @@ describe('ShorePointCard', () => {
       deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
-    expect(screen.getByText('Slide to set Cutting')).toBeInTheDocument();
-    expect(screen.getByText('Slide back to In Process')).toBeInTheDocument();
-    await slideToCommit('Slide to set Cutting');
+    expect(screen.getByText('Slide to send to Cutting Station')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to Equipment Assigned')).toBeInTheDocument();
+    await slideToCommit('Slide to send to Cutting Station');
     expect(onAdvance).toHaveBeenCalledWith(sp);
-    await slideToCommit('Slide back to In Process');
+    await slideToCommit('Slide back to Equipment Assigned');
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 
@@ -438,11 +438,11 @@ describe('ShorePointCard', () => {
       deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
-    expect(screen.getByText('Slide to set Shore Secured')).toBeInTheDocument();
-    expect(screen.getByText('Slide back to Cutting')).toBeInTheDocument();
-    await slideToCommit('Slide to set Shore Secured');
+    expect(screen.getByText('Slide to set Wood Shore Secured')).toBeInTheDocument();
+    expect(screen.getByText('Slide back to Cutting Station')).toBeInTheDocument();
+    await slideToCommit('Slide to set Wood Shore Secured');
     expect(onAdvance).toHaveBeenCalledWith(sp);
-    await slideToCommit('Slide back to Cutting');
+    await slideToCommit('Slide back to Cutting Station');
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 

@@ -376,8 +376,8 @@ export function OperationsBoard() {
       const where = [first.building, divisionLabel(first.division), first.area].filter(Boolean).join(', ');
       setAnnouncement(
         added.length === 1
-          ? `Shore point added — ${where}, Pending.`
-          : `${added.length} shore points added — ${where}, Pending.`,
+          ? `Shore point added — ${where}, Pending Equipment.`
+          : `${added.length} shore points added — ${where}, Pending Equipment.`,
       );
     },
     [expandLane],
@@ -400,7 +400,7 @@ export function OperationsBoard() {
       expandLane('process');
       setScrollToId(sp.id);
       const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
-      setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
+      setPoliteAnnouncement(`${model} deployed — ${where}, Equipment Assigned.`);
     },
     [expandLane],
   );
@@ -422,13 +422,13 @@ export function OperationsBoard() {
         if (!deployed.length) setScrollToId(pending[0]!.id);
       }
       if (pending.length === 0) {
-        setPoliteAnnouncement(`${model} deployed — ${where}, In Process.`);
+        setPoliteAnnouncement(`${model} deployed — ${where}, Equipment Assigned.`);
       } else {
         const total = deployed.length + pending.length;
         setAnnouncement(
           deployed.length === 0
-            ? `Out of stock — ${total} shore ${total === 1 ? 'point' : 'points'} stayed Pending.`
-            : `Deployed ${deployed.length} of ${total} — ${pending.length} stayed Pending, out of stock.`,
+            ? `Out of stock — ${total} shore ${total === 1 ? 'point' : 'points'} stayed Pending Equipment.`
+            : `Deployed ${deployed.length} of ${total} — ${pending.length} stayed Pending Equipment, out of stock.`,
         );
       }
     },
@@ -441,8 +441,8 @@ export function OperationsBoard() {
       setScrollToId(sp.id);
       setPoliteAnnouncement(
         count > 1
-          ? `${count} struts returned — back to Pending.`
-          : `${deployedStrutOf(sp)?.model ?? 'Strut'} returned — back to Pending.`,
+          ? `${count} struts returned — back to Pending Equipment.`
+          : `${deployedStrutOf(sp)?.model ?? 'Strut'} returned — back to Pending Equipment.`,
       );
     },
     [expandLane],

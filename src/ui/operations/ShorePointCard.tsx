@@ -378,7 +378,7 @@ export function ShorePointCard({
           />
           {/* Un-deploy: the board confirms (inventory-consequential) before any commit. */}
           <Slider
-            label="Slide back to Pending"
+            label="Slide back to Pending Equipment"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />
@@ -391,12 +391,12 @@ export function ShorePointCard({
               slide moves all lockstep mates to Cutting (reducer groupAdvance). No
               confirm — non-inventory status slide (ADR-010). */}
           <Slider
-            label="Slide to set Cutting"
+            label="Slide to send to Cutting Station"
             revealColor="var(--status-cutting-bg)"
             onCommit={() => onAdvance?.(sp)}
           />
           <Slider
-            label="Slide back to In Process"
+            label="Slide back to Equipment Assigned"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />
@@ -448,12 +448,12 @@ export function ShorePointCard({
       {interactive && !removed && !cuttingStation && sp.status === 'runner' && (
         <div className="fs-spc-slides">
           <Slider
-            label="Slide to set Shore Secured"
+            label="Slide to set Wood Shore Secured"
             revealColor="var(--status-secured-bg)"
             onCommit={() => onAdvance?.(sp)}
           />
           <Slider
-            label="Slide back to Cutting"
+            label="Slide back to Cutting Station"
             direction="stepback"
             onCommit={() => onStepBack?.(sp)}
           />

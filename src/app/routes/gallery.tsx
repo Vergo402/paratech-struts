@@ -375,7 +375,7 @@ export function GalleryScreen() {
           onCommit={() => setCommits((c) => c + 1)}
         />
         <Slider
-          label="Slide back to In Process"
+          label="Slide back to Equipment Assigned"
           direction="stepback"
           onCommit={() => setCommits((c) => c + 1)}
         />

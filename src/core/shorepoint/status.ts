@@ -9,12 +9,12 @@ import { STATUS_IDS, type ShorePointStatus } from '../schema';
 export const STATUS_ORDER = STATUS_IDS;
 
 export const STATUS_LABELS: Record<ShorePointStatus, string> = {
-  pending: 'Pending',
-  process: 'In Process',
+  pending: 'Pending Equipment',
+  process: 'Equipment Assigned',
   strutset: 'Strut Set',
-  cutting: 'Cutting',
+  cutting: 'Cutting Station',
   runner: 'Runner',
-  secured: 'Shore Secured',
+  secured: 'Wood Shore Secured',
   returned: 'Strut Equipment Returned',
 };
 

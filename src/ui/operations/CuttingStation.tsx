@@ -55,7 +55,7 @@ export function CuttingStation({
         <EmptyState
           variant="first-run"
           headline="No cuts in queue"
-          reason="Move a shore point to Cutting on the Operations board to queue it"
+          reason="Move a shore point to Cutting Station on the Operations board to queue it"
         />
       ) : (
         <>
