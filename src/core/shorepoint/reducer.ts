@@ -1,5 +1,6 @@
 import type {
   Deductions,
+  DeployedComponent,
   ShorePoint,
   ShorePointPatch,
   ShorePointStatus,
@@ -172,25 +173,62 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
     }
 
     case 'StrutDeployed':
+      // LEGACY (ADR-033): project an old single-strut deploy into a one-element BOM
+      // so every downstream reader works off deployedBom uniformly.
       if (event.spId !== sp.id) return sp;
       if (sp.status !== 'pending') return sp;
-      return { ...sp, status: 'process', deployedStrut: event.deployedStrut };
+      return {
+        ...sp,
+        status: 'process',
+        deployedBom: [
+          {
+            role: 'strut',
+            model: event.deployedStrut.model,
+            source: event.deployedStrut.source,
+            inventoryId: event.deployedStrut.inventoryId,
+          },
+        ],
+      };
 
-    case 'StrutReturned': {
+    case 'EquipmentDeployed':
+      if (event.spId !== sp.id) return sp;
+      if (sp.status !== 'pending') return sp;
+      return { ...sp, status: 'process', deployedBom: event.deployedBom };
+
+    case 'StrutReturned':
+    case 'EquipmentReturned': {
       if (event.spId !== sp.id) return sp;
       if (sp.status !== 'process') return sp;
       const next: ShorePoint = { ...sp, status: 'pending' };
-      delete next.deployedStrut;
+      delete next.deployedBom;
       return next;
     }
 
     case 'EquipmentReclaimed': {
-      // Terminal return (#224): secured → returned. KEEP deployedStrut — the
-      // returned card shows the equipment as history (unlike StrutReturned, which
-      // clears it). The inventory restore is the store's transaction, not here.
+      // Terminal return (#224): secured → returned. KEEP deployedBom — the
+      // returned card shows the equipment as history (unlike EquipmentReturned,
+      // which clears it). The inventory restore is the store's transaction, not here.
       if (event.spId !== sp.id) return sp;
       if (sp.status !== 'secured') return sp;
       return { ...sp, status: 'returned' };
+    }
+
+    case 'ComponentResourced': {
+      // ADR-033 — re-point one already-deployed component (decision 7). Status is
+      // unchanged; only that BOM slot's source/inventoryId swap. The inventory
+      // delta (restore old, consume new) is the store's transaction, not here.
+      if (event.spId !== sp.id) return sp;
+      if (!sp.deployedBom) return sp;
+      if (sp.status === 'returned') return sp; // lockstep with the store's re-source guard
+      const old = sp.deployedBom[event.componentIndex];
+      if (!old) return sp;
+      const updated: DeployedComponent = { ...old, source: event.source };
+      if (event.inventoryId === undefined) delete updated.inventoryId;
+      else updated.inventoryId = event.inventoryId;
+      return {
+        ...sp,
+        deployedBom: sp.deployedBom.map((c, i) => (i === event.componentIndex ? updated : c)),
+      };
     }
 
     default:

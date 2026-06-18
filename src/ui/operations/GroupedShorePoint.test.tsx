@@ -7,7 +7,7 @@ import { GroupedShorePoint } from './GroupedShorePoint';
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
 
 // A grouped member — defaults to a 3-Post post (KB-7: one physical shore, N
-// points sharing a groupId). Process+ members carry a deployedStrut so the card
+// points sharing a groupId). Process+ members carry a deployedBom so the card
 // renders its lifecycle (slides) rather than the pending action area.
 function member(id: string, groupIndex: number, status: ShorePointStatus = 'process'): ShorePoint {
   return {
@@ -24,7 +24,9 @@ function member(id: string, groupIndex: number, status: ShorePointStatus = 'proc
     status,
     ...(status === 'pending'
       ? {}
-      : { deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } }),
+      : {
+          deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }],
+        }),
   };
 }
 

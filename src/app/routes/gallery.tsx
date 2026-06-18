@@ -68,7 +68,7 @@ const REC_LOCKSTROKE = findStrutCombinations(80, 4000, 2, null, ['LockStroke'], 
 
 // ---- ShorePointCard / GroupedShorePoint fixtures (S12 §1–2) — props-only, no
 // engine: the cards are presentational, so the gallery hand-builds the SPs.
-const DEPLOYED = { model: 'LS 304', source: 'Engine 7', inventoryId: 'demo-inv' };
+const DEPLOYED_BOM = [{ role: 'strut' as const, model: 'LS 304', source: 'Engine 7', inventoryId: 'demo-inv' }];
 function spFixture(over: Partial<ShorePoint> = {}): ShorePoint {
   return {
     id: `gx-${Math.random().toString(36).slice(2, 8)}`,
@@ -85,18 +85,18 @@ function spFixture(over: Partial<ShorePoint> = {}): ShorePoint {
 // One physical multi-strut shore = N points sharing a groupId (KB-7). Mixed
 // statuses so the tabs/dots show different status hues.
 const DOUBLE_T_MEMBERS: ShorePoint[] = [
-  spFixture({ id: 'dt-1', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 1, groupTotal: 2, status: 'cutting', deductions: { headerWood: '6x6', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
-  spFixture({ id: 'dt-2', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 2, groupTotal: 2, status: 'strutset', deployedStrut: DEPLOYED }),
+  spFixture({ id: 'dt-1', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 1, groupTotal: 2, status: 'cutting', deductions: { headerWood: '6x6', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' }, deployedBom: DEPLOYED_BOM }),
+  spFixture({ id: 'dt-2', label: 'B-3', shoreType: 'double-t', groupId: 'gdt', groupIndex: 2, groupTotal: 2, status: 'strutset', deployedBom: DEPLOYED_BOM }),
 ];
 const THREE_POST_MEMBERS: ShorePoint[] = [
-  spFixture({ id: 'tp-1', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 1, groupTotal: 3, status: 'secured', deployedStrut: DEPLOYED }),
-  spFixture({ id: 'tp-2', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 2, groupTotal: 3, status: 'runner', deployedStrut: DEPLOYED }),
-  spFixture({ id: 'tp-3', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 3, groupTotal: 3, status: 'process', deployedStrut: DEPLOYED }),
+  spFixture({ id: 'tp-1', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 1, groupTotal: 3, status: 'secured', deployedBom: DEPLOYED_BOM }),
+  spFixture({ id: 'tp-2', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 2, groupTotal: 3, status: 'runner', deployedBom: DEPLOYED_BOM }),
+  spFixture({ id: 'tp-3', label: 'C-2', shoreType: '3-post', groupId: 'g3p', groupIndex: 3, groupTotal: 3, status: 'process', deployedBom: DEPLOYED_BOM }),
 ];
 const THREE_POST_OPEN: ShorePoint[] = [
-  spFixture({ id: 'op-1', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 1, groupTotal: 3, status: 'process', deployedStrut: DEPLOYED }),
-  spFixture({ id: 'op-2', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 2, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
-  spFixture({ id: 'op-3', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 3, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedStrut: DEPLOYED }),
+  spFixture({ id: 'op-1', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 1, groupTotal: 3, status: 'process', deployedBom: DEPLOYED_BOM }),
+  spFixture({ id: 'op-2', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 2, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedBom: DEPLOYED_BOM }),
+  spFixture({ id: 'op-3', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 3, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedBom: DEPLOYED_BOM }),
 ];
 
 /**
@@ -513,7 +513,7 @@ export function GalleryScreen() {
             measurementEighths: 547,
             deductions: NO_DEDUCTIONS,
             status: 'process',
-            deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'demo-inv' },
+            deployedBom: [{ role: 'strut' as const, model: 'LS 203', source: 'Rescue 2', inventoryId: 'demo-inv' }],
           }}
         />
         <ShorePointCard
@@ -526,7 +526,7 @@ export function GalleryScreen() {
             measurementEighths: 766,
             deductions: NO_DEDUCTIONS,
             status: 'secured',
-            deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' },
+            deployedBom: [{ role: 'strut' as const, model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' }],
           }}
         />
       </Section>
@@ -564,13 +564,13 @@ export function GalleryScreen() {
         <ShorePointCard shorePoint={spFixture({ seq: 3, label: 'A-3', pendingReason: 'no-match' })} />
         {/* In Process — the advance + step-back slide stack. */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 4, label: 'B-1', status: 'process', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 4, label: 'B-1', status: 'process', deployedBom: DEPLOYED_BOM })}
           onAdvance={() => setCommits((c) => c + 1)}
           onStepBack={() => setCommits((c) => c + 1)}
         />
         {/* Strut Set — step-back slide only (advance is workflow #222). */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 5, label: 'B-2', status: 'strutset', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 5, label: 'B-2', status: 'strutset', deployedBom: DEPLOYED_BOM })}
           onStepBack={() => setCommits((c) => c + 1)}
         />
         {/* Cutting — the promoted (28px) value shelf reading the cut length. */}
@@ -580,37 +580,37 @@ export function GalleryScreen() {
             label: 'B-3',
             status: 'cutting',
             deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
-            deployedStrut: DEPLOYED,
+            deployedBom: DEPLOYED_BOM,
           })}
         />
         {/* Runner · Secured · Returned. */}
-        <ShorePointCard shorePoint={spFixture({ seq: 7, label: 'B-4', status: 'runner', deployedStrut: DEPLOYED })} />
-        <ShorePointCard shorePoint={spFixture({ seq: 8, label: 'B-5', status: 'secured', deployedStrut: DEPLOYED })} />
-        <ShorePointCard shorePoint={spFixture({ seq: 9, label: 'B-6', status: 'returned', deployedStrut: DEPLOYED })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 7, label: 'B-4', status: 'runner', deployedBom: DEPLOYED_BOM })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 8, label: 'B-5', status: 'secured', deployedBom: DEPLOYED_BOM })} />
+        <ShorePointCard shorePoint={spFixture({ seq: 9, label: 'B-6', status: 'returned', deployedBom: DEPLOYED_BOM })} />
         {/* Hazard pill + removed slash (presentational props, #222 surfaces). */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 10, label: 'C-1', status: 'process', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 10, label: 'C-1', status: 'process', deployedBom: DEPLOYED_BOM })}
           hazard
           onAdvance={() => {}}
           onStepBack={() => {}}
         />
         <ShorePointCard
-          shorePoint={spFixture({ seq: 11, label: 'C-2', status: 'cutting', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ seq: 11, label: 'C-2', status: 'cutting', deployedBom: DEPLOYED_BOM })}
           removed
         />
         {/* Grey-system tab (AcmeThread) — apparatus caption line under location. */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 12, label: 'C-3', area: 'Stairwell B', status: 'secured', deployedStrut: { model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' } })}
+          shorePoint={spFixture({ seq: 12, label: 'C-3', area: 'Stairwell B', status: 'secured', deployedBom: [{ role: 'strut' as const, model: 'AT 37-58', source: 'Squad 3', inventoryId: 'demo-inv-2' }] })}
         />
         {/* LockStroke-cyan tab + a 3-digit number (Surfside scale). */}
         <ShorePointCard
-          shorePoint={spFixture({ seq: 147, label: 'C-4', area: 'Stairwell B', status: 'process', deployedStrut: { model: 'LK 36-57', source: 'Rescue 41', inventoryId: 'demo-inv-3' } })}
+          shorePoint={spFixture({ seq: 147, label: 'C-4', area: 'Stairwell B', status: 'process', deployedBom: [{ role: 'strut' as const, model: 'LK 36-57', source: 'Rescue 41', inventoryId: 'demo-inv-3' }] })}
         />
         {/* Design-audit additions: active (accent focus border) + the caption
             explainer line (design-system ShorePointCard props). The waiting
             presentation itself rides A-2/A-3 above — amber badge/stripe/shelf. */}
         <ShorePointCard
-          shorePoint={spFixture({ label: 'C-4', status: 'process', deployedStrut: DEPLOYED })}
+          shorePoint={spFixture({ label: 'C-4', status: 'process', deployedBom: DEPLOYED_BOM })}
           active
           caption="Slide commits; reverse is always available — no timed undo."
           onAdvance={() => {}}

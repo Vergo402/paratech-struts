@@ -25,7 +25,7 @@ const statusChanged = (spId: string, from: ShorePointStatus, to: ShorePointStatu
   type: 'ShorePointStatusChanged', ...base(), spId, from, to,
 });
 const deploy = (spId: string, inventoryId: string): FieldShoreEvent => ({
-  type: 'StrutDeployed', ...base(), spId, deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId },
+  type: 'EquipmentDeployed', ...base(), spId, deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId }],
 });
 
 const makeSp = (id: string): ShorePoint => ({

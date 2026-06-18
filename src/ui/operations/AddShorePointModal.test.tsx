@@ -394,10 +394,11 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     // 2) … then the chosen strut is deployed onto that same point (separate
     //    commit — commitMany can't carry inventory events).
     expect(mockCommit).toHaveBeenCalledTimes(1);
-    const deploy = mockCommit.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'StrutDeployed' }>;
-    expect(deploy.type).toBe('StrutDeployed');
+    const deploy = mockCommit.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'EquipmentDeployed' }>;
+    expect(deploy.type).toBe('EquipmentDeployed');
     expect(deploy.spId).toBe(created.id);
-    expect(deploy.deployedStrut).toMatchObject({ model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' });
+    expect(deploy.deployedBom).toHaveLength(1);
+    expect(deploy.deployedBom[0]).toMatchObject({ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' });
     expect(onClose).toHaveBeenCalled();
   });
 

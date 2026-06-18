@@ -144,7 +144,10 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'ShorePointEdited':
     case 'StrutDeployed':
     case 'StrutReturned':
+    case 'EquipmentDeployed':
+    case 'EquipmentReturned':
     case 'EquipmentReclaimed':
+    case 'ComponentResourced':
       return { ...state, shorePoints: state.shorePoints.map((sp) => shorePointReducer(sp, event)) };
 
     default:

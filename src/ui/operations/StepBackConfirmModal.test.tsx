@@ -20,7 +20,7 @@ const SP: ShorePoint = {
   measurementEighths: 388,
   deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' },
   status: 'process',
-  deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+  deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
 };
 
 describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms)', () => {
@@ -51,7 +51,7 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
     expect(mockCommit).not.toHaveBeenCalled();
   });
 
-  it('Return & Step Back commits StrutReturned, then reports back and closes', async () => {
+  it('Return & Step Back commits EquipmentReturned, then reports back and closes', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     const onReturned = vi.fn();
@@ -59,7 +59,7 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
 
     await user.click(screen.getByRole('button', { name: 'Return & Step Back' }));
     expect(mockCommit).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'StrutReturned', spId: 'sp-1', opId: 'op-1', by: 'device-test' }),
+      expect.objectContaining({ type: 'EquipmentReturned', spId: 'sp-1', opId: 'op-1', by: 'device-test' }),
     );
     expect(onReturned).toHaveBeenCalledWith(SP, 1);
     expect(onClose).toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
       groupId: 'g1',
       groupIndex: i,
       groupTotal: 3,
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: `inv-${i}` },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: `inv-${i}` }],
     }));
     render(
       <StepBackConfirmModal shorePoint={members[0]!} groupMembers={members} onClose={vi.fn()} onReturned={onReturned} />,
@@ -87,7 +87,7 @@ describe('StepBackConfirmModal (#221 step 3-R — the one reversal that confirms
 
     expect(mockCommit).toHaveBeenCalledTimes(3);
     for (const id of ['sp-1', 'sp-2', 'sp-3']) {
-      expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'StrutReturned', spId: id }));
+      expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'EquipmentReturned', spId: id }));
     }
     expect(onReturned).toHaveBeenCalledWith(members[0], 3);
   });

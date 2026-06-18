@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Eighths } from './common';
+import { Eighths, System } from './common';
 
 // ---- Status — the seven-state lifecycle (ADR-008 rename: v3 `strutplaced` →
 // v4 `strutset`). Declaration order IS the lifecycle order; STATUS_IDS exposes
@@ -46,12 +46,44 @@ export const NO_DEDUCTIONS: Deductions = {
 };
 
 // The strut identity a deployed shore point carries cradle-to-grave (card.md).
+// LEGACY (pre-ADR-033): the payload of the legacy StrutDeployed event and the
+// shape the reducer projects into a one-element deployedBom for old logs. New
+// deploys carry the full bill of materials (DeployedBom) below.
 export const DeployedStrut = z.object({
   model: z.string(), // e.g. "LS 203"
   source: z.string(), // apparatus name, e.g. "Rescue 2"
   inventoryId: z.string(), // the stock record it was pulled from (L-8 ID round-trip)
 });
 export type DeployedStrut = z.infer<typeof DeployedStrut>;
+
+// ADR-033 — a deployed shore is a sourced bill of materials. Each physical
+// component (the strut + 0–2 base plates + 0–2 extensions) records its OWN
+// apparatus source + stock-record id, so different rigs can supply different
+// pieces of one shore. The store consumes/restores each component from its own
+// rig inside one atomic transaction; the UI renders the list and lets any piece
+// be re-pointed later (ComponentResourced).
+export const DeployedComponentRole = z.enum(['strut', 'top-plate', 'bottom-plate', 'extension']);
+export type DeployedComponentRole = z.infer<typeof DeployedComponentRole>;
+
+// `source` is the apparatus NAME, or the 'untracked' sentinel for an off-book
+// piece the crew physically used but that isn't in tracked stock. The invariant:
+// inventoryId ABSENT ⟺ untracked — no decrement on deploy, no restore on return.
+export const UNTRACKED_SOURCE = 'untracked';
+
+export const DeployedComponent = z.object({
+  role: DeployedComponentRole,
+  model: z.string().optional(), // strut — Paratech model, e.g. "LS 203"
+  plateId: z.string().optional(), // plate roles — BASE_PLATES id
+  length: z.number().int().optional(), // extension — length in inches
+  system: System.optional(), // strut + extension
+  source: z.string(), // apparatus name | UNTRACKED_SOURCE
+  inventoryId: z.string().optional(), // absent ⟺ untracked (no stock consequence)
+});
+export type DeployedComponent = z.infer<typeof DeployedComponent>;
+
+// One physical shore-member's full assembly; the strut is always element-present.
+export const DeployedBom = z.array(DeployedComponent).min(1);
+export type DeployedBom = z.infer<typeof DeployedBom>;
 
 export const PendingReason = z.enum(['no-match', 'no-inventory', 'over-capacity']);
 export type PendingReason = z.infer<typeof PendingReason>;
@@ -88,7 +120,10 @@ export const ShorePoint = z.object({
   // (capacity demoted, ADR-012). Locked post-Pending like the measurement.
   estimatedLoad: z.number().nonnegative().optional(),
   status: ShorePointStatus,
-  deployedStrut: DeployedStrut.optional(),
+  // The deployed bill of materials (ADR-033) — strut + plates + extensions, each
+  // with its own source/inventoryId. The reducer normalizes legacy StrutDeployed
+  // events into a one-element BOM, so every projected deployed point reads here.
+  deployedBom: DeployedBom.optional(),
   pendingReason: PendingReason.optional(),
   // Cutting-queue bookkeeping (#222). cuttingStartedAt stamps FIFO order when the
   // point enters `cutting` (the Cutting Station orders by it); cuttingDone is the

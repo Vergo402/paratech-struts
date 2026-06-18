@@ -20,7 +20,7 @@ const SP: ShorePoint = {
   measurementEighths: 388,
   deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' },
   status: 'secured',
-  deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+  deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
 };
 
 describe('ReturnEquipmentModal (#224 — terminal Remove & Return)', () => {

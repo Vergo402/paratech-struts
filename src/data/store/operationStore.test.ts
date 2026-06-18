@@ -4,9 +4,11 @@ import { createDB, type FieldShoreDB } from './db';
 import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import { createOperationStore, type OperationStoreApi } from './operationStore';
 import { projectOperation } from '@core/operation';
+import { deployedStrutOf } from '@core/shorepoint';
 import { newId } from '@core/id';
 import {
   NO_DEDUCTIONS,
+  type DeployedComponent,
   type FieldShoreEvent,
   type InventoryItem,
   type ShorePoint,
@@ -26,9 +28,10 @@ const statusChanged = (spId: string, from: ShorePointStatus, to: ShorePointStatu
   type: 'ShorePointStatusChanged', ...base(), spId, from, to,
 });
 const deploy = (spId: string, inventoryId: string): FieldShoreEvent => ({
-  type: 'StrutDeployed', ...base(), spId, deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId },
+  type: 'EquipmentDeployed', ...base(), spId,
+  deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId }],
 });
-const returned = (spId: string): FieldShoreEvent => ({ type: 'StrutReturned', ...base(), spId });
+const returned = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReturned', ...base(), spId });
 const reclaimed = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReclaimed', ...base(), spId });
 
 const makeSp = (id: string, over: Partial<ShorePoint> = {}): ShorePoint => ({
@@ -81,7 +84,7 @@ describe('operationStore.commit', () => {
   it('enqueues every local commit, in order', async () => {
     await ops.commit(deploy('sp-1', 'inv-1'));
     expect(enqueued.map((e) => e.type)).toEqual([
-      'OperationCreated', 'ShorePointAdded', 'ShorePointAdded', 'StrutDeployed',
+      'OperationCreated', 'ShorePointAdded', 'ShorePointAdded', 'EquipmentDeployed',
     ]);
   });
 
@@ -101,13 +104,13 @@ describe('operationStore.commit', () => {
     expect((await db.inventory.get('inv-1'))!.available).toBe(2); // txn rolled back
   });
 
-  describe('StrutDeployed (L-8)', () => {
+  describe('EquipmentDeployed (L-8)', () => {
     it('decrements available durably and in memory', async () => {
       expect((await ops.commit(deploy('sp-1', 'inv-1'))).ok).toBe(true);
       expect((await db.inventory.get('inv-1'))!.available).toBe(1);
       expect(inventory.store.getState().items.find((i) => i.id === 'inv-1')!.available).toBe(1);
       expect(getSp('sp-1')!.status).toBe('process');
-      expect(getSp('sp-1')!.deployedStrut?.inventoryId).toBe('inv-1');
+      expect(deployedStrutOf(getSp('sp-1')!)?.inventoryId).toBe('inv-1');
     });
 
     it('aborts on a missing inventory node — no event, no state change', async () => {
@@ -129,6 +132,143 @@ describe('operationStore.commit', () => {
       const res = await ops.commit(deploy('sp-1', 'inv-1'));
       expect(res.ok).toBe(false);
       expect((await db.inventory.get('inv-1'))!.available).toBe(1); // not double-decremented
+    });
+  });
+
+  // ADR-033 — a deployed shore is a SOURCED bill of materials: strut + plates +
+  // extensions, each consumed from (and restored to) its OWN rig inside the one
+  // transaction that appends the event. These pin the safety-critical core: every
+  // tracked component moves, the whole thing is atomic, untracked pieces never
+  // touch stock, and a re-source re-points exactly one piece between two rigs.
+  describe('ADR-033 BOM deploy/return (L-8)', () => {
+    // A 3-component BOM whose strut, plate and extension live on THREE different
+    // inventory rows (one row per rig). availables seeded in this block's beforeEach.
+    const bom3 = () => [
+      { role: 'strut' as const, model: 'LS 203', system: 'LongShore' as const, source: 'Rescue 2', inventoryId: 'inv-1' },
+      { role: 'top-plate' as const, plateId: 'plate-x', source: 'Engine 4', inventoryId: 'inv-plate' },
+      { role: 'extension' as const, length: 12, system: 'LongShore' as const, source: 'Ladder 1', inventoryId: 'inv-ext' },
+    ];
+    const deployBom = (spId: string, bom: DeployedComponent[]): FieldShoreEvent => ({
+      type: 'EquipmentDeployed', ...base(), spId, deployedBom: bom,
+    });
+
+    beforeEach(async () => {
+      // A plate row and an extension row, each on its own rig, both with one available.
+      await db.inventory.bulkAdd([
+        { id: 'inv-plate', type: 'plate', plateId: 'plate-x', apparatus: 'Engine 4', apparatusId: 'app-e4', quantity: 1, available: 1 },
+        { id: 'inv-ext', type: 'extension', length: 12, system: 'LongShore', apparatus: 'Ladder 1', apparatusId: 'app-l1', quantity: 1, available: 1 },
+      ]);
+      await inventory.boot();
+    });
+
+    it('decrements available by 1 on EACH of the three rigs', async () => {
+      expect((await ops.commit(deployBom('sp-1', bom3()))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(1); // strut: 2 → 1
+      expect((await db.inventory.get('inv-plate'))!.available).toBe(0); // plate: 1 → 0
+      expect((await db.inventory.get('inv-ext'))!.available).toBe(0); // extension: 1 → 0
+      // mirror agrees with Dexie
+      const items = inventory.store.getState().items;
+      expect(items.find((i) => i.id === 'inv-1')!.available).toBe(1);
+      expect(items.find((i) => i.id === 'inv-plate')!.available).toBe(0);
+      expect(items.find((i) => i.id === 'inv-ext')!.available).toBe(0);
+      expect(getSp('sp-1')!.deployedBom).toHaveLength(3);
+      expect(getSp('sp-1')!.status).toBe('process');
+    });
+
+    it('is all-or-nothing: one dry component aborts the whole deploy — no event, no stock moved', async () => {
+      // Point the extension at the dry strut row (inv-0, available 0). The strut and
+      // plate decrements succeed first; the extension then aborts → full rollback.
+      const bom = bom3();
+      bom[2]!.inventoryId = 'inv-0';
+      const events = await db.events.count();
+      const res = await ops.commit(deployBom('sp-1', bom));
+      expect(res.ok).toBe(false);
+      expect(await db.events.count()).toBe(events); // no event appended
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // strut not moved
+      expect((await db.inventory.get('inv-plate'))!.available).toBe(1); // plate not moved
+      expect((await db.inventory.get('inv-0'))!.available).toBe(0); // still dry
+      expect(getSp('sp-1')!.status).toBe('pending'); // not deployed
+      expect(getSp('sp-1')!.deployedBom).toBeUndefined();
+    });
+
+    it('aborts when a component points at a missing inventory node — no event, no stock moved', async () => {
+      const bom = bom3();
+      bom[1]!.inventoryId = 'inv-ghost';
+      const events = await db.events.count();
+      const res = await ops.commit(deployBom('sp-1', bom));
+      expect(res.ok).toBe(false);
+      expect(await db.events.count()).toBe(events);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // strut rolled back
+      expect(await db.inventory.get('inv-ghost')).toBeUndefined(); // L-8: not created
+      expect(getSp('sp-1')!.status).toBe('pending');
+    });
+
+    it('records an untracked component on the point but moves zero stock', async () => {
+      const bom = [
+        { role: 'strut' as const, model: 'LS 203', system: 'LongShore' as const, source: 'Rescue 2', inventoryId: 'inv-1' },
+        { role: 'bottom-plate' as const, plateId: 'plate-y', source: 'untracked' }, // no inventoryId
+      ];
+      expect((await ops.commit(deployBom('sp-1', bom))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(1); // strut decremented
+      // the untracked piece is recorded on the point...
+      const deployed = getSp('sp-1')!.deployedBom!;
+      expect(deployed).toHaveLength(2);
+      expect(deployed[1]!.inventoryId).toBeUndefined();
+      // ...but moved no stock — total available across all rows fell by exactly 1.
+      const total = (await db.inventory.toArray()).reduce((n, i) => n + i.available, 0);
+      expect(total).toBe(2 + 0 + 1 + 1 - 1); // inv-1 2→1, inv-0 0, inv-plate 1, inv-ext 1
+    });
+
+    it('EquipmentReturned restores every tracked component (+1 each, clamped) and clears the BOM', async () => {
+      await ops.commit(deployBom('sp-1', bom3())); // 2/1/1 → 1/0/0
+      expect((await ops.commit(returned('sp-1'))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // restored, clamped at quantity 2
+      expect((await db.inventory.get('inv-plate'))!.available).toBe(1);
+      expect((await db.inventory.get('inv-ext'))!.available).toBe(1);
+      expect(getSp('sp-1')!.status).toBe('pending');
+      expect(getSp('sp-1')!.deployedBom).toBeUndefined(); // cleared
+    });
+
+    it('EquipmentReclaimed (from secured) restores every tracked component but KEEPS the BOM', async () => {
+      await ops.commit(deployBom('sp-1', bom3())); // 2/1/1 → 1/0/0
+      for (const [from, to] of [
+        ['process', 'strutset'],
+        ['strutset', 'cutting'],
+        ['cutting', 'runner'],
+        ['runner', 'secured'],
+      ] as [ShorePointStatus, ShorePointStatus][]) {
+        await ops.commit(statusChanged('sp-1', from, to));
+      }
+      const before = getSp('sp-1')!.deployedBom;
+      expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // all three restored
+      expect((await db.inventory.get('inv-plate'))!.available).toBe(1);
+      expect((await db.inventory.get('inv-ext'))!.available).toBe(1);
+      expect(getSp('sp-1')!.status).toBe('returned');
+      expect(getSp('sp-1')!.deployedBom).toEqual(before); // retained as history
+    });
+
+    it('ComponentResourced re-points one tracked component: +1 old rig, −1 new rig, atomically', async () => {
+      await ops.commit(deployBom('sp-1', bom3())); // strut on inv-1 (now 1), plate inv-plate 0, ext inv-ext 0
+      // A spare strut row on a different rig with one available.
+      await db.inventory.add({ id: 'inv-spare', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Squad 9', apparatusId: 'app-s9', quantity: 1, available: 1 });
+      await inventory.boot();
+      const res = await ops.commit({
+        type: 'ComponentResourced', ...base(), spId: 'sp-1', componentIndex: 0, source: 'Squad 9', inventoryId: 'inv-spare',
+      });
+      expect(res.ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(2); // old rig restored 1 → 2
+      expect((await db.inventory.get('inv-spare'))!.available).toBe(0); // new rig consumed 1 → 0
+      expect(deployedStrutOf(getSp('sp-1')!)?.inventoryId).toBe('inv-spare');
+    });
+
+    it('ComponentResourced is net-zero when the source is unchanged — no stock moves', async () => {
+      await ops.commit(deployBom('sp-1', bom3())); // strut on inv-1, now available 1
+      const res = await ops.commit({
+        type: 'ComponentResourced', ...base(), spId: 'sp-1', componentIndex: 0, source: 'Rescue 2', inventoryId: 'inv-1',
+      });
+      expect(res.ok).toBe(true);
+      expect((await db.inventory.get('inv-1'))!.available).toBe(1); // unchanged — no double move
     });
   });
 
@@ -215,7 +355,7 @@ describe('operationStore.commit', () => {
     });
   });
 
-  describe('StrutReturned (L-8)', () => {
+  describe('EquipmentReturned (L-8)', () => {
     beforeEach(async () => {
       await ops.commit(deploy('sp-1', 'inv-1')); // available 2 → 1
     });
@@ -224,7 +364,7 @@ describe('operationStore.commit', () => {
       expect((await ops.commit(returned('sp-1'))).ok).toBe(true);
       expect((await db.inventory.get('inv-1'))!.available).toBe(2);
       expect(getSp('sp-1')!.status).toBe('pending');
-      expect(getSp('sp-1')!.deployedStrut).toBeUndefined();
+      expect(getSp('sp-1')!.deployedBom).toBeUndefined();
     });
 
     it('clamps available to quantity — never over-increments', async () => {
@@ -268,11 +408,11 @@ describe('operationStore.commit', () => {
     });
 
     it('restores stock, lands returned, and KEEPS the strut as history', async () => {
-      const before = getSp('sp-1')!.deployedStrut;
+      const before = getSp('sp-1')!.deployedBom;
       expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true);
       expect((await db.inventory.get('inv-1'))!.available).toBe(2); // restored
       expect(getSp('sp-1')!.status).toBe('returned');
-      expect(getSp('sp-1')!.deployedStrut).toEqual(before); // retained as history (NOT cleared)
+      expect(getSp('sp-1')!.deployedBom).toEqual(before); // retained as history (NOT cleared)
     });
 
     it('in-memory state ≡ projection of the durable log after the terminal return', async () => {
@@ -296,7 +436,7 @@ describe('operationStore.commit', () => {
       expect(await db.events.count()).toBe(before);
       expect(await db.inventory.get('inv-1')).toBeUndefined(); // L-8: not recreated
       expect(getSp('sp-1')!.status).toBe('secured'); // unchanged
-      expect(getSp('sp-1')!.deployedStrut).toBeDefined();
+      expect(getSp('sp-1')!.deployedBom).toBeDefined();
     });
 
     it('rejects a terminal return on a non-Shore-Secured shore point', async () => {
@@ -343,6 +483,99 @@ describe('operationStore.commit', () => {
       const res = await ops.commit(reopened(OP)); // OP is still active
       expect(res.ok).toBe(false);
       expect(res).toMatchObject({ reason: 'an operation is already active' });
+    });
+  });
+
+  // Regression coverage for the ADR-033 adversarial-review fixes (HIGH #1/#5, MED #2,
+  // decision-7 guards). Uses the base setup: inv-1 strut qty2/av2, sp-1/sp-2 Pending.
+  describe('ADR-033 hardening (review fixes)', () => {
+    const durable = async (id: string) => (await db.inventory.get(id))!.available;
+    const mirror = (id: string) => inventory.store.getState().items.find((i) => i.id === id)!.available;
+
+    it('rejects legacy StrutDeployed / StrutReturned at commit (replay-only)', async () => {
+      const legacy = {
+        type: 'StrutDeployed', ...base(), spId: 'sp-1',
+        deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      } as unknown as FieldShoreEvent;
+      const res = await ops.commit(legacy);
+      expect(res.ok).toBe(false);
+      expect(await durable('inv-1')).toBe(2); // no decrement
+      expect(getSp('sp-1')!.status).toBe('pending');
+    });
+
+    it('a BOM sourcing one row twice decrements durable + mirror to the final value, and restores both', async () => {
+      await db.inventory.add({
+        id: 'inv-ext', type: 'extension', length: 12, system: 'LongShore',
+        apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 2, available: 2,
+      });
+      await inventory.boot();
+      const bom: DeployedComponent[] = [
+        { role: 'strut', model: 'LS 203', system: 'LongShore', source: 'Rescue 2', inventoryId: 'inv-1' },
+        { role: 'extension', length: 12, system: 'LongShore', source: 'Rescue 2', inventoryId: 'inv-ext' },
+        { role: 'extension', length: 12, system: 'LongShore', source: 'Rescue 2', inventoryId: 'inv-ext' },
+      ];
+      const e: FieldShoreEvent = { type: 'EquipmentDeployed', ...base(), spId: 'sp-1', deployedBom: bom };
+      expect((await ops.commit(e)).ok).toBe(true);
+      expect(await durable('inv-ext')).toBe(0); // 2→1→0
+      expect(mirror('inv-ext')).toBe(0); // mirror reflects the FINAL value, not an intermediate snapshot
+      expect((await ops.commit(returned('sp-1'))).ok).toBe(true);
+      expect(await durable('inv-ext')).toBe(2); // both units restored
+      expect(mirror('inv-ext')).toBe(2);
+    });
+
+    it('serializes concurrent deploys for one Pending point — exactly one decrement + one event', async () => {
+      const before = await db.events.count();
+      const [a, b] = await Promise.all([ops.commit(deploy('sp-1', 'inv-1')), ops.commit(deploy('sp-1', 'inv-1'))]);
+      expect([a, b].filter((r) => r.ok)).toHaveLength(1); // the second sees sp-1 already In Process
+      expect(await durable('inv-1')).toBe(1); // decremented exactly once
+      expect(await db.events.count()).toBe(before + 1);
+    });
+
+    it('ComponentResourced re-points to another rig: restore old +1, consume new −1', async () => {
+      await db.inventory.add({
+        id: 'inv-2', type: 'strut', model: 'LS 203', system: 'LongShore',
+        apparatus: 'Engine 4', apparatusId: 'app-e4', quantity: 1, available: 1,
+      });
+      await inventory.boot();
+      await ops.commit(deploy('sp-1', 'inv-1')); // strut from inv-1 (2→1)
+      const e: FieldShoreEvent = {
+        type: 'ComponentResourced', ...base(), spId: 'sp-1', componentIndex: 0, source: 'Engine 4', inventoryId: 'inv-2',
+      };
+      expect((await ops.commit(e)).ok).toBe(true);
+      expect(await durable('inv-1')).toBe(2); // restored
+      expect(await durable('inv-2')).toBe(0); // consumed
+      expect(deployedStrutOf(getSp('sp-1')!)!.inventoryId).toBe('inv-2');
+      expect(deployedStrutOf(getSp('sp-1')!)!.source).toBe('Engine 4');
+    });
+
+    it('ComponentResourced rejects a KIND mismatch (strut slot → plate row) and moves no stock', async () => {
+      await db.inventory.add({
+        id: 'inv-plate', type: 'plate', plateId: 'plate-x',
+        apparatus: 'Engine 4', apparatusId: 'app-e4', quantity: 1, available: 1,
+      });
+      await inventory.boot();
+      await ops.commit(deploy('sp-1', 'inv-1'));
+      const e: FieldShoreEvent = {
+        type: 'ComponentResourced', ...base(), spId: 'sp-1', componentIndex: 0, source: 'Engine 4', inventoryId: 'inv-plate',
+      };
+      expect((await ops.commit(e)).ok).toBe(false);
+      expect(await durable('inv-1')).toBe(1); // strut NOT restored
+      expect(await durable('inv-plate')).toBe(1); // plate NOT consumed
+    });
+
+    it('ComponentResourced is rejected on a returned shore point', async () => {
+      await ops.commit(deploy('sp-1', 'inv-1'));
+      for (const [from, to] of [
+        ['process', 'strutset'], ['strutset', 'cutting'], ['cutting', 'runner'], ['runner', 'secured'],
+      ] as [ShorePointStatus, ShorePointStatus][]) {
+        await ops.commit(statusChanged('sp-1', from, to));
+      }
+      expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true); // → returned, keeps BOM
+      expect(getSp('sp-1')!.status).toBe('returned');
+      const e: FieldShoreEvent = {
+        type: 'ComponentResourced', ...base(), spId: 'sp-1', componentIndex: 0, source: 'Engine 4', inventoryId: 'inv-1',
+      };
+      expect((await ops.commit(e)).ok).toBe(false);
     });
   });
 });

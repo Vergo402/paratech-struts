@@ -15,7 +15,7 @@ function makeSP(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
     measurementEighths: 388,
     deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' },
     status: 'cutting' as ShorePointStatus,
-    deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+    deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     ...over,
   };
 }

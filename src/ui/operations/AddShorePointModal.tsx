@@ -5,7 +5,7 @@ import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
 import { newId } from '@core/id';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
-import { effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
+import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { BottomSheetPicker, InlineSegmented } from '@ui/picker';
@@ -286,14 +286,18 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     const model = comboModel(combo);
     const deployed: ShorePoint[] = [];
     for (const p of points) {
+      // Each member sources its own full BOM (ADR-033); the store decrements every
+      // tracked component atomically. Honor each result so an exhausted-stock member
+      // stays Pending (audit W1) rather than failing the whole group.
+      const deployedBom = assembleBom(combo, p.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
       const result = await commit({
-        type: 'StrutDeployed',
+        type: 'EquipmentDeployed',
         id: newId(),
         opId: operation.id,
         at: Date.now(),
         by: uid,
         spId: p.id,
-        deployedStrut: { model, source: item.apparatus, inventoryId },
+        deployedBom,
       });
       if (result.ok) deployed.push(p);
       else break; // stock exhausted — every remaining point stays Pending

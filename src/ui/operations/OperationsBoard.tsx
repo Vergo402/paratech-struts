@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor } from '@core/shorepoint';
+import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs } from '@core/shorepoint';
 import {
   compareAreaValues,
   compareBuildingValues,
@@ -426,7 +426,7 @@ export function OperationsBoard() {
       setPoliteAnnouncement(
         count > 1
           ? `${count} struts returned — back to Pending.`
-          : `${sp.deployedStrut?.model ?? 'Strut'} returned — back to Pending.`,
+          : `${deployedStrutOf(sp)?.model ?? 'Strut'} returned — back to Pending.`,
       );
     },
     [expandLane],
@@ -440,7 +440,7 @@ export function OperationsBoard() {
       expandLane('returned');
       setScrollToId(sp.id);
       setPoliteAnnouncement(
-        `${sp.deployedStrut?.model ?? 'Equipment'} returned to ${sp.deployedStrut?.source ?? 'inventory'}.`,
+        `${deployedStrutOf(sp)?.model ?? 'Equipment'} returned to ${deployedStrutOf(sp)?.source ?? 'inventory'}.`,
       );
     },
     [expandLane],
@@ -614,14 +614,16 @@ export function OperationsBoard() {
 
   // End-Operation warning data (#238, gate M3): shore points whose equipment is
   // still out (deployed, not yet Returned) at close, grouped by the RIG it was
-  // pulled from (deployedStrut.source) — that rig's available count stays short
-  // for the next call. Empty → no warning. Non-blocking (the IC may close anyway).
+  // pulled from (deployedRigs — a deployed shore can now span multiple rigs) —
+  // each such rig's available count stays short for the next call. Empty → no
+  // warning. Non-blocking (the IC may close anyway).
   const stillDeployedByRig = useMemo(() => {
     const m = new Map<string, number>();
     for (const sp of shorePoints) {
-      if (sp.deletedAt != null || !sp.deployedStrut || sp.status === 'returned') continue;
-      const rig = sp.deployedStrut.source;
-      m.set(rig, (m.get(rig) ?? 0) + 1);
+      if (sp.deletedAt != null || !sp.deployedBom || sp.status === 'returned') continue;
+      for (const rig of deployedRigs(sp)) {
+        m.set(rig, (m.get(rig) ?? 0) + 1);
+      }
     }
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [shorePoints]);

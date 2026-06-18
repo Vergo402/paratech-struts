@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ShorePoint } from '@core/schema';
+import { deployedStrutOf } from '@core/shorepoint';
 import { newId } from '@core/id';
 import { Button, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -55,8 +56,9 @@ export function ReturnEquipmentModal({ shorePoint, onClose, onReturned }: Return
     onClose();
   }
 
-  const model = shorePoint?.deployedStrut?.model ?? 'strut';
-  const source = shorePoint?.deployedStrut?.source;
+  const deployed = shorePoint ? deployedStrutOf(shorePoint) : undefined;
+  const model = deployed?.model ?? 'strut';
+  const source = deployed?.source;
 
   return (
     <Modal

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type ShorePointStatus, type FieldShoreEvent } from '../schema';
+import { deployedStrutOf } from '../shorepoint';
 import { operationReducer, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
 import { projectOperation } from './projection';
 import { nextSeqBase } from './seq';
@@ -121,23 +122,24 @@ describe('L-7 group fan-out', () => {
 
 describe('EquipmentReclaimed (#224) — terminal Remove & Return routes to the SP reducer', () => {
   const deployed = { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' };
+  const deployedBom = [{ role: 'strut' as const, ...deployed }];
   const reclaim = (spId: string): FieldShoreEvent => ({ type: 'EquipmentReclaimed', id: 'e', opId: 'op1', at: 1, by: 't', spId });
 
   it('moves Shore Secured → Returned, keeping the strut, and never touches a different point', () => {
     const state = stateWith([
-      sp('a', { status: 'secured', deployedStrut: deployed }),
-      sp('b', { status: 'secured', deployedStrut: deployed }),
+      sp('a', { status: 'secured', deployedBom }),
+      sp('b', { status: 'secured', deployedBom }),
     ]);
     const next = operationReducer(state, reclaim('a'));
     expect(byId(next, 'a').status).toBe('returned');
-    expect(byId(next, 'a').deployedStrut).toEqual(deployed); // retained as history
+    expect(deployedStrutOf(byId(next, 'a'))).toEqual({ role: 'strut', ...deployed }); // retained as history
     expect(byId(next, 'b').status).toBe('secured'); // individual — not swept
   });
 
   it('is individual even within a group (terminal is per-card)', () => {
     const state = stateWith([
-      sp('a', { groupId: 'g', status: 'secured', deployedStrut: deployed }),
-      sp('b', { groupId: 'g', status: 'secured', deployedStrut: deployed }),
+      sp('a', { groupId: 'g', status: 'secured', deployedBom }),
+      sp('b', { groupId: 'g', status: 'secured', deployedBom }),
     ]);
     const next = operationReducer(state, reclaim('a'));
     expect(byId(next, 'a').status).toBe('returned');
@@ -150,13 +152,13 @@ describe('projection — current state is a fold of the event log', () => {
     { type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false },
     { type: 'ShorePointAdded', id: 'e2', opId: 'op1', at: 101, by: 'officer', shorePoint: sp('sp1', { status: 'pending' }) },
     {
-      type: 'StrutDeployed',
+      type: 'EquipmentDeployed',
       id: 'e3',
       opId: 'op1',
       at: 102,
       by: 'officer',
       spId: 'sp1',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' }],
     },
     statusEvent('sp1', 'process', 'strutset'),
   ];
@@ -167,7 +169,7 @@ describe('projection — current state is a fold of the event log', () => {
     expect(state.operation?.status).toBe('active');
     expect(state.shorePoints).toHaveLength(1);
     expect(byId(state, 'sp1').status).toBe('strutset');
-    expect(byId(state, 'sp1').deployedStrut?.model).toBe('LS 203');
+    expect(deployedStrutOf(byId(state, 'sp1'))?.model).toBe('LS 203');
   });
 
   it('projecting the log equals folding the reducer incrementally (store ≡ rebuild)', () => {

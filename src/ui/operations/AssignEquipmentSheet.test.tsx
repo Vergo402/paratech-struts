@@ -102,7 +102,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
   });
 
-  it('Deploy commits StrutDeployed with the composed identity and reports back', async () => {
+  it('Deploy commits EquipmentDeployed with the composed identity and reports back', async () => {
     const user = userEvent.setup();
     const onDeployed = vi.fn();
     const sp = makeSP();
@@ -113,28 +113,38 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     await user.click(screen.getByRole('button', { name: /^Deploy/ }));
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'StrutDeployed',
+        type: 'EquipmentDeployed',
         opId: 'op-1',
         spId: 'sp-1',
         by: 'device-test',
-        deployedStrut: { model: 'LS 406', source: 'Rescue 2', inventoryId: 'inv-1' },
+        deployedBom: expect.arrayContaining([
+          expect.objectContaining({ role: 'strut', model: 'LS 406', source: 'Rescue 2', inventoryId: 'inv-1' }),
+        ]),
       }),
     );
     expect(onDeployed).toHaveBeenCalledWith(sp, 'LS 406');
   });
 
-  it('an extension combo deploys with the "+ ext" model suffix (cradle-to-grave identity)', async () => {
+  it('an extension combo decomposes into a strut + extension BOM (cradle-to-grave identity)', async () => {
     const user = userEvent.setup();
+    const onDeployed = vi.fn();
     mockRecommendations.mockReturnValue([{ ...COMBO, extensions: [12], extTotal: 12, adjCollapsed: 60, adjExtended: 85 }]);
     mockInventory.mockReturnValue([INV_ITEM]);
-    render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={vi.fn()} />);
+    render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={onDeployed} />);
 
     await user.click(screen.getByRole('button', { name: /^Deploy/ }));
+    // ADR-033: the strut member carries the BARE model; the extension is its own
+    // BOM component. The combined "LS 406 + 12″" identity is reconstructed for
+    // display (bomModelLabel) and reported to the board via onDeployed.
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({
-        deployedStrut: expect.objectContaining({ model: 'LS 406 + 12″' }),
+        deployedBom: expect.arrayContaining([
+          expect.objectContaining({ role: 'strut', model: 'LS 406' }),
+          expect.objectContaining({ role: 'extension', length: 12 }),
+        ]),
       }),
     );
+    expect(onDeployed).toHaveBeenCalledWith(expect.anything(), 'LS 406 + 12″');
   });
 
   it('a failed commit keeps the sheet open and surfaces the reason as an alert', async () => {

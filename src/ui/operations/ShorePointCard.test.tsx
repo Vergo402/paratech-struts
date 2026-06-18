@@ -96,7 +96,7 @@ describe('ShorePointCard', () => {
   it('active draws the accent focus border class; caption renders under the controls', () => {
     render(
       <ShorePointCard
-        shorePoint={makeSP({ status: 'process', deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' } })}
+        shorePoint={makeSP({ status: 'process', deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }] })}
         active
         caption="Slide commits; reverse is always available — no timed undo."
       />,
@@ -136,7 +136,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
       />,
     );
@@ -166,7 +166,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
       />,
     );
@@ -183,7 +183,7 @@ describe('ShorePointCard', () => {
           status: 'strutset',
           estimatedLoad: 2000,
           deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
       />,
     );
@@ -199,7 +199,7 @@ describe('ShorePointCard', () => {
         shorePoint={makeSP({
           status: 'cutting',
           deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
       />,
     );
@@ -215,7 +215,7 @@ describe('ShorePointCard', () => {
         shorePoint={makeSP({
           status: 'secured',
           deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
       />,
     );
@@ -247,7 +247,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         hazard
       />,
@@ -260,7 +260,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         onAdvance={vi.fn()}
         onStepBack={vi.fn()}
@@ -288,7 +288,7 @@ describe('ShorePointCard', () => {
     const onStepBack = vi.fn();
     const sp = makeSP({
       status: 'process',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
 
@@ -309,7 +309,7 @@ describe('ShorePointCard', () => {
         shorePoint={makeSP({
           status: 'process',
           label: 'B-2',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         readOnly
       />,
@@ -329,7 +329,7 @@ describe('ShorePointCard', () => {
     // Secured readOnly: no Remove & Return button, no step-back slide.
     rerender(
       <ShorePointCard
-        shorePoint={makeSP({ status: 'secured', deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' } })}
+        shorePoint={makeSP({ status: 'secured', deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }] })}
         readOnly
       />,
     );
@@ -348,7 +348,7 @@ describe('ShorePointCard', () => {
           groupId: 'g',
           groupIndex: 1,
           groupTotal: 3,
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         onAdvance={onAdvance}
         onStepBack={onStepBack}
@@ -370,7 +370,7 @@ describe('ShorePointCard', () => {
     const onStepBack = vi.fn();
     const sp = makeSP({
       status: 'strutset',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
     expect(screen.getByText('Slide to set Cutting')).toBeInTheDocument();
@@ -386,7 +386,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'cutting',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         onAdvance={vi.fn()}
         onStepBack={vi.fn()}
@@ -400,7 +400,7 @@ describe('ShorePointCard', () => {
     const onStepBack = vi.fn();
     const sp = makeSP({
       status: 'cutting',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(
       <ShorePointCard shorePoint={sp} cuttingStation onMarkCutDone={onMarkCutDone} onStepBack={onStepBack} />,
@@ -418,7 +418,7 @@ describe('ShorePointCard', () => {
     const sp = makeSP({
       status: 'cutting',
       cuttingDone: true,
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(
       <ShorePointCard shorePoint={sp} cuttingStation onAdvance={onAdvance} onClearCutDone={onClearCutDone} />,
@@ -435,7 +435,7 @@ describe('ShorePointCard', () => {
     const onStepBack = vi.fn();
     const sp = makeSP({
       status: 'runner',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
     expect(screen.getByText('Slide to set Shore Secured')).toBeInTheDocument();
@@ -451,7 +451,7 @@ describe('ShorePointCard', () => {
     const onStepBack = vi.fn();
     const sp = makeSP({
       status: 'secured',
-      deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+      deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
     });
     render(<ShorePointCard shorePoint={sp} onRemoveReturn={onRemoveReturn} onStepBack={onStepBack} />);
     // Inventory-consequential + terminal → a button that raises the confirm modal,
@@ -470,7 +470,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'returned',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         onAdvance={vi.fn()}
         onStepBack={vi.fn()}
@@ -487,7 +487,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'runner',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         cuttingStation
         onAdvance={vi.fn()}
@@ -500,7 +500,7 @@ describe('ShorePointCard', () => {
       <ShorePointCard
         shorePoint={makeSP({
           status: 'secured',
-          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
         cuttingStation
         onRemoveReturn={vi.fn()}
@@ -529,14 +529,14 @@ describe('ShorePointCard — created-order number tab (#318)', () => {
   });
 
   it('fills with the deployed strut system: gold / grey / lockstroke', () => {
-    const deploy = (model: string) => ({ model, source: 'Rescue 2', inventoryId: 'inv-1' });
+    const deploy = (model: string) => [{ role: 'strut' as const, model, source: 'Rescue 2', inventoryId: 'inv-1' }];
     const { rerender } = render(
-      <ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('LS 203') })} />,
+      <ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedBom: deploy('LS 203') })} />,
     );
     expect(tab()).toHaveClass('is-gold'); // LongShore
-    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('AT 19-25') })} />);
+    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedBom: deploy('AT 19-25') })} />);
     expect(tab()).toHaveClass('is-grey'); // AcmeThread
-    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedStrut: deploy('LK 19-25') })} />);
+    rerender(<ShorePointCard shorePoint={makeSP({ seq: 2, status: 'process', deployedBom: deploy('LK 19-25') })} />);
     expect(tab()).toHaveClass('is-lockstroke'); // LockStroke (grey-colored, cyan identity)
   });
 

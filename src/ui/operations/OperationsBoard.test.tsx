@@ -281,7 +281,7 @@ describe('OperationsBoard', () => {
     expect(within(sheet).getByText('No apparatus stock available')).toBeInTheDocument();
   });
 
-  it('Deploy commits StrutDeployed and the board announces the In Process move politely', async () => {
+  it('Deploy commits EquipmentDeployed and the board announces the In Process move politely', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
@@ -294,10 +294,10 @@ describe('OperationsBoard', () => {
 
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'StrutDeployed',
+        type: 'EquipmentDeployed',
         spId: 'sp-1',
         opId: 'op-1',
-        deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' },
+        deployedBom: [{ role: 'strut', model: 'LS 304', system: 'LongShore', source: 'Rescue 2', inventoryId: 'inv-1' }],
       }),
     );
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 deployed — Div 1, In Process.');
@@ -306,7 +306,7 @@ describe('OperationsBoard', () => {
   it('the advance slide commits the status change and announces politely (gesture only — ADR-026)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'process'), deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } },
+      { ...makeSP('sp-1', 'process'), deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] },
     ]);
     render(<OperationsBoard />);
 
@@ -326,7 +326,7 @@ describe('OperationsBoard', () => {
       groupIndex,
       groupTotal: 3,
       ...(status !== 'pending'
-        ? { deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } }
+        ? { deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] }
         : {}),
     });
     mockShorePoints.mockReturnValue([
@@ -354,7 +354,7 @@ describe('OperationsBoard', () => {
       groupTotal: 3,
       ...(deletedAt != null ? { deletedAt } : {}),
       ...(status !== 'pending'
-        ? { deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } }
+        ? { deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] }
         : {}),
     });
     // sp-3 was deleted while still Pending (#319) — it keeps status:'pending' but
@@ -386,7 +386,7 @@ describe('OperationsBoard', () => {
     groupId: 'g1',
     groupIndex,
     groupTotal: 3,
-    deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' },
+    deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }],
   });
 
   it('collapsed stack: the front slide commits ONE event and announces the group size', async () => {
@@ -430,7 +430,7 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'process'), deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } },
+      { ...makeSP('sp-1', 'process'), deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] },
     ]);
     render(<OperationsBoard />);
 
@@ -439,14 +439,14 @@ describe('OperationsBoard', () => {
     expect(mockCommit).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Return & Step Back' }));
-    expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'StrutReturned', spId: 'sp-1' }));
+    expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'EquipmentReturned', spId: 'sp-1' }));
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 returned — back to Pending.');
   });
 
   it('step-back from Strut Set commits directly — no confirm (no inventory change)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'strutset'), deployedStrut: { model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' } },
+      { ...makeSP('sp-1', 'strutset'), deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }] },
     ]);
     render(<OperationsBoard />);
 
@@ -464,7 +464,7 @@ describe('OperationsBoard', () => {
 
   it('strut set: the advance slide commits strutset → cutting (#222 entry)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'strutset'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'strutset'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
     await slideToCommit('Slide to set Cutting');
     expect(mockCommit).toHaveBeenCalledWith(
@@ -476,7 +476,7 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, deployedStrut: deployed() },
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, deployedBom: [{ role: 'strut', ...deployed() }] },
     ]);
     render(<OperationsBoard />);
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
@@ -491,7 +491,7 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, cuttingDone: true, deployedStrut: deployed() },
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 10, cuttingDone: true, deployedBom: [{ role: 'strut', ...deployed() }] },
     ]);
     render(<OperationsBoard />);
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
@@ -505,9 +505,9 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-2', 'cutting'), cuttingStartedAt: 200, deployedStrut: deployed() },
-      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 100, deployedStrut: deployed() },
-      { ...makeSP('sp-3', 'strutset'), deployedStrut: deployed() }, // not in the queue
+      { ...makeSP('sp-2', 'cutting'), cuttingStartedAt: 200, deployedBom: [{ role: 'strut', ...deployed() }] },
+      { ...makeSP('sp-1', 'cutting'), cuttingStartedAt: 100, deployedBom: [{ role: 'strut', ...deployed() }] },
+      { ...makeSP('sp-3', 'strutset'), deployedBom: [{ role: 'strut', ...deployed() }] }, // not in the queue
     ]);
     render(<OperationsBoard />);
     // The sub-nav shows the live queue count.
@@ -523,7 +523,7 @@ describe('OperationsBoard', () => {
 
   it('Runner: the advance slide commits runner → secured (#223)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
     await slideToCommit('Slide to set Shore Secured');
     expect(mockCommit).toHaveBeenCalledWith(
@@ -533,7 +533,7 @@ describe('OperationsBoard', () => {
 
   it('Runner: the step-back slide commits runner → cutting (re-enters the cut queue)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
     await slideToCommit('Slide back to Cutting');
     expect(mockCommit).toHaveBeenCalledWith(
@@ -544,7 +544,7 @@ describe('OperationsBoard', () => {
   it('Shore Secured: Remove & Return opens the confirm modal, committing nothing yet; Confirm commits EquipmentReclaimed (#224)', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
 
     await user.click(screen.getByRole('button', { name: /Remove & Return Equipment/ }));
@@ -560,7 +560,7 @@ describe('OperationsBoard', () => {
 
   it('Shore Secured: the step-back slide commits secured → runner — no confirm (no inventory change)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'secured'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
     await slideToCommit('Slide back to Runner');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -571,7 +571,7 @@ describe('OperationsBoard', () => {
 
   it('Strut Equipment Returned: terminal — the marker, no slides or buttons on the card', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'returned'), deployedStrut: deployed() }]);
+    mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'returned'), deployedBom: [{ role: 'strut', ...deployed() }] }]);
     render(<OperationsBoard />);
     expect(screen.getByText('✓ Equipment returned')).toBeInTheDocument();
     // Scope to the CARD (the lane's own header is a toggle button).
@@ -726,7 +726,7 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     const deployed = (id: string, status: ShorePointStatus, source: string) => ({
       ...makeSP(id, status),
-      deployedStrut: { model: 'LS 203', source, inventoryId: `i-${id}` },
+      deployedBom: [{ role: 'strut' as const, model: 'LS 203', source, inventoryId: `i-${id}` }],
     });
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
@@ -752,7 +752,7 @@ describe('OperationsBoard', () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
-      { ...makeSP('sp-1', 'returned'), deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'i1' } },
+      { ...makeSP('sp-1', 'returned'), deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'i1' }] },
     ]);
     render(<OperationsBoard />);
 

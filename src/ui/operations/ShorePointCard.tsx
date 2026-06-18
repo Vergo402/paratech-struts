@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
-import { deductionTotalInches, effectiveLengthFrom } from '@core/shorepoint';
+import { bomModelLabel, deductionTotalInches, deployedStrutOf, effectiveLengthFrom } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -165,13 +165,17 @@ export function ShorePointCard({
   const pending = sp.status === 'pending';
   const promoted = sp.status === 'cutting';
   const waiting = pending && !!sp.pendingReason;
+  // The strut member of the deployed BOM (ADR-033). Phase 3 enriches this card to
+  // render the full bill (plates + extensions + per-component source); for now the
+  // header/model lines read the strut exactly as before.
+  const deployedStrut = deployedStrutOf(sp);
 
   // Created-order number tab (top-left): a ghost outline while no strut is
   // assigned, then FILLS with the deployed strut's SYSTEM color (gold/grey/
   // lockstroke) once equipped — outline-vs-fill keeps a Grey-system point distinct
   // from a pending one. The number is text, so identity is never color-only
   // (Principle 9). Stable across deletion + shared within a group (schema seq).
-  const tabSysKey = sp.deployedStrut ? strutSysKey(sp.deployedStrut.model) : null;
+  const tabSysKey = deployedStrut?.model ? strutSysKey(deployedStrut.model) : null;
   const numberTab =
     sp.seq != null ? (
       <span
@@ -220,8 +224,8 @@ export function ShorePointCard({
         {sp.assignedResource ? (
           <span className="fs-spc-assigned">Assigned: {sp.assignedResource}</span>
         ) : null}
-        {sp.deployedStrut ? (
-          <span className="fs-spc-apparatus">{sp.deployedStrut.source}</span>
+        {deployedStrut ? (
+          <span className="fs-spc-apparatus">{deployedStrut.source}</span>
         ) : null}
       </span>
       <span className="fs-spc-meta">
@@ -296,10 +300,12 @@ export function ShorePointCard({
       {detailLine}
       {valueShelf}
 
-      {sp.deployedStrut && (
+      {deployedStrut && (
         <div className="fs-spc-strut">
-          {/* Apparatus moved to the header caption line — model only here now. */}
-          <span className="fs-spc-strut-model">{sp.deployedStrut.model}</span>
+          {/* Apparatus moved to the header caption line — the combined strut +
+              extension identity (bomModelLabel) here now (Phase 3 enriches with the
+              full per-component list + the subtle re-source marker). */}
+          <span className="fs-spc-strut-model">{bomModelLabel(sp)}</span>
         </div>
       )}
 

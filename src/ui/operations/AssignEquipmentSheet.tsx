@@ -3,7 +3,7 @@ import type { ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
-import { pendingReasonFor } from '@core/shorepoint';
+import { assembleBom, pendingReasonFor } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Sheet } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
@@ -14,10 +14,11 @@ import { SHORE_TYPE_LABELS } from './ShorePointCard';
  * Assign Equipment — the Pending card's primary action (#221 step 2). A
  * picker SHEET, not a modal (ADR-016): the board stays visible above while
  * the officer reads RecommendationCards and taps Deploy. Deploy commits
- * StrutDeployed through the store's inventory transaction (pre-flight +
- * decrement-abort-on-zero, S2); on success the sheet dismisses and the board
- * announces the In Process move. Dismissing without deploying changes
- * nothing. Warning-gated cards never dismiss the sheet (#247 state 5).
+ * EquipmentDeployed — the full bill of materials (ADR-033) — through the store's
+ * inventory transaction (pre-flight + per-component decrement-abort-on-zero, S2);
+ * on success the sheet dismisses and the board announces the In Process move.
+ * Dismissing without deploying changes nothing. Warning-gated cards never dismiss
+ * the sheet (#247 state 5).
  */
 export interface AssignEquipmentSheetProps {
   /** The Pending point to equip; null renders closed. The board derives this LIVE by id. */
@@ -59,14 +60,19 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
     setDeploying(true);
     setError(null);
     const model = comboModel(combo);
+    // ADR-033 — deploy the full bill of materials (strut + plates + extensions),
+    // each auto-sourced from its rig; the store decrements every tracked component
+    // atomically. Phase 3 layers the multi-rig confirm + missing-piece chooser on
+    // top of this assembly.
+    const deployedBom = assembleBom(combo, sp.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
     const result = await commit({
-      type: 'StrutDeployed',
+      type: 'EquipmentDeployed',
       id: newId(),
       opId: sp.opId,
       at: Date.now(),
       by: await getUid(),
       spId: sp.id,
-      deployedStrut: { model, source: item.apparatus, inventoryId },
+      deployedBom,
     });
     if (result.ok) {
       commitHaptic();

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ShorePoint, ShorePointStatus, ShorePointPatch, DeployedStrut } from './shorepoint';
+import { ShorePoint, ShorePointStatus, ShorePointPatch, DeployedStrut, DeployedBom } from './shorepoint';
 
 // ADR-009 — the event log is the spine. Every mutation is one immutable, append-
 // only event; current state is a projection (core/operation/projection.ts). The
@@ -102,8 +102,10 @@ export const ShorePointStatusChanged = z.object({
   to: ShorePointStatus,
 });
 
-// Deploy = the atomic pending→process move: records the strut on the point AND
-// decrements that apparatus's available stock. Un-deploy is StrutReturned.
+// LEGACY (pre-ADR-033) — single-strut deploy/un-deploy. Retained as union members
+// so an existing local event log still projects (the reducer maps a legacy
+// StrutDeployed into a one-element deployedBom). The app no longer EMITS these;
+// new deploys write EquipmentDeployed / EquipmentReturned below.
 export const StrutDeployed = z.object({
   type: z.literal('StrutDeployed'),
   ...base,
@@ -117,15 +119,41 @@ export const StrutReturned = z.object({
   spId: z.string(),
 });
 
-// The terminal, inventory-consequential move (#224): Shore Secured → Strut
-// Equipment Returned. Like StrutReturned it restores stock through the same L-8
-// transaction, but it KEEPS deployedStrut on the point (the returned card shows
-// the equipment as history) and the status it lands on is `returned`, not
-// `pending`. Strut-only restore today (mirrors today's deploy footprint); widens
-// to the full bill-of-materials (extensions + connectors + base plates) when the
-// inventory build lands (#330 / ADR-033), symmetric with deploy at one seam.
-// Named `Reclaimed` to leave the `Equipment*` deploy/return names free for that
-// build (ADR-033 renames StrutDeployed/Returned → EquipmentDeployed/Returned).
+// ADR-033 — Deploy = the atomic pending→process move: records the full bill of
+// materials on the point AND decrements EACH component's available stock from its
+// own rig, all inside one transaction (all-or-nothing). Un-deploy is
+// EquipmentReturned (process→pending, restores every component).
+export const EquipmentDeployed = z.object({
+  type: z.literal('EquipmentDeployed'),
+  ...base,
+  spId: z.string(),
+  deployedBom: DeployedBom,
+});
+
+export const EquipmentReturned = z.object({
+  type: z.literal('EquipmentReturned'),
+  ...base,
+  spId: z.string(),
+});
+
+// ADR-033 — re-point ONE already-deployed component to a different rig (or to/from
+// untracked) after deploy, identified by its index in the point's deployedBom. The
+// store restores the old source's unit (if tracked) and consumes the new source's
+// (if tracked) atomically; the reducer swaps that component's source/inventoryId.
+export const ComponentResourced = z.object({
+  type: z.literal('ComponentResourced'),
+  ...base,
+  spId: z.string(),
+  componentIndex: z.number().int().nonnegative(),
+  source: z.string(),
+  inventoryId: z.string().optional(), // absent ⟺ now untracked
+});
+
+// The terminal, inventory-consequential move (#224): Shore Secured → Equipment
+// Returned. Like EquipmentReturned it restores stock through the same L-8
+// transaction (looping every tracked component of the BOM), but it KEEPS
+// deployedBom on the point (the returned card shows the equipment as history) and
+// the status it lands on is `returned`, not `pending`.
 export const EquipmentReclaimed = z.object({
   type: z.literal('EquipmentReclaimed'),
   ...base,
@@ -145,6 +173,9 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   ShorePointStatusChanged,
   StrutDeployed,
   StrutReturned,
+  EquipmentDeployed,
+  EquipmentReturned,
   EquipmentReclaimed,
+  ComponentResourced,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

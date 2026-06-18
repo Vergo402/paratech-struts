@@ -1,5 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { FieldShoreEvent, type InventoryItem } from '@core/schema';
+import { FieldShoreEvent, type DeployedComponentRole, type InventoryItem } from '@core/schema';
 import {
   operationReducer,
   projectOperation,
@@ -37,8 +37,9 @@ export interface OperationStoreApi {
   /**
    * Atomic multi-event commit — a grouped Add Shore Point (#220) lands all N
    * member events as ONE durable batch (all-or-nothing) and one re-render.
-   * Plain-append events only; inventory-consequential events (StrutDeployed /
-   * StrutReturned) need per-event pre-flight guards and commit one at a time.
+   * Plain-append events only; inventory-consequential events (Equipment*
+   * deploy/return/reclaim + ComponentResourced) need per-event pre-flight guards
+   * and commit one at a time.
    */
   commitMany(events: FieldShoreEvent[], opts?: CommitOptions): Promise<CommitResult>;
   /** Rebuild in-memory state from the event log (boot path). */
@@ -48,6 +49,21 @@ export interface OperationStoreApi {
   readArchive(): Promise<ArchivedOperationSummary[]>;
   /** Re-project one operation by id (#238 read-only archive drill-in). */
   readOperation(opId: string): Promise<OperationState>;
+}
+
+// Collapse per-decrement snapshots to ONE mirror update per inventory id (last
+// write wins = the final post-txn value), so a BOM that sources the same row more
+// than once never replays an intermediate snapshot into the in-memory mirror.
+function applyUpdates(inventory: InventoryStoreApi, updates: InventoryItem[]): void {
+  const byId = new Map<string, InventoryItem>();
+  for (const u of updates) byId.set(u.id, u);
+  for (const u of byId.values()) inventory.applyLocal(u);
+}
+
+// The inventory record `type` a deployed component must source from — so a
+// re-source can't point a strut slot at a plate row (ADR-033 decision 7 guard).
+function roleToType(role: DeployedComponentRole): InventoryItem['type'] {
+  return role === 'strut' ? 'strut' : role === 'extension' ? 'extension' : 'plate';
 }
 
 export function createOperationStore(opts?: {
@@ -62,7 +78,22 @@ export function createOperationStore(opts?: {
 
   const store = createStore<OperationState>(() => EMPTY_OPERATION_STATE);
 
-  async function commit(raw: FieldShoreEvent, options?: CommitOptions): Promise<CommitResult> {
+  // Serialize every mutation through one promise chain so each commit's synchronous
+  // pre-flight snapshot (store.getState below) reflects the PRIOR commit's durable
+  // result — two near-simultaneous deploys for one shore point can't both clear the
+  // Pending guard and double-decrement stock (the log/stock divergence the guards
+  // exist to prevent). Single-threaded callers pay nothing.
+  let queue: Promise<unknown> = Promise.resolve();
+  function serialize<T>(run: () => Promise<T>): Promise<T> {
+    const next = queue.then(run);
+    queue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  async function doCommit(raw: FieldShoreEvent, options?: CommitOptions): Promise<CommitResult> {
     // Garbage never enters the log — the schema is the gate (L-5 discipline).
     const parsed = FieldShoreEvent.safeParse(raw);
     if (!parsed.success) {
@@ -70,51 +101,89 @@ export function createOperationStore(opts?: {
     }
     const event = parsed.data;
 
+    // Legacy single-strut events are REPLAY-ONLY: the reducer projects them into a
+    // one-element BOM on boot/projection, but committing one HERE would skip the
+    // inventory transaction (stock/log divergence, ADR-033). The app emits Equipment*
+    // now; reject the legacy literals defensively (mirrors the commitMany guard).
+    if (event.type === 'StrutDeployed' || event.type === 'StrutReturned') {
+      return { ok: false, reason: 'legacy strut event is replay-only and cannot be committed' };
+    }
+
     // Inventory-consequential events get pre-flight guards the reducer alone
     // can't provide: if the reducer would skip the event but stock still moved,
     // log and stock would diverge. Reject up front instead.
     const state = store.getState();
     try {
-      if (event.type === 'StrutDeployed') {
+      if (event.type === 'EquipmentDeployed') {
+        // ADR-033 — atomic BOM deploy: decrement EVERY tracked component from its
+        // own rig inside the one transaction that appends the event. Any component
+        // failing (missing node / none available) aborts the whole deploy — no
+        // event, no partial stock move. Untracked components (no inventoryId) carry
+        // no stock consequence and are skipped.
         const sp = state.shorePoints.find((s) => s.id === event.spId);
         if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
         if (sp.status !== 'pending') return { ok: false, reason: 'deploy requires a Pending shore point' };
-        let updated: InventoryItem | undefined;
+        const updates: InventoryItem[] = [];
         await db.transaction('rw', db.events, db.inventory, async () => {
-          updated = await applyDeployTxn(db, event.deployedStrut.inventoryId);
+          for (const c of event.deployedBom) {
+            if (c.inventoryId === undefined) continue; // untracked
+            updates.push(await applyDeployTxn(db, c.inventoryId));
+          }
           await db.events.add({ ...event }); // clone — Dexie writes the seq key onto the object
         });
-        inventory.applyLocal(updated!);
-      } else if (event.type === 'StrutReturned') {
+        applyUpdates(inventory, updates);
+      } else if (event.type === 'EquipmentReturned' || event.type === 'EquipmentReclaimed') {
+        // Both restore the full BOM through the same L-8 transaction; they differ
+        // only in the required current status and the status the reducer lands on
+        // (return → pending, clears the BOM; reclaim → returned, keeps it as
+        // history, #224). Each tracked component is restored to its own rig.
         const sp = state.shorePoints.find((s) => s.id === event.spId);
         if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
-        if (sp.status !== 'process' || !sp.deployedStrut) {
-          return { ok: false, reason: 'return requires an In-Process shore point with a deployed strut' };
+        const need = event.type === 'EquipmentReturned' ? 'process' : 'secured';
+        if (sp.status !== need || !sp.deployedBom) {
+          const label = need === 'process' ? 'In-Process' : 'Shore Secured';
+          return { ok: false, reason: `return requires a ${label} shore point with deployed equipment` };
         }
-        const inventoryId = sp.deployedStrut.inventoryId; // L-8 ID round-trip
-        let updated: InventoryItem | undefined;
+        const bom = sp.deployedBom;
+        const updates: InventoryItem[] = [];
         await db.transaction('rw', db.events, db.inventory, async () => {
-          updated = await applyReturnTxn(db, inventoryId);
+          for (const c of bom) {
+            if (c.inventoryId === undefined) continue; // untracked — nothing to restore
+            updates.push(await applyReturnTxn(db, c.inventoryId));
+          }
           await db.events.add({ ...event });
         });
-        inventory.applyLocal(updated!);
-      } else if (event.type === 'EquipmentReclaimed') {
-        // Terminal return (#224): secured → returned. Same L-8 transaction as
-        // StrutReturned, but the point stays `returned` (the reducer keeps the
-        // strut as history). Strut-only restore today; widens to the full
-        // bill-of-materials when the inventory build lands (#330 / ADR-033).
+        applyUpdates(inventory, updates);
+      } else if (event.type === 'ComponentResourced') {
+        // ADR-033 (decision 7) — re-point one deployed component: restore the old
+        // rig's unit (if tracked) and consume the new rig's (if tracked) atomically.
+        // Net-zero when the source row is unchanged — skip both ops, just log.
         const sp = state.shorePoints.find((s) => s.id === event.spId);
         if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
-        if (sp.status !== 'secured' || !sp.deployedStrut) {
-          return { ok: false, reason: 'return requires a Shore Secured shore point with a deployed strut' };
-        }
-        const inventoryId = sp.deployedStrut.inventoryId; // L-8 ID round-trip
-        let updated: InventoryItem | undefined;
+        if (!sp.deployedBom) return { ok: false, reason: 're-source requires a deployed shore point' };
+        // Returned points keep their BOM as history (#224) but are no longer held —
+        // re-sourcing one would move stock against an already-reclaimed assembly.
+        if (sp.status === 'returned') return { ok: false, reason: 'cannot re-source returned equipment' };
+        const old = sp.deployedBom[event.componentIndex];
+        if (!old) return { ok: false, reason: `no component at index ${event.componentIndex}` };
+        const updates: InventoryItem[] = [];
         await db.transaction('rw', db.events, db.inventory, async () => {
-          updated = await applyReturnTxn(db, inventoryId);
+          if (old.inventoryId !== event.inventoryId) {
+            // Kind guard: the new row must match the component's role (no strut slot
+            // re-pointed at a plate row). Throw to abort — no stock move, no event.
+            if (event.inventoryId !== undefined) {
+              const newRow = await db.inventory.get(event.inventoryId);
+              if (!newRow) throw new Error(`inventory item ${event.inventoryId} not found (L-8 abort)`);
+              if (newRow.type !== roleToType(old.role)) {
+                throw new Error(`re-source kind mismatch: ${old.role} cannot source from a ${newRow.type} row`);
+              }
+            }
+            if (old.inventoryId !== undefined) updates.push(await applyReturnTxn(db, old.inventoryId));
+            if (event.inventoryId !== undefined) updates.push(await applyDeployTxn(db, event.inventoryId));
+          }
           await db.events.add({ ...event });
         });
-        inventory.applyLocal(updated!);
+        applyUpdates(inventory, updates);
       } else if (event.type === 'OperationReopened') {
         // ADR-036 — un-archive a finished incident. Pre-flight: one active op at a
         // time, so reject if the board already holds one (the UI only offers this
@@ -149,7 +218,7 @@ export function createOperationStore(opts?: {
     return { ok: true };
   }
 
-  async function commitMany(raws: FieldShoreEvent[], options?: CommitOptions): Promise<CommitResult> {
+  async function doCommitMany(raws: FieldShoreEvent[], options?: CommitOptions): Promise<CommitResult> {
     if (raws.length === 0) return { ok: false, reason: 'empty batch' };
 
     // Validate the WHOLE batch before any write — garbage never enters the log.
@@ -162,7 +231,10 @@ export function createOperationStore(opts?: {
       if (
         parsed.data.type === 'StrutDeployed' ||
         parsed.data.type === 'StrutReturned' ||
-        parsed.data.type === 'EquipmentReclaimed'
+        parsed.data.type === 'EquipmentDeployed' ||
+        parsed.data.type === 'EquipmentReturned' ||
+        parsed.data.type === 'EquipmentReclaimed' ||
+        parsed.data.type === 'ComponentResourced'
       ) {
         return { ok: false, reason: 'inventory-consequential events commit one at a time' };
       }
@@ -189,8 +261,8 @@ export function createOperationStore(opts?: {
 
   return {
     store,
-    commit,
-    commitMany,
+    commit: (raw: FieldShoreEvent, options?: CommitOptions) => serialize(() => doCommit(raw, options)),
+    commitMany: (raws: FieldShoreEvent[], options?: CommitOptions) => serialize(() => doCommitMany(raws, options)),
     async boot() {
       // toArray() returns primary-key (seq) order — true local append order.
       const rows = await db.events.toArray();

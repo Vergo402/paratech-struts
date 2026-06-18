@@ -3,3 +3,4 @@
 export * from './status';
 export * from './reducer';
 export * from './pendingReason';
+export * from './bom';

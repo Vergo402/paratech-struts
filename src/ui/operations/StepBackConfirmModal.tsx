@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ShorePoint } from '@core/schema';
+import { deployedStrutOf } from '@core/shorepoint';
 import { newId } from '@core/id';
 import { Button, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -9,8 +10,8 @@ import { useCommit, useDeviceUid } from '@ui/hooks';
  * Step-back confirm (#221 step 3-R) — un-deploying a strut RETURNS inventory,
  * so unlike every other lifecycle reversal it earns the destructive modal
  * gate (ADR-010/ADR-016: the only reversal that confirms is one that mutates
- * inventory). Confirm commits StrutReturned: the store transaction restores
- * the stock count and the reducer reverts the point to Pending.
+ * inventory). Confirm commits EquipmentReturned: the store transaction restores
+ * each component's stock count and the reducer reverts the point to Pending.
  */
 export interface StepBackConfirmModalProps {
   /** The In Process point to un-deploy; null renders nothing (closed). */
@@ -46,7 +47,7 @@ export function StepBackConfirmModal({ shorePoint, groupMembers, onClose, onRetu
     let lastReason: string | null = null;
     for (const m of members) {
       const result = await commit({
-        type: 'StrutReturned',
+        type: 'EquipmentReturned',
         id: newId(),
         opId: m.opId,
         at: Date.now(),
@@ -70,8 +71,8 @@ export function StepBackConfirmModal({ shorePoint, groupMembers, onClose, onRetu
     onClose();
   }
 
-  const model = shorePoint?.deployedStrut?.model ?? 'strut';
-  const source = shorePoint?.deployedStrut?.source;
+  const model = (shorePoint ? deployedStrutOf(shorePoint)?.model : undefined) ?? 'strut';
+  const source = shorePoint ? deployedStrutOf(shorePoint)?.source : undefined;
 
   return (
     <Modal

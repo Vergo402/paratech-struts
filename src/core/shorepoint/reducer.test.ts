@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent } from '../schema';
+import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent, type DeployedBom } from '../schema';
 import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom, deductionTotalInches } from './reducer';
+import { deployedStrutOf } from './bom';
 import { canTransition } from './status';
 
 function sp(over: Partial<ShorePoint> = {}): ShorePoint {
@@ -111,8 +112,11 @@ describe('L-7 — single-SP status transitions', () => {
 
 describe('deploy / return — the inventory-consequential boundary', () => {
   const deployed = { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' };
+  // ADR-033 — the strut member a legacy deploy projects to.
+  const deployedComponent = { role: 'strut' as const, ...deployed };
 
-  it('deploy moves Pending → In Process and records the strut identity', () => {
+  // --- LEGACY-projection coverage (StrutDeployed / StrutReturned, replay only) ---
+  it('LEGACY deploy moves Pending → In Process and projects the strut into a one-element BOM', () => {
     const next = shorePointReducer(sp({ status: 'pending' }), {
       type: 'StrutDeployed',
       ...meta,
@@ -120,10 +124,10 @@ describe('deploy / return — the inventory-consequential boundary', () => {
       deployedStrut: deployed,
     } satisfies FieldShoreEvent);
     expect(next.status).toBe('process');
-    expect(next.deployedStrut).toEqual(deployed);
+    expect(deployedStrutOf(next)).toEqual(deployedComponent);
   });
 
-  it('deploy is rejected if the point is not Pending', () => {
+  it('LEGACY deploy is rejected if the point is not Pending', () => {
     const point = sp({ status: 'strutset' });
     const next = shorePointReducer(point, {
       type: 'StrutDeployed',
@@ -134,29 +138,121 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next).toBe(point);
   });
 
-  it('return (step-back) moves In Process → Pending and clears the strut', () => {
-    const point = sp({ status: 'process', deployedStrut: deployed });
+  it('LEGACY return (step-back) moves In Process → Pending and clears the BOM', () => {
+    const point = sp({ status: 'process', deployedBom: [deployedComponent] });
     const next = shorePointReducer(point, { type: 'StrutReturned', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next.status).toBe('pending');
-    expect(next.deployedStrut).toBeUndefined();
+    expect(next.deployedBom).toBeUndefined();
   });
 
-  it('EquipmentReclaimed (#224) moves Shore Secured → Returned and KEEPS the strut as history', () => {
-    const point = sp({ status: 'secured', deployedStrut: deployed });
+  // --- ADR-033 BOM events ---
+  const bom: DeployedBom = [
+    { role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv1' },
+    { role: 'top-plate', plateId: 'threadedconn', source: 'Rescue 2', inventoryId: 'inv2' },
+    { role: 'extension', length: 18, source: 'Engine 1', inventoryId: 'inv3' },
+  ];
+
+  it('EquipmentDeployed moves Pending → In Process and records the full BOM', () => {
+    const next = shorePointReducer(sp({ status: 'pending' }), {
+      type: 'EquipmentDeployed',
+      ...meta,
+      spId: 'sp1',
+      deployedBom: bom,
+    } satisfies FieldShoreEvent);
+    expect(next.status).toBe('process');
+    expect(next.deployedBom).toEqual(bom);
+  });
+
+  it('EquipmentDeployed is rejected if the point is not Pending', () => {
+    const point = sp({ status: 'strutset' });
+    const next = shorePointReducer(point, {
+      type: 'EquipmentDeployed',
+      ...meta,
+      spId: 'sp1',
+      deployedBom: bom,
+    } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
+  it('EquipmentReturned moves In Process → Pending and clears the BOM', () => {
+    const point = sp({ status: 'process', deployedBom: bom });
+    const next = shorePointReducer(point, { type: 'EquipmentReturned', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
+    expect(next.status).toBe('pending');
+    expect(next.deployedBom).toBeUndefined();
+  });
+
+  it('EquipmentReclaimed (#224) moves Shore Secured → Returned and KEEPS the BOM as history', () => {
+    const point = sp({ status: 'secured', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next.status).toBe('returned');
-    expect(next.deployedStrut).toEqual(deployed); // retained, NOT cleared
+    expect(next.deployedBom).toEqual(bom); // retained, NOT cleared
   });
 
   it('EquipmentReclaimed is rejected if the point is not Shore Secured', () => {
-    const point = sp({ status: 'runner', deployedStrut: deployed });
+    const point = sp({ status: 'runner', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
     expect(next).toBe(point);
   });
 
   it('EquipmentReclaimed ignores an event for another shore point', () => {
-    const point = sp({ status: 'secured', deployedStrut: deployed });
+    const point = sp({ status: 'secured', deployedBom: bom });
     const next = shorePointReducer(point, { type: 'EquipmentReclaimed', ...meta, spId: 'other' } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
+  it('ComponentResourced re-points one component to a new rig (source + inventoryId) without changing status', () => {
+    const point = sp({ status: 'process', deployedBom: bom });
+    const next = shorePointReducer(point, {
+      type: 'ComponentResourced',
+      ...meta,
+      spId: 'sp1',
+      componentIndex: 1,
+      source: 'Ladder 3',
+      inventoryId: 'inv9',
+    } satisfies FieldShoreEvent);
+    expect(next.status).toBe('process'); // unchanged
+    expect(next.deployedBom?.[1]).toEqual({ role: 'top-plate', plateId: 'threadedconn', source: 'Ladder 3', inventoryId: 'inv9' });
+    expect(next.deployedBom?.[0]).toEqual(bom[0]); // other slots untouched
+    expect(next.deployedBom?.[2]).toEqual(bom[2]);
+  });
+
+  it('ComponentResourced dropping inventoryId makes the component untracked', () => {
+    const point = sp({ status: 'process', deployedBom: bom });
+    const next = shorePointReducer(point, {
+      type: 'ComponentResourced',
+      ...meta,
+      spId: 'sp1',
+      componentIndex: 1,
+      source: 'untracked',
+    } satisfies FieldShoreEvent);
+    expect(next.status).toBe('process'); // unchanged
+    expect(next.deployedBom?.[1]).toEqual({ role: 'top-plate', plateId: 'threadedconn', source: 'untracked' });
+    expect('inventoryId' in (next.deployedBom?.[1] ?? {})).toBe(false);
+  });
+
+  it('ComponentResourced is a no-op for another shore point', () => {
+    const point = sp({ status: 'process', deployedBom: bom });
+    const next = shorePointReducer(point, {
+      type: 'ComponentResourced',
+      ...meta,
+      spId: 'other',
+      componentIndex: 1,
+      source: 'Ladder 3',
+      inventoryId: 'inv9',
+    } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
+  it('ComponentResourced is a no-op when the point has no deployed BOM (illegal state)', () => {
+    const point = sp({ status: 'pending' });
+    const next = shorePointReducer(point, {
+      type: 'ComponentResourced',
+      ...meta,
+      spId: 'sp1',
+      componentIndex: 0,
+      source: 'Ladder 3',
+      inventoryId: 'inv9',
+    } satisfies FieldShoreEvent);
     expect(next).toBe(point);
   });
 });
