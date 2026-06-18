@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { Slider, shouldCommit } from './Slider';
+import { Slider, shouldCommit, buttonLabelFrom } from './Slider';
 import { cancelSlide, dragSlide, slideToCommit } from './Slider.testkit';
 
 // jsdom has no PointerEvent; MouseEvent carries clientX (which the handlers read).
@@ -172,5 +172,77 @@ describe('Slider', () => {
   it('the reason line is gate-only — never rendered while enabled', () => {
     render(<Slider label="Slide to set Runner" onCommit={vi.fn()} disabledReason="not yet" />);
     expect(screen.queryByText('not yet')).toBeNull();
+  });
+});
+
+describe('buttonLabelFrom (the mouse-branch label transform)', () => {
+  it('strips the slide prefix and capitalizes — all current call-site labels', () => {
+    expect(buttonLabelFrom('Slide to set Strut Set')).toBe('Set Strut Set');
+    expect(buttonLabelFrom('Slide to set Cutting')).toBe('Set Cutting');
+    expect(buttonLabelFrom('Slide to send to Runner')).toBe('Send to Runner');
+    expect(buttonLabelFrom('Slide to mark Cut Done')).toBe('Mark Cut Done');
+    expect(buttonLabelFrom('Slide to set Shore Secured')).toBe('Set Shore Secured');
+    expect(buttonLabelFrom('Slide back to Pending')).toBe('Back to Pending');
+    expect(buttonLabelFrom('Slide back to In Process')).toBe('Back to In Process');
+    expect(buttonLabelFrom('Slide back to Strut Set')).toBe('Back to Strut Set');
+    expect(buttonLabelFrom('Slide back to Cutting')).toBe('Back to Cutting');
+    expect(buttonLabelFrom('Slide back — clear Cut Done')).toBe('Clear Cut Done');
+  });
+});
+
+// On a MOUSE (ADR-034) the slide swaps for a tap-once button. jsdom has no
+// matchMedia, so the slide-branch tests above keep the slide path; here we stub
+// it to assert the pointer-device branch. The afterEach removes the stub so the
+// stub never leaks into another file's no-matchMedia assumption.
+describe('Slider — mouse branch (ADR-034: button instead of slide on a pointer device)', () => {
+  const mockMouse = () => {
+    window.matchMedia = ((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = undefined as unknown as typeof window.matchMedia;
+  });
+
+  it('renders a tap-once button (no slide track) and commits on a single click', () => {
+    mockMouse();
+    const onCommit = vi.fn();
+    const { container } = render(<Slider label="Slide to set Shore Secured" onCommit={onCommit} />);
+    expect(container.querySelector('.fs-slide-track')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Set Shore Secured' }));
+    expect(onCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it('advance → primary button, step-back → secondary button', () => {
+    mockMouse();
+    const { rerender } = render(<Slider label="Slide to set Cutting" onCommit={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Set Cutting' })).toHaveClass('fs-button--primary');
+    rerender(<Slider label="Slide back to Cutting" direction="stepback" onCommit={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Back to Cutting' })).toHaveClass('fs-button--secondary');
+  });
+
+  it('disabled: the button is inert and still shows the gate reason', () => {
+    mockMouse();
+    const onCommit = vi.fn();
+    render(
+      <Slider
+        label="Slide to set Strut Set"
+        onCommit={onCommit}
+        disabled
+        disabledReason="Waiting on group — 1 of 3 still Pending"
+      />,
+    );
+    const btn = screen.getByRole('button', { name: 'Set Strut Set' });
+    expect(btn).toBeDisabled();
+    fireEvent.click(btn);
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(screen.getByText('Waiting on group — 1 of 3 still Pending')).toBeInTheDocument();
   });
 });

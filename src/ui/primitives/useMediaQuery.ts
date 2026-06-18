@@ -41,3 +41,17 @@ export function useMediaQuery(query: string, fallback = false): boolean {
 export function useIsDesktop(): boolean {
   return useMediaQuery('(min-width: 768px)');
 }
+
+/**
+ * useHasMouse — true when the PRIMARY input is a mouse/trackpad (a fine pointer
+ * that can hover): desktops and laptops. False on every touchscreen — phones AND
+ * field tablets, regardless of screen width — because the status-commit slide's
+ * wet-glove ghost-tap defense (ADR-026) must stay wherever a finger is the input.
+ * On a mouse the slide is just clumsy and the ghost-tap risk is gone, so the
+ * commit swaps to a tap-once button (ADR-034). Width is deliberately NOT used:
+ * the problem is the pointer, not the screen size. Default = no mouse (false) so
+ * the test/SSR env keeps the slide branch.
+ */
+export function useHasMouse(): boolean {
+  return useMediaQuery('(hover: hover) and (pointer: fine)');
+}

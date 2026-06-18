@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { commitHaptic } from './haptics';
+import { Button } from './Button';
+import { useHasMouse } from './useMediaQuery';
 
 /**
  * Slider — slide-to-commit (slider.md / ADR-010). Commits ONE discrete
@@ -11,10 +13,14 @@ import { commitHaptic } from './haptics';
  * nothing and the threshold defense holds. Advance slides
  * rightward; step-back mirrors leftward and reads as secondary. Always
  * reversible from the card — reversal is a normal slide, not a special
- * animation. The slide gesture is the ONLY commit path (ADR-026, the Phase H
- * KB-5 ruling): no button twin, no hidden AT/keyboard equivalent — a
- * deliberate accessibility exception, recorded with its trade-offs. When
- * disabled, the gate reason renders as a visible line under the track.
+ * animation. On TOUCH the slide gesture is the ONLY commit path (ADR-026, the
+ * Phase H KB-5 ruling): no button twin, no hidden AT/keyboard equivalent — a
+ * deliberate accessibility exception, recorded with its trade-offs. On a MOUSE
+ * (desktop/laptop — useHasMouse) the slide swaps for a single tap-once button
+ * INSTEAD of the track (ADR-034): a precise drag-past-threshold is clumsy with a
+ * pointer and the wet-glove ghost-tap risk the slide defends against is gone, so
+ * the button is the right control there — not a twin, the slide is absent. When
+ * disabled, the gate reason renders as a visible line under the track/button.
  */
 export interface SliderProps {
   /** The full next step in words — "Slide to set Runner". Never truncated. */
@@ -35,6 +41,22 @@ export function shouldCommit(offsetPx: number, trackPx: number, threshold = 0.6)
   return offsetPx / trackPx >= threshold;
 }
 
+/**
+ * The mouse-branch button label, derived from the slide label so all call sites
+ * stay single-labelled: "Slide to set Shore Secured" → "Set Shore Secured",
+ * "Slide back to Cutting" → "Back to Cutting", "Slide back — clear Cut Done" →
+ * "Clear Cut Done".
+ * ponytail: prefix-strip — labels MUST keep the "Slide to…/Slide back…"
+ * convention; add an explicit prop if a label ever diverges.
+ */
+export function buttonLabelFrom(label: string): string {
+  const s = label
+    .replace(/^Slide to /, '')
+    .replace(/^Slide back to /, 'Back to ')
+    .replace(/^Slide back — /, '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 export function Slider({
   label,
   direction = 'advance',
@@ -43,6 +65,7 @@ export function Slider({
   disabledReason,
   revealColor,
 }: SliderProps) {
+  const hasMouse = useHasMouse();
   const trackRef = useRef<HTMLDivElement>(null);
   const thumbRef = useRef<HTMLButtonElement>(null);
   const drag = useRef<{ pointerId: number; startX: number; travelPx: number } | null>(null);
@@ -110,6 +133,27 @@ export function Slider({
     setDragging(false);
     setOffset(0);
   };
+
+  // Mouse branch (ADR-034): the slide swaps for a single tap-once button INSTEAD
+  // of the drag track — primary on advance, secondary on the quieter step-back.
+  // The Button carries its own disabled + disabledReason; no track, no haptic
+  // (haptics are a touch affordance). Wrapped in .fs-slide so it sits in the
+  // same column slot as a slide would.
+  if (hasMouse) {
+    return (
+      <div className={`fs-slide fs-slide--${direction}`}>
+        <Button
+          variant={direction === 'advance' ? 'primary' : 'secondary'}
+          fullWidth
+          disabled={disabled}
+          disabledReason={disabledReason}
+          onPress={onCommit}
+        >
+          {buttonLabelFrom(label)}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className={`fs-slide fs-slide--${direction}${disabled ? ' fs-slide--disabled' : ''}`}>

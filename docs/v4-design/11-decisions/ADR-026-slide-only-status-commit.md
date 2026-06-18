@@ -9,6 +9,8 @@
 **Author:** Claude (Phase H fix session S8) — recording Alex's ruling
 **Reviewer(s):** Alex (ruled 2026-06-10 on #248; locked 2026-06-11)
 
+> **Scope note (2026-06-17, [ADR-035](ADR-035-mouse-status-commit-button.md)):** this ruling governs the **touch** posture (the surface its rationale was built on — wet-glove ghost-taps). On a **mouse** device, where that risk does not exist and the drag is merely clumsy, the slide swaps for a single tap-once button *instead of* the track (not a twin — the slide is absent). The "no button twin" rule below stands in full for touch.
+
 ---
 
 ## Context
