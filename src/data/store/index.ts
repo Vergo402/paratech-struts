@@ -15,7 +15,16 @@ export {
   createInventoryStore,
   type InventoryStoreApi,
   type InventoryState,
+  type AddSpec,
+  type ImportResult,
 } from './inventoryStore';
+export {
+  apparatusStore,
+  createApparatusStore,
+  APPARATUS_ROSTER_KEY,
+  type ApparatusStoreApi,
+  type ApparatusState,
+} from './apparatusStore';
 export {
   sessionStore,
   createSessionStore,
@@ -32,5 +41,5 @@ export {
   type OnboardingState,
   type OnboardingStatus,
 } from './onboardingStore';
-export { buildSeedInventory, seedIfEmpty } from './seed';
+export { buildSeedInventory, seedIfEmpty, seedApparatusRoster } from './seed';
 export { bootData, type BootResult } from './boot';

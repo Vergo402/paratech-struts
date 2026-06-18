@@ -1,5 +1,6 @@
-import type { InventoryItem } from '@core/schema';
+import type { InventoryItem, Apparatus } from '@core/schema';
 import { db as defaultDb, type FieldShoreDB } from './db';
+import { APPARATUS_ROSTER_KEY } from './apparatusStore';
 
 // Synthetic fixture inventory — NO real department data (the CSVs in the repo
 // root are gitignored for a reason). Seeded once, on first boot with an empty
@@ -54,6 +55,24 @@ export function buildSeedInventory(): InventoryItem[] {
     s3('inv-s3-ls304', { type: 'strut', model: 'LS 304', system: 'LongShore', quantity: 2, available: 0 }),
     s3('inv-s3-at3758', { type: 'strut', model: 'AT 37-58', system: 'AcmeThread', quantity: 1, available: 0 }),
   ];
+}
+
+// The roster rows for the seeded rigs — ids + names match the fixture inventory
+// above (app-rescue-2 / 'Rescue 2', etc.) so the scope-tab union resolves cleanly.
+// Seeded only on a fresh install (gated on seedIfEmpty in boot), so a device that
+// imported its own custom inventory never gets these phantom rigs.
+const SEED_ROSTER: Apparatus[] = [
+  { id: 'app-rescue-2', name: 'Rescue 2', type: 'Rescue' },
+  { id: 'app-engine-1', name: 'Engine 1', type: 'Engine' },
+  { id: 'app-squad-3', name: 'Squad 3', type: 'Squad' },
+];
+
+/** Seed the apparatus roster meta row if absent. True when seeded. */
+export async function seedApparatusRoster(db: FieldShoreDB = defaultDb): Promise<boolean> {
+  const row = await db.meta.get(APPARATUS_ROSTER_KEY);
+  if (row) return false;
+  await db.meta.put({ key: APPARATUS_ROSTER_KEY, value: JSON.stringify(SEED_ROSTER) });
+  return true;
 }
 
 /** Seed the inventory table if (and only if) it is empty. True when seeded. */

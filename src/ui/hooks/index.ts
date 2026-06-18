@@ -4,6 +4,8 @@
 export { useOperation } from './useOperation';
 export { useShorePoints } from './useShorePoints';
 export { useInventory } from './useInventory';
+export { useApparatus, type ApparatusApi } from './useApparatus';
+export { useInventoryActions, type InventoryActionsApi, type ImportOutcome } from './useInventoryActions';
 export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';

@@ -1,7 +1,8 @@
 import { db } from './db';
 import { getDeviceUid } from './auth';
-import { seedIfEmpty } from './seed';
+import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { inventoryStore } from './inventoryStore';
+import { apparatusStore } from './apparatusStore';
 import { operationStore } from './operationStore';
 import { sessionStore, type Identity } from './session';
 import { onboardingStore } from './onboardingStore';
@@ -23,7 +24,12 @@ export interface BootResult {
 export async function bootData(): Promise<BootResult> {
   const uid = await getDeviceUid(db);
   const seeded = await seedIfEmpty(db);
+  // Unconditional + idempotent (no-ops once the roster row exists): also backfills the
+  // roster on an upgrade from a build that seeded inventory before the roster store —
+  // safe because pre-Inventory-block the only stock was ever the fixture, whose ids match.
+  await seedApparatusRoster(db);
   await inventoryStore.boot();
+  await apparatusStore.boot();
   await operationStore.boot();
   await sessionStore.boot(uid); // after getDeviceUid — reuses the minted uid
   await onboardingStore.boot();
