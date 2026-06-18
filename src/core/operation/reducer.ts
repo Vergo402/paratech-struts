@@ -88,6 +88,12 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       if (!state.operation) return state;
       return { ...state, operation: { ...state.operation, status: 'ended' } };
 
+    case 'OperationReopened':
+      // ADR-036 — un-archive. Folded per-op (projectOperationById/projectArchive),
+      // the op's OperationEnded comes first then this, so the final status is active.
+      if (!state.operation) return state;
+      return { ...state, operation: { ...state.operation, status: 'active' } };
+
     case 'DivisionAdded': {
       // Idempotent: concurrent "add floor above" from two devices converges.
       if (!state.operation) return state;

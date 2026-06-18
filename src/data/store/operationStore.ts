@@ -3,8 +3,11 @@ import { FieldShoreEvent, type InventoryItem } from '@core/schema';
 import {
   operationReducer,
   projectOperation,
+  projectOperationById,
+  projectArchive,
   EMPTY_OPERATION_STATE,
   type OperationState,
+  type ArchivedOperationSummary,
 } from '@core/operation';
 import { db as defaultDb, type FieldShoreDB } from './db';
 import { inventoryStore as defaultInventory, type InventoryStoreApi, applyDeployTxn, applyReturnTxn } from './inventoryStore';
@@ -40,6 +43,11 @@ export interface OperationStoreApi {
   commitMany(events: FieldShoreEvent[], opts?: CommitOptions): Promise<CommitResult>;
   /** Rebuild in-memory state from the event log (boot path). */
   boot(): Promise<void>;
+  /** Finished-incident summaries, newest-ended first (#238 Past-operations list).
+   *  A cold-path read over the retained log — never the hot in-memory state. */
+  readArchive(): Promise<ArchivedOperationSummary[]>;
+  /** Re-project one operation by id (#238 read-only archive drill-in). */
+  readOperation(opId: string): Promise<OperationState>;
 }
 
 export function createOperationStore(opts?: {
@@ -107,6 +115,12 @@ export function createOperationStore(opts?: {
           await db.events.add({ ...event });
         });
         inventory.applyLocal(updated!);
+      } else if (event.type === 'OperationReopened') {
+        // ADR-036 — un-archive a finished incident. Pre-flight: one active op at a
+        // time, so reject if the board already holds one (the UI only offers this
+        // from the empty state; this is defense-in-depth). Plain append otherwise.
+        if (state.operation) return { ok: false, reason: 'an operation is already active' };
+        await db.events.add({ ...event });
       } else {
         // Plain append — the reducers already no-op illegal/stale events
         // deterministically, so projection can never crash on a logged event.
@@ -118,8 +132,18 @@ export function createOperationStore(opts?: {
       return { ok: false, reason: err instanceof Error ? err.message : String(err) };
     }
 
-    // Durable write landed — now (and only now) the UI may see it (L-4).
-    store.setState(operationReducer(store.getState(), event), true);
+    // Durable write landed — now (and only now) the UI may see it (L-4). The three
+    // lifecycle-boundary events re-derive from the full log (re-scopes the active op
+    // to one incident; lets re-open rebuild a prior op's points the incremental
+    // reducer can't); every other event keeps the incremental hot path.
+    const lifecycle =
+      event.type === 'OperationCreated' ||
+      event.type === 'OperationEnded' ||
+      event.type === 'OperationReopened';
+    store.setState(
+      lifecycle ? projectOperation(await db.events.toArray()) : operationReducer(store.getState(), event),
+      true,
+    );
 
     if (!options?.fromRemote) enqueue(event);
     return { ok: true };
@@ -171,6 +195,12 @@ export function createOperationStore(opts?: {
       // toArray() returns primary-key (seq) order — true local append order.
       const rows = await db.events.toArray();
       store.setState(projectOperation(rows), true);
+    },
+    async readArchive() {
+      return projectArchive(await db.events.toArray());
+    },
+    async readOperation(opId: string) {
+      return projectOperationById(await db.events.toArray(), opId);
     },
   };
 }

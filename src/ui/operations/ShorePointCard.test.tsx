@@ -302,6 +302,41 @@ describe('ShorePointCard', () => {
     expect(onStepBack).toHaveBeenCalledWith(sp);
   });
 
+  it('readOnly (#238 archive): suppresses every interactive affordance, keeps the content', () => {
+    // A deployed process card with slides + the apparatus + the value shelf.
+    const { rerender } = render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          label: 'B-2',
+          deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' },
+        })}
+        readOnly
+      />,
+    );
+    // No slides, no stripe button.
+    expect(screen.queryByText('Slide to set Strut Set')).not.toBeInTheDocument();
+    expect(screen.queryByText('Slide back to Pending')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Assign equipment' })).toBeNull();
+    // Presentational content stays.
+    expect(screen.getByText('B-2 · T-Shore')).toBeInTheDocument();
+    expect(screen.getByText('LS 203')).toBeInTheDocument();
+
+    // Pending readOnly: no Assign button / Edit / Delete.
+    rerender(<ShorePointCard shorePoint={makeSP({ status: 'pending' })} readOnly />);
+    expect(screen.queryByRole('button', { name: 'Assign Equipment' })).toBeNull();
+
+    // Secured readOnly: no Remove & Return button, no step-back slide.
+    rerender(
+      <ShorePointCard
+        shorePoint={makeSP({ status: 'secured', deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' } })}
+        readOnly
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull();
+    expect(screen.queryByText('Slide back to Runner')).not.toBeInTheDocument();
+  });
+
   it('process: the group gate disables advance with its visible reason; step-back stays live', async () => {
     const onAdvance = vi.fn();
     const onStepBack = vi.fn();

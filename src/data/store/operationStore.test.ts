@@ -312,4 +312,37 @@ describe('operationStore.commit', () => {
       expect(getSp('sp-1')!.status).toBe('secured'); // unchanged
     });
   });
+
+  describe('end / re-open lifecycle (ADR-036)', () => {
+    const ended = (opId: string): FieldShoreEvent => ({ type: 'OperationEnded', id: newId(), opId, at: 1, by: 'device-test' });
+    const reopened = (opId: string): FieldShoreEvent => ({ type: 'OperationReopened', id: newId(), opId, at: 1, by: 'device-test' });
+
+    it('ending the active op clears it, and in-memory state still equals the log projection', async () => {
+      expect((await ops.commit(ended(OP))).ok).toBe(true);
+      expect(ops.store.getState().operation).toBeNull(); // active-op scoping → empty state
+      expect(projectOperation(await db.events.toArray())).toEqual(ops.store.getState());
+    });
+
+    it('a fresh op after ending does NOT inherit the prior op’s shore points (the re-projection fix)', async () => {
+      await ops.commit(ended(OP));
+      const OP2 = 'op-2';
+      await ops.commit({ type: 'OperationCreated', id: newId(), opId: OP2, at: 1, by: 'device-test', name: 'Second', multiBuilding: false });
+      expect(ops.store.getState().operation!.id).toBe(OP2);
+      expect(ops.store.getState().shorePoints).toHaveLength(0); // not sp-1, sp-2
+    });
+
+    it('re-open rebuilds the ended op with its points intact', async () => {
+      await ops.commit(ended(OP));
+      expect((await ops.commit(reopened(OP))).ok).toBe(true);
+      expect(ops.store.getState().operation!.id).toBe(OP);
+      expect(ops.store.getState().operation!.status).toBe('active');
+      expect(ops.store.getState().shorePoints.map((s) => s.id).sort()).toEqual(['sp-1', 'sp-2']);
+    });
+
+    it('rejects re-open while an operation is already active (one active op at a time)', async () => {
+      const res = await ops.commit(reopened(OP)); // OP is still active
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: 'an operation is already active' });
+    });
+  });
 });

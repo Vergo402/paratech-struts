@@ -130,6 +130,14 @@ export interface ShorePointCardProps {
   active?: boolean;
   /** Small explanatory caption under the controls (design-system `caption`). */
   caption?: string;
+  /**
+   * Frozen archive view (#238) — suppress EVERY interactive affordance (the stripe
+   * button, the expand head, all slides, the Cutting-Station controls, the secured
+   * Remove&Return button), keeping only presentational content. A re-opened or
+   * active op is driven from the board; the read-only drill-in renders the same
+   * card statically.
+   */
+  readOnly?: boolean;
 }
 
 export function ShorePointCard({
@@ -148,8 +156,12 @@ export function ShorePointCard({
   hazard = false,
   active = false,
   caption,
+  readOnly = false,
 }: ShorePointCardProps) {
   const [expanded, setExpanded] = useState(false);
+  // readOnly (#238 archive) collapses to the presentational case everywhere an
+  // interactive region branches on `pending` / status — one gate, no per-region edits.
+  const interactive = !readOnly;
   const pending = sp.status === 'pending';
   const promoted = sp.status === 'cutting';
   const waiting = pending && !!sp.pendingReason;
@@ -255,7 +267,7 @@ export function ShorePointCard({
     <Card
       className={`fs-spc ${statusClasses(sp)}${removed ? ' is-removed' : ''}${active ? ' is-active' : ''}`}
       edge={
-        pending && !removed ? (
+        interactive && pending && !removed ? (
           <button
             type="button"
             className="fs-spc-stripe"
@@ -268,7 +280,7 @@ export function ShorePointCard({
       }
     >
       {numberTab}
-      {pending && !removed ? (
+      {interactive && pending && !removed ? (
         <button
           type="button"
           className="fs-spc-head"
@@ -299,7 +311,7 @@ export function ShorePointCard({
         <p className="fs-spc-returned">✓ Equipment returned</p>
       )}
 
-      {pending && !removed && (
+      {interactive && pending && !removed && (
         <div className="fs-spc-pending">
           <p className="fs-spc-noequip">No equipment assigned</p>
           {sp.pendingReason && (
@@ -329,7 +341,7 @@ export function ShorePointCard({
         </div>
       )}
 
-      {!removed && sp.status === 'process' && (
+      {interactive && !removed && sp.status === 'process' && (
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Strut Set"
@@ -347,7 +359,7 @@ export function ShorePointCard({
         </div>
       )}
 
-      {!removed && sp.status === 'strutset' && (
+      {interactive && !removed && sp.status === 'strutset' && (
         <div className="fs-spc-slides">
           {/* Advance → Cutting is the last group-wide advance (#222): one member's
               slide moves all lockstep mates to Cutting (reducer groupAdvance). No
@@ -370,7 +382,7 @@ export function ShorePointCard({
           (the cutter works the station). Two-step: Mark Cut Done (a flag on the
           `cutting` state, card stays put) → Send to Runner (advances individually
           and the card leaves the queue). Step-back out of cutting → Strut Set. */}
-      {!removed && cuttingStation && sp.status === 'cutting' && (
+      {interactive && !removed && cuttingStation && sp.status === 'cutting' && (
         <div className="fs-spc-slides">
           {sp.cuttingDone ? (
             <>
@@ -407,7 +419,7 @@ export function ShorePointCard({
           (post-cutting phase split): one slide → Shore Secured, step-back → Cutting
           (re-enters the Cutting Station queue Cut-Done-intact). No confirm — non-
           inventory status slides (ADR-010). */}
-      {!removed && !cuttingStation && sp.status === 'runner' && (
+      {interactive && !removed && !cuttingStation && sp.status === 'runner' && (
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Shore Secured"
@@ -426,7 +438,7 @@ export function ShorePointCard({
           inventory-consequential + terminal action, so it is a BUTTON that raises the
           confirm modal (ADR-016), not a slide. Step-back → Runner is the last
           reversible move (ADR-010). Board only (!cuttingStation). */}
-      {!removed && !cuttingStation && sp.status === 'secured' && (
+      {interactive && !removed && !cuttingStation && sp.status === 'secured' && (
         <div className="fs-spc-slides">
           <Button variant="primary" fullWidth onPress={() => onRemoveReturn?.(sp)}>
             Remove &amp; Return Equipment

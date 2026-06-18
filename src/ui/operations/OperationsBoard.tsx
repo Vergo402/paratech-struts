@@ -20,6 +20,8 @@ import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
 import { ReturnEquipmentModal } from './ReturnEquipmentModal';
 import { CuttingStation } from './CuttingStation';
+import { PastOperationsList } from './PastOperationsList';
+import { PastOperationView } from './PastOperationView';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -261,6 +263,9 @@ export function OperationsBoard() {
   const getUid = useDeviceUid();
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
+  // Past-operations archive drill-in (#238) — the opId being viewed read-only, or
+  // null = the list. Only reachable from the empty-state (no active op).
+  const [viewArchiveOpId, setViewArchiveOpId] = useState<string | null>(null);
   const [view, setView] = useState<OpsView>('board');
   const [endOpOpen, setEndOpOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<ShorePointStatus>>(new Set());
@@ -559,6 +564,8 @@ export function OperationsBoard() {
       at: Date.now(),
       by: await getUid(),
     });
+    // The Past-operations list re-fetches on its next mount (it only renders in
+    // the empty state, which this end transition lands on) — no manual invalidate.
     if (result.ok) setEndOpOpen(false);
   }, [commit, getUid, operation]);
 
@@ -604,6 +611,21 @@ export function OperationsBoard() {
     for (const sp of shorePoints) if (sp.deletedAt == null && sp.building) set.add(sp.building);
     return [...set].sort(compareBuildingValues);
   }, [shorePoints]);
+
+  // End-Operation warning data (#238, gate M3): shore points whose equipment is
+  // still out (deployed, not yet Returned) at close, grouped by the RIG it was
+  // pulled from (deployedStrut.source) — that rig's available count stays short
+  // for the next call. Empty → no warning. Non-blocking (the IC may close anyway).
+  const stillDeployedByRig = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const sp of shorePoints) {
+      if (sp.deletedAt != null || !sp.deployedStrut || sp.status === 'returned') continue;
+      const rig = sp.deployedStrut.source;
+      m.set(rig, (m.get(rig) ?? 0) + 1);
+    }
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [shorePoints]);
+  const stillDeployedTotal = stillDeployedByRig.reduce((n, [, c]) => n + c, 0);
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -674,6 +696,15 @@ export function OperationsBoard() {
 
   // ---- No active operation --------------------------------------------------
   if (!operation || operation.status === 'ended') {
+    // Read-only drill-in into a finished incident (#238) — replaces the empty
+    // state until the user backs out (or re-opens, which makes an op active).
+    if (viewArchiveOpId) {
+      return (
+        <div className="fs-ops-board">
+          <PastOperationView opId={viewArchiveOpId} onClose={() => setViewArchiveOpId(null)} />
+        </div>
+      );
+    }
     return (
       <div className="fs-ops-board">
         <EmptyState
@@ -682,6 +713,7 @@ export function OperationsBoard() {
           reason="Start a shoring operation to begin tracking shore points"
           action={{ label: 'Start Operation', onPress: () => setModalMode('create') }}
         />
+        <PastOperationsList onOpen={setViewArchiveOpId} />
         <StartOperationModal
           open={modalMode === 'create'}
           onClose={() => setModalMode(null)}
@@ -898,6 +930,22 @@ export function OperationsBoard() {
         }
       >
         <p>This archives every shore point and ends the active operation. You can start a new one afterward.</p>
+        {stillDeployedTotal > 0 && (
+          <div className="fs-endop-warning" role="alert">
+            <p className="fs-endop-warning-lead">
+              ⚠ {stillDeployedTotal} shore {stillDeployedTotal === 1 ? 'point is' : 'points are'} still up — gear
+              hasn’t been returned to {stillDeployedByRig.length === 1 ? 'this rig' : 'these rigs'}, leaving{' '}
+              {stillDeployedByRig.length === 1 ? 'it' : 'them'} short for the next call:
+            </p>
+            <ul className="fs-endop-warning-rigs">
+              {stillDeployedByRig.map(([rig, count]) => (
+                <li key={rig}>
+                  {rig} <span className="fs-endop-warning-count">({count})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </Modal>
     </div>
   );

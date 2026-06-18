@@ -18,7 +18,10 @@ archived. The event log freezes as the incident record; the after-action packet 
 [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md).
 
 This is the one terminal action in the operation lifecycle. Everything else is reversible by a Step-back
-slide; **ending an operation is not.**
+slide; **ending an operation is not** — within the active flow. > **Superseded for recovery by
+[ADR-036](../11-decisions/ADR-036-reopen-archived-operation.md):** an archived operation can be
+**re-opened** later from the Past-operations drill-in (a confirmed forward action, not a timed undo).
+The "cannot be re-opened" copy in the Step-2 mockup is superseded; see OQ1/OQ2.
 
 ---
 
@@ -248,16 +251,22 @@ Screen-reader behavior particular to this workflow:
 
 ## Open questions
 
-1. **Archived-operation storage and access:** where Past operations live, how they are listed/searched,
-   and whether they are reachable from Operations or only from the Audit Log — not specified in Phase F.
-   Phase H owns the archive surface.
-2. **Re-open an archived operation:** v4.0 treats archive as terminal (no re-open). Whether a mis-ended
-   operation can be re-opened (and by whom) is deferred — the safe v4.0 answer is "start a new operation."
+1. **Archived-operation storage and access — RESOLVED (Session 3, ships v4.0):** Past operations live
+   on the Operations empty-state as a read-only list (`PastOperationsList`), newest-ended first;
+   tapping one opens a read-only drill-in (`PastOperationView`) that re-projects the incident from the
+   retained event log. Both are pure read projections (`projectArchive` / `projectOperationById`) — no
+   new storage. The Audit Log remains a separate, fuller after-action surface (Phase H).
+2. **Re-open an archived operation — RESOLVED ([ADR-036](../11-decisions/ADR-036-reopen-archived-operation.md), ships v4.0):**
+   archive is **recoverable, not terminal.** A confirmed "Re-open this incident" action in the drill-in
+   flips the op back to active with all shore points intact (a new `OperationReopened` event). Any
+   connected device may re-open (no live command structure post-close; auth-gated re-open deferred to
+   the auth session); only one operation is active at a time, so re-open is offered only from the empty
+   state and rejected while an op is active. Not an ADR-010 undo — an explicit forward command on an
+   archived record. The Step-2 modal copy ("cannot be re-opened") is superseded by this.
 3. **Shore points not yet Returned at close — RESOLVED (gate review M3, ships v4.0):** the app does not
    force every SP to Strut Equipment Returned before End Operation, **but the confirm modal now warns** when
-   any remain deployed (count + the inventory-shortfall consequence; Step 2). The warning informs, it does
-   not block. The only remaining open item here is **re-open / reflare recovery** (OQ2) — v4.0 keeps archive
-   terminal ("start a new operation"); a true re-open is deferred.
+   any remain deployed — the count grouped by the **rig the strut was pulled from** (`deployedStrut.source`),
+   with the inventory-shortfall consequence (Step 2). The warning informs, it does not block.
 4. **After-action email transport + recipient sourcing:** the send mechanism and IC/Ops address lookup are
    Phase H infrastructure ([`99-open-questions.md`](../99-open-questions.md) #35); the trigger wiring ships
    with the after-action feature (#32).

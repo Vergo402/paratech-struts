@@ -35,6 +35,15 @@ export const OperationEnded = z.object({
   ...base,
 });
 
+// Re-open a previously ended operation (ADR-036) — flips an archived op's status
+// back to `active` so the board can pick it up again. Mirrors OperationEnded; the
+// store rejects it when another op is already active (one active op at a time).
+// NOT a timed undo (ADR-010) — an explicit, confirmed action on an archived record.
+export const OperationReopened = z.object({
+  type: z.literal('OperationReopened'),
+  ...base,
+});
+
 // A floor added to the operation's division list (#220 — the v3 grow-the-
 // building model, app.js addFloorAbove/Below). Additive on purpose: two
 // devices concurrently adding "floor above" both emit { division: N } and the
@@ -127,6 +136,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
   OperationEnded,
+  OperationReopened,
   DivisionAdded,
   ShorePointAdded,
   ShorePointEdited,

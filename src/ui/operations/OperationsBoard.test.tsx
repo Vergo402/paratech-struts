@@ -22,6 +22,8 @@ vi.mock('@ui/hooks', () => ({
   useCommit: () => mockCommit,
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
+  usePastOperations: () => ({ data: [] }),
+  useArchivedOperation: () => ({ data: undefined }),
 }));
 
 const ACTIVE_OP: Operation = {
@@ -718,6 +720,45 @@ describe('OperationsBoard', () => {
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'OperationEnded', opId: 'op-1', by: 'device-test' }),
     );
+  });
+
+  it('End Operation warns about still-deployed gear grouped by rig (#238 gate M3)', async () => {
+    const user = userEvent.setup();
+    const deployed = (id: string, status: ShorePointStatus, source: string) => ({
+      ...makeSP(id, status),
+      deployedStrut: { model: 'LS 203', source, inventoryId: `i-${id}` },
+    });
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      deployed('sp-1', 'process', 'Rescue 2'),
+      deployed('sp-2', 'secured', 'Rescue 2'),
+      deployed('sp-3', 'process', 'Engine 1'),
+      deployed('sp-4', 'returned', 'Ladder 5'), // returned — gear is back, excluded
+      makeSP('sp-5', 'pending'), // never deployed, excluded
+    ]);
+    render(<OperationsBoard />);
+
+    await user.click(screen.getByRole('button', { name: 'End Operation' }));
+    const dialog = screen.getByRole('dialog', { name: 'End Operation?' });
+    expect(dialog).toHaveTextContent(/3 shore points are still up/); // 2 Rescue 2 + 1 Engine 1
+    expect(dialog).toHaveTextContent(/Rescue 2\s*\(2\)/);
+    expect(dialog).toHaveTextContent(/Engine 1\s*\(1\)/);
+    expect(dialog).not.toHaveTextContent('Ladder 5'); // returned rig not listed
+    // Non-blocking: the confirm is still there.
+    expect(within(dialog).getByRole('button', { name: 'End Operation' })).toBeEnabled();
+  });
+
+  it('End Operation shows no warning when all equipment is returned', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-1', 'returned'), deployedStrut: { model: 'LS 203', source: 'Rescue 2', inventoryId: 'i1' } },
+    ]);
+    render(<OperationsBoard />);
+
+    await user.click(screen.getByRole('button', { name: 'End Operation' }));
+    const dialog = screen.getByRole('dialog', { name: 'End Operation?' });
+    expect(dialog).not.toHaveTextContent(/still up/);
   });
 
   // ---- multi-building — group + filter by building ---------------------------

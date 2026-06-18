@@ -1382,3 +1382,98 @@ button.fs-spc-head {
   color: var(--text-secondary);
   margin: 0;
 }
+
+/* ---- Past-operations archive (#238) -------------------------------------- */
+.fs-archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+.fs-archive-list-title {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-1);
+}
+.fs-archive-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+}
+.fs-archive-row-name {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-archive-row-meta {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* The read-only drill-in. */
+.fs-archive-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-archive-view-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-archive-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.fs-archive-view-name {
+  font: var(--type-headline-1);
+  color: var(--text-primary);
+  margin: 0;
+}
+.fs-archive-banner {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-badge);
+  padding: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.fs-archive-empty {
+  font: var(--type-body);
+  color: var(--text-tertiary);
+}
+.fs-archive-actions {
+  margin-top: var(--space-4);
+}
+
+/* ---- End-Operation unreturned-equipment warning (gate M3) ---------------- */
+.fs-endop-warning {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--danger-bg);
+  border: var(--stroke-width) solid var(--danger-text);
+  border-radius: var(--radius-card);
+}
+.fs-endop-warning-lead {
+  font: var(--type-body);
+  color: var(--danger-text);
+  margin: 0;
+}
+.fs-endop-warning-rigs {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  font: var(--type-body-medium);
+  color: var(--danger-text);
+}
+.fs-endop-warning-count {
+  font: var(--type-mono);
+}
