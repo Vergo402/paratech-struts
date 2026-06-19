@@ -4,7 +4,7 @@
 >
 > **This is a curation index, not a source of truth.** Every row links to its canonical home — a [`99-open-questions.md`](99-open-questions.md) row, a [#248](https://github.com/Vergo402/paratech-struts/issues/248) comment, the [gate script's known-gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md), or a queued fix-session issue. Items are *resolved at the source*; when one resolves, strike its row here with a pointer. (The Phase E audit showed what happens when registers go blind to each other — this file exists so the design passes never re-learn that lesson.)
 >
-> **Habits:** every fix session (S10–S12) and every Phase I design session **opens by reading this file**. New design-class observations on #248 get a row here. Rapid adds go through the **`/docket`** skill (`.claude/skills/docket/`) — one line, committed immediately. An **ad hoc** row (no canonical home yet) is promoted to `99-open-questions.md` or #248 when it's first worked.
+> **Habits:** every fix session (S10–S12) and every Phase I design session **opens by reading this file**. New design-class observations on #248 get a row here. Rapid adds go through the **`/docket`** skill (`.claude/skills/docket/`) — one line, committed immediately. An **ad hoc** row (no canonical home yet) is promoted to `99-open-questions.md` or #248 when it's first worked. **Cosmetic items deferred past the full v4 build** land in the **Post-build polish** section, home [#341](https://github.com/Vergo402/paratech-struts/issues/341).
 
 ---
 
@@ -37,6 +37,13 @@
 | Cutting Station build (#222) shipped phone-functional; **deferred enhancements**: tablet drag-reorder of the cut queue (G-16) and the optional actual-cut input (`expected ↔ actual` diff badge). Queue is FIFO read-only order on every surface for now. | [`21-cutting-station.md`](08-information-architecture/21-cutting-station.md) OQ1/OQ3 | 2026-06-17 (Session 1) |
 | ~~**Spec vs. reducer conflict — cutting→strutset step-back scope.**~~ **RESOLVED (Alex, 2026-06-17): group-wide, matching [`13-cutting.md`](09-workflows/13-cutting.md).** The reducer's `groupAdvance` now keys group fan-out on the EDGE (a `GROUP_ZONE` = process↔strutset↔cutting check on both endpoints), not the from-status, so cutting→strutset fans out to the whole lockstep set while Send-to-Runner (cutting→runner) stays individual. Not a broadening ADR — it aligns the reducer to the existing spec. Fixed in commit `3c7c76a`; unit-tested (group-wide + L-7 no-regress) and driven in-browser. | `core/operation/reducer.ts` | 2026-06-17 (Session 3) — RESOLVED |
 | **Terminal return restores strut-only — widens to the full assembly with the inventory build.** The Remove & Return step (#224, `EquipmentReclaimed`) restores the **strut** to its source apparatus's available count today — the mirror of today's deploy, which only consumes the strut. Extensions + connectors + base plates are NOT yet consumed on deploy, so there is nothing to give back for them yet. The inventory build ([#330](https://github.com/Vergo402/paratech-struts/issues/330) / ADR-033) widens **deploy** to pull the whole assembly and **this same return** to restore it — symmetric, at one seam (`operationStore.ts`). Event named `EquipmentReclaimed` (not `EquipmentReturned`) to leave the `Equipment*` deploy/return names free for ADR-033's rename of `StrutDeployed/Returned`. Decision: *finish the operation flow first, then the inventory build* (Alex, 2026-06-17). | [#224](https://github.com/Vergo402/paratech-struts/issues/224) → ADR-033 / [#330](https://github.com/Vergo402/paratech-struts/issues/330) | 2026-06-17 (Session 2) |
+
+## Post-build polish ([#341](https://github.com/Vergo402/paratech-struts/issues/341))
+
+> Cosmetic / visual / interaction items intentionally deferred until **after the full v4 build (Phase I)**. Canonical home = epic [#341](https://github.com/Vergo402/paratech-struts/issues/341); a row is promoted to a sub-issue of that epic only when it's scheduled for work.
+
+| Item | Canonical home | Added |
+|---|---|---|
 
 ## Unscheduled / watch
 
