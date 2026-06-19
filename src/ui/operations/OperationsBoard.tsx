@@ -25,6 +25,7 @@ import { CuttingStation } from './CuttingStation';
 import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
+import { LayoutPicker, type BoardLayout } from './LayoutPicker';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -33,6 +34,9 @@ type OpsView = 'board' | 'cutting';
 
 /** Board sort (#248): by division→area (default) or insertion ("added") order. */
 type SortMode = 'location' | 'added';
+
+/** List-view sort (#356): the list gains a Status order the lanes can't have. */
+type ListSort = 'added' | 'status' | 'location';
 
 /** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
@@ -158,12 +162,8 @@ function groupLanePoints(points: ShorePoint[]): LaneItem[] {
   return items;
 }
 
-// ---- Lane -------------------------------------------------------------------
-interface LaneProps {
-  status: ShorePointStatus;
-  points: ShorePoint[];
-  collapsed: boolean;
-  onToggle: () => void;
+// ---- Shared card/group callbacks (Lane + list view) -------------------------
+interface ItemCallbacks {
   onEdit: (sp: ShorePoint) => void;
   onDelete: (sp: ShorePoint) => void;
   onOpenDetail: (sp: ShorePoint) => void;
@@ -178,21 +178,59 @@ interface LaneProps {
   activeStackId: string | null;
 }
 
-function Lane({
-  status,
-  points,
-  collapsed,
-  onToggle,
-  onEdit,
-  onDelete,
-  onOpenDetail,
-  onAssignEquipment,
-  onAdvance,
-  onStepBack,
-  onRemoveReturn,
-  advanceDisabledReasonFor,
-  activeStackId,
-}: LaneProps) {
+// LaneItems — the card/group mapping shared by the lane board and the list view
+// (#356). A grouped item renders as a rolodex stack; a singleton as a plain card.
+function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
+  return (
+    <>
+      {items.map((item) =>
+        item.kind === 'group' ? (
+          <div key={item.groupId} role="listitem">
+            <GroupedShorePoint
+              members={item.members}
+              initialActiveId={
+                // If the board's scroll target lands inside this stack, front it.
+                item.members.some((m) => m.id === cb.activeStackId) ? cb.activeStackId! : undefined
+              }
+              onEdit={cb.onEdit}
+              onDelete={cb.onDelete}
+              onOpenDetail={cb.onOpenDetail}
+              onAssignEquipment={cb.onAssignEquipment}
+              onAdvance={cb.onAdvance}
+              onStepBack={cb.onStepBack}
+              onRemoveReturn={cb.onRemoveReturn}
+              advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
+            />
+          </div>
+        ) : (
+          <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id}>
+            <ShorePointCard
+              shorePoint={item.sp}
+              onEdit={cb.onEdit}
+              onDelete={cb.onDelete}
+              onOpenDetail={cb.onOpenDetail}
+              onAssignEquipment={cb.onAssignEquipment}
+              onAdvance={cb.onAdvance}
+              onStepBack={cb.onStepBack}
+              onRemoveReturn={cb.onRemoveReturn}
+              advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
+            />
+          </div>
+        ),
+      )}
+    </>
+  );
+}
+
+// ---- Lane -------------------------------------------------------------------
+interface LaneProps extends ItemCallbacks {
+  status: ShorePointStatus;
+  points: ShorePoint[];
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+function Lane({ status, points, collapsed, onToggle, ...cb }: LaneProps) {
   const items = groupLanePoints(points);
   return (
     <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
@@ -215,41 +253,7 @@ function Lane({
           {points.length === 0 ? (
             <p className="fs-lane-empty">No shore points</p>
           ) : (
-            items.map((item) =>
-              item.kind === 'group' ? (
-                <div key={item.groupId} role="listitem">
-                  <GroupedShorePoint
-                    members={item.members}
-                    initialActiveId={
-                      // If the board's scroll target lands inside this stack, front it.
-                      item.members.some((m) => m.id === activeStackId) ? activeStackId! : undefined
-                    }
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onOpenDetail={onOpenDetail}
-                    onAssignEquipment={onAssignEquipment}
-                    onAdvance={onAdvance}
-                    onStepBack={onStepBack}
-                    onRemoveReturn={onRemoveReturn}
-                    advanceDisabledReasonFor={advanceDisabledReasonFor}
-                  />
-                </div>
-              ) : (
-                <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id}>
-                  <ShorePointCard
-                    shorePoint={item.sp}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onOpenDetail={onOpenDetail}
-                    onAssignEquipment={onAssignEquipment}
-                    onAdvance={onAdvance}
-                    onStepBack={onStepBack}
-                    onRemoveReturn={onRemoveReturn}
-                    advanceDisabledReason={advanceDisabledReasonFor(item.sp)}
-                  />
-                </div>
-              ),
-            )
+            <LaneItems items={items} {...cb} />
           )}
         </div>
       )}
@@ -340,19 +344,16 @@ export function OperationsBoard() {
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
-  // Sort/filter board controls (#347) — persisted per-op in localStorage.
+  // Sort/filter board controls (#347/#356) — persisted per-op in localStorage.
   const [sortMode, setSortMode] = useState<SortMode>('location');
+  const [layout, setLayout] = useState<BoardLayout>('lanes');
+  const [listSort, setListSort] = useState<ListSort>('location');
   const [filterDivision, setFilterDivision] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string | null>(null);
   const [filterBuilding, setFilterBuilding] = useState<string | null>(null);
-  // Ref lets the save effect always write to the current op's key without
-  // making operation.id a dep that would fire the effect on op switch (#347).
+  // Current op id for the prefs key, without making it an effect dep (#347).
   const opIdRef = useRef<string | undefined>(undefined);
   opIdRef.current = operation?.id;
-  // Guards the save effect on initial mount: the save effect fires before the
-  // load effect's setState can propagate, so the first fire must be skipped to
-  // avoid writing initial-state defaults over stored prefs (#347).
-  const isMountedRef = useRef(false);
   // Deleted section (#319) — collapsed by default, out of the way until needed.
   const [deletedOpen, setDeletedOpen] = useState(false);
 
@@ -369,29 +370,38 @@ export function OperationsBoard() {
     setScrollToId(null);
   }, [scrollToId]);
 
-  // Load sort/filter prefs from localStorage when the active op changes (#347).
+  // Load sort/filter/layout prefs from localStorage when the active op changes (#347/#356).
+  // Read-only: writes happen imperatively in the change handlers (persistPrefs),
+  // NOT in an effect — a save effect races the async load under StrictMode's
+  // double-mount and can clobber stored prefs with mount-time defaults.
   useEffect(() => {
     if (!operation?.id) return;
+    const resetPrefs = () => {
+      setSortMode('location'); setLayout('lanes'); setListSort('location');
+      setFilterDivision(null); setFilterArea(null); setFilterBuilding(null);
+    };
     try {
       const raw = localStorage.getItem(`fs-board-prefs-${operation.id}`);
-      if (!raw) { setSortMode('location'); setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); return; }
+      if (!raw) { resetPrefs(); return; }
       const p = JSON.parse(raw) as Record<string, unknown>;
       setSortMode(p.sortMode === 'added' ? 'added' : 'location');
+      setLayout(p.layout === 'list' ? 'list' : 'lanes');
+      setListSort(p.listSort === 'added' || p.listSort === 'status' ? p.listSort : 'location');
       setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
       setFilterBuilding(typeof p.filterBuilding === 'string' ? p.filterBuilding : null);
-    } catch { setSortMode('location'); setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); }
-  }, [operation?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- setters are stable
+    } catch { resetPrefs(); }
+  }, [operation?.id]);
 
-  // Persist prefs on change. isMountedRef skips the first fire (mount) so the
-  // load effect's setState can propagate first — avoids writing default values
-  // over stored prefs. Uses opIdRef to always target the current op's key.
-  useEffect(() => {
-    if (!isMountedRef.current) { isMountedRef.current = true; return; }
-    if (!opIdRef.current) return;
-    try { localStorage.setItem(`fs-board-prefs-${opIdRef.current}`, JSON.stringify({ sortMode, filterDivision, filterArea, filterBuilding })); }
-    catch {}
-  }, [sortMode, filterDivision, filterArea, filterBuilding]); // eslint-disable-line react-hooks/exhaustive-deps -- refs intentional
+  // Write the current prefs + a patch for the field(s) that just changed. Called
+  // from the change handlers so only real user actions persist (StrictMode-safe).
+  function persistPrefs(patch: Partial<{ sortMode: SortMode; layout: BoardLayout; listSort: ListSort; filterDivision: string | null; filterArea: string | null; filterBuilding: string | null }>) {
+    const opId = opIdRef.current;
+    if (!opId) return;
+    const prefs = { sortMode, layout, listSort, filterDivision, filterArea, filterBuilding, ...patch };
+    try { localStorage.setItem(`fs-board-prefs-${opId}`, JSON.stringify(prefs)); }
+    catch { /* private mode / quota — prefs are best-effort */ }
+  }
 
   // The sheet/modal targets derive LIVE by id so they always see the current
   // point (a stale object would compute recommendations against old state) and
@@ -765,12 +775,14 @@ export function OperationsBoard() {
   // handler so React batches both state updates in one render.
   function handleDivisionChange(division: string | null) {
     setFilterDivision(division);
+    let nextArea = filterArea;
     if (filterArea && division) {
       const stillPresent = shorePoints.some(
         (sp) => sp.deletedAt == null && sp.division === division && sp.area === filterArea,
       );
-      if (!stillPresent) setFilterArea(null);
+      if (!stillPresent) { setFilterArea(null); nextArea = null; }
     }
+    persistPrefs({ filterDivision: division, filterArea: nextArea });
   }
 
   const byStatus = useMemo(() => {
@@ -797,6 +809,35 @@ export function OperationsBoard() {
     }
     return map;
   }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, sortMode]);
+
+  // List view (#356): every visible point in one column, grouped shores kept as
+  // one stack (Alex's call), sorted by the list's own key. A group sits at its
+  // front leg (groupIndex 0) — ponytail: least-advanced leg if the field wants it.
+  const listItems = useMemo(() => {
+    const order = new Map(shorePoints.map((sp, i) => [sp.id, i] as const)); // 'added' = array order
+    const visible = shorePoints
+      .filter(
+        (sp) =>
+          sp.deletedAt == null &&
+          (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
+          (!filterDivision || sp.division === filterDivision) &&
+          (!filterArea || (sp.area ?? '') === filterArea),
+      )
+      .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
+    const items = groupLanePoints(visible);
+    const rep = (it: LaneItem) => (it.kind === 'group' ? it.members[0]! : it.sp);
+    return [...items].sort((a, b) => {
+      const ra = rep(a), rb = rep(b);
+      if (listSort === 'added') return (order.get(rb.id) ?? 0) - (order.get(ra.id) ?? 0); // newest first
+      if (listSort === 'status') {
+        return (
+          STATUS_ORDER.indexOf(ra.status) - STATUS_ORDER.indexOf(rb.status) ||
+          compareShorePointsByLocation(ra, rb)
+        );
+      }
+      return compareShorePointsByLocation(ra, rb);
+    });
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, listSort]);
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(
@@ -941,24 +982,43 @@ export function OperationsBoard() {
 
       {shorePoints.length > 0 && (
         <div className="fs-ops-filterbar">
-          <FilterPicker
-            label="Sort"
-            value={sortMode}
-            placeholder="Division / area"
-            nullable={false}
-            options={[
-              { value: 'location', label: 'Division / area' },
-              { value: 'added', label: 'Added order' },
-            ]}
-            onChange={(v) => setSortMode((v ?? 'location') as SortMode)}
+          <LayoutPicker
+            value={layout}
+            onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
           />
+          {layout === 'lanes' ? (
+            <FilterPicker
+              label="Sort"
+              value={sortMode}
+              placeholder="Division / area"
+              nullable={false}
+              options={[
+                { value: 'location', label: 'Division / area' },
+                { value: 'added', label: 'Added order' },
+              ]}
+              onChange={(v) => { const m = (v ?? 'location') as SortMode; setSortMode(m); persistPrefs({ sortMode: m }); }}
+            />
+          ) : (
+            <FilterPicker
+              label="Sort"
+              value={listSort}
+              placeholder="Division / area"
+              nullable={false}
+              options={[
+                { value: 'added', label: 'Added order' },
+                { value: 'status', label: 'Status' },
+                { value: 'location', label: 'Division / area' },
+              ]}
+              onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
+            />
+          )}
           {buildingsPresent.length > 0 && (
             <FilterPicker
               label="Building"
               value={filterBuilding}
               placeholder="All buildings"
               options={buildingsPresent.map((b) => ({ value: b, label: b }))}
-              onChange={setFilterBuilding}
+              onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
             />
           )}
           {divisionsPresent.length > 0 && (
@@ -976,7 +1036,7 @@ export function OperationsBoard() {
               value={filterArea}
               placeholder="All areas"
               options={areasPresent.map((a) => ({ value: a, label: a }))}
-              onChange={setFilterArea}
+              onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
             />
           )}
           {(filterBuilding || filterDivision || filterArea) && (
@@ -987,6 +1047,7 @@ export function OperationsBoard() {
                 setFilterBuilding(null);
                 setFilterDivision(null);
                 setFilterArea(null);
+                persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null });
               }}
             >
               Clear
@@ -995,26 +1056,47 @@ export function OperationsBoard() {
         </div>
       )}
 
-      <div className="fs-ops-lanes">
-        {STATUS_ORDER.map((status) => (
-          <Lane
-            key={status}
-            status={status}
-            points={byStatus[status]}
-            collapsed={collapsed.has(status)}
-            onToggle={() => toggleLane(status)}
-            onEdit={openEdit}
-            onDelete={openDelete}
-            onOpenDetail={openDetail}
-            onAssignEquipment={assignEquipment}
-            onAdvance={handleAdvance}
-            onStepBack={handleStepBack}
-            onRemoveReturn={openRemoveReturn}
-            advanceDisabledReasonFor={advanceDisabledReasonFor}
-            activeStackId={scrollToId}
-          />
-        ))}
-      </div>
+      {layout === 'lanes' ? (
+        <div className="fs-ops-lanes">
+          {STATUS_ORDER.map((status) => (
+            <Lane
+              key={status}
+              status={status}
+              points={byStatus[status]}
+              collapsed={collapsed.has(status)}
+              onToggle={() => toggleLane(status)}
+              onEdit={openEdit}
+              onDelete={openDelete}
+              onOpenDetail={openDetail}
+              onAssignEquipment={assignEquipment}
+              onAdvance={handleAdvance}
+              onStepBack={handleStepBack}
+              onRemoveReturn={openRemoveReturn}
+              advanceDisabledReasonFor={advanceDisabledReasonFor}
+              activeStackId={scrollToId}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="fs-ops-list" role="list">
+          {listItems.length === 0 ? (
+            <p className="fs-lane-empty">No shore points</p>
+          ) : (
+            <LaneItems
+              items={listItems}
+              onEdit={openEdit}
+              onDelete={openDelete}
+              onOpenDetail={openDetail}
+              onAssignEquipment={assignEquipment}
+              onAdvance={handleAdvance}
+              onStepBack={handleStepBack}
+              onRemoveReturn={openRemoveReturn}
+              advanceDisabledReasonFor={advanceDisabledReasonFor}
+              activeStackId={scrollToId}
+            />
+          )}
+        </div>
+      )}
 
       {deleted.length > 0 && (
         <DeletedSection

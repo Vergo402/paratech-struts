@@ -815,4 +815,116 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
   });
+
+  // ---- #356 — single-list view ----------------------------------------------
+
+  // Singleton card ids in the flat list, in DOM order (grouped stacks have no
+  // top-level data-sp-id, so ordering tests use singletons).
+  function listCardIds(): string[] {
+    const list = document.querySelector('.fs-ops-list')!;
+    return Array.from(list.querySelectorAll(':scope > [role="listitem"][data-sp-id]')).map(
+      (el) => el.getAttribute('data-sp-id')!,
+    );
+  }
+
+  async function switchToList(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'View' }));
+    await user.click(screen.getByRole('option', { name: 'List' }));
+  }
+
+  async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
+    await user.click(screen.getByRole('button', { name: 'Sort' }));
+    await user.click(screen.getByRole('option', { name: optionName }));
+  }
+
+  it('the List toggle replaces the seven lanes with one flat list of every point', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending'),
+      makeSP('sp-2', 'cutting'),
+      makeSP('sp-3', 'returned'),
+    ]);
+    render(<OperationsBoard />);
+    // Lanes present by default.
+    expect(screen.getByRole('region', { name: 'Pending Equipment' })).toBeInTheDocument();
+
+    await switchToList(user);
+    // Lanes gone; one list with all three points.
+    expect(screen.queryByRole('region', { name: 'Pending Equipment' })).not.toBeInTheDocument();
+    expect(document.querySelector('.fs-ops-list')).not.toBeNull();
+    expect(listCardIds().sort()).toEqual(['sp-1', 'sp-2', 'sp-3']);
+  });
+
+  it('list Sort → Status orders cards along the lifecycle (pending → returned)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-ret', 'returned'),
+      makeSP('sp-pend', 'pending'),
+      makeSP('sp-cut', 'cutting'),
+    ]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    await setListSort(user, 'Status');
+    expect(listCardIds()).toEqual(['sp-pend', 'sp-cut', 'sp-ret']);
+  });
+
+  it('list Sort → Added order is newest-first', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    // All same status/location so only insertion order decides.
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-a', 'pending'),
+      makeSP('sp-b', 'pending'),
+      makeSP('sp-c', 'pending'),
+    ]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    await setListSort(user, 'Added order');
+    expect(listCardIds()).toEqual(['sp-c', 'sp-b', 'sp-a']);
+  });
+
+  it('list Sort → Division / area orders by division desc then area asc', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-d1b', 'pending', '1'), area: 'B' },
+      { ...makeSP('sp-d2', 'pending', '2'), area: 'A' },
+      { ...makeSP('sp-d1a', 'pending', '1'), area: 'A' },
+    ]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    // Default listSort is 'location'.
+    expect(listCardIds()).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
+  });
+
+  it('a grouped multi-leg shore stays one stacked card in the list (not split rows)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([grouped3Post('sp-1', 1), grouped3Post('sp-2', 2), grouped3Post('sp-3', 3)]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    const list = document.querySelector('.fs-ops-list')!;
+    // One rolodex stack, not three separate list rows.
+    expect(list.querySelectorAll('.fs-gs')).toHaveLength(1);
+    expect(list.querySelectorAll(':scope > [role="listitem"]')).toHaveLength(1);
+    // Collapsed stack shows exactly one front slide (the fan-out is unchanged).
+    expect(within(list as HTMLElement).getAllByText('Slide to set Strut Set')).toHaveLength(1);
+  });
+
+  it('layout + list sort persist across a remount (per-op localStorage)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending'), makeSP('sp-2', 'returned')]);
+    const { unmount } = render(<OperationsBoard />);
+    await switchToList(user);
+    await setListSort(user, 'Status');
+
+    unmount();
+    render(<OperationsBoard />);
+    // Restored into List view with the Status sort.
+    expect(document.querySelector('.fs-ops-list')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Sort' })).toHaveTextContent('Status');
+  });
 });

@@ -78,8 +78,51 @@
   align-self: flex-end;
 }
 
+/* ---- view picker rows (#356) ---------------------------------------------- */
+/* The Lanes/List switcher menu, styled like the macOS/iOS view menu: a leading
+   checkmark on the selected row, then an icon, then the label (left-aligned —
+   so NOT the space-between .fs-picker-row). */
+.fs-view-trigger-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-view-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-stroke);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-view-row:last-child { border-bottom: none; }
+.fs-view-row:active { background: var(--surface-card-hover); }
+.fs-view-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* Fixed-width leading slot keeps icon+label aligned whether or not the ✓ shows. */
+.fs-view-check { flex: none; width: 16px; color: var(--accent); font-weight: 700; }
+.fs-view-icon { flex: none; display: inline-flex; color: var(--text-secondary); }
+.fs-view-row--selected .fs-view-icon { color: var(--text-primary); }
+.fs-view-row--selected .fs-view-label { font-weight: calc(600 + var(--type-weight-bump)); }
+
 /* ---- lane grid ----------------------------------------------------------- */
 .fs-ops-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---- single-list view (#356) --------------------------------------------- */
+/* One scrolling column of cards (grouped shores stay stacked). Same card gap as
+   a lane's cards so the density matches the board. */
+.fs-ops-list {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
