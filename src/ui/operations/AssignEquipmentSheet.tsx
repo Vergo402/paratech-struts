@@ -5,7 +5,7 @@ import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
 import { bomSourceStatus, findForShorePoint, pendingReasonFor } from '@core/shorepoint';
-import { EmptyState, MeasurementValue, Sheet } from '@ui/primitives';
+import { EmptyState, MeasurementValue, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
 import { RecommendationCard, comboModel } from './RecommendationCard';
@@ -14,8 +14,10 @@ import { SHORE_TYPE_LABELS } from './ShorePointCard';
 
 /**
  * Assign Equipment — the Pending card's primary action (#221 step 2). A
- * picker SHEET, not a modal (ADR-016): the board stays visible above while
- * the officer reads RecommendationCards and taps Deploy. Deploy commits
+ * center-anchored MODAL popup (Alex's call — the bottom sheet read poorly on
+ * the wider command-post surface). `variant="form"` pins the header, scrolls
+ * the body, and won't discard the in-progress Review-sources state on a stray
+ * outside tap (X / Esc are the way out). Deploy commits
  * EquipmentDeployed — the full bill of materials (ADR-033) — through the store's
  * inventory transaction (pre-flight + per-component decrement-abort-on-zero, S2);
  * on success the sheet dismisses and the board announces the Equipment Assigned move.
@@ -161,7 +163,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   ) : null;
 
   return (
-    <Sheet open={!!sp} onClose={onClose} title={resolving ? 'Review sources' : 'Assign Equipment'}>
+    <Modal open={!!sp} onClose={onClose} title={resolving ? 'Review sources' : 'Assign Equipment'} variant="form">
       {context}
       {error && (
         <p role="alert" className="fs-assign-error">
@@ -241,6 +243,6 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           reason="A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering"
         />
       )}
-    </Sheet>
+    </Modal>
   );
 }
