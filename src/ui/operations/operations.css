@@ -49,11 +49,10 @@
   padding: var(--space-1) 0;
 }
 
-/* ---- filter / sort bar (#248) -------------------------------------------- */
-/* Brings v3's by-division/area organization into the v4 lane model: lanes
-   default-sort division → area; the operator can switch sort or filter the
-   board. Native selects styled to the token system (Sheet-picker upgrade
-   deferred — see 98-design-docket). */
+/* ---- filter / sort bar (#347) -------------------------------------------- */
+/* Brings v3's by-division/area organization into the v4 lane model (#248):
+   lanes default-sort division → area; operator can switch sort or filter the
+   board. Sheet pickers (FilterPicker) replace native selects (#347). */
 .fs-ops-filterbar {
   display: flex;
   flex-wrap: wrap;
@@ -61,28 +60,12 @@
   gap: var(--space-3);
   padding: var(--space-2) 0;
 }
-.fs-ops-filter {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-.fs-ops-filter-label {
-  font: var(--type-label);
-  color: var(--text-secondary);
-}
-.fs-ops-filterbar select {
-  font: var(--type-body);
-  color: var(--text-primary);
-  background: var(--surface-card);
-  border: 1px solid var(--surface-stroke);
-  border-radius: var(--radius-input);
-  padding: var(--space-2) var(--space-3);
+/* Compact trigger override for the filterbar — form pickers use 56px; here 40px
+   matches the previous select height and keeps the bar lean. */
+.fs-ops-filterbar .fs-filterbar-trigger {
   min-height: 40px;
-}
-.fs-ops-filterbar select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
+  font: var(--type-body);
+  padding: 0 var(--space-3);
 }
 .fs-ops-filter-clear {
   font: var(--type-body-medium);
@@ -92,6 +75,7 @@
   padding: var(--space-2) var(--space-3);
   min-height: 40px;
   cursor: pointer;
+  align-self: flex-end;
 }
 
 /* ---- lane grid ----------------------------------------------------------- */

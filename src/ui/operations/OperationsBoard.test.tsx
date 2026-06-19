@@ -99,6 +99,7 @@ describe('OperationsBoard', () => {
     mockCommit.mockResolvedValue({ ok: true });
     mockCommitMany.mockClear();
     Element.prototype.scrollIntoView = vi.fn();
+    localStorage.clear(); // isolation: sort/filter prefs are persisted (#347)
   });
 
   it('shows empty state when no operation', () => {
@@ -637,7 +638,8 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     // Default = division/area: Div 2 (sp-1) before Div 1 (sp-2).
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1', 'sp-2']);
-    await user.selectOptions(screen.getByLabelText('Sort'), 'added');
+    await user.click(screen.getByRole('button', { name: 'Sort' }));
+    await user.click(screen.getByRole('option', { name: 'Added order' }));
     // Added = newest-first insertion order: sp-2 then sp-1.
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
@@ -653,7 +655,8 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
 
-    await user.selectOptions(screen.getByLabelText('Division'), '1');
+    await user.click(screen.getByRole('button', { name: 'Division' }));
+    await user.click(screen.getByRole('option', { name: 'Div 1' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
     expect(laneCardIds('Cutting Station')).toEqual([]); // sp-3 is Div 2 — filtered out
     const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
@@ -805,7 +808,8 @@ describe('OperationsBoard', () => {
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
 
     // Filter to North tower drops the South point.
-    await user.selectOptions(screen.getByLabelText('Building'), 'North tower');
+    await user.click(screen.getByRole('button', { name: 'Building' }));
+    await user.click(screen.getByRole('option', { name: 'North tower' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1']);
 
     await user.click(screen.getByRole('button', { name: 'Clear' }));

@@ -24,6 +24,7 @@ import { ReturnEquipmentModal } from './ReturnEquipmentModal';
 import { CuttingStation } from './CuttingStation';
 import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
+import { FilterPicker } from './FilterPicker';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -339,12 +340,19 @@ export function OperationsBoard() {
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
-  // Sort/filter board controls (#248) — in-memory, like v3's drilldown (reset on
-  // reload; persistence deferred, see 98-design-docket).
+  // Sort/filter board controls (#347) — persisted per-op in localStorage.
   const [sortMode, setSortMode] = useState<SortMode>('location');
   const [filterDivision, setFilterDivision] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string | null>(null);
   const [filterBuilding, setFilterBuilding] = useState<string | null>(null);
+  // Ref lets the save effect always write to the current op's key without
+  // making operation.id a dep that would fire the effect on op switch (#347).
+  const opIdRef = useRef<string | undefined>(undefined);
+  opIdRef.current = operation?.id;
+  // Guards the save effect on initial mount: the save effect fires before the
+  // load effect's setState can propagate, so the first fire must be skipped to
+  // avoid writing initial-state defaults over stored prefs (#347).
+  const isMountedRef = useRef(false);
   // Deleted section (#319) — collapsed by default, out of the way until needed.
   const [deletedOpen, setDeletedOpen] = useState(false);
 
@@ -360,6 +368,30 @@ export function OperationsBoard() {
     document.querySelector(`[data-sp-id="${scrollToId}"]`)?.scrollIntoView?.({ block: 'nearest' });
     setScrollToId(null);
   }, [scrollToId]);
+
+  // Load sort/filter prefs from localStorage when the active op changes (#347).
+  useEffect(() => {
+    if (!operation?.id) return;
+    try {
+      const raw = localStorage.getItem(`fs-board-prefs-${operation.id}`);
+      if (!raw) { setSortMode('location'); setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); return; }
+      const p = JSON.parse(raw) as Record<string, unknown>;
+      setSortMode(p.sortMode === 'added' ? 'added' : 'location');
+      setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
+      setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
+      setFilterBuilding(typeof p.filterBuilding === 'string' ? p.filterBuilding : null);
+    } catch { setSortMode('location'); setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); }
+  }, [operation?.id]); // eslint-disable-line react-hooks/exhaustive-deps -- setters are stable
+
+  // Persist prefs on change. isMountedRef skips the first fire (mount) so the
+  // load effect's setState can propagate first — avoids writing default values
+  // over stored prefs. Uses opIdRef to always target the current op's key.
+  useEffect(() => {
+    if (!isMountedRef.current) { isMountedRef.current = true; return; }
+    if (!opIdRef.current) return;
+    try { localStorage.setItem(`fs-board-prefs-${opIdRef.current}`, JSON.stringify({ sortMode, filterDivision, filterArea, filterBuilding })); }
+    catch {}
+  }, [sortMode, filterDivision, filterArea, filterBuilding]); // eslint-disable-line react-hooks/exhaustive-deps -- refs intentional
 
   // The sheet/modal targets derive LIVE by id so they always see the current
   // point (a stale object would compute recommendations against old state) and
@@ -693,11 +725,17 @@ export function OperationsBoard() {
     for (const sp of shorePoints) if (sp.deletedAt == null && sp.division) set.add(sp.division);
     return [...set].sort(compareDivisionValues);
   }, [shorePoints]);
+  // Cascade (#347): when a division filter is active, only show areas that have
+  // points in that division (avoids selecting an area with zero results).
   const areasPresent = useMemo(() => {
     const set = new Set<string>();
-    for (const sp of shorePoints) if (sp.deletedAt == null && sp.area) set.add(sp.area);
+    for (const sp of shorePoints) {
+      if (sp.deletedAt == null && sp.area && (!filterDivision || sp.division === filterDivision)) {
+        set.add(sp.area);
+      }
+    }
     return [...set].sort(compareAreaValues);
-  }, [shorePoints]);
+  }, [shorePoints, filterDivision]);
   // Distinct buildings present (multi-building ops only) — the building filter list.
   const buildingsPresent = useMemo(() => {
     const set = new Set<string>();
@@ -721,6 +759,19 @@ export function OperationsBoard() {
     return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
   }, [shorePoints]);
   const stillDeployedTotal = stillDeployedByRig.reduce((n, [, c]) => n + c, 0);
+
+  // Cascade (#347): when division changes, drop filterArea if it's no longer
+  // present in the new division's area list. Handled synchronously in the
+  // handler so React batches both state updates in one render.
+  function handleDivisionChange(division: string | null) {
+    setFilterDivision(division);
+    if (filterArea && division) {
+      const stillPresent = shorePoints.some(
+        (sp) => sp.deletedAt == null && sp.division === division && sp.area === filterArea,
+      );
+      if (!stillPresent) setFilterArea(null);
+    }
+  }
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -890,51 +941,43 @@ export function OperationsBoard() {
 
       {shorePoints.length > 0 && (
         <div className="fs-ops-filterbar">
-          <label className="fs-ops-filter">
-            <span className="fs-ops-filter-label">Sort</span>
-            <select value={sortMode} onChange={(e) => setSortMode(e.target.value as SortMode)}>
-              <option value="location">Division / area</option>
-              <option value="added">Added order</option>
-            </select>
-          </label>
+          <FilterPicker
+            label="Sort"
+            value={sortMode}
+            placeholder="Division / area"
+            nullable={false}
+            options={[
+              { value: 'location', label: 'Division / area' },
+              { value: 'added', label: 'Added order' },
+            ]}
+            onChange={(v) => setSortMode((v ?? 'location') as SortMode)}
+          />
           {buildingsPresent.length > 0 && (
-            <label className="fs-ops-filter">
-              <span className="fs-ops-filter-label">Building</span>
-              <select value={filterBuilding ?? ''} onChange={(e) => setFilterBuilding(e.target.value || null)}>
-                <option value="">All</option>
-                {buildingsPresent.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FilterPicker
+              label="Building"
+              value={filterBuilding}
+              placeholder="All buildings"
+              options={buildingsPresent.map((b) => ({ value: b, label: b }))}
+              onChange={setFilterBuilding}
+            />
           )}
           {divisionsPresent.length > 0 && (
-            <label className="fs-ops-filter">
-              <span className="fs-ops-filter-label">Division</span>
-              <select value={filterDivision ?? ''} onChange={(e) => setFilterDivision(e.target.value || null)}>
-                <option value="">All</option>
-                {divisionsPresent.map((d) => (
-                  <option key={d} value={d}>
-                    {divisionLabel(d)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FilterPicker
+              label="Division"
+              value={filterDivision}
+              placeholder="All divisions"
+              options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
+              onChange={handleDivisionChange}
+            />
           )}
           {areasPresent.length > 0 && (
-            <label className="fs-ops-filter">
-              <span className="fs-ops-filter-label">Area</span>
-              <select value={filterArea ?? ''} onChange={(e) => setFilterArea(e.target.value || null)}>
-                <option value="">All</option>
-                {areasPresent.map((a) => (
-                  <option key={a} value={a}>
-                    {a}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FilterPicker
+              label="Area"
+              value={filterArea}
+              placeholder="All areas"
+              options={areasPresent.map((a) => ({ value: a, label: a }))}
+              onChange={setFilterArea}
+            />
           )}
           {(filterBuilding || filterDivision || filterArea) && (
             <button
