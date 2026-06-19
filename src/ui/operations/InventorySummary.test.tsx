@@ -12,7 +12,8 @@ const roster: Apparatus[] = [
 
 const items: InventoryItem[] = [
   { id: 'i1', type: 'strut', model: 'AT 25-36', system: 'AcmeThread', apparatus: 'Rescue 1', apparatusId: 'app-1', quantity: 4, available: 0 },
-  { id: 'i2', type: 'strut', model: 'AT 37-58', system: 'AcmeThread', apparatus: 'Engine 2', apparatusId: 'app-2', quantity: 2, available: 2 },
+  { id: 'i2', type: 'strut', model: 'LS 304', system: 'LongShore', apparatus: 'Engine 2', apparatusId: 'app-2', quantity: 2, available: 2 },
+  { id: 'i3', type: 'plate', plateId: 'rigid6', apparatus: 'Rescue 1', apparatusId: 'app-1', quantity: 2, available: 2 },
 ];
 
 describe('InventorySummary', () => {
@@ -27,6 +28,13 @@ describe('InventorySummary', () => {
     // i1 has available=0 → is-depleted on its row
     const count = screen.getByLabelText('0 of 4 available');
     expect(count.closest('.fs-inv-summary-row')?.classList.contains('is-depleted')).toBe(true);
+  });
+
+  it('shows the system sub-label (Grey / Gold / Plate)', () => {
+    render(<InventorySummary items={items} roster={roster} />);
+    expect(screen.getByText('Grey')).toBeDefined(); // AcmeThread strut
+    expect(screen.getByText('Gold')).toBeDefined(); // LongShore strut
+    expect(screen.getByText('Plate')).toBeDefined(); // base plate
   });
 
   it('shows empty state when no items', () => {

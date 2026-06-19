@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs } from '@core/shorepoint';
 import {
@@ -9,7 +9,7 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, Modal, Segmented, SideDrawer } from '@ui/primitives';
+import { Badge, Button, EmptyState, Modal, Segmented, SideDrawer, useIsWide } from '@ui/primitives';
 import { useApparatus, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
@@ -52,6 +52,41 @@ function InventoryIcon() {
       <rect x="3" y="4" width="14" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function CloseGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailGlyph() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// The pinned detail column's empty state (desktop ≥1200): an outlined shell that
+// holds the column's footprint so selecting/clearing a point never shifts the
+// layout. role="complementary" so the landmark stays present whether or not a
+// point is selected.
+function DetailShell() {
+  return (
+    <aside className="fs-ops-detail-shell" role="complementary" aria-label="Shore point details">
+      <div className="fs-ops-detail-shell-inner">
+        <DetailGlyph />
+        <p>
+          Select a deployed shore point&apos;s <strong>Details</strong> to see its full bill of
+          materials, sources, and safety check here.
+        </p>
+      </div>
+    </aside>
   );
 }
 
@@ -275,6 +310,13 @@ export function OperationsBoard() {
   const shorePoints = useShorePoints();
   const inventory = useInventory();
   const { roster } = useApparatus();
+  // ≥1200px (Laptop surface, spacing-grid.md): pin both companion panels open as
+  // standard fixtures. Below it they stay on-demand drawers (one companion fits).
+  const isWide = useIsWide();
+  // Refs for the pinned detail panel's companion focus contract (see effect below).
+  const detailAsideRef = useRef<HTMLElement>(null);
+  const detailCloseRef = useRef<HTMLButtonElement>(null);
+  const detailOpenerRef = useRef<HTMLElement | null>(null);
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
@@ -352,6 +394,28 @@ export function OperationsBoard() {
   useEffect(() => {
     if (detailSpId && !detailSp) setDetailSpId(null);
   }, [detailSpId, detailSp]);
+  // Pinned detail (≥1200): mirror DockDrawer's companion focus contract — picking
+  // a point moves focus into the panel's Close and Esc (while focus is inside the
+  // panel) clears the selection + restores the opener. Below 1200 the SideDrawer/
+  // DockDrawer already owns this; keyed on detailSpId so an unrelated board update
+  // never steals focus back. Esc is scoped to the panel so a layered Modal/Sheet
+  // keeps its own Esc.
+  useEffect(() => {
+    if (!isWide || !detailSpId) return;
+    detailOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    detailCloseRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const aside = detailAsideRef.current;
+      if (!aside || !aside.contains(document.activeElement)) return;
+      e.stopPropagation();
+      const opener = detailOpenerRef.current;
+      setDetailSpId(null);
+      if (opener?.isConnected) opener.focus();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isWide, detailSpId]);
   // The full Equipment Assigned set to un-deploy together: a grouped physical shore
   // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
   // to Pending" never leaves orphaned standing struts — the set is married
@@ -758,15 +822,17 @@ export function OperationsBoard() {
     <div className="fs-ops-board">
       <header className="fs-ops-header">
         <h1 className="fs-ops-name">{operation.name}</h1>
-        <button
-          className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
-          type="button"
-          aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
-          aria-pressed={inventoryOpen}
-          onClick={() => setInventoryOpen((v) => !v)}
-        >
-          <InventoryIcon />
-        </button>
+        {!isWide && (
+          <button
+            className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
+            type="button"
+            aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
+            aria-pressed={inventoryOpen}
+            onClick={() => setInventoryOpen((v) => !v)}
+          >
+            <InventoryIcon />
+          </button>
+        )}
         <button
           className="fs-ops-edit"
           type="button"
@@ -922,20 +988,65 @@ export function OperationsBoard() {
             </Button>
           </div>
         </div>
-        <SideDrawer
-          open={!!detailSp}
-          onClose={() => setDetailSpId(null)}
-          title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
-        >
-          {detailSp && <ShorePointDetail sp={detailSp} />}
-        </SideDrawer>
-        <SideDrawer
-          open={inventoryOpen}
-          onClose={() => setInventoryOpen(false)}
-          title="Available Inventory"
-        >
-          <InventorySummary items={inventory} roster={roster} />
-        </SideDrawer>
+        {isWide ? (
+          <>
+            {detailSp ? (
+              <aside
+                ref={detailAsideRef}
+                className="fs-drawer fs-drawer--dock fs-ops-detail-pinned"
+                role="complementary"
+                aria-label={shorePointDrawerTitle(detailSp)}
+              >
+                <div className="fs-drawer-head">
+                  <h2 className="fs-drawer-title">{shorePointDrawerTitle(detailSp)}</h2>
+                  <button
+                    ref={detailCloseRef}
+                    type="button"
+                    className="fs-drawer-close"
+                    aria-label="Clear selection"
+                    onClick={() => setDetailSpId(null)}
+                  >
+                    <CloseGlyph />
+                  </button>
+                </div>
+                <div className="fs-drawer-body">
+                  <ShorePointDetail sp={detailSp} />
+                </div>
+              </aside>
+            ) : (
+              <DetailShell />
+            )}
+            <aside
+              className="fs-drawer fs-drawer--dock fs-ops-inv-pinned"
+              role="complementary"
+              aria-label="Available Inventory"
+            >
+              <div className="fs-drawer-head">
+                <h2 className="fs-drawer-title">Available Inventory</h2>
+              </div>
+              <div className="fs-drawer-body">
+                <InventorySummary items={inventory} roster={roster} />
+              </div>
+            </aside>
+          </>
+        ) : (
+          <>
+            <SideDrawer
+              open={!!detailSp}
+              onClose={() => setDetailSpId(null)}
+              title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
+            >
+              {detailSp && <ShorePointDetail sp={detailSp} />}
+            </SideDrawer>
+            <SideDrawer
+              open={inventoryOpen}
+              onClose={() => setInventoryOpen(false)}
+              title="Available Inventory"
+            >
+              <InventorySummary items={inventory} roster={roster} />
+            </SideDrawer>
+          </>
+        )}
         </div>
       )}
 

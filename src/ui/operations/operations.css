@@ -1791,6 +1791,12 @@ button.fs-spc-head {
     top: 0;
     align-self: stretch;
     max-height: calc(100dvh - 8rem);
+    /* A docked companion sits BESIDE the canvas in normal flow — it does not
+       overlay content, so it reads at column elevation, not the inward overlay
+       cast --shadow-drawer reserves for true overlays (side-drawer.md §Anatomy;
+       spacing-grid.md "surface color carries hierarchy, not shadow"). The base
+       .fs-drawer hairline stroke stays as the column boundary. */
+    box-shadow: none;
   }
 }
 
@@ -1832,62 +1838,127 @@ button.fs-spc-head {
 .fs-inv-summary-rig {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
 }
 
+/* Apparatus segregation (v3 parity): the rig name is the accent-colored section
+   header with an accent divider rule beneath it — the strong visual break
+   between rigs. NOT uppercase (reads as a name, "Eng 169", not a label). */
 .fs-inv-summary-rig-name {
-  margin: 0;
-  font: var(--type-label);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  font: var(--type-body-medium);
+  font-weight: 700;
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-2);
 }
 
 .fs-inv-summary-external-tag {
   font: var(--type-caption);
-  background: var(--surface-elevated);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-secondary);
-  border-radius: var(--radius-chip);
-  padding: 1px var(--space-2);
 }
 
 .fs-inv-summary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-1) 0;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
   border-bottom: var(--stroke-width) solid var(--stroke);
 }
 .fs-inv-summary-row:last-child { border-bottom: none; }
 
+/* name (top) + system sub-label (Grey / Gold / Plate) stacked, v3-style. */
+.fs-inv-summary-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
 .fs-inv-summary-label {
   font: var(--type-body);
   color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.fs-inv-summary-system {
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .fs-inv-summary-count {
-  font: var(--type-body);
+  font: var(--type-body-medium);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   flex-shrink: 0;
 }
 
 /* tone overrides — count only, not the whole row */
-.is-depleted .fs-inv-summary-count { color: var(--danger-text); font-weight: 600; }
-.is-low .fs-inv-summary-count      { color: var(--status-cutting-text); font-weight: 600; }
+.is-depleted .fs-inv-summary-count { color: var(--danger-text); }
+.is-low .fs-inv-summary-count      { color: var(--status-cutting-text); }
 
 /* narrower dock column for the inventory drawer (sibling of the Quick View dock) */
 @media (min-width: 768px) {
   .fs-drawer--dock + .fs-drawer--dock {
     width: clamp(280px, 26%, 340px);
+  }
+}
+
+/* ---- pinned companion columns (Laptop ≥1200px) --------------------------- */
+/* On the Laptop surface the grid sanctions an optional third column
+   (spacing-grid.md §Surface breakpoints): both companion panels pin open as
+   standard fixtures. Widths are explicit (compound-class specificity so they
+   never depend on sibling order) — the detail column keeps one footprint
+   whether it shows a panel or the empty shell, so selecting/clearing never
+   shifts the board. */
+@media (min-width: 1200px) {
+  .fs-drawer--dock.fs-ops-detail-pinned,
+  .fs-ops-detail-shell {
+    flex: none;
+    width: clamp(360px, 30%, 420px);
+  }
+  .fs-drawer--dock.fs-ops-inv-pinned {
+    flex: none;
+    width: clamp(280px, 24%, 340px);
+  }
+
+  /* Outlined empty shell — same footprint + sticky geometry as the dock column,
+     but a dashed placeholder instead of an elevated surface. */
+  .fs-ops-detail-shell {
+    position: sticky;
+    top: 0;
+    align-self: stretch;
+    max-height: calc(100dvh - 8rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    border: 2px dashed color-mix(in srgb, var(--text-secondary) 32%, transparent);
+    border-radius: var(--radius-sheet);
+  }
+  .fs-ops-detail-shell-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    max-width: 240px;
+    text-align: center;
+    color: var(--text-secondary);
+  }
+  .fs-ops-detail-shell-inner p {
+    margin: 0;
+    font: var(--type-body);
+  }
+  .fs-ops-detail-shell-inner strong {
+    color: var(--text-primary);
+    font-weight: 600;
   }
 }

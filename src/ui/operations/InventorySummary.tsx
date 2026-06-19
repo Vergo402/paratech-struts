@@ -6,9 +6,18 @@ import { itemLabel } from '../inventory/EquipmentRow';
 
 type Tone = 'depleted' | 'low' | 'ok';
 
+// The strut-family / category tag shown under each item name, mirroring v3's
+// "Grey / Gold / Plate" sub-label (common.ts: AcmeThread + LockStroke = Grey,
+// LongShore = Gold). Extensions carry a system too; plates are always "Plate".
+function systemLabel(item: InventoryItem): string {
+  if (item.type === 'plate') return 'Plate';
+  return item.system === 'LongShore' ? 'Gold' : 'Grey';
+}
+
 interface ItemRow {
   id: string;
   label: string;
+  system: string;
   available: number;
   quantity: number;
   tone: Tone;
@@ -53,14 +62,16 @@ export function InventorySummary({ items, roster }: Props) {
 
       const tone: Tone = item.available === 0 ? 'depleted' : item.available === 1 ? 'low' : 'ok';
       const { label } = itemLabel(item);
+      const system = systemLabel(item);
+      const base = { id: item.id, label, system, available: item.available, quantity: item.quantity, tone };
 
       if (item.type === 'strut') {
         const strut = STRUTS.find((s) => s.model === item.model);
-        group.struts.push({ id: item.id, label, available: item.available, quantity: item.quantity, tone, sortKey: strut?.collapsed ?? 999 });
+        group.struts.push({ ...base, sortKey: strut?.collapsed ?? 999 });
       } else if (item.type === 'extension') {
-        group.extensions.push({ id: item.id, label, available: item.available, quantity: item.quantity, tone, sortKey: item.length ?? 999 });
+        group.extensions.push({ ...base, sortKey: item.length ?? 999 });
       } else {
-        group.plates.push({ id: item.id, label, available: item.available, quantity: item.quantity, tone, sortKey: 0 });
+        group.plates.push({ ...base, sortKey: 0 });
       }
     }
 
@@ -90,7 +101,10 @@ export function InventorySummary({ items, roster }: Props) {
           </h3>
           {[...g.struts, ...g.extensions, ...g.plates].map((row) => (
             <div key={row.id} className={`fs-inv-summary-row is-${row.tone}`}>
-              <span className="fs-inv-summary-label">{row.label}</span>
+              <div className="fs-inv-summary-id">
+                <span className="fs-inv-summary-label">{row.label}</span>
+                <span className="fs-inv-summary-system">{row.system}</span>
+              </div>
               <span
                 className="fs-inv-summary-count"
                 aria-label={`${row.available} of ${row.quantity} available`}

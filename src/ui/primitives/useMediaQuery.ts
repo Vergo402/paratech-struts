@@ -43,6 +43,18 @@ export function useIsDesktop(): boolean {
 }
 
 /**
+ * useIsWide — true at ≥1200px, the Laptop (Toughbook) surface where the grid
+ * sanctions an OPTIONAL THIRD COLUMN (spacing-grid.md §Surface breakpoints).
+ * Operations pins both companion panels (Quick View detail + Available
+ * Inventory) open as standard fixtures here; the tablet range (768–1200) has
+ * room for the board plus only ONE on-demand companion, so it keeps the toggle
+ * drawers. Default = false so test/SSR keep the non-pinned (drawer) path.
+ */
+export function useIsWide(): boolean {
+  return useMediaQuery('(min-width: 1200px)');
+}
+
+/**
  * useHasMouse — true when the PRIMARY input is a mouse/trackpad (a fine pointer
  * that can hover): desktops and laptops. False on every touchscreen — phones AND
  * field tablets, regardless of screen width — because the status-commit slide's
