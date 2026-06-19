@@ -43,7 +43,12 @@ Read `docs/v4-design/98-design-docket.md` and show Alex a compact summary: per-s
 
 7. **Confirm + show running list:**
    - First line: the row as written + which section it landed in.
-   - Then: a table of **all items in the docket** (including ad hoc, struck rows hidden) organized by section, with columns `| Section | Version | Issue # | Item |`. Extract the issue number from each canonical home (e.g., `#248`, `#341`, `ad hoc`) and the item text. Version is always **v4** (this docket is v4-redesign only). Group by section in the order they appear in the docket file.
+   - Then: a table of **all items in the docket** (including ad hoc, struck rows hidden) organized by section, with columns `| Section | Version | Issue # | Item | Status | Deferred To |`. 
+     - Extract the issue number from each canonical home.
+     - Version is always **v4**.
+     - **Status:** Infer from the docket or audit context: `✅ Done` (struck items), `🔄 In Progress` (explicitly marked), `⏳ Deferred` (explicitly deferred, Post-build polish section), `❓ Decision Awaiting` (ADR-034 owed).
+     - **Deferred To:** If `⏳ Deferred`, note the phase/epic (e.g., "Phase I", "#341", "Phase J"). If not deferred, leave blank.
+   - Group by section in the order they appear in the docket file.
 
 ## Never
 
