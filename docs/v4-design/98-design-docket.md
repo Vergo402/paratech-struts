@@ -27,6 +27,12 @@
 | Deduction ledger collapsed-by-default in Add Shore Point (Principle 7 disclosure) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #10 | 2026-06-11 (seed) |
 | Focus lands on the moved card after Deploy (keyboard parity polish) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #6 | 2026-06-11 (seed) |
 
+## Doctrine deviation watch
+
+| Item | Canonical home | Added |
+|---|---|---|
+| **Assign Equipment renders as a centered modal** ([#346](https://github.com/Vergo402/paratech-struts/issues/346)), not a bottom sheet — deliberately deviating from [ADR-016](11-decisions/ADR-016-modal-vs-sheet-rules.md) (assign = interrupt = sheet). Alex's call: the two-step assign flow (pick strut → Review sources) needs full-height centered layout on the command-post surface. Recorded in a doc-comment in `AssignEquipmentSheet.tsx`. Flag for the Phase J modal-vs-sheet doctrine audit. | [#346](https://github.com/Vergo402/paratech-struts/issues/346) / [ADR-016](11-decisions/ADR-016-modal-vs-sheet-rules.md) | 2026-06-19 |
+
 ## Post-build polish ([#341](https://github.com/Vergo402/paratech-struts/issues/341))
 
 > Cosmetic / visual / interaction items intentionally deferred until **after the full v4 build (Phase I)**. Canonical home = epic [#341](https://github.com/Vergo402/paratech-struts/issues/341); a row is promoted to a sub-issue of that epic only when it's scheduled for work.
