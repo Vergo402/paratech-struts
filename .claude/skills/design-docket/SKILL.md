@@ -46,8 +46,8 @@ Read `docs/v4-design/98-design-docket.md` and show Alex a compact summary: per-s
    - Then: a table of **all items in the docket** (including ad hoc, struck rows hidden) organized by section, with columns `| Section | Version | Issue # | Item | Status | Deferred To |`. 
      - Extract the issue number from each canonical home.
      - Version is always **v4**.
-     - **Status:** Infer from the docket or audit context: `✅ Done` (struck items), `🔄 In Progress` (explicitly marked), `⏳ Deferred` (explicitly deferred, Post-build polish section), `❓ Decision Awaiting` (ADR-034 owed).
-     - **Deferred To:** If `⏳ Deferred`, note the phase/epic (e.g., "Phase I", "#341", "Phase J"). If not deferred, leave blank.
+     - **Status:** Infer from the docket or audit context: `✅ Done` (struck items), `🔄 In Progress` (explicitly marked), `📋 Pending` (queued within Phase I), `⏳ Deferred` (pushed beyond Phase I), `❓ Decision Awaiting` (ADR owed).
+     - **Deferred To:** Show the target phase/epic. If "Pending" (Phase I queue), show "Phase I queue". If "Deferred" beyond Phase I, show the destination (e.g., "Phase J", "#341", "Phase K"). If neither, leave blank.
    - Group by section in the order they appear in the docket file.
 
 ## Never
