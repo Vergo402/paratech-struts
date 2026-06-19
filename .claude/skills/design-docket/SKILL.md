@@ -41,7 +41,9 @@ Read `docs/v4-design/98-design-docket.md` and show Alex a compact summary: per-s
    ```
    (For a **Post-build polish** add, prefix `[#341]` instead of `[#248]`. If #248 is closed by the time this runs, use the then-active v4 epic from `00-INDEX.md` in the prefix.)
 
-7. **Confirm in one line:** the row as written + which section it landed in. Nothing else.
+7. **Confirm + show running list:**
+   - First line: the row as written + which section it landed in.
+   - Then: a table of **all items in the docket** (including ad hoc, struck rows hidden) organized by section, with columns `| Section | Issue # | Item |`. Extract the issue number from each canonical home (e.g., `#248`, `#341`, `ad hoc`) and the item text. Group by section in the order they appear in the docket file.
 
 ## Never
 
