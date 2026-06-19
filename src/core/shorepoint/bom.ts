@@ -59,7 +59,9 @@ export function deployedRigs(sp: ShorePoint): string[] {
 export function assembleBom(
   combo: StrutCombination,
   deductions: Pick<Deductions, 'topPlate' | 'bottomPlate'>,
-  strutSource: { apparatus: string; inventoryId: string },
+  // inventoryId absent ⟺ the strut itself is not drawn from stock (a not-in-stock
+  // / off-book strut, resolved in the missing-piece chooser like a missing plate).
+  strutSource: { apparatus: string; inventoryId?: string },
   inventory: InventoryItem[],
 ): DeployedComponent[] {
   // Units already claimed from each inventory row by THIS one assembly — so two
@@ -72,16 +74,17 @@ export function assembleBom(
     claimed[id] = (claimed[id] ?? 0) + 1;
   };
 
+  const strutTracked = !!strutSource.inventoryId;
   const bom: DeployedComponent[] = [
     {
       role: 'strut',
       model: combo.strut.model,
       system: combo.strut.system,
-      source: strutSource.apparatus,
-      inventoryId: strutSource.inventoryId,
+      source: strutTracked ? strutSource.apparatus : UNTRACKED_SOURCE,
+      inventoryId: strutTracked ? strutSource.inventoryId : undefined,
     },
   ];
-  claim(strutSource.inventoryId);
+  if (strutTracked) claim(strutSource.inventoryId!);
 
   // Pair each required extension LENGTH with a row the engine resolved for it
   // (combo.extensionSources, one entry per instance), consuming each source once.
@@ -133,7 +136,8 @@ export interface BomSourceStatus {
 export function bomSourceStatus(
   combo: StrutCombination,
   deductions: Pick<Deductions, 'topPlate' | 'bottomPlate'>,
-  strutSource: { apparatus: string; inventoryId: string },
+  // inventoryId absent ⟺ a not-in-stock strut → reports 'missing' ("Strut not on scene").
+  strutSource: { apparatus: string; inventoryId?: string },
   inventory: InventoryItem[],
 ): BomSourceStatus {
   const bom = assembleBom(combo, deductions, strutSource, inventory);

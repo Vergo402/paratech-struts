@@ -272,7 +272,7 @@ describe('OperationsBoard', () => {
     expect(screen.getByText('No matching strut — nothing fits this opening at this load')).toBeInTheDocument();
   });
 
-  it('Assign Equipment opens the sheet with the SP context and an empty state', async () => {
+  it('Assign Equipment opens the sheet with the SP context and the off-book offer', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
@@ -281,8 +281,8 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { name: 'Assign Equipment' }));
     const sheet = screen.getByRole('dialog', { name: 'Assign Equipment' });
     expect(sheet).toBeInTheDocument();
-    // 60″, empty inventory, catalog reaches → the no-inventory empty state.
-    expect(within(sheet).getByText('No apparatus stock available')).toBeInTheDocument();
+    // 60″, empty inventory, catalog reaches → offer fitting struts off-book / add-to-truck.
+    expect(within(sheet).getByText(/Deploy one off-book, or add it to a truck/)).toBeInTheDocument();
   });
 
   it('Deploy commits EquipmentDeployed and the board announces the Equipment Assigned move politely', async () => {

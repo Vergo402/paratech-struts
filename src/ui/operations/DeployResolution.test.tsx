@@ -199,6 +199,37 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(topPlate.inventoryId).toBeUndefined();
   });
 
+  // A not-in-stock strut (combo with no inventoryId) — the strut itself flows through
+  // the missing-piece chooser, just like a missing plate. deductions cleared so the
+  // BOM is the lone strut (isolates the strut path).
+  const OFF_BOOK_STRUT = { ...COMBO, strut: { ...COMBO.strut, inventoryId: null } } as StrutCombination;
+  const noPlateSp = () =>
+    makeSP({ deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' } });
+
+  it('a not-in-stock strut shows the chooser (add to truck ∥ off-book, never "drop")', () => {
+    mockInventory.mockReturnValue([]); // nothing on scene at all
+    render(<DeployResolution sp={noPlateSp()} combo={OFF_BOOK_STRUT} onBack={vi.fn()} onConfirm={vi.fn()} submitting={false} />);
+    expect(screen.getByText(/not on scene/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add .* to/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Deploy off-book/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Drop this/i })).toBeNull(); // a strut is never dropped
+    expect(screen.getByRole('button', { name: /Confirm/ })).toBeDisabled(); // until the strut resolves
+  });
+
+  it('deploy a not-in-stock strut off-book: commits an untracked strut (moves zero stock)', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn(async () => ({ ok: true }));
+    mockInventory.mockReturnValue([]);
+    render(<DeployResolution sp={noPlateSp()} combo={OFF_BOOK_STRUT} onBack={vi.fn()} onConfirm={onConfirm} submitting={false} />);
+
+    await user.click(screen.getByRole('button', { name: /Deploy off-book/i }));
+    await user.click(screen.getByRole('button', { name: /Confirm/ }));
+    const [bom] = onConfirm.mock.calls[0] as unknown as [DeployedComponent[]];
+    const strut = bom.find((c) => c.role === 'strut')!;
+    expect(strut.inventoryId).toBeUndefined();
+    expect(strut.source).toBe('untracked');
+  });
+
   it('set-to-none: drops the plate, persists deductions, warns + gates Confirm until acknowledged', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn(async () => ({ ok: true }));

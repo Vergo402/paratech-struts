@@ -85,8 +85,10 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={vi.fn()} />);
     const sheet = screen.getByRole('dialog', { name: 'Assign Equipment' });
     expect(sheet).toBeInTheDocument();
-    expect(screen.getByText(/Div 1 · NW corner/)).toBeInTheDocument();
-    expect(screen.getByText(/T-Shore/)).toBeInTheDocument();
+    // The location also rides each off-book card now, so scope to the context line.
+    const context = document.querySelector('.fs-assign-context')!;
+    expect(context.textContent).toMatch(/Div 1 · NW corner/);
+    expect(context.textContent).toMatch(/T-Shore/);
   });
 
   it('renders a RecommendationCard per result; source + location resolved from the combo/SP', () => {
@@ -212,10 +214,12 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     expect(screen.getByText('No matching struts')).toBeInTheDocument();
   });
 
-  it('empty + stock blocker → the no-inventory empty state (sheet still opens)', () => {
-    // 60″ is catalog-reachable; the empty inventory is the blocker.
+  it('no stock on scene → offers fitting struts to deploy off-book / add to a truck', () => {
+    // 60″ is catalog-reachable; empty inventory means deploy NOT from stock.
     render(<AssignEquipmentSheet shorePoint={makeSP()} onClose={vi.fn()} onDeployed={vi.fn()} />);
     expect(screen.getByRole('dialog', { name: 'Assign Equipment' })).toBeInTheDocument();
-    expect(screen.getByText('No apparatus stock available')).toBeInTheDocument();
+    expect(screen.getByText(/Deploy one off-book, or add it to a truck/)).toBeInTheDocument();
+    // The fitting catalog struts are surfaced as deployable cards (no dead end).
+    expect(screen.getAllByRole('button', { name: /Deploy/ }).length).toBeGreaterThan(0);
   });
 });

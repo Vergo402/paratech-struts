@@ -51,6 +51,9 @@ interface WorkPiece {
 
 /** Inventory rows that physically match this component (by catalog identity). */
 function matchRows(c: DeployedComponent, inventory: InventoryItem[]): InventoryItem[] {
+  if (c.role === 'strut') {
+    return inventory.filter((i) => i.type === 'strut' && i.model === c.model);
+  }
   if (c.role === 'extension') {
     return inventory.filter((i) => i.type === 'extension' && i.length === c.length && i.system === c.system);
   }
@@ -154,7 +157,9 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   const strutApparatusId = strutItem?.apparatusId ?? '';
 
   const [pieces, setPieces] = useState<WorkPiece[]>(() =>
-    assembleBom(combo, sp.deductions, { apparatus: strutApparatus, inventoryId: combo.strut.inventoryId ?? '' }, inventory).map(
+    // inventoryId stays undefined for a not-in-stock strut so it surfaces as a
+    // missing piece (chooser: add to a truck ∥ off-book), exactly like a missing plate.
+    assembleBom(combo, sp.deductions, { apparatus: strutApparatus, inventoryId: combo.strut.inventoryId ?? undefined }, inventory).map(
       (c, i) => ({ id: `${c.role}-${c.plateId ?? c.length ?? 'strut'}-${i}`, c, offBook: false }),
     ),
   );
@@ -239,9 +244,11 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
     if (adding !== null) return; // single-flight — a gloved double-tap must not add 2×
     setAdding(id);
     const spec =
-      c.role === 'extension'
-        ? ({ type: 'extension', length: c.length!, system: c.system!, apparatus: apparatusName, apparatusId } as const)
-        : ({ type: 'plate', plateId: c.plateId!, apparatus: apparatusName, apparatusId } as const);
+      c.role === 'strut'
+        ? ({ type: 'strut', model: c.model!, system: c.system!, apparatus: apparatusName, apparatusId } as const)
+        : c.role === 'extension'
+          ? ({ type: 'extension', length: c.length!, system: c.system!, apparatus: apparatusName, apparatusId } as const)
+          : ({ type: 'plate', plateId: c.plateId!, apparatus: apparatusName, apparatusId } as const);
     let rowId = '';
     try {
       for (let k = 0; k < count; k++) rowId = await addOne(spec);
@@ -282,7 +289,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
         {pieces.map((w) => {
           const tracked = !!w.c.inventoryId;
           const row = tracked ? inventory.find((i) => i.id === w.c.inventoryId) : undefined;
-          const opts = w.c.role === 'strut' ? [] : sourceOptions(w.c, inventory);
+          const opts = sourceOptions(w.c, inventory);
           const ambiguous = tracked && opts.length >= 2;
           const currentAppId = row?.apparatusId ?? '';
 

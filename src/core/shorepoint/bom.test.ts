@@ -15,6 +15,13 @@ const strutSrc = { apparatus: 'Rescue 2', inventoryId: 'inv-strut' };
 const sp = (bom: ShorePoint['deployedBom']): ShorePoint => ({ deployedBom: bom }) as unknown as ShorePoint;
 
 describe('assembleBom — ADR-033 deploy assembly', () => {
+  it('a strut source with no inventoryId records an UNTRACKED strut (off-book / not-in-stock)', () => {
+    const bom = assembleBom(combo({}), { topPlate: 'none', bottomPlate: 'none' }, { apparatus: 'untracked' }, []);
+    const strut = bom.find((c) => c.role === 'strut')!;
+    expect(strut.inventoryId).toBeUndefined();
+    expect(strut.source).toBe('untracked');
+  });
+
   it('same plate at both ends with ONE unit in stock → one tracked, one untracked (no double-claim)', () => {
     // The HIGH bug: a single shared plate unit must not be claimed twice, which
     // would force the all-or-nothing deploy transaction to abort a valid shore.

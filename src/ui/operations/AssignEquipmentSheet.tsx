@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Deductions, DeployedComponent, ShorePoint } from '@core/schema';
+import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
-import { bomSourceStatus, pendingReasonFor } from '@core/shorepoint';
+import { bomSourceStatus, findForShorePoint, pendingReasonFor } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Sheet } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
@@ -109,8 +110,16 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   function handleDeploy(combo: StrutCombination) {
     if (!sp || inFlight.current) return;
     const inventoryId = combo.strut.inventoryId;
-    const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
-    if (!inventoryId || !item) {
+    // A not-in-stock (catalog) strut has no inventoryId — route straight to Review
+    // sources, where the strut resolves like a missing plate: add it to a truck, or
+    // deploy it off-book. Never the "no longer in inventory" error (it never was).
+    if (!inventoryId) {
+      setError(null);
+      setResolving(combo);
+      return;
+    }
+    const item = inventory.find((i) => i.id === inventoryId);
+    if (!item) {
       setError('That strut is no longer in inventory — pull down to re-check stock.');
       return;
     }
@@ -128,6 +137,14 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   }
 
   const reason = sp && recommendations.length === 0 ? pendingReasonFor(sp, inventory) : undefined;
+
+  // No stock fits, but the catalog does: offer the fitting struts to deploy NOT from
+  // stock (decision: only when no in-stock option). Each routes to Review sources to
+  // resolve the strut (add to a truck ∥ off-book). Capacity sentinels stay excluded.
+  const offBookCombos = useMemo(
+    () => (sp && reason === 'no-inventory' ? findForShorePoint(sp, null).filter((c) => !c.exceedsCapacity) : []),
+    [sp, reason],
+  );
 
   // The shore point's identity line (division · building · area) — reused for
   // the sheet header AND passed to each RecommendationCard's `location` (S12 §3.1).
@@ -197,12 +214,25 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           reason="Nothing fits this opening at this load — adjust deductions or re-measure"
         />
       )}
-      {sp && recommendations.length === 0 && reason === 'no-inventory' && (
-        <EmptyState
-          variant="upstream-blocked"
-          headline="No apparatus stock available"
-          reason="A strut that fits exists, but none is available on scene"
-        />
+      {sp && !resolving && recommendations.length === 0 && reason === 'no-inventory' && (
+        <>
+          <p className="fs-assign-notice" role="status">
+            No fitting strut is on scene. Deploy one off-book, or add it to a truck.
+          </p>
+          <div className="fs-assign-list">
+            {offBookCombos.map((combo) => (
+              <RecommendationCard
+                key={`${combo.strut.id}|${combo.extensions.join('+')}`}
+                combo={combo}
+                deductions={sp.deductions}
+                location={spLocation}
+                stock={bomSourceStatus(combo, sp.deductions, { apparatus: UNTRACKED_SOURCE }, inventory)}
+                onDeploy={handleDeploy}
+                deployDisabled={deploying}
+              />
+            ))}
+          </div>
+        </>
       )}
       {sp && recommendations.length === 0 && reason === 'over-capacity' && (
         <EmptyState
