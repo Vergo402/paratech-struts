@@ -50,8 +50,9 @@ beforeEach(() => {
 describe('ShorePointDetail — BOM', () => {
   it('lists each piece and flags an off-book piece', () => {
     render(<ShorePointDetail sp={makeSp()} />);
-    // "LS 406" appears as the strut headline AND the BOM piece id — both expected.
-    expect(screen.getAllByText('LS 406').length).toBeGreaterThanOrEqual(2);
+    // The strut model lives in exactly ONE place now — the BOM piece (the redesign
+    // dropped the duplicate identity/hero echo).
+    expect(screen.getAllByText('LS 406')).toHaveLength(1);
     expect(screen.getByText('Off-book — not drawn from stock')).toBeInTheDocument();
     expect(screen.getByText(/All tracked pieces on Rescue 2/)).toBeInTheDocument();
     expect(screen.getByText(/includes off-book pieces/)).toBeInTheDocument();
@@ -66,16 +67,25 @@ describe('ShorePointDetail — BOM', () => {
 });
 
 describe('ShorePointDetail — measurement ledger', () => {
-  it('shows the raw opening, an effective length, and the estimated load', () => {
-    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 5000 })} />);
+  const withDeductions = { headerWood: '4x4', footerWood: 'none', topPlate: 'none', bottomPlate: 'rigid6' } as const;
+
+  it('with deductions: shows the raw opening, the deducted effective length, and the load', () => {
+    render(<ShorePointDetail sp={makeSp({ deductions: withDeductions, estimatedLoad: 5000 })} />);
     expect(screen.getByText('Raw opening')).toBeInTheDocument();
-    expect(screen.getByText('Effective length')).toBeInTheDocument();
+    // "Effective length" labels the hero figure AND the ledger row → 2 occurrences.
+    expect(screen.getAllByText('Effective length').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('5,000 lbs')).toBeInTheDocument();
   });
 
-  it('labels the effective length "Set length" once secured', () => {
+  it('no deductions: collapses to a single "Opening length" (no phantom Raw row)', () => {
+    render(<ShorePointDetail sp={makeSp()} />);
+    expect(screen.queryByText('Raw opening')).toBeNull();
+    expect(screen.getAllByText('Opening length').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('labels the length "Set length" once secured (hero + ledger)', () => {
     render(<ShorePointDetail sp={makeSp({ status: 'secured' })} />);
-    expect(screen.getByText('Set length')).toBeInTheDocument();
+    expect(screen.getAllByText('Set length').length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -109,6 +119,17 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
     mockFind.mockReturnValue([combo({ capacity: 12000 })]);
     render(<ShorePointDetail sp={makeSp()} />);
     expect(screen.getByText(/Within rated capacity — 12,000 lbs per strut\./)).toBeInTheDocument();
+  });
+
+  it('leads the strip with a one-word verdict (color is never the only signal)', () => {
+    mockFind.mockReturnValue([combo({ capacity: 12000 })]);
+    const { unmount } = render(<ShorePointDetail sp={makeSp()} />);
+    expect(screen.getByText('Safe')).toBeInTheDocument();
+    unmount();
+
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'] })]);
+    render(<ShorePointDetail sp={makeSp()} />);
+    expect(screen.getByText('Unverified')).toBeInTheDocument();
   });
 
   it('flags the unrated zone', () => {

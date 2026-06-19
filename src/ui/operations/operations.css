@@ -1666,44 +1666,92 @@ button.fs-spc-head {
 .fs-spd {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 .fs-spd-section {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
 }
+/* Section headers → quiet anchored dividers: a hairline above + the faintest text
+   tier, so a header reads as a fence between blocks, not as content competing with
+   the values beneath it. The hero has no header, so the first hairline lands above
+   "Measurement & load" and fences the hero off as the summary. */
 .fs-spd-h {
   margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--surface-stroke);
   font: var(--type-label);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  /* The hairline above already makes the header recede as a divider; the color
+     stays at --text-secondary (not tertiary) so these "what-is-what" signposts
+     hold WCAG AA at 11px — tertiary is large/non-essential only. */
   color: var(--text-secondary);
 }
-.fs-spd-idrow {
+
+/* HERO — the glance zone */
+.fs-spd-hero {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-spd-hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-2);
 }
-.fs-spd-seq {
-  font: var(--type-mono);
-  font-weight: 600;
-  color: var(--text-secondary);
+.fs-spd-hero-top > .fs-badge {
+  flex: none;
 }
 .fs-spd-where {
+  /* repurposed → the hero headline (location, or shore type when no location) */
   margin: 0;
-  font: var(--type-body-medium);
+  min-width: 0;
+  font: var(--type-headline-2);
   color: var(--text-primary);
 }
 .fs-spd-assigned {
   margin: 0;
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-spd-assigned-label {
   font: var(--type-caption);
   color: var(--text-secondary);
 }
-.fs-spd-strut {
-  margin: 0;
-  font: var(--type-body-medium);
+.fs-spd-hero-figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.fs-spd-hero-cap {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  /* labels the hero number — must stay AA-legible (not tertiary) */
+  color: var(--text-secondary);
+}
+.fs-spd-hero-num {
+  font: var(--type-mono);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--accent);
+}
+.fs-spd-safety-word {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: var(--space-2);
+}
+/* promote the effective/set row inside the ledger without touching shared .fs-rec-* */
+.fs-spd .fs-rec-effective-row .fs-rec-slot-label {
   color: var(--text-primary);
+}
+.fs-spd .fs-rec-effective {
+  font-size: 1.0625rem;
 }
 .fs-spd-rollup {
   margin: 0;
