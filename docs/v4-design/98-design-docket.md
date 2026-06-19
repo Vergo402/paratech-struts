@@ -47,6 +47,7 @@
 |---|---|---|
 | Desktop: move the bottom tab bar to a true side selector (left nav rail) | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
 | Desktop: redesign the Operations / Cutting Station selector — bad UI | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
+| Dashed empty-shell (`.fs-ops-detail-shell`, pinned detail column ≥1200) is a net-new idiom — formalize as a reusable empty-state pattern, or re-style to the surface/hairline convention vs the 2px dashed border | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
 
 ## Unscheduled / watch
 
