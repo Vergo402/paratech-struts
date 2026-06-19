@@ -164,6 +164,10 @@
   font: var(--type-body-medium);
   font-weight: 600;
 }
+.fs-swatch--photo {
+  background: var(--surface-card);
+  object-fit: cover;
+}
 
 /* ---- full-screen list -------------------------------------------------------- */
 .fs-fullscreen {

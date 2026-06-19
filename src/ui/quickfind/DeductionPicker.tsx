@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, plateHeight, woodHeight } from '@core/load';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import type { Deductions } from '@core/schema';
 import { MeasurementValue } from '@ui/primitives';
-import { InlineSegmented, VisualGridPicker } from '@ui/picker';
+import { InlineSegmented, PlateSwatch, VisualGridPicker } from '@ui/picker';
+import type { VisualGridOption } from '@ui/picker';
 
 /**
  * DeductionPicker — the fixed-order deduction ledger (card.md / input.md):
@@ -23,6 +25,20 @@ export interface DeductionPickerProps {
   measurementEighths: number;
   value: Deductions;
   onChange: (next: Deductions) => void;
+}
+
+function PlateThumb({ id, name }: VisualGridOption) {
+  const [err, setErr] = useState(false);
+  if (id === 'none' || err) return <PlateSwatch name={name} />;
+  return (
+    <img
+      className="fs-swatch fs-swatch--photo"
+      src={`/plates/${id}.jpg`}
+      alt=""
+      aria-hidden="true"
+      onError={() => setErr(true)}
+    />
+  );
 }
 
 function DeductionAmount({ heightInches }: { heightInches: number }) {
@@ -72,6 +88,7 @@ export function DeductionPicker({ measurementEighths, value, onChange }: Deducti
         options={PLATE_OPTIONS}
         value={value.topPlate}
         onSelect={(id) => set('topPlate', id)}
+        renderThumb={(opt) => <PlateThumb {...opt} />}
         trailing={
           <span className="fs-ledger-value">
             <DeductionAmount heightInches={plateHeight(value.topPlate)} />
@@ -83,6 +100,7 @@ export function DeductionPicker({ measurementEighths, value, onChange }: Deducti
         options={PLATE_OPTIONS}
         value={value.bottomPlate}
         onSelect={(id) => set('bottomPlate', id)}
+        renderThumb={(opt) => <PlateThumb {...opt} />}
         trailing={
           <span className="fs-ledger-value">
             <DeductionAmount heightInches={plateHeight(value.bottomPlate)} />
