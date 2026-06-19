@@ -843,7 +843,15 @@ export function OperationsBoard() {
       )
       .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
     const items = groupLanePoints(visible);
+    // Front leg (lowest groupIndex) carries the group's location/added identity.
     const rep = (it: LaneItem) => (it.kind === 'group' ? it.members[0]! : it.sp);
+    // For STATUS sort a split-status group sits at its LEAST-ADVANCED leg, so a
+    // group with any leg still in cutting reads as "still in cutting" — it can't
+    // hide behind a front leg that's already secured (review #4).
+    const statusKey = (it: LaneItem) =>
+      it.kind === 'group'
+        ? Math.min(...it.members.map((m) => STATUS_ORDER.indexOf(m.status)))
+        : STATUS_ORDER.indexOf(it.sp.status);
     return [...items].sort((a, b) => {
       const ra = rep(a), rb = rep(b);
       if (listSort === 'added-newest' || listSort === 'added-oldest') {
@@ -851,10 +859,7 @@ export function OperationsBoard() {
         return listSort === 'added-oldest' ? asc : -asc; // newest = reverse of oldest
       }
       if (listSort === 'status') {
-        return (
-          STATUS_ORDER.indexOf(ra.status) - STATUS_ORDER.indexOf(rb.status) ||
-          compareShorePointsByLocation(ra, rb)
-        );
+        return statusKey(a) - statusKey(b) || compareShorePointsByLocation(ra, rb);
       }
       return compareShorePointsByLocation(ra, rb);
     });

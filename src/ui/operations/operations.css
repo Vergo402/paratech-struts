@@ -68,10 +68,17 @@
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none; /* the row scrolls; no scrollbar chrome on a phone */
+  /* Keep a sideways swipe from chaining to the page / back-gesture (review nit). */
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* Fade the right edge so an off-screen chip peeks — a "there's more" hint
+     (review #2). Only bites when content overflows into the fade zone. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
 }
 .fs-ops-filter-chips::-webkit-scrollbar { display: none; }
 /* Chips size to their content and never shrink (they scroll instead). */
-.fs-ops-filter-chips .fs-picker-field { flex: none; }
+.fs-ops-filter-chips .fs-picker-field { flex: none; scroll-snap-align: start; }
 /* Compact, content-width trigger (form pickers are 56px / full-width). */
 .fs-ops-filterbar .fs-filterbar-trigger {
   width: auto;
@@ -80,17 +87,23 @@
   padding: 0 var(--space-3);
   gap: var(--space-1);
 }
-.fs-picker-trigger-icon { flex: none; display: inline-flex; color: var(--text-secondary); }
+/* A long building/area name can't push a chip past the viewport — ellipsize. */
+.fs-ops-filter-chips .fs-picker-trigger-value { max-width: 14ch; }
+/* The Sort chip's glyph is the accent gold so it reads apart from the place
+   filters beside it without re-adding a label (review #3). */
+.fs-picker-trigger-icon { flex: none; display: inline-flex; color: var(--accent); }
 .fs-ops-filter-clear {
   flex: none;
   font: var(--type-body-medium);
   color: var(--accent);
   background: none;
   border: none;
+  border-radius: var(--radius-button);
   padding: var(--space-2) var(--space-3);
   min-height: 40px;
   cursor: pointer;
 }
+.fs-ops-filter-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* ---- View toggle (#356) — two square icon buttons (desktop), one (phone) --- */
 .fs-view-toggle {

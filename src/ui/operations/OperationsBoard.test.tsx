@@ -871,6 +871,33 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-pend', 'sp-cut', 'sp-ret']);
   });
 
+  it('list Sort → Status: a split-status group sits at its least-advanced leg', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    const gm = (id: string, status: ShorePointStatus, idx: number): ShorePoint => ({
+      ...makeSP(id, status),
+      shoreType: '3-post',
+      groupId: 'g1',
+      groupIndex: idx,
+      groupTotal: 2,
+      deployedBom: [{ role: 'strut', model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }],
+    });
+    // Group's front leg is 'secured' but a mate is still 'cutting'; a 'runner'
+    // singleton sits between those two statuses in STATUS_ORDER.
+    mockShorePoints.mockReturnValue([
+      gm('sp-g-secured', 'secured', 1),
+      gm('sp-g-cutting', 'cutting', 2),
+      makeSP('sp-runner', 'runner'),
+    ]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    await setListSort(user, 'Status');
+    const items = Array.from(document.querySelectorAll('.fs-ops-list > [role="listitem"]'));
+    // Group keys on its least-advanced leg (cutting) → ahead of the runner singleton.
+    expect(items[0]!.querySelector('.fs-gs')).not.toBeNull();
+    expect(items[1]!.getAttribute('data-sp-id')).toBe('sp-runner');
+  });
+
   it('list Sort → Added — newest first is newest-first', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
