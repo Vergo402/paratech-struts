@@ -10,12 +10,13 @@ import {
 } from '@core/operation';
 import { newId } from '@core/id';
 import { Badge, Button, EmptyState, Modal, Segmented, SideDrawer } from '@ui/primitives';
-import { useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
+import { useApparatus, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
 import { ShorePointCard, SHORE_TYPE_LABELS, shorePointDrawerTitle } from './ShorePointCard';
 import { ShorePointDetail } from './ShorePointDetail';
+import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
@@ -40,6 +41,16 @@ function Chevron() {
   return (
     <svg className="fs-lane-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ---- Inventory summary icon -------------------------------------------------
+function InventoryIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="3" y="4" width="14" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -263,6 +274,7 @@ export function OperationsBoard() {
   const operation = useOperation();
   const shorePoints = useShorePoints();
   const inventory = useInventory();
+  const { roster } = useApparatus();
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
@@ -281,6 +293,7 @@ export function OperationsBoard() {
   const [returnSpId, setReturnSpId] = useState<string | null>(null);
   // Quick View drawer (ADR-019) — the deployed point being inspected, or null.
   const [detailSpId, setDetailSpId] = useState<string | null>(null);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
@@ -746,6 +759,15 @@ export function OperationsBoard() {
       <header className="fs-ops-header">
         <h1 className="fs-ops-name">{operation.name}</h1>
         <button
+          className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
+          type="button"
+          aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
+          aria-pressed={inventoryOpen}
+          onClick={() => setInventoryOpen((v) => !v)}
+        >
+          <InventoryIcon />
+        </button>
+        <button
           className="fs-ops-edit"
           type="button"
           aria-label="Edit operation"
@@ -906,6 +928,13 @@ export function OperationsBoard() {
           title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
         >
           {detailSp && <ShorePointDetail sp={detailSp} />}
+        </SideDrawer>
+        <SideDrawer
+          open={inventoryOpen}
+          onClose={() => setInventoryOpen(false)}
+          title="Available Inventory"
+        >
+          <InventorySummary items={inventory} roster={roster} />
         </SideDrawer>
         </div>
       )}

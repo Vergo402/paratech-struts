@@ -14,7 +14,7 @@ export interface EquipmentRowProps {
   onDecrement: (id: string) => void;
 }
 
-function itemLabel(item: InventoryItem): { label: string; sub?: string } {
+export function itemLabel(item: InventoryItem): { label: string; sub?: string } {
   if (item.type === 'strut') {
     const s = STRUTS.find((x) => x.model === item.model);
     return { label: item.model ?? 'Strut', sub: s ? `${s.collapsed}″–${s.extended}″` : undefined };

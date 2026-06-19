@@ -18,6 +18,7 @@ vi.mock('@ui/hooks', () => ({
   useOperation: () => mockOperation(),
   useShorePoints: () => mockShorePoints(),
   useInventory: () => mockInventory(),
+  useApparatus: () => ({ roster: [], add: vi.fn(), remove: vi.fn() }),
   useRecommendations: () => mockRecommendations(),
   useCommit: () => mockCommit,
   useCommitMany: () => mockCommitMany,
