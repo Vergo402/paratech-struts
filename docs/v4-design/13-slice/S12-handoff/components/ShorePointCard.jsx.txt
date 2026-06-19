@@ -90,12 +90,12 @@ if (typeof document !== 'undefined' && !document.getElementById('fs-spc-css')) {
 }
 
 const NEXT_LABEL = {
-  pending:'In Process', process:'Strut Set', strutset:'Cutting',
-  cutting:'Runner', runner:'Shore Secured', secured:'Strut Equipment Returned',
+  pending:'Equipment Assigned', process:'Strut Set', strutset:'Cutting Station',
+  cutting:'Runner', runner:'Wood Shore Secured', secured:'Strut Equipment Returned',
 };
 const PREV_LABEL = {
-  process:'Pending', strutset:'In Process', cutting:'Strut Set',
-  runner:'Cutting', secured:'Runner', returned:'Shore Secured',
+  process:'Pending Equipment', strutset:'Equipment Assigned', cutting:'Strut Set',
+  runner:'Cutting Station', secured:'Runner', returned:'Wood Shore Secured',
 };
 const VALUE_LABEL = {
   pending:'Required', process:'Required', strutset:'Required', waiting:'Required',
@@ -256,8 +256,8 @@ export function ShorePointCard({
 }
 
 /* Inline status pill so the card is self-contained (mirrors StatusBadge). */
-const STATUS_LABELS = { pending:'Pending', process:'In Process', strutset:'Strut Set',
-  cutting:'Cutting', runner:'Runner', secured:'Shore Secured',
+const STATUS_LABELS = { pending:'Pending Equipment', process:'Equipment Assigned', strutset:'Strut Set',
+  cutting:'Cutting Station', runner:'Runner', secured:'Wood Shore Secured',
   returned:'Strut Equipment Returned', waiting:'Waiting', danger:'Hazard' };
 function StatusInline({ state, label }) {
   return (

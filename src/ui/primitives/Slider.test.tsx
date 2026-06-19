@@ -178,14 +178,15 @@ describe('Slider', () => {
 describe('buttonLabelFrom (the mouse-branch label transform)', () => {
   it('strips the slide prefix and capitalizes — all current call-site labels', () => {
     expect(buttonLabelFrom('Slide to set Strut Set')).toBe('Set Strut Set');
-    expect(buttonLabelFrom('Slide to set Cutting')).toBe('Set Cutting');
+    expect(buttonLabelFrom('Slide to send to Cutting Station')).toBe('Send to Cutting Station');
     expect(buttonLabelFrom('Slide to send to Runner')).toBe('Send to Runner');
     expect(buttonLabelFrom('Slide to mark Cut Done')).toBe('Mark Cut Done');
-    expect(buttonLabelFrom('Slide to set Shore Secured')).toBe('Set Shore Secured');
-    expect(buttonLabelFrom('Slide back to Pending')).toBe('Back to Pending');
-    expect(buttonLabelFrom('Slide back to In Process')).toBe('Back to In Process');
+    expect(buttonLabelFrom('Slide to set Wood Shore Secured')).toBe('Set Wood Shore Secured');
+    expect(buttonLabelFrom('Slide back to Pending Equipment')).toBe('Back to Pending Equipment');
+    expect(buttonLabelFrom('Slide back to Equipment Assigned')).toBe('Back to Equipment Assigned');
     expect(buttonLabelFrom('Slide back to Strut Set')).toBe('Back to Strut Set');
-    expect(buttonLabelFrom('Slide back to Cutting')).toBe('Back to Cutting');
+    expect(buttonLabelFrom('Slide back to Cutting Station')).toBe('Back to Cutting Station');
+    expect(buttonLabelFrom('Slide back to Runner')).toBe('Back to Runner');
     expect(buttonLabelFrom('Slide back — clear Cut Done')).toBe('Clear Cut Done');
   });
 });
@@ -214,18 +215,18 @@ describe('Slider — mouse branch (ADR-034: button instead of slide on a pointer
   it('renders a tap-once button (no slide track) and commits on a single click', () => {
     mockMouse();
     const onCommit = vi.fn();
-    const { container } = render(<Slider label="Slide to set Shore Secured" onCommit={onCommit} />);
+    const { container } = render(<Slider label="Slide to set Wood Shore Secured" onCommit={onCommit} />);
     expect(container.querySelector('.fs-slide-track')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Set Shore Secured' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Set Wood Shore Secured' }));
     expect(onCommit).toHaveBeenCalledTimes(1);
   });
 
   it('advance → primary button, step-back → secondary button', () => {
     mockMouse();
-    const { rerender } = render(<Slider label="Slide to set Cutting" onCommit={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Set Cutting' })).toHaveClass('fs-button--primary');
-    rerender(<Slider label="Slide back to Cutting" direction="stepback" onCommit={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Back to Cutting' })).toHaveClass('fs-button--secondary');
+    const { rerender } = render(<Slider label="Slide to send to Cutting Station" onCommit={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Send to Cutting Station' })).toHaveClass('fs-button--primary');
+    rerender(<Slider label="Slide back to Cutting Station" direction="stepback" onCommit={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Back to Cutting Station' })).toHaveClass('fs-button--secondary');
   });
 
   it('disabled: the button is inert and still shows the gate reason', () => {

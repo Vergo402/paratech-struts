@@ -43,8 +43,8 @@ export function shouldCommit(offsetPx: number, trackPx: number, threshold = 0.6)
 
 /**
  * The mouse-branch button label, derived from the slide label so all call sites
- * stay single-labelled: "Slide to set Shore Secured" → "Set Shore Secured",
- * "Slide back to Cutting" → "Back to Cutting", "Slide back — clear Cut Done" →
+ * stay single-labelled: "Slide to set Wood Shore Secured" → "Set Wood Shore Secured",
+ * "Slide back to Cutting Station" → "Back to Cutting Station", "Slide back — clear Cut Done" →
  * "Clear Cut Done".
  * ponytail: prefix-strip — labels MUST keep the "Slide to…/Slide back…"
  * convention; add an explicit prop if a label ever diverges.
