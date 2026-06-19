@@ -25,6 +25,13 @@ export interface DeductionPickerProps {
   measurementEighths: number;
   value: Deductions;
   onChange: (next: Deductions) => void;
+  /**
+   * Collapse the editable pickers behind a "Deductions" toggle, keeping the
+   * Required strut length + applied-summary + any danger warning always visible
+   * (#349, Add Shore Point only; Principle 7 honored). Default off — Quick Find
+   * and the gallery keep the ledger fully expanded, where it IS the task.
+   */
+  collapsible?: boolean;
 }
 
 function PlateThumb({ id, name }: VisualGridOption) {
@@ -58,66 +65,113 @@ const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
   sub: <DeductionAmount heightInches={p.height} />,
 }));
 
-export function DeductionPicker({ measurementEighths, value, onChange }: DeductionPickerProps) {
+// Disclosure chevron for the collapsible toggle — points down when open, rotates
+// to point right when collapsed (CSS, on the button's aria-expanded). Mirrors the
+// board's `.fs-lane-chevron` idiom (operations.css).
+function LedgerChevron() {
+  return (
+    <svg className="fs-ledger-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// Option-B collapsed summary (#349): the non-default deductions in build order
+// (Header → plates → Footer), or "No deductions" when every slot is empty. Names
+// the wood size and plate so an auto-applied 6×6 (3-Post) or a non-standard plate
+// announces itself without opening the section.
+function appliedSummary(value: Deductions): string {
+  const parts: string[] = [];
+  if (value.headerWood !== 'none') parts.push(`Header ${value.headerWood.replace('x', '×')}`);
+  if (value.topPlate !== 'none') parts.push(BASE_PLATES.find((p) => p.id === value.topPlate)?.name ?? 'Top plate');
+  if (value.bottomPlate !== 'none') parts.push(BASE_PLATES.find((p) => p.id === value.bottomPlate)?.name ?? 'Bottom plate');
+  if (value.footerWood !== 'none') parts.push(`Footer ${value.footerWood.replace('x', '×')}`);
+  return parts.length ? parts.join(' · ') : 'No deductions';
+}
+
+export function DeductionPicker({ measurementEighths, value, onChange, collapsible = false }: DeductionPickerProps) {
   const effectiveInches = effectiveLengthFrom(measurementEighths, value);
   const effectiveEighths = Math.round(effectiveInches * 8); // exact — already ⅛″-floored
-  const impossible = effectiveInches <= 0;
+  // Only a danger once a real opening is entered — a blank (0) measurement is the
+  // empty state, not "deductions consume the opening" (and must not force-open #349).
+  const impossible = measurementEighths > 0 && effectiveInches <= 0;
+
+  const [expanded, setExpanded] = useState(false);
+  // impossible force-opens: you can't fix a wood/plate you can't see (Principle 7).
+  const isOpen = !collapsible || expanded || impossible;
+  const showSummary = collapsible && !isOpen;
 
   const set = <K extends keyof Deductions>(key: K, v: Deductions[K]) =>
     onChange({ ...value, [key]: v });
 
   return (
     <div className="fs-ledger">
-      <div className="fs-ledger-row fs-ledger-raw">
-        <span className="fs-ledger-label">Raw opening</span>
-        <MeasurementValue eighths={measurementEighths} className="fs-ledger-value" />
-      </div>
-      <InlineSegmented
-        label="Header wood"
-        options={WOOD_OPTIONS}
-        value={value.headerWood}
-        onChange={(v) => set('headerWood', v)}
-        trailing={
-          <span className="fs-ledger-value">
-            <DeductionAmount heightInches={woodHeight(value.headerWood)} />
-          </span>
-        }
-      />
-      <VisualGridPicker
-        label="Top plate"
-        options={PLATE_OPTIONS}
-        value={value.topPlate}
-        onSelect={(id) => set('topPlate', id)}
-        renderThumb={(opt) => <PlateThumb {...opt} />}
-        trailing={
-          <span className="fs-ledger-value">
-            <DeductionAmount heightInches={plateHeight(value.topPlate)} />
-          </span>
-        }
-      />
-      <VisualGridPicker
-        label="Bottom plate"
-        options={PLATE_OPTIONS}
-        value={value.bottomPlate}
-        onSelect={(id) => set('bottomPlate', id)}
-        renderThumb={(opt) => <PlateThumb {...opt} />}
-        trailing={
-          <span className="fs-ledger-value">
-            <DeductionAmount heightInches={plateHeight(value.bottomPlate)} />
-          </span>
-        }
-      />
-      <InlineSegmented
-        label="Footer wood"
-        options={WOOD_OPTIONS}
-        value={value.footerWood}
-        onChange={(v) => set('footerWood', v)}
-        trailing={
-          <span className="fs-ledger-value">
-            <DeductionAmount heightInches={woodHeight(value.footerWood)} />
-          </span>
-        }
-      />
+      {collapsible && (
+        <button
+          type="button"
+          className="fs-ledger-toggle"
+          aria-expanded={isOpen}
+          onClick={() => setExpanded((e) => !e)}
+        >
+          <span className="fs-ledger-toggle-label">Deductions</span>
+          <LedgerChevron />
+        </button>
+      )}
+      {showSummary && <div className="fs-ledger-summary">{appliedSummary(value)}</div>}
+      {isOpen && (
+        <>
+          <div className="fs-ledger-row fs-ledger-raw">
+            <span className="fs-ledger-label">Raw opening</span>
+            <MeasurementValue eighths={measurementEighths} className="fs-ledger-value" />
+          </div>
+          <InlineSegmented
+            label="Header wood"
+            options={WOOD_OPTIONS}
+            value={value.headerWood}
+            onChange={(v) => set('headerWood', v)}
+            trailing={
+              <span className="fs-ledger-value">
+                <DeductionAmount heightInches={woodHeight(value.headerWood)} />
+              </span>
+            }
+          />
+          <VisualGridPicker
+            label="Top plate"
+            options={PLATE_OPTIONS}
+            value={value.topPlate}
+            onSelect={(id) => set('topPlate', id)}
+            renderThumb={(opt) => <PlateThumb {...opt} />}
+            trailing={
+              <span className="fs-ledger-value">
+                <DeductionAmount heightInches={plateHeight(value.topPlate)} />
+              </span>
+            }
+          />
+          <VisualGridPicker
+            label="Bottom plate"
+            options={PLATE_OPTIONS}
+            value={value.bottomPlate}
+            onSelect={(id) => set('bottomPlate', id)}
+            renderThumb={(opt) => <PlateThumb {...opt} />}
+            trailing={
+              <span className="fs-ledger-value">
+                <DeductionAmount heightInches={plateHeight(value.bottomPlate)} />
+              </span>
+            }
+          />
+          <InlineSegmented
+            label="Footer wood"
+            options={WOOD_OPTIONS}
+            value={value.footerWood}
+            onChange={(v) => set('footerWood', v)}
+            trailing={
+              <span className="fs-ledger-value">
+                <DeductionAmount heightInches={woodHeight(value.footerWood)} />
+              </span>
+            }
+          />
+        </>
+      )}
       <div className={`fs-ledger-row fs-ledger-effective${impossible ? ' fs-ledger-effective--danger' : ''}`}>
         <span className="fs-ledger-label">Required strut length</span>
         <MeasurementValue eighths={effectiveEighths} className="fs-ledger-value fs-ledger-value--big" />

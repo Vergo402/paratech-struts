@@ -102,6 +102,38 @@
 .fs-ledger-value--big { font-size: 26px; font-weight: 700; line-height: 1.05; }
 .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-text); }
 
+/* Collapsible disclosure (#349, Add Shore Point only) — tucks the editable pickers
+   behind a toggle; the Required strut length + summary + danger warning stay put. */
+.fs-ledger-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  text-align: left;
+}
+.fs-ledger-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-ledger-toggle-label {
+  font: var(--type-body-medium);
+  font-weight: calc(600 + var(--type-weight-bump));
+}
+.fs-ledger-chevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transform: rotate(0deg); /* explicit base — transition to/from `none` doesn't settle */
+  transition: transform var(--motion-micro) var(--ease-micro);
+}
+.fs-ledger-toggle[aria-expanded="false"] .fs-ledger-chevron { transform: rotate(-90deg); }
+.fs-ledger-summary {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
 /* ---- Quick Find screen (10-quick-find.md) ----------------------------------- */
 /* The standalone calculator: measurement → deductions → load → system filter →
    Find Struts → result cards, one scrolling column. */

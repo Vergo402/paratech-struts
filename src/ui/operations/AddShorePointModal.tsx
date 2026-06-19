@@ -487,7 +487,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
           />
         )}
         <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
-        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
+        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} collapsible />
         <TextField
           label="Estimated load (lbs) — optional"
           value={estimatedLoad}

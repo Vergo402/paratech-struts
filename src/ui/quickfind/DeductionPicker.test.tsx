@@ -6,9 +6,19 @@ import { NO_DEDUCTIONS, type Deductions } from '@core/schema';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import { DeductionPicker } from './DeductionPicker';
 
-function Harness({ measurementEighths = 56 * 8 }: { measurementEighths?: number }) {
-  const [d, setD] = useState<Deductions>(NO_DEDUCTIONS);
-  return <DeductionPicker measurementEighths={measurementEighths} value={d} onChange={setD} />;
+function Harness({
+  measurementEighths = 56 * 8,
+  collapsible = false,
+  initial = NO_DEDUCTIONS,
+}: {
+  measurementEighths?: number;
+  collapsible?: boolean;
+  initial?: Deductions;
+}) {
+  const [d, setD] = useState<Deductions>(initial);
+  return (
+    <DeductionPicker measurementEighths={measurementEighths} value={d} onChange={setD} collapsible={collapsible} />
+  );
 }
 
 describe('DeductionPicker', () => {
@@ -87,5 +97,55 @@ describe('DeductionPicker', () => {
     expect(screen.getByRole('button', { name: /top plate/i }).textContent).toContain(
       '6" Swivel Base',
     );
+  });
+});
+
+describe('DeductionPicker — collapsible (#349, Add Shore Point)', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('collapsed by default: pickers hidden, but Required strut length + "No deductions" stay visible', () => {
+    render(<Harness collapsible />);
+    expect(screen.queryByRole('radiogroup', { name: 'Header wood' })).toBeNull();
+    // Principle 7 — the safety output is never hidden by the collapse.
+    expect(screen.getByText('Required strut length')).toBeInTheDocument();
+    expect(screen.getByText('No deductions')).toBeInTheDocument();
+  });
+
+  it('the toggle reveals the editable pickers', async () => {
+    const user = userEvent.setup();
+    render(<Harness collapsible />);
+    expect(screen.queryByRole('radiogroup', { name: 'Header wood' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Deductions' }));
+    expect(screen.getByRole('radiogroup', { name: 'Header wood' })).toBeInTheDocument();
+  });
+
+  it('the collapsed summary names the applied deductions in build order (Option B)', () => {
+    render(<Harness collapsible initial={{ ...NO_DEDUCTIONS, headerWood: '4x4', footerWood: '6x6' }} />);
+    expect(screen.getByText('Header 4×4 · Footer 6×6')).toBeInTheDocument();
+  });
+
+  it('impossible force-opens the pickers and shows the warning even while collapsed', () => {
+    // 8″ opening − 6×6 header (5.5) − 6×6 footer (5.5) = −3″.
+    render(
+      <Harness collapsible measurementEighths={8 * 8} initial={{ ...NO_DEDUCTIONS, headerWood: '6x6', footerWood: '6x6' }} />,
+    );
+    // Never tapped the toggle, yet the pickers show (can't fix what you can't see)…
+    expect(screen.getByRole('radiogroup', { name: 'Header wood' })).toBeInTheDocument();
+    // …and the danger warning is surfaced.
+    expect(screen.getByText(/consume the whole opening/i)).toBeInTheDocument();
+  });
+
+  it('a blank (0) opening is not danger and stays collapsed, even with auto-filled deductions', () => {
+    // Shore type auto-fills wood before a measurement is entered — that is the empty
+    // state, NOT "deductions consume the opening". Must not false-flag or force-open.
+    const { container } = render(
+      <Harness collapsible measurementEighths={0} initial={{ ...NO_DEDUCTIONS, headerWood: '6x6', footerWood: '6x6' }} />,
+    );
+    expect(container.querySelector('.fs-ledger-effective--danger')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Header wood' })).toBeNull();
+    // The summary still announces what's auto-applied (Option B).
+    expect(screen.getByText('Header 6×6 · Footer 6×6')).toBeInTheDocument();
   });
 });
