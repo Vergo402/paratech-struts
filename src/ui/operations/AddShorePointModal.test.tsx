@@ -372,6 +372,20 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     expect(screen.queryByRole('button', { name: 'Add Shore Point' })).toBeNull();
   });
 
+  it('no available stock → a notice + "Add to Pending", no dead-end Find button', async () => {
+    // every strut out (available 0) → one-step mode has nothing to deploy.
+    mockInventory.mockReturnValue([
+      { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, available: 0 },
+    ] as never);
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    expect(screen.getByText(/No stock available to deploy/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Find Available Struts' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add to Pending' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Save as Pending' })).toBeNull();
+  });
+
   it('offers a Group picker built from on-scene apparatus', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
     expect(screen.getByText('Group')).toBeInTheDocument();

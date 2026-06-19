@@ -73,6 +73,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // stays available in BOTH modes). Editing never finds/deploys, so the inline
   // section is create-mode only.
   const inlineMode = !!operation?.inlineDeploy && !editing;
+  // One-step mode has nothing to deploy when no strut is available on scene (every
+  // rig out, or no stock at all). Rather than let it silently fall back to a Pending
+  // card (Alex), surface it: a notice + the create button relabeled "Add to Pending".
+  const noDeployableStock = inlineMode && !inventory.some((i) => i.type === 'strut' && (i.available ?? 0) > 0);
 
   const [division, setDivision] = useState(1);
   const [building, setBuilding] = useState('');
@@ -415,13 +419,15 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     </Button>
   ) : inlineMode ? (
     <Button
-      variant="secondary"
+      // No stock to deploy → this IS the action, so emphasize it (primary) and
+      // name it for what it does. Otherwise it's the secondary escape hatch.
+      variant={noDeployableStock ? 'primary' : 'secondary'}
       fullWidth
       disabled={!canSubmit}
       disabledReason={disabledReason ?? undefined}
       onPress={handleCreatePending}
     >
-      Save as Pending
+      {noDeployableStock ? 'Add to Pending' : 'Save as Pending'}
     </Button>
   ) : (
     <Button
@@ -492,7 +498,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
           helper="Leave blank if unknown"
         />
 
-        {inlineMode && (
+        {inlineMode && noDeployableStock && (
+          <p className="fs-assign-notice" role="status">
+            No stock available to deploy — this will be added to Pending.
+          </p>
+        )}
+        {inlineMode && !noDeployableStock && (
           <>
             {!found && (
               <Button

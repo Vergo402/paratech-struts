@@ -1026,6 +1026,18 @@ button.fs-spc-head {
   color: var(--danger-text);
 }
 
+/* One-step mode, nothing to deploy: a pending-tinted notice that the card will
+   be created as Pending (left-border idiom, mirrors the safety strip). */
+.fs-assign-notice {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: 0 var(--radius-button) var(--radius-button) 0;
+  border-left: 3px solid var(--status-pending-text);
+  background: var(--status-pending-bg);
+  color: var(--text-primary);
+  font: var(--type-body);
+}
+
 /* ---- deploy resolution — "Review sources" step (#330 Phase 3b, ADR-033) ----- */
 .fs-resolve {
   display: flex;
