@@ -174,6 +174,21 @@ describe('ShorePointCard', () => {
     expect(valueShelfText()).toBe('Required strut length48 1/2″');
   });
 
+  it('promotes the pre-cutting Required strut length number at a glance (#351)', () => {
+    // pending / process / strutset all read the value big (is-promoted), matching
+    // the cutting card's Cut-length treatment; post-cut statuses stay shelf weight.
+    for (const status of ['pending', 'process', 'strutset', 'cutting'] as const) {
+      const { unmount } = render(<ShorePointCard shorePoint={makeSP({ status })} />);
+      expect(document.querySelector('.fs-spc-value')).toHaveClass('is-promoted');
+      unmount();
+    }
+    for (const status of ['runner', 'secured', 'returned'] as const) {
+      const { unmount } = render(<ShorePointCard shorePoint={makeSP({ status })} />);
+      expect(document.querySelector('.fs-spc-value')).not.toHaveClass('is-promoted');
+      unmount();
+    }
+  });
+
   it('detail line (#248): shows the (−deduction) + load when present', () => {
     // 4×4 header + 4×4 footer = 7″ = 56 eighths deducted. Raw 48½″ (388),
     // effective 41½″ (332). The detail line carries raw + (−deduction) + load.

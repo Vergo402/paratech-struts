@@ -60,6 +60,8 @@ const VALUE_LABEL: Record<ShorePointStatus, string> = {
   secured: 'Set length',
   returned: 'Set length',
 };
+// Statuses whose value number is the live working length and reads big (#351).
+const PROMOTED_VALUE = new Set<ShorePointStatus>(['pending', 'process', 'strutset', 'cutting']);
 
 /**
  * Status-hook classes for a point — appends the WAITING presentation when a
@@ -182,7 +184,11 @@ export function ShorePointCard({
   // interactive region branches on `pending` / status — one gate, no per-region edits.
   const interactive = !readOnly;
   const pending = sp.status === 'pending';
-  const promoted = sp.status === 'cutting';
+  // Promote the value number (28px/700) on every card where it's the LIVE working
+  // length: the pre-cutting Required strut length (pending/process/strutset, #351)
+  // and the cutting Cut length. Post-cut (runner/secured/returned) stays at shelf
+  // weight — that number is a record, not the next thing to read at a glance.
+  const promoted = PROMOTED_VALUE.has(sp.status);
   const waiting = pending && !!sp.pendingReason;
   // A no-inventory wait names the strut(s) that fit (catalog-only — no inventory
   // dep, deterministic on the opening). Memoized so it runs only for waiting cards.
