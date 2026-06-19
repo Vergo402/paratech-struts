@@ -150,13 +150,15 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
     expect(screen.getByText('Capacity not re-verifiable for the deployed assembly.')).toBeInTheDocument();
   });
 
-  it('announces non-passing states assertively (warn + unknown = alert; clean pass stays quiet)', () => {
+  it('only a FLAG announces assertively (warn = alert in hero; pass + unverifiable stay quiet at the bottom)', () => {
+    // "not re-verifiable" (unknown) is NOT a flag → quiet, no alert, but still shown.
     mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'] })]);
     const { unmount } = render(<ShorePointDetail sp={makeSp()} />);
-    // "not re-verifiable" (unknown) is safety-relevant → role=alert.
-    expect(screen.getByRole('alert')).toHaveTextContent('Capacity not re-verifiable');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('Capacity not re-verifiable for the deployed assembly.')).toBeInTheDocument();
     unmount();
 
+    // A real flag (unrated / over-capacity) → role=alert, surfaced in the hero.
     mockFind.mockReturnValue([combo({ unrated: true, unratedReason: 'Beyond published length.' })]);
     const warn = render(<ShorePointDetail sp={makeSp()} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Beyond published length.');

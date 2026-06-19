@@ -147,6 +147,12 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
     return { kind: 'ok' as const, msg: `Within rated capacity — ${Math.floor(match.capacity).toLocaleString()} lbs per strut.` };
   }, [sp, inventory]);
 
+  // Only an actual FLAG (over-capacity / unrated) earns a spot in the hero, loud
+  // and assertive. A clean pass or an unverifiable read is reference, not an
+  // exception — it drops to the bottom of the panel (Alex). Surface the exception,
+  // not the non-event.
+  const safetyFlagged = safety.kind === 'warn';
+
   return (
     <div className="fs-spd">
       {/* HERO — the 2-second answer: where · status · the one length number · is it safe */}
@@ -164,13 +170,15 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
           <span className="fs-spd-hero-cap">{lengthLabel}</span>
           <MeasurementValue eighths={effectiveEighths} className="fs-spd-hero-num" />
         </div>
-        {/* Anything but a confirmed pass is safety-relevant — warn AND unknown both
-            announce assertively; only the clean "within rated" pass stays quiet.
-            The leading word carries the verdict without color (Principle 9). */}
-        <p className={`fs-spd-safety fs-spd-safety--${safety.kind}`} role={safety.kind === 'ok' ? undefined : 'alert'}>
-          <span className="fs-spd-safety-word">{SAFETY_WORD[safety.kind]}</span>
-          {safety.msg}
-        </p>
+        {/* Only a FLAG rides in the hero — loud + role=alert. The leading word
+            carries the verdict without color (Principle 9). Clean/unverifiable
+            reads drop to the bottom Safety section. */}
+        {safetyFlagged && (
+          <p className={`fs-spd-safety fs-spd-safety--${safety.kind}`} role="alert">
+            <span className="fs-spd-safety-word">{SAFETY_WORD[safety.kind]}</span>
+            {safety.msg}
+          </p>
+        )}
       </section>
 
       {/* Measurement & deduction ledger — the math behind the hero number */}
@@ -254,6 +262,18 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
           </ul>
         )}
       </section>
+
+      {/* Safety — at the bottom UNLESS flagged (a flag rides in the hero, above).
+          A clean pass / unverifiable read is reference, kept quiet here, no alert. */}
+      {!safetyFlagged && (
+        <section className="fs-spd-section">
+          <h3 className="fs-spd-h">Safety</h3>
+          <p className={`fs-spd-safety fs-spd-safety--${safety.kind}`}>
+            <span className="fs-spd-safety-word">{SAFETY_WORD[safety.kind]}</span>
+            {safety.msg}
+          </p>
+        </section>
+      )}
     </div>
   );
 }

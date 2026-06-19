@@ -1679,14 +1679,16 @@ button.fs-spc-head {
    "Measurement & load" and fences the hero off as the summary. */
 .fs-spd-h {
   margin: 0;
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--surface-stroke);
+  padding-top: var(--space-4);
+  /* A pronounced section divider (Alex): the bare --surface-stroke hairline (~0.07
+     alpha) was barely visible, so the rule is derived from --text-secondary for a
+     clearly-readable break between sections. Themed: tracks the text color. */
+  border-top: 1px solid color-mix(in srgb, var(--text-secondary) 45%, transparent);
   font: var(--type-label);
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  /* The hairline above already makes the header recede as a divider; the color
-     stays at --text-secondary (not tertiary) so these "what-is-what" signposts
-     hold WCAG AA at 11px — tertiary is large/non-essential only. */
+  /* --text-secondary (not tertiary) so these "what-is-what" signposts hold WCAG AA
+     at 11px — tertiary is large/non-essential only. */
   color: var(--text-secondary);
 }
 
