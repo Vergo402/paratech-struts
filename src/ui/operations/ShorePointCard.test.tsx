@@ -73,9 +73,9 @@ describe('ShorePointCard', () => {
       screen.getByText('No matching strut — nothing fits this opening at this load'),
     ).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
-    expect(
-      screen.getByText('Waiting for inventory — no apparatus stock to pull from'),
-    ).toBeInTheDocument();
+    // A no-inventory wait now NAMES the strut(s) that fit (issue: "doesn't tell you
+    // what equipment you're waiting for") instead of the generic stock copy.
+    expect(screen.getByText(/Needs .+ — none on scene/)).toBeInTheDocument();
   });
 
   it('waiting PRESENTATION: pending+reason shows the amber Waiting badge + is-waiting hooks', () => {
@@ -226,12 +226,11 @@ describe('ShorePointCard', () => {
     expect(detailLineText()).toBe('');
   });
 
-  it('waiting callout: title + verbatim copy for both pending reasons', () => {
+  it('waiting callout: title + reason copy for both pending reasons', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
     expect(screen.getByText('Waiting for inventory')).toBeInTheDocument();
-    expect(
-      screen.getByText('Waiting for inventory — no apparatus stock to pull from'),
-    ).toBeInTheDocument();
+    // no-inventory names the needed strut(s); no-match keeps its verbatim copy.
+    expect(screen.getByText(/Needs .+ — none on scene/)).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
     expect(screen.getByText('No matching strut')).toBeInTheDocument();
     expect(

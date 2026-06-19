@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type InventoryItem, type ShorePoint } from '../schema';
-import { pendingReasonFor } from './pendingReason';
+import { pendingReasonFor, pendingNeedModels } from './pendingReason';
 
 function sp(over: Partial<ShorePoint> = {}): ShorePoint {
   return {
@@ -75,5 +75,19 @@ describe('pendingReasonFor — live reason for a Pending point (#221)', () => {
     // comes back as an exceedsCapacity sentinel: a load problem, not a geometry miss.
     const inv = [strut('inv-ls1016', 'LS 1016', 'LongShore', 4)];
     expect(pendingReasonFor(sp({ measurementEighths: 132 * 8, estimatedLoad: 60000 }), inv)).toBe('over-capacity');
+  });
+});
+
+describe('pendingNeedModels — what equipment a no-inventory wait needs (issue 1)', () => {
+  it('names the catalog strut(s) that fit the opening, deduped', () => {
+    const models = pendingNeedModels(sp({ measurementEighths: 30 * 8 }));
+    expect(models.length).toBeGreaterThan(0);
+    expect(new Set(models).size).toBe(models.length); // no duplicate models
+    expect(models.every((m) => typeof m === 'string' && m.length > 0)).toBe(true);
+  });
+
+  it('empty when nothing in the catalog fits (a no-match point)', () => {
+    // 1000″ — far beyond any strut + extension in the catalog.
+    expect(pendingNeedModels(sp({ measurementEighths: 1000 * 8 }))).toEqual([]);
   });
 });

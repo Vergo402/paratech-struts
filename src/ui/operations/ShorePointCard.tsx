@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
-import { bomModelLabel, deductionTotalInches, deployedStrutOf, effectiveLengthFrom } from '@core/shorepoint';
+import { bomModelLabel, deductionTotalInches, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -31,6 +31,14 @@ const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
   'no-match': 'No matching strut',
   'over-capacity': 'Over capacity',
 };
+
+// Name the strut(s) a no-inventory point is waiting on — answers "what equipment?"
+// (Alex). Up to two models joined by "or"; a longer list collapses to "+N more".
+function needLine(models: string[]): string {
+  if (models.length === 0) return PENDING_REASON_COPY['no-inventory'];
+  if (models.length <= 2) return `Needs ${models.join(' or ')} — none on scene`;
+  return `Needs ${models[0]} or ${models[1]} (+${models.length - 2} more) — none on scene`;
+}
 
 // The lifecycle value shelf. The shelf number is ALWAYS the effective length
 // (raw − deductions, floored to ⅛″ by the engine); only the LABEL changes per
@@ -176,6 +184,12 @@ export function ShorePointCard({
   const pending = sp.status === 'pending';
   const promoted = sp.status === 'cutting';
   const waiting = pending && !!sp.pendingReason;
+  // A no-inventory wait names the strut(s) that fit (catalog-only — no inventory
+  // dep, deterministic on the opening). Memoized so it runs only for waiting cards.
+  const needModels = useMemo(
+    () => (sp.pendingReason === 'no-inventory' ? pendingNeedModels(sp) : []),
+    [sp],
+  );
   // The strut member of the deployed BOM (ADR-033). Phase 3 enriches this card to
   // render the full bill (plates + extensions + per-component source); for now the
   // header/model lines read the strut exactly as before.
@@ -347,7 +361,11 @@ export function ShorePointCard({
               </span>
               <div>
                 <div className="fs-spc-wait-t">{PENDING_REASON_TITLE[sp.pendingReason]}</div>
-                <div className="fs-spc-wait-d">{PENDING_REASON_COPY[sp.pendingReason]}</div>
+                <div className="fs-spc-wait-d">
+                  {sp.pendingReason === 'no-inventory'
+                    ? needLine(needModels)
+                    : PENDING_REASON_COPY[sp.pendingReason]}
+                </div>
               </div>
             </div>
           )}

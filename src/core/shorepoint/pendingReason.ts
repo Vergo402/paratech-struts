@@ -33,3 +33,22 @@ export function pendingReasonFor(sp: ShorePoint, inventory: InventoryItem[]): Pe
   // miss. Only an empty catalog is a true no-match (audit W3).
   return catalog.length > 0 ? 'over-capacity' : 'no-match';
 }
+
+/**
+ * The strut model(s) that WOULD fit this opening per the Paratech catalog — i.e.
+ * what to pull onto a truck when a no-inventory Pending point is waiting on stock.
+ * Catalog-only (no inventory), capacity-deployable, deduped in recommendation
+ * order. Empty when nothing fits at all (a 'no-match' point — nothing to name).
+ */
+export function pendingNeedModels(sp: ShorePoint): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const c of findForShorePoint(sp, null)) {
+    if (c.exceedsCapacity || !c.strut.model) continue;
+    if (!seen.has(c.strut.model)) {
+      seen.add(c.strut.model);
+      out.push(c.strut.model);
+    }
+  }
+  return out;
+}

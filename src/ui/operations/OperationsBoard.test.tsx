@@ -258,7 +258,9 @@ describe('OperationsBoard', () => {
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]); // 60″ — the catalog reaches it
     mockInventory.mockReturnValue([]);
     render(<OperationsBoard />);
-    expect(screen.getByText('Waiting for inventory — no apparatus stock to pull from')).toBeInTheDocument();
+    // Waiting title + the named strut(s) that fit but aren't on scene (issue 1).
+    expect(screen.getByText('Waiting for inventory')).toBeInTheDocument();
+    expect(screen.getByText(/Needs .+ — none on scene/)).toBeInTheDocument();
   });
 
   it('a pending card surfaces no-match when nothing fits geometrically', () => {
