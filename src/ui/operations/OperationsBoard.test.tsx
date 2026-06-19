@@ -827,8 +827,10 @@ describe('OperationsBoard', () => {
     );
   }
 
+  // jsdom has no matchMedia → useIsDesktop() is false → the phone single-button
+  // ViewToggle. In tiles view (default) the button reads "Switch to list view".
   async function switchToList(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('radio', { name: 'List' }));
+    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
@@ -928,20 +930,37 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-a', 'sp-b', 'sp-c']);
   });
 
-  it('the View toggle exposes List + Status tiles and switches back to tiles', async () => {
+  it('phone: one view button toggles between Status tiles and List', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
     render(<OperationsBoard />);
-    expect(screen.getByRole('radio', { name: 'Status tiles' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
-
-    await switchToList(user);
+    // Default tiles; the lone button offers to switch to list.
+    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
     expect(document.querySelector('.fs-ops-list')).not.toBeNull();
-
-    await user.click(screen.getByRole('radio', { name: 'Status tiles' }));
+    // Now it offers the way back to tiles.
+    await user.click(screen.getByRole('button', { name: 'Switch to tile view' }));
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
     expect(document.querySelector('.fs-ops-list')).toBeNull();
+  });
+
+  it('desktop: the view toggle is two radio buttons (List + Status tiles)', () => {
+    const mql = {
+      matches: true, media: '', onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {}, dispatchEvent: () => true,
+    } as unknown as MediaQueryList;
+    vi.stubGlobal('matchMedia', vi.fn(() => mql));
+    try {
+      mockOperation.mockReturnValue(ACTIVE_OP);
+      mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
+      render(<OperationsBoard />);
+      expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Status tiles' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('layout + list sort persist across a remount (per-op localStorage)', async () => {

@@ -92,12 +92,13 @@
   cursor: pointer;
 }
 
-/* ---- View toggle (#356) — two small square icon buttons, pinned right ----- */
+/* ---- View toggle (#356) — two square icon buttons (desktop), one (phone) --- */
 .fs-view-toggle {
   display: flex;
   gap: var(--space-2);
   flex: none;
 }
+.fs-view-btn--single { flex: none; } /* phone: lone button, never shrinks */
 .fs-view-btn {
   display: inline-flex;
   align-items: center;
