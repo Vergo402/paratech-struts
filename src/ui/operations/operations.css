@@ -202,6 +202,20 @@
   padding: var(--space-2) 0;
 }
 
+/* #350: the single-card wrapper is a programmatic focus target after a deploy.
+   Show a ring only for keyboard focus; the deploy (programmatic) focus shows
+   none, so a deploy doesn't flash an outline. */
+.fs-lane-cards > [role="listitem"]:focus-visible,
+.fs-ops-list > [role="listitem"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-card);
+}
+.fs-lane-cards > [role="listitem"]:focus:not(:focus-visible),
+.fs-ops-list > [role="listitem"]:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .fs-lane-empty {
   font: var(--type-caption);
   color: var(--text-tertiary);

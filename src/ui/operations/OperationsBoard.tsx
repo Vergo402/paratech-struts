@@ -214,7 +214,9 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
             />
           </div>
         ) : (
-          <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id}>
+          // tabIndex=-1: not in the tab order, but a programmatic focus target so
+          // a deploy can land focus here (#350). Groups carry their own on the front.
+          <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id} tabIndex={-1}>
             <ShorePointCard
               shorePoint={item.sp}
               onEdit={cb.onEdit}
@@ -355,6 +357,9 @@ export function OperationsBoard() {
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
+  // After a deploy, the card id whose wrapper should take focus (#350) — set
+  // alongside scrollToId, consumed once by the scroll effect.
+  const focusAfterCommitRef = useRef<string | null>(null);
   // Sort/filter board controls (#347/#356) — persisted per-op in localStorage.
   const [sortMode, setSortMode] = useState<SortMode>('location');
   const [layout, setLayout] = useState<BoardLayout>('lanes');
@@ -375,9 +380,20 @@ export function OperationsBoard() {
   // fan-out lands a group in a new lane the stack mounts fronting that member.
   // The data-sp-id target resolves whether the member is the stack's front
   // wrapper or one of its tabs — both carry it (GroupedShorePoint).
+  // #350: after a DEPLOY the closing Assign-Equipment modal would return focus to
+  // its opener (the card's "Assign Equipment" button), but that card has moved to
+  // Equipment Assigned and the button is gone — so focus drops to <body>. When
+  // focusAfterCommitRef names this card, move focus to it instead, deferred past
+  // the modal's close-focus (rAF). Other scroll targets (add/advance/return) keep
+  // their focus untouched — only deploy hands off.
   useEffect(() => {
     if (!scrollToId) return;
-    document.querySelector(`[data-sp-id="${scrollToId}"]`)?.scrollIntoView?.({ block: 'nearest' });
+    const el = document.querySelector(`[data-sp-id="${scrollToId}"]`);
+    el?.scrollIntoView?.({ block: 'nearest' });
+    if (focusAfterCommitRef.current === scrollToId && el instanceof HTMLElement) {
+      requestAnimationFrame(() => el.focus());
+    }
+    focusAfterCommitRef.current = null;
     setScrollToId(null);
   }, [scrollToId]);
 
@@ -533,6 +549,7 @@ export function OperationsBoard() {
     (sp: ShorePoint, model: string) => {
       setAssignSpId(null);
       expandLane('process');
+      focusAfterCommitRef.current = sp.id; // #350: focus the deployed card, not <body>
       setScrollToId(sp.id);
       const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
       setPoliteAnnouncement(`${model} deployed — ${where}, Equipment Assigned.`);
@@ -550,6 +567,7 @@ export function OperationsBoard() {
       const where = [ref.building, divisionLabel(ref.division), ref.area].filter(Boolean).join(', ');
       if (deployed.length) {
         expandLane('process');
+        focusAfterCommitRef.current = deployed[0]!.id; // #350
         setScrollToId(deployed[0]!.id);
       }
       if (pending.length) {

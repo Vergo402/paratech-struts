@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
@@ -306,6 +306,23 @@ describe('OperationsBoard', () => {
       }),
     );
     expect(screen.getAllByRole('status')[1]).toHaveTextContent('LS 304 deployed — Div 1, Equipment Assigned.');
+  });
+
+  it('after Deploy, focus moves to the deployed card — not lost to <body> (#350)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
+    mockInventory.mockReturnValue([INV_ITEM]);
+    mockRecommendations.mockReturnValue([COMBO]);
+    render(<OperationsBoard />);
+
+    await user.click(screen.getByRole('button', { name: 'Assign Equipment' }));
+    await user.click(screen.getByRole('button', { name: /^Deploy/ }));
+
+    // The deployed card's wrapper takes focus (deferred past the modal close-focus).
+    const wrapper = document.querySelector('[data-sp-id="sp-1"]');
+    await waitFor(() => expect(document.activeElement).toBe(wrapper));
+    expect(document.activeElement).not.toBe(document.body);
   });
 
   it('the advance slide commits the status change and announces politely (gesture only — ADR-026)', async () => {
