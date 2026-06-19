@@ -79,7 +79,12 @@
 .fs-ops-filter-chips::-webkit-scrollbar { display: none; }
 /* Chips size to their content and never shrink (they scroll instead). */
 .fs-ops-filter-chips .fs-picker-field { flex: none; scroll-snap-align: start; }
-/* Compact, content-width trigger (form pickers are 56px / full-width). */
+/* Compact, content-width trigger (form pickers are 56px / full-width).
+   DELIBERATE EXCEPTION (Alex, 2026-06-19): the sort/filter chips, View toggle,
+   and Clear run at 40px — below spacing-grid.md's 44px absolute / 56px
+   active-op floor. Signed off to keep this a single compact row after the
+   multi-row bar was rejected as too tall on a phone. Not an oversight; do not
+   "fix" to 56 without re-confirming. (#356) */
 .fs-ops-filterbar .fs-filterbar-trigger {
   width: auto;
   min-height: 40px;
