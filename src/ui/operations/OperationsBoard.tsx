@@ -25,18 +25,19 @@ import { CuttingStation } from './CuttingStation';
 import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
-import { LayoutPicker, type BoardLayout } from './LayoutPicker';
+import { ViewToggle, type BoardLayout } from './ViewToggle';
 
 type ModalMode = null | 'create' | 'edit';
 
 /** Operations sub-nav (#222): the board, or the Cutting Station workstation. */
 type OpsView = 'board' | 'cutting';
 
-/** Board sort (#248): by division→area (default) or insertion ("added") order. */
-type SortMode = 'location' | 'added';
+// Sort values (#356) — Added carries its direction in the value so newest/oldest
+// live in the Sort menu, not a separate pill. 'location' = division→area.
+type SortMode = 'location' | 'added-newest' | 'added-oldest';
 
-/** List-view sort (#356): the list gains a Status order the lanes can't have. */
-type ListSort = 'added' | 'status' | 'location';
+/** List-view sort (#356): the list also gains a Status order the tiles can't have. */
+type ListSort = 'added-newest' | 'added-oldest' | 'status' | 'location';
 
 /** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
@@ -46,6 +47,16 @@ function Chevron() {
   return (
     <svg className="fs-lane-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ---- Sort glyph — marks the Sort chip apart from the filter chips (#356) -----
+function SortGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 3v10M4 13l-2-2.5M4 13l2-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 13V3M12 3l-2 2.5M12 3l2 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -380,13 +391,18 @@ export function OperationsBoard() {
       setSortMode('location'); setLayout('lanes'); setListSort('location');
       setFilterDivision(null); setFilterArea(null); setFilterBuilding(null);
     };
+    // Back-compat: an older stored 'added' (pre-directional) reads as newest-first.
+    const asSort = (v: unknown): SortMode =>
+      v === 'added-oldest' ? 'added-oldest' : v === 'added' || v === 'added-newest' ? 'added-newest' : 'location';
+    const asListSort = (v: unknown): ListSort =>
+      v === 'status' ? 'status' : v === 'location' ? 'location' : asSort(v) as ListSort;
     try {
       const raw = localStorage.getItem(`fs-board-prefs-${operation.id}`);
       if (!raw) { resetPrefs(); return; }
       const p = JSON.parse(raw) as Record<string, unknown>;
-      setSortMode(p.sortMode === 'added' ? 'added' : 'location');
+      setSortMode(asSort(p.sortMode));
       setLayout(p.layout === 'list' ? 'list' : 'lanes');
-      setListSort(p.listSort === 'added' || p.listSort === 'status' ? p.listSort : 'location');
+      setListSort(asListSort(p.listSort));
       setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
       setFilterBuilding(typeof p.filterBuilding === 'string' ? p.filterBuilding : null);
@@ -802,10 +818,12 @@ export function OperationsBoard() {
       // (ShorePointPatch has no such field; events are built from live SPs).
       map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
     }
-    // Default sort (#248): division → area within each lane; 'added' keeps the
-    // newest-first insertion order the loop builds.
+    // Default sort (#248): division → area within each lane. The loop builds
+    // newest-first, so 'added-newest' needs no sort; 'added-oldest' reverses (#356).
     if (sortMode === 'location') {
       for (const lane of Object.values(map)) lane.sort(compareShorePointsByLocation);
+    } else if (sortMode === 'added-oldest') {
+      for (const lane of Object.values(map)) lane.reverse();
     }
     return map;
   }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, sortMode]);
@@ -828,7 +846,10 @@ export function OperationsBoard() {
     const rep = (it: LaneItem) => (it.kind === 'group' ? it.members[0]! : it.sp);
     return [...items].sort((a, b) => {
       const ra = rep(a), rb = rep(b);
-      if (listSort === 'added') return (order.get(rb.id) ?? 0) - (order.get(ra.id) ?? 0); // newest first
+      if (listSort === 'added-newest' || listSort === 'added-oldest') {
+        const asc = (order.get(ra.id) ?? 0) - (order.get(rb.id) ?? 0); // oldest first
+        return listSort === 'added-oldest' ? asc : -asc; // newest = reverse of oldest
+      }
       if (listSort === 'status') {
         return (
           STATUS_ORDER.indexOf(ra.status) - STATUS_ORDER.indexOf(rb.status) ||
@@ -982,77 +1003,91 @@ export function OperationsBoard() {
 
       {shorePoints.length > 0 && (
         <div className="fs-ops-filterbar">
-          <LayoutPicker
+          {/* One tight row (#356): label-less sort + filter chips scroll sideways on
+              the left; the List/Status-tiles View toggle is pinned on the right.
+              Added direction lives inside the Sort menu (newest/oldest), no pill. */}
+          <div className="fs-ops-filter-chips">
+            {layout === 'lanes' ? (
+              <FilterPicker
+                label="Sort"
+                hideLabel
+                leadingIcon={<SortGlyph />}
+                value={sortMode}
+                placeholder="Division / area"
+                nullable={false}
+                options={[
+                  { value: 'location', label: 'Division / area' },
+                  { value: 'added-newest', label: 'Added — newest first' },
+                  { value: 'added-oldest', label: 'Added — oldest first' },
+                ]}
+                onChange={(v) => { const m = (v ?? 'location') as SortMode; setSortMode(m); persistPrefs({ sortMode: m }); }}
+              />
+            ) : (
+              <FilterPicker
+                label="Sort"
+                hideLabel
+                leadingIcon={<SortGlyph />}
+                value={listSort}
+                placeholder="Division / area"
+                nullable={false}
+                options={[
+                  { value: 'added-newest', label: 'Added — newest first' },
+                  { value: 'added-oldest', label: 'Added — oldest first' },
+                  { value: 'status', label: 'Status' },
+                  { value: 'location', label: 'Division / area' },
+                ]}
+                onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
+              />
+            )}
+            {buildingsPresent.length > 0 && (
+              <FilterPicker
+                label="Building"
+                hideLabel
+                value={filterBuilding}
+                placeholder="All buildings"
+                options={buildingsPresent.map((b) => ({ value: b, label: b }))}
+                onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
+              />
+            )}
+            {divisionsPresent.length > 0 && (
+              <FilterPicker
+                label="Division"
+                hideLabel
+                value={filterDivision}
+                placeholder="All divisions"
+                options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
+                onChange={handleDivisionChange}
+              />
+            )}
+            {areasPresent.length > 0 && (
+              <FilterPicker
+                label="Area"
+                hideLabel
+                value={filterArea}
+                placeholder="All areas"
+                options={areasPresent.map((a) => ({ value: a, label: a }))}
+                onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
+              />
+            )}
+            {(filterBuilding || filterDivision || filterArea) && (
+              <button
+                type="button"
+                className="fs-ops-filter-clear"
+                onClick={() => {
+                  setFilterBuilding(null);
+                  setFilterDivision(null);
+                  setFilterArea(null);
+                  persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null });
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <ViewToggle
             value={layout}
             onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
           />
-          {layout === 'lanes' ? (
-            <FilterPicker
-              label="Sort"
-              value={sortMode}
-              placeholder="Division / area"
-              nullable={false}
-              options={[
-                { value: 'location', label: 'Division / area' },
-                { value: 'added', label: 'Added order' },
-              ]}
-              onChange={(v) => { const m = (v ?? 'location') as SortMode; setSortMode(m); persistPrefs({ sortMode: m }); }}
-            />
-          ) : (
-            <FilterPicker
-              label="Sort"
-              value={listSort}
-              placeholder="Division / area"
-              nullable={false}
-              options={[
-                { value: 'added', label: 'Added order' },
-                { value: 'status', label: 'Status' },
-                { value: 'location', label: 'Division / area' },
-              ]}
-              onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
-            />
-          )}
-          {buildingsPresent.length > 0 && (
-            <FilterPicker
-              label="Building"
-              value={filterBuilding}
-              placeholder="All buildings"
-              options={buildingsPresent.map((b) => ({ value: b, label: b }))}
-              onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
-            />
-          )}
-          {divisionsPresent.length > 0 && (
-            <FilterPicker
-              label="Division"
-              value={filterDivision}
-              placeholder="All divisions"
-              options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
-              onChange={handleDivisionChange}
-            />
-          )}
-          {areasPresent.length > 0 && (
-            <FilterPicker
-              label="Area"
-              value={filterArea}
-              placeholder="All areas"
-              options={areasPresent.map((a) => ({ value: a, label: a }))}
-              onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
-            />
-          )}
-          {(filterBuilding || filterDivision || filterArea) && (
-            <button
-              type="button"
-              className="fs-ops-filter-clear"
-              onClick={() => {
-                setFilterBuilding(null);
-                setFilterDivision(null);
-                setFilterArea(null);
-                persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null });
-              }}
-            >
-              Clear
-            </button>
-          )}
         </div>
       )}
 

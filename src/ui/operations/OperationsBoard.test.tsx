@@ -639,7 +639,7 @@ describe('OperationsBoard', () => {
     // Default = division/area: Div 2 (sp-1) before Div 1 (sp-2).
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1', 'sp-2']);
     await user.click(screen.getByRole('button', { name: 'Sort' }));
-    await user.click(screen.getByRole('option', { name: 'Added order' }));
+    await user.click(screen.getByRole('option', { name: 'Added — newest first' }));
     // Added = newest-first insertion order: sp-2 then sp-1.
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
@@ -828,8 +828,7 @@ describe('OperationsBoard', () => {
   }
 
   async function switchToList(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'View' }));
-    await user.click(screen.getByRole('option', { name: 'List' }));
+    await user.click(screen.getByRole('radio', { name: 'List' }));
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
@@ -870,7 +869,7 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-pend', 'sp-cut', 'sp-ret']);
   });
 
-  it('list Sort → Added order is newest-first', async () => {
+  it('list Sort → Added — newest first is newest-first', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     // All same status/location so only insertion order decides.
@@ -881,7 +880,7 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
     await switchToList(user);
-    await setListSort(user, 'Added order');
+    await setListSort(user, 'Added — newest first');
     expect(listCardIds()).toEqual(['sp-c', 'sp-b', 'sp-a']);
   });
 
@@ -911,6 +910,38 @@ describe('OperationsBoard', () => {
     expect(list.querySelectorAll(':scope > [role="listitem"]')).toHaveLength(1);
     // Collapsed stack shows exactly one front slide (the fan-out is unchanged).
     expect(within(list as HTMLElement).getAllByText('Slide to set Strut Set')).toHaveLength(1);
+  });
+
+  it('list Added direction lives in the Sort menu: newest ↔ oldest', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-a', 'pending'),
+      makeSP('sp-b', 'pending'),
+      makeSP('sp-c', 'pending'),
+    ]);
+    render(<OperationsBoard />);
+    await switchToList(user);
+    await setListSort(user, 'Added — newest first');
+    expect(listCardIds()).toEqual(['sp-c', 'sp-b', 'sp-a']);
+    await setListSort(user, 'Added — oldest first');
+    expect(listCardIds()).toEqual(['sp-a', 'sp-b', 'sp-c']);
+  });
+
+  it('the View toggle exposes List + Status tiles and switches back to tiles', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
+    render(<OperationsBoard />);
+    expect(screen.getByRole('radio', { name: 'Status tiles' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
+
+    await switchToList(user);
+    expect(document.querySelector('.fs-ops-list')).not.toBeNull();
+
+    await user.click(screen.getByRole('radio', { name: 'Status tiles' }));
+    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    expect(document.querySelector('.fs-ops-list')).toBeNull();
   });
 
   it('layout + list sort persist across a remount (per-op localStorage)', async () => {

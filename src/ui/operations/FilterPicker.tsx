@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { PickerSurface } from '@ui/primitives';
 
 // FilterPicker — single-select filter pill for the Operations board filterbar (#347).
@@ -14,6 +14,10 @@ export interface FilterPickerProps {
   onChange: (v: string | null) => void;
   /** If false, no "All" row is rendered. Default true. */
   nullable?: boolean;
+  /** Drop the visible label (#356 one-row bar) — label still names the control for AT. */
+  hideLabel?: boolean;
+  /** Optional glyph before the value (e.g. a sort icon to mark the Sort chip). */
+  leadingIcon?: ReactNode;
 }
 
 export function FilterPicker({
@@ -23,6 +27,8 @@ export function FilterPicker({
   options,
   onChange,
   nullable = true,
+  hideLabel = false,
+  leadingIcon,
 }: FilterPickerProps) {
   const [open, setOpen] = useState(false);
   const labelId = useId();
@@ -38,24 +44,36 @@ export function FilterPicker({
 
   return (
     <div className="fs-picker-field">
-      <span className="fs-field-label" id={labelId}>
-        {label}
-      </span>
+      {!hideLabel && (
+        <span className="fs-field-label" id={labelId}>
+          {label}
+        </span>
+      )}
       <button
         ref={triggerRef}
         type="button"
         className="fs-picker-trigger fs-filterbar-trigger"
-        aria-labelledby={labelId}
+        aria-labelledby={hideLabel ? undefined : labelId}
+        aria-label={hideLabel ? label : undefined}
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
+        {leadingIcon && (
+          <span className="fs-picker-trigger-icon" aria-hidden="true">
+            {leadingIcon}
+          </span>
+        )}
         <span className="fs-picker-trigger-value">{displayValue}</span>
         <span className="fs-picker-trigger-chevron" aria-hidden="true">
           ▾
         </span>
       </button>
       <PickerSurface open={open} onClose={() => setOpen(false)} title={label} anchor={triggerRef}>
-        <div role="listbox" aria-labelledby={labelId}>
+        <div
+          role="listbox"
+          aria-labelledby={hideLabel ? undefined : labelId}
+          aria-label={hideLabel ? label : undefined}
+        >
           {nullable && (
             <button
               type="button"
