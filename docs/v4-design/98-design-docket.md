@@ -45,6 +45,7 @@
 | Item | Canonical home | Added |
 |---|---|---|
 | Desktop: move the bottom tab bar to a true side selector (left nav rail) | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
+| Desktop: redesign the Operations / Cutting Station selector — bad UI | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
 
 ## Unscheduled / watch
 
