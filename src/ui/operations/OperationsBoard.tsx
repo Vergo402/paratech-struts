@@ -948,7 +948,7 @@ export function OperationsBoard() {
   const viewToggle = (
     <Segmented
       aria-label="Operations view"
-      size="standard"
+      size="operational"
       options={[
         { value: 'board', label: 'Operations' },
         {

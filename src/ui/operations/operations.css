@@ -1649,6 +1649,12 @@ button.fs-spc-head {
   width: auto;
   max-width: max-content;
 }
+/* The scope toggle sizes to its labels, so the primitive's tight 8px segment
+   padding leaves the raised pill hugging the text. Give it room (Alex). */
+.fs-ops-header-toggle .fs-segment,
+.fs-ops-subnav .fs-segment {
+  padding: 0 var(--space-4);
+}
 
 /* ---- "✓ Cut done" flag marker on a cutting card (#222) ------------------- */
 .fs-spc-cutdone {
