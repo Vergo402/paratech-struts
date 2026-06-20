@@ -144,6 +144,35 @@ describe('OperationsBoard', () => {
     expect(within(cuttingSection).getByText('1')).toBeInTheDocument();
   });
 
+  // ---- Pending lane "(toggled off)" in one-step deploy mode -------------------
+
+  it('one-step mode (Utilize Pending Card OFF) reads an empty Pending lane as "(toggled off)"', () => {
+    mockOperation.mockReturnValue({ ...ACTIVE_OP, inlineDeploy: true });
+    mockShorePoints.mockReturnValue([]); // nothing forced into Pending
+    render(<OperationsBoard />);
+    const pending = screen.getByRole('region', { name: 'Pending Equipment' });
+    expect(pending).toHaveClass('is-toggled-off');
+    expect(within(pending).getByText('(toggled off)')).toBeInTheDocument();
+  });
+
+  it('a card forced into Pending (out of stock) keeps the lane live — no "(toggled off)"', () => {
+    mockOperation.mockReturnValue({ ...ACTIVE_OP, inlineDeploy: true });
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]); // couldn't deploy → forced here
+    render(<OperationsBoard />);
+    const pending = screen.getByRole('region', { name: 'Pending Equipment' });
+    expect(pending).not.toHaveClass('is-toggled-off');
+    expect(within(pending).queryByText('(toggled off)')).toBeNull();
+  });
+
+  it('two-step mode (default) never marks the Pending lane toggled off', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP); // inlineDeploy: false
+    mockShorePoints.mockReturnValue([]);
+    render(<OperationsBoard />);
+    expect(screen.getByRole('region', { name: 'Pending Equipment' })).not.toHaveClass('is-toggled-off');
+    // The heading name stays clean (the note rides the visible title only).
+    expect(screen.getByRole('heading', { name: 'Pending Equipment' })).toBeInTheDocument();
+  });
+
   it('the G-15 status-summary bar carries a count per lane and stays out of the a11y tree', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([

@@ -303,15 +303,20 @@ interface LaneProps extends ItemCallbacks {
   points: ShorePoint[];
   collapsed: boolean;
   onToggle: () => void;
+  /** Pending lane only: one-step deploy mode (Utilize Pending Card OFF) with no
+   *  forced cards — the lane is bypassed, so it reads dimmed + "(toggled off)". */
+  toggledOff?: boolean;
 }
 
-function Lane({ status, points, collapsed, onToggle, ...cb }: LaneProps) {
+function Lane({ status, points, collapsed, onToggle, toggledOff = false, ...cb }: LaneProps) {
   const items = groupLanePoints(points);
   return (
-    <section className={`fs-lane is-${status}`} aria-label={STATUS_LABELS[status]}>
+    <section className={`fs-lane is-${status}${toggledOff ? ' is-toggled-off' : ''}`} aria-label={STATUS_LABELS[status]}>
       {/* Heading lives OUTSIDE the toggle button: a heading nested inside a button
           isn't exposed for heading navigation by several screen readers (audit W7).
-          sr-only keeps the visual row unchanged; the button stays fully tappable. */}
+          sr-only keeps the visual row unchanged; the button stays fully tappable.
+          The "(toggled off)" note rides the VISIBLE title only — the sr-only
+          heading + the region aria-label stay the plain status name. */}
       <h2 className="fs-sr-only">{STATUS_LABELS[status]}</h2>
       <button
         className="fs-lane-header"
@@ -319,7 +324,10 @@ function Lane({ status, points, collapsed, onToggle, ...cb }: LaneProps) {
         onClick={onToggle}
         aria-expanded={!collapsed}
       >
-        <span className="fs-lane-title">{STATUS_LABELS[status]}</span>
+        <span className="fs-lane-title">
+          {STATUS_LABELS[status]}
+          {toggledOff && <span className="fs-lane-off">(toggled off)</span>}
+        </span>
         <Badge variant="count" value={points.length} srLabel={`${points.length} shore points`} />
         <Chevron />
       </button>
@@ -1013,6 +1021,10 @@ export function OperationsBoard() {
       points={byStatus[status]}
       collapsed={collapsed.has(status)}
       onToggle={() => toggleLane(status)}
+      // Pending only: in one-step deploy mode (Utilize Pending Card OFF) cards skip
+      // Pending, so an EMPTY Pending lane reads "(toggled off)". A card forced here
+      // (out of stock on add, or a step-back un-deploy) keeps the lane live.
+      toggledOff={status === 'pending' && operation?.inlineDeploy === true && byStatus.pending.length === 0}
       onEdit={openEdit}
       onDelete={openDelete}
       onOpenDetail={openDetail}

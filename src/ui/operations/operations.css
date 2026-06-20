@@ -323,6 +323,28 @@
   margin: 0;
 }
 
+/* Pending lane bypassed (one-step deploy mode, "Utilize Pending Card" OFF, and
+   nothing forced here): the section reads dimmed with a red "(toggled off)" note.
+   The note uses the danger PAIR (not bare --danger-text, which flips to white in
+   the sunlight theme) so it stays red across all four themes — like the hazard
+   pill. A card forced here (out of stock) drops is-toggled-off and the lane is
+   live again. */
+.fs-lane.is-toggled-off .fs-lane-title,
+.fs-lane.is-toggled-off .fs-lane-empty {
+  color: var(--text-tertiary);
+}
+.fs-lane-off {
+  margin-left: var(--space-2);
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-text);
+  border-radius: var(--radius-badge);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
 .fs-lane-chevron {
   flex-shrink: 0;
   transition: transform var(--motion-micro) var(--ease-micro);
