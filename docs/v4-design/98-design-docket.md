@@ -27,6 +27,7 @@
 | Deduction ledger collapsed-by-default in Add Shore Point (Principle 7 disclosure) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #10 | 2026-06-11 (seed) |
 | Focus lands on the moved card after Deploy (keyboard parity polish) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #6 | 2026-06-11 (seed) |
 | Add Shore Point modal: scroll area margin too large — hard to hit scroll target | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 |
+| Move/advance buttons should carry the next/prior step's status color (v3 did this — destination obvious at a glance) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 |
 
 ## Doctrine deviation watch
 
