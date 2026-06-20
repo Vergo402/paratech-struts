@@ -125,6 +125,12 @@ function PencilIcon() {
 // Counts per lane, above the board. Tablet/laptop only — CSS hides it below
 // 768pt (G-15: "phone does not show"). aria-hidden: it is a visual glance aid;
 // the lane headers already carry the same counts for assistive tech.
+// This is the Operations Section Chief's cross-Division aggregate, shown on the
+// larger surface they coordinate from. It is deliberately NOT on phone: the
+// phone-floor user is a Division inputter served by the per-lane count badges +
+// the Division filter, and the IC's at-a-glance command picture is the separate
+// Command tab's job — not this board. (A SIM-V "lone IC on a phone" finding once
+// argued to put this on phone; that was a wrong-persona read — do not re-add it.)
 function StatusSummaryBar({ byStatus }: { byStatus: Record<ShorePointStatus, ShorePoint[]> }) {
   return (
     <div className="fs-ops-summary" aria-hidden="true">
