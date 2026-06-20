@@ -24,6 +24,7 @@
 | Per-Division / per-Group SitStat roll-up at scale | [`99-open-questions.md`](99-open-questions.md) #43 | 2026-06-11 (seed) |
 | Tablet-primary posture for the saw deck (phone stays the floor) | [`99-open-questions.md`](99-open-questions.md) #46 | 2026-06-11 (seed) |
 | Plate/connector pickers: real photo thumbnails, not letter swatches | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #8 | 2026-06-11 (seed) |
+| Inside-officer "Mine" lens — sticky per-device slice (rig and/or division/area) narrowing the board to To-do/Done + "X left · Y done", slides kept (officer advances own) | ad hoc (Alex, 2026-06-20) | 2026-06-20 |
 
 ## Doctrine deviation watch
 
