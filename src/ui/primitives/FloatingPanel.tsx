@@ -72,6 +72,7 @@ function CloseGlyph() {
 }
 
 const GAP = 16;
+const MIN_H = 140; // floor for the drag-resize (header + a sliver of body)
 
 function measureBounds(selector?: string): Bounds {
   const el = selector ? (document.querySelector(selector) as HTMLElement | null) : null;
@@ -95,7 +96,11 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
   const [pos, setPos] = useState<Pos | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [z, setZ] = useState(() => nextZ());
+  // Explicit drag-set height; null = auto-size to content (the default). Capped to
+  // the bounds; the body scrolls inside whatever height is set.
+  const [height, setHeight] = useState<number | null>(null);
   const drag = useRef<{ pointerId: number; startX: number; startY: number; from: Pos; panel: { w: number; h: number }; b: Bounds } | null>(null);
+  const resize = useRef<{ pointerId: number; startY: number; startH: number; maxH: number } | null>(null);
 
   const raiseToFront = () => setZ(nextZ());
 
@@ -119,6 +124,7 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
     const rawY = useSide ? GAP : GAP + cascadeIndex * 32;
     setBounds(b);
     setPos(clampPanelPosition({ x: rawX, y: rawY }, { w: pw, h: ph }, { w: b.width, h: b.height }));
+    setHeight(null); // each open starts auto-sized; the user can drag-resize after
     setZ(nextZ());
 
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -141,6 +147,8 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
       setPos((prev) =>
         prev ? clampPanelPosition(prev, { w: el.offsetWidth, h: el.offsetHeight }, { w: nb.width, h: nb.height }) : prev,
       );
+      // A set height can't outgrow the shrunken bounds.
+      setHeight((prev) => (prev == null ? prev : Math.min(prev, Math.max(MIN_H, nb.height - 2 * GAP))));
     };
     document.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
@@ -184,6 +192,32 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
     e.currentTarget.releasePointerCapture?.(e.pointerId);
   };
 
+  // Bottom resize bar — drag to set the panel height (the body scrolls inside it).
+  const onResizeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const el = panelRef.current;
+    const b = bounds ?? measureBounds(boundsSelector);
+    resize.current = {
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      startH: el?.offsetHeight ?? 0,
+      maxH: Math.max(MIN_H, b.height - 2 * GAP),
+    };
+    raiseToFront();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    e.stopPropagation();
+  };
+  const onResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = resize.current;
+    if (!r || e.pointerId !== r.pointerId) return;
+    setHeight(Math.min(Math.max(MIN_H, r.startH + (e.clientY - r.startY)), r.maxH));
+  };
+  const onResizeEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = resize.current;
+    if (!r || e.pointerId !== r.pointerId) return;
+    resize.current = null;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+  };
+
   const x = (bounds?.left ?? 0) + (pos?.x ?? 0);
   const y = (bounds?.top ?? 0) + (pos?.y ?? 0);
 
@@ -195,6 +229,7 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
       aria-label={title}
       style={{
         transform: `translate(${x}px, ${y}px)`,
+        height: height != null ? `${height}px` : undefined,
         maxHeight: bounds ? `${Math.max(0, bounds.height - 2 * GAP)}px` : undefined,
         zIndex: z,
         visibility: pos ? 'visible' : 'hidden',
@@ -223,6 +258,18 @@ export function FloatingPanel({ open, onClose, title, children, cascadeIndex = 0
         </button>
       </div>
       <div className="fs-fp-body fs-drawer-body">{children}</div>
+      {/* Bottom resize bar — pointer-drag to set the panel height (the body
+          scrolls inside it). A pointer enhancement, aria-hidden: the panel is
+          fully usable without it (the body scrolls regardless). */}
+      <div
+        className="fs-fp-resize"
+        aria-hidden="true"
+        title="Drag to resize"
+        onPointerDown={onResizeDown}
+        onPointerMove={onResizeMove}
+        onPointerUp={onResizeEnd}
+        onPointerCancel={onResizeEnd}
+      />
     </aside>
   );
 }

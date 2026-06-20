@@ -2162,6 +2162,33 @@ button.fs-spc-head {
   flex: none;
   color: var(--text-tertiary);
 }
+/* Bottom resize bar — drag vertically to set the panel height. A grip pill marks
+   it; the body above scrolls inside whatever height is set. */
+.fs-fp-resize {
+  flex: none;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+  border-top: 1px solid var(--surface-stroke);
+  border-radius: 0 0 var(--radius-sheet) var(--radius-sheet);
+  color: var(--text-tertiary);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-fp-resize::before {
+  content: '';
+  width: 32px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.fs-fp-resize:hover {
+  color: var(--text-secondary);
+}
 
 /* ---- inventory summary toggle button (ops header) ------------------------ */
 .fs-ops-inv-btn {

@@ -40,6 +40,7 @@ If the operator needs to see the canvas *under* the companion and the canvas mus
 | Title | `--type-headline-2`; doubles as the panel's accessible name | [`typography.md`](../07-design-system/typography.md) |
 | Z-order | Click-to-front: the last-touched panel rises above the other; base above the board, below scrim (290) / overlay (300) / picker (400) | — |
 | Close | A focusable 44pt Close button in the header | [`spacing-grid.md`](../07-design-system/spacing-grid.md) |
+| Resize bar | A bottom bar (grip pill, `ns-resize`) — pointer-drag sets the panel height (floored at 140pt, capped to the bounds); the body scrolls inside. A pointer enhancement (`aria-hidden`): the panel is fully usable without it (the body scrolls regardless). Height resets to auto on each open. | — |
 
 The floating panel joins the sheet, modal, and side-drawer as a surface allowed a real cast shadow, because it genuinely overlays the board. It reuses `--shadow-modal` (the centered cast) rather than minting one — unlike the side-drawer's sideways `--shadow-drawer`, a floating panel is not anchored to any edge.
 

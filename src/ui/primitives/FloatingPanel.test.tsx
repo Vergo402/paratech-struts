@@ -70,4 +70,17 @@ describe('FloatingPanel', () => {
     fireEvent.pointerDown(panel.querySelector('.fs-fp-handle')!, { pointerId: 1 });
     expect(Number(panel.style.zIndex)).toBeGreaterThan(before);
   });
+
+  it('renders the bottom resize bar (height is auto until dragged)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    const panel = screen.getByRole('dialog');
+    // The bar is present + aria-hidden (a pointer enhancement); the actual
+    // drag-to-resize is geometry/pointer-driven and verified manually, not here.
+    const bar = panel.querySelector('.fs-fp-resize');
+    expect(bar).not.toBeNull();
+    expect(bar).toHaveAttribute('aria-hidden', 'true');
+    expect(panel.style.height).toBe(''); // auto-sized until a resize drag sets it
+  });
 });
