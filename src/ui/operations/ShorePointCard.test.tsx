@@ -157,11 +157,12 @@ describe('ShorePointCard', () => {
   it('value shelf (#248 Design 2): "Required strut length" + effective on pending and process', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
     // No deductions: effective == raw == 48½″ (388 eighths). The shelf carries
-    // the required strut length; the detail line carries the raw opening + load
-    // (deduction segment omitted when zero — v3 behaviour).
+    // the required strut length; the detail line carries the raw opening (the load
+    // segment is omitted when no estimate was entered; deduction segment omitted
+    // when zero — v3 behaviour).
     expect(screen.getByText('Required strut length')).toBeInTheDocument();
     expect(valueShelfText()).toBe('Required strut length48 1/2″');
-    expect(detailLineText()).toBe('Raw opening 48 1/2″ · 0 lbs');
+    expect(detailLineText()).toBe('Raw opening 48 1/2″');
     rerender(
       <ShorePointCard
         shorePoint={makeSP({
@@ -187,6 +188,14 @@ describe('ShorePointCard', () => {
       expect(document.querySelector('.fs-spc-value')).not.toHaveClass('is-promoted');
       unmount();
     }
+  });
+
+  it('detail line: omits the load segment when blank, keeps an explicit 0', () => {
+    // A not-entered load (undefined) must not read as "0 lbs"; an explicit 0 still does.
+    const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
+    expect(detailLineText()).toBe('Raw opening 48 1/2″');
+    rerender(<ShorePointCard shorePoint={makeSP({ estimatedLoad: 0 })} />);
+    expect(detailLineText()).toBe('Raw opening 48 1/2″ · 0 lbs');
   });
 
   it('detail line (#248): shows the (−deduction) + load when present', () => {

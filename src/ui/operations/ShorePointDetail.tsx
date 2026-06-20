@@ -117,7 +117,7 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
   ];
   const effectiveEighths = Math.round(effectiveLengthInches(sp) * 8);
   const hasDeductions = deductionTotalInches(sp.deductions) > 0;
-  const estLoad = sp.estimatedLoad ?? 0;
+  const estLoad = sp.estimatedLoad; // blank renders as "—", not "0 lbs" (undefined ≠ 0)
   // One label for the hero figure AND the ledger's final row, so they agree.
   // Secured/returned shores show the as-built "Set length"; with deductions the
   // number is the deducted "Effective length"; with none, raw == effective so it
@@ -202,7 +202,7 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
           </div>
           <div className="fs-rec-row">
             <span className="fs-rec-slot-label">Estimated load</span>
-            <span className="fs-rec-opening">{estLoad.toLocaleString()} lbs</span>
+            <span className="fs-rec-opening">{estLoad != null ? `${estLoad.toLocaleString()} lbs` : '—'}</span>
           </div>
         </div>
       </section>

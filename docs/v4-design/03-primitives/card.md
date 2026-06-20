@@ -120,7 +120,7 @@ The card's one big number is the **measurement value shelf** — a full-bleed, s
 
 | Status | Shelf label | The shelf number is… | Detail line above the shelf |
 |---|---|---|---|
-| `pending` / `process` / `strutset` | **Required strut length** | the effective length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the cut-to answer | **Raw opening** (`measurementEighths`) + the total deduction in parens + the estimated load (`Raw opening 48″ (−3½″) · 0 lbs`). The deduction is rendered to the nearest ⅛″ (exact spec stays in the math, ADR-012); the `(−…)` segment is omitted when zero (v3 behaviour). |
+| `pending` / `process` / `strutset` | **Required strut length** | the effective length (raw − deductions, floored to ⅛″ per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)) — the cut-to answer | **Raw opening** (`measurementEighths`) + the total deduction in parens + the estimated load (`Raw opening 48″ (−3½″) · 2,000 lbs`). The deduction is rendered to the nearest ⅛″ (exact spec stays in the math, ADR-012); the `(−…)` segment is omitted when zero (v3 behaviour), and the `· … lbs` segment is omitted entirely when no load estimate was entered (a blank load is not `0 lbs`; an explicit `0` still renders). |
 | `cutting` / `runner` | **Cut length** | the *effective* length — the number the cutter cuts to | — (none; the shelf number IS the cut length) |
 | `secured` / `returned` | **Set length** | the *effective* length the strut was set to (S12 SME review: showing the raw opening here would mislabel the setting) | — (none) |
 

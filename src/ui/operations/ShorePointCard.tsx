@@ -245,7 +245,9 @@ export function ShorePointCard({
   // the detail line drops away.
   const preCut = sp.status === 'pending' || sp.status === 'process' || sp.status === 'strutset';
   const dedEighths = Math.round(deductionTotalInches(sp.deductions) * 8);
-  const estLoad = sp.estimatedLoad ?? 0;
+  // A blank load is not "0 lbs" — omit the segment when no estimate was entered
+  // (undefined ≠ 0; an explicit 0 still renders). ponytail: undefined ≠ 0.
+  const estLoad = sp.estimatedLoad;
 
   const headContent = (
     <>
@@ -285,7 +287,7 @@ export function ShorePointCard({
           {')'}
         </>
       ) : null}
-      {` · ${estLoad.toLocaleString()} lbs`}
+      {estLoad != null ? ` · ${estLoad.toLocaleString()} lbs` : null}
     </div>
   ) : null;
 
