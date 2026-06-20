@@ -777,6 +777,24 @@ p.fs-gate--disclaimer {
 .fs-slide--toned .fs-slide-fill {
   background: color-mix(in srgb, var(--sp-solid) 32%, transparent);
 }
+/* Desktop (mouse, ADR-035): the slide renders as a labeled button, not a track —
+   tone IT too (Alex, 2026-06-20: the whole-bar tint is desktop AND phone). Mirrors
+   the destructive overlay above — the status pair (--sp-bg / --sp-text, the verified
+   badge pairing) replaces the accent at the SAME emphasis, so it's a calm status
+   treatment, never a loud fill. Theme-aware for free: pale tint in light/dark, solid
+   banner + white ink in sunlight. */
+.fs-slide--toned .fs-button--primary {
+  background: var(--sp-bg);
+  color: var(--sp-text);
+  border: var(--stroke-width) solid color-mix(in srgb, var(--sp-text) 30%, transparent);
+}
+.fs-slide--toned .fs-button--primary:active {
+  background: color-mix(in srgb, var(--sp-bg) 85%, var(--sp-text));
+}
+.fs-slide--toned .fs-button--secondary {
+  border-color: color-mix(in srgb, var(--sp-text) 55%, transparent);
+  color: var(--sp-text);
+}
 .fs-slide-thumb {
   position: relative;
   z-index: 1;
