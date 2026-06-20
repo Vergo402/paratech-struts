@@ -371,12 +371,13 @@ export function GalleryScreen() {
         </span>
         <Slider
           label="Slide to set Strut Set"
-          revealColor="var(--status-strutset-bg)"
+          tone="strutset"
           onCommit={() => setCommits((c) => c + 1)}
         />
         <Slider
           label="Slide back to Equipment Assigned"
           direction="stepback"
+          tone="process"
           onCommit={() => setCommits((c) => c + 1)}
         />
       </Section>

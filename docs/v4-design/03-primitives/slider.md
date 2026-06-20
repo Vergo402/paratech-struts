@@ -108,6 +108,8 @@ The knob inset (4px from the track edge) and the 999px pill radius are the chann
 
 **The travel-reveal is why the slide *means* something.** The channel does not fill with a generic accent — it fills with the **color of the state you are committing to**, and at commit the status badge cross-fades to that exact hue ([`badge.md`](badge.md) / [`motion.md`](../07-design-system/motion.md)). Advancing to Cutting Station reveals the cutting hue; the badge lands on the cutting hue; the gesture and its confirmation are the same color. This keeps color tied to the lifecycle palette (never decorative) and gives the operator a visible answer to "what am I about to do."
 
+> **The whole bar is status-toned, at rest, not only on travel (Alex, 2026-06-19).** The advance track's resting tint moves from `--accent` (gold) to the **destination status hue** (`--sp-solid` via the `is-{status}` hook), and the **step-back** track gains the **prior** status hue — so the move's landing is obvious *before* the drag, the way v3's colored move buttons were. This extends the travel-reveal doctrine above (color already tracked the destination) to the at-rest channel. The gold (advance) / elevated (step-back) **knob stays** as the grip, preserving the one-accent thread. This is a **deliberate, recorded deviation** from this file's "advance = accent-tinted channel" anatomy; flag for the Phase J doctrine audit alongside the assign-modal deviation ([#346](https://github.com/Vergo402/paratech-struts/issues/346)). Implemented as `Slider`'s `tone` prop (replaced the per-call `revealColor`); desktop keeps its labeled primary/secondary button (the label already names the destination).
+
 ---
 
 ## The advance slider — the canonical, safety-critical control

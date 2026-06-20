@@ -30,8 +30,15 @@ export interface SliderProps {
   disabled?: boolean;
   /** Why the slide is disabled — a visible .fs-slide-reason line under the track. */
   disabledReason?: string;
-  /** Track fill revealed by travel — typically the target status bg token. */
-  revealColor?: string;
+  /**
+   * Status tone for the WHOLE bar (Alex, 2026-06-19): the status id whose hue the
+   * track + fill wear at rest — destination for advance, prior for step-back — so
+   * where the move lands is obvious at a glance (v3 colored its move buttons). Adds
+   * `fs-slide--toned is-{tone}`; the gold/elevated knob stays as the grip. A
+   * DELIBERATE, recorded deviation from the one-gold-accent norm for the slider
+   * (flag for the Phase J doctrine audit, sibling of #346). Omit → neutral fill.
+   */
+  tone?: string;
 }
 
 /** Travel fraction past which release commits. Exported pure for tuning + tests.
@@ -63,7 +70,7 @@ export function Slider({
   onCommit,
   disabled = false,
   disabledReason,
-  revealColor,
+  tone,
 }: SliderProps) {
   const hasMouse = useHasMouse();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -84,6 +91,10 @@ export function Slider({
     setOffsetState(next);
   };
 
+  // Status-tone hook: drives the whole-bar tint (track + fill) off --sp-solid via
+  // the global .is-{status} hooks. The tone is the destination (advance) / prior
+  // (step-back) status the move lands on.
+  const toneCls = tone ? ` fs-slide--toned is-${tone}` : '';
   const sign = direction === 'advance' ? 1 : -1;
   // Fill reaches the thumb CENTRE as it travels: track inset (4px) + half the
   // knob. Knobs differ by role — 44px advance / 36px step-back — so the nudge
@@ -141,7 +152,7 @@ export function Slider({
   // same column slot as a slide would.
   if (hasMouse) {
     return (
-      <div className={`fs-slide fs-slide--${direction}`}>
+      <div className={`fs-slide fs-slide--${direction}${toneCls}`}>
         <Button
           variant={direction === 'advance' ? 'primary' : 'secondary'}
           fullWidth
@@ -156,7 +167,7 @@ export function Slider({
   }
 
   return (
-    <div className={`fs-slide fs-slide--${direction}${disabled ? ' fs-slide--disabled' : ''}`}>
+    <div className={`fs-slide fs-slide--${direction}${disabled ? ' fs-slide--disabled' : ''}${toneCls}`}>
       {/* Pointer handlers live on the TRACK: a press anywhere in the channel
           starts the drag (thumb presses bubble here too). */}
       <div
@@ -171,7 +182,6 @@ export function Slider({
           className="fs-slide-fill"
           style={{
             width: offset > 0 ? `calc(${offset}px + var(--space-1) + ${fillNudge}px)` : 0,
-            background: revealColor ?? 'var(--accent-subtle)',
           }}
           aria-hidden="true"
         />

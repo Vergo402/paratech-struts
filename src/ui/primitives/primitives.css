@@ -470,6 +470,12 @@ p.fs-gate--disclaimer {
   padding: var(--space-8); /* more generous than the sheet — a stop surface */
   z-index: 300;
 }
+/* Phone: the 32px stop-surface frame is too generous on a ~375px screen — it insets
+   the scrolling body on every side so the form is cramped and the scroll area reads
+   hard to reach. Reclaim it below tablet; desktop keeps the generous stop surface. */
+@media (max-width: 767px) {
+  .fs-modal { padding: var(--space-5); }
+}
 .fs-modal[data-state='open'] { animation: fs-fade-in var(--motion-transition) var(--ease-standard); }
 .fs-modal[data-state='closed'] { animation: fs-fade-out var(--motion-exit) var(--ease-exit); }
 .fs-modal-title {
@@ -749,8 +755,28 @@ p.fs-gate--disclaimer {
   bottom: 0;
   left: 0;
   pointer-events: none;
+  background: var(--accent-subtle); /* neutral default; a toned slide overrides below */
 }
 .fs-slide--stepback .fs-slide-fill { left: auto; right: 0; }
+
+/* Status-toned slide (Alex, 2026-06-19): the WHOLE bar wears the destination
+   (advance) / prior (step-back) status hue via the is-{status} → --sp-solid hook,
+   so where the move lands is obvious at rest. DELIBERATE, recorded deviation from
+   the one-gold-accent norm for the slider — the gold (advance) / elevated (step-back)
+   knob stays as the grip; flag for the Phase J doctrine audit (sibling of #346).
+   Sunlight remaps --sp-solid to the saturated bg (tokens.css) so the tint stays
+   legible on the white card. */
+.fs-slide--toned.fs-slide--advance .fs-slide-track {
+  background: color-mix(in srgb, var(--sp-solid) 16%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--sp-solid) 45%, transparent);
+}
+.fs-slide--toned.fs-slide--stepback .fs-slide-track {
+  background: color-mix(in srgb, var(--sp-solid) 10%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--sp-solid) 35%, transparent);
+}
+.fs-slide--toned .fs-slide-fill {
+  background: color-mix(in srgb, var(--sp-solid) 32%, transparent);
+}
 .fs-slide-thumb {
   position: relative;
   z-index: 1;

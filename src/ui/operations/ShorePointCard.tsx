@@ -397,7 +397,7 @@ export function ShorePointCard({
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Strut Set"
-            revealColor="var(--status-strutset-bg)"
+            tone="strutset"
             disabled={!!advanceDisabledReason}
             disabledReason={advanceDisabledReason}
             onCommit={() => onAdvance?.(sp)}
@@ -406,6 +406,7 @@ export function ShorePointCard({
           <Slider
             label="Slide back to Pending Equipment"
             direction="stepback"
+            tone="pending"
             onCommit={() => onStepBack?.(sp)}
           />
         </div>
@@ -418,12 +419,13 @@ export function ShorePointCard({
               confirm — non-inventory status slide (ADR-010). */}
           <Slider
             label="Slide to send to Cutting Station"
-            revealColor="var(--status-cutting-bg)"
+            tone="cutting"
             onCommit={() => onAdvance?.(sp)}
           />
           <Slider
             label="Slide back to Equipment Assigned"
             direction="stepback"
+            tone="process"
             onCommit={() => onStepBack?.(sp)}
           />
         </div>
@@ -440,12 +442,13 @@ export function ShorePointCard({
             <>
               <Slider
                 label="Slide to send to Runner"
-                revealColor="var(--status-runner-bg)"
+                tone="runner"
                 onCommit={() => onAdvance?.(sp)}
               />
               <Slider
                 label="Slide back — clear Cut Done"
                 direction="stepback"
+                tone="cutting"
                 onCommit={() => onClearCutDone?.(sp)}
               />
             </>
@@ -453,12 +456,13 @@ export function ShorePointCard({
             <>
               <Slider
                 label="Slide to mark Cut Done"
-                revealColor="var(--status-cutting-bg)"
+                tone="cutting"
                 onCommit={() => onMarkCutDone?.(sp)}
               />
               <Slider
                 label="Slide back to Strut Set"
                 direction="stepback"
+                tone="strutset"
                 onCommit={() => onStepBack?.(sp)}
               />
             </>
@@ -475,12 +479,13 @@ export function ShorePointCard({
         <div className="fs-spc-slides">
           <Slider
             label="Slide to set Wood Shore Secured"
-            revealColor="var(--status-secured-bg)"
+            tone="secured"
             onCommit={() => onAdvance?.(sp)}
           />
           <Slider
             label="Slide back to Cutting Station"
             direction="stepback"
+            tone="cutting"
             onCommit={() => onStepBack?.(sp)}
           />
         </div>
@@ -498,6 +503,7 @@ export function ShorePointCard({
           <Slider
             label="Slide back to Runner"
             direction="stepback"
+            tone="runner"
             onCommit={() => onStepBack?.(sp)}
           />
         </div>
