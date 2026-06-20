@@ -24,10 +24,6 @@
 | Per-Division / per-Group SitStat roll-up at scale | [`99-open-questions.md`](99-open-questions.md) #43 | 2026-06-11 (seed) |
 | Tablet-primary posture for the saw deck (phone stays the floor) | [`99-open-questions.md`](99-open-questions.md) #46 | 2026-06-11 (seed) |
 | Plate/connector pickers: real photo thumbnails, not letter swatches | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #8 | 2026-06-11 (seed) |
-| Deduction ledger collapsed-by-default in Add Shore Point (Principle 7 disclosure) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #10 | 2026-06-11 (seed) |
-| Focus lands on the moved card after Deploy (keyboard parity polish) | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #6 | 2026-06-11 (seed) |
-| Add Shore Point modal: scroll area margin too large — hard to hit scroll target | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 |
-| Move/advance buttons should carry the next/prior step's status color (v3 did this — destination obvious at a glance) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 |
 
 ## Doctrine deviation watch
 
@@ -49,16 +45,20 @@
 
 | Item | Canonical home | Added |
 |---|---|---|
-| `--motion-loop` — continuous-loop timing (spinner/shimmer): behavior value vs ADR-gated 7th duration token; decide when a spinner first ships | [`99-open-questions.md`](99-open-questions.md) #19 | 2026-06-11 (seed) |
-| Operations sort/filter: upgrade native `<select>` dropdowns to the v4 Sheet picker (`DivisionPicker` pattern) for full design-system feel | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
-| Operations sort/filter: persist the choice (per-op / across reload) — currently in-memory per session like v3's drilldown | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
-| Operations filter: cascade the Area options to the selected Division (v1 lists them independently) | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 |
-| ShorePointCard: consider promoting the pre-cutting Required-strut-length number (size/weight), as cutting already does — Design 2 keeps it at normal shelf size for now | [#248](https://github.com/Vergo402/paratech-struts/issues/248) card Design 2 | 2026-06-13 |
+| `--motion-loop` — continuous-loop timing (spinner/shimmer): behavior value vs ADR-gated 7th duration token; decide when a spinner first ships | [`99-open-questions.md`](99-open-questions.md) #19 ([#355](https://github.com/Vergo402/paratech-struts/issues/355)) | 2026-06-11 (seed) |
 
 ## Resolved (struck rows land here)
 
 | Item | Canonical home | Resolved |
 |---|---|---|
+| ~~Add Shore Point modal: scroll-area margin too large~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 — shipped (`f7c3854`): phone `.fs-modal` frame 32px → 20px below 768px |
+| ~~Move/advance buttons carry the next/prior step's status color~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-19) | 2026-06-19 — shipped (`f7c3854`): Slider `tone` tints the whole bar (destination/prior `--sp-solid`); `slider.md` note, Phase J doctrine flag |
+| ~~Deduction ledger collapsed-by-default in Add Shore Point~~ | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #10 | 2026-06-18 — shipped (#349, `8ea41a3`) |
+| ~~Focus lands on the moved card after Deploy~~ | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #6 | 2026-06-19 — shipped (#350, `a9a12a0`) |
+| ~~Operations sort/filter: native `<select>` → v4 Sheet picker~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-15 — shipped: surface-adaptive pickers (ADR-032) |
+| ~~Operations sort/filter: persist the choice (per-op / across reload)~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 — shipped (#347) |
+| ~~Operations filter: cascade the Area options to the selected Division~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) board sort/filter | 2026-06-13 — shipped (#347) |
+| ~~ShorePointCard: promote the pre-cutting Required-strut-length number~~ | [#248](https://github.com/Vergo402/paratech-struts/issues/248) card Design 2 | 2026-06-13 — shipped (#351, `eb77532`) |
 | ~~Measurement ⅛″ fraction sub-control form — strip vs picker geometry~~ | [`99-open-questions.md`](99-open-questions.md) #20 | 2026-06-11 — S10 shipped (`714bac9..de5c944`): 56pt 8-button tap-strip, form modal |
 | ~~Measurement + Division as big gloved tap targets — no spinners/scroll-wheels~~ | [`99-open-questions.md`](99-open-questions.md) #38 | 2026-06-11 — S10 shipped: 56pt tap targets, no spinners/wheels |
 | ~~Big-key custom keypad on phone + hardware-keyboard typed parsing on desktop (KB-3)~~ | [#314](https://github.com/Vergo402/paratech-struts/issues/314) | 2026-06-11 — S10 shipped (#314 closed): phone 56pt dialer + tap-strip, desktop hardware-keyboard + `parseMeasurement` |

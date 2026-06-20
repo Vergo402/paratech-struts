@@ -69,6 +69,8 @@ Theme lives in **Settings** (System / Light / Dark / Sunlight) if you want to ch
 
 Things you'll notice that are **deliberately not built yet**. The slice proves the spine; these ride the next phases:
 
+> **Resolution status (2026-06-19, register hygiene).** Most of this list has since shipped — the original bullets are left intact as the point-in-time gate record. **Resolved:** #1 Quick Find (#320) · #3 End-Op archive (#339) · #4 extension/plate decrement (#330) · #5 unrated-ack follows the deployed card (`0916f07`) · #6 focus after Deploy (#350) · #7 measurement keypad (S10 / #314) · #10 deduction-ledger collapse (#349) · #13 Strut Set → Cutting + full lifecycle (#222/#224/#339). **Still open:** #2 (Command tab stub → #323) · #8 (plate photo thumbnails) · #9 (Power Select fallback) · #12 (picker back-button) · #14 (cloud sync — its own session). (#11 was already struck inline below.)
+
 1. **Quick Find tab is a stub** (the shared measurement inputs were built inside Add Shore Point; the standalone screen is Phase I) — and the "no match → try Quick Find" link is likewise absent.
 2. **Inventory and Command tabs are stubs** — honest "not built yet" screens. Inventory changes are real underneath (you watched counts move); the management screen comes later.
 3. **End Operation button → placeholder confirm** — doesn't archive yet (workflow #238, Phase I).
