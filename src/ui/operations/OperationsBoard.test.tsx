@@ -1006,7 +1006,7 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-c', 'sp-b', 'sp-a']);
   });
 
-  it('list Sort → Division / area orders by division desc then area asc', async () => {
+  it('list Sort → Location orders by division desc then area asc', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([

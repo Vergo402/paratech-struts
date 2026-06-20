@@ -1167,10 +1167,10 @@ export function OperationsBoard() {
                 hideLabel
                 leadingIcon={<SortGlyph />}
                 value={sortMode}
-                placeholder="Division / area"
+                placeholder="Location"
                 nullable={false}
                 options={[
-                  { value: 'location', label: 'Division / area' },
+                  { value: 'location', label: 'Location' },
                   { value: 'added-newest', label: 'Added — newest first' },
                   { value: 'added-oldest', label: 'Added — oldest first' },
                 ]}
@@ -1182,13 +1182,13 @@ export function OperationsBoard() {
                 hideLabel
                 leadingIcon={<SortGlyph />}
                 value={listSort}
-                placeholder="Division / area"
+                placeholder="Location"
                 nullable={false}
                 options={[
                   { value: 'added-newest', label: 'Added — newest first' },
                   { value: 'added-oldest', label: 'Added — oldest first' },
                   { value: 'status', label: 'Status' },
-                  { value: 'location', label: 'Division / area' },
+                  { value: 'location', label: 'Location' },
                 ]}
                 onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
               />
