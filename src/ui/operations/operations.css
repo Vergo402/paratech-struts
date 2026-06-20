@@ -336,13 +336,15 @@
 .fs-lane-off {
   margin-left: var(--space-2);
   font: var(--type-caption);
-  font-weight: 600;
+  /* Quiet red TEXT, no chip — it shouldn't shout. --danger-text is the red in
+     light/dark/broadcast; in sunlight it resolves to white, so there the red
+     comes from --danger-bg instead (override below). */
   color: var(--danger-text);
-  background: var(--danger-bg);
-  border: 1px solid var(--danger-text);
-  border-radius: var(--radius-badge);
-  padding: 2px 8px;
+  opacity: 0.75;
   white-space: nowrap;
+}
+[data-theme='sunlight'] .fs-lane-off {
+  color: var(--danger-bg);
 }
 
 .fs-lane-chevron {
