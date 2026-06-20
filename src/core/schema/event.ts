@@ -128,6 +128,12 @@ export const EquipmentDeployed = z.object({
   ...base,
   spId: z.string(),
   deployedBom: DeployedBom,
+  // The team's recorded acknowledgment when deploying into the LongShore unrated
+  // zone (>16 ft, no published working load — engine flags it `unrated`). #76:
+  // the ack was UI-only and unpersisted; it now rides the immutable event so the
+  // store's deploy guard can re-verify it off-UI (a peer/replay must carry it too).
+  // Absent ⟺ not acknowledged; meaningful only for an unrated configuration.
+  unratedAcknowledged: z.boolean().optional(),
 });
 
 export const EquipmentReturned = z.object({

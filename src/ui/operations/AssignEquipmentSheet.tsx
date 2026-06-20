@@ -65,6 +65,11 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   async function commitBom(
     deployedBom: DeployedComponent[],
     model: string,
+    // True when the chosen combo is in the LongShore unrated zone — by the time
+    // Deploy fires, RecommendationCard's gate has the operator's acknowledgment
+    // (the button is disabled until then), so reaching here IS the ack. Persisted
+    // on the event so the store's deploy guard can re-verify it off-UI (#76).
+    unratedAck: boolean,
     deductions?: Deductions,
   ): Promise<{ ok: boolean; reason?: string }> {
     if (!sp || inFlight.current) return { ok: false, reason: 'A deploy is already in flight.' };
@@ -97,6 +102,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       by: uid,
       spId: sp.id,
       deployedBom,
+      ...(unratedAck ? { unratedAcknowledged: true } : {}),
     });
     if (result.ok) {
       commitHaptic();
@@ -131,7 +137,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
     // missing piece before commit.
     const status = bomSourceStatus(combo, sp.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
     if (status.status === 'complete') {
-      void commitBom(status.bom, comboModel(combo));
+      void commitBom(status.bom, comboModel(combo), !!combo.unrated);
     } else {
       setError(null);
       setResolving(combo);
@@ -176,7 +182,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           combo={resolving}
           submitting={deploying}
           onBack={() => setResolving(null)}
-          onConfirm={(bom, deductions) => commitBom(bom, comboModel(resolving), deductions)}
+          onConfirm={(bom, deductions) => commitBom(bom, comboModel(resolving), !!resolving.unrated, deductions)}
         />
       )}
       {sp && !resolving && recommendations.length > 0 && (

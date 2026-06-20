@@ -135,6 +135,61 @@ describe('operationStore.commit', () => {
     });
   });
 
+  // Defense-in-depth (lands with the Firebase sync session): the engine's safety
+  // verdict (over-capacity / unrated zone) is gated only in the deploy UI, which
+  // lives ABOVE the data/sync seam. The store re-derives it from the point's own
+  // inputs so a peer/replayed/off-UI EquipmentDeployed the engine flagged can't
+  // slip into the log.
+  describe('deploy safety verdict', () => {
+    // 200″ LongShore is past the published 16-ft chart → engine flags `unrated`.
+    // Untracked pieces (no inventoryId) carry no stock consequence, so no seeding.
+    const unratedBom = (): DeployedComponent[] => [
+      { role: 'strut', model: 'LS 1016', system: 'LongShore', source: 'untracked' },
+      { role: 'extension', length: 12, system: 'LongShore', source: 'untracked' },
+    ];
+    const deployEvt = (spId: string, bom: DeployedComponent[], extra = {}): FieldShoreEvent => ({
+      type: 'EquipmentDeployed', ...base(), spId, deployedBom: bom, ...extra,
+    });
+
+    it('rejects an over-capacity deploy outright — no event, point stays Pending', async () => {
+      await ops.commit(spAdded(makeSp('sp-oc', { estimatedLoad: 1_000_000 })));
+      const before = await db.events.count();
+      const res = await ops.commit(deployEvt('sp-oc', [{ role: 'strut', model: 'LS 1016', source: 'untracked' }]));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('capacity') });
+      expect(await db.events.count()).toBe(before); // nothing logged
+      expect(getSp('sp-oc')!.status).toBe('pending');
+    });
+
+    it('rejects an unrated-zone deploy that lacks the team acknowledgment', async () => {
+      await ops.commit(spAdded(makeSp('sp-ur', { measurementEighths: 1600 }))); // 200″
+      const res = await ops.commit(deployEvt('sp-ur', unratedBom()));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('acknowledgment') });
+      expect(getSp('sp-ur')!.status).toBe('pending');
+    });
+
+    it('allows the SAME unrated deploy once the acknowledgment is recorded', async () => {
+      await ops.commit(spAdded(makeSp('sp-ur', { measurementEighths: 1600 })));
+      const res = await ops.commit(deployEvt('sp-ur', unratedBom(), { unratedAcknowledged: true }));
+      expect(res.ok).toBe(true);
+      expect(getSp('sp-ur')!.status).toBe('process');
+    });
+
+    it('still guards a peer (fromRemote) deploy — the actual threat once sync lands', async () => {
+      await ops.commit(spAdded(makeSp('sp-ur', { measurementEighths: 1600 })));
+      const res = await ops.commit(deployEvt('sp-ur', unratedBom()), { fromRemote: true });
+      expect(res.ok).toBe(false);
+      expect(getSp('sp-ur')!.status).toBe('pending');
+    });
+
+    it('leaves a clean in-range deploy untouched', async () => {
+      // sp-1 is 30″, no load → neither over-capacity nor unrated.
+      expect((await ops.commit(deploy('sp-1', 'inv-1'))).ok).toBe(true);
+      expect(getSp('sp-1')!.status).toBe('process');
+    });
+  });
+
   // ADR-033 — a deployed shore is a SOURCED bill of materials: strut + plates +
   // extensions, each consumed from (and restored to) its OWN rig inside the one
   // transaction that appends the event. These pin the safety-critical core: every

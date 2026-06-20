@@ -51,6 +51,29 @@ export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | 
 }
 
 /**
+ * Re-derive the engine's safety verdict for a shore point's deployed configuration
+ * from the point's OWN persisted inputs (measurement, deductions, load) + the BOM's
+ * strut model. The deploy UI gate (RecommendationCard) lives ABOVE the data/sync
+ * seam, so the store re-checks here before committing a deploy that originated
+ * off-UI — a peer device, a replay, or a future second entry point. The engine
+ * stays the sole owner of the math (L-1/L-2); this only reads the flags it computes.
+ *
+ * `exceedsCapacity` is a per-point property (no ≤4-strut combo handles the load at
+ * this length), so its presence means NO deploy here is safe. `unrated` is binary
+ * per point+system — when the effective length is beyond LongShore's 16-ft chart,
+ * EVERY LongShore combo is unrated — so matching the deployed strut's MODEL is
+ * enough; the exact extension chosen never changes the verdict. Catalog mode (no
+ * inventory) is the most permissive on load, so a verdict here is the conservative
+ * one stock can only worsen.
+ */
+export function deployVerdict(sp: ShorePoint, bom: DeployedComponent[]): { exceedsCapacity: boolean; unrated: boolean } {
+  const combos = findForShorePoint(sp, null);
+  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false };
+  const model = bom.find((c) => c.role === 'strut')?.model;
+  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model) };
+}
+
+/**
  * Total deduction (inches) — the EXACT sum of the four component heights (not
  * rounded; L-2). The card detail line (#248) displays it (rounded to ⅛″ at the
  * UI), and effectiveLengthFrom subtracts it before the single final floor.

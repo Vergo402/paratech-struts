@@ -1,5 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { FieldShoreEvent, type DeployedComponentRole, type InventoryItem } from '@core/schema';
+import { deployVerdict } from '@core/shorepoint';
 import {
   operationReducer,
   projectOperation,
@@ -128,6 +129,19 @@ export function createOperationStore(opts?: {
         const sp = state.shorePoints.find((s) => s.id === event.spId);
         if (!sp) return { ok: false, reason: `unknown shore point ${event.spId}` };
         if (sp.status !== 'pending') return { ok: false, reason: 'deploy requires a Pending shore point' };
+        // Defense-in-depth (lands with the Firebase sync session): the engine's
+        // safety verdict lives in the UI gate (RecommendationCard) ABOVE the seam,
+        // so re-derive it from the point's own inputs and reject up front — same
+        // L-5/L-7/L-8 doctrine (no event, no stock move) — so a peer/replayed/off-UI
+        // deploy can't commit an over-capacity or unacknowledged-unrated assembly the
+        // engine flagged. (ComponentResourced is exempt: it re-points a piece to a
+        // different rig without touching measurement/load/strut model, so the verdict
+        // is invariant under it.)
+        const verdict = deployVerdict(sp, event.deployedBom);
+        if (verdict.exceedsCapacity) return { ok: false, reason: 'deploy exceeds 4-strut capacity for this load' };
+        if (verdict.unrated && !event.unratedAcknowledged) {
+          return { ok: false, reason: 'unrated-zone deploy requires a recorded team acknowledgment' };
+        }
         const updates: InventoryItem[] = [];
         await db.transaction('rw', db.events, db.inventory, async () => {
           for (const c of event.deployedBom) {
