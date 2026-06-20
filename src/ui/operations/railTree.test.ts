@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildRailTree } from './railTree';
+import { buildRailTree, isLeafScope } from './railTree';
 import type { ShorePoint } from '@core/schema';
 
 function sp(over: Partial<ShorePoint> & { id: string }): ShorePoint {
@@ -61,5 +61,40 @@ describe('buildRailTree', () => {
     expect(tree.buildings[0]!.count).toBe(2);
     expect(tree.buildings[0]!.divisions.map((d) => d.division)).toEqual(['2', '1']);
     expect(tree.buildings[1]!.divisions[0]!.division).toBe('1');
+  });
+});
+
+describe('isLeafScope', () => {
+  // single-building tree: Div 2 has areas A+B; Div 1 has none.
+  const single = buildRailTree([
+    sp({ id: 'a', division: '2', area: 'A' }),
+    sp({ id: 'b', division: '2', area: 'B' }),
+    sp({ id: 'c', division: '1' }),
+  ]);
+  // multi-building tree: North has divisions; South has a division too.
+  const multi = buildRailTree([
+    sp({ id: 'a', building: 'North', division: '2', area: 'A' }),
+    sp({ id: 'b', building: 'North', division: '1' }),
+    sp({ id: 'c', building: 'South', division: '1' }),
+  ]);
+
+  it('an area path is always a leaf', () => {
+    expect(isLeafScope({ building: null, division: '2', area: 'A' }, single)).toBe(true);
+  });
+  it('a division with areas is NOT a leaf (keep drilling)', () => {
+    expect(isLeafScope({ building: null, division: '2', area: null }, single)).toBe(false);
+  });
+  it('a division with no areas IS a leaf', () => {
+    expect(isLeafScope({ building: null, division: '1', area: null }, single)).toBe(true);
+  });
+  it('a building with divisions is NOT a leaf', () => {
+    expect(isLeafScope({ building: 'North', division: null, area: null }, multi)).toBe(false);
+  });
+  it('a division-with-area under a building is NOT a leaf at division level', () => {
+    expect(isLeafScope({ building: 'North', division: '2', area: null }, multi)).toBe(false);
+    expect(isLeafScope({ building: 'North', division: '1', area: null }, multi)).toBe(true);
+  });
+  it('the root ("All", all null) is never a leaf', () => {
+    expect(isLeafScope({ building: null, division: null, area: null }, single)).toBe(false);
   });
 });

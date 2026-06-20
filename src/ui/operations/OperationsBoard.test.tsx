@@ -674,8 +674,12 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
 
-    await user.click(screen.getByRole('button', { name: 'Division' }));
-    await user.click(screen.getByRole('option', { name: 'Div 1' }));
+    // Phone (jsdom): location filtering goes through the Scope drilldown Sheet,
+    // not flat chips. A division with no areas is a leaf, so selecting it
+    // "picks and goes" — the sheet closes and the board is revealed (Item 1).
+    await user.click(screen.getByRole('button', { name: 'Scope' }));
+    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
+    await user.click(within(sheet).getByRole('button', { name: /Div 1/ }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
     expect(laneCardIds('Cutting Station')).toEqual([]); // sp-3 is Div 2 — filtered out
     const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
@@ -844,13 +848,65 @@ describe('OperationsBoard', () => {
     // Building groups first (North before South); within North, Div 2 before Div 1.
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
 
-    // Filter to North tower drops the South point.
-    await user.click(screen.getByRole('button', { name: 'Building' }));
-    await user.click(screen.getByRole('option', { name: 'North tower' }));
+    // Filter to North tower via the Scope sheet. A building WITH divisions isn't a
+    // leaf, so the sheet stays open to keep drilling — dismiss it to read the board.
+    await user.click(screen.getByRole('button', { name: 'Scope' }));
+    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
+    // /^North tower/ targets the select row, not the "Expand North tower" toggle.
+    await user.click(within(sheet).getByRole('button', { name: /^North tower/ }));
+    await user.keyboard('{Escape}');
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1']);
 
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
+  });
+
+  // ---- phone phase grouping + scope drilldown (port of the desktop wins) -----
+
+  it('phone: the seven lanes group under the three workflow-phase labels, in order', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending'), makeSP('sp-2', 'cutting')]);
+    const { container } = render(<OperationsBoard />);
+    const labels = Array.from(container.querySelectorAll('.fs-ops-phase-label')).map((el) => el.textContent);
+    expect(labels).toEqual(['Strut placement', 'Cutting', 'Wood & return']);
+    // Grouping is presentational — all seven lanes still render under the phases.
+    for (const label of ['Pending Equipment', 'Equipment Assigned', 'Strut Set', 'Cutting Station', 'Runner', 'Wood Shore Secured', 'Strut Equipment Returned']) {
+      expect(screen.getByRole('heading', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('phone: the Scope chip opens the location drilldown sheet (the reused rail)', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending', '1'), makeSP('sp-2', 'pending', '2')]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('button', { name: 'Scope' }));
+    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
+    // The desktop rail is reused verbatim — "All shore points" + a node per division.
+    expect(within(sheet).getByRole('button', { name: /All shore points/ })).toBeInTheDocument();
+    expect(within(sheet).getByRole('button', { name: /Div 2/ })).toBeInTheDocument();
+  });
+
+  it('phone: the scope breadcrumb appears once scoped and steps back out a level', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending', '1'), makeSP('sp-2', 'pending', '2')]);
+    render(<OperationsBoard />);
+    // No breadcrumb until a scope is set.
+    expect(screen.queryByRole('navigation', { name: 'Active scope' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Scope' }));
+    await user.click(
+      within(screen.getByRole('dialog', { name: 'Jump to location' })).getByRole('button', { name: /Div 1/ }),
+    );
+    // Leaf division → picks-and-goes; board narrows and the breadcrumb shows the path.
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
+    const bc = screen.getByRole('navigation', { name: 'Active scope' });
+    expect(within(bc).getByText('Div 1')).toBeInTheDocument();
+
+    // Tapping "All" steps back out to the whole board.
+    await user.click(within(bc).getByRole('button', { name: 'All' }));
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
 
   // ---- #356 — single-list view ----------------------------------------------

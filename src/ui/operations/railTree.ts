@@ -54,6 +54,34 @@ function buildDivisions(points: ShorePoint[]): RailDivisionNode[] {
     });
 }
 
+/** The scope path the rail/breadcrumb select into (mirrors OperationsBoard's filter state). */
+export interface ScopePath {
+  building: string | null;
+  division: string | null;
+  area: string | null;
+}
+
+/**
+ * Does this exact scope path point at a LEAF node — nothing deeper to drill?
+ * The phone scope sheet uses this to "pick and go": selecting a leaf (an area,
+ * an area-less division, a division-less building) closes the sheet; selecting
+ * an expandable node keeps it open so the user can keep drilling (the rail
+ * expands it inline). "All" (the root) is never a leaf.
+ */
+export function isLeafScope(path: ScopePath, tree: RailTree): boolean {
+  if (path.area) return true; // areas have no children
+  if (path.division) {
+    const divisions = tree.multiBuilding
+      ? (tree.buildings.find((b) => b.building === path.building)?.divisions ?? [])
+      : tree.divisions;
+    return (divisions.find((d) => d.division === path.division)?.areas.length ?? 0) === 0;
+  }
+  if (path.building) {
+    return (tree.buildings.find((b) => b.building === path.building)?.divisions.length ?? 0) === 0;
+  }
+  return false; // "All" — the root, keep the sheet open
+}
+
 export function buildRailTree(shorePoints: readonly ShorePoint[]): RailTree {
   const live = shorePoints.filter((sp) => sp.deletedAt == null);
   const multiBuilding = live.some((sp) => !!sp.building);

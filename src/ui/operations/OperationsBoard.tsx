@@ -9,7 +9,7 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
+import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
 import { useApparatus, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
@@ -27,7 +27,7 @@ import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { OperationsRail } from './OperationsRail';
-import { buildRailTree } from './railTree';
+import { buildRailTree, isLeafScope, type ScopePath } from './railTree';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -85,6 +85,84 @@ function PencilIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// ---- Location pin glyph — the phone Scope chip's leading icon ----------------
+function LocationGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M8 1.5a4 4 0 0 0-4 4c0 2.8 4 8 4 8s4-5.2 4-8a4 4 0 0 0-4-4Z"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="5.5" r="1.4" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+// ---- Phone lane grouping (Item 2) -------------------------------------------
+// On phone the seven lanes group into the three workflow phases the laptop board
+// shows (operations.css 3-1-3): strut placement → the cutting pivot → wood &
+// return. Presentational only — labeled dividers wrapping the same <Lane>s, and
+// phone-only (desktop keeps the flat STATUS_ORDER map so its 2-up/3-1-3 grids see
+// .fs-lane as direct children of .fs-ops-lanes — wrapping them in sections there
+// would break the grid). The statuses union, in order, IS STATUS_ORDER.
+const PHASE_GROUPS = [
+  { label: 'Strut placement', statuses: ['pending', 'process', 'strutset'] },
+  { label: 'Cutting', statuses: ['cutting'] },
+  { label: 'Wood & return', statuses: ['runner', 'secured', 'returned'] },
+] as const satisfies ReadonlyArray<{ label: string; statuses: readonly ShorePointStatus[] }>;
+
+// ---- Scope breadcrumb (Item 1) ----------------------------------------------
+// Phone-only, shown above the lanes once a location scope is active: the active
+// path as tappable back-segments (All › Div 2 › Area 3). Tapping a segment
+// applies that truncated path (it FILTERS in place — no router, no sheet), so a
+// firefighter can step out a level without reopening the scope sheet. Writes the
+// same filter state the rail + chips do (applyRailFilter — one source of truth).
+function ScopeBreadcrumb({
+  building,
+  division,
+  area,
+  onSelect,
+}: {
+  building: string | null;
+  division: string | null;
+  area: string | null;
+  onSelect: (path: ScopePath) => void;
+}) {
+  const segs: { label: string; path: ScopePath }[] = [
+    { label: 'All', path: { building: null, division: null, area: null } },
+  ];
+  if (building) segs.push({ label: building, path: { building, division: null, area: null } });
+  if (division) segs.push({ label: divisionLabel(division), path: { building, division, area: null } });
+  if (area) segs.push({ label: area, path: { building, division, area } });
+  return (
+    <nav className="fs-ops-breadcrumb" aria-label="Active scope">
+      {segs.map((s, i) => {
+        const last = i === segs.length - 1;
+        return (
+          <span key={`${s.label}-${i}`} className="fs-ops-bc-seg">
+            {i > 0 && (
+              <span className="fs-ops-bc-sep" aria-hidden="true">
+                ›
+              </span>
+            )}
+            {last ? (
+              <span className="fs-ops-bc-current" aria-current="true">
+                {s.label}
+              </span>
+            ) : (
+              <button type="button" className="fs-ops-bc-link" onClick={() => onSelect(s.path)}>
+                {s.label}
+              </button>
+            )}
+          </span>
+        );
+      })}
+    </nav>
   );
 }
 
@@ -336,6 +414,10 @@ export function OperationsBoard() {
   // Quick View drawer (ADR-019) — the deployed point being inspected, or null.
   const [detailSpId, setDetailSpId] = useState<string | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  // Phone scope sheet (Item 1) — the building→division→area drilldown that the
+  // desktop rail is, surfaced on phone as a bottom Sheet (ADR-016: scope picking
+  // is non-destructive → sheet). Desktop keeps the always-visible rail instead.
+  const [scopeSheetOpen, setScopeSheetOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
@@ -797,12 +879,22 @@ export function OperationsBoard() {
   // Rail selection applies an EXACT building/division/area path, so no cascade is
   // needed (a stale area can't survive). Writes the same state the chips use, so
   // rail and chips stay one source of truth (#248 / 20-operations.md).
-  function applyRailFilter(p: { building: string | null; division: string | null; area: string | null }) {
+  function applyRailFilter(p: ScopePath) {
     setFilterBuilding(p.building);
     setFilterDivision(p.division);
     setFilterArea(p.area);
     persistPrefs({ filterBuilding: p.building, filterDivision: p.division, filterArea: p.area });
   }
+
+  // Phone scope sheet select (Item 1): apply the path, then "pick and go" — close
+  // the sheet on a leaf (an area / area-less division), but keep it open on an
+  // expandable node so the user can keep drilling (the rail expands it inline).
+  function selectScope(p: ScopePath) {
+    applyRailFilter(p);
+    if (isLeafScope(p, railTree)) setScopeSheetOpen(false);
+  }
+  // Any location scope active → show the breadcrumb + light the Scope chip.
+  const scopeActive = !!(filterBuilding || filterDivision || filterArea);
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -911,6 +1003,27 @@ export function OperationsBoard() {
       return next;
     });
   }, []);
+
+  // One <Lane> with its full prop set — rendered flat (desktop, STATUS_ORDER) or
+  // wrapped in phase groups (phone, PHASE_GROUPS). DRYs the two lane layouts.
+  const renderLane = (status: ShorePointStatus) => (
+    <Lane
+      key={status}
+      status={status}
+      points={byStatus[status]}
+      collapsed={collapsed.has(status)}
+      onToggle={() => toggleLane(status)}
+      onEdit={openEdit}
+      onDelete={openDelete}
+      onOpenDetail={openDetail}
+      onAssignEquipment={assignEquipment}
+      onAdvance={handleAdvance}
+      onStepBack={handleStepBack}
+      onRemoveReturn={openRemoveReturn}
+      advanceDisabledReasonFor={advanceDisabledReasonFor}
+      activeStackId={scrollToId}
+    />
+  );
 
   // ---- No active operation --------------------------------------------------
   if (!operation || operation.status === 'ended') {
@@ -1080,35 +1193,53 @@ export function OperationsBoard() {
                 onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
               />
             )}
-            {buildingsPresent.length > 0 && (
-              <FilterPicker
-                label="Building"
-                hideLabel
-                value={filterBuilding}
-                placeholder="All buildings"
-                options={buildingsPresent.map((b) => ({ value: b, label: b }))}
-                onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
-              />
-            )}
-            {divisionsPresent.length > 0 && (
-              <FilterPicker
-                label="Division"
-                hideLabel
-                value={filterDivision}
-                placeholder="All divisions"
-                options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
-                onChange={handleDivisionChange}
-              />
-            )}
-            {areasPresent.length > 0 && (
-              <FilterPicker
-                label="Area"
-                hideLabel
-                value={filterArea}
-                placeholder="All areas"
-                options={areasPresent.map((a) => ({ value: a, label: a }))}
-                onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
-              />
+            {/* Location scope: desktop keeps the always-visible rail + the flat
+                Building/Division/Area chips; phone collapses those three into one
+                Scope chip that opens the rail as a drilldown Sheet (Item 1). */}
+            {isDesktop ? (
+              <>
+                {buildingsPresent.length > 0 && (
+                  <FilterPicker
+                    label="Building"
+                    hideLabel
+                    value={filterBuilding}
+                    placeholder="All buildings"
+                    options={buildingsPresent.map((b) => ({ value: b, label: b }))}
+                    onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
+                  />
+                )}
+                {divisionsPresent.length > 0 && (
+                  <FilterPicker
+                    label="Division"
+                    hideLabel
+                    value={filterDivision}
+                    placeholder="All divisions"
+                    options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
+                    onChange={handleDivisionChange}
+                  />
+                )}
+                {areasPresent.length > 0 && (
+                  <FilterPicker
+                    label="Area"
+                    hideLabel
+                    value={filterArea}
+                    placeholder="All areas"
+                    options={areasPresent.map((a) => ({ value: a, label: a }))}
+                    onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
+                  />
+                )}
+              </>
+            ) : (
+              (divisionsPresent.length > 0 || buildingsPresent.length > 0) && (
+                <button
+                  type="button"
+                  className={`fs-ops-scope-chip${scopeActive ? ' is-active' : ''}`}
+                  onClick={() => setScopeSheetOpen(true)}
+                >
+                  <LocationGlyph />
+                  Scope
+                </button>
+              )
             )}
             {apparatusPresent.length > 0 && (
               <FilterPicker
@@ -1156,26 +1287,30 @@ export function OperationsBoard() {
         </div>
       )}
 
+      {/* Phone scope breadcrumb (Item 1) — the active path, tap a segment to step
+          out a level. Phone-only; desktop shows the active path in the rail. */}
+      {!isDesktop && scopeActive && (
+        <ScopeBreadcrumb
+          building={filterBuilding}
+          division={filterDivision}
+          area={filterArea}
+          onSelect={applyRailFilter}
+        />
+      )}
+
       {layout === 'lanes' ? (
         <div className="fs-ops-lanes">
-          {STATUS_ORDER.map((status) => (
-            <Lane
-              key={status}
-              status={status}
-              points={byStatus[status]}
-              collapsed={collapsed.has(status)}
-              onToggle={() => toggleLane(status)}
-              onEdit={openEdit}
-              onDelete={openDelete}
-              onOpenDetail={openDetail}
-              onAssignEquipment={assignEquipment}
-              onAdvance={handleAdvance}
-              onStepBack={handleStepBack}
-              onRemoveReturn={openRemoveReturn}
-              advanceDisabledReasonFor={advanceDisabledReasonFor}
-              activeStackId={scrollToId}
-            />
-          ))}
+          {/* Desktop keeps the flat STATUS_ORDER map — its 2-up/3-1-3 grids need
+              .fs-lane as a direct child of .fs-ops-lanes; phone groups the seven
+              lanes into the three workflow phases (Item 2, phone-only). */}
+          {isDesktop
+            ? STATUS_ORDER.map(renderLane)
+            : PHASE_GROUPS.map((g) => (
+                <div className="fs-ops-phase" key={g.label}>
+                  <div className="fs-ops-phase-label">{g.label}</div>
+                  {g.statuses.map(renderLane)}
+                </div>
+              ))}
         </div>
       ) : (
         <div className="fs-ops-list" role="list">
@@ -1255,6 +1390,22 @@ export function OperationsBoard() {
               <InventorySummary items={inventory} roster={roster} />
             </SideDrawer>
           </>
+        )}
+        {/* Phone scope drilldown (Item 1) — the desktop rail, surfaced as a bottom
+            Sheet. Reuses OperationsRail verbatim; selecting a leaf picks-and-goes
+            (selectScope), an expandable node keeps the sheet open to keep drilling.
+            Rendered phone-only; the Sheet's claimOverlay closes any open companion
+            drawer (ADR-016 one-overlay). */}
+        {!isDesktop && (
+          <Sheet open={scopeSheetOpen} onClose={() => setScopeSheetOpen(false)} title="Jump to location">
+            <OperationsRail
+              tree={railTree}
+              filterBuilding={filterBuilding}
+              filterDivision={filterDivision}
+              filterArea={filterArea}
+              onSelect={selectScope}
+            />
+          </Sheet>
         )}
         </div>
         </>
