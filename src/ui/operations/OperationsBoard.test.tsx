@@ -158,9 +158,11 @@ describe('OperationsBoard', () => {
     expect(bar).toHaveAttribute('aria-hidden', 'true');
     const items = bar!.querySelectorAll('.fs-ops-summary-item');
     expect(items).toHaveLength(7);
-    expect(items[0]!.textContent).toBe('Pending Equipment2');
-    expect(items[1]!.textContent).toBe('Equipment Assigned0');
-    expect(items[3]!.textContent).toBe('Cutting Station1');
+    // Short chip labels (SUMMARY_LABEL) so all seven fit on one line; the full
+    // STATUS_LABELS stay on the lane headers (asserted elsewhere).
+    expect(items[0]!.textContent).toBe('Pending2');
+    expect(items[1]!.textContent).toBe('Assigned0');
+    expect(items[3]!.textContent).toBe('Cutting1');
   });
 
   it('lane collapse toggles card visibility', async () => {
@@ -682,6 +684,24 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
     expect(laneCardIds('Cutting Station')).toEqual(['sp-3']);
+  });
+
+  it('filtering by assigned apparatus narrows the board; Clear restores', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      { ...makeSP('sp-1', 'pending', '1'), assignedResource: 'Rescue 2' },
+      { ...makeSP('sp-2', 'pending', '1'), assignedResource: 'Engine 1' },
+    ]);
+    render(<OperationsBoard />);
+    expect(laneCardIds('Pending Equipment').slice().sort()).toEqual(['sp-1', 'sp-2']);
+
+    await user.click(screen.getByRole('button', { name: 'Apparatus' }));
+    await user.click(screen.getByRole('option', { name: 'Rescue 2' }));
+    expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']); // only the Rescue 2 point
+
+    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    expect(laneCardIds('Pending Equipment').slice().sort()).toEqual(['sp-1', 'sp-2']);
   });
 
   // ---- #319 — soft-delete + restore ------------------------------------------

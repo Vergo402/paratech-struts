@@ -9,7 +9,7 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, Modal, Segmented, SideDrawer, useIsWide } from '@ui/primitives';
+import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
 import { useApparatus, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
@@ -26,6 +26,8 @@ import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
+import { OperationsRail } from './OperationsRail';
+import { buildRailTree } from './railTree';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -71,41 +73,6 @@ function InventoryIcon() {
   );
 }
 
-function CloseGlyph() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function DetailGlyph() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M8 8h8M8 12h8M8 16h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-// The pinned detail column's empty state (desktop ≥1200): an outlined shell that
-// holds the column's footprint so selecting/clearing a point never shifts the
-// layout. role="complementary" so the landmark stays present whether or not a
-// point is selected.
-function DetailShell() {
-  return (
-    <aside className="fs-ops-detail-shell" role="complementary" aria-label="Shore point details">
-      <div className="fs-ops-detail-shell-inner">
-        <DetailGlyph />
-        <p>
-          Select a deployed shore point&apos;s <strong>Details</strong> to see its full bill of
-          materials, sources, and safety check here.
-        </p>
-      </div>
-    </aside>
-  );
-}
-
 // ---- Pencil edit icon -------------------------------------------------------
 function PencilIcon() {
   return (
@@ -131,12 +98,23 @@ function PencilIcon() {
 // the Division filter, and the IC's at-a-glance command picture is the separate
 // Command tab's job — not this board. (A SIM-V "lone IC on a phone" finding once
 // argued to put this on phone; that was a wrong-persona read — do not re-add it.)
+// Short chip labels so all seven counts fit on one line (Alex). The full
+// STATUS_LABELS stay everywhere else (lane headers, slide announcements).
+const SUMMARY_LABEL: Record<ShorePointStatus, string> = {
+  pending: 'Pending',
+  process: 'Assigned',
+  strutset: 'Strut Set',
+  cutting: 'Cutting',
+  runner: 'Runner',
+  secured: 'Secured',
+  returned: 'Returned',
+};
 function StatusSummaryBar({ byStatus }: { byStatus: Record<ShorePointStatus, ShorePoint[]> }) {
   return (
     <div className="fs-ops-summary" aria-hidden="true">
       {STATUS_ORDER.map((status) => (
         <span key={status} className={`fs-ops-summary-item is-${status}`}>
-          {STATUS_LABELS[status]}
+          {SUMMARY_LABEL[status]}
           <span className="fs-ops-summary-count">{byStatus[status].length}</span>
         </span>
       ))}
@@ -334,13 +312,11 @@ export function OperationsBoard() {
   const shorePoints = useShorePoints();
   const inventory = useInventory();
   const { roster } = useApparatus();
-  // ≥1200px (Laptop surface, spacing-grid.md): pin both companion panels open as
-  // standard fixtures. Below it they stay on-demand drawers (one companion fits).
-  const isWide = useIsWide();
-  // Refs for the pinned detail panel's companion focus contract (see effect below).
-  const detailAsideRef = useRef<HTMLElement>(null);
-  const detailCloseRef = useRef<HTMLButtonElement>(null);
-  const detailOpenerRef = useRef<HTMLElement | null>(null);
+  // ≥768px (tablet/command-post): the board gets the drilldown rail + a dominant
+  // canvas, and the Details / Available-Inventory companions float over it as
+  // draggable FloatingPanels (ADR-037). Below it (phone, the floor) the rail
+  // collapses to the filter chips and the companions are full-screen SideDrawers.
+  const isDesktop = useIsDesktop();
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
@@ -373,6 +349,9 @@ export function OperationsBoard() {
   const [filterDivision, setFilterDivision] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string | null>(null);
   const [filterBuilding, setFilterBuilding] = useState<string | null>(null);
+  // Filter by assigned apparatus (assignedResource) — a 4th board filter beside
+  // building/division/area (Alex). Same lifecycle: persisted, cleared together.
+  const [filterApparatus, setFilterApparatus] = useState<string | null>(null);
   // Current op id for the prefs key, without making it an effect dep (#347).
   const opIdRef = useRef<string | undefined>(undefined);
   opIdRef.current = operation?.id;
@@ -411,7 +390,7 @@ export function OperationsBoard() {
     if (!operation?.id) return;
     const resetPrefs = () => {
       setSortMode('location'); setLayout('lanes'); setListSort('location');
-      setFilterDivision(null); setFilterArea(null); setFilterBuilding(null);
+      setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); setFilterApparatus(null);
     };
     // Back-compat: an older stored 'added' (pre-directional) reads as newest-first.
     const asSort = (v: unknown): SortMode =>
@@ -428,15 +407,16 @@ export function OperationsBoard() {
       setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
       setFilterBuilding(typeof p.filterBuilding === 'string' ? p.filterBuilding : null);
+      setFilterApparatus(typeof p.filterApparatus === 'string' ? p.filterApparatus : null);
     } catch { resetPrefs(); }
   }, [operation?.id]);
 
   // Write the current prefs + a patch for the field(s) that just changed. Called
   // from the change handlers so only real user actions persist (StrictMode-safe).
-  function persistPrefs(patch: Partial<{ sortMode: SortMode; layout: BoardLayout; listSort: ListSort; filterDivision: string | null; filterArea: string | null; filterBuilding: string | null }>) {
+  function persistPrefs(patch: Partial<{ sortMode: SortMode; layout: BoardLayout; listSort: ListSort; filterDivision: string | null; filterArea: string | null; filterBuilding: string | null; filterApparatus: string | null }>) {
     const opId = opIdRef.current;
     if (!opId) return;
-    const prefs = { sortMode, layout, listSort, filterDivision, filterArea, filterBuilding, ...patch };
+    const prefs = { sortMode, layout, listSort, filterDivision, filterArea, filterBuilding, filterApparatus, ...patch };
     try { localStorage.setItem(`fs-board-prefs-${opId}`, JSON.stringify(prefs)); }
     catch { /* private mode / quota — prefs are best-effort */ }
   }
@@ -474,28 +454,6 @@ export function OperationsBoard() {
   useEffect(() => {
     if (detailSpId && !detailSp) setDetailSpId(null);
   }, [detailSpId, detailSp]);
-  // Pinned detail (≥1200): mirror DockDrawer's companion focus contract — picking
-  // a point moves focus into the panel's Close and Esc (while focus is inside the
-  // panel) clears the selection + restores the opener. Below 1200 the SideDrawer/
-  // DockDrawer already owns this; keyed on detailSpId so an unrelated board update
-  // never steals focus back. Esc is scoped to the panel so a layered Modal/Sheet
-  // keeps its own Esc.
-  useEffect(() => {
-    if (!isWide || !detailSpId) return;
-    detailOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    detailCloseRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      const aside = detailAsideRef.current;
-      if (!aside || !aside.contains(document.activeElement)) return;
-      e.stopPropagation();
-      const opener = detailOpenerRef.current;
-      setDetailSpId(null);
-      if (opener?.isConnected) opener.focus();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isWide, detailSpId]);
   // The full Equipment Assigned set to un-deploy together: a grouped physical shore
   // (Double-T / 3-Post) returns ALL its deployed struts as one, so a "Send Back
   // to Pending" never leaves orphaned standing struts — the set is married
@@ -792,6 +750,17 @@ export function OperationsBoard() {
     for (const sp of shorePoints) if (sp.deletedAt == null && sp.building) set.add(sp.building);
     return [...set].sort(compareBuildingValues);
   }, [shorePoints]);
+  // Distinct assigned apparatus present (the assignedResource filter list).
+  const apparatusPresent = useMemo(() => {
+    const set = new Set<string>();
+    for (const sp of shorePoints) if (sp.deletedAt == null && sp.assignedResource) set.add(sp.assignedResource);
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [shorePoints]);
+
+  // Drilldown-rail tree (desktop only, 20-operations.md §Drilldown) — building →
+  // division → area with counts. The rail SELECTS into the same filter state the
+  // chips drive (one source of truth, applyRailFilter below).
+  const railTree = useMemo(() => buildRailTree(shorePoints), [shorePoints]);
 
   // End-Operation warning data (#238, gate M3): shore points whose equipment is
   // still out (deployed, not yet Returned) at close, grouped by the RIG it was
@@ -825,6 +794,16 @@ export function OperationsBoard() {
     persistPrefs({ filterDivision: division, filterArea: nextArea });
   }
 
+  // Rail selection applies an EXACT building/division/area path, so no cascade is
+  // needed (a stale area can't survive). Writes the same state the chips use, so
+  // rail and chips stay one source of truth (#248 / 20-operations.md).
+  function applyRailFilter(p: { building: string | null; division: string | null; area: string | null }) {
+    setFilterBuilding(p.building);
+    setFilterDivision(p.division);
+    setFilterArea(p.area);
+    persistPrefs({ filterBuilding: p.building, filterDivision: p.division, filterArea: p.area });
+  }
+
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
       pending: [], process: [], strutset: [], cutting: [],
@@ -838,6 +817,7 @@ export function OperationsBoard() {
       if (filterBuilding && (sp.building ?? '') !== filterBuilding) continue;
       if (filterDivision && sp.division !== filterDivision) continue;
       if (filterArea && (sp.area ?? '') !== filterArea) continue;
+      if (filterApparatus && (sp.assignedResource ?? '') !== filterApparatus) continue;
       // Display-only enrichment — the computed reason never re-serializes
       // (ShorePointPatch has no such field; events are built from live SPs).
       map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
@@ -850,7 +830,7 @@ export function OperationsBoard() {
       for (const lane of Object.values(map)) lane.reverse();
     }
     return map;
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, sortMode]);
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, sortMode]);
 
   // List view (#356): every visible point in one column, grouped shores kept as
   // one stack (Alex's call), sorted by the list's own key. A group sits at its
@@ -863,7 +843,8 @@ export function OperationsBoard() {
           sp.deletedAt == null &&
           (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
           (!filterDivision || sp.division === filterDivision) &&
-          (!filterArea || (sp.area ?? '') === filterArea),
+          (!filterArea || (sp.area ?? '') === filterArea) &&
+          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus),
       )
       .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
     const items = groupLanePoints(visible);
@@ -887,7 +868,7 @@ export function OperationsBoard() {
       }
       return compareShorePointsByLocation(ra, rb);
     });
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, listSort]);
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, listSort]);
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(
@@ -960,11 +941,43 @@ export function OperationsBoard() {
   }
 
   // ---- Active operation -----------------------------------------------------
+  // The Operations ↔ Cutting Station scope toggle (#222 / 21-cutting-station.md) —
+  // a workstation under Operations, not a sixth tab (ADR-008 / ADR-014). Rendered
+  // ONCE: inline in the header on desktop (a compact top-right switch), or as a
+  // full-width row below the header on phone.
+  const viewToggle = (
+    <Segmented
+      aria-label="Operations view"
+      size="standard"
+      options={[
+        { value: 'board', label: 'Operations' },
+        {
+          value: 'cutting',
+          label: cuttingQueue.length ? `Cutting Station (${cuttingQueue.length})` : 'Cutting Station',
+        },
+      ]}
+      value={view}
+      onChange={setView}
+    />
+  );
+
   return (
     <div className="fs-ops-board">
       <header className="fs-ops-header">
         <h1 className="fs-ops-name">{operation.name}</h1>
-        {!isWide && (
+        {/* Edit sits right next to the incident name (Alex). */}
+        <button
+          className="fs-ops-edit"
+          type="button"
+          aria-label="Edit operation"
+          onClick={() => setModalMode('edit')}
+        >
+          <PencilIcon />
+        </button>
+        {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
+        {/* Phone keeps the inventory glance as a header icon (desktop gets the
+            labeled Inventory button in the filter row). */}
+        {!isDesktop && (
           <button
             className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
             type="button"
@@ -975,32 +988,9 @@ export function OperationsBoard() {
             <InventoryIcon />
           </button>
         )}
-        <button
-          className="fs-ops-edit"
-          type="button"
-          aria-label="Edit operation"
-          onClick={() => setModalMode('edit')}
-        >
-          <PencilIcon />
-        </button>
       </header>
 
-      {/* Operations ↔ Cutting Station sub-nav (#222 / 21-cutting-station.md) — a
-          workstation under Operations, not a sixth tab (ADR-008 / ADR-014). */}
-      <div className="fs-ops-subnav">
-        <Segmented
-          aria-label="Operations view"
-          options={[
-            { value: 'board', label: 'Operations' },
-            {
-              value: 'cutting',
-              label: cuttingQueue.length ? `Cutting Station (${cuttingQueue.length})` : 'Cutting Station',
-            },
-          ]}
-          value={view}
-          onChange={setView}
-        />
-      </div>
+      {!isDesktop && <div className="fs-ops-subnav">{viewToggle}</div>}
 
       <div className="fs-sr-only" role="status" aria-live="assertive">
         {announcement}
@@ -1020,14 +1010,36 @@ export function OperationsBoard() {
           onStepBack={handleStepBack}
         />
       ) : (
-        <div className="fs-ops-shell">
-        <div className="fs-ops-main">
-          <div className="fs-ops-actions">
+        <>
+        {/* Phone: Add runs full-width above the board (desktop Add lives at the
+            top of the left rail column instead). */}
+        {!isDesktop && (
+          <div className="fs-ops-controls">
             <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
               + Add Shore Point
             </Button>
           </div>
-
+        )}
+        <div className="fs-ops-stage">
+        {isDesktop && (
+          <div className="fs-ops-railcol">
+            {/* Add leads the left column; the drilldown tree sits beneath it
+                (the tree appears once the op has shore points). */}
+            <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
+              + Add Shore Point
+            </Button>
+            {shorePoints.length > 0 && (
+              <OperationsRail
+                tree={railTree}
+                filterBuilding={filterBuilding}
+                filterDivision={filterDivision}
+                filterArea={filterArea}
+                onSelect={applyRailFilter}
+              />
+            )}
+          </div>
+        )}
+        <div className="fs-ops-main">
           <StatusSummaryBar byStatus={byStatus} />
 
       {shorePoints.length > 0 && (
@@ -1098,7 +1110,17 @@ export function OperationsBoard() {
                 onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
               />
             )}
-            {(filterBuilding || filterDivision || filterArea) && (
+            {apparatusPresent.length > 0 && (
+              <FilterPicker
+                label="Apparatus"
+                hideLabel
+                value={filterApparatus}
+                placeholder="All apparatus"
+                options={apparatusPresent.map((a) => ({ value: a, label: a }))}
+                onChange={(v) => { setFilterApparatus(v); persistPrefs({ filterApparatus: v }); }}
+              />
+            )}
+            {(filterBuilding || filterDivision || filterArea || filterApparatus) && (
               <button
                 type="button"
                 className="fs-ops-filter-clear"
@@ -1106,13 +1128,27 @@ export function OperationsBoard() {
                   setFilterBuilding(null);
                   setFilterDivision(null);
                   setFilterArea(null);
-                  persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null });
+                  setFilterApparatus(null);
+                  persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null, filterApparatus: null });
                 }}
               >
                 Clear
               </button>
             )}
           </div>
+          {/* Desktop: the labeled Inventory toggle sits just left of the view
+              toggle (Alex); phone uses the header icon instead. */}
+          {isDesktop && (
+            <button
+              type="button"
+              className={`fs-ops-inv-cta${inventoryOpen ? ' is-active' : ''}`}
+              aria-pressed={inventoryOpen}
+              onClick={() => setInventoryOpen((v) => !v)}
+            >
+              <InventoryIcon />
+              Inventory
+            </button>
+          )}
           <ViewToggle
             value={layout}
             onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
@@ -1177,46 +1213,30 @@ export function OperationsBoard() {
             </Button>
           </div>
         </div>
-        {isWide ? (
+        {/* Companions are surface-adaptive (ADR-037): on desktop they float over
+            the board as draggable FloatingPanels (the board keeps full width); on
+            phone they stay full-screen modal SideDrawers. The bodies are
+            container-agnostic, dropped into either. */}
+        {isDesktop ? (
           <>
-            {detailSp ? (
-              <aside
-                ref={detailAsideRef}
-                className="fs-drawer fs-drawer--dock fs-ops-detail-pinned"
-                role="complementary"
-                aria-label={shorePointDrawerTitle(detailSp)}
-              >
-                <div className="fs-drawer-head">
-                  <h2 className="fs-drawer-title">{shorePointDrawerTitle(detailSp)}</h2>
-                  <button
-                    ref={detailCloseRef}
-                    type="button"
-                    className="fs-drawer-close"
-                    aria-label="Clear selection"
-                    onClick={() => setDetailSpId(null)}
-                  >
-                    <CloseGlyph />
-                  </button>
-                </div>
-                <div className="fs-drawer-body">
-                  <ShorePointDetail sp={detailSp} />
-                </div>
-              </aside>
-            ) : (
-              <DetailShell />
-            )}
-            <aside
-              className="fs-drawer fs-drawer--dock fs-ops-inv-pinned"
-              role="complementary"
-              aria-label="Available Inventory"
+            <FloatingPanel
+              open={!!detailSp}
+              onClose={() => setDetailSpId(null)}
+              title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
+              cascadeIndex={0}
+              boundsSelector=".fs-shell-main"
             >
-              <div className="fs-drawer-head">
-                <h2 className="fs-drawer-title">Available Inventory</h2>
-              </div>
-              <div className="fs-drawer-body">
-                <InventorySummary items={inventory} roster={roster} />
-              </div>
-            </aside>
+              {detailSp && <ShorePointDetail sp={detailSp} />}
+            </FloatingPanel>
+            <FloatingPanel
+              open={inventoryOpen}
+              onClose={() => setInventoryOpen(false)}
+              title="Available Inventory"
+              cascadeIndex={1}
+              boundsSelector=".fs-shell-main"
+            >
+              <InventorySummary items={inventory} roster={roster} />
+            </FloatingPanel>
           </>
         ) : (
           <>
@@ -1237,6 +1257,7 @@ export function OperationsBoard() {
           </>
         )}
         </div>
+        </>
       )}
 
       <StartOperationModal

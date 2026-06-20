@@ -19,17 +19,17 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
-// The value shelf renders the measurement as plain text the value font composes
-// diagonally (ADR-028): "48 1/2″" with a space before the fraction. textContent
-// concatenates label + value with no separator, e.g. "Required strut length48 1/2″".
+// The value shelf's number ROW (label + measurement) — read separately from the
+// strut sub-line below it. textContent concatenates label + value with no
+// separator, e.g. "Strut system48 1/2″".
 function valueShelfText(): string {
-  return document.querySelector('.fs-spc-value')?.textContent ?? '';
+  return document.querySelector('.fs-spc-value-row')?.textContent ?? '';
 }
 
-// The #248 Design-2 detail line above the shelf (pre-cutting only): raw opening
-// + (−deduction) + load. Empty string when absent (cutting onward).
-function detailLineText(): string {
-  return document.querySelector('.fs-spc-detail')?.textContent ?? '';
+// The strut + extensions sub-line folded into the bar (card compaction) — empty
+// when absent (pending, or the Cutting Station where the bar is cut length only).
+function valueEqText(): string {
+  return document.querySelector('.fs-spc-value-eq')?.textContent ?? '';
 }
 
 describe('ShorePointCard', () => {
@@ -56,12 +56,31 @@ describe('ShorePointCard', () => {
     expect(screen.queryByText(/\d \/ \d/)).not.toBeInTheDocument();
   });
 
-  it('pending: shows "No equipment assigned" + Assign Equipment; no reason line when unset', () => {
+  it('pending: shows the Assign Equipment action; no reason line when unset', () => {
     render(<ShorePointCard shorePoint={makeSP()} />);
-    expect(screen.getByText(/No equipment assigned/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Assign Equipment' })).toBeInTheDocument();
     expect(screen.queryByText(/No matching strut/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Waiting for inventory/)).not.toBeInTheDocument();
+    // Card compaction: the "No equipment assigned" line is gone (an empty bar +
+    // the Assign action already say it); pending bar carries no strut sub-line.
+    expect(valueEqText()).toBe('');
+  });
+
+  it('appends the assigned resource to the location line', () => {
+    render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          area: 'West',
+          assignedResource: 'Rescue 2',
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Engine 1', inventoryId: 'inv-1' }],
+        })}
+      />,
+    );
+    // Building · Div · Area · assigned-apparatus — the source rig (Engine 1) is NOT
+    // here (it moved to Details); the assigned resource rides the end of the line.
+    expect(screen.getByText('Div 1 · West · Rescue 2')).toHaveClass('fs-spc-where');
+    expect(screen.queryByText('Engine 1')).not.toBeInTheDocument();
   });
 
   it('pending: surfaces both pendingReason copies when set', () => {
@@ -131,7 +150,7 @@ describe('ShorePointCard', () => {
     expect(onAssign).toHaveBeenCalledWith(sp);
   });
 
-  it('non-pending: shows the deployed strut identity and no pending actions', () => {
+  it('non-pending: shows the deployed strut in the bar and no pending actions', () => {
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -140,29 +159,25 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(screen.getByText('LS 203')).toBeInTheDocument();
-    // Apparatus moved to the header caption line; the "from {source}" sub-line is gone (S12 §1.1).
-    expect(screen.getByText('Rescue 2')).toBeInTheDocument();
-    expect(screen.queryByText('from Rescue 2')).not.toBeInTheDocument();
+    // Card compaction: the strut identity rides the value bar sub-line; the source
+    // rig moved entirely to Details (not on the card face).
+    expect(valueEqText()).toBe('LS 203');
+    expect(screen.queryByText('Rescue 2')).not.toBeInTheDocument();
     // No pending-only actions — the slide stack owns the card now (#221).
     expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Assign equipment' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/No equipment assigned/)).not.toBeInTheDocument();
   });
 
   // ---- S12 card restyle: value shelf, waiting callout, hazard, removed ----
 
-  it('value shelf (#248 Design 2): "Required strut length" + effective on pending and process', () => {
+  it('value shelf: "Strut system" + effective on pending and process', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
-    // No deductions: effective == raw == 48½″ (388 eighths). The shelf carries
-    // the required strut length; the detail line carries the raw opening (the load
-    // segment is omitted when no estimate was entered; deduction segment omitted
-    // when zero — v3 behaviour).
-    expect(screen.getByText('Required strut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required strut length48 1/2″');
-    expect(detailLineText()).toBe('Raw opening 48 1/2″');
+    // No deductions: effective == raw == 48½″ (388 eighths). The shelf carries the
+    // required strut length (raw opening / deductions / load live in Details now).
+    expect(screen.getByText('Strut system')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Strut system48 1/2″');
     rerender(
       <ShorePointCard
         shorePoint={makeSP({
@@ -171,8 +186,8 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(screen.getByText('Required strut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Required strut length48 1/2″');
+    expect(screen.getByText('Strut system')).toBeInTheDocument();
+    expect(valueShelfText()).toBe('Strut system48 1/2″');
   });
 
   it('promotes the pre-cutting Required strut length number at a glance (#351)', () => {
@@ -190,17 +205,9 @@ describe('ShorePointCard', () => {
     }
   });
 
-  it('detail line: omits the load segment when blank, keeps an explicit 0', () => {
-    // A not-entered load (undefined) must not read as "0 lbs"; an explicit 0 still does.
-    const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
-    expect(detailLineText()).toBe('Raw opening 48 1/2″');
-    rerender(<ShorePointCard shorePoint={makeSP({ estimatedLoad: 0 })} />);
-    expect(detailLineText()).toBe('Raw opening 48 1/2″ · 0 lbs');
-  });
-
-  it('detail line (#248): shows the (−deduction) + load when present', () => {
+  it('value bar: shows the effective (deducted) length + the deployed strut sub-line', () => {
     // 4×4 header + 4×4 footer = 7″ = 56 eighths deducted. Raw 48½″ (388),
-    // effective 41½″ (332). The detail line carries raw + (−deduction) + load.
+    // effective 41½″ (332). The bar carries the effective length + the strut.
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -211,11 +218,11 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(valueShelfText()).toBe('Required strut length41 1/2″');
-    expect(detailLineText()).toBe('Raw opening 48 1/2″ (−7″) · 2,000 lbs');
+    expect(valueShelfText()).toBe('Strut system41 1/2″');
+    expect(valueEqText()).toBe('LS 203');
   });
 
-  it('value shelf: "Cut length" reads the effective (deducted) length while cutting; no detail line', () => {
+  it('value shelf: "Cut length" reads the effective (deducted) length while cutting; no strut sub-line', () => {
     // 388 eighths = 48 1/2″; 4×4 header + 4×4 footer = 3.5 + 3.5 = 7″ deducted →
     // floor((48.5 − 7) × 8)/8 = 41 1/2″ = 332 eighths.
     render(
@@ -229,8 +236,8 @@ describe('ShorePointCard', () => {
     );
     expect(screen.getByText('Cut length')).toBeInTheDocument();
     expect(valueShelfText()).toBe('Cut length41 1/2″');
-    // Cutting onward, the shelf number IS the cut length — the detail line drops.
-    expect(detailLineText()).toBe('');
+    // The Cutting Station needs the cut length alone — no strut sub-line here.
+    expect(valueEqText()).toBe('');
   });
 
   it('value shelf: "Set length" reads the set (effective) length once secured', () => {
@@ -247,7 +254,8 @@ describe('ShorePointCard', () => {
     // Set length = what the strut was SET to: the effective 41½″ (388 − 56
     // eighths of 4x4+4x4 wood), NOT the raw opening 48½″ (SME review SF-1).
     expect(valueShelfText()).toBe('Set length41 1/2″');
-    expect(detailLineText()).toBe('');
+    // Secured still carries the strut in the bar (not cutting).
+    expect(valueEqText()).toBe('LS 203');
   });
 
   it('waiting callout: title + reason copy for both pending reasons', () => {
@@ -260,8 +268,8 @@ describe('ShorePointCard', () => {
     expect(
       screen.getByText('No matching strut — nothing fits this opening at this load'),
     ).toBeInTheDocument();
-    // The "No equipment assigned" line + the Assign action survive the callout.
-    expect(screen.getByText('No equipment assigned')).toBeInTheDocument();
+    // The Assign action survives the callout (the "No equipment assigned" line was
+    // dropped in the card compaction).
     expect(screen.getByRole('button', { name: 'Assign Equipment' })).toBeInTheDocument();
   });
 

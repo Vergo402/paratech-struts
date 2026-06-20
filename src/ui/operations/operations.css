@@ -17,13 +17,22 @@
 }
 
 .fs-ops-name {
-  flex: 1;
+  /* Content-width (not flex:1) so the edit pencil sits right beside it; still
+     shrinks + ellipsizes a long name. The toggle/inventory are pushed right. */
+  flex: 0 1 auto;
+  min-width: 0;
   margin: 0;
   font: var(--type-headline-1);
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* Whatever follows the pencil (the desktop scope toggle, or the phone inventory
+   icon) is pushed to the right edge. */
+.fs-ops-header-toggle,
+.fs-ops-inv-btn {
+  margin-left: auto;
 }
 
 .fs-ops-edit {
@@ -44,9 +53,47 @@
   background: var(--surface-elevated);
 }
 
-/* ---- primary action row -------------------------------------------------- */
-.fs-ops-actions {
+/* ---- controls row (Add) — PHONE ONLY ------------------------------------- */
+/* Phone: Add runs full-width (the Inventory glance is the header icon). On
+   desktop the Add button lives at the top of the left rail column instead, so
+   this row isn't rendered there. */
+.fs-ops-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-1) 0;
+}
+/* Desktop labeled Inventory toggle — an outlined secondary button in the filter
+   row, just left of the view toggle (mirrors the ViewToggle treatment; Principle
+   9: active state is ring + tint, not color alone). 40px to match the compact
+   filter-row controls (the documented #356 exception). */
+.fs-ops-inv-cta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-ops-inv-cta:hover {
+  background: var(--surface-card-hover);
+  color: var(--text-primary);
+}
+.fs-ops-inv-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.fs-ops-inv-cta.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft, var(--surface-card-hover));
+  color: var(--text-primary);
 }
 
 /* ---- filter / sort bar (#347 / #356) ------------------------------------- */
@@ -335,9 +382,10 @@
   flex-direction: column;
   gap: var(--space-2);
 }
-/* Top clearance so the header never underlaps the corner number tab. */
+/* Top clearance so the header never underlaps the corner number tab. Trimmed a
+   step (card compaction) — the tab is short, --space-5 clears it. */
 .fs-spc:has(.fs-spc-tab) {
-  padding-top: var(--space-6);
+  padding-top: var(--space-5);
 }
 
 /* Created-order number tab (top-left corner) — the crew's stable radio handle.
@@ -450,21 +498,6 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 
-/* Apparatus caption (handoff §1.1) — the deployed strut's source, one line
-   under location. The apparatus lives here, NOT on the strut block (no dup). */
-.fs-spc-apparatus {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
-
-/* Assigned crew/apparatus (assignedResource) — the accountability line: who is
-   working this point, distinct from the deployed strut's source apparatus.
-   Command roll-up ("who's on what") is Phase I; this is the per-card view. */
-.fs-spc-assigned {
-  font: var(--type-caption);
-  color: var(--text-secondary);
-}
-
 .fs-spc-meta {
   display: flex;
   align-items: center;
@@ -525,9 +558,13 @@ button.fs-spc-head {
 .fs-spc-value {
   margin: var(--space-3) calc(-1 * var(--space-4)) 0 calc(-1 * var(--space-6));
   padding: var(--space-3) var(--space-4) var(--space-3) var(--space-6);
+  /* One line: label · measurement · strut, all on the same baseline (Alex,
+     2026-06-20) — the measurement sits directly after its label and the strut
+     rides in line with it. Wraps gracefully on a narrow card. */
   display: flex;
+  flex-flow: row wrap;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-1) var(--space-2);
   background: color-mix(in srgb, var(--sp-solid) 13%, var(--surface-card));
   border-top: 1px solid color-mix(in srgb, var(--sp-solid) 22%, var(--surface-stroke));
   border-bottom: 1px solid color-mix(in srgb, var(--sp-solid) 22%, var(--surface-stroke));
@@ -537,6 +574,12 @@ button.fs-spc-head {
 }
 [data-theme='broadcast'] .fs-spc-value {
   background: color-mix(in srgb, var(--sp-solid) 18%, var(--surface-card));
+}
+/* The label + measurement group — the number sits directly next to its label. */
+.fs-spc-value-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 .fs-spc-value-label {
   font: var(--type-body);
@@ -556,30 +599,13 @@ button.fs-spc-head {
   font-size: 28px;
   font-weight: 700;
 }
-
-/* Pre-cutting detail line above the value shelf (#248 Design 2): the v3 context
-   the promoted shelf no longer carries — raw opening, total deduction, load.
-   Caption size, muted, mono numbers; sits between the header and the shelf. */
-.fs-spc-detail {
-  margin-top: var(--space-2);
-  font: var(--type-caption);
-  color: var(--text-secondary);
-}
-.fs-spc-detail .fs-meas {
-  color: var(--text-secondary);
-}
-
-/* Deployed strut identity — cradle to grave (card.md). Model only; the
-   apparatus source moved to the header caption line (no duplication). */
-.fs-spc-strut {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fs-spc-strut-model {
-  font: var(--type-mono);
+/* Strut + extensions, in line with the measurement at a comparable size (Alex) —
+   reuses bomModelLabel; absent at the Cutting Station (cut length only). */
+.fs-spc-value-eq {
+  font: var(--type-body-lg);
+  font-family: var(--font-mono);
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 /* Quick View entry — a quiet, self-contained text button, away from the status
@@ -601,17 +627,11 @@ button.fs-spc-head {
   border-radius: var(--radius-button);
 }
 
-/* Pending block — no equipment yet + the Assign primary action. */
+/* Pending block — the waiting callout (if any) + the Assign primary action. */
 .fs-spc-pending {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-}
-
-.fs-spc-noequip {
-  margin: 0;
-  font: var(--type-caption);
-  color: var(--text-secondary);
 }
 
 /* Waiting callout (handoff §1.1) — replaces the plain reason line with a tinted
@@ -671,6 +691,27 @@ button.fs-spc-head {
   flex-direction: column;
   gap: var(--space-2);
   padding-top: var(--space-1);
+}
+/* On a MOUSE desktop the slides are tap-once buttons (ADR-034), so they sit on
+   ONE row: Back (left, ~1/3) + the forward action (right, ~2/3) — Alex. Same
+   media query as useHasMouse, so this only applies where buttons (not slide
+   tracks) render; touch surfaces keep the full-width stacked tracks for sliding.
+   row-reverse: the DOM order is [advance, step-back], so reversing puts Back on
+   the left and the forward action on the right. */
+@media (hover: hover) and (pointer: fine) {
+  .fs-spc-slides {
+    flex-direction: row-reverse;
+    align-items: stretch;
+  }
+  .fs-spc-slides > .fs-slide--advance,
+  .fs-spc-slides > .fs-button {
+    flex: 2 1 0; /* the forward action — ~2/3 */
+    min-width: 0;
+  }
+  .fs-spc-slides > .fs-slide--stepback {
+    flex: 1 1 0; /* Back — ~1/3 */
+    min-width: 0;
+  }
 }
 
 /* Removed from cut list (handoff §1.4) — the content dims, but the slash and
@@ -1266,35 +1307,38 @@ button.fs-spc-head {
     padding: var(--space-6) var(--space-8);
   }
 
-  /* The primary action stops stretching phone-wide. */
-  .fs-ops-actions {
-    max-width: 420px;
-  }
-
-  /* G-15 status-summary bar — visible from tablet up. */
+  /* G-15 status-summary bar — visible from tablet up. Short labels (SUMMARY_LABEL)
+     + nowrap + tight chips so all seven counts sit on ONE line (Alex); if a very
+     narrow board can't hold them, the row scrolls sideways rather than wrapping. */
   .fs-ops-summary {
     display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .fs-ops-summary::-webkit-scrollbar { display: none; }
 
   .fs-ops-summary-item {
+    flex: none;
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    min-height: 32px;
-    padding: 0 var(--space-3);
+    gap: 6px;
+    min-height: 28px;
+    padding: 0 var(--space-2);
     border: 1px solid var(--surface-stroke);
     border-radius: var(--radius-button);
     font: var(--type-caption);
     color: var(--text-secondary);
+    white-space: nowrap;
   }
 
   /* The status dot rides the shared is-{status} hue hooks (primitives.css). */
   .fs-ops-summary-item::before {
     content: '';
-    width: 8px;
-    height: 8px;
+    flex: none;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--sp-solid); /* sunlight-safe: --sp-text is white there, --sp-solid keeps the hue */
   }
@@ -1314,9 +1358,11 @@ button.fs-spc-head {
     align-items: start;
   }
 
-  /* Side-by-side lanes need a bounding surface to read as board columns —
-     hairline stroke only, no fill (tokens only, no new minting). */
+  /* Side-by-side lanes read as recessed wells on the board panel — a step down
+     from the panel surface (--surface-bg) with a hairline edge, so the cards
+     inside lift off them. */
   .fs-lane {
+    background: var(--surface-bg);
     border: 1px solid var(--surface-stroke);
     border-radius: var(--radius-card);
     padding: 0 var(--space-3) var(--space-1);
@@ -1328,9 +1374,22 @@ button.fs-spc-head {
     padding: var(--space-8) var(--space-12);
   }
 
-  /* Laptop: the optional third column (spacing-grid.md). */
+  /* Laptop: the board groups by workflow phase into three rows (Alex, 2026-06-20):
+       row 1  Pending Equipment · Equipment Assigned · Strut Set   (strut placement)
+       row 2  Cutting Station                                       (the cut pivot)
+       row 3  Runner · Wood Shore Secured · Strut Equipment Returned (wood & return)
+     Three equal columns; the Cutting Station lane SPANS the full width so it sits
+     alone on its own row (the workflow funnels through it) with no dead columns. */
   .fs-ops-lanes {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* Cutting Station sits ALONE on row 2, a normal column width, left-justified
+     (Alex). Forcing Runner to start a fresh row at column 1 leaves Cutting (the
+     prior auto-placed item) by itself in row 2 col 1 — cols 2-3 empty — and puts
+     Runner · Wood Shore Secured · Strut Equipment Returned on row 3. Cutting
+     cards flow vertically like every other lane. */
+  .fs-ops-lanes .fs-lane.is-runner {
+    grid-column: 1;
   }
 }
 
@@ -1576,9 +1635,19 @@ button.fs-spc-head {
   height: 13px;
 }
 
-/* ---- Operations ↔ Cutting Station sub-nav (#222) ------------------------- */
+/* ---- Operations ↔ Cutting Station scope toggle (#222) -------------------- */
+/* Phone: a full-width row below the header. Desktop: a compact switch inline in
+   the header (top-right), so it reads as a small toggle — not a full-width
+   section header that made the companion panels look nested under it. */
 .fs-ops-subnav {
   padding: var(--space-1) 0 var(--space-2);
+}
+.fs-ops-header-toggle {
+  flex: none;
+}
+.fs-ops-header-toggle .fs-segmented {
+  width: auto;
+  max-width: max-content;
 }
 
 /* ---- "✓ Cut done" flag marker on a cutting card (#222) ------------------- */
@@ -1894,8 +1963,11 @@ button.fs-spc-head {
   text-align: right;
 }
 
-/* Desktop docked column (≥768px). Phone: display:contents — the wrapper is inert
-   and the phone drawer portals over the board; the dock geometry never applies. */
+/* Desktop docked column (≥768px) — STILL used by the read-only archive view
+   (PastOperationView wraps its board + a single SideDrawer dock in .fs-ops-shell).
+   The live Operations board moved to .fs-ops-stage (grid + floating panels, below).
+   Phone: display:contents — the wrapper is inert and the phone drawer portals over
+   the board; the dock geometry never applies. */
 .fs-ops-shell {
   display: contents;
 }
@@ -1927,6 +1999,168 @@ button.fs-spc-head {
        .fs-drawer hairline stroke stays as the column boundary. */
     box-shadow: none;
   }
+}
+
+/* ==========================================================================
+   Operations board stage (≥768px) — the board-dominant layout (ADR-037).
+   A grid: a quiet drilldown RAIL track + the dominant BOARD track. The Details
+   and Available-Inventory companions are position:fixed FloatingPanels that hover
+   over the board instead of eating a permanent column — so the board owns the full
+   width and the user drags a panel aside to read the cards underneath. Phone:
+   display:contents (the rail isn't rendered; companions are SideDrawers that
+   portal over).
+   ========================================================================== */
+.fs-ops-stage {
+  display: contents;
+}
+@media (min-width: 768px) {
+  .fs-ops-stage {
+    display: grid;
+    grid-template-columns: [rail] auto [board] minmax(0, 1fr);
+    gap: var(--space-4);
+    align-items: start;
+    /* The board sits on a shaded panel — the rail + lane wells read as one work
+       surface lifted off the page (the redesign's "background behind the cards"). */
+    background: var(--surface-card);
+    border: var(--stroke-width) solid var(--surface-stroke);
+    border-radius: var(--radius-card);
+    padding: var(--space-4);
+  }
+  .fs-ops-stage > .fs-ops-main {
+    grid-column: board;
+    min-width: 0;
+  }
+  /* The left column = the + Add Shore Point button + the drilldown rail (Alex).
+     It owns the column width + sticky behaviour; the rail nav flows inside it. */
+  .fs-ops-stage > .fs-ops-railcol {
+    grid-column: rail;
+    width: clamp(180px, 18vw, 240px);
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    border-right: 1px solid var(--surface-stroke);
+    padding-right: var(--space-2);
+  }
+}
+
+/* ---- drilldown rail (20-operations.md §Drilldown) ------------------------- */
+.fs-rail-list,
+.fs-rail-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fs-rail-row {
+  display: flex;
+  align-items: center;
+}
+.fs-rail-select {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-left: 3px solid transparent; /* active marker — paired with weight + tint (Principle 9) */
+  border-radius: 0 var(--radius-button) var(--radius-button) 0;
+  font: var(--type-body);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-rail-select:hover {
+  background: var(--surface-elevated);
+}
+.fs-rail-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.fs-rail-select.is-active {
+  border-left-color: var(--accent);
+  background: var(--accent-soft, var(--surface-card-hover));
+  color: var(--text-primary);
+  font: var(--type-body-medium);
+}
+.fs-rail-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-rail-toggle {
+  flex: none;
+  width: 32px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-rail-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.fs-rail-chevron {
+  transition: transform var(--motion-micro) var(--ease-micro);
+}
+
+/* ---- floating companion panel (floating-panel.md / ADR-037) --------------- */
+/* A true overlay that floats over the board — so it casts --shadow-modal (unlike
+   the docked column, which sat in flow at column elevation with no shadow).
+   position:fixed so it stays put in the viewport while the board scrolls beneath
+   it; translate() (set inline) places it within the scroll-pane bounds, max-height
+   (set inline) caps it to those bounds, z-index (set inline) brings the
+   last-touched panel to the front. The head/body chrome is reused from
+   .fs-drawer-* (primitives.css). Desktop-only — phone renders the modal SideDrawer. */
+.fs-fp {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: clamp(320px, 28vw, 420px);
+  max-height: calc(100dvh - 8rem); /* fallback; the inline cap from measured bounds wins */
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-sheet);
+  box-shadow: var(--shadow-modal);
+  overscroll-behavior: contain;
+}
+.fs-fp .fs-drawer-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The header IS the drag handle — touch-action:none so a drag isn't stolen by
+   scroll (the Slider/Sheet idiom). The Close button stops propagation. */
+.fs-fp-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.fs-fp-handle:active {
+  cursor: grabbing;
+}
+.fs-fp-grip {
+  flex: none;
+  color: var(--text-tertiary);
 }
 
 /* ---- inventory summary toggle button (ops header) ------------------------ */
@@ -2034,60 +2268,3 @@ button.fs-spc-head {
 .is-depleted .fs-inv-summary-count { color: var(--danger-text); }
 .is-low .fs-inv-summary-count      { color: var(--status-cutting-text); }
 
-/* narrower dock column for the inventory drawer (sibling of the Quick View dock) */
-@media (min-width: 768px) {
-  .fs-drawer--dock + .fs-drawer--dock {
-    width: clamp(280px, 26%, 340px);
-  }
-}
-
-/* ---- pinned companion columns (Laptop ≥1200px) --------------------------- */
-/* On the Laptop surface the grid sanctions an optional third column
-   (spacing-grid.md §Surface breakpoints): both companion panels pin open as
-   standard fixtures. Widths are explicit (compound-class specificity so they
-   never depend on sibling order) — the detail column keeps one footprint
-   whether it shows a panel or the empty shell, so selecting/clearing never
-   shifts the board. */
-@media (min-width: 1200px) {
-  .fs-drawer--dock.fs-ops-detail-pinned,
-  .fs-ops-detail-shell {
-    flex: none;
-    width: clamp(360px, 30%, 420px);
-  }
-  .fs-drawer--dock.fs-ops-inv-pinned {
-    flex: none;
-    width: clamp(280px, 24%, 340px);
-  }
-
-  /* Outlined empty shell — same footprint + sticky geometry as the dock column,
-     but a dashed placeholder instead of an elevated surface. */
-  .fs-ops-detail-shell {
-    position: sticky;
-    top: 0;
-    align-self: stretch;
-    max-height: calc(100dvh - 8rem);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-6);
-    border: 2px dashed color-mix(in srgb, var(--text-secondary) 32%, transparent);
-    border-radius: var(--radius-sheet);
-  }
-  .fs-ops-detail-shell-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-    max-width: 240px;
-    text-align: center;
-    color: var(--text-secondary);
-  }
-  .fs-ops-detail-shell-inner p {
-    margin: 0;
-    font: var(--type-body);
-  }
-  .fs-ops-detail-shell-inner strong {
-    color: var(--text-primary);
-    font-weight: 600;
-  }
-}

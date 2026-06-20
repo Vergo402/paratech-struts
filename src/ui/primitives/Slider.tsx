@@ -151,6 +151,12 @@ export function Slider({
   // (haptics are a touch affordance). Wrapped in .fs-slide so it sits in the
   // same column slot as a slide would.
   if (hasMouse) {
+    // A status step-back collapses to a compact "Back" on mouse (the advance
+    // button names the forward move; the back is its reverse, and the card lays
+    // the two on one row where the back column is narrow). A non-status step-back
+    // (e.g. "Clear Cut Done") keeps its real label — it isn't a plain reversal.
+    const mouseLabel =
+      direction === 'stepback' && /^Slide back to /.test(label) ? 'Back' : buttonLabelFrom(label);
     return (
       <div className={`fs-slide fs-slide--${direction}${toneCls}`}>
         <Button
@@ -160,7 +166,7 @@ export function Slider({
           disabledReason={disabledReason}
           onPress={onCommit}
         >
-          {buttonLabelFrom(label)}
+          {mouseLabel}
         </Button>
       </div>
     );

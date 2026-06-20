@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
-import { bomModelLabel, deductionTotalInches, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
+import { bomModelLabel, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -44,13 +44,16 @@ function needLine(models: string[]): string {
 // (raw − deductions, floored to ⅛″ by the engine); only the LABEL changes per
 // phase: pre-cut it is the "Required strut length" (the cut-to answer), "Cut
 // length" while cutting, "Set length" once set (S12 SME review SF-1: the raw
-// opening would mislabel the setting). #248 Design 2 (re-drive) promotes the
-// required strut length into the shelf and moves the raw opening + deduction +
-// load to the detail line above (RAW_OPENING_LABEL), restoring the v3 dual-
-// length context. Amends the S12 "one length that matters" shelf (card.md /
-// ADR-011 Addendum 2), per Alex's re-drive direction.
-const RAW_OPENING_LABEL = 'Raw opening';
-const REQUIRED_LABEL = 'Required strut length';
+// opening would mislabel the setting). Card compaction (2026-06-20): the raw
+// opening + deduction + load detail line is retired from the card face (it lives
+// in Details now); the bar instead carries the deployed strut + extensions as a
+// sub-line. Amends the S12 "one length that matters" shelf (card.md / ADR-011
+// Addendum 2).
+// Short labels (card compaction 2026-06-20) so the label + measurement + strut
+// fit on one line in the narrow board lanes. The deduction LEDGER keeps the full
+// "Required strut length" wording (card.md §Ledger vocabulary); only the card's
+// bar label is shortened.
+const REQUIRED_LABEL = 'Strut system';
 const VALUE_LABEL: Record<ShorePointStatus, string> = {
   pending: REQUIRED_LABEL,
   process: REQUIRED_LABEL,
@@ -223,13 +226,16 @@ export function ShorePointCard({
     ? `${sp.label} · ${SHORE_TYPE_LABELS[sp.shoreType]}`
     : SHORE_TYPE_LABELS[sp.shoreType];
 
-  // Location reads Building · Division · Area (broad → narrow). Building leads in
-  // multi-building ops; single-building points have no building, so it opens on
-  // the division (e.g. "Div 1 · West Wall").
+  // Location reads Building · Division · Area · assigned-apparatus (broad →
+  // narrow → who). Building leads in multi-building ops; single-building points
+  // open on the division (e.g. "Div 1 · West Wall · Rescue 2"). The assigned
+  // resource rides the end of this line now (card compaction) — its own line is
+  // gone; the strut's SOURCE rig moves to Details.
   const identity = [
     ...(sp.building ? [sp.building] : []),
     divisionLabel(sp.division),
     ...(sp.area ? [sp.area] : []),
+    ...(sp.assignedResource ? [sp.assignedResource] : []),
   ].join(' · ');
 
   // The shelf number is the effective length in every phase (Required / Cut /
@@ -238,28 +244,18 @@ export function ShorePointCard({
   // eighth; round() only defends float noise. No double-floor.
   const valueEighths = Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
 
-  // Pre-cutting detail line (#248 Design 2): the raw opening, the total
-  // deduction (nearest ⅛″ for display; the exact spec stays in the math,
-  // ADR-012), and the estimated load — the v3 context the promoted shelf no
-  // longer carries. Cutting onward, the shelf number IS the cut/set length, so
-  // the detail line drops away.
-  const preCut = sp.status === 'pending' || sp.status === 'process' || sp.status === 'strutset';
-  const dedEighths = Math.round(deductionTotalInches(sp.deductions) * 8);
-  // A blank load is not "0 lbs" — omit the segment when no estimate was entered
-  // (undefined ≠ 0; an explicit 0 still renders). ponytail: undefined ≠ 0.
-  const estLoad = sp.estimatedLoad;
+  // The deployed strut + extensions now ride INSIDE the value bar as a sub-line
+  // (card compaction) — except at the Cutting Station, where the bar is the cut
+  // length alone ("cutting only needs the cut length", Alex). Pending has no
+  // strut. The raw-opening / deduction / load detail line is gone from the face
+  // (it lives in Details).
+  const showStrutInBar = !!deployedStrut && sp.status !== 'cutting';
 
   const headContent = (
     <>
       <span className="fs-spc-identity">
         <span className="fs-spc-title">{title}</span>
         <span className="fs-spc-where">{identity}</span>
-        {sp.assignedResource ? (
-          <span className="fs-spc-assigned">Assigned: {sp.assignedResource}</span>
-        ) : null}
-        {deployedStrut ? (
-          <span className="fs-spc-apparatus">{deployedStrut.source}</span>
-        ) : null}
       </span>
       <span className="fs-spc-meta">
         {sp.groupIndex && sp.groupTotal ? (
@@ -277,26 +273,15 @@ export function ShorePointCard({
     </>
   );
 
-  const detailLine = preCut ? (
-    <div className="fs-spc-detail">
-      {RAW_OPENING_LABEL} <MeasurementValue eighths={sp.measurementEighths} />
-      {dedEighths > 0 ? (
-        <>
-          {' ('}
-          <MeasurementValue eighths={-dedEighths} />
-          {')'}
-        </>
-      ) : null}
-      {estLoad != null ? ` · ${estLoad.toLocaleString()} lbs` : null}
-    </div>
-  ) : null;
-
   const valueShelf = (
     <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
-      <span className="fs-spc-value-label">{VALUE_LABEL[sp.status]}</span>
-      <span className="fs-spc-value-num">
-        <MeasurementValue eighths={valueEighths} />
+      <span className="fs-spc-value-row">
+        <span className="fs-spc-value-label">{VALUE_LABEL[sp.status]}</span>
+        <span className="fs-spc-value-num">
+          <MeasurementValue eighths={valueEighths} />
+        </span>
       </span>
+      {showStrutInBar && <span className="fs-spc-value-eq">{bomModelLabel(sp)}</span>}
     </div>
   );
 
@@ -330,17 +315,7 @@ export function ShorePointCard({
         <div className="fs-spc-head">{headContent}</div>
       )}
 
-      {detailLine}
       {valueShelf}
-
-      {deployedStrut && (
-        <div className="fs-spc-strut">
-          {/* Apparatus moved to the header caption line — the combined strut +
-              extension identity (bomModelLabel) here now (Phase 3 enriches with the
-              full per-component list + the subtle re-source marker). */}
-          <span className="fs-spc-strut-model">{bomModelLabel(sp)}</span>
-        </div>
-      )}
 
       {/* Quick View entry (ADR-019) — a quiet read-only affordance on every
           deployed card, away from the status stripe + slides. Read-only, so it
@@ -361,7 +336,6 @@ export function ShorePointCard({
 
       {interactive && pending && !removed && (
         <div className="fs-spc-pending">
-          <p className="fs-spc-noequip">No equipment assigned</p>
           {sp.pendingReason && (
             <div className="fs-spc-wait">
               <span className="fs-spc-wait-ic" aria-hidden="true">

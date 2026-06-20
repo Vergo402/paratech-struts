@@ -226,7 +226,9 @@ describe('Slider — mouse branch (ADR-034: button instead of slide on a pointer
     const { rerender } = render(<Slider label="Slide to send to Cutting Station" onCommit={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Send to Cutting Station' })).toHaveClass('fs-button--primary');
     rerender(<Slider label="Slide back to Cutting Station" direction="stepback" onCommit={vi.fn()} />);
-    expect(screen.getByRole('button', { name: 'Back to Cutting Station' })).toHaveClass('fs-button--secondary');
+    // A status step-back collapses to a compact "Back" on the mouse branch (the
+    // advance button names the forward move; the card lays them on one row).
+    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('fs-button--secondary');
   });
 
   it('disabled: the button is inert and still shows the gate reason', () => {
