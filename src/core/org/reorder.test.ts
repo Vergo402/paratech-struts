@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { seedOrgState } from './orgReducer';
 import { defaultPositionId } from './defaultTree';
 import { childrenOf } from './tree';
-import { orderForUp, orderForDown, promoteTarget, demoteTarget, validParentsFor, nextChildOrder } from './reorder';
+import { orderForUp, orderForDown, promoteTarget, demoteTarget, validParentsFor, nextChildOrder, orderForSlot } from './reorder';
 
 const OP = 'op1';
 const id = (k: Parameters<typeof defaultPositionId>[1]) => defaultPositionId(OP, k);
@@ -47,5 +47,23 @@ describe('reorder helpers', () => {
     expect(nextChildOrder(p, id('ops'))).toBe(4); // after cutting(3)
     expect(nextChildOrder(p, id('rescue'))).toBe(0); // no children yet
     expect(childrenOf(p, id('ops'))).toHaveLength(4);
+  });
+
+  it('orderForSlot lands a drop in a gap — ends, midpoints, empty parent', () => {
+    const p = positions();
+    expect(orderForSlot(p, id('ops'), 0)).toBe(-1); // before rescue(0)
+    expect(orderForSlot(p, id('ops'), 4)).toBe(4); // after cutting(3)
+    expect(orderForSlot(p, id('ops'), 1)).toBe(0.5); // between rescue(0) and shoring(1)
+    expect(orderForSlot(p, id('ops'), 2)).toBe(1.5); // between shoring(1) and staging(2)
+    expect(orderForSlot(p, id('rescue'), 0)).toBe(0); // empty parent
+  });
+
+  it('orderForSlot excludes movingId so the visual gap index lines up', () => {
+    const p = positions();
+    // Drag staging into the gap between rescue and shoring. Excluding staging, the
+    // surviving siblings are rescue(0) shoring(1) cutting(3); gap index 1 = 0.5.
+    expect(orderForSlot(p, id('ops'), 1, id('staging'))).toBe(0.5);
+    // Same node to the very end (after cutting) → cutting(3) + 1 = 4.
+    expect(orderForSlot(p, id('ops'), 3, id('staging'))).toBe(4);
   });
 });

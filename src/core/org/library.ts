@@ -70,3 +70,24 @@ export function libraryItemsAddableUnder(kind: OrgPositionKind): LibraryPosition
 export function libraryItem(key: string): LibraryPosition | undefined {
   return POSITION_LIBRARY.find((it) => it.key === key);
 }
+
+// Short, friendly label for a position's ICS type — shown as the kicker on each org
+// node so the type (esp. for a free-form custom position) reads on the chart.
+const KIND_LABEL: Record<OrgPositionKind, string> = {
+  command: 'Command',
+  'command-staff': 'Command Staff',
+  section: 'Section',
+  branch: 'Branch',
+  division: 'Division',
+  group: 'Group',
+  unit: 'Unit',
+  staging: 'Staging',
+  workstation: 'Workstation',
+  'strike-team': 'Strike Team',
+  'task-force': 'Task Force',
+  'single-resource': 'Resource',
+};
+
+export function kindLabel(kind: OrgPositionKind): string {
+  return KIND_LABEL[kind];
+}

@@ -65,3 +65,19 @@ export function nextChildOrder(positions: OrgPositions, parentId: string): numbe
   const kids = childrenOf(positions, parentId);
   return kids.length ? kids[kids.length - 1]!.order + 1 : 0;
 }
+
+/** The fractional `order` to land a node at visual slot `index` among `parentId`'s
+ *  children — the drag-and-drop "drop into this gap" math. `movingId` is excluded from
+ *  the gap so the visual gap index lines up with the surviving siblings (no off-by-one
+ *  when reordering within the same parent). index 0 = before the first child; index ===
+ *  count = after the last. Any finite number is a legal order (the reducer takes it
+ *  as-is), so a single-node write stays concurrent-safe like orderForUp/Down. */
+export function orderForSlot(positions: OrgPositions, parentId: string, index: number, movingId?: string): number {
+  const sibs = childrenOf(positions, parentId).filter((s) => s.id !== movingId);
+  const before = index > 0 ? sibs[index - 1] : undefined;
+  const after = sibs[index];
+  if (!before && !after) return 0; // empty parent
+  if (!before) return after!.order - 1; // before the first
+  if (!after) return before.order + 1; // after the last
+  return (before.order + after.order) / 2; // midpoint between two siblings
+}

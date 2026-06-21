@@ -1,99 +1,25 @@
-import { useState } from 'react';
-import type { OrgPosition, OrgPositions } from '@core/schema';
-import { rootPosition, childrenOf, leaderOf, spanOfControl, spanLevel, currentIC } from '@core/org';
+import { useRef, useState } from 'react';
+import type { OrgPositions } from '@core/schema';
+import { rootPosition, currentIC } from '@core/org';
 import { useOrg, useDeviceUidValue } from '@ui/hooks';
 import { NodeSheet } from './NodeSheet';
 import { MyRoleSheet } from './MyRoleSheet';
-
-// One org node card — a button that opens the node sheet. Gold for the IC root;
-// muted "Unassigned" when no leader; a span caution as text.
-function OrgNode({
-  pos,
-  isIC,
-  spanText,
-  onOpen,
-}: {
-  pos: OrgPosition;
-  isIC?: boolean;
-  spanText?: string;
-  onOpen: () => void;
-}) {
-  const leader = leaderOf(pos);
-  const cls = `fs-org-node fs-org-node--press${isIC ? ' is-ic' : ''}${leader ? ' is-filled' : ''}${
-    pos.kind === 'workstation' ? ' is-workstation' : ''
-  }`;
-  return (
-    <button type="button" className={cls} onClick={onOpen}>
-      <span className="fs-org-node-eyebrow">{pos.title}</span>
-      <span className={`fs-org-node-leader${leader ? '' : ' is-unassigned'}`}>{leader ? leader.label : 'Unassigned'}</span>
-      {spanText && <span className="fs-org-node-span">{spanText}</span>}
-    </button>
-  );
-}
-
-// A subtree node + ALL its descendants (the whole tree renders at once — no
-// tap-to-descend; descending a level at a time loses the reader). Command Staff
-// (Safety Officer …) render as a childless side cluster excluded from the span.
-function SubTree({
-  positions,
-  id,
-  rootId,
-  depth,
-  onOpen,
-}: {
-  positions: OrgPositions;
-  id: string;
-  rootId: string;
-  depth: number;
-  onOpen: (id: string) => void;
-}) {
-  const pos = positions[id];
-  if (!pos) return null;
-  const kids = childrenOf(positions, id);
-  const staff = kids.filter((k) => k.kind === 'command-staff');
-  const reports = kids.filter((k) => k.kind !== 'command-staff');
-  const span = spanOfControl(positions, id);
-  const level = spanLevel(span);
-  const spanText =
-    reports.length > 0 && level !== 'ok' ? `Span ${span} · ${level === 'over' ? 'over' : 'caution'}` : undefined;
-  // Stack a group's children vertically (indented spine) ONLY at the bottom-most
-  // parent→leaf relationship: below the Operations groups row (depth ≥ 2) AND when
-  // every child is a leaf. A child that itself has subordinates stays in a HORIZONTAL
-  // row so it can branch (e.g. Staging → Engine/Ladder/Rescue horizontal, then each
-  // of those → its own leaves stacked). IC→Sections / Operations→Groups stay horizontal.
-  const stacked = depth >= 2 && reports.length > 0 && reports.every((r) => childrenOf(positions, r.id).length === 0);
-
-  return (
-    <li className={stacked ? 'fs-org-li--stackparent' : undefined}>
-      <div className="fs-org-top">
-        <OrgNode pos={pos} isIC={id === rootId} spanText={spanText} onOpen={() => onOpen(id)} />
-        {staff.length > 0 && (
-          <div className="fs-org-staff" aria-label="Command staff">
-            {staff.map((s) => (
-              <OrgNode key={s.id} pos={s} onOpen={() => onOpen(s.id)} />
-            ))}
-          </div>
-        )}
-      </div>
-      {reports.length > 0 && (
-        <ul className={`fs-org-reports${stacked ? ' fs-org-reports--stack' : ''}`}>
-          {reports.map((r) => (
-            <SubTree key={r.id} positions={positions} id={r.id} rootId={rootId} depth={depth + 1} onOpen={onOpen} />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
+import { RosterStrip } from './RosterStrip';
+import { OrgDragLayer } from './OrgDragLayer';
+import { useOrgDragDrop } from './useOrgDragDrop';
+import { OrgFullScreen } from './OrgFullScreen';
+import { SubTree } from './OrgTree';
 
 /**
- * Org chart (#295) — the Command Deck workspace. Renders the WHOLE structure at
+ * Org chart (#295/#323) — the Command Deck workspace. Renders the WHOLE structure at
  * once (pan/scroll if wide); the IC reads the entire command picture without
- * descending levels. Gold IC, Command Staff to the side, span caution. Tap any node
- * → the node sheet (read for all; edit for the IC). My Role lets any device declare
+ * descending levels. For the IC it is fully interactive: drag a card to re-assign who
+ * it reports to (re-parent / reorder), drag a roster rig onto a card to assign it.
+ * Drag is an additive enhancement — the node sheet's Move… buttons stay the keyboard /
+ * screen-reader path. Tap any node → the node sheet. My Role lets any device declare
  * its own position.
  */
-export function OrgChart() {
+export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolean } = {}) {
   const positions: OrgPositions = useOrg();
   const root = rootPosition(positions);
   const uid = useDeviceUidValue();
@@ -104,25 +30,43 @@ export function OrgChart() {
 
   const [openNodeId, setOpenNodeId] = useState<string | null>(null);
   const [myRoleOpen, setMyRoleOpen] = useState(false);
+  const [fullOpen, setFullOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dnd = useOrgDragDrop({ positions, isIC, containerRef, onOpenNode: setOpenNodeId });
 
   if (!root) return null;
 
   return (
-    <div className="fs-org">
+    <div className="fs-org" ref={containerRef}>
       <div className="fs-org-head">
         <span />
-        <button type="button" className="fs-org-myrole" onClick={() => setMyRoleOpen(true)}>
-          My role
-        </button>
+        <div className="fs-org-head-actions">
+          {allowFullScreen && (
+            <button type="button" className="fs-org-fullscreen" aria-label="Full screen" onClick={() => setFullOpen(true)}>
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 8V4H8M16 8V4H12M4 12V16H8M16 12V16H12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          <button type="button" className="fs-org-myrole" onClick={() => setMyRoleOpen(true)}>
+            My role
+          </button>
+        </div>
       </div>
 
-      <div className="fs-org-scroll">
+      {isIC && <RosterStrip dnd={dnd} />}
+
+      <div className={`fs-org-scroll${dnd.drag ? ' is-dragging' : ''}`}>
         <div className="fs-org-tree">
           <ul>
-            <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} />
+            <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} dnd={dnd} editable={isIC} />
           </ul>
         </div>
       </div>
+
+      <OrgDragLayer drag={dnd.drag} gapHot={dnd.gapHot} />
+
+      {allowFullScreen && <OrgFullScreen positions={positions} open={fullOpen} onClose={() => setFullOpen(false)} />}
 
       {openNodeId && <NodeSheet key={openNodeId} positionId={openNodeId} isIC={isIC} onClose={() => setOpenNodeId(null)} />}
       <MyRoleSheet open={myRoleOpen} onClose={() => setMyRoleOpen(false)} />

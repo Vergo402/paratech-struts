@@ -3,6 +3,8 @@ import type { FieldShoreEvent, OrgPosition } from '../schema';
 import { projectOperation } from '../operation/projection';
 import { defaultPositionId } from './defaultTree';
 import { orgReducer, seedOrgState } from './orgReducer';
+import { orderForSlot } from './reorder';
+import { childrenOf } from './tree';
 
 const OP = 'op1';
 const DEV = 'dev-creator';
@@ -84,6 +86,18 @@ describe('orgReducer (structural folds)', () => {
     expect(s.myRoles[DEV]).toBe(id('ic')); // founder unchanged
     s = orgReducer(s, { type: 'MyRoleSet', ...base(), by: 'dev2', positionId: null });
     expect(s.myRoles['dev2']).toBeUndefined();
+  });
+
+  it('a drop = PositionReparented then PositionReordered lands the node at the chosen slot', () => {
+    // The exact sequence a gap-drop under a different parent commits (#323).
+    let s = seedOrgState(OP, DEV);
+    s = orgReducer(s, { type: 'PositionAdded', ...base(), position: customPos({ id: 'e1', parentId: id('rescue'), kind: 'single-resource', order: 0 }) });
+    s = orgReducer(s, { type: 'PositionAdded', ...base(), position: customPos({ id: 'e2', parentId: id('rescue'), kind: 'single-resource', order: 1 }) });
+    // Drag cutting (under Operations) into Rescue, into the gap between e1 and e2.
+    const order = orderForSlot(s.positions, id('rescue'), 1, id('cutting'));
+    s = orgReducer(s, { type: 'PositionReparented', ...base(), positionId: id('cutting'), newParentId: id('rescue') });
+    s = orgReducer(s, { type: 'PositionReordered', ...base(), positionId: id('cutting'), order });
+    expect(childrenOf(s.positions, id('rescue')).map((k) => k.id)).toEqual(['e1', id('cutting'), 'e2']);
   });
 
   it('concurrent reparents in different branches converge (order-independent)', () => {

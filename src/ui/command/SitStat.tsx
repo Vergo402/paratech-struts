@@ -69,7 +69,7 @@ export function SitStat() {
             <p className="fs-cmd-ws-soon-sub">Open hazards already show in the rail summary.</p>
           </div>
         ) : (
-          <OrgChart />
+          <OrgChart allowFullScreen />
         )}
       </Sheet>
     </div>
