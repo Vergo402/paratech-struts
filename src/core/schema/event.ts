@@ -239,6 +239,36 @@ export const MyRoleSet = z.object({
   positionId: z.string().nullable(),
 });
 
+// ── Command transfer (ADR-021, #225) — the two-party handshake. Initiate sets a
+// pending transfer (command does NOT move); the named incoming Accepts (command
+// moves), or either side Declines/Cancels. The append-only sequence IS the
+// transfer-of-command record (closes v3's no-handoff-record gap). Non-inventory.
+
+// The outgoing IC names the incoming commander. The six-datum ICS-201 brief is
+// DERIVED at render time (live SitStat), never stored on the event.
+export const CommandTransferInitiated = z.object({
+  type: z.literal('CommandTransferInitiated'),
+  ...base,
+  toResource: OrgResourceRef, // the named incoming commander (individual or device)
+});
+
+// The incoming accepts → the reducer moves the IC node's leader + clears pending.
+// Guarded at fold time (a matching pending must exist; pre-auth device-uid soft check).
+export const CommandTransferAccepted = z.object({
+  type: z.literal('CommandTransferAccepted'),
+  ...base,
+});
+
+export const CommandTransferDeclined = z.object({
+  type: z.literal('CommandTransferDeclined'),
+  ...base,
+});
+
+export const CommandTransferCancelled = z.object({
+  type: z.literal('CommandTransferCancelled'),
+  ...base,
+});
+
 // ── ICS-208 hazard register (#296) — granular, keyed-object, concurrent-safe.
 // Non-inventory → the store's plain-append path. A hazard is incident truth; it is
 // NEVER a gate (no safety-hold; Principle 10) — only logged, mitigated, reopened.
@@ -291,6 +321,10 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   ResourceAssigned,
   ResourceCleared,
   MyRoleSet,
+  CommandTransferInitiated,
+  CommandTransferAccepted,
+  CommandTransferDeclined,
+  CommandTransferCancelled,
   HazardLogged,
   HazardMitigated,
   HazardReopened,

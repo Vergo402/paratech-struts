@@ -1,6 +1,6 @@
 import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPositions, Hazards } from '../schema';
 import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
-import { orgReducer, seedOrgState } from '../org';
+import { orgReducer, seedOrgState, type PendingTransfer } from '../org';
 import { hazardReducer } from '../hazard';
 
 // The projected current state of one operation: the operation record + its shore
@@ -11,6 +11,7 @@ export interface OperationState {
   shorePoints: ShorePoint[];
   positions: OrgPositions; //                 ICS org chart, seeded on OperationCreated
   myRoles: Record<string, string | null>; //  uid → positionId (device self-declaration)
+  commandTransfer: PendingTransfer | null; //  pending command handoff (ADR-021), or null
   hazards: Hazards; //                         ICS-208 hazard register (#296), keyed by id
 }
 
@@ -19,6 +20,7 @@ export const EMPTY_OPERATION_STATE: OperationState = {
   shorePoints: [],
   positions: {},
   myRoles: {},
+  commandTransfer: null,
   hazards: {},
 };
 
@@ -173,9 +175,16 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'PositionReordered':
     case 'ResourceAssigned':
     case 'ResourceCleared':
-    case 'MyRoleSet': {
-      const org = orgReducer({ positions: state.positions, myRoles: state.myRoles }, event);
-      return { ...state, positions: org.positions, myRoles: org.myRoles };
+    case 'MyRoleSet':
+    case 'CommandTransferInitiated':
+    case 'CommandTransferAccepted':
+    case 'CommandTransferDeclined':
+    case 'CommandTransferCancelled': {
+      const org = orgReducer(
+        { positions: state.positions, myRoles: state.myRoles, commandTransfer: state.commandTransfer },
+        event,
+      );
+      return { ...state, positions: org.positions, myRoles: org.myRoles, commandTransfer: org.commandTransfer };
     }
 
     // ICS-208 hazard register (#296) — delegated to the pure hazardReducer.

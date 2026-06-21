@@ -8,4 +8,5 @@ export * from './tree';
 export * from './span';
 export * from './resource';
 export * from './library';
+export * from './transfer';
 export * from './orgReducer';

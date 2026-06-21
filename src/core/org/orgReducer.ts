@@ -1,16 +1,19 @@
 import type { FieldShoreEvent } from '../schema/event';
 import type { OrgPositions } from '../schema/org';
-import { subtreeIds, wouldCreateCycle } from './tree';
+import { subtreeIds, wouldCreateCycle, rootPosition } from './tree';
 import { sameResource } from './resource';
+import { canAccept, currentIC, type PendingTransfer } from './transfer';
 import { buildDefaultTree, defaultPositionId } from './defaultTree';
 
-// The org projection slices: the keyed position tree + the per-device My Role map.
+// The org projection slices: the keyed position tree, the per-device My Role map,
+// and the pending command transfer (ADR-021 — null unless a handshake is in flight).
 export interface OrgState {
   positions: OrgPositions;
   myRoles: Record<string, string | null>;
+  commandTransfer: PendingTransfer | null;
 }
 
-export const EMPTY_ORG_STATE: OrgState = { positions: {}, myRoles: {} };
+export const EMPTY_ORG_STATE: OrgState = { positions: {}, myRoles: {}, commandTransfer: null };
 
 // Seeded on OperationCreated: the ADR-008 default tree, with the FOUNDING DEVICE
 // holding Incident Commander (its uid is the IC node's leader, so the gold accent
@@ -21,7 +24,7 @@ export function seedOrgState(opId: string, by: string): OrgState {
   const icId = defaultPositionId(opId, 'ic');
   const ic = positions[icId];
   if (ic) positions[icId] = { ...ic, assignedResources: [{ ref: 'device', value: by, label: 'This device' }] };
-  return { positions, myRoles: { [by]: icId } };
+  return { positions, myRoles: { [by]: icId }, commandTransfer: null };
 }
 
 // Fold one org/My-Role event. Pure. Every illegal/stale event no-ops deterministically
@@ -88,6 +91,41 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       if (event.positionId == null) delete myRoles[event.by];
       else myRoles[event.by] = event.positionId;
       return { ...state, myRoles };
+    }
+
+    // ── Command transfer (ADR-021) — the two-party handshake. Pending state is a
+    // projection field; command does NOT move until the incoming accepts.
+    case 'CommandTransferInitiated': {
+      // Only the current IC of record may initiate. Pre-auth soft check: when the IC
+      // leader is a device, require by === that uid; an individual/apparatus IC can't
+      // be uid-verified pre-auth (the UI gates the button). Replay-safe (projection only).
+      const ic = currentIC(state.positions);
+      if (ic && ic.ref === 'device' && ic.value !== event.by) return state;
+      return { ...state, commandTransfer: { initiatedBy: event.by, toResource: event.toResource, at: event.at } };
+    }
+
+    case 'CommandTransferAccepted': {
+      const pending = state.commandTransfer;
+      if (!canAccept(pending, event.by)) return state; // no pending, or wrong device
+      const ic = rootPosition(state.positions);
+      if (!ic) return state;
+      // Move command: incoming becomes the sole leader (replaces index 0 — the
+      // outgoing IC steps out of the slot); any pre-existing staff at index >0 stay,
+      // de-duped against the incoming. Always exactly one IC of record.
+      const rest = ic.assignedResources.slice(1).filter((r) => !sameResource(r, pending!.toResource));
+      return {
+        ...state,
+        positions: { ...state.positions, [ic.id]: { ...ic, assignedResources: [pending!.toResource, ...rest] } },
+        commandTransfer: null,
+      };
+    }
+
+    // Decline (incoming) / Cancel (outgoing) — identical fold (clear pending; command
+    // stays with the outgoing IC). They differ only in who emits + the role-history record.
+    case 'CommandTransferDeclined':
+    case 'CommandTransferCancelled': {
+      if (!state.commandTransfer) return state;
+      return { ...state, commandTransfer: null };
     }
 
     default:
