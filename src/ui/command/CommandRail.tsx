@@ -84,24 +84,16 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
 
   return (
     <>
-      {/* Persistent chrome — Safety Officer + OP/elapsed (C-6) */}
-      <div className="fs-cmd-chrome">
-        <div className="fs-cmd-so">
-          <span className="fs-cmd-eyebrow">Safety Officer</span>
-          <span className="fs-cmd-so-name">
-            {safetyName !== 'Unassigned' && <span className="fs-cmd-so-dot" aria-hidden="true" />}
-            {safetyName}
-          </span>
+      {/* Incident name up top + OP/elapsed (Safety Officer lives in the pair row below) */}
+      <div className="fs-cmd-top">
+        <div className="fs-cmd-incident">
+          <h1 className="fs-cmd-title">{operation.name}</h1>
+          {operation.location && <p className="fs-cmd-loc">{operation.location}</p>}
         </div>
         <div className="fs-cmd-op">
           <span className="fs-cmd-eyebrow">OP 1 · Elapsed</span>
           <ElapsedClock since={operation.createdAt} />
         </div>
-      </div>
-
-      <div className="fs-cmd-incident">
-        <h1 className="fs-cmd-title">{operation.name}</h1>
-        {operation.location && <p className="fs-cmd-loc">{operation.location}</p>}
       </div>
 
       {/* Incident Commander — full width, the one gold accent + Transfer (P8) */}
