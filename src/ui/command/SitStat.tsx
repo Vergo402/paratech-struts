@@ -1,71 +1,25 @@
-import { useMemo, useState } from 'react';
-import type { ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
-import { currentIC, leaderOf, defaultPositionId } from '@core/org';
-import { newId } from '@core/id';
-import { Badge, Button, Card, EmptyState, Modal } from '@ui/primitives';
-import { useOperation, useShorePoints, useOrg, useHazards, useCommit, useDeviceUid } from '@ui/hooks';
-import { useElapsed } from './useElapsed';
+import { useState } from 'react';
+import { Button, EmptyState, Sheet, useMediaQuery } from '@ui/primitives';
+import { useOperation } from '@ui/hooks';
+import { CommandRail } from './CommandRail';
+import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
+import { EndOperationButton } from './EndOperationButton';
+import { OrgChart } from './OrgChart';
 import './command.css';
 
-// The running clock as its own leaf — so the 1s tick re-renders ONLY this node,
-// never the rest of SitStat (v3 discipline).
-function ElapsedClock({ since }: { since: number | undefined }) {
-  return <span className="fs-cmd-clock">{useElapsed(since)}</span>;
-}
-
 /**
- * SitStat — the Command tab home (#201). The Incident Commander's read view: six
- * canonical datums above the fold (incident · IC w/ gold accent · Safety Officer ·
- * resources · 7-status shore board · OP + elapsed), then the one-tap entries, the
- * resource roster, and End Operation. READ-only this phase — Org Chart / Hazard Log
- * editing and resource assignment arrive in P6–P9.
+ * Command tab home (#201) — the Command Deck. Desktop (≥1024px) is one page: a
+ * pinned situation rail (the six datums) beside a swappable workspace (Org Chart /
+ * Hazard Log), so structure stays in view while the IC works (ADR: one-page Command
+ * Deck, Alex 2026-06-20). Below 1024px it collapses to the rail as a stacked column
+ * with the org chart / hazard log reached as a Sheet (the spec's phone-floor "opens
+ * one tap from SitStat"). Phone stays the floor; the Deck is progressive enhancement.
  */
 export function SitStat() {
   const operation = useOperation();
-  const shorePoints = useShorePoints();
-  const positions = useOrg();
-  const hazards = useHazards();
-  const commit = useCommit();
-  const getUid = useDeviceUid();
-  const [endOpOpen, setEndOpOpen] = useState(false);
-
-  const counts = useMemo(() => {
-    const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
-    let total = 0;
-    for (const sp of shorePoints) {
-      if (sp.deletedAt != null) continue; // soft-deleted: out of the picture
-      m[sp.status]++;
-      total++;
-    }
-    return { m, total };
-  }, [shorePoints]);
-
-  // Distinct assigned resources across the chart = the "assigned apparatus +
-  // individuals" datum (the device/self ref is not a roster resource).
-  const resources = useMemo(() => {
-    const apparatus = new Set<string>();
-    const individuals = new Set<string>();
-    const roster: { key: string; label: string; home: string }[] = [];
-    const seen = new Set<string>();
-    for (const p of Object.values(positions)) {
-      for (const r of p.assignedResources) {
-        if (r.ref === 'apparatus') apparatus.add(r.value);
-        else if (r.ref === 'individual') individuals.add(r.value);
-        else continue; // device/self — not a roster resource
-        const key = `${r.ref}:${r.value}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        roster.push({ key, label: r.label, home: p.title });
-      }
-    }
-    return { apparatusCount: apparatus.size, individualCount: individuals.size, roster };
-  }, [positions]);
-
-  const openHazards = useMemo(
-    () => Object.values(hazards).filter((h) => h.mitigatedAt == null).length,
-    [hazards],
-  );
+  const isDeck = useMediaQuery('(min-width: 1024px)');
+  const [view, setView] = useState<WorkspaceView>('org');
+  const [sheet, setSheet] = useState<WorkspaceView | null>(null);
 
   if (!operation) {
     return (
@@ -79,135 +33,45 @@ export function SitStat() {
     );
   }
 
-  const ic = currentIC(positions);
-  const safety = positions[defaultPositionId(operation.id, 'safety')];
-  const safetyName = (safety && leaderOf(safety)?.label) ?? 'Unassigned';
-  const ROSTER_PREVIEW = 3;
+  if (isDeck) {
+    return (
+      <div className="fs-cmd-deck">
+        <div className="fs-cmd-deck-rail">
+          <CommandRail onOpenHazards={() => setView('hazard')} />
+          <EndOperationButton />
+        </div>
+        <div className="fs-cmd-deck-ws">
+          <CommandWorkspace view={view} onView={setView} />
+        </div>
+      </div>
+    );
+  }
 
-  const endOperation = async () => {
-    const result = await commit({
-      type: 'OperationEnded',
-      id: newId(),
-      opId: operation.id,
-      at: Date.now(),
-      by: await getUid(),
-    });
-    if (result.ok) setEndOpOpen(false);
-  };
-
+  // Phone / small tablet (<1024px): the rail as a stacked column; Org Chart /
+  // Hazard Log open as a Sheet (the phone-floor contract).
   return (
     <div className="fs-cmd">
-      {/* Persistent chrome — Safety Officer + OP/elapsed (C-6) */}
-      <div className="fs-cmd-chrome">
-        <div className="fs-cmd-so">
-          <span className="fs-cmd-eyebrow">Safety Officer</span>
-          <span className="fs-cmd-so-name">
-            {safetyName !== 'Unassigned' && <span className="fs-cmd-so-dot" aria-hidden="true" />}
-            {safetyName}
-          </span>
-        </div>
-        <div className="fs-cmd-op">
-          <span className="fs-cmd-eyebrow">OP 1 · Elapsed</span>
-          <ElapsedClock since={operation.createdAt} />
-        </div>
-      </div>
-
-      {/* Incident name */}
-      <div className="fs-cmd-incident">
-        <h1 className="fs-cmd-title">{operation.name}</h1>
-        {operation.location && <p className="fs-cmd-loc">{operation.location}</p>}
-      </div>
-
-      {/* Incident Commander — the one gold accent */}
-      <Card className="fs-cmd-ic">
-        <div>
-          <span className="fs-cmd-eyebrow">Incident Commander</span>
-          <span className="fs-cmd-ic-name">{ic?.label ?? 'Unassigned'}</span>
-        </div>
-      </Card>
-
-      {/* Resources assigned */}
-      <div className="fs-cmd-metrics">
-        <Card className="fs-cmd-metric">
-          <span className="fs-cmd-eyebrow">Apparatus</span>
-          <span className="fs-cmd-metric-num">{resources.apparatusCount}</span>
-        </Card>
-        <Card className="fs-cmd-metric">
-          <span className="fs-cmd-eyebrow">Individuals</span>
-          <span className="fs-cmd-metric-num">{resources.individualCount}</span>
-        </Card>
-      </div>
-
-      {/* Shore-point status board */}
-      <div className="fs-cmd-board-head">
-        <span className="fs-cmd-eyebrow">Shore points</span>
-        <span className="fs-cmd-board-total">{counts.total} total</span>
-      </div>
-      <div className="fs-cmd-board" role="list" aria-label="Shore points by status">
-        {STATUS_ORDER.map((status) => (
-          <div key={status} className={`fs-cmd-stat is-${status}`} role="listitem">
-            <span className="fs-cmd-stat-label">{STATUS_LABELS[status]}</span>
-            <span className="fs-cmd-stat-count">{counts.m[status]}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="fs-cmd-divider" />
-
-      {/* One-tap entries — destinations build in P6 (Org Chart) / P9 (Hazard Log) */}
+      <CommandRail />
       <div className="fs-cmd-entries">
-        <Button variant="secondary" disabled disabledReason="Builds next" onPress={() => {}}>
+        <Button variant="secondary" onPress={() => setSheet('org')}>
           Org Chart
         </Button>
-        <Button variant="secondary" disabled disabledReason="Builds next" onPress={() => {}}>
-          Hazard Log{openHazards > 0 ? ` (${openHazards})` : ''}
+        <Button variant="secondary" onPress={() => setSheet('hazard')}>
+          Hazard Log
         </Button>
       </div>
+      <EndOperationButton />
 
-      {/* Resource roster */}
-      <Card className="fs-cmd-roster">
-        <div className="fs-cmd-roster-head">
-          <span className="fs-cmd-eyebrow">Resource roster</span>
-        </div>
-        {resources.roster.length === 0 ? (
-          <p className="fs-cmd-roster-empty">No resources assigned yet.</p>
+      <Sheet open={sheet !== null} onClose={() => setSheet(null)} title={sheet === 'hazard' ? 'Hazard Log' : 'Org Chart'}>
+        {sheet === 'hazard' ? (
+          <div className="fs-cmd-ws-soon">
+            <p>The ICS-208 hazard register builds next.</p>
+            <p className="fs-cmd-ws-soon-sub">Open hazards already show in the rail summary.</p>
+          </div>
         ) : (
-          <>
-            {resources.roster.slice(0, ROSTER_PREVIEW).map((r) => (
-              <div key={r.key} className="fs-cmd-roster-row">
-                <span>{r.label}</span>
-                <Badge variant="label">{r.home}</Badge>
-              </div>
-            ))}
-            {resources.roster.length > ROSTER_PREVIEW && (
-              <p className="fs-cmd-roster-more">+ {resources.roster.length - ROSTER_PREVIEW} more</p>
-            )}
-          </>
+          <OrgChart />
         )}
-      </Card>
-
-      <Button variant="secondary" destructive fullWidth onPress={() => setEndOpOpen(true)}>
-        End Operation
-      </Button>
-
-      <Modal
-        open={endOpOpen}
-        onClose={() => setEndOpOpen(false)}
-        title="End Operation?"
-        variant="destructive"
-        footer={
-          <>
-            <Button variant="secondary" onPress={() => setEndOpOpen(false)}>
-              <span data-modal-cancel>Cancel</span>
-            </Button>
-            <Button variant="primary" destructive onPress={endOperation}>
-              End Operation
-            </Button>
-          </>
-        }
-      >
-        <p>This archives every shore point and ends the active operation. You can start a new one afterward.</p>
-      </Modal>
+      </Sheet>
     </div>
   );
 }

@@ -74,6 +74,15 @@
 }
 
 /* ---- IC datum (the one gold accent) ------------------------------------ */
+.fs-cmd-ic {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.fs-cmd-ic-main {
+  min-width: 0;
+}
 .fs-cmd-ic .fs-cmd-ic-name {
   display: inline-block;
   margin-top: 3px;
@@ -82,6 +91,25 @@
   color: var(--text-primary);
   border-bottom: 3px solid var(--accent);
   padding-bottom: 2px;
+}
+
+/* ---- Operations Section Chief | Safety Officer two-up row --------------- */
+.fs-cmd-pair {
+  display: flex;
+  gap: var(--space-2);
+}
+.fs-cmd-pair-cell {
+  flex: 1;
+  min-width: 0;
+}
+.fs-cmd-pair-name {
+  display: block;
+  margin-top: 2px;
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- resource metrics -------------------------------------------------- */
@@ -194,9 +222,249 @@
   color: var(--text-secondary);
 }
 
-@media (min-width: 768px) {
+/* ---- hazard summary line ----------------------------------------------- */
+.fs-cmd-haz {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-secondary);
+  font: var(--type-caption);
+}
+.fs-cmd-haz--press {
+  cursor: pointer;
+}
+.fs-cmd-haz-count {
+  font-weight: 700;
+  color: var(--status-runner-text);
+}
+.fs-cmd-haz-go {
+  color: var(--text-tertiary);
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+/* ===== Command Deck (desktop ≥1024px, JS-gated render) ==================== */
+.fs-cmd-deck {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+  padding: var(--space-4) 0;
+}
+.fs-cmd-deck-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  position: sticky;
+  top: var(--space-3);
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+}
+.fs-cmd-deck-ws {
+  min-width: 0;
+}
+
+/* ---- workspace (Segmented header + body) ------------------------------- */
+.fs-cmd-ws {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-cmd-ws-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.fs-cmd-ws-body {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-6) var(--space-4);
+  min-height: 430px;
+}
+.fs-cmd-ws-soon {
+  text-align: center;
+  color: var(--text-secondary);
+  font: var(--type-body);
+  padding: var(--space-8) var(--space-4);
+}
+.fs-cmd-ws-soon-sub {
+  margin-top: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* ===== org chart (read view) ============================================ */
+.fs-org {
+  /* Connector hairline: visible but quiet, themed (the raw --surface-stroke at
+     0.07α reads as no line on an org chart). */
+  --org-line: color-mix(in srgb, var(--text-secondary) 55%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+}
+.fs-org-crumbs {
+  align-self: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font: var(--type-caption);
+}
+.fs-org-crumb {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font: var(--type-caption);
+}
+.fs-org-crumb.is-current {
+  color: var(--text-secondary);
+  cursor: default;
+}
+.fs-org-scroll {
+  align-self: stretch;
+  overflow-x: auto;
+}
+.fs-org-tree {
+  width: max-content;
+  margin-inline: auto;
+}
+
+/* node card */
+.fs-org-node {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  align-items: flex-start;
+  text-align: left;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-2) var(--space-3);
+  min-width: 148px;
+}
+.fs-org-node--press {
+  cursor: pointer;
+}
+.fs-org-node.is-ic {
+  border-color: var(--accent);
+}
+.fs-org-node.is-ic .fs-org-node-leader {
+  color: var(--accent);
+}
+.fs-org-node-eyebrow {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-org-node-leader {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-org-node-leader.is-unassigned {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+.fs-org-node-span {
+  margin-top: 2px;
+  font: var(--type-caption);
+  color: var(--status-runner-text);
+}
+.fs-org-node-descend {
+  margin-top: 2px;
+  font: var(--type-caption);
+  color: var(--accent);
+}
+
+/* IC + Command-staff side cluster (Safety to the side, excluded from span) */
+.fs-org-top {
+  position: relative;
+  display: inline-block;
+}
+.fs-org-staff {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  margin-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-org-staff::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: calc(var(--space-5) * -1);
+  width: var(--space-5);
+  height: 1px;
+  background: var(--org-line);
+}
+
+/* CSS L-connectors (the v3-proven nested technique, no SVG) */
+.fs-org-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.fs-org-reports {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  padding-top: 18px;
+}
+.fs-org-reports::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 18px;
+  border-left: 1px solid var(--org-line);
+}
+.fs-org-reports > li {
+  position: relative;
+  padding: 18px var(--space-2) 0;
+}
+.fs-org-reports > li::before,
+.fs-org-reports > li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: 18px;
+  border-top: 1px solid var(--org-line);
+}
+.fs-org-reports > li::after {
+  right: auto;
+  left: 50%;
+  border-left: 1px solid var(--org-line);
+}
+.fs-org-reports > li:first-child::before,
+.fs-org-reports > li:last-child::after {
+  border: 0;
+}
+.fs-org-reports > li:last-child::before {
+  border-right: 1px solid var(--org-line);
+}
+.fs-org-reports > li:only-child::before,
+.fs-org-reports > li:only-child::after {
+  border: 0;
+}
+
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  /* small-tablet column: center it, don't stretch a phone layout edge-to-edge */
   .fs-cmd {
-    max-width: 600px;
+    max-width: 640px;
     margin: 0 auto;
     padding: var(--space-4) 0;
     gap: var(--space-4);
