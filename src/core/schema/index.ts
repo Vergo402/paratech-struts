@@ -4,6 +4,7 @@
 export * from './common';
 export * from './operation';
 export * from './shorepoint';
+export * from './org';
 export * from './inventory';
 export * from './apparatus';
 export * from './event';
