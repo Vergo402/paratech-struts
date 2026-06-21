@@ -30,7 +30,11 @@ function OrgNode({
       <span className="fs-org-node-eyebrow">{pos.title}</span>
       <span className={`fs-org-node-leader${leader ? '' : ' is-unassigned'}`}>{leader ? leader.label : 'Unassigned'}</span>
       {spanText && <span className="fs-org-node-span">{spanText}</span>}
-      {reportsCount ? <span className="fs-org-node-reports">{reportsCount} {reportsCount === 1 ? 'report' : 'reports'}</span> : null}
+      {reportsCount ? (
+        <span className="fs-org-node-reports">
+          {reportsCount} {reportsCount === 1 ? 'subordinate' : 'subordinates'}
+        </span>
+      ) : null}
     </button>
   );
 }

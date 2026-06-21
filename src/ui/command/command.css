@@ -395,11 +395,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--org-gap) var(--space-2) 0; /* top = bus/drop region · sides = sibling gap */
+  padding: 0 var(--space-2); /* sibling gap only; the connector region is added per nested level below */
 }
-/* per-child: bus halves (border-top) + the vertical drop to the node (::after border-left) */
-.fs-org-tree li::before,
-.fs-org-tree li::after {
+/* A nested level: the connector region = the ul's top padding (parent → bus down-
+   line) + each child li's top padding (bus + the drop to the node). All connector
+   CSS is scoped to .fs-org-reports so the ROOT node never gets a line above it.
+   Padding (not margin) keeps the down-line starting exactly at the parent's bottom
+   edge — the margin+negative-top version bled the line up into the parent box. */
+.fs-org-reports {
+  position: relative;
+}
+/* higher specificity than `.fs-org-tree ul { padding: 0 }` so the down-line region
+   (the ul's top padding) actually applies — without this the parent stem collapses
+   below the bus. */
+.fs-org-tree ul.fs-org-reports {
+  padding-top: var(--org-gap);
+}
+.fs-org-reports::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: var(--org-gap);
+  border-left: 1.4px solid var(--org-line);
+}
+.fs-org-reports > li {
+  padding-top: var(--org-gap);
+}
+.fs-org-reports > li::before,
+.fs-org-reports > li::after {
   content: '';
   position: absolute;
   top: 0;
@@ -407,48 +431,27 @@
   height: var(--org-gap);
   border-top: 1.4px solid var(--org-line);
 }
-.fs-org-tree li::before {
+.fs-org-reports > li::before {
   right: 50%;
 }
-.fs-org-tree li::after {
+.fs-org-reports > li::after {
   left: 50%;
   border-left: 1.4px solid var(--org-line);
 }
-.fs-org-tree li:first-child::before {
+.fs-org-reports > li:first-child::before {
   border: 0;
 }
-.fs-org-tree li:last-child::after {
+.fs-org-reports > li:last-child::after {
   border-top: 0;
 }
-.fs-org-tree li:last-child::before {
+.fs-org-reports > li:last-child::before {
   border-right: 1.4px solid var(--org-line);
 }
-.fs-org-tree li:only-child::before {
+.fs-org-reports > li:only-child::before {
   border: 0;
 }
-.fs-org-tree li:only-child::after {
-  border-top: 0; /* single report → just the vertical, no bus */
-}
-/* the root (IC) has no parent → no connector above it */
-.fs-org-tree > ul > li {
-  padding-top: 0;
-}
-.fs-org-tree > ul > li::before,
-.fs-org-tree > ul > li::after {
-  display: none;
-}
-/* the parent → bus down-line (centered under the parent node) */
-.fs-org-reports {
-  position: relative;
-  margin-top: var(--org-gap);
-}
-.fs-org-reports::before {
-  content: '';
-  position: absolute;
-  top: calc(var(--org-gap) * -1);
-  left: 50%;
-  height: var(--org-gap);
-  border-left: 1.4px solid var(--org-line);
+.fs-org-reports > li:only-child::after {
+  border-top: 0; /* single subordinate → just the vertical, no bus */
 }
 
 /* IC + Command-staff side cluster (Safety to the side, excluded from span) */
@@ -510,47 +513,114 @@
   color: var(--text-tertiary);
 }
 
-/* ---- node sheet + assign/add sheets ------------------------------------ */
+/* ---- node sheet (Assigned · Subordinates · Manage) --------------------- */
 .fs-node-subtitle {
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-2);
   font: var(--type-caption);
   color: var(--text-secondary);
 }
-.fs-node-menu {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
+/* section header — small caps, sets the three groups apart */
+.fs-node-section {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  margin: var(--space-5) 0 var(--space-2);
 }
-.fs-node-row {
+.fs-node-empty {
+  margin: 0 0 var(--space-2);
+  font: var(--type-body);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+/* assigned resources — dividered rows, not boxes */
+.fs-node-resources {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+}
+.fs-node-resource {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--surface-stroke);
+}
+.fs-node-resource:last-child {
+  border-bottom: 0;
+}
+.fs-node-leader-tag {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-node-clear {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* a grouped action card — one container, hairline-divided rows */
+.fs-node-group {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.fs-node-grow {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
   text-align: left;
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-card);
-  padding: var(--space-3);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-stroke);
+  padding: var(--space-3) var(--space-3);
   color: var(--text-primary);
   font: var(--type-body);
   cursor: pointer;
   min-height: 48px;
 }
-.fs-node-reparent {
+.fs-node-grow:last-child {
+  border-bottom: 0;
+}
+.fs-node-grow:active {
+  background: var(--surface-card-hover);
+}
+.fs-node-grow > [aria-hidden] {
+  color: var(--text-tertiary);
+}
+.fs-node-rename {
   display: flex;
   gap: var(--space-2);
-  flex-wrap: wrap;
+  align-items: flex-end;
 }
-.fs-node-reparent > * {
+.fs-node-rename > :first-child {
   flex: 1;
-  min-width: 72px;
+  min-width: 0;
 }
-.fs-node-readonly {
+.fs-node-reorder {
+  display: flex;
+  gap: var(--space-2);
+}
+.fs-node-reorder > * {
+  flex: 1;
+}
+.fs-node-note {
   margin: var(--space-3) 0 0;
   font: var(--type-caption);
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   text-align: center;
 }
 .fs-node-back {
@@ -560,30 +630,6 @@
   color: var(--accent);
   font: var(--type-caption);
   cursor: pointer;
-}
-.fs-node-resource {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-card);
-}
-.fs-node-leader-tag {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
-.fs-node-clear {
-  flex: none;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 var(--space-1);
 }
 .fs-node-history {
   list-style: none;

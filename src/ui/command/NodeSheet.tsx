@@ -1,20 +1,13 @@
 import { useState } from 'react';
 import type { FieldShoreEvent, OrgResourceRef } from '@core/schema';
-import {
-  childrenOf,
-  orderForUp,
-  orderForDown,
-  promoteTarget,
-  demoteTarget,
-  validParentsFor,
-} from '@core/org';
+import { childrenOf, orderForUp, orderForDown, validParentsFor } from '@core/org';
 import { Sheet, Modal, Button, TextField } from '@ui/primitives';
 import { useOrg, useOperation, useRoleHistory } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { AssignResourceSheet } from './AssignResourceSheet';
 import { AddPositionSheet } from './AddPositionSheet';
 
-// One-line role-history description (the events naming this node, append order).
+// One-line role-history description (events naming this node, append order).
 function describe(e: FieldShoreEvent): string {
   switch (e.type) {
     case 'PositionAdded':
@@ -22,9 +15,9 @@ function describe(e: FieldShoreEvent): string {
     case 'PositionRenamed':
       return `Renamed to ${e.title}`;
     case 'PositionReparented':
-      return 'Moved under a new parent';
+      return 'Moved to a new position';
     case 'PositionReordered':
-      return 'Reordered among siblings';
+      return 'Reordered';
     case 'ResourceAssigned':
       return `Assigned ${e.resource.label}`;
     case 'ResourceCleared':
@@ -32,7 +25,7 @@ function describe(e: FieldShoreEvent): string {
     case 'MyRoleSet':
       return e.positionId ? 'A device set this as its role' : 'A device cleared its role';
     case 'CommandTransferInitiated':
-      return `Command transfer initiated → ${e.toResource.label}`;
+      return `Command transfer → ${e.toResource.label}`;
     case 'CommandTransferAccepted':
       return 'Command transfer accepted';
     case 'CommandTransferDeclined':
@@ -44,16 +37,17 @@ function describe(e: FieldShoreEvent): string {
   }
 }
 
-const fmtTime = (ms: number) => new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+const fmtTime = (ms: number) =>
+  new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 type Mode = 'menu' | 'move' | 'history';
 
 /**
- * The org-node sheet (#295/#225) — tap a node to open it. Reads for everyone (the
- * assigned resources, reports, role history); the IC may edit (assign/clear, rename,
- * add a sub-position, reparent via the move/up/down/promote/demote buttons — the AT
- * path, drag is a later nicety — and remove a custom position). Built-ins can't be
- * removed.
+ * The org-node sheet (#295/#225) — tap a node. Grouped into Assigned · Subordinates ·
+ * Manage so it scans at a glance (the flat menu was unreadable — Alex). Reads for
+ * everyone; the IC edits. All reparenting lives behind one Move… sub-view (reorder
+ * up/down + move under a different position); promote/demote are just move-under
+ * targets, so there are no separate buttons and no reason-label clutter.
  */
 export function NodeSheet({
   positionId,
@@ -81,11 +75,9 @@ export function NodeSheet({
   if (!pos) return null;
 
   const parent = pos.parentId ? positions[pos.parentId] : null;
-  const reports = childrenOf(positions, positionId).filter((c) => c.kind !== 'command-staff');
+  const subs = childrenOf(positions, positionId).filter((c) => c.kind !== 'command-staff');
   const upOrder = orderForUp(positions, positionId);
   const downOrder = orderForDown(positions, positionId);
-  const promote = promoteTarget(positions, positionId);
-  const demote = demoteTarget(positions, positionId);
 
   const clear = (resource: OrgResourceRef) => emit({ type: 'ResourceCleared', positionId, resource });
   const reparent = (newParentId: string) => {
@@ -97,25 +89,20 @@ export function NodeSheet({
     if (t && t !== pos.title) emit({ type: 'PositionRenamed', positionId, title: t });
     setRenaming(false);
   };
-
-  const headerTitle = pos.title;
+  const subsLabel = `${subs.length} ${subs.length === 1 ? 'subordinate' : 'subordinates'}`;
 
   return (
-    <Sheet open onClose={onClose} title={headerTitle}>
+    <Sheet open onClose={onClose} title={pos.title}>
       <p className="fs-node-subtitle">{parent ? `Reports to ${parent.title}` : 'Top of command'}</p>
 
       {mode === 'menu' && (
         <>
-          {/* assigned resources */}
-          <div className="fs-cmd-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>
-            Assigned
-          </div>
+          {/* ASSIGNED */}
+          <div className="fs-node-section">Assigned</div>
           {pos.assignedResources.length === 0 ? (
-            <p className="fs-cmd-roster-empty" style={{ marginTop: 0 }}>
-              Unassigned
-            </p>
+            <p className="fs-node-empty">Unassigned</p>
           ) : (
-            <ul className="fs-assign-list">
+            <ul className="fs-node-resources">
               {pos.assignedResources.map((r, i) => (
                 <li key={`${r.ref}:${r.value}`} className="fs-node-resource">
                   <span className="fs-assign-name">
@@ -131,120 +118,86 @@ export function NodeSheet({
               ))}
             </ul>
           )}
-
           {isIC &&
-            (renaming ? (
-              <div className="fs-assign-individual" style={{ marginTop: 'var(--space-3)' }}>
-                <TextField label="Position title" value={title} onChange={setTitle} size="standard" />
-                <Button variant="secondary" size="standard" onPress={saveRename}>
-                  Save
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="primary"
-                size="standard"
-                fullWidth
-                onPress={() => setAssignOpen(true)}
-              >
+            (renaming ? null : (
+              <Button variant="primary" size="standard" fullWidth onPress={() => setAssignOpen(true)}>
                 Assign resource
               </Button>
             ))}
 
-          <div className="fs-node-menu">
-            {reports.length > 0 && (
-              <button
-                type="button"
-                className="fs-node-row"
-                onClick={() => {
-                  onDescend(positionId);
-                  onClose();
-                }}
-              >
-                <span>View {reports.length} {reports.length === 1 ? 'report' : 'reports'}</span>
-                <span aria-hidden="true">›</span>
-              </button>
-            )}
-            <button type="button" className="fs-node-row" onClick={() => setMode('history')}>
-              <span>Role history</span>
-              <span aria-hidden="true">›</span>
-            </button>
-
-            {isIC && (
-              <>
+          {/* SUBORDINATES */}
+          {subs.length > 0 && (
+            <>
+              <div className="fs-node-section">Subordinates</div>
+              <div className="fs-node-group">
                 <button
                   type="button"
-                  className="fs-node-row"
+                  className="fs-node-grow"
                   onClick={() => {
-                    setTitle(pos.title);
-                    setRenaming(true);
+                    onDescend(positionId);
+                    onClose();
                   }}
                 >
-                  <span>Rename</span>
-                </button>
-                <button type="button" className="fs-node-row" onClick={() => setAddOpen(true)}>
-                  <span>Add position under this</span>
+                  <span>View {subsLabel}</span>
                   <span aria-hidden="true">›</span>
                 </button>
-                <button type="button" className="fs-node-row" onClick={() => setMode('move')}>
-                  <span>Move under…</span>
-                  <span aria-hidden="true">›</span>
-                </button>
-                <div className="fs-node-reparent">
-                  <Button
-                    variant="secondary"
-                    size="standard"
-                    disabled={upOrder === null}
-                    disabledReason="Top"
-                    onPress={() => {
-                      if (upOrder !== null) emit({ type: 'PositionReordered', positionId, order: upOrder });
-                    }}
-                  >
-                    ↑ Up
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="standard"
-                    disabled={downOrder === null}
-                    disabledReason="Bottom"
-                    onPress={() => {
-                      if (downOrder !== null) emit({ type: 'PositionReordered', positionId, order: downOrder });
-                    }}
-                  >
-                    ↓ Down
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="standard"
-                    disabled={!promote}
-                    disabledReason="At top level"
-                    onPress={() => {
-                      if (promote) reparent(promote);
-                    }}
-                  >
-                    Promote
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="standard"
-                    disabled={!demote}
-                    disabledReason="No sibling above"
-                    onPress={() => {
-                      if (demote) reparent(demote);
-                    }}
-                  >
-                    Demote
+              </div>
+            </>
+          )}
+
+          {/* MANAGE (IC) / read row (others) */}
+          {isIC ? (
+            <>
+              <div className="fs-node-section">Manage position</div>
+              {renaming ? (
+                <div className="fs-node-rename">
+                  <TextField label="Position title" value={title} onChange={setTitle} size="standard" />
+                  <Button variant="secondary" size="standard" onPress={saveRename}>
+                    Save
                   </Button>
                 </div>
-                {!pos.builtIn && (
-                  <Button variant="secondary" size="standard" destructive fullWidth onPress={() => setRemoveOpen(true)}>
-                    Remove position
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-          {!isIC && <p className="fs-node-readonly">Only the Incident Commander can restructure the chart.</p>}
+              ) : (
+                <div className="fs-node-group">
+                  <button
+                    type="button"
+                    className="fs-node-grow"
+                    onClick={() => {
+                      setTitle(pos.title);
+                      setRenaming(true);
+                    }}
+                  >
+                    <span>Rename</span>
+                  </button>
+                  <button type="button" className="fs-node-grow" onClick={() => setAddOpen(true)}>
+                    <span>Add position under this</span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="fs-node-grow" onClick={() => setMode('move')}>
+                    <span>Move…</span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                  <button type="button" className="fs-node-grow" onClick={() => setMode('history')}>
+                    <span>Role history</span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                </div>
+              )}
+              {!pos.builtIn ? (
+                <Button variant="secondary" size="standard" destructive fullWidth onPress={() => setRemoveOpen(true)}>
+                  Remove position
+                </Button>
+              ) : (
+                <p className="fs-node-note">Built-in position · cannot be removed</p>
+              )}
+            </>
+          ) : (
+            <div className="fs-node-group">
+              <button type="button" className="fs-node-grow" onClick={() => setMode('history')}>
+                <span>Role history</span>
+                <span aria-hidden="true">›</span>
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -253,9 +206,30 @@ export function NodeSheet({
           <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
             ‹ Back
           </button>
-          <div className="fs-cmd-eyebrow" style={{ margin: 'var(--space-2) 0' }}>
-            Move under
+          <div className="fs-node-section">Reorder among siblings</div>
+          <div className="fs-node-reorder">
+            <Button
+              variant="secondary"
+              size="standard"
+              disabled={upOrder === null}
+              onPress={() => {
+                if (upOrder !== null) emit({ type: 'PositionReordered', positionId, order: upOrder });
+              }}
+            >
+              ↑ Move up
+            </Button>
+            <Button
+              variant="secondary"
+              size="standard"
+              disabled={downOrder === null}
+              onPress={() => {
+                if (downOrder !== null) emit({ type: 'PositionReordered', positionId, order: downOrder });
+              }}
+            >
+              ↓ Move down
+            </Button>
           </div>
+          <div className="fs-node-section">Move under a different position</div>
           <ul className="fs-assign-list">
             {validParentsFor(positions, positionId).map((p) => (
               <li key={p.id}>
@@ -274,13 +248,9 @@ export function NodeSheet({
           <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
             ‹ Back
           </button>
-          <div className="fs-cmd-eyebrow" style={{ margin: 'var(--space-2) 0' }}>
-            Role history
-          </div>
+          <div className="fs-node-section">Role history</div>
           {history.events.length === 0 ? (
-            <p className="fs-cmd-roster-empty" style={{ marginTop: 0 }}>
-              No history yet.
-            </p>
+            <p className="fs-node-empty">No history yet.</p>
           ) : (
             <ul className="fs-node-history">
               {history.events.map((e) => (
@@ -298,13 +268,7 @@ export function NodeSheet({
         <AssignResourceSheet open onClose={() => setAssignOpen(false)} positionId={positionId} positionTitle={pos.title} />
       )}
       {addOpen && (
-        <AddPositionSheet
-          open
-          onClose={() => setAddOpen(false)}
-          parentId={positionId}
-          parentKind={pos.kind}
-          parentTitle={pos.title}
-        />
+        <AddPositionSheet open onClose={() => setAddOpen(false)} parentId={positionId} parentKind={pos.kind} parentTitle={pos.title} />
       )}
       <Modal
         open={removeOpen}
@@ -330,7 +294,7 @@ export function NodeSheet({
           </>
         }
       >
-        <p>This removes the position{reports.length > 0 ? ' and everything under it' : ''}. Assignments here are cleared.</p>
+        <p>This removes the position{subs.length > 0 ? ' and everything under it' : ''}. Assignments here are cleared.</p>
       </Modal>
     </Sheet>
   );
