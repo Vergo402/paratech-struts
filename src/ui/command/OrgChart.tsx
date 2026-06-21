@@ -36,7 +36,9 @@ function OrgNode({
       )}
     </>
   );
-  const cls = `fs-org-node${isIC ? ' is-ic' : ''}${leader ? ' is-filled' : ''}`;
+  const cls = `fs-org-node${isIC ? ' is-ic' : ''}${leader ? ' is-filled' : ''}${
+    pos.kind === 'workstation' ? ' is-workstation' : ''
+  }`;
   return onDescend ? (
     <button type="button" className={`${cls} fs-org-node--press`} onClick={onDescend}>
       {body}

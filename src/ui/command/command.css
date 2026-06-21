@@ -385,6 +385,79 @@
   color: var(--accent);
 }
 
+/* CSS elbow connectors — a centered flex tree (each node centers over its reports;
+   no SVG). --org-gap is the connector segment height; tuned in one place. */
+.fs-org {
+  --org-gap: 22px;
+}
+.fs-org-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+.fs-org-tree li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--org-gap) var(--space-2) 0; /* top = bus/drop region · sides = sibling gap */
+}
+/* per-child: bus halves (border-top) + the vertical drop to the node (::after border-left) */
+.fs-org-tree li::before,
+.fs-org-tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: var(--org-gap);
+  border-top: 1.4px solid var(--org-line);
+}
+.fs-org-tree li::before {
+  right: 50%;
+}
+.fs-org-tree li::after {
+  left: 50%;
+  border-left: 1.4px solid var(--org-line);
+}
+.fs-org-tree li:first-child::before {
+  border: 0;
+}
+.fs-org-tree li:last-child::after {
+  border-top: 0;
+}
+.fs-org-tree li:last-child::before {
+  border-right: 1.4px solid var(--org-line);
+}
+.fs-org-tree li:only-child::before {
+  border: 0;
+}
+.fs-org-tree li:only-child::after {
+  border-top: 0; /* single report → just the vertical, no bus */
+}
+/* the root (IC) has no parent → no connector above it */
+.fs-org-tree > ul > li {
+  padding-top: 0;
+}
+.fs-org-tree > ul > li::before,
+.fs-org-tree > ul > li::after {
+  display: none;
+}
+/* the parent → bus down-line (centered under the parent node) */
+.fs-org-reports {
+  position: relative;
+  margin-top: var(--org-gap);
+}
+.fs-org-reports::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--org-gap) * -1);
+  left: 50%;
+  height: var(--org-gap);
+  border-left: 1.4px solid var(--org-line);
+}
+
 /* IC + Command-staff side cluster (Safety to the side, excluded from span) */
 .fs-org-top {
   position: relative;
@@ -393,7 +466,8 @@
 .fs-org-staff {
   position: absolute;
   left: 100%;
-  top: 0;
+  top: 50%;
+  transform: translateY(-50%);
   margin-left: var(--space-5);
   display: flex;
   flex-direction: column;
@@ -402,63 +476,17 @@
 .fs-org-staff::before {
   content: '';
   position: absolute;
-  top: 24px;
+  top: 50%;
   left: calc(var(--space-5) * -1);
   width: var(--space-5);
-  height: 1px;
+  height: 1.4px;
   background: var(--org-line);
 }
-
-/* CSS L-connectors (the v3-proven nested technique, no SVG) */
-.fs-org-tree ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.fs-org-staff .fs-org-node {
+  border-style: dashed; /* command staff — set apart from the line organization */
 }
-.fs-org-reports {
-  display: flex;
-  justify-content: center;
-  position: relative;
-  padding-top: 18px;
-}
-.fs-org-reports::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 0;
-  height: 18px;
-  border-left: 1px solid var(--org-line);
-}
-.fs-org-reports > li {
-  position: relative;
-  padding: 18px var(--space-2) 0;
-}
-.fs-org-reports > li::before,
-.fs-org-reports > li::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 50%;
-  width: 50%;
-  height: 18px;
-  border-top: 1px solid var(--org-line);
-}
-.fs-org-reports > li::after {
-  right: auto;
-  left: 50%;
-  border-left: 1px solid var(--org-line);
-}
-.fs-org-reports > li:first-child::before,
-.fs-org-reports > li:last-child::after {
-  border: 0;
-}
-.fs-org-reports > li:last-child::before {
-  border-right: 1px solid var(--org-line);
-}
-.fs-org-reports > li:only-child::before,
-.fs-org-reports > li:only-child::after {
-  border: 0;
+.fs-org-node.is-workstation {
+  background: var(--surface-elevated); /* Cutting Station = a workstation, not a command box */
 }
 
 @media (min-width: 768px) and (max-width: 1023.98px) {
