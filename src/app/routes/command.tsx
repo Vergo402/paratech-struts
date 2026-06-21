@@ -1,12 +1,7 @@
-import { EmptyState } from '@ui/primitives';
+import { SitStat } from '@ui/command';
 
-/** Command stub — SitStat / Command Picture / Org Chart are Phase I. */
+/** Command tab home (#201) — SitStat read view. Org chart, hazard log, and
+ *  command transfer fill in over P6–P9. */
 export function CommandScreen() {
-  return (
-    <EmptyState
-      variant="upstream-blocked"
-      headline="Command isn't built yet"
-      reason="SitStat, the Command Picture, and the org chart land in Phase I"
-    />
-  );
+  return <SitStat />;
 }
