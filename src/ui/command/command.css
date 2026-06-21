@@ -454,34 +454,56 @@
   border-top: 0; /* single subordinate → just the vertical, no bus */
 }
 
-/* ---- deep levels stack VERTICALLY ------------------------------------- */
-/* Below the four Operations groups, children fan out horizontally and blow up the
-   width — stack those deeper siblings in a single centered column instead, joined
-   by a continuous vertical line. Width stays one node wide (no horizontal growth),
-   the drop from the parent still lands on the column center, and stacked siblings
-   never collide with the horizontal row. */
+/* ---- bottom-most level: leaf children stack on an INDENTED SPINE ------- */
+/* Only the bottom parent→leaf relationship stacks (OrgChart decides via `stacked`).
+   A group that still branches stays horizontal; its all-leaf children hang off a
+   vertical spine with elbows (file-tree style) so the chart grows DOWN at the leaves
+   and sideways at the groups. All rules are prefixed `.fs-org-tree ul.fs-org-reports
+   --stack …` to beat the base horizontal-bus connectors on specificity. */
+.fs-org-tree li.fs-org-li--stackparent {
+  align-items: flex-start; /* parent node left-aligns so the spine drops under its left */
+}
 .fs-org-tree ul.fs-org-reports--stack {
   flex-direction: column;
-  align-items: center;
-  padding-top: var(--org-gap);
-  gap: var(--org-gap);
+  align-items: flex-start;
+  padding-top: var(--org-gap); /* the down-line region from the parent */
+  padding-left: var(--space-5); /* the spine gutter */
+}
+.fs-org-tree ul.fs-org-reports--stack::before {
+  display: none; /* no centered parent down-line — the spine handles it */
 }
 .fs-org-tree ul.fs-org-reports--stack > li {
-  padding: 0;
+  /* vertical gaps via PADDING (not gap/margin) so the per-li spines are contiguous;
+     left padding leaves room for the elbow. */
+  padding: var(--space-2) 0 var(--space-2) var(--space-4);
 }
 .fs-org-tree ul.fs-org-reports--stack > li::before {
-  /* vertical connector in the gap above each stacked node (parent→first, node→node) */
-  top: calc(-1 * var(--org-gap));
-  bottom: auto;
-  left: 50%;
+  /* the spine — full li height; consecutive segments join into one line */
+  top: 0;
+  bottom: 0;
+  left: 0;
   right: auto;
   width: 0;
-  height: var(--org-gap);
+  height: auto;
   border-top: 0;
   border-left: 1.4px solid var(--org-line);
 }
+.fs-org-tree ul.fs-org-reports--stack > li:first-child::before {
+  top: calc(-1 * var(--org-gap)); /* reach up to the parent's bottom */
+}
+.fs-org-tree ul.fs-org-reports--stack > li:last-child::before {
+  bottom: auto;
+  height: 50%; /* stop at the elbow — no overhang past the last leaf */
+}
 .fs-org-tree ul.fs-org-reports--stack > li::after {
-  content: none; /* no horizontal bus in a vertical stack */
+  /* the elbow — horizontal stub from the spine to the node */
+  top: 50%;
+  left: 0;
+  right: auto;
+  width: var(--space-5);
+  height: 0;
+  border-left: 0;
+  border-top: 1.4px solid var(--org-line);
 }
 
 /* IC + Command-staff side cluster (Safety to the side, excluded from span) */

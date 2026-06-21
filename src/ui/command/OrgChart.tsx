@@ -56,13 +56,15 @@ function SubTree({
   const level = spanLevel(span);
   const spanText =
     reports.length > 0 && level !== 'ok' ? `Span ${span} · ${level === 'over' ? 'over' : 'caution'}` : undefined;
-  // Below the Operations groups row (depth ≥ 2) the children fan out horizontally and
-  // blow up the width, so stack those deeper siblings VERTICALLY (indented spine).
-  // IC→Sections (depth 0) and Operations→the four Groups (depth 1) stay horizontal.
-  const stacked = depth >= 2;
+  // Stack a group's children vertically (indented spine) ONLY at the bottom-most
+  // parent→leaf relationship: below the Operations groups row (depth ≥ 2) AND when
+  // every child is a leaf. A child that itself has subordinates stays in a HORIZONTAL
+  // row so it can branch (e.g. Staging → Engine/Ladder/Rescue horizontal, then each
+  // of those → its own leaves stacked). IC→Sections / Operations→Groups stay horizontal.
+  const stacked = depth >= 2 && reports.length > 0 && reports.every((r) => childrenOf(positions, r.id).length === 0);
 
   return (
-    <li>
+    <li className={stacked ? 'fs-org-li--stackparent' : undefined}>
       <div className="fs-org-top">
         <OrgNode pos={pos} isIC={id === rootId} spanText={spanText} onOpen={() => onOpen(id)} />
         {staff.length > 0 && (
