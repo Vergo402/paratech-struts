@@ -24,6 +24,7 @@ function stateWith(points: ShorePoint[]): OperationState {
     shorePoints: points,
     positions: {},
     myRoles: {},
+    hazards: {},
   };
 }
 

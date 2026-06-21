@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ShorePoint, ShorePointStatus, ShorePointPatch, DeployedStrut, DeployedBom } from './shorepoint';
 import { OrgPosition, OrgResourceRef } from './org';
+import { Hazard } from './hazard';
 
 // ADR-009 — the event log is the spine. Every mutation is one immutable, append-
 // only event; current state is a projection (core/operation/projection.ts). The
@@ -238,6 +239,33 @@ export const MyRoleSet = z.object({
   positionId: z.string().nullable(),
 });
 
+// ── ICS-208 hazard register (#296) — granular, keyed-object, concurrent-safe.
+// Non-inventory → the store's plain-append path. A hazard is incident truth; it is
+// NEVER a gate (no safety-hold; Principle 10) — only logged, mitigated, reopened.
+
+// Log a hazard. Idempotent by id: re-applying an event whose hazard.id already
+// exists no-ops (safe replay; the DivisionAdded/PositionAdded model).
+export const HazardLogged = z.object({
+  type: z.literal('HazardLogged'),
+  ...base,
+  hazard: Hazard, // id minted by the caller (newId())
+});
+
+// Mark a hazard mitigated — stamps mitigatedBy=`by`, mitigatedAt=`at`. Reversible.
+export const HazardMitigated = z.object({
+  type: z.literal('HazardMitigated'),
+  ...base,
+  hazardId: z.string(),
+});
+
+// Reopen a mitigated hazard — clears the mitigation stamp (always-reversible,
+// ADR-010; not a timed undo).
+export const HazardReopened = z.object({
+  type: z.literal('HazardReopened'),
+  ...base,
+  hazardId: z.string(),
+});
+
 export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
@@ -263,5 +291,8 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   ResourceAssigned,
   ResourceCleared,
   MyRoleSet,
+  HazardLogged,
+  HazardMitigated,
+  HazardReopened,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

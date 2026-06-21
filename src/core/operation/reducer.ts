@@ -1,6 +1,7 @@
-import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPositions } from '../schema';
+import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPositions, Hazards } from '../schema';
 import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
 import { orgReducer, seedOrgState } from '../org';
+import { hazardReducer } from '../hazard';
 
 // The projected current state of one operation: the operation record + its shore
 // points in insertion order, plus the ICS org chart (#323) — the keyed position
@@ -10,6 +11,7 @@ export interface OperationState {
   shorePoints: ShorePoint[];
   positions: OrgPositions; //                 ICS org chart, seeded on OperationCreated
   myRoles: Record<string, string | null>; //  uid → positionId (device self-declaration)
+  hazards: Hazards; //                         ICS-208 hazard register (#296), keyed by id
 }
 
 export const EMPTY_OPERATION_STATE: OperationState = {
@@ -17,6 +19,7 @@ export const EMPTY_OPERATION_STATE: OperationState = {
   shorePoints: [],
   positions: {},
   myRoles: {},
+  hazards: {},
 };
 
 // The pre-runner "group zone": process ↔ strutset ↔ cutting. A grouped transition
@@ -173,6 +176,14 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'MyRoleSet': {
       const org = orgReducer({ positions: state.positions, myRoles: state.myRoles }, event);
       return { ...state, positions: org.positions, myRoles: org.myRoles };
+    }
+
+    // ICS-208 hazard register (#296) — delegated to the pure hazardReducer.
+    case 'HazardLogged':
+    case 'HazardMitigated':
+    case 'HazardReopened': {
+      const h = hazardReducer({ hazards: state.hazards }, event);
+      return { ...state, hazards: h.hazards };
     }
 
     default:
