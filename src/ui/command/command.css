@@ -340,10 +340,12 @@
   margin-inline: auto;
 }
 
-/* node card */
+/* node card — FIXED width + min-height so every box in a tier is a clean, evenly
+   spaced grid (content-sized boxes made the row look ragged / not lined up). */
 .fs-org-node {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 1px;
   align-items: flex-start;
   text-align: left;
@@ -351,7 +353,15 @@
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
   padding: var(--space-2) var(--space-3);
-  min-width: 148px;
+  width: 176px;
+  min-height: 58px;
+  box-sizing: border-box;
+}
+.fs-org-node-leader {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .fs-org-node--press {
   cursor: pointer;
