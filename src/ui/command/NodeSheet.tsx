@@ -216,7 +216,7 @@ export function NodeSheet({
                 if (upOrder !== null) emit({ type: 'PositionReordered', positionId, order: upOrder });
               }}
             >
-              ↑ Move up
+              ← Move left
             </Button>
             <Button
               variant="secondary"
@@ -226,7 +226,7 @@ export function NodeSheet({
                 if (downOrder !== null) emit({ type: 'PositionReordered', positionId, order: downOrder });
               }}
             >
-              ↓ Move down
+              Move right →
             </Button>
           </div>
           <div className="fs-node-section">Move under a different position</div>
