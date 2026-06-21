@@ -22,6 +22,8 @@ function stateWith(points: ShorePoint[]): OperationState {
   return {
     operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], status: 'active', createdAt: 1 },
     shorePoints: points,
+    positions: {},
+    myRoles: {},
   };
 }
 

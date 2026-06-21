@@ -31,6 +31,8 @@ beforeEach(() => {
   mockArchived.mockReturnValue({
     data: {
       operation: op,
+      positions: {},
+      myRoles: {},
       shorePoints: [
         sp('a', { label: 'B-2', status: 'secured', deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'i1' }] }),
         sp('b', { status: 'returned' }),

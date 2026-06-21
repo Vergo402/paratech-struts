@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ShorePoint, ShorePointStatus, ShorePointPatch, DeployedStrut, DeployedBom } from './shorepoint';
+import { OrgPosition, OrgResourceRef } from './org';
 
 // ADR-009 — the event log is the spine. Every mutation is one immutable, append-
 // only event; current state is a projection (core/operation/projection.ts). The
@@ -166,6 +167,77 @@ export const EquipmentReclaimed = z.object({
   spId: z.string(),
 });
 
+// ── ICS org chart (#323) — granular, keyed-object, concurrent-safe events. The
+// default tree seeds on OperationCreated (no migration); these grow/shrink/assign
+// it. All non-inventory → the store's plain-append path (no new store branch).
+
+// Add a position from the library or a custom one. Idempotent by id: re-applying an
+// event whose position.id already exists no-ops (safe replay; DivisionAdded model).
+export const PositionAdded = z.object({
+  type: z.literal('PositionAdded'),
+  ...base,
+  position: OrgPosition, // id minted by the caller (newId())
+});
+
+// Remove a position AND its whole subtree (the reducer does the BFS — one event,
+// deterministic fold). Built-in default nodes are protected in the reducer.
+export const PositionRemoved = z.object({
+  type: z.literal('PositionRemoved'),
+  ...base,
+  positionId: z.string(),
+});
+
+export const PositionRenamed = z.object({
+  type: z.literal('PositionRenamed'),
+  ...base,
+  positionId: z.string(),
+  title: z.string().min(1),
+});
+
+// Move a position under a new parent. The cycle guard (isAncestorOrSelf) is a
+// FOLD-TIME reducer rule, so a cycle-creating reparent is dropped even under replay.
+export const PositionReparented = z.object({
+  type: z.literal('PositionReparented'),
+  ...base,
+  positionId: z.string(),
+  newParentId: z.string(),
+});
+
+// A single position's new sibling rank (fractional) — no sibling renumber, so two
+// concurrent reorders in different branches never collide.
+export const PositionReordered = z.object({
+  type: z.literal('PositionReordered'),
+  ...base,
+  positionId: z.string(),
+  order: z.number(),
+});
+
+// Assign a resource (a roster rig / individual / device) to a position. Appended to
+// assignedResources; the reducer dedups by ref+value.
+export const ResourceAssigned = z.object({
+  type: z.literal('ResourceAssigned'),
+  ...base,
+  positionId: z.string(),
+  resource: OrgResourceRef,
+});
+
+// Clear an assignment. `resource` present → remove that one (ref+value match);
+// absent → clear all resources on the position.
+export const ResourceCleared = z.object({
+  type: z.literal('ResourceCleared'),
+  ...base,
+  positionId: z.string(),
+  resource: OrgResourceRef.optional(),
+});
+
+// The device (`by`) self-declares its ICS position (v3 openMyRoleModal). null =
+// "clear my role". A device-scoped projection slice, separate from the IC's org.
+export const MyRoleSet = z.object({
+  type: z.literal('MyRoleSet'),
+  ...base,
+  positionId: z.string().nullable(),
+});
+
 export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
@@ -183,5 +255,13 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   EquipmentReturned,
   EquipmentReclaimed,
   ComponentResourced,
+  PositionAdded,
+  PositionRemoved,
+  PositionRenamed,
+  PositionReparented,
+  PositionReordered,
+  ResourceAssigned,
+  ResourceCleared,
+  MyRoleSet,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

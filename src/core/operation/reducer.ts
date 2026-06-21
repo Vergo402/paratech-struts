@@ -1,14 +1,23 @@
-import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent } from '../schema';
+import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPositions } from '../schema';
 import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
+import { orgReducer, seedOrgState } from '../org';
 
 // The projected current state of one operation: the operation record + its shore
-// points in insertion order. Built from the event log by projectOperation().
+// points in insertion order, plus the ICS org chart (#323) — the keyed position
+// tree and the per-device My Role map. Built from the event log by projectOperation().
 export interface OperationState {
   operation: Operation | null;
   shorePoints: ShorePoint[];
+  positions: OrgPositions; //                 ICS org chart, seeded on OperationCreated
+  myRoles: Record<string, string | null>; //  uid → positionId (device self-declaration)
 }
 
-export const EMPTY_OPERATION_STATE: OperationState = { operation: null, shorePoints: [] };
+export const EMPTY_OPERATION_STATE: OperationState = {
+  operation: null,
+  shorePoints: [],
+  positions: {},
+  myRoles: {},
+};
 
 // The pre-runner "group zone": process ↔ strutset ↔ cutting. A grouped transition
 // whose BOTH endpoints sit in this zone moves every lockstep member at once —
@@ -79,6 +88,9 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           status: 'active',
           createdAt: event.at,
         },
+        // Seed the ADR-008 default org chart with the founding device as IC (free on
+        // re-fold for existing ops — the divisions:[1] precedent, no migration).
+        ...seedOrgState(event.opId, event.by),
       };
 
     case 'OperationEdited': {
@@ -149,6 +161,19 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'EquipmentReclaimed':
     case 'ComponentResourced':
       return { ...state, shorePoints: state.shorePoints.map((sp) => shorePointReducer(sp, event)) };
+
+    // ICS org chart (#323) — delegated to the pure orgReducer over the two org slices.
+    case 'PositionAdded':
+    case 'PositionRemoved':
+    case 'PositionRenamed':
+    case 'PositionReparented':
+    case 'PositionReordered':
+    case 'ResourceAssigned':
+    case 'ResourceCleared':
+    case 'MyRoleSet': {
+      const org = orgReducer({ positions: state.positions, myRoles: state.myRoles }, event);
+      return { ...state, positions: org.positions, myRoles: org.myRoles };
+    }
 
     default:
       return state;
