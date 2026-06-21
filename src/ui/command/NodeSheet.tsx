@@ -53,12 +53,10 @@ export function NodeSheet({
   positionId,
   isIC,
   onClose,
-  onDescend,
 }: {
   positionId: string;
   isIC: boolean;
   onClose: () => void;
-  onDescend: (id: string) => void;
 }) {
   const positions = useOrg();
   const op = useOperation();
@@ -125,23 +123,13 @@ export function NodeSheet({
               </Button>
             ))}
 
-          {/* SUBORDINATES */}
+          {/* SUBORDINATES — count only; the whole tree is visible in the chart */}
           {subs.length > 0 && (
             <>
               <div className="fs-node-section">Subordinates</div>
-              <div className="fs-node-group">
-                <button
-                  type="button"
-                  className="fs-node-grow"
-                  onClick={() => {
-                    onDescend(positionId);
-                    onClose();
-                  }}
-                >
-                  <span>View {subsLabel}</span>
-                  <span aria-hidden="true">›</span>
-                </button>
-              </div>
+              <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
+                {subsLabel}
+              </p>
             </>
           )}
 
