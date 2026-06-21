@@ -1,4 +1,4 @@
-import { Segmented, Button } from '@ui/primitives';
+import { Segmented } from '@ui/primitives';
 import { OrgChart } from './OrgChart';
 
 export type WorkspaceView = 'org' | 'hazard';
@@ -20,11 +20,7 @@ export function CommandWorkspace({ view, onView }: { view: WorkspaceView; onView
     <div className="fs-cmd-ws">
       <div className="fs-cmd-ws-head">
         <Segmented options={VIEW_OPTIONS} value={view} onChange={onView} aria-label="Command workspace view" />
-        {view === 'org' && (
-          <Button variant="tertiary" size="standard" disabled disabledReason="Builds next" onPress={() => {}}>
-            Edit structure
-          </Button>
-        )}
+        {view === 'org' && <span className="fs-cmd-ws-hint">Tap a position to assign or edit</span>}
       </div>
       <div className="fs-cmd-ws-body">
         {view === 'org' ? (

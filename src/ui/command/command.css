@@ -489,6 +489,181 @@
   background: var(--surface-elevated); /* Cutting Station = a workstation, not a command box */
 }
 
+/* org chart header (breadcrumbs + My role) */
+.fs-org-head {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.fs-org-myrole {
+  flex: none;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  color: var(--text-primary);
+  font: var(--type-caption);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.fs-org-node-reports {
+  margin-top: 2px;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-cmd-ws-hint {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* ---- node sheet + assign/add sheets ------------------------------------ */
+.fs-node-subtitle {
+  margin: 0 0 var(--space-3);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-node-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.fs-node-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  color: var(--text-primary);
+  font: var(--type-body);
+  cursor: pointer;
+  min-height: 48px;
+}
+.fs-node-reparent {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.fs-node-reparent > * {
+  flex: 1;
+  min-width: 72px;
+}
+.fs-node-readonly {
+  margin: var(--space-3) 0 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  text-align: center;
+}
+.fs-node-back {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font: var(--type-caption);
+  cursor: pointer;
+}
+.fs-node-resource {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+}
+.fs-node-leader-tag {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-node-clear {
+  flex: none;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 var(--space-1);
+}
+.fs-node-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-node-history li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font: var(--type-caption);
+  color: var(--text-primary);
+}
+.fs-node-hist-time {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+/* assign / add / move lists */
+.fs-assign-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.fs-assign-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: left;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+  color: var(--text-primary);
+  font: var(--type-body);
+  cursor: pointer;
+  min-height: 48px;
+}
+.fs-assign-row.is-on {
+  border-color: var(--accent);
+}
+.fs-assign-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-assign-meta {
+  flex: none;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-assign-row.is-on .fs-assign-meta {
+  color: var(--accent);
+}
+.fs-assign-individual {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+.fs-assign-individual > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 @media (min-width: 768px) and (max-width: 1023.98px) {
   /* small-tablet column: center it, don't stretch a phone layout edge-to-edge */
   .fs-cmd {

@@ -8,6 +8,7 @@ export * from './tree';
 export * from './span';
 export * from './resource';
 export * from './library';
+export * from './reorder';
 export * from './transfer';
 export * from './history';
 export * from './orgReducer';

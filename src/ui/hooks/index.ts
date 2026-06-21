@@ -9,6 +9,7 @@ export { useInventoryActions, type InventoryActionsApi, type ImportOutcome } fro
 export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';
+export { useDeviceUidValue } from './useDeviceUidValue';
 export { useSession, type SessionApi } from './useSession';
 export { useDepartment, type DepartmentApi } from './useDepartment';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
