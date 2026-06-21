@@ -18,6 +18,7 @@ import { ShorePointCard, SHORE_TYPE_LABELS, shorePointDrawerTitle } from './Shor
 import { ShorePointDetail } from './ShorePointDetail';
 import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
+import { CardBoundary } from './CardBoundary';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
 import { ReturnEquipmentModal } from './ReturnEquipmentModal';
@@ -259,37 +260,41 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
       {items.map((item) =>
         item.kind === 'group' ? (
           <div key={item.groupId} role="listitem">
-            <GroupedShorePoint
-              members={item.members}
-              initialActiveId={
-                // If the board's scroll target lands inside this stack, front it.
-                item.members.some((m) => m.id === cb.activeStackId) ? cb.activeStackId! : undefined
-              }
-              onEdit={cb.onEdit}
-              onDelete={cb.onDelete}
-              onOpenDetail={cb.onOpenDetail}
-              onAssignEquipment={cb.onAssignEquipment}
-              onAdvance={cb.onAdvance}
-              onStepBack={cb.onStepBack}
-              onRemoveReturn={cb.onRemoveReturn}
-              advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
-            />
+            <CardBoundary>
+              <GroupedShorePoint
+                members={item.members}
+                initialActiveId={
+                  // If the board's scroll target lands inside this stack, front it.
+                  item.members.some((m) => m.id === cb.activeStackId) ? cb.activeStackId! : undefined
+                }
+                onEdit={cb.onEdit}
+                onDelete={cb.onDelete}
+                onOpenDetail={cb.onOpenDetail}
+                onAssignEquipment={cb.onAssignEquipment}
+                onAdvance={cb.onAdvance}
+                onStepBack={cb.onStepBack}
+                onRemoveReturn={cb.onRemoveReturn}
+                advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
+              />
+            </CardBoundary>
           </div>
         ) : (
           // tabIndex=-1: not in the tab order, but a programmatic focus target so
           // a deploy can land focus here (#350). Groups carry their own on the front.
           <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id} tabIndex={-1}>
-            <ShorePointCard
-              shorePoint={item.sp}
-              onEdit={cb.onEdit}
-              onDelete={cb.onDelete}
-              onOpenDetail={cb.onOpenDetail}
-              onAssignEquipment={cb.onAssignEquipment}
-              onAdvance={cb.onAdvance}
-              onStepBack={cb.onStepBack}
-              onRemoveReturn={cb.onRemoveReturn}
-              advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
-            />
+            <CardBoundary>
+              <ShorePointCard
+                shorePoint={item.sp}
+                onEdit={cb.onEdit}
+                onDelete={cb.onDelete}
+                onOpenDetail={cb.onOpenDetail}
+                onAssignEquipment={cb.onAssignEquipment}
+                onAdvance={cb.onAdvance}
+                onStepBack={cb.onStepBack}
+                onRemoveReturn={cb.onRemoveReturn}
+                advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
+              />
+            </CardBoundary>
           </div>
         ),
       )}

@@ -105,6 +105,24 @@ export function createOperationStore(opts?: {
     return next;
   }
 
+  // Read trust boundary (F-SETUP-1): the event log is replayed forever, so a row written
+  // under an OLDER schema must never crash a projection or the board. Drop rows that fail
+  // the CURRENT schema (validate-then-degrade — the session.ts boot pattern) and keep the
+  // valid rows byte-identical, so replay is unchanged for everything well-formed. The write
+  // path gates on this same schema, so today this drops nothing; it is forward armor for the
+  // first post-launch schema change. Every cold read funnels through here, not raw toArray().
+  async function loadEvents(): Promise<FieldShoreEvent[]> {
+    const rows = await db.events.toArray();
+    const valid: FieldShoreEvent[] = [];
+    let dropped = 0;
+    for (const row of rows) {
+      if (FieldShoreEvent.safeParse(row).success) valid.push(row);
+      else dropped++;
+    }
+    if (dropped) console.warn(`FieldShore: skipped ${dropped} unreadable event(s) on load (stale or corrupt schema).`);
+    return valid;
+  }
+
   async function doCommit(raw: FieldShoreEvent, options?: CommitOptions): Promise<CommitResult> {
     // Garbage never enters the log — the schema is the gate (L-5 discipline).
     const parsed = FieldShoreEvent.safeParse(raw);
@@ -235,7 +253,7 @@ export function createOperationStore(opts?: {
       event.type === 'OperationEnded' ||
       event.type === 'OperationReopened';
     store.setState(
-      lifecycle ? projectOperation(await db.events.toArray()) : operationReducer(store.getState(), event),
+      lifecycle ? projectOperation(await loadEvents()) : operationReducer(store.getState(), event),
       true,
     );
 
@@ -289,27 +307,27 @@ export function createOperationStore(opts?: {
     commit: (raw: FieldShoreEvent, options?: CommitOptions) => serialize(() => doCommit(raw, options)),
     commitMany: (raws: FieldShoreEvent[], options?: CommitOptions) => serialize(() => doCommitMany(raws, options)),
     async boot() {
-      // toArray() returns primary-key (seq) order — true local append order.
-      const rows = await db.events.toArray();
+      // loadEvents() returns primary-key (seq) order — true local append order.
+      const rows = await loadEvents();
       store.setState(projectOperation(rows), true);
     },
     async readArchive() {
-      return projectArchive(await db.events.toArray());
+      return projectArchive(await loadEvents());
     },
     async readOperation(opId: string) {
-      return projectOperationById(await db.events.toArray(), opId);
+      return projectOperationById(await loadEvents(), opId);
     },
     async readShorePointHistory(spId: string) {
-      // toArray() = seq (append) order = chronological; no sort. ShorePointAdded
+      // loadEvents() = seq (append) order = chronological; no sort. ShorePointAdded
       // carries the id under shorePoint.id; every other SP event under spId.
-      const rows = await db.events.toArray();
+      const rows = await loadEvents();
       return rows.filter((e) =>
         e.type === 'ShorePointAdded' ? e.shorePoint.id === spId : 'spId' in e && e.spId === spId,
       );
     },
     async readRoleHistory(opId: string, positionId?: string) {
-      // toArray() = seq (append) order = chronological. The filter is pure (core/org).
-      return roleHistory(await db.events.toArray(), opId, positionId);
+      // loadEvents() = seq (append) order = chronological. The filter is pure (core/org).
+      return roleHistory(await loadEvents(), opId, positionId);
     },
   };
 }

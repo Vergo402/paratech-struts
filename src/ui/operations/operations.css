@@ -495,6 +495,19 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+/* Per-card crash fallback (F-SETUP-1 / CardBoundary): a compact tile that holds the
+   card's slot when one shore point can't render, so the rest of the board stays live. */
+.fs-spc-unreadable {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border: var(--stroke-width) dashed var(--surface-stroke);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font: var(--type-caption);
+}
 /* Top clearance so the header never underlaps the corner number tab. Trimmed a
    step (card compaction) — the tab is short, --space-5 clears it. */
 .fs-spc:has(.fs-spc-tab) {
