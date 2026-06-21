@@ -454,6 +454,36 @@
   border-top: 0; /* single subordinate → just the vertical, no bus */
 }
 
+/* ---- deep levels stack VERTICALLY ------------------------------------- */
+/* Below the four Operations groups, children fan out horizontally and blow up the
+   width — stack those deeper siblings in a single centered column instead, joined
+   by a continuous vertical line. Width stays one node wide (no horizontal growth),
+   the drop from the parent still lands on the column center, and stacked siblings
+   never collide with the horizontal row. */
+.fs-org-tree ul.fs-org-reports--stack {
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--org-gap);
+  gap: var(--org-gap);
+}
+.fs-org-tree ul.fs-org-reports--stack > li {
+  padding: 0;
+}
+.fs-org-tree ul.fs-org-reports--stack > li::before {
+  /* vertical connector in the gap above each stacked node (parent→first, node→node) */
+  top: calc(-1 * var(--org-gap));
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  width: 0;
+  height: var(--org-gap);
+  border-top: 0;
+  border-left: 1.4px solid var(--org-line);
+}
+.fs-org-tree ul.fs-org-reports--stack > li::after {
+  content: none; /* no horizontal bus in a vertical stack */
+}
+
 /* IC + Command-staff side cluster (Safety to the side, excluded from span) */
 .fs-org-top {
   position: relative;

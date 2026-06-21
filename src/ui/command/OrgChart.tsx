@@ -38,11 +38,13 @@ function SubTree({
   positions,
   id,
   rootId,
+  depth,
   onOpen,
 }: {
   positions: OrgPositions;
   id: string;
   rootId: string;
+  depth: number;
   onOpen: (id: string) => void;
 }) {
   const pos = positions[id];
@@ -54,6 +56,10 @@ function SubTree({
   const level = spanLevel(span);
   const spanText =
     reports.length > 0 && level !== 'ok' ? `Span ${span} · ${level === 'over' ? 'over' : 'caution'}` : undefined;
+  // Below the Operations groups row (depth ≥ 2) the children fan out horizontally and
+  // blow up the width, so stack those deeper siblings VERTICALLY (indented spine).
+  // IC→Sections (depth 0) and Operations→the four Groups (depth 1) stay horizontal.
+  const stacked = depth >= 2;
 
   return (
     <li>
@@ -68,9 +74,9 @@ function SubTree({
         )}
       </div>
       {reports.length > 0 && (
-        <ul className="fs-org-reports">
+        <ul className={`fs-org-reports${stacked ? ' fs-org-reports--stack' : ''}`}>
           {reports.map((r) => (
-            <SubTree key={r.id} positions={positions} id={r.id} rootId={rootId} onOpen={onOpen} />
+            <SubTree key={r.id} positions={positions} id={r.id} rootId={rootId} depth={depth + 1} onOpen={onOpen} />
           ))}
         </ul>
       )}
@@ -111,7 +117,7 @@ export function OrgChart() {
       <div className="fs-org-scroll">
         <div className="fs-org-tree">
           <ul>
-            <SubTree positions={positions} id={root.id} rootId={root.id} onOpen={setOpenNodeId} />
+            <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} />
           </ul>
         </div>
       </div>
