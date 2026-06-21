@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { FieldShoreEvent, type DeployedComponentRole, type InventoryItem } from '@core/schema';
 import { deployVerdict } from '@core/shorepoint';
+import { roleHistory } from '@core/org';
 import {
   operationReducer,
   projectOperation,
@@ -55,6 +56,11 @@ export interface OperationStoreApi {
    *  index); the events table is kept after OperationEnded, so this works for
    *  archived points too. */
   readShorePointHistory(spId: string): Promise<FieldShoreEvent[]>;
+  /** Org/command role history for one op, append order (#323). Omit positionId for
+   *  the whole command timeline (the transfer handoff record); pass one for a single
+   *  node's history. A cold-path read over the retained log (the readShorePointHistory
+   *  pattern); works for archived ops too. */
+  readRoleHistory(opId: string, positionId?: string): Promise<FieldShoreEvent[]>;
 }
 
 // Collapse per-decrement snapshots to ONE mirror update per inventory id (last
@@ -300,6 +306,10 @@ export function createOperationStore(opts?: {
       return rows.filter((e) =>
         e.type === 'ShorePointAdded' ? e.shorePoint.id === spId : 'spId' in e && e.spId === spId,
       );
+    },
+    async readRoleHistory(opId: string, positionId?: string) {
+      // toArray() = seq (append) order = chronological. The filter is pure (core/org).
+      return roleHistory(await db.events.toArray(), opId, positionId);
     },
   };
 }

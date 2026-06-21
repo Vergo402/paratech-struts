@@ -14,3 +14,8 @@ export { useDepartment, type DepartmentApi } from './useDepartment';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
 export { useShorePointHistory, type ShorePointHistory } from './useShorePointHistory';
+export { useOrg } from './useOrg';
+export { useMyRole, useMyRoles } from './useMyRoles';
+export { useCommandTransfer } from './useCommandTransfer';
+export { useHazards } from './useHazards';
+export { useRoleHistory, type RoleHistory } from './useRoleHistory';
