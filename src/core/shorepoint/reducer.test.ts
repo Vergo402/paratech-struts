@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent, type DeployedBom } from '../schema';
-import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom, deductionTotalInches } from './reducer';
+import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom, deductionTotalInches, cutLengthInches } from './reducer';
 import { deployedStrutOf } from './bom';
 import { canTransition } from './status';
 
@@ -51,6 +51,30 @@ describe('L-2 — effective length deducts once and floors to ⅛″', () => {
     expect(
       deductionTotalInches({ headerWood: '4x4', footerWood: '6x6', topPlate: 'threadedconn', bottomPlate: 'swivel6' }),
     ).toBeCloseTo(14.3, 10);
+  });
+});
+
+describe('cutLengthInches — wood cut length, shore-type-fixed lumber + wedge (#361)', () => {
+  it('T-Shore & Double-T cut to 4×4 header+footer − 1.5″ wedge', () => {
+    // 40 − 2×3.5 − 1.5 = 31.5
+    expect(cutLengthInches(sp({ shoreType: 't-shore' }))).toBe(31.5);
+    expect(cutLengthInches(sp({ shoreType: 'double-t' }))).toBe(31.5);
+  });
+
+  it('3-Post cuts to 6×6 header+footer − 1.5″ wedge', () => {
+    // 40 − 2×5.5 − 1.5 = 27.5
+    expect(cutLengthInches(sp({ shoreType: '3-post' }))).toBe(27.5);
+  });
+
+  it('uses the SHORE-TYPE lumber, NOT the operator strut deduction (the v3 correction)', () => {
+    // A T-Shore sized with a 6×6 strut deduction still CUTS to 4×4 (31.5), not 6×6.
+    const point = sp({
+      shoreType: 't-shore',
+      deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'threadedconn', bottomPlate: 'swivel6' },
+    });
+    expect(cutLengthInches(point)).toBe(31.5);
+    // …and that is NOT the strut effective length, which DOES use the operator deduction.
+    expect(effectiveLengthInches(point)).not.toBe(31.5);
   });
 });
 

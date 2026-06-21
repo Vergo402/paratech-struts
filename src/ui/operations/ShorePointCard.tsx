@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
-import { bomModelLabel, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
+import { bomModelLabel, cutLengthInches, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -65,6 +65,10 @@ const VALUE_LABEL: Record<ShorePointStatus, string> = {
 };
 // Statuses whose value number is the live working length and reads big (#351).
 const PROMOTED_VALUE = new Set<ShorePointStatus>(['pending', 'process', 'strutset', 'cutting']);
+// Once a point goes to the saw, the shelf is the wood CUT length, not the strut
+// effective length (#361). The Cut / Set labels both name the wood, so every phase
+// from cutting onward reads the cut length; pre-cut reads the required strut length.
+const CUT_PHASES = new Set<ShorePointStatus>(['cutting', 'runner', 'secured', 'returned']);
 
 /**
  * Status-hook classes for a point — appends the WAITING presentation when a
@@ -238,11 +242,13 @@ export function ShorePointCard({
     ...(sp.assignedResource ? [sp.assignedResource] : []),
   ].join(' · ');
 
-  // The shelf number is the effective length in every phase (Required / Cut /
-  // Set name the same value; only the label differs). effectiveLengthFrom
-  // returns INCHES already floored to ⅛″ (ADR-012) — × 8 lands on an exact
-  // eighth; round() only defends float noise. No double-floor.
-  const valueEighths = Math.round(effectiveLengthFrom(sp.measurementEighths, sp.deductions) * 8);
+  // Pre-cut, the shelf is the required STRUT length; from the cutting phase on it
+  // is the wood CUT length — a different number (shore-type lumber + wedge, no
+  // plates; #361). Both helpers return INCHES already floored to ⅛″ (ADR-012) — × 8
+  // lands on an exact eighth; round() only defends float noise. No double-floor.
+  const valueEighths = Math.round(
+    (CUT_PHASES.has(sp.status) ? cutLengthInches(sp) : effectiveLengthFrom(sp.measurementEighths, sp.deductions)) * 8,
+  );
 
   // The deployed strut + extensions now ride INSIDE the value bar as a sub-line
   // (card compaction) — except at the Cutting Station, where the bar is the cut

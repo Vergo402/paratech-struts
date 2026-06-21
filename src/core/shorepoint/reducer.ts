@@ -4,6 +4,8 @@ import type {
   ShorePoint,
   ShorePointPatch,
   ShorePointStatus,
+  ShoreTypeId,
+  WoodSizeId,
   FieldShoreEvent,
   InventoryItem,
 } from '../schema';
@@ -11,6 +13,7 @@ import {
   findStrutCombinations,
   woodHeight,
   plateHeight,
+  WEDGE_DEDUCTION,
   type EngineDeductions,
   type StrutCombination,
 } from '../load';
@@ -100,6 +103,27 @@ export function effectiveLengthFrom(measurementEighths: number, deductions: Dedu
 /** Effective strut length (inches) after deductions, floored to ⅛″ — for display. */
 export function effectiveLengthInches(sp: ShorePoint): number {
   return effectiveLengthFrom(sp.measurementEighths, sp.deductions);
+}
+
+// Cut lumber is fixed by SHORE TYPE, not the operator's strut deduction (confirmed
+// Alex 2026-06-21, #361): a T-Shore or Double-T always sits on 4×4 header+footer, a
+// 3-Post on 6×6. Header and footer are the same size.
+const CUT_LUMBER: Record<ShoreTypeId, WoodSizeId> = {
+  't-shore': '4x4',
+  'double-t': '4x4',
+  '3-post': '6x6',
+};
+
+/**
+ * Wood CUT length (inches), floored to ⅛″ — the length to cut the shore wood to.
+ * A DISTINCT number from the strut effective length: it deducts the shore-type
+ * standard header + footer (NOT the operator's strut selection) plus a flat
+ * loading-wedge allowance, and NO plates (the cut wood replaces the strut+plates).
+ * Cut short — the wedge takes up the slack; long is the hazard (#361).
+ */
+export function cutLengthInches(sp: ShorePoint): number {
+  const lumber = woodHeight(CUT_LUMBER[sp.shoreType]);
+  return Math.floor((sp.measurementEighths / 8 - 2 * lumber - WEDGE_DEDUCTION) * 8) / 8;
 }
 
 function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {

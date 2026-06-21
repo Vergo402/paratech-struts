@@ -222,9 +222,11 @@ describe('ShorePointCard', () => {
     expect(valueEqText()).toBe('LS 203');
   });
 
-  it('value shelf: "Cut length" reads the effective (deducted) length while cutting; no strut sub-line', () => {
-    // 388 eighths = 48 1/2″; 4×4 header + 4×4 footer = 3.5 + 3.5 = 7″ deducted →
-    // floor((48.5 − 7) × 8)/8 = 41 1/2″ = 332 eighths.
+  it('value shelf: "Cut length" reads the WOOD cut length while cutting; no strut sub-line', () => {
+    // 388 eighths = 48 1/2″. The cut length (#361) deducts the SHORE-TYPE lumber
+    // (T-Shore → 4×4 + 4×4 = 7″) AND a flat 1.5″ wedge, NO plates:
+    // floor((48.5 − 7 − 1.5) × 8)/8 = 40″ = 320 eighths. Differs from the 41½″
+    // strut effective length by the wedge.
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -235,12 +237,12 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('Cut length')).toBeInTheDocument();
-    expect(valueShelfText()).toBe('Cut length41 1/2″');
+    expect(valueShelfText()).toBe('Cut length40″');
     // The Cutting Station needs the cut length alone — no strut sub-line here.
     expect(valueEqText()).toBe('');
   });
 
-  it('value shelf: "Set length" reads the set (effective) length once secured', () => {
+  it('value shelf: "Set length" reads the WOOD cut length once secured (#361 supersedes SF-1)', () => {
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -251,9 +253,11 @@ describe('ShorePointCard', () => {
       />,
     );
     expect(screen.getByText('Set length')).toBeInTheDocument();
-    // Set length = what the strut was SET to: the effective 41½″ (388 − 56
-    // eighths of 4x4+4x4 wood), NOT the raw opening 48½″ (SME review SF-1).
-    expect(valueShelfText()).toBe('Set length41 1/2″');
+    // The wood was SET at its cut length — shore-type lumber + 1.5″ wedge, no
+    // plates (#361): 40″, not the 41½″ strut effective length. SF-1's "show the
+    // deducted length, not the raw opening" still holds; #361 only refines WHICH
+    // deducted number it is (the wood cut, not the strut effective).
+    expect(valueShelfText()).toBe('Set length40″');
     // Secured still carries the strut in the bar (not cutting).
     expect(valueEqText()).toBe('LS 203');
   });
