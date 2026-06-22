@@ -45,7 +45,7 @@ describe('projectOperation — active-op scoping (multi-incident isolation)', ()
 
   it('returns the empty state when every operation is ended', () => {
     const log: FieldShoreEvent[] = [created('op1', 'First', 100), added('op1', 'a'), ended('op1', 200)];
-    expect(projectOperation(log)).toEqual({ operation: null, shorePoints: [], positions: {}, myRoles: {}, commandTransfer: null, hazards: {}, checklists: {} });
+    expect(projectOperation(log)).toEqual({ operation: null, shorePoints: [], positions: {}, myRoles: {}, commandTransfer: null, hazards: {}, checklists: {}, briefings: {} });
   });
 
   it('a single active op behaves as before', () => {

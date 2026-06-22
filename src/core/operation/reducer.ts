@@ -2,7 +2,7 @@ import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPosit
 import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
 import { orgReducer, seedOrgState, type PendingTransfer } from '../org';
 import { hazardReducer } from '../hazard';
-import { checklistReducer, type Checklists } from '../checklist';
+import { checklistReducer, type Checklists, type Briefings } from '../checklist';
 
 // The projected current state of one operation: the operation record + its shore
 // points in insertion order, plus the ICS org chart (#323) — the keyed position
@@ -15,6 +15,7 @@ export interface OperationState {
   commandTransfer: PendingTransfer | null; //  pending command handoff (ADR-021), or null
   hazards: Hazards; //                         ICS-208 hazard register (#296), keyed by id
   checklists: Checklists; //                   doctrine-attestation state, keyed by checklistId::instanceId (#203/#204/#205)
+  briefings: Briefings; //                     ORM/TCRM briefing sessions, keyed by briefingId (#205)
 }
 
 export const EMPTY_OPERATION_STATE: OperationState = {
@@ -25,6 +26,7 @@ export const EMPTY_OPERATION_STATE: OperationState = {
   commandTransfer: null,
   hazards: {},
   checklists: {},
+  briefings: {},
 };
 
 // The pre-runner "group zone": process ↔ strutset ↔ cutting. A grouped transition
@@ -198,11 +200,14 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       return { ...state, hazards: h.hazards };
     }
 
-    // Checklist attestation (#203/#204/#205) — delegated to the pure checklistReducer.
+    // Checklist attestation + ORM/TCRM briefing sessions (#203/#204/#205) —
+    // delegated to the pure checklistReducer over the two slices.
     case 'ChecklistItemChecked':
-    case 'ChecklistItemUnchecked': {
-      const c = checklistReducer({ checklists: state.checklists }, event);
-      return { ...state, checklists: c.checklists };
+    case 'ChecklistItemUnchecked':
+    case 'BriefingStarted':
+    case 'BriefingEnded': {
+      const c = checklistReducer({ checklists: state.checklists, briefings: state.briefings }, event);
+      return { ...state, checklists: c.checklists, briefings: c.briefings };
     }
 
     default:

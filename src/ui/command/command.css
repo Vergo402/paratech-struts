@@ -1173,30 +1173,9 @@
   }
 }
 
-/* The persistent edge tab (ADR-019) — a thumb-reachable checkmark-box anchored to
-   the right edge. Hidden while the drawer is open (Close + Esc dismiss it). */
-.fs-cmd-checklist-tab {
-  position: fixed;
-  top: 45%;
-  right: 0;
-  z-index: 200;
-  width: 40px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-elevated);
-  color: var(--accent);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-right: none;
-  border-radius: var(--radius-card) 0 0 var(--radius-card);
-  cursor: pointer;
-  box-shadow: var(--shadow-drawer);
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-cmd-checklist-tab:hover { background: var(--surface-card-hover); }
-.fs-cmd-checklist-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-
+/* The edge tab is the shared ChecklistTab primitive (.fs-checklist-tab,
+   primitives.css) — summons this drawer on Command + the Task Level drawer on
+   Operations. */
 .fs-cmd-checklist {
   display: flex;
   flex-direction: column;

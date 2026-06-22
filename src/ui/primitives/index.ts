@@ -8,6 +8,7 @@ export { Button, type ButtonProps } from './Button';
 export { Card, type CardProps } from './Card';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { NestedChecklist, type NestedChecklistProps } from './NestedChecklist';
+export { ChecklistTab, type ChecklistTabProps } from './ChecklistTab';
 export { MeasurementValue, eighthsToParts, type MeasurementValueProps } from './Measurement';
 export { Modal, type ModalProps } from './Modal';
 export { Segmented, type SegmentedProps, type SegmentedOption } from './Segmented';

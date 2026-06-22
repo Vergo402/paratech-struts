@@ -4,6 +4,7 @@ import {
   checklistReducer,
   checklistInstance,
   checklistInstanceKey,
+  activeBriefing,
   EMPTY_CHECKLIST_STATE,
   type ChecklistState,
 } from './reducer';
@@ -93,5 +94,35 @@ describe('checklistReducer', () => {
     const before = fold([check('a')]);
     const unrelated = { type: 'OperationEnded', id: 'z', opId: 'op1', at: 9, by: 'd' } as FieldShoreEvent;
     expect(checklistReducer(before, unrelated)).toBe(before);
+  });
+});
+
+function briefing(type: 'BriefingStarted' | 'BriefingEnded', briefingId: string, at: number, by = 'dev-a'): FieldShoreEvent {
+  return { type, id: `e${n++}`, opId: 'op1', at, by, briefingId };
+}
+
+describe('ORM/TCRM briefing sessions', () => {
+  it('Begin records the started time + briefer; End stamps endedAt', () => {
+    const s = fold([briefing('BriefingStarted', 'b1', 100, 'dev-x')]);
+    expect(s.briefings['b1']).toEqual({ id: 'b1', startedAt: 100, startedBy: 'dev-x' });
+    const s2 = checklistReducer(s, briefing('BriefingEnded', 'b1', 200));
+    expect(s2.briefings['b1']).toEqual({ id: 'b1', startedAt: 100, startedBy: 'dev-x', endedAt: 200 });
+  });
+
+  it('activeBriefing returns the latest un-ended session, null once ended', () => {
+    let s = fold([briefing('BriefingStarted', 'b1', 100)]);
+    expect(activeBriefing(s)?.id).toBe('b1');
+    s = checklistReducer(s, briefing('BriefingStarted', 'b2', 300));
+    expect(activeBriefing(s)?.id).toBe('b2'); // latest
+    s = checklistReducer(s, briefing('BriefingEnded', 'b2', 400));
+    expect(activeBriefing(s)?.id).toBe('b1'); // b2 ended -> falls back to b1
+    s = checklistReducer(s, briefing('BriefingEnded', 'b1', 500));
+    expect(activeBriefing(s)).toBeNull();
+  });
+
+  it('Begin is idempotent; Ending a missing/already-ended session no-ops', () => {
+    const started = fold([briefing('BriefingStarted', 'b1', 100)]);
+    expect(checklistReducer(started, briefing('BriefingStarted', 'b1', 999))).toBe(started);
+    expect(checklistReducer(started, briefing('BriefingEnded', 'nope', 200))).toBe(started);
   });
 });

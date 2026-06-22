@@ -1016,3 +1016,28 @@ p.fs-gate--disclaimer {
 [data-theme='sunlight'] .fs-ck-box.is-partial {
   border-width: 2px;
 }
+
+/* The persistent edge tab (ADR-019) that summons a checklist side-drawer — a
+   thumb-reachable checkmark-box anchored to the right screen edge. Shared by the
+   Command + Operations screens (ChecklistTab primitive). */
+.fs-checklist-tab {
+  position: fixed;
+  top: 45%;
+  right: 0;
+  z-index: 200;
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  color: var(--accent);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-right: none;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  cursor: pointer;
+  box-shadow: var(--shadow-drawer);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-checklist-tab:hover { background: var(--surface-card-hover); }
+.fs-checklist-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }

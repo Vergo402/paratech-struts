@@ -321,6 +321,22 @@ export const ChecklistItemUnchecked = z.object({
   role: z.string(),
 });
 
+// ORM/TCRM briefing session wrapper (#205). Begin/End bracket a briefing; the
+// timestamps + briefer (`by`) are the who-briefed-which-crew record (D7.5). The
+// briefing's STEPS are ChecklistItem* events with checklistId 'orm-tcrm' and
+// instanceId = the briefingId. A briefing records — it never gates work (Principle 10).
+export const BriefingStarted = z.object({
+  type: z.literal('BriefingStarted'),
+  ...base,
+  briefingId: z.string(),
+});
+
+export const BriefingEnded = z.object({
+  type: z.literal('BriefingEnded'),
+  ...base,
+  briefingId: z.string(),
+});
+
 export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
@@ -355,5 +371,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   HazardReopened,
   ChecklistItemChecked,
   ChecklistItemUnchecked,
+  BriefingStarted,
+  BriefingEnded,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

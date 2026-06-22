@@ -2418,3 +2418,28 @@ button.fs-spc-head {
 .is-depleted .fs-inv-summary-count { color: var(--danger-text); }
 .is-low .fs-inv-summary-count      { color: var(--status-cutting-text); }
 
+
+/* ===== ORM/TCRM risk briefing modal (#205) =============================== */
+.fs-orm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-orm-session {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-card);
+  border-radius: var(--radius-card);
+}
+.fs-orm-time {
+  font-family: var(--type-mono);
+  color: var(--text-primary);
+}
+/* the load-bearing reassurance: a briefing records, it never gates work (P10) */
+.fs-orm-note {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  line-height: 1.4;
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { currentIC } from '@core/org';
-import { Button, EmptyState, Sheet, SideDrawer, useMediaQuery } from '@ui/primitives';
+import { Button, ChecklistTab, EmptyState, Sheet, SideDrawer, useMediaQuery } from '@ui/primitives';
 import { useOperation, useOrg, useDeviceUidValue } from '@ui/hooks';
 import { CommandRail } from './CommandRail';
 import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
@@ -8,18 +8,6 @@ import { EndOperationButton } from './EndOperationButton';
 import { OrgChart } from './OrgChart';
 import { ICCommandChecklist } from './ICCommandChecklist';
 import './command.css';
-
-/** The persistent edge tab that summons the IC Command Checklist (ADR-019). */
-function ChecklistTab({ onOpen }: { onOpen: () => void }) {
-  return (
-    <button type="button" className="fs-cmd-checklist-tab" onClick={onOpen} aria-label="IC Command Checklist">
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <rect x="3" y="2.5" width="14" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M6.5 9.5L9 12L13.5 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </button>
-  );
-}
 
 /**
  * Command tab home (#201) — the Command Deck. Desktop (≥1024px) is one page: a
@@ -61,7 +49,7 @@ export function SitStat() {
   // The edge tab + drawer, hosted in the flex shell so the desktop dock sits beside.
   const checklist = isIC && (
     <>
-      {!checklistOpen && <ChecklistTab onOpen={() => setChecklistOpen(true)} />}
+      {!checklistOpen && <ChecklistTab onOpen={() => setChecklistOpen(true)} label="IC Command Checklist" />}
       <SideDrawer open={checklistOpen} onClose={() => setChecklistOpen(false)} title="IC Command Checklist">
         <ICCommandChecklist instanceId={operation.id} />
       </SideDrawer>

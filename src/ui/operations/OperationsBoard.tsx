@@ -9,8 +9,8 @@ import {
   divisionLabel,
 } from '@core/operation';
 import { newId } from '@core/id';
-import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
-import { useApparatus, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
+import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
+import { useApparatus, useBriefing, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
@@ -28,6 +28,8 @@ import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { OperationsRail } from './OperationsRail';
+import { TaskLevelChecklist } from './TaskLevelChecklist';
+import { OrmBriefingModal } from './OrmBriefingModal';
 import { buildRailTree, isLeafScope, type ScopePath } from './railTree';
 
 type ModalMode = null | 'create' | 'edit';
@@ -427,6 +429,9 @@ export function OperationsBoard() {
   // Quick View drawer (ADR-019) — the deployed point being inspected, or null.
   const [detailSpId, setDetailSpId] = useState<string | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [taskChecklistOpen, setTaskChecklistOpen] = useState(false);
+  const [ormOpen, setOrmOpen] = useState(false);
+  const briefing = useBriefing();
   // Phone scope sheet (Item 1) — the building→division→area drilldown that the
   // desktop rail is, surfaced on phone as a bottom Sheet (ADR-016: scope picking
   // is non-destructive → sheet). Desktop keeps the always-visible rail instead.
@@ -1360,6 +1365,15 @@ export function OperationsBoard() {
       )}
 
           <div className="fs-ops-end">
+            <Button
+              variant="secondary"
+              onPress={async () => {
+                await briefing.begin(); // resumes the active session or starts one
+                setOrmOpen(true);
+              }}
+            >
+              {briefing.active ? 'Open Briefing' : 'Begin Briefing'}
+            </Button>
             <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
               End Operation
             </Button>
@@ -1369,6 +1383,11 @@ export function OperationsBoard() {
             the board as draggable FloatingPanels (the board keeps full width); on
             phone they stay full-screen modal SideDrawers. The bodies are
             container-agnostic, dropped into either. */}
+        {/* Task Level Checklist (#204) summon tab — the shared ADR-019 edge tab,
+            hidden while its companion is open (Begin/Open Briefing is separate). */}
+        {!taskChecklistOpen && (
+          <ChecklistTab onOpen={() => setTaskChecklistOpen(true)} label="Task Level Checklist" />
+        )}
         {isDesktop ? (
           <>
             <FloatingPanel
@@ -1389,6 +1408,15 @@ export function OperationsBoard() {
             >
               <InventorySummary items={inventory} roster={roster} />
             </FloatingPanel>
+            <FloatingPanel
+              open={taskChecklistOpen}
+              onClose={() => setTaskChecklistOpen(false)}
+              title="Task Level Checklist"
+              cascadeIndex={2}
+              boundsSelector=".fs-shell-main"
+            >
+              <TaskLevelChecklist />
+            </FloatingPanel>
           </>
         ) : (
           <>
@@ -1405,6 +1433,13 @@ export function OperationsBoard() {
               title="Available Inventory"
             >
               <InventorySummary items={inventory} roster={roster} />
+            </SideDrawer>
+            <SideDrawer
+              open={taskChecklistOpen}
+              onClose={() => setTaskChecklistOpen(false)}
+              title="Task Level Checklist"
+            >
+              <TaskLevelChecklist />
             </SideDrawer>
           </>
         )}
@@ -1443,6 +1478,16 @@ export function OperationsBoard() {
       />
 
       <DeleteShorePointModal shorePoint={deleteSp} onClose={() => setDeleteSp(null)} />
+
+      <OrmBriefingModal
+        open={ormOpen}
+        briefing={briefing.active}
+        onClose={() => setOrmOpen(false)}
+        onEnd={async () => {
+          if (briefing.active) await briefing.end(briefing.active.id);
+          setOrmOpen(false);
+        }}
+      />
 
       <AssignEquipmentSheet shorePoint={assignSp} onClose={() => setAssignSpId(null)} onDeployed={handleDeployed} />
 

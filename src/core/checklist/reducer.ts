@@ -15,11 +15,33 @@ export interface Attestation {
 export type ChecklistInstance = Record<string, Attestation>; // itemId -> attestation
 export type Checklists = Record<string, ChecklistInstance>; //  instanceKey -> instance
 
+/** One ORM/TCRM briefing session — the Begin/End bracket (#205). `endedAt` absent
+ *  ⟺ the session is still active. The briefing's step attestations live in
+ *  `checklists` under instanceId = the briefing id. */
+export interface Briefing {
+  id: string;
+  startedAt: number;
+  startedBy: string;
+  endedAt?: number;
+}
+export type Briefings = Record<string, Briefing>; // briefingId -> session
+
 export interface ChecklistState {
   checklists: Checklists;
+  briefings: Briefings;
 }
 
-export const EMPTY_CHECKLIST_STATE: ChecklistState = { checklists: {} };
+export const EMPTY_CHECKLIST_STATE: ChecklistState = { checklists: {}, briefings: {} };
+
+/** The most-recently-started briefing that has not been ended, or null. The ORM
+ *  entry point resumes this rather than spawning a duplicate session. */
+export function activeBriefing(state: ChecklistState): Briefing | null {
+  let active: Briefing | null = null;
+  for (const b of Object.values(state.briefings)) {
+    if (b.endedAt == null && (active == null || b.startedAt > active.startedAt)) active = b;
+  }
+  return active;
+}
 
 // instanceKey = checklistId + instanceId. checklistId is a fixed enum value (no
 // '::'), so the delimiter can never collide -- one checklist's op-instance stays
@@ -69,6 +91,23 @@ export function checklistReducer(state: ChecklistState, event: FieldShoreEvent):
       const next = { ...inst };
       delete next[event.itemId];
       return { ...state, checklists: { ...state.checklists, [key]: next } };
+    }
+
+    case 'BriefingStarted': {
+      if (state.briefings[event.briefingId]) return state; // idempotent by id
+      return {
+        ...state,
+        briefings: {
+          ...state.briefings,
+          [event.briefingId]: { id: event.briefingId, startedAt: event.at, startedBy: event.by },
+        },
+      };
+    }
+
+    case 'BriefingEnded': {
+      const b = state.briefings[event.briefingId];
+      if (!b || b.endedAt != null) return state; // missing / already ended
+      return { ...state, briefings: { ...state.briefings, [b.id]: { ...b, endedAt: event.at } } };
     }
 
     default:

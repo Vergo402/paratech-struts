@@ -27,6 +27,7 @@ function stateWith(points: ShorePoint[]): OperationState {
     commandTransfer: null,
     hazards: {},
     checklists: {},
+    briefings: {},
   };
 }
 
