@@ -1,22 +1,23 @@
 import { useState } from 'react';
+import type { FieldShoreEvent, OrgPositionKind, TeamMember } from '@core/schema';
+import { classGroupsAddableUnder, libraryItemsAddableUnder, kindLabel, nextChildOrder } from '@core/org';
 import { newId } from '@core/id';
-import type { OrgPositionKind } from '@core/schema';
-import { libraryItemsAddableUnder, nextChildOrder } from '@core/org';
-import { Sheet, TextField, Button, Segmented } from '@ui/primitives';
-import { useOrg } from '@ui/hooks';
+import { Sheet, TextField, Button } from '@ui/primitives';
+import { useOrg, useOperation, useDeviceUid, useCommitMany, useCustomTitles } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
+import { ClassSelector } from './ClassSelector';
 
-const CUSTOM_KINDS: { value: OrgPositionKind; label: string }[] = [
-  { value: 'group', label: 'Group' },
-  { value: 'division', label: 'Division' },
-  { value: 'branch', label: 'Branch' },
-  { value: 'unit', label: 'Unit' },
-  { value: 'single-resource', label: 'Resource' },
-];
+const memberSummary = (members: TeamMember[]): string => members.map((m) => `${m.count} ${m.type}`).join(', ');
 
-/** Add a position beneath `parentId` — from the NIMS library (filtered to what may
- *  attach under this parent's kind, keeping the tree doctrine-sane) or a free-form
- *  custom position (the escape hatch). */
+/**
+ * Add a position beneath `parentId` — class-first (#323). The top is an ICS-class chip
+ * row (only classes legal under this parent); selecting a class lists that class's roles
+ * (built-in + the department's custom titles), each a tap-to-add. A quick "+ new title"
+ * creates a one-off that BOTH saves into the custom library AND places it. Strike Team /
+ * Task Force titles that carry a composition spawn their member slots as unassigned
+ * single-resource children in one batch. Leaf parents (nothing reports under them) show
+ * an empty state. Full title management lives in Settings.
+ */
 export function AddPositionSheet({
   open,
   onClose,
@@ -31,68 +32,154 @@ export function AddPositionSheet({
   parentTitle: string;
 }) {
   const positions = useOrg();
+  const op = useOperation();
   const emit = useOrgCommit();
-  const [customTitle, setCustomTitle] = useState('');
-  const [customKind, setCustomKind] = useState<OrgPositionKind>('group');
+  const commitMany = useCommitMany();
+  const getUid = useDeviceUid();
+  const { titles, add: addCustomTitle } = useCustomTitles();
 
-  const items = libraryItemsAddableUnder(parentKind);
-  const groups = [...new Set(items.map((i) => i.group))];
+  const groups = classGroupsAddableUnder(parentKind);
+  const [selKey, setSelKey] = useState(groups[0]?.key ?? '');
+  const [newTitle, setNewTitle] = useState('');
+  const [newKind, setNewKind] = useState<OrgPositionKind | null>(null);
 
-  const add = (title: string, kind: OrgPositionKind) => {
-    emit({
+  const group = groups.find((g) => g.key === selKey) ?? groups[0];
+  const multi = (group?.kinds.length ?? 0) > 1;
+  // Inline "+ new title" kind: single-kind group → that kind; multi (Resources) → the
+  // chosen sub-kind, defaulting to single-resource (the last, most common one).
+  const newKindResolved: OrgPositionKind | null = group
+    ? multi
+      ? newKind ?? group.kinds[group.kinds.length - 1]!
+      : group.kinds[0]!
+    : null;
+
+  const placeOne = (title: string, kind: OrgPositionKind) => {
+    void emit({
       type: 'PositionAdded',
-      position: {
-        id: newId(),
-        title,
-        kind,
-        parentId,
-        builtIn: false,
-        order: nextChildOrder(positions, parentId),
-        assignedResources: [],
-      },
+      position: { id: newId(), title, kind, parentId, builtIn: false, order: nextChildOrder(positions, parentId), assignedResources: [] },
     });
     onClose();
   };
 
-  const addCustom = () => {
-    const t = customTitle.trim();
-    if (!t) return;
-    add(t, customKind);
-    setCustomTitle('');
+  // A team template: leader + one unassigned single-resource child per member unit, all
+  // in one atomic batch (useCommitMany). The leader id is generated first so the children
+  // parent to it.
+  const placeTeam = async (title: string, kind: OrgPositionKind, members: TeamMember[]) => {
+    if (!op) return;
+    const by = await getUid();
+    const leaderId = newId();
+    const stamp = (over: Record<string, unknown>): FieldShoreEvent =>
+      ({ id: newId(), opId: op.id, at: Date.now(), by, ...over }) as FieldShoreEvent;
+    const events: FieldShoreEvent[] = [
+      stamp({
+        type: 'PositionAdded',
+        position: { id: leaderId, title, kind, parentId, builtIn: false, order: nextChildOrder(positions, parentId), assignedResources: [] },
+      }),
+    ];
+    let childOrder = 0;
+    for (const m of members) {
+      for (let i = 0; i < m.count; i++) {
+        events.push(
+          stamp({
+            type: 'PositionAdded',
+            position: { id: newId(), title: m.type, kind: 'single-resource', parentId: leaderId, builtIn: false, order: childOrder++, assignedResources: [] },
+          }),
+        );
+      }
+    }
+    await commitMany(events);
+    onClose();
   };
+
+  const place = (title: string, kind: OrgPositionKind, members?: TeamMember[]) => {
+    if ((kind === 'strike-team' || kind === 'task-force') && members && members.length) void placeTeam(title, kind, members);
+    else placeOne(title, kind);
+  };
+
+  const addNew = async () => {
+    const t = newTitle.trim();
+    if (!t || !newKindResolved) return;
+    const created = await addCustomTitle(t, newKindResolved); // saves into the library (no composition inline)
+    setNewTitle('');
+    place(created.title, created.kind, created.members);
+  };
+
+  const builtIns = group ? libraryItemsAddableUnder(parentKind).filter((i) => group.kinds.includes(i.kind)) : [];
+  const customs = group ? titles.filter((t) => group.kinds.includes(t.kind)) : [];
 
   return (
     <Sheet open={open} onClose={onClose} title={`Add under ${parentTitle}`}>
-      {groups.map((g) => (
-        <div key={g}>
-          <div className="fs-cmd-eyebrow" style={{ margin: 'var(--space-3) 0 var(--space-2)' }}>
-            {g}
-          </div>
-          <ul className="fs-assign-list">
-            {items
-              .filter((i) => i.group === g)
-              .map((i) => (
-                <li key={i.key}>
-                  <button type="button" className="fs-assign-row" onClick={() => add(i.title, i.kind)}>
-                    <span className="fs-assign-name">{i.title}</span>
-                    <span className="fs-assign-meta">add ›</span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </div>
-      ))}
+      {groups.length === 0 || !group ? (
+        <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
+          Nothing reports under a {kindLabel(parentKind)}.
+        </p>
+      ) : (
+        <>
+          <ClassSelector
+            groups={groups}
+            value={group.key}
+            onChange={(k) => {
+              setSelKey(k);
+              setNewKind(null);
+            }}
+          />
 
-      <div className="fs-cmd-eyebrow" style={{ margin: 'var(--space-4) 0 var(--space-2)' }}>
-        Custom position
-      </div>
-      <Segmented options={CUSTOM_KINDS} value={customKind} onChange={setCustomKind} aria-label="Custom position kind" />
-      <div className="fs-assign-individual" style={{ marginTop: 'var(--space-2)' }}>
-        <TextField label="Title" value={customTitle} onChange={setCustomTitle} placeholder="e.g. Tunneling Group Supervisor" size="standard" />
-        <Button variant="secondary" size="standard" disabled={!customTitle.trim()} onPress={addCustom}>
-          Add
-        </Button>
-      </div>
+          <ul className="fs-assign-list" style={{ marginTop: 'var(--space-3)' }}>
+            {builtIns.map((i) => (
+              <li key={i.key}>
+                <button type="button" className="fs-assign-row" onClick={() => place(i.title, i.kind)}>
+                  <span className="fs-assign-name-wrap">
+                    <span className="fs-assign-name">{i.title}</span>
+                    {multi && <span className="fs-assign-tag">{kindLabel(i.kind)}</span>}
+                  </span>
+                  <span className="fs-assign-meta">add ›</span>
+                </button>
+              </li>
+            ))}
+            {customs.map((c) => (
+              <li key={c.id}>
+                <button type="button" className="fs-assign-row" onClick={() => place(c.title, c.kind, c.members)}>
+                  <span className="fs-assign-name-wrap">
+                    <span className="fs-assign-name">{c.title}</span>
+                    {multi && <span className="fs-assign-tag">{kindLabel(c.kind)}</span>}
+                    <span className="fs-assign-tag">custom</span>
+                  </span>
+                  <span className="fs-assign-meta">{c.members && c.members.length ? `${memberSummary(c.members)} · add ›` : 'add ›'}</span>
+                </button>
+              </li>
+            ))}
+            {builtIns.length === 0 && customs.length === 0 && (
+              <li>
+                <p className="fs-node-empty">No roles in this class yet — add one below.</p>
+              </li>
+            )}
+          </ul>
+
+          <div className="fs-node-section">New title{newKindResolved ? ` · ${kindLabel(newKindResolved)}` : ''}</div>
+          {multi && (
+            <div className="fs-newkind-chips" role="radiogroup" aria-label="New title kind">
+              {group.kinds.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={k === newKindResolved}
+                  className={`fs-newkind-chip${k === newKindResolved ? ' is-active' : ''}`}
+                  onClick={() => setNewKind(k)}
+                >
+                  {kindLabel(k)}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="fs-assign-individual">
+            <TextField label="Title" value={newTitle} onChange={setNewTitle} placeholder="e.g. Tunneling Group Supervisor" size="standard" />
+            <Button variant="secondary" size="standard" disabled={!newTitle.trim()} onPress={addNew}>
+              Add
+            </Button>
+          </div>
+        </>
+      )}
     </Sheet>
   );
 }

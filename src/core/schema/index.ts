@@ -8,5 +8,6 @@ export * from './org';
 export * from './hazard';
 export * from './inventory';
 export * from './apparatus';
+export * from './customTitle';
 export * from './event';
 export * from './department';

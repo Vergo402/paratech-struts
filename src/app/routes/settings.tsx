@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Badge, Button, Modal, Toggle } from '@ui/primitives';
-import { useSession, useDepartment, useOnboarding } from '@ui/hooks';
+import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
+import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
+import { kindLabel } from '@core/org';
 import { useTheme, type ThemePreference } from '../theme';
 
 // The role-guided tour split (ADR — ICS position). Two buckets for the slice —
@@ -36,8 +38,10 @@ export function SettingsScreen() {
   const { identity, signOut } = useSession();
   const { department, role, inviteCode } = useDepartment();
   const { roleFocus, replayTour, startLesson, setRoleFocus } = useOnboarding();
+  const { titles: customTitles, add: addCustomTitle, remove: removeCustomTitle } = useCustomTitles();
   const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
+  const [addTitleOpen, setAddTitleOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [nativeControls, setNativeControls] = useState(
     () => localStorage.getItem(NATIVE_CONTROLS_KEY) === 'true',
@@ -164,9 +168,48 @@ export function SettingsScreen() {
         </Button>
       </section>
 
+      {/* Custom ICS titles (#323). Shown to all for now — device-local config like the
+          apparatus roster. TODO(ADR-017): gate add/remove behind admin once auth lands. */}
+      <section className="flex flex-col gap-3">
+        <h2 style={{ font: 'var(--type-headline-2)' }}>Custom ICS titles</h2>
+        <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
+          Roles your department adds to the built-in ICS catalog. Placement follows the role&rsquo;s class. Strike
+          Teams and Task Forces carry a member composition that auto-fills when placed.
+        </p>
+        {customTitles.length === 0 ? (
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>None yet.</p>
+        ) : (
+          <ul className="flex flex-col" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            {customTitles.map((t) => (
+              <li
+                key={t.id}
+                className="flex items-center justify-between gap-3"
+                style={{ padding: 'var(--space-2) 0', borderBottom: 'var(--stroke-width) solid var(--surface-stroke)' }}
+              >
+                <span className="flex flex-col">
+                  <span style={{ font: 'var(--type-body-medium)' }}>{t.title}</span>
+                  <span className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
+                    {kindLabel(t.kind)}
+                    {t.members && t.members.length ? ` · ${t.members.map((m) => `${m.count} ${m.type}`).join(', ')}` : ''}
+                  </span>
+                </span>
+                <Button variant="tertiary" size="standard" destructive onPress={() => void removeCustomTitle(t.id)}>
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <Button variant="secondary" onPress={() => setAddTitleOpen(true)}>
+          Add custom title
+        </Button>
+      </section>
+
       <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
         FieldShore v4 — vertical slice build
       </p>
+
+      <AddCustomTitleModal open={addTitleOpen} onClose={() => setAddTitleOpen(false)} onAdd={addCustomTitle} />
 
       <Modal
         open={confirmOut}

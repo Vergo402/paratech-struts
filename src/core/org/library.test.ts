@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { POSITION_LIBRARY, libraryItemsAddableUnder, libraryItem } from './library';
+import {
+  POSITION_LIBRARY,
+  libraryItemsAddableUnder,
+  libraryItem,
+  addableUnderForKind,
+  classGroupsAddableUnder,
+} from './library';
 
 describe('position library', () => {
   it('has unique keys', () => {
@@ -44,5 +50,44 @@ describe('position library', () => {
     }
     expect(libraryItem('rescue-group')!.kind).toBe('group');
     expect(libraryItem('nope')).toBeUndefined();
+  });
+
+  it('addableUnderForKind derives from a real item AND is identical across a kind', () => {
+    // The whole custom-title placement rests on this invariant.
+    expect(addableUnderForKind('group')).toEqual(libraryItem('rescue-group')!.addableUnder);
+    const kinds = [...new Set(POSITION_LIBRARY.map((p) => p.kind))];
+    for (const kind of kinds) {
+      const derived = addableUnderForKind(kind);
+      for (const item of POSITION_LIBRARY.filter((p) => p.kind === kind)) {
+        expect(item.addableUnder).toEqual(derived);
+      }
+    }
+  });
+
+  it('classGroupsAddableUnder: Resources tier under a Group, never Unit', () => {
+    const keys = classGroupsAddableUnder('group').map((g) => g.key);
+    expect(keys).toContain('resources'); // strike team / task force / single resource
+    expect(keys).toContain('cutting'); // a Cutting Station is addable under a Group
+    expect(keys).not.toContain('unit'); // a Unit is NOT a resource (ICS 300)
+    expect(keys).not.toContain('group'); // no Group under a Group
+    // Resources = exactly the three resource kinds, Unit kept out.
+    const resources = classGroupsAddableUnder('group').find((g) => g.key === 'resources')!;
+    expect(resources.kinds).toEqual(['strike-team', 'task-force', 'single-resource']);
+  });
+
+  it('classGroupsAddableUnder: under the IC = command staff, command, section only', () => {
+    const keys = classGroupsAddableUnder('command').map((g) => g.key);
+    expect(keys).toEqual(['command-staff', 'command', 'section']);
+  });
+
+  it('classGroupsAddableUnder: a Unit chip is offered under a Section', () => {
+    const keys = classGroupsAddableUnder('section').map((g) => g.key);
+    expect(keys).toContain('unit');
+    expect(keys).toContain('resources');
+    expect(new Set(keys).size).toBe(keys.length); // deduped
+  });
+
+  it('classGroupsAddableUnder: a leaf (single-resource) admits nothing', () => {
+    expect(classGroupsAddableUnder('single-resource')).toEqual([]);
   });
 });

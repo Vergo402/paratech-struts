@@ -19,6 +19,7 @@ vi.mock('@ui/hooks', () => ({
     startLesson: vi.fn(),
     setRoleFocus: vi.fn(),
   }),
+  useCustomTitles: () => ({ titles: [], add: vi.fn(), remove: vi.fn() }),
 }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),

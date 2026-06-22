@@ -26,6 +26,13 @@ export {
   type ApparatusState,
 } from './apparatusStore';
 export {
+  customTitlesStore,
+  createCustomTitlesStore,
+  CUSTOM_TITLES_KEY,
+  type CustomTitlesStoreApi,
+  type CustomTitlesState,
+} from './customTitlesStore';
+export {
   sessionStore,
   createSessionStore,
   SESSION_KEY,

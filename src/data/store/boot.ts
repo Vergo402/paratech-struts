@@ -3,6 +3,7 @@ import { getDeviceUid } from './auth';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { inventoryStore } from './inventoryStore';
 import { apparatusStore } from './apparatusStore';
+import { customTitlesStore } from './customTitlesStore';
 import { operationStore } from './operationStore';
 import { sessionStore, type Identity } from './session';
 import { onboardingStore } from './onboardingStore';
@@ -30,6 +31,7 @@ export async function bootData(): Promise<BootResult> {
   await seedApparatusRoster(db);
   await inventoryStore.boot();
   await apparatusStore.boot();
+  await customTitlesStore.boot();
   await operationStore.boot();
   await sessionStore.boot(uid); // after getDeviceUid — reuses the minted uid
   await onboardingStore.boot();

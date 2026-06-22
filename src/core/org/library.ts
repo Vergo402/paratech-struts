@@ -91,3 +91,40 @@ const KIND_LABEL: Record<OrgPositionKind, string> = {
 export function kindLabel(kind: OrgPositionKind): string {
   return KIND_LABEL[kind];
 }
+
+// Every library item of a given kind shares the same addableUnder (verified by
+// library.test.ts), so a CUSTOM title's placement is fully derivable from its class —
+// the first item of that kind is authoritative.
+export function addableUnderForKind(kind: OrgPositionKind): OrgPositionKind[] {
+  const item = POSITION_LIBRARY.find((it) => it.kind === kind);
+  return item ? [...item.addableUnder] : [];
+}
+
+// The class-chip taxonomy for the "Add under…" sheet (#323), grounded in FEMA ICS 300
+// (org chart + element definitions). One kind per chip EXCEPT "Resources" = the
+// Operations resources tier (strike team / task force / single resource). A Unit is its
+// OWN chip — per ICS 300 a Unit is a Planning/Logistics/Finance element, NOT a tactical
+// resource.
+export interface PositionClassGroup {
+  key: string;
+  label: string;
+  kinds: OrgPositionKind[];
+}
+
+export const POSITION_CLASS_GROUPS: readonly PositionClassGroup[] = [
+  { key: 'command-staff', label: 'Command Staff', kinds: ['command-staff'] },
+  { key: 'command', label: 'Command', kinds: ['command'] },
+  { key: 'section', label: 'Section', kinds: ['section'] },
+  { key: 'branch', label: 'Branch', kinds: ['branch'] },
+  { key: 'division', label: 'Division', kinds: ['division'] },
+  { key: 'group', label: 'Group', kinds: ['group'] },
+  { key: 'unit', label: 'Unit', kinds: ['unit'] },
+  { key: 'staging', label: 'Staging', kinds: ['staging'] },
+  { key: 'cutting', label: 'Cutting Station', kinds: ['workstation'] },
+  { key: 'resources', label: 'Resources', kinds: ['strike-team', 'task-force', 'single-resource'] },
+];
+
+/** The class groups with ≥1 kind legal under `parentKind` — drives the chips. */
+export function classGroupsAddableUnder(parentKind: OrgPositionKind): PositionClassGroup[] {
+  return POSITION_CLASS_GROUPS.filter((g) => g.kinds.some((k) => addableUnderForKind(k).includes(parentKind)));
+}
