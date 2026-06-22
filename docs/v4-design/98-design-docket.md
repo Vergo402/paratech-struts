@@ -29,6 +29,7 @@
 | Command board: "Add apparatus" and "Add individual" button placement needs design pass | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
 | ICS org chart: command staff clips above the viewport when >1 card added — needs scroll/layout fix | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
 | ICS org chart: connector lines broken/open between nodes + inconsistent weight — must be unbroken and uniform | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
+| ICS org chart: remove "Top of command" subtitle from IC node card face | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
 
 ## Doctrine deviation watch
 
