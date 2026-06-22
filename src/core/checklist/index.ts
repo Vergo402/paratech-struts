@@ -5,3 +5,4 @@
 export * from './reducer';
 export * from './progress';
 export * from './baseline';
+export * from './edit';

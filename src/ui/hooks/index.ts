@@ -23,3 +23,4 @@ export { useHazards } from './useHazards';
 export { useRoleHistory, type RoleHistory } from './useRoleHistory';
 export { useChecklists, type ChecklistApi } from './useChecklists';
 export { useBriefing, type BriefingApi } from './useBriefing';
+export { useChecklistTemplate, useChecklistTemplates, type ChecklistTemplatesApi } from './useChecklistTemplates';

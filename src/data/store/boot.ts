@@ -4,6 +4,7 @@ import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { inventoryStore } from './inventoryStore';
 import { apparatusStore } from './apparatusStore';
 import { customTitlesStore } from './customTitlesStore';
+import { checklistTemplateStore } from './checklistTemplateStore';
 import { operationStore } from './operationStore';
 import { sessionStore, type Identity } from './session';
 import { onboardingStore } from './onboardingStore';
@@ -32,6 +33,7 @@ export async function bootData(): Promise<BootResult> {
   await inventoryStore.boot();
   await apparatusStore.boot();
   await customTitlesStore.boot();
+  await checklistTemplateStore.boot();
   await operationStore.boot();
   await sessionStore.boot(uid); // after getDeviceUid — reuses the minted uid
   await onboardingStore.boot();

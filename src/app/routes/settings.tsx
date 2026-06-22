@@ -5,6 +5,7 @@ import { Badge, Button, Modal, Toggle } from '@ui/primitives';
 import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
+import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
 import { kindLabel } from '@core/org';
 import { useTheme, type ThemePreference } from '../theme';
 
@@ -204,6 +205,8 @@ export function SettingsScreen() {
           Add custom title
         </Button>
       </section>
+
+      {department && <ChecklistEditor />}
 
       <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
         FieldShore v4 — vertical slice build

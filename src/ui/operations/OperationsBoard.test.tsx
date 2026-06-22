@@ -25,6 +25,7 @@ vi.mock('@ui/hooks', () => ({
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useDeviceUidValue: () => 'device-test',
   useChecklists: () => ({ attestations: {}, check: vi.fn(), uncheck: vi.fn() }),
+  useChecklistTemplate: () => ({ id: 'orm-tcrm', title: 'T', source: 'fieldshore-baseline', autoCollapseCompleted: false, nodes: [] }),
   useBriefing: () => ({ active: null, begin: vi.fn(), end: vi.fn() }),
   usePastOperations: () => ({ data: [] }),
   useArchivedOperation: () => ({ data: undefined }),
