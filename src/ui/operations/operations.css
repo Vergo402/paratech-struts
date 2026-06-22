@@ -2113,24 +2113,9 @@ button.fs-spc-head {
     flex: 1;
     min-width: 0;
   }
-  /* The board's lanes already shrink gracefully (minmax(0,1fr)) when the column
-     takes ~360–420px. ponytail: max-height is a header+nav approximation, not a
-     measured value — the body scrolls inside, so an off-by-a-little just leaves a
-     small gap; upgrade to a measured --shell-main-h var if it ever matters. */
-  .fs-drawer--dock {
-    flex: none;
-    width: clamp(360px, 32%, 420px);
-    position: sticky;
-    top: 0;
-    align-self: stretch;
-    max-height: calc(100dvh - 8rem);
-    /* A docked companion sits BESIDE the canvas in normal flow — it does not
-       overlay content, so it reads at column elevation, not the inward overlay
-       cast --shadow-drawer reserves for true overlays (side-drawer.md §Anatomy;
-       spacing-grid.md "surface color carries hierarchy, not shadow"). The base
-       .fs-drawer hairline stroke stays as the column boundary. */
-    box-shadow: none;
-  }
+  /* .fs-drawer--dock geometry now lives with the primitive (primitives.css) so any
+     screen with a flex-row shell (the ops board, the Command deck) can host the
+     docked companion. The board's lanes shrink gracefully (minmax(0,1fr)) beside it. */
 }
 
 /* ==========================================================================

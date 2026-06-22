@@ -21,3 +21,4 @@ export { useMyRole, useMyRoles } from './useMyRoles';
 export { useCommandTransfer } from './useCommandTransfer';
 export { useHazards } from './useHazards';
 export { useRoleHistory, type RoleHistory } from './useRoleHistory';
+export { useChecklists, type ChecklistApi } from './useChecklists';

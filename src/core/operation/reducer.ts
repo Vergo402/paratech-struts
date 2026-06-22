@@ -2,6 +2,7 @@ import type { Operation, ShorePoint, ShorePointStatus, FieldShoreEvent, OrgPosit
 import { shorePointReducer, canTransition, applyCuttingFields } from '../shorepoint';
 import { orgReducer, seedOrgState, type PendingTransfer } from '../org';
 import { hazardReducer } from '../hazard';
+import { checklistReducer, type Checklists } from '../checklist';
 
 // The projected current state of one operation: the operation record + its shore
 // points in insertion order, plus the ICS org chart (#323) — the keyed position
@@ -13,6 +14,7 @@ export interface OperationState {
   myRoles: Record<string, string | null>; //  uid → positionId (device self-declaration)
   commandTransfer: PendingTransfer | null; //  pending command handoff (ADR-021), or null
   hazards: Hazards; //                         ICS-208 hazard register (#296), keyed by id
+  checklists: Checklists; //                   doctrine-attestation state, keyed by checklistId::instanceId (#203/#204/#205)
 }
 
 export const EMPTY_OPERATION_STATE: OperationState = {
@@ -22,6 +24,7 @@ export const EMPTY_OPERATION_STATE: OperationState = {
   myRoles: {},
   commandTransfer: null,
   hazards: {},
+  checklists: {},
 };
 
 // The pre-runner "group zone": process ↔ strutset ↔ cutting. A grouped transition
@@ -193,6 +196,13 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'HazardReopened': {
       const h = hazardReducer({ hazards: state.hazards }, event);
       return { ...state, hazards: h.hazards };
+    }
+
+    // Checklist attestation (#203/#204/#205) — delegated to the pure checklistReducer.
+    case 'ChecklistItemChecked':
+    case 'ChecklistItemUnchecked': {
+      const c = checklistReducer({ checklists: state.checklists }, event);
+      return { ...state, checklists: c.checklists };
     }
 
     default:

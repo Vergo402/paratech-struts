@@ -1154,3 +1154,85 @@
     gap: var(--space-4);
   }
 }
+
+/* ===== IC Command Checklist (#203) — side-drawer companion + ICS-201 brief ===
+   The .fs-cmd-shell flex row hosts the docked checklist column beside the deck/
+   rail (>=768px); the dock geometry itself is .fs-drawer--dock (primitives.css).
+   Below 768px the SideDrawer is a modal over a scrim, so the shell is a plain
+   block and the edge tab summons it. */
+@media (min-width: 768px) {
+  .fs-cmd-shell {
+    display: flex;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+  .fs-cmd-shell > .fs-cmd,
+  .fs-cmd-shell > .fs-cmd-deck {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* The persistent edge tab (ADR-019) — a thumb-reachable checkmark-box anchored to
+   the right edge. Hidden while the drawer is open (Close + Esc dismiss it). */
+.fs-cmd-checklist-tab {
+  position: fixed;
+  top: 45%;
+  right: 0;
+  z-index: 200;
+  width: 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-elevated);
+  color: var(--accent);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-right: none;
+  border-radius: var(--radius-card) 0 0 var(--radius-card);
+  cursor: pointer;
+  box-shadow: var(--shadow-drawer);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-cmd-checklist-tab:hover { background: var(--surface-card-hover); }
+.fs-cmd-checklist-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.fs-cmd-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ICS-201 briefing card — six live datums, read-only, rides the checklist drawer */
+.fs-201 {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+.fs-201-head { margin-bottom: var(--space-2); }
+.fs-201-eyebrow {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+.fs-201-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2) var(--space-3);
+}
+.fs-201-datum {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.fs-201-label {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-201-value {
+  font: var(--type-body);
+  color: var(--text-primary);
+}

@@ -6,6 +6,7 @@ export * from './operation';
 export * from './shorepoint';
 export * from './org';
 export * from './hazard';
+export * from './checklist';
 export * from './inventory';
 export * from './apparatus';
 export * from './customTitle';

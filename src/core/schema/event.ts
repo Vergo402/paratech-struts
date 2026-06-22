@@ -296,6 +296,31 @@ export const HazardReopened = z.object({
   hazardId: z.string(),
 });
 
+// ── Checklist attestation (#203/#204/#205, nested-checklist.md) — a leaf check is
+// an op-scoped, append-only attestation. `instanceId` scopes it: the op for the
+// IC Command Checklist (one per incident), the Group/task for the Task Level
+// Checklist (per-Group, M13), the briefing session for ORM/TCRM. `role` is the
+// attester's spelled-out ICS title at check time (`by` is the device uid). Un-check
+// is its OWN event (never an erasure) — reversibility is the re-tap (ADR-010,
+// Principle 6). Never a gate: a checked step records, it does not block (Principle 10).
+export const ChecklistItemChecked = z.object({
+  type: z.literal('ChecklistItemChecked'),
+  ...base,
+  checklistId: z.string(),
+  instanceId: z.string(),
+  itemId: z.string(),
+  role: z.string(),
+});
+
+export const ChecklistItemUnchecked = z.object({
+  type: z.literal('ChecklistItemUnchecked'),
+  ...base,
+  checklistId: z.string(),
+  instanceId: z.string(),
+  itemId: z.string(),
+  role: z.string(),
+});
+
 export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationCreated,
   OperationEdited,
@@ -328,5 +353,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   HazardLogged,
   HazardMitigated,
   HazardReopened,
+  ChecklistItemChecked,
+  ChecklistItemUnchecked,
 ]);
 export type FieldShoreEvent = z.infer<typeof FieldShoreEvent>;

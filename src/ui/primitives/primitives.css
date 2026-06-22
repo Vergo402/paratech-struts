@@ -633,6 +633,24 @@ p.fs-gate--disclaimer {
 .fs-drawer--phone[data-state='open'] { animation: fs-drawer-in var(--motion-transition) var(--ease-standard); }
 .fs-drawer--phone[data-state='closed'] { animation: fs-drawer-out var(--motion-exit) var(--ease-exit); }
 
+/* Desktop (>=768px) — the NON-MODAL docked companion column. Sits BESIDE the
+   canvas in normal flow (its parent is a flex row: .fs-ops-shell / .fs-cmd-shell),
+   so the board stays live. Reads at column elevation, not the inward overlay cast
+   --shadow-drawer reserves for true overlays (side-drawer.md); the base .fs-drawer
+   hairline stroke is the column boundary. Relocated from operations.css so any
+   flex-row shell can host it. */
+@media (min-width: 768px) {
+  .fs-drawer--dock {
+    flex: none;
+    width: clamp(360px, 32%, 420px);
+    position: sticky;
+    top: 0;
+    align-self: stretch;
+    max-height: calc(100dvh - 8rem);
+    box-shadow: none;
+  }
+}
+
 .fs-drawer-head {
   flex: none;
   display: flex;
@@ -877,4 +895,124 @@ p.fs-gate--disclaimer {
   padding: 0;
   font: var(--type-headline-2);
   font-weight: 700;
+}
+
+/* ===== NestedChecklist (nested-checklist.md, #196) =========================
+   The doctrine-attestation tree. 56pt rows, 16pt indent (inline via --space-4),
+   --accent fill, --motion-micro fill/chevron (auto-0 under reduced motion). Mints
+   no token. The whole row is the target; only leaves are checkable. */
+.fs-ck {
+  display: flex;
+  flex-direction: column;
+}
+
+/* leaf + section header share the 56pt row, the reset, and the press feedback */
+.fs-ck-leaf,
+.fs-ck-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-card);
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background var(--motion-micro) var(--ease-micro);
+}
+.fs-ck-leaf:hover,
+.fs-ck-section-head:hover {
+  background: var(--surface-card-hover);
+}
+.fs-ck-leaf.is-readonly {
+  cursor: default;
+}
+.fs-ck-leaf:focus-visible,
+.fs-ck-section-head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.fs-ck-leaf-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fs-ck-label {
+  font: var(--type-body);
+}
+.fs-ck-section-label {
+  flex: 1;
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+}
+/* attribution — role spelled out + mono time (the safety thread) */
+.fs-ck-attr {
+  font: var(--type-caption);
+  font-family: var(--type-mono);
+  color: var(--text-secondary);
+}
+/* derived count — tabular so it climbs in place without reflow */
+.fs-ck-count {
+  font: var(--type-caption);
+  font-family: var(--type-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+/* the three checkbox states — shape first, color second */
+.fs-ck-box {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fs-ck-box.is-unchecked {
+  border: 1.5px solid var(--text-secondary);
+}
+.fs-ck-box.is-partial {
+  border: 1.5px solid var(--accent);
+}
+.fs-ck-box.is-checked {
+  background: var(--accent);
+  color: var(--on-accent);
+  transition: background var(--motion-micro) var(--ease-micro);
+}
+.fs-ck-bar {
+  width: 11px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+/* disclosure — only the chevron animates; the content snaps (no height anim).
+   The chevron + the leaf's empty spacer are the SAME fixed width so a row's
+   checkbox column is consistent: every nesting level then steps cleanly by the
+   16pt indent, and a leaf's box never lands left of its parent section's box. */
+.fs-ck-chev,
+.fs-ck-chev-spacer {
+  flex: 0 0 14px;
+}
+.fs-ck-chev {
+  color: var(--text-secondary);
+  transition: transform var(--motion-micro) var(--ease-micro);
+}
+.fs-ck-chev.is-open {
+  transform: rotate(90deg);
+}
+.fs-ck-children {
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='sunlight'] .fs-ck-box.is-unchecked,
+[data-theme='sunlight'] .fs-ck-box.is-partial {
+  border-width: 2px;
 }
