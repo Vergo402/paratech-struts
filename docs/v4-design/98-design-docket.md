@@ -27,6 +27,7 @@
 | Inside-officer "Mine" lens — sticky per-device slice (rig and/or division/area) narrowing the board to To-do/Done + "X left · Y done", slides kept (officer advances own) | ad hoc (Alex, 2026-06-20) | 2026-06-20 |
 | ICS org chart: center on IC position when chart opens | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
 | Command board: "Add apparatus" and "Add individual" button placement needs design pass | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
+| ICS org chart: command staff clips above the viewport when >1 card added — needs scroll/layout fix | [#248](https://github.com/Vergo402/paratech-struts/issues/248) (2026-06-21) | 2026-06-21 |
 
 ## Doctrine deviation watch
 
