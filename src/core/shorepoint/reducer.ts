@@ -170,9 +170,10 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
 /**
  * Cutting-queue bookkeeping that rides a status change (#222). Entering `cutting`
  * from `strutset` stamps the FIFO order; stepping back OUT of cutting (→ strutset)
- * clears the stamp AND the cut-done flag (the card leaves the queue). The
- * cutting↔runner edges preserve both — the saw already ran, a Send-to-Runner
- * step-back is "runner not ready," not "re-cut" (#223). Applied by BOTH the live
+ * clears the stamp, the cut-done flag, AND the saw claim (#354 — the card leaves
+ * the queue, so the saw is freed). The cutting↔runner edges preserve all three —
+ * the saw already ran, a Send-to-Runner step-back is "runner not ready," not
+ * "re-cut" (#223). Applied by BOTH the live
  * path (operation/reducer groupAdvance) and the single-member guard below, so the
  * two stay in lockstep (audit W9).
  */
@@ -187,6 +188,7 @@ export function applyCuttingFields(
     const next = { ...sp };
     delete next.cuttingStartedAt;
     delete next.cuttingDone;
+    delete next.sawId; // the saw releases the claim — the point left the queue (#354)
     return next;
   }
   return sp;

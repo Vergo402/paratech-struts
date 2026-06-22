@@ -39,6 +39,7 @@ const OP: Operation = {
   multiBuilding: false,
   inlineDeploy: false,
   divisions: [1],
+  saws: ['A'],
   status: 'active',
   createdAt: 1000,
 };

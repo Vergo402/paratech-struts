@@ -66,7 +66,7 @@ describe('InventoryScreen', () => {
 
   it('blocks CSV import while an operation is active', () => {
     mockApparatus.mockReturnValue({ roster: [rig('e1', 'Engine 1')], add: vi.fn(), remove: vi.fn() });
-    mockOperation.mockReturnValue({ id: 'op-1', name: 'Surfside', multiBuilding: false, inlineDeploy: false, divisions: [1], status: 'active', createdAt: 1 });
+    mockOperation.mockReturnValue({ id: 'op-1', name: 'Surfside', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1 });
     render(<InventoryScreen />);
     expect(screen.getByRole('button', { name: 'Import CSV' })).toBeDisabled();
   });

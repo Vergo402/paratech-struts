@@ -1803,6 +1803,15 @@ button.fs-spc-head {
   gap: var(--space-3);
   padding: var(--space-2) 0;
 }
+/* The header row: title + the saw-roster chips (#354). The chips wrap to the next
+   line on a narrow phone rather than crowding the title. */
+.fs-cutstation-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
 .fs-cutstation-title {
   font: var(--type-headline-1);
   color: var(--text-primary);
@@ -1813,10 +1822,45 @@ button.fs-spc-head {
   color: var(--text-secondary);
   margin: 0;
 }
-.fs-cutstation-queue {
+
+/* The saw roster (#354) — chips per saw + an "+ Add saw" control. On phone the
+   chips SELECT which saw the view acts as (aria-pressed); on tablet they're static
+   labels (each saw has its own hero). Hidden entirely until a 2nd saw exists OR an
+   add handler is wired. Glove-sized hit targets. */
+.fs-cutstation-saws {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-cutstation-saw-chip,
+.fs-cutstation-saw-add {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  font: var(--type-label);
+  font-weight: 600;
+  border: 1px solid var(--surface-stroke);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+}
+.fs-cutstation-saw-chip {
+  cursor: pointer;
+}
+.fs-cutstation-saw-chip.is-static {
+  cursor: default;
+}
+.fs-cutstation-saw-chip.is-selected {
+  border-color: var(--status-cutting-text);
+  background: var(--status-cutting-bg);
+  color: var(--status-cutting-text);
+}
+.fs-cutstation-saw-add {
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-style: dashed;
 }
 /* A stepped-back card lingers as a red-slash signal + its Dismiss control. */
 .fs-cutstation-removed {
@@ -1842,18 +1886,47 @@ button.fs-spc-head {
   margin: 0;
 }
 
-/* ---- Cutting Station — tablet / desktop two-column split (#354) ----------
-   Phone is the floor (Principle 2): the column above is the fallback. At the
-   tablet/command-post breakpoint (≥768px, useIsDesktop / ADR-032) the cutter's
-   real work surface is a propped tablet, so the screen splits — a large hero
-   "cut this now" card on the left (the queue head) and the rest of the queue as
-   a compact "up next" list on the right. The featured 2px border uses the
-   cutting hue (the screen's semantic color — there is no generic info token). */
+/* ---- Cutting Station — the shared hero + up-next layout (#354) ------------
+   ONE layout on BOTH surfaces now: a hero "cut this now" + a compact, read-only
+   "up next" list. PHONE stacks it to a single column (grid-template-columns:1fr);
+   TABLET/desktop (≥768px) lays the hero(es) and the up-next list side by side.
+   The featured 2px hero border uses the cutting hue (the screen's semantic color
+   — there is no generic info token). The cutter's real work surface is a propped
+   tablet, hence the two-column split there; the phone keeps the same hierarchy. */
 .fs-cutstation-split {
   display: grid;
-  grid-template-columns: 1.65fr 1fr;
+  grid-template-columns: 1fr; /* phone = one column (hero over up-next) */
   gap: var(--space-4);
   align-items: start;
+}
+@media (min-width: 768px) {
+  .fs-cutstation-split {
+    grid-template-columns: 1.65fr 1fr;
+  }
+}
+/* The hero side holds either one hero (1 saw) or a row of per-saw heroes (>1). */
+.fs-cutstation-heroside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* Multi-saw (#354): a column of per-saw heroes on phone, a row on the wide table. */
+.fs-cutstation-heroes {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+@media (min-width: 768px) {
+  .fs-cutstation-heroes {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+/* An idle saw's hero — free, but no unclaimed cut left to take. Muted, no slides. */
+.fs-cutstation-hero.is-idle {
+  border-style: dashed;
+  border-color: var(--surface-stroke);
+  color: var(--text-secondary);
+  gap: var(--space-2);
 }
 
 /* The hero "cut this now" card — the queue head, blown up for table distance.
@@ -1970,6 +2043,15 @@ button.fs-spc-head {
   display: block;
   font: var(--type-body);
   color: var(--text-secondary);
+}
+/* A cut another saw is actively cutting (#354): muted in this saw's up-next list
+   with an "on Saw B" marker, so the cutter sees it's handled and skips it. */
+.fs-cutstation-row.is-on-other-saw {
+  opacity: 0.6;
+}
+.fs-cutstation-row-onsaw {
+  font-weight: 600;
+  color: var(--status-cutting-text);
 }
 /* The sent-to-runner tail in the right column reuses .fs-cutstation-sent. */
 .fs-cutstation-split .fs-cutstation-sent {

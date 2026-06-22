@@ -20,6 +20,12 @@ export const Operation = z.object({
   inlineDeploy: z.boolean(),
   location: z.string().optional(),
   divisions: z.array(z.number().int()),
+  // The Cutting Station saw roster (#354) — the ids of the saws on this op's cut
+  // station ('A', 'B', …). Initialized to ['A'] by the reducer (one saw, the common
+  // case) and grown via SawAdded events — never written whole, like `divisions`, so
+  // concurrent adds converge and legacy ops (no SawAdded) project a single Saw A for
+  // free (no migration). Single-device for v4.0; cross-tablet live mirroring is #369.
+  saws: z.array(z.string()),
   status: OperationStatus,
   createdAt: z.number().int(), // epoch ms
 });

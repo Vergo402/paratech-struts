@@ -50,8 +50,12 @@ describe('CuttingStation', () => {
       />,
     );
     expect(screen.getByText('2 cuts in queue')).toBeInTheDocument();
-    expect(screen.getByText('A-1 · T-Shore')).toBeInTheDocument();
-    expect(screen.getByText('B-2 · T-Shore')).toBeInTheDocument();
+    // The hero+list shows the location subtitle, not the card title; assert the
+    // queue order via the data-sp-id the hero (queue head) + up-next rows carry.
+    const ids = Array.from(document.querySelectorAll('.fs-cutstation [data-sp-id]')).map((el) =>
+      el.getAttribute('data-sp-id'),
+    );
+    expect(ids).toEqual(['a', 'b']);
   });
 
   it('singular count copy when one cut is queued', () => {

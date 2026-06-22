@@ -18,7 +18,7 @@ vi.mock('@ui/hooks', () => ({
 
 const op: Operation = {
   id: 'op1', name: 'Cascade Fire', multiBuilding: false, inlineDeploy: false,
-  divisions: [1], status: 'ended', createdAt: 1,
+  divisions: [1], saws: ['A'], status: 'ended', createdAt: 1,
 };
 const sp = (id: string, over: Partial<ShorePoint> = {}): ShorePoint => ({
   id, opId: 'op1', division: '1', shoreType: 't-shore', measurementEighths: 320,
