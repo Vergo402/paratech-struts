@@ -6,4 +6,6 @@ export {
   type DepartmentServiceApi,
   type CreateDepartmentResult,
   type CreatedDepartment,
+  type JoinDepartmentResult,
+  type JoinedDepartment,
 } from './departmentService';

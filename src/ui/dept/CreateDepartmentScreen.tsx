@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Badge, Button, Sheet, TextField } from '@ui/primitives';
 import { useDepartment } from '@ui/hooks';
+import { QrImage } from './QrImage';
 
 /**
  * CreateDepartmentScreen — the pre-shell "stand up a department" route (workflow
@@ -98,6 +99,14 @@ export function CreateDepartmentScreen() {
           {busy ? 'Creating…' : 'Create department'}
         </Button>
 
+        <Button
+          variant="secondary"
+          fullWidth
+          onPress={() => navigate({ to: '/join-department' })}
+        >
+          Join an existing department instead
+        </Button>
+
         <Button variant="tertiary" fullWidth onPress={() => navigate({ to: HOME })}>
           Skip for now
         </Button>
@@ -111,8 +120,9 @@ export function CreateDepartmentScreen() {
             </p>
             <div className="flex flex-col gap-2">
               <span className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
-                Invite your crew with this code
+                Invite your crew — they scan this or type the code
               </span>
+              <QrImage value={created.inviteCode} />
               <div className="flex items-center gap-3">
                 <strong style={{ font: 'var(--type-headline-2)', letterSpacing: '0.1em' }}>
                   {created.inviteCode}

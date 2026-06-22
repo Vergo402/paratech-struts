@@ -50,6 +50,12 @@ export const Member = z.object({
   role: z.string().min(1), //        a roleId present under roles/ (the rules check existence)
   displayName: z.string().min(1).max(80),
   joinedAt: z.number().int().nonnegative(),
+  // Provenance of a JOIN (workflow #232): the invite code the member joined with.
+  // Absent on a founding Admin (they created the dept, not joined). The join
+  // self-write rule dereferences it (orgs/inviteCodes/{viaCode}) to prove the
+  // join used a real, active code for THIS dept — so a member can only add
+  // themselves with a valid code, never write into an arbitrary department.
+  viaCode: z.string().optional(),
 });
 export type Member = z.infer<typeof Member>;
 
@@ -68,6 +74,11 @@ export type Department = z.infer<typeof Department>;
 // (no 0/O, 1/l) is a client-minting concern, not a schema constraint.
 export const InviteCode = z.object({
   deptId: z.string().min(1),
+  // Carried on the code so a not-yet-member can resolve the department NAME from
+  // the code alone — the dept node itself is member-read-gated (the joiner isn't a
+  // member yet). Set by the founder when the code is published; the founder-only
+  // code-write rule keeps this from being spoofed.
+  deptName: z.string().min(1).max(100),
   createdBy: z.string().min(1),
   createdAt: z.number().int().nonnegative(),
   active: z.boolean(),

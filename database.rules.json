@@ -162,9 +162,13 @@
             "joinedAt": {
               ".validate": "newData.isNumber() && newData.val() >= 0"
             },
+            "viaCode": {
+              ".validate": "!newData.exists() || (newData.isString())"
+            },
             "$other": {
               ".validate": false
-            }
+            },
+            ".write": "auth != null && $uid === auth.uid && !data.exists() && newData.child('role').val() === 'default' && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true"
           }
         },
         "roles": {
@@ -210,6 +214,31 @@
               ".validate": false
             }
           }
+        }
+      },
+      "inviteCodes": {
+        "$code": {
+          ".validate": "newData.hasChildren(['deptId','deptName','createdBy','createdAt','active'])",
+          "deptId": {
+            ".validate": "newData.isString() && newData.val().length >= 1"
+          },
+          "deptName": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
+          },
+          "createdBy": {
+            ".validate": "newData.isString() && newData.val().length >= 1"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "active": {
+            ".validate": "newData.isBoolean()"
+          },
+          "$other": {
+            ".validate": false
+          },
+          ".read": "auth != null",
+          ".write": "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid && root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid"
         }
       }
     },

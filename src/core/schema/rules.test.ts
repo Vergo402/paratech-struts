@@ -45,6 +45,35 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(member.$other['.validate']).toBe(false);
   });
 
+  it('a member can self-join only as their own uid, Default role, with an active code for THIS dept', () => {
+    const w = committed.rules.orgs.$deptId.members.$uid['.write'];
+    expect(w).toContain('$uid === auth.uid'); // only your own row
+    expect(w).toContain('!data.exists()'); //    never overwrite an existing member
+    expect(w).toContain("newData.child('role').val() === 'default'"); // no self-promote to Admin
+    // viaCode must resolve to THIS dept and still be active (the anti-injection check)
+    expect(w).toContain(
+      "root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId",
+    );
+    expect(w).toContain(
+      "root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true",
+    );
+    // viaCode is an allowed (optional) member field — present, not in the required set
+    expect(committed.rules.orgs.$deptId.members.$uid.viaCode['.validate']).toContain('isString');
+  });
+
+  it('an invite code is create-only by the dept founder and readable by any signed-in holder', () => {
+    const code = committed.rules.orgs.inviteCodes.$code;
+    expect(code['.read']).toBe('auth != null'); // know-the-code is the authorization; no enumeration
+    expect(code['.write']).toContain('!data.exists()'); // create-only
+    expect(code['.write']).toContain("newData.child('createdBy').val() === auth.uid"); // self-stamped
+    // only for a dept the writer actually founded — no publishing codes into others' depts
+    expect(code['.write']).toContain(
+      "root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid",
+    );
+    expect(code['.validate']).toContain('deptName'); // carries the name a not-yet-member can't read
+    expect(committed.rules.orgs.inviteCodes.$other).toBeUndefined(); // no stray parent rule => no enumeration
+  });
+
   it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {
     expect(committed.rules.departments.$deptId.members.$uid['.validate']).toBe('newData.isBoolean()');
     expect(committed.rules.$other).toEqual({ '.read': false, '.write': false });

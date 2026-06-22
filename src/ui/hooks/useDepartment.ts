@@ -3,16 +3,18 @@ import { sessionStore } from '@data/store';
 import { departmentService, type DepartmentServiceApi } from '@data/dept';
 
 /**
- * The department seam for the UI (workflow 07): the live department projection
- * (id + name) and the member's role, plus the create action — all behind one
- * hook so screens never import @data (invariant 3). The projection is a live
- * subscription (re-renders when a department is founded or cleared on sign-out).
+ * The department seam for the UI (workflows 07 + #232): the live department
+ * projection (id + name) and the member's role, plus the create + join actions —
+ * all behind one hook so screens never import @data (invariant 3). The projection
+ * is a live subscription (re-renders when a department is founded, joined, or
+ * cleared on sign-out).
  */
 export interface DepartmentApi {
   department: { id: string; name: string } | null;
   role: string | null;
   inviteCode: string | null;
   createDepartment: DepartmentServiceApi['createDepartment'];
+  joinByCode: DepartmentServiceApi['joinByCode'];
 }
 
 export function useDepartment(): DepartmentApi {
@@ -25,5 +27,6 @@ export function useDepartment(): DepartmentApi {
     role,
     inviteCode,
     createDepartment: departmentService.createDepartment,
+    joinByCode: departmentService.joinByCode,
   };
 }

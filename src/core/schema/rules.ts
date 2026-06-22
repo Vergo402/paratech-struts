@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Department, Member, Role } from './department';
+import { Department, Member, Role, InviteCode, DEFAULT_ROLE_ID } from './department';
 
 // core/schema — generate the v4 portion of database.rules.json from the SAME Zod
 // schemas the client validates against (L-11, the permanent fix for v3's worst
@@ -87,6 +87,38 @@ function objectRules(schema: z.ZodObject<z.ZodRawShape>): RuleTree {
 const READ_MEMBER = "auth != null && data.child('members').child(auth.uid).exists()";
 const CREATE_ONLY = "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid";
 
+// JOIN (workflow #232) — a signed-in user adds ONLY their own member row to an
+// existing dept, and only:
+//   · for their own uid, never overwriting an existing member (no stomping),
+//   · as the DEFAULT role (the stable token, NOT a name — no self-promotion to
+//     Admin; ADR-017),
+//   · carrying a viaCode that resolves to THIS dept and is still active.
+// The viaCode dereference is what proves the join used a real, founder-published
+// code: without it a member could write into any department they could name.
+const JOIN_SELF_WRITE = [
+  'auth != null',
+  '$uid === auth.uid',
+  '!data.exists()',
+  `newData.child('role').val() === '${DEFAULT_ROLE_ID}'`,
+  "root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId",
+  "root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true",
+].join(' && ');
+
+// INVITE CODE (workflow #232) — the founder publishes one resolver entry per code
+// (orgs/inviteCodes/{code} → {deptId, deptName, ...}). Create-only, self-stamped,
+// and ONLY for a dept the writer actually founded (root createdBy === auth.uid) —
+// so no one can publish a code that injects members into someone else's dept.
+const INVITE_CODE_CREATE = [
+  'auth != null',
+  '!data.exists()',
+  'newData.child(\'createdBy\').val() === auth.uid',
+  "root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid",
+].join(' && ');
+// A specific code is readable by any signed-in user — knowing the code IS the
+// authorization (resolve code → dept). The inviteCodes PARENT has no read, so
+// codes can't be enumerated; you can only read one you already hold.
+const INVITE_CODE_READ = 'auth != null';
+
 /** The `orgs` value for database.rules.json. Pure — same output every run. */
 export function buildV4OrgsRules(): RuleTree {
   const deptFields = Department.omit({ id: true }).shape; // name/createdBy/createdAt (id is the key)
@@ -99,8 +131,18 @@ export function buildV4OrgsRules(): RuleTree {
   for (const [key, child] of Object.entries(deptFields)) {
     deptNode[key] = { '.validate': leafValidate(child as z.ZodTypeAny) };
   }
-  deptNode['members'] = { $uid: objectRules(Member) };
+  const memberNode = objectRules(Member);
+  memberNode['.write'] = JOIN_SELF_WRITE; // founder writes via the dept create-cascade; joiners via this
+  deptNode['members'] = { $uid: memberNode };
   deptNode['roles'] = { $roleId: objectRules(RoleNode) };
 
-  return { $deptId: deptNode };
+  // The invite-code resolver — a sibling of $deptId under /orgs (a named child
+  // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and
+  // $deptId to every other key). objectRules gives the InviteCode .validate +
+  // extra-field rejection; the read/write authz is layered on top.
+  const codeNode = objectRules(InviteCode);
+  codeNode['.read'] = INVITE_CODE_READ;
+  codeNode['.write'] = INVITE_CODE_CREATE;
+
+  return { $deptId: deptNode, inviteCodes: { $code: codeNode } };
 }

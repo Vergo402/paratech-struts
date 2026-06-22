@@ -6,6 +6,7 @@ import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/h
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
+import { QrImage } from '@ui/dept';
 import { kindLabel } from '@core/org';
 import { useTheme, type ThemePreference } from '../theme';
 
@@ -121,8 +122,9 @@ export function SettingsScreen() {
               {inviteCode && (
                 <div className="flex flex-col gap-2">
                   <span className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
-                    Invite your crew with this code
+                    Invite your crew — they scan this or type the code
                   </span>
+                  <QrImage value={inviteCode} />
                   <div className="flex items-center gap-3">
                     <strong style={{ font: 'var(--type-headline-2)', letterSpacing: '0.1em' }}>
                       {inviteCode}
@@ -141,6 +143,9 @@ export function SettingsScreen() {
               </p>
               <Button variant="primary" onPress={() => navigate({ to: '/create-department' })}>
                 Create new department
+              </Button>
+              <Button variant="secondary" onPress={() => navigate({ to: '/join-department' })}>
+                Join existing department
               </Button>
             </>
           )}

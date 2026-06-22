@@ -16,6 +16,7 @@ import { SettingsScreen } from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
 import { AuthRoute } from './routes/auth';
 import { CreateDepartmentRoute } from './routes/create-department';
+import { JoinDepartmentRoute } from './routes/join-department';
 import { HelpRoute } from './routes/help';
 import { EmptyState } from '@ui/primitives';
 import { OnboardingHost } from '@ui/onboarding';
@@ -85,6 +86,11 @@ const routeTree = rootRoute.addChildren([
     getParentRoute: () => rootRoute,
     path: '/create-department',
     component: CreateDepartmentRoute,
+  }),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/join-department',
+    component: JoinDepartmentRoute,
   }),
 ]);
 
