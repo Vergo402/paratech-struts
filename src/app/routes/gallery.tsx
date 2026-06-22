@@ -683,6 +683,22 @@ export function GalleryScreen() {
           onStepBack={() => setCommits((c) => c + 1)}
         />
       </Section>
+
+      <Section title="#354 — Cutting Station: multi-saw (2 saws, one shared queue, auto-claim)">
+        {/* Two saws on one shared queue. Tablet (≥768px): a hero per saw + the
+            shared unclaimed up-next. Phone: the selected saw's hero + the queue with
+            the other saw's cut marked "on Saw B"; the chips switch saws. */}
+        <CuttingStation
+          queue={CUT_QUEUE}
+          sent={CUT_SENT}
+          saws={['A', 'B']}
+          onMarkCutDone={() => setCommits((c) => c + 1)}
+          onClearCutDone={() => setCommits((c) => c + 1)}
+          onSendToRunner={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+          onAddSaw={() => setCommits((c) => c + 1)}
+        />
+      </Section>
     </div>
   );
 }
