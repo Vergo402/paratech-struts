@@ -69,6 +69,17 @@ The Command home shows, above the fold, **exactly these six**, seeded by v3's `r
 
 Nothing competes with these six above the fold; everything else is a tap away.
 
+### SitStat scope — All incident vs. By Division ([#353](https://github.com/Vergo402/paratech-struts/issues/353), built)
+
+The per-status board (datum 5) defaults to the **whole-incident** 7-status tally — unchanged. At Surfside scale the IC also needs to see *which Division is behind*, so a [`segmented`](../03-primitives/segmented.md) toggle above the board flips its scope:
+
+- **All incident** (default) — the existing whole-incident 7-status board, untouched.
+- **By Division** — a table, one **row per Division** (top-floor-first via `compareDivisionValues` / `divisionLabel`), columns = the seven statuses (abbreviated headers — Pend / Assign / Set / Cut / Run / Secured / Ret'd, with a one-line legend mapping each to its full `STATUS_LABELS` word) plus a **Total** column, and a bottom **"All divisions"** totals row equal to the whole-incident numbers.
+  - **Lagging-Division flag:** the Division with the most shore points still at **Pending Equipment** (`pending`) gets a danger tint + an alert-triangle icon. Single, fixed heuristic — most-awaiting-equipment, ties broken by board order; no configurable scoring.
+  - **Expand a Division row** to reveal its grouped shores (clustered by `groupId`; solo points are their own cluster) with per-group, per-status counts — a plain lazy expand/collapse.
+- **Surface adaptation:** **phone** (the floor) opens By Division as a [`sheet`](../03-primitives/sheet.md) (an interrupt over the board); **desktop/tablet** (`useIsDesktop`, ≥768px, [ADR-032](../11-decisions/ADR-032-surface-adaptive-pickers.md)) renders it **inline** in the command rail.
+- Soft-deleted points (`deletedAt != null`) are skipped in every tally, matching the board. Pure display of data already present — no new schema, no new data. The aggregation is a pure core function (`src/core/command/sitstat-rollup.ts`, `rollupByDivision`); the React view (`SitStatRollup`) stays thin.
+
 ## Command transfer (§2.5)
 
 v3 has **no transfer ceremony** — command moves implicitly when a device self-assigns the `ic` role, and the End-Op gate re-checks the live `myRole` each render. v4 adds an **explicit transfer ceremony**: a transfer affordance **on the persistent IC header** → a **full-screen takeover** (the ADR-016 Command row, not a stacked modal) where the outgoing IC initiates, carrying an **auto-assembled six-datum SitStat snapshot brief** (real content, no manual entry; doctrine-expanded ICS-201 fields v4.1). **It is a two-party handshake** ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)): the outgoing IC **retains command until the incoming IC accepts** — so the incident is **never** in a no-IC state and the End-Op gate is always satisfiable. The incoming IC sees a **pending-acceptance** state on the command surface (on next sync — **not a push**, Principle 10; the verbal "you have command / I have command" is on the radio); Cancel/Decline returns command to the outgoing IC. Both ends write **role-history** events (K-13: initiated-by → accepted-by, timestamped). Full flow in the Phase G command-transfer workflow.
