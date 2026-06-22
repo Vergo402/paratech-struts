@@ -11,6 +11,41 @@ Stress-tests FieldShore at working-incident scale: multiple apparatus, a Safety 
 
 ---
 
+## ⚠️ v4 RE-POINT — READ FIRST (overrides the v3 body below)
+
+This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.xlsx`). It now runs against the **v4 app** (`v4-redesign` branch: Vite/TS/React under `src/`, local-first Dexie/IndexedDB, Firebase **stubbed**). Where the body below disagrees, **this block wins.** Verified against source 2026-06-22.
+
+**Launch (replaces Phase 1 §2):** v4 dev server at **`http://localhost:5199`** via the preview MCP (`preview_start`) — NOT `npx serve -l 8095 .`. Blank page on first load = stale PWA service worker → hard-refresh (⌘⇧R). Baseline = **v4.0 early Phase I**, not v3.17.2.
+
+**Inventory import (replaces Phase 2):** import **`.claude/skills/shared/millbrook-inventory.csv`** (CSV, not the `.xlsx`; xlsx import is deferred). The CSV is validated against the v4 catalog on import — it uses v4 model/plate names (see the rewritten Inventory Baseline below). It is git-ignored (`*.csv`); `git add -f` to commit it. **Import is DISABLED while an operation is active** — the button shows "Finish the operation to import". So **import BEFORE creating the Hamden operation** (Phase 2 precedes Phase 3); if a scratch op from a prior sim is still active, end it first.
+
+**Status labels (7, renamed in v4).** The lifecycle ids are unchanged; the field-visible labels are not. Drive/observe by these:
+
+| lifecycle id | v4 label |
+|---|---|
+| pending | **Pending Equipment** |
+| process | **Equipment Assigned** |
+| strutset | **Strut Set** (was v3 "strut placed" / `strutplaced`) |
+| cutting | **Cutting Station** |
+| runner | **Runner** |
+| secured | **Wood Shore Secured** |
+| returned | **Strut Equipment Returned** |
+
+**T-Shore group mechanics (v4-new):** a "T-Shore group of 3" = create a **Vertical T-Shore with quantity 3** (the Add form's quantity = number of shores; each T-Shore is 1 strut → 3 grouped cards sharing a `groupId`). Pre-cutting transitions move the group lock-step; cutting→runner→secured move members individually. This is reducer-enforced — the marquee data test (D-1/D-2/D-3) PASSES.
+
+**Checks that are N/A in v4 — do NOT log these as findings (the feature is deliberately deferred):**
+- **D-6** (Firebase security-rule validation) — N/A: v4 writes to local Dexie event log, not Firebase.
+- **D-7** (real-time concurrent multi-user views) — N/A: cloud sync `flush()` is a no-op stub. Tracked by **#369**.
+- **N-1** (command-transfer recorded) and the **E+0:12 transfer** — N/A: transfer *core* exists but has **no UI**. Workaround: simulate manually — add a Division Alpha Supervisor under IC → assign Torres → clear Torres from IC → assign Whitfield to IC (tests reparent + reassign, skips the atomic handshake).
+- **U-9 attribution half** (Quick Find shows which rig has the strut) — N/A by design (catalog-only Quick Find). Keep the lookup half (does it return matching struts?).
+- **Safety hazard logging** (Safety persona, E+2:30) — N/A: the Hazard Log is a placeholder ("ICS-208 register builds next"); display-only. Safety communicates verbally. *(This is its own future ICS-208 workflow, not #369.)*
+
+**Still fully live in v4 (run these hard — this is the real signal):** operation lifecycle end-to-end · T-Shore group phase-split · multi-apparatus deploy bill-of-materials + return-to-source rig (#330) · org chart / Safety Officer / Division-Area fields / span-of-control · Quick Find lookup · rain/mobile UX.
+
+**Preview-MCP gotchas (moderators):** synthetic clicks & native-setter inputs don't flush React synchronously — read resulting state in a **separate** `eval` call (same-call reads are stale); `focus()`/`blur()` unreliable headless (dispatch a bubbling `focusout` to fire `onBlur`); TanStack `<Link>` can't be driven (use `location.assign`); Sheet scrim-close doesn't fire (reload to dismiss); buttons/`.click()` are reliable.
+
+---
+
 ## Scenario
 
 **Building:** 1-story unreinforced masonry (URM) strip mall, 4-unit commercial, 822 Dixwell Ave, Hamden CT
@@ -73,24 +108,26 @@ Stress-tests FieldShore at working-incident scale: multiple apparatus, a Safety 
 
 ## Inventory Baseline
 
-Dispatched apparatus carry the following from the Millbrook fleet:
+Dispatched apparatus carry the following (v4 catalog names — this mirrors `millbrook-inventory.csv` exactly). Struts are AcmeThread/"Grey" (the v4 equivalent of the v3 "ACME"): `AT 37-58` covers 48–58", `AT 56-88` covers 56–88".
 
-| Apparatus | Model | Qty | Available | Length | Type |
-|-----------|-------|-----|-----------|--------|------|
-| Engine 1 | ACME Strut | 2 | 2 | 60" | strut |
-| Engine 1 | Universal Base Plate | 4 | 4 | — | plate |
-| Engine 1 | Wedge Plate | 2 | 2 | — | plate |
-| Engine 2 | ACME Strut | 2 | 2 | 60" | strut |
-| Engine 2 | Universal Base Plate | 4 | 4 | — | plate |
-| Engine 2 | Wedge Plate | 2 | 2 | — | plate |
-| Rescue 1 | ACME Strut | 4 | 4 | 48" | strut |
-| Rescue 1 | ACME Strut | 4 | 4 | 84" | strut |
-| Rescue 1 | Extension | 2 | 2 | — | extension |
-| Rescue 1 | Universal Base Plate | 8 | 8 | — | plate |
-| Rescue 1 | Wedge Plate | 4 | 4 | — | plate |
-| Rescue 1 | Chimney Plate | 2 | 2 | — | plate |
+| Apparatus | Type | Model / Plate | Qty | Covers |
+|-----------|------|---------------|-----|--------|
+| Engine 1 | strut | AT 56-88 | 2 | 61–78" |
+| Engine 1 | plate | 6" Swivel Base (`swivel6`) | 4 | — |
+| Engine 1 | plate | 3/8" Chain Wedge (`chainwedge`) | 2 | — |
+| Engine 2 | strut | AT 56-88 | 2 | 61–78" (staging spare) |
+| Engine 2 | plate | 6" Swivel Base (`swivel6`) | 4 | — |
+| Engine 2 | plate | 3/8" Chain Wedge (`chainwedge`) | 2 | — |
+| Rescue 1 | strut | AT 37-58 | 4 | 48/52/55/56" |
+| Rescue 1 | strut | AT 56-88 | 2 | 61/78" |
+| Rescue 1 | extension | 24" (Grey) | 2 | — |
+| Rescue 1 | plate | 6" Swivel Base (`swivel6`) | 8 | — |
+| Rescue 1 | plate | 6" Rigid Base (`rigid6`) | 4 | — |
+| Rescue 1 | plate | 3/8" Chain Wedge (`chainwedge`) | 4 | — |
 
-**Import method:** Full Millbrook fleet imported via `.claude/skills/shared/millbrook-inventory.xlsx`. Only Engine 1, Engine 2, Rescue 1, and BC-1 are dispatched.
+**Loadout intent:** the six measurements (52/56/48/61/55 singles + 78" ×3 T-Shore) need 4× `AT 37-58` and 4× `AT 56-88`. Rescue 1 holds all four `AT 37-58` but only **2** of the `AT 56-88` it needs for the T-Shore + SP5 — so the T-Shore deploy is **forced to draw the remaining 56-88s from Engine 1**, exercising the multi-apparatus deploy bill-of-materials + return-to-source-rig path (D-4/D-5). This is the deliberate stress.
+
+**Import method:** import `.claude/skills/shared/millbrook-inventory.csv` via **Inventory → Import (CSV)**. Only Engine 1, Engine 2, Rescue 1, and BC-1 are dispatched (BC-1 carries no struts — chief's vehicle).
 
 ---
 
@@ -160,19 +197,19 @@ Focus: ICS role assignment accuracy for Level IV org (IC + Safety + informal Ops
 ### Phase 0 — Intent
 Ask Alex: start fresh, or resume from a specific phase? Default: Phase 1.
 
-### Phase 1 — Pre-flight
-1. Read CLAUDE.md → confirm app version
-2. Start preview server: `npx serve -l 8095 .`
-3. Verify app loads via `preview_snapshot`
-4. Check Firebase connection in Settings tab
-5. **Success:** App loads, version confirmed, Firebase connected
+### Phase 1 — Pre-flight  *(v4 — see RE-POINT block)*
+1. Confirm branch is `v4-redesign`; baseline = v4.0 early Phase I
+2. Start the v4 dev server: `preview_start` → app at `http://localhost:5199` (NOT `npx serve -l 8095`)
+3. Verify app loads via `preview_snapshot` (blank page → hard-refresh stale PWA SW)
+4. Confirm local-first storage is active (Dexie/IndexedDB) — there is **no** Firebase connection to check in v4 (cloud sync stubbed, #369)
+5. **Success:** App loads on :5199, v4 shell renders
 
-### Phase 2 — Inventory Import (UI only)
-1. Settings → Department Code: `sim-millbrook-fd`
-2. Inventory → Import: `.claude/skills/shared/millbrook-inventory.xlsx`
-3. Verify Engine 1, Engine 2, Rescue 1 inventories visible
-4. Check console for import errors
-5. **Success:** All dispatched apparatus show correct strut/plate/extension counts
+### Phase 2 — Inventory Import (UI only)  *(v4 — CSV, see RE-POINT block)*
+1. Get into a department context (v4 cold-opens guest-first; use the create/select-department flow as the app presents it — the exact v3 "Department Code" field no longer applies)
+2. Inventory → Import (CSV): `.claude/skills/shared/millbrook-inventory.csv`
+3. Verify Engine 1, Engine 2, Rescue 1 appear as apparatus scope tabs with per-rig counts matching the fixture; review any import warnings surfaced after the import
+4. Check console for errors
+5. **Success:** the three rigs' scope tabs are present and counts match the CSV fixture
 
 ### Phase 3 — Spawn Agents
 Spawn all 10 agents in a **single message with 10 parallel Agent tool calls**. Each receives scenario overview, persona brief, event clock, app URL, and the UI-only constraint.
@@ -329,8 +366,8 @@ Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `
 
 - **Sandbox department:** `sim-millbrook-fd`
 - **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx`
-- **App version baseline:** v3.17.2
-- **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
+- **App version baseline:** v4.0 (early Phase I, `v4-redesign` branch) — NOT v3.17.2
+- **Design reference:** `docs/v4-design/00-INDEX.md` + the v4 board (GitHub Project #2). The v3 `MASTER-PLAN.md` Release-3 phase labels are stale for v4.
 - **Runtime output:** `.claude/simulations/level-iv-sim/runtime/`
 - **Key stress targets:** T-Shore grouped SP phase-split, command transfer, multi-apparatus inventory deduction, rain-condition UX
 - **Related simulations:** `/level-v-sim` (smaller), `/level-iii-sim` (larger)

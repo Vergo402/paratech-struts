@@ -1,0 +1,13 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+,Engine 1,,Strut,AT 56-88,Grey,,,,2
+,Engine 1,,Plate,,,swivel6,"6"" Swivel Base",,4
+,Engine 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Engine 2,,Strut,AT 56-88,Grey,,,,2
+,Engine 2,,Plate,,,swivel6,"6"" Swivel Base",,4
+,Engine 2,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Rescue 1,,Strut,AT 37-58,Grey,,,,4
+,Rescue 1,,Strut,AT 56-88,Grey,,,,2
+,Rescue 1,,Extension,,Grey,,,24,2
+,Rescue 1,,Plate,,,swivel6,"6"" Swivel Base",,8
+,Rescue 1,,Plate,,,rigid6,"6"" Rigid Base",,4
+,Rescue 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,4
