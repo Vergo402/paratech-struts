@@ -1,11 +1,20 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { currentIC, leaderOf, defaultPositionId } from '@core/org';
 import { openHazardsBySeverity } from '@core/hazard';
-import { Badge, Button, Card } from '@ui/primitives';
+import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
 import { useOperation, useShorePoints, useOrg, useHazards } from '@ui/hooks';
 import { useElapsed } from './useElapsed';
+import { SitStatRollup } from './SitStatRollup';
+
+// SitStat scope toggle (#353): the whole-incident board (default, unchanged) vs
+// the per-Division roll-up table for "which Division is behind" at scale.
+type SitStatScope = 'all' | 'division';
+const SCOPE_OPTIONS = [
+  { value: 'all', label: 'All incident' },
+  { value: 'division', label: 'By Division' },
+] as const;
 
 // The running clock as its own leaf — the 1s tick re-renders ONLY this node.
 function ElapsedClock({ since }: { since: number | undefined }) {
@@ -26,6 +35,8 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const shorePoints = useShorePoints();
   const positions = useOrg();
   const hazards = useHazards();
+  const isDesktop = useIsDesktop();
+  const [scope, setScope] = useState<SitStatScope>('all');
 
   const counts = useMemo(() => {
     const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
@@ -136,14 +147,39 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         <span className="fs-cmd-eyebrow">Shore points</span>
         <span className="fs-cmd-board-total">{counts.total} total</span>
       </div>
-      <div className="fs-cmd-board" role="list" aria-label="Shore points by status">
-        {STATUS_ORDER.map((status) => (
-          <div key={status} className={`fs-cmd-stat is-${status}`} role="listitem">
-            <span className="fs-cmd-stat-label">{STATUS_LABELS[status]}</span>
-            <span className="fs-cmd-stat-count">{counts.m[status]}</span>
-          </div>
-        ))}
-      </div>
+      {/* Scope toggle (#353): All incident (the board below, unchanged) vs By Division. */}
+      <Segmented
+        size="standard"
+        aria-label="Shore-point tally scope"
+        options={SCOPE_OPTIONS}
+        value={scope}
+        onChange={(v) => setScope(v)}
+      />
+      {/* The whole-incident 7-status board stays the default and the desktop-inline
+          fallback; the By-Division roll-up replaces it inline on desktop and rises
+          as a Sheet on phone (the phone floor). */}
+      {scope === 'division' && isDesktop ? (
+        <SitStatRollup />
+      ) : (
+        <div className="fs-cmd-board" role="list" aria-label="Shore points by status">
+          {STATUS_ORDER.map((status) => (
+            <div key={status} className={`fs-cmd-stat is-${status}`} role="listitem">
+              <span className="fs-cmd-stat-label">{STATUS_LABELS[status]}</span>
+              <span className="fs-cmd-stat-count">{counts.m[status]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Phone: By Division is an interrupt sheet over the board. */}
+      {!isDesktop && (
+        <Sheet
+          open={scope === 'division'}
+          onClose={() => setScope('all')}
+          title="Shore points by Division"
+        >
+          <SitStatRollup />
+        </Sheet>
+      )}
 
       {/* Hazard summary — taps to the Hazard Log workspace on the Deck */}
       {onOpenHazards ? (

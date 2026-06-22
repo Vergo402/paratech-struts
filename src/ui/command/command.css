@@ -1215,3 +1215,126 @@
   font: var(--type-body);
   color: var(--text-primary);
 }
+
+/* ===== SitStat By-Division roll-up (#353) ================================ */
+.fs-rollup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+/* The 7-status + Total grid is wider than a phone; let it scroll horizontally
+   inside its own pane rather than squeeze the columns to unreadable. */
+.fs-rollup-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.fs-rollup-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.fs-rollup-caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.fs-rollup-colhead,
+.fs-rollup-corner {
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: right;
+  padding: var(--space-1) var(--space-2);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+  white-space: nowrap;
+}
+.fs-rollup-corner {
+  text-align: left;
+}
+.fs-rollup-row .fs-rollup-div,
+.fs-rollup-subrow .fs-rollup-grouplabel {
+  text-align: left;
+  font-weight: 400;
+}
+.fs-rollup-div,
+.fs-rollup-grouplabel,
+.fs-rollup-cell {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-rollup-divname {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-rollup-cell {
+  text-align: right;
+  font: var(--type-body);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+/* A zero reads as quiet so the eye lands on the non-empty buckets. */
+.fs-rollup-cell[data-zero] {
+  color: var(--text-tertiary);
+}
+.fs-rollup-total {
+  font-weight: 700;
+}
+/* Tappable Division name (expand/collapse) — looks like text, behaves like a row toggle. */
+.fs-rollup-divbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+.fs-rollup-caret {
+  color: var(--text-tertiary);
+  font-size: 0.8em;
+  width: 1em;
+}
+/* The lagging-Division flag: danger tint across the row + the alert triangle. */
+.fs-rollup-row.is-lagging .fs-rollup-div,
+.fs-rollup-row.is-lagging .fs-rollup-cell {
+  background: var(--danger-bg);
+}
+.fs-rollup-alert {
+  color: var(--danger-text);
+  font-weight: 700;
+}
+.fs-rollup-subrow .fs-rollup-grouplabel {
+  padding-left: var(--space-4);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-rollup-subrow .fs-rollup-cell {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-rollup-allrow .fs-rollup-div,
+.fs-rollup-allrow .fs-rollup-cell {
+  border-top: calc(var(--stroke-width) * 2) solid var(--surface-stroke);
+  border-bottom: none;
+  font-weight: 700;
+}
+.fs-rollup-allrow .fs-rollup-divname {
+  font: var(--type-body-medium);
+}
+.fs-rollup-legend {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-rollup-empty {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
