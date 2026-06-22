@@ -1,17 +1,18 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// Same Firebase project as v3 (paratech-c3ab4) — display name changed to
-// "FieldShore" in the console. This file (+ data/sync/firebase.ts) are the
-// ONLY places in v4 that touch Firebase directly (invariant 1, lint-enforced).
+// FieldShore v4's OWN Firebase project (fieldshore-database) — separate from
+// v3 production (paratech-c3ab4), per Alex's 2026-06-22 decision. This file
+// (+ data/sync/firebase.ts) are the ONLY places in v4 that touch Firebase
+// directly (invariant 1, lint-enforced).
 const config = {
-  apiKey: 'AIzaSyCBrXfWI5-YI8p5ylWO88gwliPxIamkxuM',
-  authDomain: 'paratech-c3ab4.firebaseapp.com',
-  databaseURL: 'https://paratech-c3ab4-default-rtdb.firebaseio.com',
-  projectId: 'paratech-c3ab4',
-  storageBucket: 'paratech-c3ab4.firebasestorage.app',
-  messagingSenderId: '1058271616211',
-  appId: '1:1058271616211:web:e3cb56a83036859debc826',
+  apiKey: 'AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo',
+  authDomain: 'fieldshore-database.firebaseapp.com',
+  databaseURL: 'https://fieldshore-database-default-rtdb.firebaseio.com',
+  projectId: 'fieldshore-database',
+  storageBucket: 'fieldshore-database.firebasestorage.app',
+  messagingSenderId: '431864655354',
+  appId: '1:431864655354:web:896017d8810d1d78bcc843',
 };
 
 // HMR-safe: don't re-initialize if Vite re-runs this module during hot reload.
