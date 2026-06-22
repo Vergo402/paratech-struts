@@ -1842,6 +1842,129 @@ button.fs-spc-head {
   margin: 0;
 }
 
+/* ---- Cutting Station — tablet / desktop two-column split (#354) ----------
+   Phone is the floor (Principle 2): the column above is the fallback. At the
+   tablet/command-post breakpoint (≥768px, useIsDesktop / ADR-032) the cutter's
+   real work surface is a propped tablet, so the screen splits — a large hero
+   "cut this now" card on the left (the queue head) and the rest of the queue as
+   a compact "up next" list on the right. The featured 2px border uses the
+   cutting hue (the screen's semantic color — there is no generic info token). */
+.fs-cutstation-split {
+  display: grid;
+  grid-template-columns: 1.65fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* The hero "cut this now" card — the queue head, blown up for table distance.
+   A 2px featured border (cutting hue) marks it; the cut length reads VERY large;
+   the slide control anchors the bottom full-width. */
+.fs-cutstation-hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  background: var(--surface-card);
+  border: 2px solid var(--status-cutting-text);
+  border-radius: var(--radius-card);
+}
+.fs-cutstation-hero-label {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+/* The one number the cutter acts on, at table-glance size. Diagonal ⅛″ fraction
+   (.fs-meas composes it via the OpenType frac feature — scales with font-size). */
+.fs-cutstation-hero-num {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--status-cutting-text);
+  font-variant-numeric: diagonal-fractions tabular-nums;
+  margin: calc(-1 * var(--space-2)) 0 0;
+}
+.fs-cutstation-hero-where {
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  margin: 0;
+}
+/* Push the slide control to the bottom and let it run full-width. The hero's
+   slide is the ShorePointCard's own cuttingStation slide; this just frames it. */
+.fs-cutstation-hero-slide {
+  margin-top: auto;
+}
+.fs-cutstation-hero-cutdone {
+  font: var(--type-body-medium);
+  color: var(--status-cutting-text);
+  margin: 0;
+}
+
+/* The right column — "up next" + the read-only sent tail, scrollable so the
+   hero stays put while the list grows. */
+.fs-cutstation-upnext {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.fs-cutstation-upnext-head {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-1);
+}
+/* A compact queue row: grip handle · cut length (mid) · location subtitle. */
+.fs-cutstation-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+}
+/* The drag handle — VISUAL ONLY in v4.0 (no reorder mechanism wired yet; see the
+   component's ponytail TODO). Glove-sized hit area, grab cursor as the affordance. */
+.fs-cutstation-grip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  align-self: stretch;
+  color: var(--text-tertiary);
+  cursor: grab;
+  touch-action: none;
+}
+.fs-cutstation-grip svg {
+  width: 20px;
+  height: 20px;
+}
+.fs-cutstation-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.fs-cutstation-row-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--status-cutting-text);
+  font-variant-numeric: diagonal-fractions tabular-nums;
+}
+.fs-cutstation-row-where {
+  display: block;
+  font: var(--type-body);
+  color: var(--text-secondary);
+}
+/* The sent-to-runner tail in the right column reuses .fs-cutstation-sent. */
+.fs-cutstation-split .fs-cutstation-sent {
+  margin-top: var(--space-2);
+}
+
 /* ---- Past-operations archive (#238) -------------------------------------- */
 .fs-archive-list {
   display: flex;

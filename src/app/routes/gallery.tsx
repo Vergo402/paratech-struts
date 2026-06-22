@@ -22,7 +22,7 @@ import {
   VisualGridPicker,
 } from '@ui/picker';
 import { DeductionPicker, MeasurementInput } from '@ui/quickfind';
-import { GroupedShorePoint, RecommendationCard, ShorePointCard, StartOperationModal } from '@ui/operations';
+import { CuttingStation, GroupedShorePoint, RecommendationCard, ShorePointCard, StartOperationModal } from '@ui/operations';
 import type { ShorePoint } from '@core/schema';
 import { useTheme } from '../theme';
 
@@ -97,6 +97,17 @@ const THREE_POST_OPEN: ShorePoint[] = [
   spFixture({ id: 'op-1', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 1, groupTotal: 3, status: 'process', deployedBom: DEPLOYED_BOM }),
   spFixture({ id: 'op-2', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 2, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedBom: DEPLOYED_BOM }),
   spFixture({ id: 'op-3', label: 'D-4', shoreType: '3-post', groupId: 'g3o', groupIndex: 3, groupTotal: 3, status: 'cutting', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, deployedBom: DEPLOYED_BOM }),
+];
+// The Cutting Station queue (#354) — a FIFO list of `cutting` points (the first is
+// the tablet hero, the rest are the up-next rows) + a read-only sent-to-runner tail.
+const CUT_QUEUE: ShorePoint[] = [
+  spFixture({ id: 'cq-1', label: 'A', area: 'A side', division: '2', shoreType: '3-post', groupIndex: 1, groupTotal: 3, status: 'cutting' }),
+  spFixture({ id: 'cq-2', label: 'A', area: 'A side', division: '2', shoreType: '3-post', groupIndex: 2, groupTotal: 3, status: 'cutting' }),
+  spFixture({ id: 'cq-3', label: 'A', area: 'A side', division: '2', shoreType: '3-post', groupIndex: 3, groupTotal: 3, status: 'cutting' }),
+  spFixture({ id: 'cq-4', label: 'C', area: 'C side', division: '3', shoreType: 't-shore', measurementEighths: 900, status: 'cutting' }),
+];
+const CUT_SENT: ShorePoint[] = [
+  spFixture({ id: 'cs-1', label: 'B', area: 'B side', division: '1', shoreType: '3-post', groupIndex: 1, groupTotal: 3, status: 'runner', deployedBom: DEPLOYED_BOM }),
 ];
 
 /**
@@ -657,6 +668,20 @@ export function GalleryScreen() {
         {REC_OVER_CAPACITY && (
           <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />
         )}
+      </Section>
+
+      <Section title="#354 — Cutting Station: tablet two-column (hero + up-next) / phone column">
+        {/* Surface-adaptive (useIsDesktop): ≥768px renders the hero "cut this now"
+            card + the up-next list; narrower keeps the single-column queue. Resize
+            the preview to compare the two surfaces. */}
+        <CuttingStation
+          queue={CUT_QUEUE}
+          sent={CUT_SENT}
+          onMarkCutDone={() => setCommits((c) => c + 1)}
+          onClearCutDone={() => setCommits((c) => c + 1)}
+          onSendToRunner={() => setCommits((c) => c + 1)}
+          onStepBack={() => setCommits((c) => c + 1)}
+        />
       </Section>
     </div>
   );
