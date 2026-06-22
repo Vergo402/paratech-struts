@@ -219,6 +219,22 @@ The v4 redesign (`v4-redesign` branch) forked at **v3.19.1**, so every v3 featur
 
 ---
 
+## Mockup Fidelity in Development (standing rule, 2026-06-22)
+
+When Alex accepts a `show_widget` mockup, the built implementation **must match it as
+closely as possible.** If you can't match it directly, find another way to accomplish
+the same design. If something is *genuinely* impossible — treat "impossible" with deep
+skepticism, because nothing ever is — stop and tell Alex what happened plus your
+recommendations; **never silently ship a build that diverges from the accepted mockup.**
+Before calling it done, **verify the built UI against the accepted mockup yourself**
+(drive the preview / screenshot) — do not rely on a sub-agent's self-reported
+screenshots. (Companion to the mockup-first rule in the global CLAUDE.md; the
+regression that prompted this: a Cutting Station hero shipped as a card-in-a-card with
+the cut length doubled, nothing like the approved mockup, because a sub-agent's
+screenshot was trusted without an independent check.)
+
+---
+
 ## How We Talk — Plain Language for Alex (standing rule, 2026-06-08)
 
 Alex is a firefighter (USAR/FEMA) **and a tech-savvy power user of decades — but from

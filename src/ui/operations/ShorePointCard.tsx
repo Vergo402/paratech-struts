@@ -415,39 +415,18 @@ export function ShorePointCard({
           station; on the Operations board the `cutting` lane card stays read-only
           (the cutter works the station). Two-step: Mark Cut Done (a flag on the
           `cutting` state, card stays put) → Send to Runner (advances individually
-          and the card leaves the queue). Step-back out of cutting → Strut Set. */}
+          and the card leaves the queue). Step-back out of cutting → Strut Set.
+          The slide pair lives in <CuttingControls> so the tablet hero ("cut this
+          now") can host the SAME controls WITHOUT re-embedding the whole card —
+          embedding the card doubled the cut length + location (regression, 2026-06-22). */}
       {interactive && !removed && cuttingStation && sp.status === 'cutting' && (
-        <div className="fs-spc-slides">
-          {sp.cuttingDone ? (
-            <>
-              <Slider
-                label="Slide to send to Runner"
-                tone="runner"
-                onCommit={() => onAdvance?.(sp)}
-              />
-              <Slider
-                label="Slide back — clear Cut Done"
-                direction="stepback"
-                tone="cutting"
-                onCommit={() => onClearCutDone?.(sp)}
-              />
-            </>
-          ) : (
-            <>
-              <Slider
-                label="Slide to mark Cut Done"
-                tone="cutting"
-                onCommit={() => onMarkCutDone?.(sp)}
-              />
-              <Slider
-                label="Slide back to Strut Set"
-                direction="stepback"
-                tone="strutset"
-                onCommit={() => onStepBack?.(sp)}
-              />
-            </>
-          )}
-        </div>
+        <CuttingControls
+          sp={sp}
+          onMarkCutDone={onMarkCutDone}
+          onClearCutDone={onClearCutDone}
+          onSendToRunner={onAdvance}
+          onStepBack={onStepBack}
+        />
       )}
 
       {/* Runner (#223) — interactive on the BOARD only (gated !cuttingStation so the
@@ -505,5 +484,53 @@ export function ShorePointCard({
         </>
       )}
     </Card>
+  );
+}
+
+/**
+ * The Cutting Station slide pair for a `cutting` point — Mark Cut Done → Send to
+ * Runner, with the mirror step-backs (the two-step #222 commit). Extracted from
+ * ShorePointCard so the tablet hero ("cut this now") hosts the SAME controls
+ * without re-rendering the whole card around them (a card-in-a-card doubled the
+ * cut length + location). One source for the cutter's slides — the card's own
+ * cutting block and the hero both render this.
+ */
+export function CuttingControls({
+  sp,
+  onMarkCutDone,
+  onClearCutDone,
+  onSendToRunner,
+  onStepBack,
+}: {
+  sp: ShorePoint;
+  onMarkCutDone?: (sp: ShorePoint) => void | Promise<void>;
+  onClearCutDone?: (sp: ShorePoint) => void | Promise<void>;
+  onSendToRunner?: (sp: ShorePoint) => void | Promise<void>;
+  onStepBack?: (sp: ShorePoint) => void | Promise<void>;
+}) {
+  return (
+    <div className="fs-spc-slides">
+      {sp.cuttingDone ? (
+        <>
+          <Slider label="Slide to send to Runner" tone="runner" onCommit={() => onSendToRunner?.(sp)} />
+          <Slider
+            label="Slide back — clear Cut Done"
+            direction="stepback"
+            tone="cutting"
+            onCommit={() => onClearCutDone?.(sp)}
+          />
+        </>
+      ) : (
+        <>
+          <Slider label="Slide to mark Cut Done" tone="cutting" onCommit={() => onMarkCutDone?.(sp)} />
+          <Slider
+            label="Slide back to Strut Set"
+            direction="stepback"
+            tone="strutset"
+            onCommit={() => onStepBack?.(sp)}
+          />
+        </>
+      )}
+    </div>
   );
 }

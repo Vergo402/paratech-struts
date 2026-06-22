@@ -4,7 +4,7 @@ import { divisionLabel } from '@core/operation';
 import { cutLengthInches } from '@core/shorepoint';
 import { Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
-import { ShorePointCard, SHORE_TYPE_LABELS } from './ShorePointCard';
+import { ShorePointCard, SHORE_TYPE_LABELS, CuttingControls } from './ShorePointCard';
 
 /**
  * CuttingStation — the cut-the-strut-to-length workstation (21-cutting-station.md,
@@ -149,9 +149,12 @@ export function CuttingStation({
           {isDesktop && queue.length > 0 ? (
             <TabletSplit
               queue={queue}
-              cutCard={cutCard}
               sentTail={sentTail}
               removedCards={removedCards}
+              onMarkCutDone={onMarkCutDone}
+              onClearCutDone={onClearCutDone}
+              onSendToRunner={onSendToRunner}
+              onStepBack={handleStepBack}
             />
           ) : (
             <>
@@ -179,14 +182,20 @@ export function CuttingStation({
  */
 function TabletSplit({
   queue,
-  cutCard,
   sentTail,
   removedCards,
+  onMarkCutDone,
+  onClearCutDone,
+  onSendToRunner,
+  onStepBack,
 }: {
   queue: ShorePoint[];
-  cutCard: (sp: ShorePoint) => ReactNode;
   sentTail: ReactNode;
   removedCards: ReactNode[];
+  onMarkCutDone: (sp: ShorePoint) => void | Promise<void>;
+  onClearCutDone: (sp: ShorePoint) => void | Promise<void>;
+  onSendToRunner: (sp: ShorePoint) => void | Promise<void>;
+  onStepBack: (sp: ShorePoint) => void;
 }) {
   const [hero, ...rest] = queue;
   // Caller renders TabletSplit only for a non-empty queue, but noUncheckedIndexedAccess
@@ -198,16 +207,26 @@ function TabletSplit({
 
   return (
     <div className="fs-cutstation-split">
-      {/* Left — the hero "cut this now" card. The big number + subtitle frame the
-          SAME ShorePointCard (with its slide) at the bottom; we render the card
-          inside so the cutter still slides to mark cut done / send to runner. */}
+      {/* Left — the hero "cut this now" card. The big number + subtitle ARE the
+          hero; the cutter's slides sit beneath via <CuttingControls> — the SAME
+          slide pair the card uses, WITHOUT re-embedding the card (that doubled the
+          cut length + location — regression caught 2026-06-22). */}
       <div className="fs-cutstation-hero" data-sp-id={hero.id}>
+        <span className="fs-cutstation-hero-badge">Cut this now</span>
         <p className="fs-cutstation-hero-label">Cut length</p>
         <p className="fs-cutstation-hero-num">
           <MeasurementValue eighths={heroEighths} />
         </p>
         <p className="fs-cutstation-hero-where">{cutSubtitle(hero)}</p>
-        <div className="fs-cutstation-hero-slide">{cutCard(hero)}</div>
+        <div className="fs-cutstation-hero-slide">
+          <CuttingControls
+            sp={hero}
+            onMarkCutDone={onMarkCutDone}
+            onClearCutDone={onClearCutDone}
+            onSendToRunner={onSendToRunner}
+            onStepBack={onStepBack}
+          />
+        </div>
       </div>
 
       {/* Right — "up next" + the read-only sent tail, scrollable. */}
