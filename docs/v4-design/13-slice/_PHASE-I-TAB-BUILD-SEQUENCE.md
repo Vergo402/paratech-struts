@@ -1,6 +1,8 @@
 # Phase I — Tab Build Sequence (DRAFT)
 
 > **Status: DRAFT reference.** The binding Phase I build order is ratified by [#250](https://github.com/Vergo402/paratech-struts/issues/250) **after the [#248](https://github.com/Vergo402/paratech-struts/issues/248) Phase H gate clears** — not here. This doc exists so the four non-Operations tabs are visible and roughly sequenced while the slice is still being re-driven. Orientation, not commitment.
+>
+> **Superseded note (2026-06-22):** the build has moved well past this draft — **Quick Find ([#320](https://github.com/Vergo402/paratech-struts/issues/320)), Inventory ([#200](https://github.com/Vergo402/paratech-struts/issues/200)), and the Command (SitStat) tab incl. its per-Division roll-up ([#323](https://github.com/Vergo402/paratech-struts/issues/323) / [#353](https://github.com/Vergo402/paratech-struts/issues/353)) have all shipped**, so the "stub …" / "build pending" cells below are stale. The live status of record is [`00-INDEX.md`](../00-INDEX.md) (Phase I row). Left intact as the point-in-time orientation draft.
 
 ---
 

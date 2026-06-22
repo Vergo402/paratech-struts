@@ -291,9 +291,7 @@ Screen-reader behavior particular to this workflow:
 1. **Queue ordering for same-group members:** T-Shore ×3 all enter Cutting Station at the same timestamp.
    Ordered by group index (1/3 first) is the stated rule; Phase H implementation verifies this
    produces the expected FIFO behavior in practice.
-2. **Multiple saw stations:** v4.0 assumes one Cutting Station queue. If a second saw opens
-   (e.g., a concurrent team), per-station queues + cut-card routing are a workstation-instancing
-   question (analogous to multiple Staging areas in NIMS); deferred to v4.5 / Phase G future.
+2. **Multiple saw stations:** ~~deferred~~ **shipped single-device in v4.0** ([#354](https://github.com/Vergo402/paratech-struts/issues/354)). The named-saw model (Option A, auto-claim) is built: each saw pulls the top unclaimed cut off the one shared FIFO queue and keeps it until sent to Runner (`assignSaws` / `core/operation/saw`); the tablet shows per-saw heroes, the phone shows the selected saw + an "on Saw B" marker on others. The **only** remaining deferral is **cross-tablet live mirroring** of claims, which rides the sync build ([#369](https://github.com/Vergo402/paratech-struts/issues/369)) — not v4.5, not a workstation-instancing open question.
 3. **Actual-cut input UX:** the optional actual-cut override field beneath the promoted cut length
    — whether it is a tap-to-expand slot or always visible — finalized in Phase H with the Cutting
    Station form layout.
