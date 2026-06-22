@@ -132,6 +132,13 @@ export const ShorePoint = z.object({
   // except cuttingDone which the cutter toggles via a ShorePointEdited patch.
   cuttingStartedAt: z.number().int().nonnegative().optional(),
   cuttingDone: z.boolean().optional(),
+  // Multi-saw claim (#354). The id of the saw (roster id 'A'/'B'/…) currently
+  // working this cut. Set by CuttingClaimed when a free saw pulls the point off
+  // the shared queue; PERSISTED on the point so an out-of-order finish never
+  // reshuffles who-owns-what (a claim is not derived from queue position). Cleared
+  // when the point steps OUT of cutting (→ strutset); kept across cutting→runner as
+  // history (the point leaves the queue, freeing the saw). Absent ⟺ unclaimed.
+  sawId: z.string().optional(),
   // Soft-delete flag (#319, ADR-030). Set = the point is deleted but RETAINED in
   // the projection so it can be restored and so its seq stays a high-water mark
   // (a deleted number is never reused). Reducer-managed via ShorePointDeleted /

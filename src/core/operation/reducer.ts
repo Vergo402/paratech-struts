@@ -95,6 +95,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           inlineDeploy: event.inlineDeploy ?? true, // absent (old events) → one-step inline
           location: event.location,
           divisions: [1], // Ground level — grown via DivisionAdded, never on the wire
+          saws: ['A'], // one saw by default (#354) — grown via SawAdded, never on the wire
           status: 'active',
           createdAt: event.at,
         },
@@ -132,6 +133,27 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
         operation: { ...state.operation, divisions: [...state.operation.divisions, event.division] },
       };
     }
+
+    case 'SawAdded': {
+      // Idempotent (DivisionAdded model): a saw already on the roster no-ops, so
+      // concurrent "add saw" from two devices converges. Legacy ops project
+      // saws:['A'] (reducer-seeded on OperationCreated), so this only ever appends.
+      if (!state.operation) return state;
+      if (state.operation.saws.includes(event.sawId)) return state;
+      return { ...state, operation: { ...state.operation, saws: [...state.operation.saws, event.sawId] } };
+    }
+
+    case 'CuttingClaimed':
+      // Stamp the claiming saw onto the cutting point. Guarded: only a `cutting`
+      // point can be claimed (a stale claim against a moved point no-ops, so replay
+      // is safe). The claim is persisted here, not derived from queue position —
+      // that is what keeps an out-of-order finish from reshuffling claims.
+      return {
+        ...state,
+        shorePoints: state.shorePoints.map((sp) =>
+          sp.id === event.spId && sp.status === 'cutting' ? { ...sp, sawId: event.sawId } : sp,
+        ),
+      };
 
     case 'ShorePointAdded':
       return { ...state, shorePoints: [...state.shorePoints, event.shorePoint] };

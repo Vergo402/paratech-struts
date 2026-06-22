@@ -7,6 +7,7 @@ import {
   compareDivisionValues,
   compareShorePointsByLocation,
   divisionLabel,
+  nextSawId,
 } from '@core/operation';
 import { newId } from '@core/id';
 import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
@@ -745,6 +746,40 @@ export function OperationsBoard() {
   const markCutDone = useCallback((sp: ShorePoint) => commitCutDone(sp, true), [commitCutDone]);
   const clearCutDone = useCallback((sp: ShorePoint) => commitCutDone(sp, false), [commitCutDone]);
 
+  // Multi-saw (#354). Add a saw to the roster (auto-named A/B/C…) — append-only,
+  // idempotent by sawId in the reducer. 'A' is reducer-seeded, so the first add is 'B'.
+  const addSaw = useCallback(async () => {
+    if (!operation) return;
+    const sawId = nextSawId(operation.saws);
+    const result = await commit({
+      type: 'SawAdded',
+      id: newId(),
+      opId: operation.id,
+      at: Date.now(),
+      by: await getUid(),
+      sawId,
+    });
+    if (result.ok) setPoliteAnnouncement(`Saw ${sawId} added to the Cutting Station.`);
+  }, [commit, getUid, operation]);
+
+  // A free saw auto-claims the top unclaimed cut (CuttingStation computes it; this
+  // persists it). Stamps sawId so the claim survives an out-of-order finish. Quiet —
+  // it's background bookkeeping, not a user action.
+  const claimCut = useCallback(
+    async (sp: ShorePoint, sawId: string) => {
+      await commit({
+        type: 'CuttingClaimed',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: await getUid(),
+        spId: sp.id,
+        sawId,
+      });
+    },
+    [commit, getUid],
+  );
+
   // Restore a soft-deleted point (#319) — one tap, no confirm (it's reversible).
   // The point returns to whatever status it held (delete is Pending-only, so
   // ~always Pending) with its original #N reclaimed.
@@ -1143,6 +1178,9 @@ export function OperationsBoard() {
           onClearCutDone={clearCutDone}
           onSendToRunner={handleAdvance}
           onStepBack={handleStepBack}
+          saws={operation?.saws}
+          onAddSaw={addSaw}
+          onClaim={claimCut}
         />
       ) : (
         <>

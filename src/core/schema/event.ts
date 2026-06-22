@@ -60,6 +60,17 @@ export const DivisionAdded = z.object({
     .refine((n) => n !== 0, 'division 0 does not exist'),
 });
 
+// A saw added to the operation's Cutting Station roster (#354). Idempotent by
+// sawId: re-applying an event whose saw is already on the roster no-ops (safe
+// replay; the DivisionAdded model). Add-only for v4.0 — saw removal is deferred
+// (YAGNI; a downed saw's claimed cut would need re-homing). 'A' is implicit
+// (reducer-seeded), so the first emitted SawAdded is normally 'B'.
+export const SawAdded = z.object({
+  type: z.literal('SawAdded'),
+  ...base,
+  sawId: z.string().min(1),
+});
+
 export const ShorePointAdded = z.object({
   type: z.literal('ShorePointAdded'),
   ...base,
@@ -102,6 +113,19 @@ export const ShorePointStatusChanged = z.object({
   spId: z.string(),
   from: ShorePointStatus,
   to: ShorePointStatus,
+});
+
+// A saw claims a cut off the shared Cutting Station queue (#354). Stamps `sawId`
+// onto the `cutting` point so the claim is PERSISTED, not derived from queue
+// position — an out-of-order finish therefore never reshuffles who-owns-what, and
+// a free saw never steals the cut another saw is mid-way through. Non-inventory →
+// the store's plain-append path. The reducer clears sawId when the point steps out
+// of cutting (applyCuttingFields); sending to runner keeps it as history.
+export const CuttingClaimed = z.object({
+  type: z.literal('CuttingClaimed'),
+  ...base,
+  spId: z.string(),
+  sawId: z.string().min(1),
 });
 
 // LEGACY (pre-ADR-033) — single-strut deploy/un-deploy. Retained as union members
@@ -343,11 +367,13 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationEnded,
   OperationReopened,
   DivisionAdded,
+  SawAdded,
   ShorePointAdded,
   ShorePointEdited,
   ShorePointDeleted,
   ShorePointRestored,
   ShorePointStatusChanged,
+  CuttingClaimed,
   StrutDeployed,
   StrutReturned,
   EquipmentDeployed,

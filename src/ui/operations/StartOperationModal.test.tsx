@@ -18,6 +18,7 @@ const MOCK_OP: Operation = {
   inlineDeploy: false,
   location: '123 Main St',
   divisions: [1],
+  saws: ['A'],
   status: 'active',
   createdAt: 1000,
 };

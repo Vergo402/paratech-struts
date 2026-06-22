@@ -38,6 +38,7 @@ const ACTIVE_OP: Operation = {
   multiBuilding: false,
   inlineDeploy: false,
   divisions: [1],
+  saws: ['A'],
   status: 'active',
   createdAt: 1000,
 };
@@ -570,10 +571,10 @@ describe('OperationsBoard', () => {
     // The sub-nav shows the live queue count.
     expect(screen.getByRole('radio', { name: 'Cutting Station (2)' })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
-    const ids = Array.from(document.querySelectorAll('.fs-cutstation-queue [data-sp-id]')).map((el) =>
+    const ids = Array.from(document.querySelectorAll('.fs-cutstation-split [data-sp-id]')).map((el) =>
       el.getAttribute('data-sp-id'),
     );
-    expect(ids).toEqual(['sp-1', 'sp-2']); // sorted by cuttingStartedAt
+    expect(ids).toEqual(['sp-1', 'sp-2']); // hero (queue head) then up-next, FIFO by cuttingStartedAt
   });
 
   // ---- #223 / #224 — Runner → Wood Shore Secured → Strut Equipment Returned --------

@@ -20,7 +20,7 @@ function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
 
 function stateWith(points: ShorePoint[]): OperationState {
   return {
-    operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], status: 'active', createdAt: 1 },
+    operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1 },
     shorePoints: points,
     positions: {},
     myRoles: {},
@@ -262,6 +262,58 @@ describe('divisions — the grow-the-building model (#220)', () => {
 
   it('DivisionAdded with no operation is a no-op', () => {
     expect(operationReducer(EMPTY_OPERATION_STATE, divAdded('e1', 2))).toEqual(EMPTY_OPERATION_STATE);
+  });
+});
+
+describe('saws — the Cutting Station roster + claim (#354)', () => {
+  const created: FieldShoreEvent = {
+    type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false,
+  };
+  const sawAdded = (id: string, sawId: string): FieldShoreEvent => ({
+    type: 'SawAdded', id, opId: 'op1', at: 101, by: 'lead', sawId,
+  });
+
+  it('OperationCreated seeds the roster to one saw [A]', () => {
+    const state = operationReducer(EMPTY_OPERATION_STATE, created);
+    expect(state.operation?.saws).toEqual(['A']);
+  });
+
+  it('SawAdded appends a saw to the roster', () => {
+    const state = [created, sawAdded('e2', 'B'), sawAdded('e3', 'C')].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.saws).toEqual(['A', 'B', 'C']);
+  });
+
+  it('SawAdded is idempotent — concurrent adds of the same saw converge', () => {
+    const state = [created, sawAdded('e2', 'B'), sawAdded('e3', 'B')].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.saws).toEqual(['A', 'B']);
+  });
+
+  it('SawAdded with no operation is a no-op', () => {
+    expect(operationReducer(EMPTY_OPERATION_STATE, sawAdded('e1', 'B'))).toEqual(EMPTY_OPERATION_STATE);
+  });
+
+  it('CuttingClaimed stamps sawId onto a cutting point; a step-back out of cutting clears it', () => {
+    const sp: ShorePoint = {
+      id: 'a', opId: 'op1', division: '1', shoreType: 't-shore', measurementEighths: 388,
+      deductions: NO_DEDUCTIONS, status: 'cutting', cuttingStartedAt: 5,
+    };
+    const base: OperationState = { ...EMPTY_OPERATION_STATE, shorePoints: [sp] };
+    const claimed = operationReducer(base, { type: 'CuttingClaimed', id: 'e2', opId: 'op1', at: 6, by: 'lead', spId: 'a', sawId: 'B' });
+    expect(claimed.shorePoints[0]!.sawId).toBe('B');
+    // Step back cutting → strutset frees the claim (applyCuttingFields, #354).
+    const stepped = operationReducer(claimed, statusEvent('a', 'cutting', 'strutset'));
+    expect(stepped.shorePoints[0]!.status).toBe('strutset');
+    expect(stepped.shorePoints[0]!.sawId).toBeUndefined();
+  });
+
+  it('CuttingClaimed against a non-cutting point no-ops (stale-claim replay safety)', () => {
+    const sp: ShorePoint = {
+      id: 'a', opId: 'op1', division: '1', shoreType: 't-shore', measurementEighths: 388,
+      deductions: NO_DEDUCTIONS, status: 'strutset',
+    };
+    const base: OperationState = { ...EMPTY_OPERATION_STATE, shorePoints: [sp] };
+    const next = operationReducer(base, { type: 'CuttingClaimed', id: 'e2', opId: 'op1', at: 6, by: 'lead', spId: 'a', sawId: 'B' });
+    expect(next.shorePoints[0]!.sawId).toBeUndefined();
   });
 });
 
