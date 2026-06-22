@@ -18,7 +18,7 @@ The cut-the-strut-to-length workstation: the queue of shore points whose struts 
 ## Primary role(s) and surface(s)
 
 - **Primary role(s):** the **Cutting Station lead / saw operator** (the cutter). The Operations Section Chief / Shoring Group Supervisor monitor it.
-- **Primary surface(s):** **phone is the floor** — the cutter works the queue and commits on a phone (K-10 requires phone-functional). **Tablet** is the natural cutting-table surface (bigger, props on the table) and adds **drag-reorder** (rec G-16); **phone is read-only order**. Broadcast can project the queue read-only.
+- **Primary surface(s):** **phone is the floor** — the cutter works the queue and commits on a phone (K-10 requires phone-functional). **Tablet is the PRIMARY work surface** — the cutter has both hands on a saw + strut, so a propped tablet is the real cut table. At ≥768px ([`useIsDesktop`](../11-decisions/ADR-032-surface-adaptive-pickers.md)) the screen becomes a **two-column split — a large hero "cut this now" card (the queue head) + a compact "up next" list** ([#354](https://github.com/Vergo402/paratech-struts/issues/354)); it adds **drag-reorder** (rec G-16, visual handle now, mechanism deferred) and **phone is read-only order**. Broadcast can project the queue read-only.
 
 ## Information hierarchy (above / below fold) — per surface
 
@@ -60,7 +60,20 @@ v3 renders three stacked sections (`renderCutTableView()`): **Ready to Cut** →
 - **One FIFO queue**, default-ordered by `cuttingStartedAt` (oldest first) — the cut that's waited longest is next. The three v3 groupings become **state within the queue** (awaiting cut → cut done, awaiting runner → handed off), carried by each card's status, not three separate headers.
 - **Priority override (new in v4):** the lead can pull an urgent cut to the top. On **tablet**, drag the card (G-16); on **phone**, priority is **read-only** (the cutter works the order the lead set) — phone is the floor, drag-reorder is the enhancement.
 - **The sent-to-runner tail stays visible, read-only**, until [Operations](20-operations.md) returns the equipment — faithful to v3 (the cutter sees what they've handed off).
-- **Single station in v4.0.** This is **one** cut station's queue. When more than one saw station runs (Saw A / Saw B / …), routing each cut to a *named* station is a multi-station concern (OQ4) — workstation-instancing like running more than one Staging area, not v4.0.
+- **Single station in v4.0** (one cut queue). The multi-saw model is designed below but deferred.
+
+### Multi-saw — the named-saw model (DEFERRED — activates with cloud sync [#369](https://github.com/Vergo402/paratech-struts/issues/369))
+
+> **This is the agreed design (Option A), NOT yet built.** It is intentionally held until real-time multi-device sync ([#369](https://github.com/Vergo402/paratech-struts/issues/369)) lands — without sync, every "which saw is cutting this?" marker is dead UI (two tablets can't see each other's claims), so v4.0 ships the single-saw hero+list layout only. When sync is live, this turns on. Decided by Alex at the [#354](https://github.com/Vergo402/paratech-struts/issues/354) design review.
+
+When more than one saw runs (Saw A / Saw B / …), they all pull from **one shared, priority-ordered queue** — not per-station queues. The model:
+
+- **One shared queue, top-down.** Every saw pulls the **top unclaimed cut**. There is no routing of a cut to a named station up front; the queue stays the single ordered list, and whichever saw is free takes the next one. The lead's priority reorder (above) still sets the order all saws honor.
+- **Named-saw selector (set once per tablet).** Each tablet **declares which saw it is** — a header chip reading e.g. **"This tablet: Saw A"** — chosen from **Saw A / Saw B / … / + add a saw**. Set once when the tablet is propped at that station; persists for the session. This is how a claim gets a name without any per-cut routing.
+- **"On Saw B" muted markers.** A cut that another saw has already pulled (is actively cutting) shows **muted in the queue with an "on Saw B" marker** — so Saw A's cutter sees it's handled and skips to the next unclaimed cut. The marker names the *other* saw; the local tablet's own active cut is the hero, not a muted row.
+- **Why named (Option A) over anonymous claims:** the named saw gives the lead and the Shoring Group Supervisor accountability — *who* is cutting *what* — and lets a cutter hand off cleanly when a saw goes down. It maps to how a real cut station is run (a saw is a named resource), consistent with [ADR-008](../11-decisions/ADR-008-nims-org-structure.md) workstation thinking.
+
+This is **workstation-instancing under Operations** (like running more than one Staging area) and is finalized for the Phase G cutting workflow / the [#369](https://github.com/Vergo402/paratech-struts/issues/369) sync build, not v4.0.
 
 ## The cut card
 
@@ -94,13 +107,13 @@ The role gate (who may commit a cut) is the D7 authorization work; the screen re
 
 ## The four-surface table (this screen)
 
-| Dimension | Phone | Tablet (cutting table) | Laptop | Broadcast |
+| Dimension | Phone | Tablet (cutting table) — PRIMARY | Laptop | Broadcast |
 |---|---|---|---|---|
-| Layout | single-column queue | board + drag handles | dense queue + keyboard | status-card grid |
-| Above fold | next cut; **cut length largest** | cuts-remaining count; cut length glanceable | dense queue | cut length largest |
-| Primary-action affordance | slide on card | slide + drag-reorder | slide + keyboard Advance/Step-back | — (read-only) |
-| Added density | one cut focus | drag priority (G-16) | sortable, keyboard | — |
-| Does NOT render | drag-reorder | — | — | slide, drag, input |
+| Layout | single-column queue | **two-column: hero "cut this now" + "up next" list** (#354) | dense queue + keyboard | status-card grid |
+| Above fold | next cut; **cut length largest** | **hero cut length ~64px** + up-next list w/ drag handles | dense queue | cut length largest |
+| Primary-action affordance | slide on card | hero slide + drag-reorder | slide + keyboard Advance/Step-back | — (read-only) |
+| Added density | one cut focus | hero/queue split + drag priority (G-16, handle now / mechanism deferred) | sortable, keyboard | — |
+| Does NOT render | drag-reorder; hero split | — | — | slide, drag, input |
 
 ## Empty / error / loading states
 
@@ -121,4 +134,4 @@ The role gate (who may commit a cut) is the D7 authorization work; the screen re
 1. **Priority-override model** — is reorder a free drag, or a small set of priority tiers? Free drag (G-16) is the default; tiers are an alternative if free order proves fragile at scale. Finalized in the Phase G cutting workflow.
 2. **Exact slide gesture + drag threshold** — affordance geometry inherited from [`card.md`](../03-primitives/card.md) OQ1 / [`sheet.md`](../03-primitives/sheet.md) OQ2; finalized in the Phase H slice.
 3. **Grouped cuts** — how a T-Shore group's three individual cuts present in the queue (each is an individual card post-cutting per the phase-split, [`20-operations.md`](20-operations.md)); ordering of group-mates finalized in the Phase G grouped-shore workflow.
-4. **Multiple saw stations (Saw A / B / n…).** v4.0 assumes **one** cut station / queue. When a second+ saw station opens, each cut must be **placed at a named station** — per-station queues + cut routing are a multi-station design (workstation-instancing under Operations, like multiple Staging areas, [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)); planned for the Phase G cutting workflow / future scale, not v4.0. (Raised by Alex at the #217 gate.)
+4. **Multiple saw stations (Saw A / B / n…).** ~~Open~~ **Decided — the named-saw model (Option A), DEFERRED to the [#369](https://github.com/Vergo402/paratech-struts/issues/369) sync build.** One shared priority-ordered queue, each saw pulls the top unclaimed cut, each tablet declares its saw (set once), and another saw's active cut shows muted with an "on Saw B" marker — full model in [§Multi-saw](#multi-saw--the-named-saw-model-deferred--activates-with-cloud-sync-369) above. v4.0 ships the single-saw hero+list layout only ([#354](https://github.com/Vergo402/paratech-struts/issues/354)). (Raised by Alex at the #217 gate; resolved at the #354 review.)
