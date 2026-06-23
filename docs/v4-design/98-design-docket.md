@@ -23,7 +23,7 @@
 | PAR / pending-rows indicator in the persistent command chrome | [#352](https://github.com/Vergo402/paratech-struts/issues/352) (OQ #39) | 2026-06-11 (seed) |
 | Per-Division / per-Group SitStat roll-up at scale | [#376](https://github.com/Vergo402/paratech-struts/issues/376) — visual pass (#353 functional shipped) | 2026-06-11 (seed) |
 | Tablet-primary posture for the saw deck (phone stays the floor) | [#376](https://github.com/Vergo402/paratech-struts/issues/376) — visual pass (#354 functional shipped) | 2026-06-11 (seed) |
-| Plate/connector pickers: real photo thumbnails, not letter swatches | [gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md) #8 (untracked) | 2026-06-11 (seed) |
+| Plate/connector pickers: real photo thumbnails, not letter swatches | [#384](https://github.com/Vergo402/paratech-struts/issues/384) (design-idea; was gaps register #8) | 2026-06-11 (seed) |
 | Inside-officer "Mine" lens — sticky per-device slice (rig and/or division/area) narrowing the board to To-do/Done + "X left · Y done", slides kept (officer advances own) | [#370](https://github.com/Vergo402/paratech-struts/issues/370) (ad hoc, Alex 2026-06-20) | 2026-06-20 |
 | ICS org chart: layout & visual design pass — center-on-IC · command-staff clipping · broken/uneven connector lines · remove "Top of command" subtitle · "Add apparatus"/"Add individual" button placement | [#373](https://github.com/Vergo402/paratech-struts/issues/373) (was #248) | 2026-06-21 |
 | ICS node-detail modal: UX/flow overhaul — zero flow between sections and actions | [#374](https://github.com/Vergo402/paratech-struts/issues/374) (was #248) | 2026-06-21 |
