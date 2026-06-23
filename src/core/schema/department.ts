@@ -56,6 +56,12 @@ export const Member = z.object({
   // join used a real, active code for THIS dept — so a member can only add
   // themselves with a valid code, never write into an arbitrary department.
   viaCode: z.string().optional(),
+  // Soft-revoke (#381, User Manager): a revoked member's row is KEPT (so the audit
+  // trail stays attributable) but marked inactive. ABSENT = active (every pre-#381
+  // row, and every fresh join); false = revoked → the membership rules deny all
+  // access. Reactivation flips it back to true. The ≥1-Admin anti-lockout treats
+  // deactivating an admin the same as demoting one (rules.ts).
+  active: z.boolean().optional(),
 });
 export type Member = z.infer<typeof Member>;
 
@@ -123,18 +129,22 @@ export const NO_PERMISSIONS: Permissions = {
 
 /**
  * Resolve a roleId to its permission set — keyed off PERMISSION, never role name.
- *   admin       → ADMIN_PERMISSIONS
- *   null / ''    → NO_PERMISSIONS (a guest is no one's member)
- *   default + any custom id → DEFAULT_PERMISSIONS (the safe floor)
+ *   admin                    → ADMIN_PERMISSIONS (built-in, never editable)
+ *   null / ''                → NO_PERMISSIONS (a guest is no one's member)
+ *   a synced role (Default-edited or custom) → its live permissions
+ *   an unsynced / unknown id → DEFAULT_PERMISSIONS (the safe under-privilege floor)
  *
- * ponytail: built-in constants are correct while only admin/default exist (custom
- * roles can't be created until the P4 User Manager, #381). CEILING: once Admins can
- * EDIT Default or create custom roles, the live set lives at /orgs/{dept}/roles/{id}/
- * permissions — swap this body to read a synced roles table; the signature is unchanged,
- * so every call site (usePermissions + the rules) stays put.
+ * The optional `roles` is the live `/orgs/{dept}/roles` map (P4 #381 — usePermissions
+ * passes it from useRoles()). When absent or not-yet-loaded, the built-in fallback
+ * applies: admin/Default resolve from constants (correct for an un-edited dept), and a
+ * custom role floors to Default until the table loads — under-privilege, never over.
  */
-export function permissionsForRole(roleId: string | null): Permissions {
+export function permissionsForRole(
+  roleId: string | null,
+  roles?: Record<string, Role>,
+): Permissions {
   if (roleId === ADMIN_ROLE_ID) return ADMIN_PERMISSIONS;
   if (!roleId) return NO_PERMISSIONS;
+  if (roles && roles[roleId]) return roles[roleId].permissions;
   return DEFAULT_PERMISSIONS;
 }

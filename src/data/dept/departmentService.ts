@@ -7,9 +7,10 @@ import {
   DEFAULT_ROLE_ID,
   ADMIN_PERMISSIONS,
   DEFAULT_PERMISSIONS,
+  type Permissions,
 } from '@core/schema';
 import { newId } from '@core/id';
-import { rtdb, ref, get, set } from '../sync/firebase';
+import { rtdb, ref, get, set, update, remove } from '../sync/firebase';
 import { logSyncEvent } from '../sync/diagnostics';
 import { syncStatusStore } from '../sync/syncStatus';
 import { sessionStore, type SessionStoreApi } from '../store/session';
@@ -82,6 +83,27 @@ export interface DepartmentServiceApi {
   /** Restore a queued join into the sync-status store on boot, so the banner reflects it
    *  across a reload that happened while still offline. */
   restorePendingJoin(): Promise<void>;
+
+  // ---- User Manager (#381) — admin governance, manageUsers-gated by the rules ----
+  /** Cold-read the department's members map (admin screen only — not a live store). */
+  readMembers(): Promise<Record<string, Member> | null>;
+  /** Set a member's role (also the promote-to-Admin path: roleId = ADMIN_ROLE_ID). */
+  assignRole(uid: string, roleId: string): Promise<AdminMutationResult>;
+  /** Soft-revoke: mark the member inactive (row kept for the audit trail). */
+  revokeMember(uid: string): Promise<AdminMutationResult>;
+  /** Restore a revoked member. */
+  reactivateMember(uid: string): Promise<AdminMutationResult>;
+  /** Create a custom role (name + the 8 permission toggles). */
+  createRole(name: string, permissions: Permissions): Promise<AdminMutationResult>;
+  /** Edit a role's name and/or permissions (Default editable; Admin is fixed). */
+  editRole(roleId: string, patch: { name?: string; permissions?: Permissions }): Promise<AdminMutationResult>;
+  /** Delete a custom role, reassigning any holders to Default first (built-ins can't be deleted). */
+  deleteRole(roleId: string): Promise<AdminMutationResult>;
+}
+
+export interface AdminMutationResult {
+  ok: boolean;
+  reason?: string;
 }
 
 // The offline join intent lives in global meta (survives the page reload), alongside the
@@ -324,7 +346,177 @@ export function createDepartmentService(deps: {
     if (intent) syncStatusStore.setPendingJoin(intent);
   }
 
-  return { createDepartment, joinByCode, retryPendingJoin, restorePendingJoin };
+  // ---- User Manager (#381) ------------------------------------------------------
+  // All governance writes target the CURRENT department and are gated server-side by
+  // the ADMIN_MANAGE / roles / audit rules (manageUsers + the ≥1-Admin anti-lockout).
+  // Online-first via the Firebase seam (RTDB's own offline cache queues a write made
+  // offline + echoes it to the rolesListener instantly — no custom queue here). A rule
+  // rejection (e.g. a tampered last-admin demote the UI already disables) surfaces as a
+  // PERMISSION_DENIED, mapped to a plain reason. Every action appends an audit entry.
+  interface AdminCtx {
+    deptId: string;
+    by: string; // the acting device's uid (the audit `by`; NOT bound to auth.uid by the rule)
+    actor: string; // the acting admin's display name (denormalized for a readable trail)
+  }
+  function adminCtx(): AdminCtx | null {
+    const s = deps.session().store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId) return null;
+    return { deptId: s.departmentId, by: s.deviceUid, actor: s.identity.displayName };
+  }
+
+  function writeError(err: unknown): string {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/permission_denied/i.test(msg)) return "You don't have permission for that change.";
+    return 'That change could not be saved. Try again.';
+  }
+
+  // Append one write-once governance entry (the P3 /orgs/{dept}/audit append-only node).
+  // Fire-and-forget: a failed audit write must never block (or roll back) the action it records.
+  function appendAudit(c: AdminCtx, type: string, details: Record<string, unknown>): Promise<unknown> {
+    const id = newId();
+    return set(ref(rtdb, `orgs/${c.deptId}/audit/${id}`), {
+      id,
+      type,
+      at: Date.now(),
+      by: c.by,
+      actor: c.actor,
+      ...details,
+    }).catch((err) =>
+      logSyncEvent('audit_write_failed', {
+        deptId: c.deptId,
+        error: err instanceof Error ? err.message : String(err),
+      }),
+    );
+  }
+
+  async function readMembers(): Promise<Record<string, Member> | null> {
+    const c = adminCtx();
+    if (!c) return null;
+    try {
+      const snap = await get(ref(rtdb, `orgs/${c.deptId}/members`));
+      const val = snap.val();
+      if (!val || typeof val !== 'object') return {};
+      const out: Record<string, Member> = {};
+      for (const [uid, body] of Object.entries(val as Record<string, unknown>)) {
+        const parsed = Member.safeParse(body);
+        if (parsed.success) out[uid] = parsed.data;
+      }
+      return out;
+    } catch {
+      return null; // offline / read error → the hook shows a retry state
+    }
+  }
+
+  async function assignRole(uid: string, roleId: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    try {
+      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { role: roleId });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'roleAssigned', { targetUid: uid, roleId });
+    return { ok: true };
+  }
+
+  async function setActive(uid: string, active: boolean, type: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    try {
+      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { active });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, type, { targetUid: uid });
+    return { ok: true };
+  }
+  const revokeMember = (uid: string) => setActive(uid, false, 'memberRevoked');
+  const reactivateMember = (uid: string) => setActive(uid, true, 'memberReactivated');
+
+  async function createRole(name: string, permissions: Permissions): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const trimmed = name.trim();
+    if (!trimmed) return { ok: false, reason: 'A role name is required.' };
+    const roleId = newId();
+    const role = { name: trimmed, permissions }; // custom → no builtIn flag
+    try {
+      Role.parse({ id: roleId, ...role }); // L-11: validate the shape the rules derive from
+    } catch {
+      return { ok: false, reason: 'Could not create the role. Check the name and try again.' };
+    }
+    try {
+      await set(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), role);
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'roleCreated', { roleId, roleName: trimmed });
+    return { ok: true };
+  }
+
+  async function editRole(
+    roleId: string,
+    patch: { name?: string; permissions?: Permissions },
+  ): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    if (roleId === ADMIN_ROLE_ID) return { ok: false, reason: 'The Admin role is fixed and cannot be edited.' };
+    const changes: Record<string, unknown> = {};
+    if (patch.name !== undefined) {
+      const trimmed = patch.name.trim();
+      if (!trimmed) return { ok: false, reason: 'A role name is required.' };
+      changes.name = trimmed;
+    }
+    if (patch.permissions !== undefined) changes.permissions = patch.permissions;
+    try {
+      await update(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), changes);
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'roleEdited', { roleId, ...(changes.name ? { roleName: changes.name } : {}) });
+    return { ok: true };
+  }
+
+  async function deleteRole(roleId: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    if (roleId === ADMIN_ROLE_ID || roleId === DEFAULT_ROLE_ID) {
+      return { ok: false, reason: 'Built-in roles cannot be deleted.' };
+    }
+    // Reassign any holders to Default FIRST so no member is left pointing at a missing role.
+    const members = await readMembers();
+    const holders = members
+      ? Object.entries(members).filter(([, m]) => m.role === roleId).map(([uid]) => uid)
+      : [];
+    for (const uid of holders) {
+      try {
+        await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { role: DEFAULT_ROLE_ID });
+      } catch (err) {
+        return { ok: false, reason: writeError(err) };
+      }
+    }
+    try {
+      await remove(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`));
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'roleDeleted', { roleId, reassigned: holders.length });
+    return { ok: true };
+  }
+
+  return {
+    createDepartment,
+    joinByCode,
+    retryPendingJoin,
+    restorePendingJoin,
+    readMembers,
+    assignRole,
+    revokeMember,
+    reactivateMember,
+    createRole,
+    editRole,
+    deleteRole,
+  };
 }
 
 /** The app's singleton department service, bound to the singleton session store. */

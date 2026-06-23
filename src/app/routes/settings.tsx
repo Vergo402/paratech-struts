@@ -201,6 +201,20 @@ export function SettingsScreen() {
         </Button>
       </section>
 
+      {/* Administration gateway (#381) — Admin-only entry to the User Manager. Visible to any
+          role granted "Manage users & roles"; hidden from everyone else (ADR-017). */}
+      {perms.manageUsers && (
+        <section className="flex flex-col gap-3">
+          <h2 style={{ font: 'var(--type-headline-2)' }}>Administration</h2>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
+            Manage who&rsquo;s in your department and what each role can do.
+          </p>
+          <Button variant="secondary" onPress={() => navigate({ to: '/users' })}>
+            Users &amp; roles
+          </Button>
+        </section>
+      )}
+
       {/* Custom ICS titles (#323) — department config, so gated on manageSettings (ADR-017, #380).
           The titles still render on the org chart picker for everyone; this is the editor. */}
       {perms.manageSettings && (

@@ -5,6 +5,7 @@ import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import { createApparatusStore, type ApparatusStoreApi } from './apparatusStore';
 import { createCustomTitlesStore, type CustomTitlesStoreApi } from './customTitlesStore';
 import { createChecklistTemplateStore, type ChecklistTemplateStoreApi } from './checklistTemplateStore';
+import { createRolesStore, type RolesStoreApi } from './rolesStore';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { syncService } from '../sync/syncService';
 import { inventoryPath, toCloudRow, tombstone } from '../sync/stateSync';
@@ -33,6 +34,7 @@ export let inventoryStore: InventoryStoreApi;
 export let apparatusStore: ApparatusStoreApi;
 export let customTitlesStore: CustomTitlesStoreApi;
 export let checklistTemplateStore: ChecklistTemplateStoreApi;
+export let rolesStore: RolesStoreApi;
 
 /** Construct the 5 store instances against a bucket's DB. No IO — boot does that.
  *  Does NOT set activeBucket — that's only stamped once activateBucket fully boots. */
@@ -55,6 +57,9 @@ function build(bucket: string): void {
   checklistTemplateStore = createChecklistTemplateStore(deptDb, {
     onBlob: (env) => void syncService.setState('checklists', env),
   });
+  // Roles are in-memory (no Dexie) + cloud-authoritative — recreated per bucket so a switch
+  // resets them; the rolesListener (started in main.tsx) pulls /orgs/{deptId}/roles in.
+  rolesStore = createRolesStore();
   operationStore = createOperationStore({
     db: deptDb,
     inventory: inventoryStore,

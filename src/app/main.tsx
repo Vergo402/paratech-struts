@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
-import { eventListenerSync, stateListenerSync, connectivity } from '@data/sync';
+import { eventListenerSync, stateListenerSync, rolesListenerSync, connectivity } from '@data/sync';
 import { departmentService } from '@data/dept';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
@@ -49,6 +49,9 @@ function App() {
         // Cloud-sync Increment 3: the non-event STATE listener (inventory + apparatus /
         // titles / checklists, last-write-wins) — same lifecycle as the event listener.
         stateListenerSync.start();
+        // #381: the department ROLE definitions (a one-way pull) — feeds usePermissions so an
+        // edited Default / custom role re-gates the app. Same start/teardown lifecycle.
+        rolesListenerSync.start();
         connectivity.start();
         // Cloud-sync Increment 4: surface a join that was queued offline (banner reflects
         // it across the reload); connectivity auto-completes it on reconnect. Fire-and-forget.

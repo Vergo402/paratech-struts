@@ -139,9 +139,26 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(w).toContain("data.child('role').val() === 'admin'");
     expect(w).toContain("newData.child('role').val() !== 'admin'");
     expect(w).toContain('!newData.exists()');
+    // #381 — DEACTIVATING an admin also counts as "losing admin" (a revoke can't strand the dept)
+    expect(w).toContain("newData.child('active').val() === false");
     // ...allowed only when the actor is a DIFFERENT admin → >=1 admin always remains
     expect(w).toContain('$uid !== auth.uid');
     expect(w).toContain("child(auth.uid).child('role').val() === 'admin'");
+  });
+
+  it('membership gating is active-aware — a revoked member (active:false) is denied (#381)', () => {
+    const dept = committed.rules.orgs.$deptId;
+    const ACTIVE = ".child('active').val() != false";
+    // the dept READ + every member-gated WRITE require the member to be active (not revoked)
+    expect(dept['.read']).toContain(`data.child('members').child(auth.uid)${ACTIVE}`);
+    expect(dept.events.$opId.$eventId['.write']).toContain(ACTIVE);
+    expect(dept.inventory.$itemId['.write']).toContain(ACTIVE);
+    expect(dept.apparatus['.write']).toContain(ACTIVE);
+    expect(dept.audit.$auditId['.write']).toContain(ACTIVE);
+    expect(dept.members.$uid['.write']).toContain(ACTIVE); // the admin-manage actor must be active
+    // `active` is an allowed optional boolean on the member; unknown fields still rejected
+    expect(dept.members.$uid.active['.validate']).toContain('isBoolean');
+    expect(dept.members.$uid.$other['.validate']).toBe(false);
   });
 
   it('the governance audit log is manageUsers-gated, append-only, and has no public read (#380)', () => {

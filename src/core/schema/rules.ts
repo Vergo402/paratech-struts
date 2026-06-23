@@ -87,7 +87,18 @@ function objectRules(schema: z.ZodObject<z.ZodRawShape>): RuleTree {
 //           built-in roles; the create-only grant cascades to that subtree, so
 //           no per-child .write is needed. After creation the node exists → this
 //           is false → children are default-deny until their feature adds a rule.
-const READ_MEMBER = "auth != null && data.child('members').child(auth.uid).exists()";
+// Membership is ACTIVE-aware (#381 soft-revoke). A member row must exist AND not be
+// flagged inactive: `active` is optional (ABSENT = active — every pre-#381 row and every
+// fresh join), so the gate is `!= false` and only an explicit active:false (a revoked
+// member) is denied. Centralized so READ + every member-gated WRITE share one definition.
+// Two forms: `data`-relative for the dept node's own .read; root-relative for the writes
+// nested under $deptId. CAUTION: NO literal { } (gen-rules.ts brace-matches the orgs block).
+const MEMBER_DATA = "data.child('members').child(auth.uid)";
+const MEMBER_ROOT = "root.child('orgs').child($deptId).child('members').child(auth.uid)";
+const activeMemberData = `${MEMBER_DATA}.exists() && ${MEMBER_DATA}.child('active').val() != false`;
+const activeMemberRoot = `${MEMBER_ROOT}.exists() && ${MEMBER_ROOT}.child('active').val() != false`;
+
+const READ_MEMBER = 'auth != null && ' + activeMemberData;
 const CREATE_ONLY = "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid";
 
 // JOIN (workflow #232) — a signed-in user adds ONLY their own member row to an
@@ -135,8 +146,7 @@ const INVITE_CODE_READ = 'auth != null';
 // is deferred. Reads cascade from the dept node's READ_MEMBER (no .read needed here).
 // CAUTION: rule strings must contain NO literal { } — gen-rules.ts brace-matches the
 // orgs block; a literal brace would mis-slice the file (see scripts/gen-rules.ts).
-const EVENT_WRITE =
-  "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && !data.exists()";
+const EVENT_WRITE = 'auth != null && ' + activeMemberRoot + ' && !data.exists()';
 // Coarse envelope only — require the identity/clock/actor children with the right
 // primitive types. NOT the per-type fields: the client FieldShoreEvent.safeParse
 // (operationStore.doCommit) is the strict gate; the cloud is not the payload-integrity
@@ -161,8 +171,7 @@ const EVENT_ENVELOPE_VALIDATE =
 // fine-grained gate; the UI's usePermissions hook is the friendly front that hides what a
 // member can't do. Reads cascade from the dept node's READ_MEMBER. CAUTION: NO literal { }
 // (gen-rules.ts brace-matches the orgs block).
-const STATE_MEMBER =
-  "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists()";
+const STATE_MEMBER = 'auth != null && ' + activeMemberRoot;
 const LWW_MONOTONIC =
   "(!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())";
 
@@ -187,22 +196,23 @@ const STATE_BLOB_VALIDATE = "newData.hasChildren(['lastWriteAt']) && newData.chi
 const INVENTORY_ROW_VALIDATE =
   "newData.hasChildren(['id','lastWriteAt']) && newData.child('lastWriteAt').isNumber()";
 
-// MEMBER MANAGEMENT (#380, ≥1-Admin anti-lockout) — beyond the create-only self-join
-// (JOIN_SELF_WRITE), a manageUsers-holder may change or revoke OTHER members. The ≥1-Admin
-// guarantee is COUNT-FREE (RTDB can't count children; a cooperative counter is bypassable):
-// an admin can only LOSE the admin role by ANOTHER admin's action, so at least one admin
-// always remains and the LAST admin can never be removed. "Losing admin" = currently admin
-// AND becoming non-admin or deleted; that case additionally requires the actor to be a
-// DIFFERENT admin — which also closes the hole where a custom role granted manageUsers (but
-// not the admin role) could otherwise strand the dept. Uses the ADMIN_ROLE_ID stable token
-// structurally (same precedent as JOIN_SELF_WRITE's DEFAULT_ROLE_ID), NOT a role NAME. The
-// "disabled-with-reason" affordance is inherent to the P4 User Manager; this is the rule
-// floor. CAUTION: NO literal { }.
-const actorIsMember = "root.child('orgs').child($deptId).child('members').child(auth.uid).exists()";
+// MEMBER MANAGEMENT (#380 anti-lockout + #381 soft-revoke) — beyond the create-only
+// self-join (JOIN_SELF_WRITE), an ACTIVE manageUsers-holder may change, revoke, or
+// reactivate OTHER members. The ≥1-Admin guarantee is COUNT-FREE (RTDB can't count
+// children; a cooperative counter is bypassable): an admin can only LOSE admin by ANOTHER
+// admin's action, so at least one admin always remains and the LAST admin can never be
+// removed. "Losing admin" = currently admin AND becoming non-admin, deleted, OR DEACTIVATED
+// (#381 — a revoke must not strand the dept any more than a demote); that case additionally
+// requires the actor to be a DIFFERENT admin — which also closes the hole where a custom
+// role granted manageUsers (but not the admin role) could otherwise strand the dept. Uses
+// the ADMIN_ROLE_ID stable token structurally (same precedent as JOIN_SELF_WRITE's
+// DEFAULT_ROLE_ID), NOT a role NAME. The "disabled-with-reason" affordance lives in the
+// User Manager UI; this is the rule floor. CAUTION: NO literal { }.
+const actorIsMember = activeMemberRoot; // active-aware (#381): a revoked admin can't manage
 const actorIsAdmin = `${memberRole} === '${ADMIN_ROLE_ID}'`;
 const adminLosingAdmin =
   `data.child('role').val() === '${ADMIN_ROLE_ID}' && ` +
-  `(!newData.exists() || newData.child('role').val() !== '${ADMIN_ROLE_ID}')`;
+  `(!newData.exists() || newData.child('role').val() !== '${ADMIN_ROLE_ID}' || newData.child('active').val() === false)`;
 const ADMIN_MANAGE = [
   'auth != null',
   actorIsMember,

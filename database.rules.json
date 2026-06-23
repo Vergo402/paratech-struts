@@ -139,7 +139,7 @@
     },
     "orgs": {
       "$deptId": {
-        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".read": "auth != null && data.child('members').child(auth.uid).exists() && data.child('members').child(auth.uid).child('active').val() != false",
         ".write": "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid",
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 100"
@@ -165,10 +165,13 @@
             "viaCode": {
               ".validate": "!newData.exists() || (newData.isString())"
             },
+            "active": {
+              ".validate": "!newData.exists() || (newData.isBoolean())"
+            },
             "$other": {
               ".validate": false
             },
-            ".write": "(auth != null && $uid === auth.uid && !data.exists() && newData.child('role').val() === 'default' && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true) || (auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && ( !(data.child('role').val() === 'admin' && (!newData.exists() || newData.child('role').val() !== 'admin')) || ( root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' && $uid !== auth.uid ) ))"
+            ".write": "(auth != null && $uid === auth.uid && !data.exists() && newData.child('role').val() === 'default' && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true) || (auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && ( !(data.child('role').val() === 'admin' && (!newData.exists() || newData.child('role').val() !== 'admin' || newData.child('active').val() === false)) || ( root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' && $uid !== auth.uid ) ))"
           }
         },
         "roles": {
@@ -218,32 +221,32 @@
         "events": {
           "$opId": {
             "$eventId": {
-              ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && !data.exists()",
+              ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && !data.exists()",
               ".validate": "newData.hasChildren(['id','opId','type','at','by']) && newData.child('id').isString() && newData.child('opId').isString() && newData.child('type').isString() && newData.child('at').isNumber()"
             }
           }
         },
         "inventory": {
           "$itemId": {
-            ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageInventory').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
+            ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageInventory').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
             ".validate": "newData.hasChildren(['id','lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
           }
         },
         "apparatus": {
-          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageInventory').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
+          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageInventory').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
           ".validate": "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
         },
         "titles": {
-          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
+          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
           ".validate": "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
         },
         "checklists": {
-          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
+          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
           ".validate": "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
         },
         "audit": {
           "$auditId": {
-            ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && !data.exists()",
+            ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && !data.exists()",
             ".validate": "newData.hasChildren(['id','type','at','by']) && newData.child('id').isString() && newData.child('type').isString() && newData.child('at').isNumber()"
           }
         }

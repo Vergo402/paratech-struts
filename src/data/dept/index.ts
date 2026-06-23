@@ -8,4 +8,5 @@ export {
   type CreatedDepartment,
   type JoinDepartmentResult,
   type JoinedDepartment,
+  type AdminMutationResult,
 } from './departmentService';

@@ -8,6 +8,7 @@ export {
 } from './syncService';
 export { eventListenerSync, createEventListenerSync, type EventListenerSync } from './eventListener';
 export { stateListenerSync, createStateListenerSync, type StateListenerSync } from './stateListener';
+export { rolesListenerSync, createRolesListenerSync, type RolesListenerSync } from './rolesListener';
 export { connectivity, createConnectivity, type Connectivity } from './connectivity';
 export {
   syncStatusStore,

@@ -24,10 +24,12 @@ export {
   apparatusStore,
   customTitlesStore,
   checklistTemplateStore,
+  rolesStore,
   activateBucket,
   currentDeptDb,
   currentBucket,
 } from './registry';
+export { createRolesStore, type RolesStoreApi, type RolesState } from './rolesStore';
 export { createOperationStore, type OperationStoreApi, type CommitResult, type CommitOptions } from './operationStore';
 export {
   createInventoryStore,

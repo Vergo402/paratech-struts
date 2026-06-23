@@ -1,0 +1,163 @@
+/* User Manager (#381) — the Admin-gated members/roles screen under Settings. Back-office,
+   non-operational (48pt targets); composes Segmented + Sheet + Modal + Toggle + Badge. */
+
+.fs-um {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.fs-um-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-um-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-left: calc(-1 * var(--space-2));
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-button);
+}
+.fs-um-back:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-um-title { font: var(--type-headline-1); color: var(--text-primary); }
+
+/* ---- list rows (shared by the Members + Roles faces) ---- */
+.fs-um-list { display: flex; flex-direction: column; }
+
+.fs-um-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) 0;
+  border: none;
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+  background: none;
+  color: var(--text-primary);
+  text-align: left;
+  font: var(--type-body);
+}
+button.fs-um-row { cursor: pointer; }
+button.fs-um-row:hover { background: var(--surface-card-hover); }
+button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-button); }
+
+.fs-um-row-main { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.fs-um-row-name { font: var(--type-body); color: var(--text-primary); }
+.fs-um-you { color: var(--text-tertiary); font: var(--type-caption); }
+.fs-um-row-sub { font: var(--type-caption); color: var(--text-tertiary); }
+.fs-um-row-right { display: inline-flex; align-items: center; gap: var(--space-2); flex: 0 0 auto; }
+.fs-um-chevron { color: var(--text-tertiary); flex: 0 0 auto; }
+
+/* a revoked member: struck + dimmed, with the danger mark + a Reactivate control */
+.fs-um-row.is-revoked .fs-um-row-name { text-decoration: line-through; color: var(--text-tertiary); }
+.fs-um-revoked-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--type-caption);
+  color: var(--danger-text);
+}
+
+/* ---- role badges (3 tones; the role NAME carries the meaning — color is decorative, P9) ---- */
+.fs-um-rolebadge {
+  display: inline-flex;
+  align-items: center;
+  font: var(--type-label);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+}
+.fs-um-rolebadge--admin { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.fs-um-rolebadge--default { color: var(--text-secondary); border: var(--stroke-width) solid var(--surface-stroke); }
+.fs-um-rolebadge--custom { color: var(--status-process-text); background: var(--status-process-bg); }
+
+/* the built-in / editable tag on a role row */
+.fs-um-tag {
+  font: var(--type-label);
+  color: var(--text-tertiary);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+}
+
+/* the always-shown anti-lockout note under the Members list */
+.fs-um-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  padding-top: var(--space-2);
+}
+
+/* the gold "+ Create role" action */
+.fs-um-create {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+}
+
+/* a quiet inline Reactivate pill on a revoked row */
+.fs-um-reactivate {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  background: none;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  padding: 4px var(--space-2);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+.fs-um-reactivate:hover { background: var(--surface-card-hover); }
+.fs-um-reactivate:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---- sheets (assign role / role editor) ---- */
+.fs-um-sheet-help { font: var(--type-caption); color: var(--text-tertiary); margin-bottom: var(--space-3); }
+.fs-um-sheet-error { font: var(--type-caption); color: var(--danger-text); margin: var(--space-2) 0; }
+.fs-um-sheet-foot { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+
+/* assign-role: a pick list, the current role checked */
+.fs-um-pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-2) var(--space-2);
+  border: none;
+  border-radius: var(--radius-card);
+  background: none;
+  color: var(--text-primary);
+  text-align: left;
+  font: var(--type-body);
+  cursor: pointer;
+}
+.fs-um-pick:hover:not(:disabled) { background: var(--surface-card-hover); }
+.fs-um-pick:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-um-pick:disabled { opacity: 0.45; cursor: not-allowed; }
+.fs-um-pick.is-current { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.fs-um-pick-check { color: var(--accent); flex: 0 0 auto; }
+.fs-um-pick-reason { font: var(--type-caption); color: var(--text-tertiary); }
+
+.fs-um-revoke-row { margin-top: var(--space-4); border-top: var(--stroke-width) solid var(--surface-stroke); padding-top: var(--space-3); }
+
+/* role editor: the 8 permission toggles in two columns */
+.fs-um-perms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 var(--space-5);
+}
+.fs-um-delete-row { margin-top: var(--space-4); border-top: var(--stroke-width) solid var(--surface-stroke); padding-top: var(--space-3); }
