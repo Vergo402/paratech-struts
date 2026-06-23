@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { ChecklistTemplate, type ChecklistId, type ChecklistNode } from '@core/schema';
 import { BASELINE_TEMPLATES } from '@core/checklist';
 import { type FieldShoreDB } from './db';
+import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's checklist library (#230, ADR-020). Departments fully author the
 // three checklists (IC Command / Task Level / ORM-TCRM); a checklist is the shipped
@@ -35,17 +36,33 @@ export interface ChecklistTemplateStoreApi {
   setNodes(id: ChecklistId, nodes: ChecklistNode[]): Promise<void>;
   /** Discard the fork — restore the shipped FieldShore baseline. */
   reset(id: ChecklistId): Promise<void>;
+  // ---- cloud-sync Increment 3 (whole-blob LWW) ----
+  /** The local overrides blob's last-write stamp (epoch ms; 0 if never stamped). */
+  localStamp(): number;
+  /** Apply a remote overrides blob: durable write (preserving the remote stamp) THEN mirror. */
+  applyRemote(value: unknown, stamp: number): Promise<void>;
 }
 
 // A wrong-shape row degrades to "no overrides" (every checklist falls back to its
 // baseline) rather than dead-ending boot.
 const Overrides = z.record(ChecklistTemplate).catch({});
 
-export function createChecklistTemplateStore(db: FieldShoreDB): ChecklistTemplateStoreApi {
-  const store = createStore<ChecklistTemplateState>(() => ({ overrides: {} }));
+/** Cloud-write hook (cloud-sync Increment 3) — push the whole-overrides blob to
+ *  /orgs/{deptId}/checklists after the durable write. */
+export interface ChecklistTemplateCloudHooks {
+  onBlob?: (env: BlobEnvelope<ChecklistOverrides>) => void;
+}
 
-  function persist(overrides: ChecklistOverrides): Promise<unknown> {
-    return db.meta.put({ key: CHECKLIST_TEMPLATES_KEY, value: JSON.stringify(overrides) });
+export function createChecklistTemplateStore(
+  db: FieldShoreDB,
+  hooks: ChecklistTemplateCloudHooks = {},
+): ChecklistTemplateStoreApi {
+  const store = createStore<ChecklistTemplateState>(() => ({ overrides: {} }));
+  let stampVal = 0;
+
+  function persist(overrides: ChecklistOverrides, stamp: number): Promise<unknown> {
+    stampVal = stamp;
+    return db.meta.put({ key: CHECKLIST_TEMPLATES_KEY, value: JSON.stringify(wrapBlob(overrides, stamp)) });
   }
 
   function effective(id: ChecklistId): ChecklistTemplate {
@@ -58,6 +75,7 @@ export function createChecklistTemplateStore(db: FieldShoreDB): ChecklistTemplat
 
     async boot() {
       let overrides: ChecklistOverrides = {};
+      stampVal = 0;
       const row = await db.meta.get(CHECKLIST_TEMPLATES_KEY);
       if (row) {
         let parsed: unknown;
@@ -66,7 +84,9 @@ export function createChecklistTemplateStore(db: FieldShoreDB): ChecklistTemplat
         } catch {
           parsed = undefined;
         }
-        overrides = Overrides.parse(parsed) as ChecklistOverrides;
+        const { value, lastWriteAt } = unwrapBlob(parsed);
+        overrides = Overrides.parse(value) as ChecklistOverrides;
+        stampVal = lastWriteAt;
       }
       store.setState({ overrides }, true);
     },
@@ -76,14 +96,26 @@ export function createChecklistTemplateStore(db: FieldShoreDB): ChecklistTemplat
     async setNodes(id, nodes) {
       const forked: ChecklistTemplate = { ...effective(id), source: 'department', nodes };
       const overrides = { ...store.getState().overrides, [id]: forked };
-      await persist(overrides);
+      const stamp = Date.now();
+      await persist(overrides, stamp);
       store.setState({ overrides }, true);
+      hooks.onBlob?.(wrapBlob(overrides, stamp));
     },
 
     async reset(id) {
       const overrides = { ...store.getState().overrides };
       delete overrides[id];
-      await persist(overrides);
+      const stamp = Date.now();
+      await persist(overrides, stamp);
+      store.setState({ overrides }, true);
+      hooks.onBlob?.(wrapBlob(overrides, stamp));
+    },
+
+    localStamp: () => stampVal,
+
+    async applyRemote(value, stamp) {
+      const overrides = Overrides.parse(value) as ChecklistOverrides;
+      await persist(overrides, stamp);
       store.setState({ overrides }, true);
     },
   };

@@ -7,4 +7,5 @@ export {
   type ReconcileResult,
 } from './syncService';
 export { eventListenerSync, createEventListenerSync, type EventListenerSync } from './eventListener';
+export { stateListenerSync, createStateListenerSync, type StateListenerSync } from './stateListener';
 export { connectivity, createConnectivity, type Connectivity } from './connectivity';

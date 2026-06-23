@@ -66,4 +66,36 @@ describe('checklistTemplateStore', () => {
     await store2.boot();
     expect(store2.effective('orm-tcrm')).toBe(BASELINE_TEMPLATES['orm-tcrm']);
   });
+
+  // ---- cloud-sync Increment 3 (whole-blob LWW; the overrides map is a record) ----
+  it('setNodes wraps the overrides blob, fires the hook, and tracks localStamp', async () => {
+    const blobs: { value: unknown; lastWriteAt: number }[] = [];
+    const synced = createChecklistTemplateStore(db, { onBlob: (env) => blobs.push(env) });
+    await synced.boot();
+    const t = synced.effective('task-level');
+    await synced.setNodes('task-level', addChild(t.nodes, t.nodes[0]!.id, { id: 'x', label: 'Step' }));
+    const raw = JSON.parse((await db.meta.get('fieldshore_checklist_templates'))!.value);
+    expect(raw).toMatchObject({ value: { 'task-level': expect.any(Object) }, lastWriteAt: expect.any(Number) });
+    expect(synced.localStamp()).toBe(raw.lastWriteAt);
+    expect(blobs.at(-1)!.lastWriteAt).toBe(raw.lastWriteAt);
+  });
+
+  it('boot unwraps a bare pre-Increment-3 overrides record as the oldest (stamp 0)', async () => {
+    const fork = { ...BASELINE_TEMPLATES['ic-command'], source: 'department' as const };
+    await db.meta.put({ key: 'fieldshore_checklist_templates', value: JSON.stringify({ 'ic-command': fork }) });
+    await store.boot();
+    expect(store.effective('ic-command').source).toBe('department');
+    expect(store.localStamp()).toBe(0);
+  });
+
+  it('applyRemote replaces overrides, preserves the remote stamp, no echo', async () => {
+    const blobs: unknown[] = [];
+    const synced = createChecklistTemplateStore(db, { onBlob: (env) => blobs.push(env) });
+    await synced.boot();
+    const fork = { ...BASELINE_TEMPLATES['orm-tcrm'], source: 'department' as const };
+    await synced.applyRemote({ 'orm-tcrm': fork }, 900);
+    expect(synced.effective('orm-tcrm').source).toBe('department');
+    expect(synced.localStamp()).toBe(900);
+    expect(blobs).toHaveLength(0);
+  });
 });

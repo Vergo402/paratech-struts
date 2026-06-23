@@ -40,6 +40,11 @@ function stripUndefined(event: FieldShoreEvent): unknown {
   return JSON.parse(JSON.stringify(event));
 }
 
+/** Same undefined-stripping for the non-event state path (Increment 3 setState). */
+function jsonClean(value: unknown): unknown {
+  return JSON.parse(JSON.stringify(value));
+}
+
 export type RowSyncState = 'queued' | 'synced';
 
 export interface ReconcileResult {
@@ -58,6 +63,10 @@ export interface SyncServiceApi {
   /** Per-row sync state for the repo hooks (staleness is life-safety — ADR-024). */
   getRowSyncState(eventId: string): RowSyncState;
   pendingCount(): number;
+  /** Push a non-event STATE record (cloud-sync Increment 3) to orgs/{deptId}/{relPath}
+   *  — an LWW overwrite (not the append-only event queue). Best-effort, guest-guarded,
+   *  strips undefined. Fire-and-forget: callers void the promise. */
+  setState(relPath: string, value: unknown): Promise<void>;
 }
 
 export function createSyncService(deps: {
@@ -158,6 +167,17 @@ export function createSyncService(deps: {
 
     pendingCount() {
       return queue.length;
+    },
+
+    async setState(relPath, value) {
+      const dept = deps.deptId();
+      if (!dept) return; // guest / no department → nothing to sync
+      const path = `orgs/${dept}/${relPath}`;
+      try {
+        await set(path, jsonClean(value)); // LWW overwrite; the cloud rule guards monotonic lastWriteAt
+      } catch (err) {
+        log('state-write-failed', { path, reason: String(err) }); // best-effort (the listener re-pushes on next merge)
+      }
     },
   };
 }

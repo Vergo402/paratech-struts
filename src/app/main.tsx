@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
-import { eventListenerSync, connectivity } from '@data/sync';
+import { eventListenerSync, stateListenerSync, connectivity } from '@data/sync';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -42,9 +42,12 @@ function App() {
         // Cloud-sync Increment 2: the active dept bucket is hydrated by now, so the
         // events listener (cloud → local + first-snapshot backlog push) and the
         // reconnect-flush both start here. A dept switch reloads the page, tearing
-        // these down structurally and re-starting them on the new bucket. All three
+        // these down structurally and re-starting them on the new bucket. All four
         // start() calls are idempotent (StrictMode-safe).
         eventListenerSync.start();
+        // Cloud-sync Increment 3: the non-event STATE listener (inventory + apparatus /
+        // titles / checklists, last-write-wins) — same lifecycle as the event listener.
+        stateListenerSync.start();
         connectivity.start();
         if (!cancelled) setBooted(true);
       })

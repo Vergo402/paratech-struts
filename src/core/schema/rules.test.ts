@@ -90,6 +90,32 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(event.$other).toBeUndefined();
   });
 
+  it('non-event state (inventory/apparatus/titles/checklists) is membership-gated + monotonic LWW', () => {
+    const dept = committed.rules.orgs.$deptId;
+    const writes = [
+      dept.inventory.$itemId['.write'],
+      dept.apparatus['.write'],
+      dept.titles['.write'],
+      dept.checklists['.write'],
+    ];
+    for (const w of writes) {
+      // membership floor (any member; the app's manageInventory/manageSettings stay the fine gate)
+      expect(w).toContain("root.child('orgs').child($deptId).child('members').child(auth.uid).exists()");
+      // monotonic last-write-wins guard, >= so an idempotent re-push isn't wedged
+      expect(w).toContain("newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val()");
+      expect(w).not.toContain('!data.exists() &&'); // NOT append-only — state is overwrite
+    }
+    // validate requires the LWW clock as a number; inventory also keys on id (tombstone shape)
+    expect(dept.inventory.$itemId['.validate']).toContain("newData.hasChildren(['id','lastWriteAt'])");
+    expect(dept.apparatus['.validate']).toContain("newData.child('lastWriteAt').isNumber()");
+    // the blob does NOT require `value` — RTDB drops an empty array/object, so an emptied
+    // roster serializes to just { lastWriteAt }; requiring value would block that write
+    expect(dept.apparatus['.validate']).not.toContain("'value'");
+    // reads cascade from the dept node's .read — no own .read on the state subtrees
+    expect(dept.inventory['.read']).toBeUndefined();
+    expect(dept.apparatus['.read']).toBeUndefined();
+  });
+
   it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {
     expect(committed.rules.departments.$deptId.members.$uid['.validate']).toBe('newData.isBoolean()');
     expect(committed.rules.$other).toEqual({ '.read': false, '.write': false });

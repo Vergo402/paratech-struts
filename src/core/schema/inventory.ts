@@ -16,6 +16,11 @@ export const InventoryItem = z.object({
   apparatusId: z.string(),
   quantity: z.number().int().nonnegative(),
   available: z.number().int().nonnegative(),
+  // Cloud-sync Increment 3: last-write-wins stamp (epoch ms). Set only by MANUAL stock
+  // edits (the inventoryStore choke point), never by deploy/return — `available` is
+  // event-owned, so an event-only change must not bump the LWW clock. Optional: seeded /
+  // migrated / pre-Increment-3 rows have none (treated as oldest on sync).
+  lastWriteAt: z.number().int().nonnegative().optional(),
 });
 export type InventoryItem = z.infer<typeof InventoryItem>;
 

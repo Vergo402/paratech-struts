@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Apparatus } from '@core/schema';
 import { type FieldShoreDB } from './db';
 import type { InventoryStoreApi } from './inventoryStore';
+import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
 
 // The department apparatus roster — which rigs exist, independent of the stock they
 // carry. Durable copy is ONE json row in `meta` (APPARATUS_ROSTER_KEY), mirroring
@@ -36,17 +37,33 @@ export interface ApparatusStoreApi {
   removeApparatus(id: string, inventory: InventoryStoreApi): Promise<void>;
   /** Replace one rig in the mirror after a durable write elsewhere (e.g. import). */
   applyLocal(a: Apparatus): void;
+  // ---- cloud-sync Increment 3 (whole-blob LWW) ----
+  /** The local blob's last-write stamp (epoch ms; 0 if never stamped). */
+  localStamp(): number;
+  /** Apply a remote roster blob: durable write (preserving the remote stamp) THEN mirror.
+   *  No re-push (no echo). */
+  applyRemote(value: unknown, stamp: number): Promise<void>;
+  /** Push the current roster blob to the cloud (used after an inline import write). */
+  pushRoster(): void;
 }
 
 // A wrong-shape row degrades to an empty roster rather than dead-ending boot — the
 // scope-tab union still surfaces rigs that carry stock, so no rig silently vanishes.
 const Roster = z.array(Apparatus).catch([]);
 
-export function createApparatusStore(db: FieldShoreDB): ApparatusStoreApi {
-  const store = createStore<ApparatusState>(() => ({ roster: [] }));
+/** Cloud-write hook (cloud-sync Increment 3) — fired after the durable write so the
+ *  registry can push the whole-roster blob to /orgs/{deptId}/apparatus. */
+export interface ApparatusCloudHooks {
+  onBlob?: (env: BlobEnvelope<Apparatus[]>) => void;
+}
 
-  function persist(roster: Apparatus[]): Promise<unknown> {
-    return db.meta.put({ key: APPARATUS_ROSTER_KEY, value: JSON.stringify(roster) });
+export function createApparatusStore(db: FieldShoreDB, hooks: ApparatusCloudHooks = {}): ApparatusStoreApi {
+  const store = createStore<ApparatusState>(() => ({ roster: [] }));
+  let stampVal = 0; // localStamp — the persisted blob's lastWriteAt
+
+  function persist(roster: Apparatus[], stamp: number): Promise<unknown> {
+    stampVal = stamp;
+    return db.meta.put({ key: APPARATUS_ROSTER_KEY, value: JSON.stringify(wrapBlob(roster, stamp)) });
   }
 
   return {
@@ -54,6 +71,7 @@ export function createApparatusStore(db: FieldShoreDB): ApparatusStoreApi {
 
     async boot() {
       let roster: Apparatus[] = [];
+      stampVal = 0;
       const row = await db.meta.get(APPARATUS_ROSTER_KEY);
       if (row) {
         let parsed: unknown;
@@ -62,19 +80,25 @@ export function createApparatusStore(db: FieldShoreDB): ApparatusStoreApi {
         } catch {
           parsed = undefined;
         }
-        roster = Roster.parse(parsed);
+        const { value, lastWriteAt } = unwrapBlob(parsed);
+        roster = Roster.parse(value);
+        stampVal = lastWriteAt;
       }
       store.setState({ roster }, true);
     },
 
     async addApparatus(a) {
       const next = [...store.getState().roster.filter((r) => r.id !== a.id), a];
-      await persist(next);
+      const stamp = Date.now();
+      await persist(next, stamp);
       store.setState({ roster: next }, true);
+      hooks.onBlob?.(wrapBlob(next, stamp));
     },
 
     async removeApparatus(id, inventory) {
       const next = store.getState().roster.filter((r) => r.id !== id);
+      const stamp = Date.now();
+      let removedIds: string[] = [];
       // Read AND write inside one rw txn: the guard sees committed stock, and a throw
       // rolls back both the roster row and any cascade delete (L-8 discipline).
       await db.transaction('rw', db.meta, db.inventory, async () => {
@@ -82,15 +106,32 @@ export function createApparatusStore(db: FieldShoreDB): ApparatusStoreApi {
         if (items.some((i) => i.quantity - i.available > 0)) {
           throw new Error(`apparatus ${id} has deployed equipment (L-8 abort)`);
         }
-        if (items.length > 0) await db.inventory.bulkDelete(items.map((i) => i.id));
-        await persist(next);
+        removedIds = items.map((i) => i.id);
+        if (removedIds.length > 0) await db.inventory.bulkDelete(removedIds);
+        await persist(next, stamp);
       });
       await inventory.boot(); // resync the inventory mirror after the cascade delete
       store.setState({ roster: next }, true);
+      hooks.onBlob?.(wrapBlob(next, stamp));
+      // The cascade bulk-deleted the rows directly (not via the stock mutators), so push
+      // cloud tombstones for them — otherwise peers resurrect the orphaned cloud rows.
+      inventory.tombstoneCloud(removedIds);
     },
 
     applyLocal(a) {
       store.setState((s) => ({ roster: [...s.roster.filter((r) => r.id !== a.id), a] }), true);
+    },
+
+    localStamp: () => stampVal,
+
+    async applyRemote(value, stamp) {
+      const roster = Roster.parse(value);
+      await persist(roster, stamp); // preserve the REMOTE stamp (not Date.now)
+      store.setState({ roster }, true);
+    },
+
+    pushRoster() {
+      hooks.onBlob?.(wrapBlob(store.getState().roster, stampVal));
     },
   };
 }

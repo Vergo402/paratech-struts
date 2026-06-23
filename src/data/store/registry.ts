@@ -7,6 +7,7 @@ import { createCustomTitlesStore, type CustomTitlesStoreApi } from './customTitl
 import { createChecklistTemplateStore, type ChecklistTemplateStoreApi } from './checklistTemplateStore';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { syncService } from '../sync/syncService';
+import { inventoryPath, toCloudRow, tombstone } from '../sync/stateSync';
 
 // data/store/registry — per-department local bucketing (cloud-sync Increment 1).
 // Each department gets its OWN Dexie DB (`fieldshore-dept-<deptId>`); a guest /
@@ -37,10 +38,23 @@ export let checklistTemplateStore: ChecklistTemplateStoreApi;
  *  Does NOT set activeBucket — that's only stamped once activateBucket fully boots. */
 function build(bucket: string): void {
   deptDb = createDB(deptDbName(bucket));
-  inventoryStore = createInventoryStore(deptDb);
-  apparatusStore = createApparatusStore(deptDb);
-  customTitlesStore = createCustomTitlesStore(deptDb);
-  checklistTemplateStore = createChecklistTemplateStore(deptDb);
+  // Cloud-sync Increment 3 — wire each non-event store's durable-write hook to a
+  // best-effort LWW push (orgs/{deptId}/...). setState is guest-guarded + fire-and-
+  // forget, so this never blocks a local write and no-ops for a guest. Keeping the
+  // push HERE (not in the stores) preserves their sync-ignorance, like operationStore.
+  inventoryStore = createInventoryStore(deptDb, {
+    onRow: (item) => void syncService.setState(inventoryPath(item.id), toCloudRow(item)),
+    onDelete: (id, lastWriteAt) => void syncService.setState(inventoryPath(id), tombstone(id, lastWriteAt)),
+  });
+  apparatusStore = createApparatusStore(deptDb, {
+    onBlob: (env) => void syncService.setState('apparatus', env),
+  });
+  customTitlesStore = createCustomTitlesStore(deptDb, {
+    onBlob: (env) => void syncService.setState('titles', env),
+  });
+  checklistTemplateStore = createChecklistTemplateStore(deptDb, {
+    onBlob: (env) => void syncService.setState('checklists', env),
+  });
   operationStore = createOperationStore({
     db: deptDb,
     inventory: inventoryStore,

@@ -24,6 +24,12 @@ import { syncService } from './syncService';
 export interface EventListenerSync {
   start(): void;
   stop(): void;
+  /** Re-reconcile the latest cloud snapshot already received (no new network read).
+   *  Called by the STATE listener once inventory has durably landed: an inventory-
+   *  consequential event (deploy/return) that was dropped because its stock row hadn't
+   *  arrived yet (the two listeners are uncoordinated subscriptions) re-applies now that
+   *  the row exists. Idempotent — already-applied events fail the &id dedup and drop. */
+  resync(): void;
 }
 
 /** Flatten the RTDB {opId}→{eventId}→event snapshot into a flat event list. */
@@ -65,6 +71,7 @@ export function createEventListenerSync(deps: {
   const subscribe = deps.subscribe ?? firebaseSubscribe;
   let unsub: (() => void) | null = null;
   let firstSnapshotSeen = false;
+  let lastCloud: FieldShoreEvent[] = []; // the latest snapshot, retained for resync()
 
   // Two-way reconciliation on the first snapshot (see header).
   async function firstMerge(cloud: FieldShoreEvent[]): Promise<void> {
@@ -86,6 +93,7 @@ export function createEventListenerSync(deps: {
       firstSnapshotSeen = false;
       unsub = subscribe(`orgs/${dept}/events`, (snap) => {
         const cloud = flatten(snap);
+        lastCloud = cloud; // retain for resync()
         if (!firstSnapshotSeen) {
           firstSnapshotSeen = true;
           void firstMerge(cloud);
@@ -97,6 +105,9 @@ export function createEventListenerSync(deps: {
     stop() {
       unsub?.();
       unsub = null;
+    },
+    resync() {
+      if (lastCloud.length > 0) void deps.reconcile(lastCloud);
     },
   };
 }

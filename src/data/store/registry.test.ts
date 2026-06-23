@@ -1,8 +1,15 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { activateBucket, inventoryStore, operationStore, currentDeptDb } from './registry';
+import {
+  activateBucket,
+  inventoryStore,
+  apparatusStore,
+  operationStore,
+  currentDeptDb,
+} from './registry';
 import { createDB, deptDbName, GUEST_BUCKET } from './db';
 import { sessionStore } from './session';
+import { syncService } from '../sync/syncService';
 import type { InventoryItem, FieldShoreEvent } from '@core/schema';
 
 // The anti-bleed proof for per-department bucketing: switching A→B→A keeps each
@@ -101,5 +108,38 @@ describe('store registry — dev bucket guard wiring', () => {
     await operationStore.commit(opCreated());
 
     expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+// Proves the cloud-sync Increment 3 push hooks are WIRED into the dept-scoped stores:
+// a manual stock edit reaches syncService.setState at the right path, with `available`
+// stripped (event-owned). The store-level proof that deploy/return DON'T push lives in
+// inventoryStore.test.ts (applyDeploy/ReturnTxn take no hooks).
+describe('store registry — non-event cloud-push wiring (Increment 3)', () => {
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await createDB(deptDbName('dept-sync')).delete();
+  });
+
+  it('a manual inventory edit pushes to orgs-relative inventory/{id} without available', async () => {
+    await activateBucket('dept-sync');
+    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue();
+
+    const id = await inventoryStore.addOne({
+      apparatus: 'Rescue 2', apparatusId: 'app-r2', type: 'strut', model: 'LS 203', system: 'LongShore',
+    });
+
+    expect(spy).toHaveBeenCalledWith(`inventory/${id}`, expect.objectContaining({ id, quantity: 1, lastWriteAt: expect.any(Number) }));
+    const payload = spy.mock.calls[0]![1] as Record<string, unknown>;
+    expect('available' in payload).toBe(false); // available is event-owned, never synced
+  });
+
+  it('an apparatus edit pushes the whole roster blob to the apparatus path', async () => {
+    await activateBucket('dept-sync');
+    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue();
+
+    await apparatusStore.addApparatus({ id: 'app-1', name: 'Engine 1', type: 'Engine' });
+
+    expect(spy).toHaveBeenCalledWith('apparatus', expect.objectContaining({ value: expect.any(Array), lastWriteAt: expect.any(Number) }));
   });
 });

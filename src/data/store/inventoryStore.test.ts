@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createDB, type FieldShoreDB } from './db';
-import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
+import { createInventoryStore, applyDeployTxn, applyReturnTxn, type InventoryStoreApi } from './inventoryStore';
 import { createApparatusStore, type ApparatusStoreApi } from './apparatusStore';
+import type { CloudRow } from '../sync/stateSync';
 import type { InventoryItem } from '@core/schema';
 import type { ParsedImportRow } from '../inventory/excel';
 import { newId } from '@core/id';
@@ -133,5 +134,98 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
     const results = await Promise.allSettled([inv.decrementItem('a'), inv.decrementItem('a')]);
     expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
     expect(get('a')).toBeUndefined();
+  });
+});
+
+// ---- cloud-sync Increment 3 (LWW) ------------------------------------------
+describe('inventory store — LWW stamp + remote apply', () => {
+  let db: FieldShoreDB;
+  let rows: InventoryItem[];
+  let deletes: { id: string; lastWriteAt: number }[];
+  let inv: InventoryStoreApi;
+
+  beforeEach(async () => {
+    db = createDB(`test-inv-lww-${newId()}`);
+    rows = [];
+    deletes = [];
+    inv = createInventoryStore(db, {
+      onRow: (item) => rows.push(item),
+      onDelete: (id, lastWriteAt) => deletes.push({ id, lastWriteAt }),
+    });
+    await inv.boot();
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+  const get = (id: string) => inv.store.getState().items.find((i) => i.id === id);
+
+  it('manual mutators stamp lastWriteAt and fire the cloud-row hook', async () => {
+    const id = await inv.addOne({ apparatus: 'Rescue 2', apparatusId: 'app-r2', type: 'strut', model: 'LS 203', system: 'LongShore' });
+    expect(get(id)!.lastWriteAt).toBeGreaterThan(0);
+    expect(rows.at(-1)!.id).toBe(id);
+    await inv.incrementItem(id);
+    expect(rows.at(-1)!.lastWriteAt).toBeGreaterThan(0);
+  });
+
+  it('removeItem fires the delete hook with a stamp', async () => {
+    await db.inventory.add(strut({ id: 'a', quantity: 1, available: 1 }));
+    await inv.boot();
+    await inv.removeItem('a');
+    expect(deletes.at(-1)).toMatchObject({ id: 'a' });
+    expect(deletes.at(-1)!.lastWriteAt).toBeGreaterThan(0);
+  });
+
+  it('deploy/return do NOT stamp lastWriteAt (available is event-owned, not synced)', async () => {
+    await db.inventory.add(strut({ id: 'a', quantity: 2, available: 2 })); // no lastWriteAt
+    const deployed = await applyDeployTxn(db, 'a');
+    expect(deployed.lastWriteAt).toBeUndefined();
+    const returned = await applyReturnTxn(db, 'a');
+    expect(returned.lastWriteAt).toBeUndefined();
+  });
+
+  it('applyRemoteRow recomputes available = quantity − deployed (never trusts the wire)', async () => {
+    await db.inventory.add(strut({ id: 'a', quantity: 4, available: 1 })); // 3 deployed locally
+    await inv.boot();
+    const row: CloudRow = { id: 'a', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 6, lastWriteAt: 100 };
+    await inv.applyRemoteRow(row);
+    expect(get('a')).toMatchObject({ quantity: 6, available: 3, lastWriteAt: 100 }); // deployed 3 preserved
+  });
+
+  it('applyRemoteRow clamps a remote quantity below the deployed floor (never strands a unit)', async () => {
+    await db.inventory.add(strut({ id: 'a', quantity: 4, available: 1 })); // 3 deployed
+    await inv.boot();
+    const row: CloudRow = { id: 'a', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, lastWriteAt: 100 };
+    await inv.applyRemoteRow(row);
+    expect(get('a')).toMatchObject({ quantity: 3, available: 0 }); // clamped up to the 3 deployed
+  });
+
+  it('applyRemoteRow for a brand-new id sets available = quantity', async () => {
+    const row: CloudRow = { id: 'b', type: 'plate', plateId: 'rigid6', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 5, lastWriteAt: 100 };
+    await inv.applyRemoteRow(row);
+    expect(get('b')).toMatchObject({ quantity: 5, available: 5 });
+  });
+
+  it('applyRemoteDelete removes an undeployed row, but keeps one with deployed units', async () => {
+    await db.inventory.bulkAdd([strut({ id: 'a', quantity: 1, available: 1 }), strut({ id: 'b', quantity: 2, available: 0 })]);
+    await inv.boot();
+    await inv.applyRemoteDelete('a'); // none deployed → removed
+    expect(get('a')).toBeUndefined();
+    await inv.applyRemoteDelete('b'); // all deployed → kept (never strand)
+    expect(get('b')).toBeDefined();
+  });
+
+  it('applyRemoteRow drops a malformed wire row (no quantity → would be NaN) instead of poisoning local state', async () => {
+    const bad = { id: 'x', type: 'strut', apparatus: 'R2', apparatusId: 'app-r2', lastWriteAt: 100 } as unknown as CloudRow; // no quantity
+    await inv.applyRemoteRow(bad);
+    expect(get('x')).toBeUndefined();
+    expect(await db.inventory.get('x')).toBeUndefined();
+  });
+
+  it('applyRemoteRow / applyRemoteDelete do NOT re-push (no echo)', async () => {
+    const row: CloudRow = { id: 'c', type: 'plate', plateId: 'rigid6', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 2, lastWriteAt: 100 };
+    await inv.applyRemoteRow(row);
+    await inv.applyRemoteDelete('c');
+    expect(rows).toHaveLength(0);
+    expect(deletes).toHaveLength(0);
   });
 });

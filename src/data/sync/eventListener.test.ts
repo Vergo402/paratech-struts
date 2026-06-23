@@ -110,6 +110,25 @@ describe('eventListenerSync — cloud → local, first-snapshot two-way merge', 
     expect(flush).not.toHaveBeenCalled();
   });
 
+  it('resync re-reconciles the latest snapshot (deploy dropped before its stock row arrived)', async () => {
+    const l = make();
+    l.start();
+    cb!(snap([ev('a'), ev('deploy')])); // first snapshot retained
+    await settle();
+    reconcile.mockClear();
+
+    l.resync(); // state listener: inventory just landed → re-drive
+    expect(reconcile).toHaveBeenCalledTimes(1);
+    expect((reconcile.mock.calls[0]![0] as FieldShoreEvent[]).map((e) => e.id).sort()).toEqual(['a', 'deploy']);
+  });
+
+  it('resync is a no-op before any snapshot has arrived', () => {
+    const l = make();
+    l.start();
+    l.resync();
+    expect(reconcile).not.toHaveBeenCalled();
+  });
+
   it('start() is idempotent and stop() detaches', () => {
     const l = make();
     l.start();

@@ -146,6 +146,32 @@ const EVENT_ENVELOPE_VALIDATE =
   "newData.child('id').isString() && newData.child('opId').isString() && " +
   "newData.child('type').isString() && newData.child('at').isNumber()";
 
+// STATE (cloud-sync Increment 3) — non-event department state at /orgs/{deptId}/
+// {inventory|apparatus|titles|checklists}. Unlike the append-only event log, STATE is
+// OVERWRITE (last-write-wins): the write gate is department MEMBERSHIP + a MONOTONIC
+// lastWriteAt guard, so a stale write (older stamp) is rejected and a late-arriving
+// offline edit can't clobber a newer one. `>=` (NOT `>`) so an idempotent re-push of an
+// unchanged record (first-merge backlog) is never rejected and wedged. Membership-only
+// like EVENT_WRITE (Alex 2026-06-23): the app's manageInventory / manageSettings screens
+// stay the fine-grained gate; this is the floor (stops non-members + other departments).
+// Reads cascade from the dept node's READ_MEMBER. CAUTION: NO literal { } (gen-rules.ts
+// brace-matches the orgs block).
+const STATE_MEMBER =
+  "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists()";
+const LWW_MONOTONIC =
+  "(!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())";
+const STATE_WRITE = STATE_MEMBER + ' && ' + LWW_MONOTONIC;
+// Coarse envelope: require the LWW clock (also what the guard reads) as a number. Inventory
+// also requires `id` (its key echo / the tombstone shape). Per-field validation stays
+// client-side (Zod on read), like the event envelope. No $other:false (extras pass).
+// NOTE: the blob does NOT require `value` — RTDB drops an empty array/object, so an emptied
+// roster/titles/overrides serializes to just { lastWriteAt }. Requiring `value` would make
+// "I deleted my last rig" un-syncable (permission_denied). The reader Zod-`.catch`es an
+// absent value to empty, so this is safe.
+const STATE_BLOB_VALIDATE = "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()";
+const INVENTORY_ROW_VALIDATE =
+  "newData.hasChildren(['id','lastWriteAt']) && newData.child('lastWriteAt').isNumber()";
+
 /** The `orgs` value for database.rules.json. Pure — same output every run. */
 export function buildV4OrgsRules(): RuleTree {
   const deptFields = Department.omit({ id: true }).shape; // name/createdBy/createdAt (id is the key)
@@ -169,6 +195,15 @@ export function buildV4OrgsRules(): RuleTree {
   deptNode['events'] = {
     $opId: { $eventId: { '.write': EVENT_WRITE, '.validate': EVENT_ENVELOPE_VALIDATE } },
   };
+
+  // Non-event STATE (cloud-sync Increment 3, last-write-wins) — membership + monotonic
+  // lastWriteAt guard. Inventory is per-row (key = itemId; a live row or a tombstone);
+  // apparatus/titles/checklists are whole { value, lastWriteAt } blobs. Reads cascade
+  // from the dept node's .read.
+  deptNode['inventory'] = { $itemId: { '.write': STATE_WRITE, '.validate': INVENTORY_ROW_VALIDATE } };
+  deptNode['apparatus'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
+  deptNode['titles'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
+  deptNode['checklists'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
 
   // The invite-code resolver — a sibling of $deptId under /orgs (a named child
   // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and

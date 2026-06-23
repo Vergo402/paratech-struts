@@ -214,6 +214,25 @@ describe('syncService (event cloud sync + L-7 merge guard)', () => {
     expect(ops.store.getState().shorePoints.find((s) => s.id === 'sp-3')!.status).toBe('runner'); // converged
   });
 
+  it('setState pushes a non-event state record to orgs/{dept}/{relPath} (LWW overwrite)', async () => {
+    await sync.setState('apparatus', { value: [{ id: 'app-1' }], lastWriteAt: 5 });
+    expect(writes['orgs/dept-1/apparatus']).toEqual({ value: [{ id: 'app-1' }], lastWriteAt: 5 });
+    await sync.setState('inventory/inv-9', { id: 'inv-9', deleted: true, lastWriteAt: 7 }); // tombstone shape
+    expect(writes['orgs/dept-1/inventory/inv-9']).toEqual({ id: 'inv-9', deleted: true, lastWriteAt: 7 });
+  });
+
+  it('setState is a no-op for a guest and strips undefined fields', async () => {
+    dept = null;
+    await sync.setState('apparatus', { value: [], lastWriteAt: 1 });
+    expect(Object.keys(writes)).toHaveLength(0);
+
+    dept = 'dept-1';
+    await sync.setState('inventory/inv-1', { id: 'inv-1', model: undefined, quantity: 2, lastWriteAt: 1 });
+    const w = writes['orgs/dept-1/inventory/inv-1'] as Record<string, unknown>;
+    expect('model' in w).toBe(false); // RTDB rejects undefined → stripped
+    expect(w).toMatchObject({ id: 'inv-1', quantity: 2, lastWriteAt: 1 });
+  });
+
   it('re-drains events enqueued during an in-flight upload (no second trigger needed)', async () => {
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));
