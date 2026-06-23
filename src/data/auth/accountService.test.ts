@@ -1,3 +1,7 @@
+// @vitest-environment jsdom
+// jsdom: accountService's magic-link flow reads window.location.origin +
+// window.localStorage (the email stash). The setup file provides a spec-faithful
+// localStorage shim for jsdom; node-env data tests are unaffected.
 import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -8,6 +12,10 @@ vi.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: vi.fn(),
   updateProfile: vi.fn(),
   signOut: vi.fn(),
+  sendSignInLinkToEmail: vi.fn(),
+  isSignInWithEmailLink: vi.fn(),
+  signInWithEmailLink: vi.fn(),
+  sendPasswordResetEmail: vi.fn(),
 }));
 
 import {
@@ -15,6 +23,10 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
   signOut as fbSignOut,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, SESSION_KEY, type SessionStoreApi } from '../store/session';
@@ -36,6 +48,9 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
   let account: AccountServiceApi;
 
   beforeEach(async () => {
+    // Clear call history each test (keep implementations, re-set below) so the
+    // `not.toHaveBeenCalled()` assertions are order-independent.
+    vi.clearAllMocks();
     vi.mocked(createUserWithEmailAndPassword).mockResolvedValue(
       { user: { uid: FB_UID, displayName: null } } as never,
     );
@@ -44,6 +59,13 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     );
     vi.mocked(updateProfile).mockResolvedValue(undefined);
     vi.mocked(fbSignOut).mockResolvedValue(undefined);
+    vi.mocked(sendSignInLinkToEmail).mockResolvedValue(undefined);
+    vi.mocked(isSignInWithEmailLink).mockReturnValue(false);
+    vi.mocked(signInWithEmailLink).mockResolvedValue(
+      { user: { uid: FB_UID, displayName: 'Capt. Reyes' } } as never,
+    );
+    vi.mocked(sendPasswordResetEmail).mockResolvedValue(undefined);
+    window.localStorage.clear();
 
     db = createDB(`test-account-${newId()}`);
     session = createSessionStore(db);
@@ -127,5 +149,67 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     await account.signIn({ email: 'reyes@dept14.gov', password: 'pw' });
     await account.signOut();
     expect(await db.inventory.count()).toBe(before);
+  });
+
+  it('sendMagicLink: sends a same-device link and stashes the trimmed email', async () => {
+    const res = await account.sendMagicLink('  reyes@dept14.gov  ');
+    expect(res.ok).toBe(true);
+    expect(vi.mocked(sendSignInLinkToEmail)).toHaveBeenCalledWith(
+      expect.anything(),
+      'reyes@dept14.gov',
+      expect.objectContaining({ handleCodeInApp: true }),
+    );
+    expect(window.localStorage.getItem('fieldshore_magic_email')).toBe('reyes@dept14.gov');
+  });
+
+  it('sendMagicLink: rejects an empty email before any network call', async () => {
+    const res = await account.sendMagicLink('   ');
+    expect(res.ok).toBe(false);
+    expect(vi.mocked(sendSignInLinkToEmail)).not.toHaveBeenCalled();
+  });
+
+  it('isMagicLink: delegates to Firebase (and is safe on a thrown check)', () => {
+    vi.mocked(isSignInWithEmailLink).mockReturnValueOnce(true);
+    expect(account.isMagicLink('https://app/auth?mode=signIn')).toBe(true);
+    vi.mocked(isSignInWithEmailLink).mockImplementationOnce(() => {
+      throw new Error('bad url');
+    });
+    expect(account.isMagicLink('garbage')).toBe(false);
+  });
+
+  it('completeMagicLink: signs in with the stashed email → member, then clears the stash', async () => {
+    window.localStorage.setItem('fieldshore_magic_email', 'reyes@dept14.gov');
+    const res = await account.completeMagicLink('https://app/auth?oobCode=x');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.member.accountId).toBe(FB_UID);
+    expect(session.store.getState().identity.kind).toBe('member');
+    expect(window.localStorage.getItem('fieldshore_magic_email')).toBeNull();
+  });
+
+  it('completeMagicLink: no stashed email (cross-device) → calm reason, no sign-in', async () => {
+    const res = await account.completeMagicLink('https://app/auth?oobCode=x');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/same device/i);
+    expect(vi.mocked(signInWithEmailLink)).not.toHaveBeenCalled();
+    expect(session.store.getState().identity.kind).toBe('guest');
+  });
+
+  it('completeMagicLink: an expired / already-used link maps to "request a new one"', async () => {
+    window.localStorage.setItem('fieldshore_magic_email', 'reyes@dept14.gov');
+    vi.mocked(signInWithEmailLink).mockRejectedValueOnce({ code: 'auth/expired-action-code' });
+    const res = await account.completeMagicLink('https://app/auth?oobCode=stale');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/expired or was already used/i);
+    expect(session.store.getState().identity.kind).toBe('guest');
+  });
+
+  it('sendPasswordReset: emails a reset link for a non-empty address', async () => {
+    const res = await account.sendPasswordReset('reyes@dept14.gov');
+    expect(res.ok).toBe(true);
+    expect(vi.mocked(sendPasswordResetEmail)).toHaveBeenCalledWith(
+      expect.anything(),
+      'reyes@dept14.gov',
+    );
+    expect((await account.sendPasswordReset('   ')).ok).toBe(false);
   });
 });

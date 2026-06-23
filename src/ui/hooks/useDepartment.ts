@@ -13,6 +13,13 @@ export interface DepartmentApi {
   department: { id: string; name: string } | null;
   role: string | null;
   inviteCode: string | null;
+  /**
+   * The CURRENT department id read straight from the store at call time — for
+   * deciding navigation right after an auth action, where the subscribed
+   * `department` is the stale mount-time value (setMember re-discovers the dept
+   * synchronously, but the component hasn't re-rendered yet).
+   */
+  currentDepartmentId: () => string | null;
   createDepartment: DepartmentServiceApi['createDepartment'];
   joinByCode: DepartmentServiceApi['joinByCode'];
 }
@@ -26,6 +33,7 @@ export function useDepartment(): DepartmentApi {
     department: departmentId ? { id: departmentId, name: departmentName ?? '' } : null,
     role,
     inviteCode,
+    currentDepartmentId: () => sessionStore.store.getState().departmentId,
     createDepartment: departmentService.createDepartment,
     joinByCode: departmentService.joinByCode,
   };

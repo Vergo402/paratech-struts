@@ -8,6 +8,10 @@ const mockUseDepartment = vi.fn();
 const mockSignIn = vi.fn();
 const mockCreateAccount = vi.fn();
 const mockNavigate = vi.fn();
+const mockSendMagicLink = vi.fn();
+const mockSendPasswordReset = vi.fn();
+const mockIsMagicLink = vi.fn();
+const mockCompleteMagicLink = vi.fn();
 
 vi.mock('@ui/hooks', () => ({
   useSession: () => mockUseSession(),
@@ -27,17 +31,27 @@ beforeEach(() => {
   mockNavigate.mockReset();
   mockSignIn.mockReset().mockResolvedValue(OK);
   mockCreateAccount.mockReset().mockResolvedValue(OK);
+  mockSendMagicLink.mockReset().mockResolvedValue({ ok: true });
+  mockSendPasswordReset.mockReset().mockResolvedValue({ ok: true });
+  mockIsMagicLink.mockReset().mockReturnValue(false); // not a magic-link landing by default
+  mockCompleteMagicLink.mockReset().mockResolvedValue(OK);
   mockUseSession.mockReturnValue({
     identity: { kind: 'guest' },
     signIn: mockSignIn,
     createAccount: mockCreateAccount,
     signOut: vi.fn(),
+    sendMagicLink: mockSendMagicLink,
+    sendPasswordReset: mockSendPasswordReset,
+    isMagicLink: mockIsMagicLink,
+    completeMagicLink: mockCompleteMagicLink,
   });
   // Default: a freshly-authed member has no department → forward to setup.
+  // currentDepartmentId() is the FRESH read used for the post-auth route.
   mockUseDepartment.mockReset().mockReturnValue({
     department: null,
     role: null,
     createDepartment: vi.fn(),
+    currentDepartmentId: () => null,
   });
 });
 
@@ -82,6 +96,7 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
       department: { id: 'd1', name: 'Hamden Fire Rescue' },
       role: 'admin',
       createDepartment: vi.fn(),
+      currentDepartmentId: () => 'd1',
     });
     const user = userEvent.setup();
     render(<AuthScreen />);
@@ -135,9 +150,101 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     expect(pw).toHaveAttribute('type', 'text');
   });
 
-  it('the cloud-dependent options are present but disabled', () => {
+  it('the email actions are disabled until an email is entered, then enable', async () => {
+    const user = userEvent.setup();
     render(<AuthScreen />);
-    expect(screen.getByRole('button', { name: 'Email me a sign-in link' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Forgot password?' })).toBeDisabled();
+    const magic = screen.getByRole('button', { name: 'Email me a sign-in link' });
+    const forgot = screen.getByRole('button', { name: 'Forgot password?' });
+    expect(magic).toBeDisabled();
+    expect(forgot).toBeDisabled();
+    await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
+    expect(magic).toBeEnabled();
+    expect(forgot).toBeEnabled();
+  });
+
+  it('the email actions are hidden in Create Account mode (display name needed first)', async () => {
+    const user = userEvent.setup();
+    render(<AuthScreen />);
+    await user.click(screen.getByRole('radio', { name: 'Create Account' }));
+    expect(screen.queryByRole('button', { name: 'Email me a sign-in link' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Forgot password?' })).not.toBeInTheDocument();
+  });
+
+  it('"Email me a sign-in link" sends the link and shows a check-your-email confirmation', async () => {
+    const user = userEvent.setup();
+    render(<AuthScreen />);
+    await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
+    await user.click(screen.getByRole('button', { name: 'Email me a sign-in link' }));
+    expect(mockSendMagicLink).toHaveBeenCalledWith('reyes@dept14.gov');
+    expect(screen.getByText('Check your email')).toBeInTheDocument();
+    expect(screen.getByText('reyes@dept14.gov')).toBeInTheDocument();
+    // a way back to the form
+    expect(screen.getByRole('button', { name: 'Use password instead' })).toBeInTheDocument();
+  });
+
+  it('"Forgot password?" sends a reset and shows the reset confirmation', async () => {
+    const user = userEvent.setup();
+    render(<AuthScreen />);
+    await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
+    await user.click(screen.getByRole('button', { name: 'Forgot password?' }));
+    expect(mockSendPasswordReset).toHaveBeenCalledWith('reyes@dept14.gov');
+    expect(screen.getByText(/password-reset link/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Back to sign in' })).toBeInTheDocument();
+  });
+
+  it('a failed magic-link send shows the reason inline and stays on the form', async () => {
+    mockSendMagicLink.mockResolvedValue({ ok: false, reason: 'Too many attempts — try again in a moment.' });
+    const user = userEvent.setup();
+    render(<AuthScreen />);
+    await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
+    await user.click(screen.getByRole('button', { name: 'Email me a sign-in link' }));
+    expect(screen.getByText('Too many attempts — try again in a moment.')).toBeInTheDocument();
+    expect(screen.queryByText('Check your email')).not.toBeInTheDocument();
+  });
+
+  it('opening from a magic-link completes the sign-in and forwards into the app', async () => {
+    mockIsMagicLink.mockReturnValue(true);
+    mockUseDepartment.mockReturnValue({
+      department: { id: 'd1', name: 'Hamden Fire Rescue' },
+      role: 'default',
+      createDepartment: vi.fn(),
+      currentDepartmentId: () => 'd1',
+    });
+    render(<AuthScreen />);
+    // landing shows the "signing you in" view immediately
+    expect(screen.getByText('Signing you in…')).toBeInTheDocument();
+    await vi.waitFor(() => expect(mockCompleteMagicLink).toHaveBeenCalled());
+    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' }));
+  });
+
+  it('a returning member (no dept at mount, re-discovered on completion) lands in the app, not setup', async () => {
+    mockIsMagicLink.mockReturnValue(true);
+    // department is null at mount (guest session row) but the store re-discovers
+    // it during completion — currentDepartmentId reads the FRESH value, so the
+    // route must be the app, not /create-department (the stale-closure bug).
+    mockUseDepartment.mockReturnValue({
+      department: null,
+      role: null,
+      createDepartment: vi.fn(),
+      currentDepartmentId: () => 'd1',
+    });
+    render(<AuthScreen />);
+    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' }));
+    expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/create-department' });
+  });
+
+  it('a failed magic-link landing drops back to the form with the reason', async () => {
+    mockIsMagicLink.mockReturnValue(true);
+    mockCompleteMagicLink.mockResolvedValue({
+      ok: false,
+      reason: 'Open the link on the same device you requested it from.',
+    });
+    render(<AuthScreen />);
+    await vi.waitFor(() =>
+      expect(
+        screen.getByText('Open the link on the same device you requested it from.'),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
   });
 });

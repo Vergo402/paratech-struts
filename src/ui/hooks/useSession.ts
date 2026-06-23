@@ -14,6 +14,10 @@ export interface SessionApi {
   createAccount: AccountServiceApi['createAccount'];
   signIn: AccountServiceApi['signIn'];
   signOut: AccountServiceApi['signOut'];
+  sendMagicLink: AccountServiceApi['sendMagicLink'];
+  isMagicLink: AccountServiceApi['isMagicLink'];
+  completeMagicLink: AccountServiceApi['completeMagicLink'];
+  sendPasswordReset: AccountServiceApi['sendPasswordReset'];
 }
 
 export function useSession(): SessionApi {
@@ -23,5 +27,9 @@ export function useSession(): SessionApi {
     createAccount: accountService.createAccount,
     signIn: accountService.signIn,
     signOut: accountService.signOut,
+    sendMagicLink: accountService.sendMagicLink,
+    isMagicLink: accountService.isMagicLink,
+    completeMagicLink: accountService.completeMagicLink,
+    sendPasswordReset: accountService.sendPasswordReset,
   };
 }

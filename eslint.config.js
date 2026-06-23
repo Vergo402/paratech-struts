@@ -17,6 +17,10 @@ export default tseslint.config(
       'dist/**',
       'dev-dist/**',
       'node_modules/**',
+      // design-sync tooling + build output (already gitignored) — not app code.
+      '.ds-sync/**',
+      'ds-bundle/**',
+      '.design-sync/**',
       // v3 lives at the repo root and is not part of the v4 lint surface.
       'app.js',
       'sw.js',
