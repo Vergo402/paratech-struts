@@ -1,6 +1,7 @@
 import type { FieldShoreEvent } from '@core/schema';
 import { isAfter } from '@core/shorepoint';
-import { operationStore, type OperationStoreApi } from '../store/operationStore';
+import { type OperationStoreApi } from '../store/operationStore';
+import { operationStore } from '../store/registry';
 
 // data/sync — the ONE backend path (module-boundaries.md). This slice ships it
 // as a STUB behind the real seam (scope decision 1, settled with Alex

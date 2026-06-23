@@ -1,5 +1,5 @@
 import { newId } from '@core/id';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { globalDb as defaultDb, type FieldShoreDB } from './db';
 
 // ADR-024 — the per-device anonymous identity. A uid minted once per device
 // (crypto.randomUUID, L-10) and persisted in the Dexie `meta` table under this

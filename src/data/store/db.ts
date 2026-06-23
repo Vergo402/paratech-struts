@@ -39,5 +39,32 @@ export function createDB(name?: string): FieldShoreDB {
   return new FieldShoreDB(name);
 }
 
-/** The app's singleton database. Opened lazily by Dexie on first operation. */
-export const db = createDB();
+// --- per-department bucketing (cloud-sync Increment 1) -----------------------
+// The phone holds ONE global DB (device/account meta that survives a department
+// switch) + one DB PER DEPARTMENT. Each dept bucket is the local cache the cloud
+// sync targets 1:1 to /orgs/{deptId}; a guest / no-department member works in the
+// reserved 'guest' bucket. Switching departments swaps the active dept bucket
+// (registry.ts) — the two never share a database, so data can't bleed across.
+export const GLOBAL_DB_NAME = 'fieldshore-global';
+export const GUEST_BUCKET = 'guest';
+const DEPT_DB_PREFIX = 'fieldshore-dept-';
+
+/** The Dexie name for a department's bucket (the guest bucket when no active dept). */
+export function deptDbName(deptId: string | null | undefined): string {
+  return DEPT_DB_PREFIX + (deptId || GUEST_BUCKET);
+}
+
+/**
+ * The global DB — only its `meta` table is used, holding the device/account rows
+ * that must survive a department switch (device uid, session, dept memberships,
+ * onboarding). session.ts / auth.ts / onboardingStore.ts bind here.
+ */
+export const globalDb = createDB(GLOBAL_DB_NAME);
+
+/**
+ * The LEGACY single-tenant database (pre-bucketing). No store binds to it anymore;
+ * it is read once by the boot migration (registry.ts) which splits its rows into
+ * the global DB + the active dept bucket, then leaves it in place as a safety net.
+ */
+export const LEGACY_DB_NAME = 'fieldshore';
+export const legacyDb = createDB(LEGACY_DB_NAME);

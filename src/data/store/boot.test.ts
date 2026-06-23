@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, afterEach } from 'vitest';
-import { db } from './db';
+import { globalDb } from './db';
+import { currentDeptDb } from './registry';
 import { bootData } from './boot';
 import { sessionStore } from './session';
 
@@ -10,7 +11,8 @@ import { sessionStore } from './session';
 // not re-mint — the ADR-024 floor) and reports a guest identity on a clean DB.
 describe('bootData() wiring', () => {
   afterEach(async () => {
-    await db.delete();
+    await currentDeptDb().delete();
+    await globalDb.delete();
   });
 
   it('threads the minted device uid into the session and boots to guest', async () => {

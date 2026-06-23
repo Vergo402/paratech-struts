@@ -1,7 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { Apparatus } from '@core/schema';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { type FieldShoreDB } from './db';
 import type { InventoryStoreApi } from './inventoryStore';
 
 // The department apparatus roster — which rigs exist, independent of the stock they
@@ -42,7 +42,7 @@ export interface ApparatusStoreApi {
 // scope-tab union still surfaces rigs that carry stock, so no rig silently vanishes.
 const Roster = z.array(Apparatus).catch([]);
 
-export function createApparatusStore(db: FieldShoreDB = defaultDb): ApparatusStoreApi {
+export function createApparatusStore(db: FieldShoreDB): ApparatusStoreApi {
   const store = createStore<ApparatusState>(() => ({ roster: [] }));
 
   function persist(roster: Apparatus[]): Promise<unknown> {
@@ -96,4 +96,5 @@ export function createApparatusStore(db: FieldShoreDB = defaultDb): ApparatusSto
 }
 
 /** The app's singleton apparatus store, bound to the singleton DB. */
-export const apparatusStore = createApparatusStore();
+// The dept-scoped singleton lives in registry.ts (recreated per-department on a
+// switch); this file exports only the factory + helpers.

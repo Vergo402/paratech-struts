@@ -1,5 +1,5 @@
 import type { InventoryItem, Apparatus } from '@core/schema';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { globalDb as defaultDb, type FieldShoreDB } from './db';
 import { APPARATUS_ROSTER_KEY } from './apparatusStore';
 
 // Synthetic fixture inventory — NO real department data (the CSVs in the repo

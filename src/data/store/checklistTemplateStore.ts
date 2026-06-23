@@ -2,7 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { ChecklistTemplate, type ChecklistId, type ChecklistNode } from '@core/schema';
 import { BASELINE_TEMPLATES } from '@core/checklist';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { type FieldShoreDB } from './db';
 
 // The department's checklist library (#230, ADR-020). Departments fully author the
 // three checklists (IC Command / Task Level / ORM-TCRM); a checklist is the shipped
@@ -41,7 +41,7 @@ export interface ChecklistTemplateStoreApi {
 // baseline) rather than dead-ending boot.
 const Overrides = z.record(ChecklistTemplate).catch({});
 
-export function createChecklistTemplateStore(db: FieldShoreDB = defaultDb): ChecklistTemplateStoreApi {
+export function createChecklistTemplateStore(db: FieldShoreDB): ChecklistTemplateStoreApi {
   const store = createStore<ChecklistTemplateState>(() => ({ overrides: {} }));
 
   function persist(overrides: ChecklistOverrides): Promise<unknown> {
@@ -90,4 +90,5 @@ export function createChecklistTemplateStore(db: FieldShoreDB = defaultDb): Chec
 }
 
 /** The app's singleton checklist-template store, bound to the singleton DB. */
-export const checklistTemplateStore = createChecklistTemplateStore();
+// The dept-scoped singleton lives in registry.ts (recreated per-department on a
+// switch); this file exports only the factory + helpers.

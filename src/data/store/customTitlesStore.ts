@@ -1,7 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { CustomTitle } from '@core/schema';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { type FieldShoreDB } from './db';
 
 // The department's custom ICS-title library (#323) — titles the department adds on top
 // of the built-in POSITION_LIBRARY catalog. Durable copy is ONE json row in `meta`
@@ -32,7 +32,7 @@ export interface CustomTitlesStoreApi {
 // A wrong-shape row degrades to an empty library rather than dead-ending boot.
 const Titles = z.array(CustomTitle).catch([]);
 
-export function createCustomTitlesStore(db: FieldShoreDB = defaultDb): CustomTitlesStoreApi {
+export function createCustomTitlesStore(db: FieldShoreDB): CustomTitlesStoreApi {
   const store = createStore<CustomTitlesState>(() => ({ titles: [] }));
 
   function persist(titles: CustomTitle[]): Promise<unknown> {
@@ -72,4 +72,5 @@ export function createCustomTitlesStore(db: FieldShoreDB = defaultDb): CustomTit
 }
 
 /** The app's singleton custom-titles store, bound to the singleton DB. */
-export const customTitlesStore = createCustomTitlesStore();
+// The dept-scoped singleton lives in registry.ts (recreated per-department on a
+// switch); this file exports only the factory + helpers.

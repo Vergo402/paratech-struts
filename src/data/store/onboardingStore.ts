@@ -1,6 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { globalDb as defaultDb, type FieldShoreDB } from './db';
 
 // data/store — the first-run onboarding progress (account-creation welcome →
 // checklist hub → guided Quick Find tips). Decoupled from session.ts on purpose:

@@ -2,7 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { newId } from '@core/id';
 import type { InventoryItem } from '@core/schema';
 import type { ParsedImportRow } from '../inventory/excel';
-import { db as defaultDb, type FieldShoreDB } from './db';
+import { type FieldShoreDB } from './db';
 import { APPARATUS_ROSTER_KEY, type ApparatusStoreApi } from './apparatusStore';
 
 // The in-memory mirror of the Dexie `inventory` table, plus the stock mutators the
@@ -73,7 +73,7 @@ function sameKind(a: InventoryItem, b: AddSpec): boolean {
   return a.plateId === b.plateId; // plate
 }
 
-export function createInventoryStore(db: FieldShoreDB = defaultDb): InventoryStoreApi {
+export function createInventoryStore(db: FieldShoreDB): InventoryStoreApi {
   const store = createStore<InventoryState>(() => ({ items: [] }));
 
   function applyLocal(item: InventoryItem): void {
@@ -285,4 +285,5 @@ export async function applyReturnTxn(db: FieldShoreDB, inventoryId: string): Pro
 }
 
 /** The app's singleton inventory store, bound to the singleton DB. */
-export const inventoryStore = createInventoryStore();
+// The dept-scoped singleton lives in registry.ts (recreated per-department on a
+// switch); this file exports only the factory + helpers.

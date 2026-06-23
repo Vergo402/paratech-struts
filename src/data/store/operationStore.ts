@@ -11,9 +11,8 @@ import {
   type OperationState,
   type ArchivedOperationSummary,
 } from '@core/operation';
-import { db as defaultDb, type FieldShoreDB } from './db';
-import { inventoryStore as defaultInventory, type InventoryStoreApi, applyDeployTxn, applyReturnTxn } from './inventoryStore';
-import { syncService } from '../sync/syncService';
+import { type FieldShoreDB } from './db';
+import { createInventoryStore, type InventoryStoreApi, applyDeployTxn, applyReturnTxn } from './inventoryStore';
 
 // The only legal mutation entry (module-boundaries.md, data/store). One commit =
 // validate → durable Dexie append (+ the inventory transaction when the event is
@@ -78,15 +77,17 @@ function roleToType(role: DeployedComponentRole): InventoryItem['type'] {
   return role === 'strut' ? 'strut' : role === 'extension' ? 'extension' : 'plate';
 }
 
-export function createOperationStore(opts?: {
-  db?: FieldShoreDB;
+export function createOperationStore(opts: {
+  db: FieldShoreDB;
   inventory?: InventoryStoreApi;
   enqueue?: (event: FieldShoreEvent) => void;
 }): OperationStoreApi {
-  const db = opts?.db ?? defaultDb;
-  const inventory = opts?.inventory ?? defaultInventory;
-  // Default dereferences the syncService binding at CALL time (cycle-safe).
-  const enqueue = opts?.enqueue ?? ((event: FieldShoreEvent) => syncService.enqueue(event));
+  const db = opts.db;
+  const inventory = opts.inventory ?? createInventoryStore(db);
+  // enqueue is INJECTED by the registry (wired to syncService) — keeping syncService
+  // out of this file breaks the registry↔operationStore↔syncService import cycle.
+  // A store built without an injected enqueue (most tests) simply doesn't sync.
+  const enqueue = opts.enqueue ?? (() => {});
 
   const store = createStore<OperationState>(() => EMPTY_OPERATION_STATE);
 
@@ -333,4 +334,5 @@ export function createOperationStore(opts?: {
 }
 
 /** The app's singleton operation store, bound to the singleton DB. */
-export const operationStore = createOperationStore();
+// The dept-scoped singleton lives in registry.ts (it's recreated per-department
+// on a switch); this file exports only the factory + helpers.
