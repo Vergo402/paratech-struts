@@ -1,5 +1,6 @@
-import { createDB, deptDbName, GUEST_BUCKET, type FieldShoreDB } from './db';
+import { createDB, deptDbName, GUEST_BUCKET, isBucketStale, type FieldShoreDB } from './db';
 import { createOperationStore, type OperationStoreApi } from './operationStore';
+import { sessionStore } from './session';
 import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import { createApparatusStore, type ApparatusStoreApi } from './apparatusStore';
 import { createCustomTitlesStore, type CustomTitlesStoreApi } from './customTitlesStore';
@@ -44,6 +45,20 @@ function build(bucket: string): void {
     db: deptDb,
     inventory: inventoryStore,
     enqueue: (e) => syncService.enqueue(e), // wire commits to the sync queue
+    // Dev-only tripwire: a commit against a bucket that no longer matches the
+    // signed-in department means a switch didn't reload (ui/dept/switchBucket).
+    // Checked at write time (settled state), so the brief legit reload windows
+    // never false-positive; import.meta.env.DEV strips it from prod entirely.
+    assertBucket: import.meta.env.DEV
+      ? () => {
+          const dept = sessionStore.store.getState().departmentId;
+          if (isBucketStale(bucket, dept))
+            console.error(
+              `[bucket-guard] write to bucket "${bucket}" but the signed-in department is ` +
+                `"${dept ?? 'guest'}" — a department switch did not reload (see ui/dept/switchBucket).`,
+            );
+        }
+      : undefined,
   });
 }
 

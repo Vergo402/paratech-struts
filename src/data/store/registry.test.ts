@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto';
-import { describe, it, expect, afterEach } from 'vitest';
-import { activateBucket, inventoryStore, currentDeptDb } from './registry';
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { activateBucket, inventoryStore, operationStore, currentDeptDb } from './registry';
 import { createDB, deptDbName, GUEST_BUCKET } from './db';
-import type { InventoryItem } from '@core/schema';
+import { sessionStore } from './session';
+import type { InventoryItem, FieldShoreEvent } from '@core/schema';
 
 // The anti-bleed proof for per-department bucketing: switching A→B→A keeps each
 // department's local data in its OWN database, and switching never leaks one into
@@ -64,5 +65,41 @@ describe('store registry — per-department isolation', () => {
 
     await activateBucket(GUEST_BUCKET);
     expect(inventoryStore.store.getState().items.length).toBeGreaterThan(0); // demo fixtures
+  });
+});
+
+// Proves the dev-only bucket guard is actually WIRED, not just that isBucketStale is
+// correct (db.test.ts): the registry must inject the closure into operationStore AND a
+// commit must call it. A silent break here would give false confidence that a "forgot
+// to reload" regression would be caught. (import.meta.env.DEV is true under vitest.)
+describe('store registry — dev bucket guard wiring', () => {
+  const opCreated = (): FieldShoreEvent => ({
+    type: 'OperationCreated', id: 'evt-1', opId: 'op-1', at: 1, by: 'device-test', name: 'Op', multiBuilding: false,
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await createDB(deptDbName('dept-real')).delete();
+  });
+
+  it('console.errors when a commit lands on a bucket that does not match the session dept', async () => {
+    await activateBucket('dept-real'); // stores now bound to the dept-real bucket
+    sessionStore.store.setState({ departmentId: 'dept-OTHER' }); // a switch that never reloaded
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await operationStore.commit(opCreated());
+
+    expect(res.ok).toBe(true); // the guard warns; it never blocks the write
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('[bucket-guard]'));
+  });
+
+  it('stays silent when the bucket matches the session dept', async () => {
+    await activateBucket('dept-real');
+    sessionStore.store.setState({ departmentId: 'dept-real' }); // matched — no regression
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await operationStore.commit(opCreated());
+
+    expect(spy).not.toHaveBeenCalled();
   });
 });

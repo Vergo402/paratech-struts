@@ -55,6 +55,17 @@ export function deptDbName(deptId: string | null | undefined): string {
 }
 
 /**
+ * True when the active store bucket no longer matches the signed-in member's
+ * department — i.e. a departmentId change did NOT reload the stores
+ * (ui/dept/switchBucket). Powers the dev-only write-time bucket guard injected by
+ * registry.ts. `boundBucket` is the bare bucket key (a deptId or GUEST_BUCKET);
+ * a guest's department is null/undefined, which maps to GUEST_BUCKET.
+ */
+export function isBucketStale(boundBucket: string, sessionDepartmentId: string | null | undefined): boolean {
+  return (sessionDepartmentId || GUEST_BUCKET) !== boundBucket;
+}
+
+/**
  * The global DB — only its `meta` table is used, holding the device/account rows
  * that must survive a department switch (device uid, session, dept memberships,
  * onboarding). session.ts / auth.ts / onboardingStore.ts bind here.

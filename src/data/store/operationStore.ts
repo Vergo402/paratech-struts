@@ -81,6 +81,10 @@ export function createOperationStore(opts: {
   db: FieldShoreDB;
   inventory?: InventoryStoreApi;
   enqueue?: (event: FieldShoreEvent) => void;
+  /** Dev-only bucket guard (registry-injected): fires if a commit lands on a bucket
+   *  that no longer matches the signed-in department — a switch that didn't reload
+   *  (ui/dept/switchBucket). Stripped from prod; stores built without it skip the check. */
+  assertBucket?: () => void;
 }): OperationStoreApi {
   const db = opts.db;
   const inventory = opts.inventory ?? createInventoryStore(db);
@@ -125,6 +129,7 @@ export function createOperationStore(opts: {
   }
 
   async function doCommit(raw: FieldShoreEvent, options?: CommitOptions): Promise<CommitResult> {
+    opts.assertBucket?.(); // dev-only: warn if this write is landing on a stale department bucket
     // Garbage never enters the log — the schema is the gate (L-5 discipline).
     const parsed = FieldShoreEvent.safeParse(raw);
     if (!parsed.success) {
@@ -263,6 +268,7 @@ export function createOperationStore(opts: {
   }
 
   async function doCommitMany(raws: FieldShoreEvent[], options?: CommitOptions): Promise<CommitResult> {
+    opts.assertBucket?.(); // dev-only: warn if this write is landing on a stale department bucket
     if (raws.length === 0) return { ok: false, reason: 'empty batch' };
 
     // Validate the WHOLE batch before any write — garbage never enters the log.
