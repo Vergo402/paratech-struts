@@ -1,0 +1,62 @@
+{
+  "_comment": "design-sync only: barrel dirs mapped to index.ts before wildcards (works around bundle.mjs tsconfigPathsPlugin matching directories on the bare-ext). baseUrl=.. => repo root.",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@core/checklist": [
+        "src/core/checklist/index.ts"
+      ],
+      "@core/hazard": [
+        "src/core/hazard/index.ts"
+      ],
+      "@core/load": [
+        "src/core/load/index.ts"
+      ],
+      "@core/operation": [
+        "src/core/operation/index.ts"
+      ],
+      "@core/org": [
+        "src/core/org/index.ts"
+      ],
+      "@core/schema": [
+        "src/core/schema/index.ts"
+      ],
+      "@core/shorepoint": [
+        "src/core/shorepoint/index.ts"
+      ],
+      "@data/auth": [
+        "src/data/auth/index.ts"
+      ],
+      "@data/dept": [
+        "src/data/dept/index.ts"
+      ],
+      "@data/store": [
+        "src/data/store/index.ts"
+      ],
+      "@ui/hooks": [
+        "src/ui/hooks/index.ts"
+      ],
+      "@ui/picker": [
+        "src/ui/picker/index.ts"
+      ],
+      "@ui/primitives": [
+        "src/ui/primitives/index.ts"
+      ],
+      "@ui/quickfind": [
+        "src/ui/quickfind/index.ts"
+      ],
+      "@core/*": [
+        "src/core/*"
+      ],
+      "@data/*": [
+        "src/data/*"
+      ],
+      "@ui/*": [
+        "src/ui/*"
+      ],
+      "@app/*": [
+        "src/app/*"
+      ]
+    }
+  }
+}

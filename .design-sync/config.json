@@ -1,0 +1,20 @@
+{
+  "pkg": "fieldshore-v4",
+  "projectId": "322a8afa-146a-4aa7-a525-673e5d1fb509",
+  "globalName": "FieldShore",
+  "shape": "package",
+  "srcDir": "src/ui",
+  "tsconfig": ".design-sync/tsconfig.sync.json",
+  "readmeHeader": ".design-sync/conventions.md",
+  "cssEntry": "dist/assets/index-Y8xbzYp1.css",
+  "overrides": {
+    "CuttingStation": { "cardMode": "single", "viewport": "960x720" },
+    "GroupedShorePoint": { "cardMode": "column" }
+  },
+  "tokensPkg": "fieldshore-v4",
+  "tokensGlob": ".design-sync/default-theme.css",
+  "extraFonts": [
+    "node_modules/@fontsource-variable/geist/index.css",
+    "node_modules/@fontsource-variable/inter/index.css"
+  ]
+}

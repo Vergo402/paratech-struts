@@ -1,0 +1,40 @@
+/* design-sync default theme — the light theme mapped to :where(:root) at ZERO
+   specificity, so color tokens resolve with no [data-theme] ancestor (the app
+   sets data-theme on <html>; the design tool does not). Any explicit
+   [data-theme="dark|sunlight|broadcast"] still wins. Regenerate from
+   src/app/tokens.css [data-theme="light"] if tokens change. */
+:where(:root) {
+  --surface-bg: #F7F6F3;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #FAFAF9;
+  --surface-elevated: #FFFFFF;
+  --surface-stroke: rgba(0, 0, 0, 0.08);
+  --stroke-width: 1px;
+  --accent: #8C6700;          /* 4.79:1 on bg, 5.18:1 on card (was #B8860B = 3.01 FAIL) */
+  --accent-subtle: #FFF8E7;
+  --on-accent: #FFFFFF;       /* white on --accent fill — 5.18:1 (button.md primary) */
+
+  --text-primary: #1A1A1A;    /* 16.10:1 */
+  --text-secondary: #5C5C5C;  /* 6.19:1  */
+  --text-tertiary: #8A8A8A;   /* 3.19:1 — large/non-essential only */
+
+  --status-pending-text: #4B5563;  --status-pending-bg: #F3F4F6;  /* 6.87 (was #6B7280=4.39) */
+  --status-process-text:  #1D4ED8;  --status-process-bg:  #EFF6FF;  /* 6.16 */
+  --status-strutset-text:#5B21B6;  --status-strutset-bg:#F5F3FF;  /* 8.19 */
+  --status-cutting-text: #92400E;  --status-cutting-bg: #FEF3C7;  /* 6.37 */
+  --status-runner-text:  #9A3412;  --status-runner-bg:  #FFEDD5;  /* 6.38 */
+  --status-secured-text: #065F46;  --status-secured-bg: #ECFDF5;  /* 7.29 — green = secured */
+  --status-returned-text:#57534E;  --status-returned-bg:#F5F5F4;  /* 6.99 */
+  --danger-text:         #B91C1C;  --danger-bg:         #FEF2F2;  /* 5.91 */
+  /* waiting — amber PRESENTATION of pending+reason (v4 styleguide waiting card), not a lifecycle status */
+  --status-waiting-text: #7A5A00;  --status-waiting-bg: #FBEFC4;  /* 5.55 */
+  --sys-lockstroke: #0E7490;  --sys-lockstroke-bg: #ECFEFF;  /* LockStroke strut-system color, S12 handoff §4 — 4.96 bg / 5.36 card */
+
+  --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
+  --shadow-sheet: 0 -2px 16px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.12);    /* centered cast shadow (modal.md) */
+  --shadow-drawer: -2px 0 16px rgba(0, 0, 0, 0.08);  /* sideways inward cast (side-drawer.md / ADR-019; mirror x-sign if left-anchored) */
+  --card-top-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.50);
+  --card-shadow: none;
+  --type-weight-bump: 0;   /* sunlight bumps this */
+}
