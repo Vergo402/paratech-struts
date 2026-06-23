@@ -29,6 +29,17 @@ function firebaseLog(event: string, detail: Record<string, unknown>): void {
   void import('./diagnostics').then(({ logSyncEvent }) => logSyncEvent(event, detail));
 }
 
+/**
+ * Firebase RTDB `set` REJECTS any value containing `undefined` (an unfilled optional
+ * field — e.g. OperationCreated.location, an untracked BOM component's inventoryId).
+ * A JSON round-trip drops undefined-valued keys recursively (the absent-key convention
+ * RTDB wants), losslessly for the rest (events are plain Zod data — no Dates/functions).
+ * Done at the upload boundary, not the emit sites, so no event constructor can forget it.
+ */
+function stripUndefined(event: FieldShoreEvent): unknown {
+  return JSON.parse(JSON.stringify(event));
+}
+
 export type RowSyncState = 'queued' | 'synced';
 
 export interface ReconcileResult {
@@ -86,7 +97,7 @@ export function createSyncService(deps: {
           for (const event of [...queue]) {
             const path = `orgs/${dept}/events/${event.opId}/${event.id}`;
             try {
-              await set(path, event); // create-only set keyed by event.id (append-only cloud rule)
+              await set(path, stripUndefined(event)); // create-only set; strip undefined (RTDB rejects it)
               const i = queue.indexOf(event);
               if (i !== -1) {
                 queue.splice(i, 1); // success → 'queued' flips to 'synced'

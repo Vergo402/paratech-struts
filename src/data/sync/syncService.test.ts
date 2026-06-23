@@ -180,6 +180,16 @@ describe('syncService (event cloud sync + L-7 merge guard)', () => {
     expect(Object.keys(writes)).toHaveLength(0);
   });
 
+  it('strips undefined optional fields before upload (Firebase RTDB rejects undefined)', async () => {
+    const evt = { type: 'OperationCreated', ...base(), name: 'Op', multiBuilding: false, location: undefined } as FieldShoreEvent;
+    sync.enqueue(evt);
+    await sync.flush();
+    const uploaded = writes[`orgs/dept-1/events/${evt.opId}/${evt.id}`] as Record<string, unknown>;
+    expect(uploaded).toBeTruthy();
+    expect('location' in uploaded).toBe(false); // the undefined key is dropped, not sent as undefined
+    expect(uploaded.name).toBe('Op'); // the rest of the event is preserved
+  });
+
   it('reconciles an out-of-order peer status chain to the correct final status (causal `at` sort)', async () => {
     await sync.reconcile([spAdded(makeSp('sp-2'))]); // sp-2 at pending
     await ops.commit(deploy('sp-2', 'inv-1')); // pending → process (deploy is the inventory edge)
