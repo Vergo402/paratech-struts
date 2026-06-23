@@ -11,7 +11,9 @@ import {
 import { newId } from '@core/id';
 import { rtdb, ref, get, set } from '../sync/firebase';
 import { logSyncEvent } from '../sync/diagnostics';
+import { syncStatusStore } from '../sync/syncStatus';
 import { sessionStore, type SessionStoreApi } from '../store/session';
+import { globalDb, type FieldShoreDB } from '../store/db';
 
 // data/dept — the department seam (workflow 07): create a department → become
 // its first Admin → get an invite code. Department / membership / role are PLAIN
@@ -66,20 +68,62 @@ export interface JoinedDepartment {
 
 export type JoinDepartmentResult =
   | { ok: true; department: JoinedDepartment }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; queued?: true }; // queued: held offline, will auto-complete on reconnect
 
 export interface DepartmentServiceApi {
   /** Create a department, claim founding Admin, mint an invite code. Local-first. */
   createDepartment(name: string): Promise<CreateDepartmentResult>;
-  /** Join an existing department by invite code → Default role (workflow #232). */
+  /** Join an existing department by invite code → Default role (workflow #232).
+   *  Offline: holds the intent and returns `queued` (auto-completes on reconnect). */
   joinByCode(rawCode: string): Promise<JoinDepartmentResult>;
+  /** Retry a queued offline join (called on reconnect). Returns true if it completed,
+   *  so the caller reloads onto the new bucket. */
+  retryPendingJoin(): Promise<boolean>;
+  /** Restore a queued join into the sync-status store on boot, so the banner reflects it
+   *  across a reload that happened while still offline. */
+  restorePendingJoin(): Promise<void>;
+}
+
+// The offline join intent lives in global meta (survives the page reload), alongside the
+// session row. code-only when the resolve itself failed offline (deptName unknown then).
+const PENDING_JOIN_KEY = 'fieldshore_pending_join';
+interface PendingJoinIntent {
+  code: string;
+  deptName: string | null;
 }
 
 export function createDepartmentService(deps: {
   session: () => SessionStoreApi;
+  /** Global meta DB for the pending-join intent (default: the global singleton). */
+  db?: FieldShoreDB;
 }): DepartmentServiceApi {
-  return {
-    async createDepartment(rawName) {
+  const db = deps.db ?? globalDb;
+  let retrying = false; // one retry at a time — a rapid double 'online' must not race two joins
+
+  async function readIntent(): Promise<PendingJoinIntent | null> {
+    const row = await db.meta.get(PENDING_JOIN_KEY);
+    if (!row) return null;
+    try {
+      const p = JSON.parse(row.value);
+      if (p && typeof p.code === 'string') {
+        return { code: p.code, deptName: typeof p.deptName === 'string' ? p.deptName : null };
+      }
+    } catch {
+      /* corrupt row → no intent */
+    }
+    return null;
+  }
+  async function queueJoin(code: string, deptName: string | null): Promise<void> {
+    const intent: PendingJoinIntent = { code, deptName };
+    await db.meta.put({ key: PENDING_JOIN_KEY, value: JSON.stringify(intent) });
+    syncStatusStore.setPendingJoin(intent);
+  }
+  async function clearIntent(): Promise<void> {
+    await db.meta.delete(PENDING_JOIN_KEY);
+    syncStatusStore.setPendingJoin(null);
+  }
+
+  async function createDepartment(rawName: string): Promise<CreateDepartmentResult> {
       const name = rawName.trim();
       if (!name) return { ok: false, reason: 'Department name is required.' };
       if (name.length > 100) return { ok: false, reason: 'Department name is too long (max 100).' };
@@ -161,9 +205,9 @@ export function createDepartmentService(deps: {
       }
 
       return { ok: true, department: { id, name, role: ADMIN_ROLE_ID, inviteCode } };
-    },
+  }
 
-    async joinByCode(rawCode) {
+  async function joinByCode(rawCode: string): Promise<JoinDepartmentResult> {
       const code = normalizeInviteCode(rawCode);
       if (!CODE_RE.test(code)) {
         return { ok: false, reason: "That code isn't valid. Check it and try again." };
@@ -190,9 +234,13 @@ export function createDepartmentService(deps: {
         }
         resolved = snap.val();
       } catch {
+        // Offline at the resolve step — deptName unknown (code-only). Hold the intent;
+        // connectivity.retryPendingJoin completes it on reconnect.
+        await queueJoin(code, null);
         return {
           ok: false,
-          reason: "You're offline. You'll be able to join once you reconnect.",
+          queued: true,
+          reason: "You're offline. You'll join automatically when you reconnect.",
         };
       }
 
@@ -211,6 +259,7 @@ export function createDepartmentService(deps: {
       // CURRENT role — a re-join must not appear to downgrade an Admin to Default.
       const current = session.store.getState();
       if (current.departmentId === deptId) {
+        await clearIntent(); // already in → no longer queued
         return {
           ok: true,
           department: { id: deptId, name: deptName, role: current.role ?? DEFAULT_ROLE_ID },
@@ -238,17 +287,44 @@ export function createDepartmentService(deps: {
           deptId,
           error: err instanceof Error ? err.message : String(err),
         });
+        // Offline at the member-write step — deptName IS known now. Hold + auto-complete.
+        await queueJoin(code, deptName);
         return {
           ok: false,
-          reason: "You're offline. You'll be able to join once you reconnect.",
+          queued: true,
+          reason: "You're offline. You'll join automatically when you reconnect.",
         };
       }
 
       // Local-first projection — the member now carries the joined dept + Default role.
       await session.setDepartment({ id: deptId, name: deptName, role: DEFAULT_ROLE_ID, inviteCode: code });
+      await clearIntent(); // completed → drop any queued intent
       return { ok: true, department: { id: deptId, name: deptName, role: DEFAULT_ROLE_ID } };
-    },
-  };
+  }
+
+  async function retryPendingJoin(): Promise<boolean> {
+    if (retrying) return false; // a rapid double 'online' must not run two joins concurrently
+    retrying = true;
+    try {
+      const intent = await readIntent();
+      if (!intent) return false;
+      const result = await joinByCode(intent.code);
+      if (result.ok) return true; // joinByCode cleared the intent → caller reloads
+      // Still offline → joinByCode re-queued it (leave it). A DEFINITIVE failure (invalid /
+      // expired / malformed code) is not `queued` → drop the stale intent so we stop retrying.
+      if (!result.queued) await clearIntent();
+      return false;
+    } finally {
+      retrying = false;
+    }
+  }
+
+  async function restorePendingJoin(): Promise<void> {
+    const intent = await readIntent();
+    if (intent) syncStatusStore.setPendingJoin(intent);
+  }
+
+  return { createDepartment, joinByCode, retryPendingJoin, restorePendingJoin };
 }
 
 /** The app's singleton department service, bound to the singleton session store. */

@@ -214,6 +214,43 @@ describe('syncService (event cloud sync + L-7 merge guard)', () => {
     expect(ops.store.getState().shorePoints.find((s) => s.id === 'sp-3')!.status).toBe('runner'); // converged
   });
 
+  it('pushes pendingCount on enqueue and resets it as the queue flushes (Increment 4 banner)', async () => {
+    const counts: number[] = [];
+    const w: Record<string, unknown> = {};
+    const s = createSyncService({
+      ops: () => ops,
+      deptId: () => 'dept-1',
+      set: async (p, v) => void (w[p] = v),
+      notifyPending: (c) => counts.push(c),
+    });
+    s.enqueue({ ...opCreated(), id: 'p1' });
+    s.enqueue({ ...opCreated(), id: 'p2' });
+    expect(counts.at(-1)).toBe(2); // grew with the queue
+    await s.flush();
+    expect(counts.at(-1)).toBe(0); // drained to empty
+  });
+
+  it('flags syncError when a flush leaves changes stuck, clears it once drained (Increment 4)', async () => {
+    const errors: boolean[] = [];
+    const w: Record<string, unknown> = {};
+    let failing = true;
+    const s = createSyncService({
+      ops: () => ops,
+      deptId: () => 'dept-1',
+      set: async (p, v) => {
+        if (failing) throw new Error('boom');
+        w[p] = v;
+      },
+      notifyError: (e) => errors.push(e),
+    });
+    s.enqueue({ ...opCreated(), id: 'e1' });
+    await s.flush();
+    expect(errors.at(-1)).toBe(true); // upload failed → stuck
+    failing = false;
+    await s.flush();
+    expect(errors.at(-1)).toBe(false); // drained → cleared
+  });
+
   it('setState pushes a non-event state record to orgs/{dept}/{relPath} (LWW overwrite)', async () => {
     await sync.setState('apparatus', { value: [{ id: 'app-1' }], lastWriteAt: 5 });
     expect(writes['orgs/dept-1/apparatus']).toEqual({ value: [{ id: 'app-1' }], lastWriteAt: 5 });

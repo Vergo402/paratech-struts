@@ -2,6 +2,7 @@ import type { FieldShoreEvent } from '@core/schema';
 import { type OperationStoreApi } from '../store/operationStore';
 import { operationStore } from '../store/registry';
 import { sessionStore } from '../store/session';
+import { syncStatusStore } from './syncStatus';
 
 // data/sync — the ONE backend path (module-boundaries.md). Cloud-sync Increment 2:
 // the real event upload + the merge guard. flush() drains the in-memory queue to
@@ -77,10 +78,19 @@ export function createSyncService(deps: {
   set?: (path: string, value: unknown) => Promise<void>;
   /** Failure ledger — injected for the same reason (default: /diagnostics/sync). */
   log?: (event: string, detail: Record<string, unknown>) => void;
+  /** Reactive pending-count sink (cloud-sync Increment 4 banner). Injected so unit tests
+   *  stay store-free; defaults to the syncStatus singleton. */
+  notifyPending?: (count: number) => void;
+  /** Reactive "uploads are stuck" sink (Increment 4 banner). True after a flush leaves
+   *  changes queued on failure; false once the queue drains. Injected; defaults to the store. */
+  notifyError?: (stuck: boolean) => void;
 }): SyncServiceApi {
   const queue: FieldShoreEvent[] = [];
   const set = deps.set ?? firebaseSet;
   const log = deps.log ?? firebaseLog;
+  const notifyPending = deps.notifyPending ?? ((count) => syncStatusStore.setPending(count));
+  const notifyError = deps.notifyError ?? ((stuck) => syncStatusStore.setSyncError(stuck));
+  const emitPending = () => notifyPending(queue.length); // after every queue mutation
   let flushing = false; // one drain at a time — post-commit + reconnect must not race
 
   return {
@@ -89,6 +99,7 @@ export function createSyncService(deps: {
       // event already queued this session; with the append-only cloud rule a second
       // upload of the same id would be rejected and wedge the queue.
       if (!queue.some((e) => e.id === event.id)) queue.push(event);
+      emitPending();
     },
 
     async flush() {
@@ -110,6 +121,7 @@ export function createSyncService(deps: {
               const i = queue.indexOf(event);
               if (i !== -1) {
                 queue.splice(i, 1); // success → 'queued' flips to 'synced'
+                emitPending();
                 progress = true;
               }
             } catch (err) {
@@ -119,6 +131,9 @@ export function createSyncService(deps: {
           }
           if (!progress) break; // every remaining event failed this pass — retry later
         }
+        // Stuck iff changes remain after the drain (writes are failing, not progressing) —
+        // the banner shows "couldn't sync, retrying" instead of a forever-"Syncing…".
+        notifyError(queue.length > 0);
       } finally {
         flushing = false;
       }

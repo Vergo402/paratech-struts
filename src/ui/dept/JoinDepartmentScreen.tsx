@@ -32,6 +32,7 @@ export function JoinDepartmentScreen() {
   const [busy, setBusy] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [joined, setJoined] = useState<{ name: string; role: string } | null>(null);
+  const [queued, setQueued] = useState(false); // offline: held, will auto-complete on reconnect
 
   const canSubmit = looksComplete(code) && !busy;
 
@@ -43,7 +44,9 @@ export function JoinDepartmentScreen() {
     const result = await joinByCode(value);
     setBusy(false);
     if (!result.ok) {
-      setError(result.reason);
+      // Offline → the intent is held; show the calm "will join on reconnect" state, not an error.
+      if (result.queued) setQueued(true);
+      else setError(result.reason);
       return;
     }
     setJoined({ name: result.department.name, role: result.department.role });
@@ -142,6 +145,19 @@ export function JoinDepartmentScreen() {
       </div>
 
       <QrScannerSheet open={scanOpen} onClose={() => setScanOpen(false)} onDetect={onScanned} />
+
+      <Sheet open={queued} onClose={() => navigate({ to: HOME })} title="You're offline">
+        <div className="flex flex-col gap-5">
+          <p style={{ font: 'var(--type-body-lg)' }}>We&rsquo;ll finish joining automatically when you reconnect.</p>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body)' }}>
+            Keep working — your invite code is saved on this device, and you&rsquo;ll land in the
+            department once it joins.
+          </p>
+          <Button variant="primary" fullWidth onPress={() => navigate({ to: HOME })}>
+            Got it
+          </Button>
+        </div>
+      </Sheet>
 
       <Sheet
         open={joined !== null}

@@ -9,3 +9,10 @@ export {
 export { eventListenerSync, createEventListenerSync, type EventListenerSync } from './eventListener';
 export { stateListenerSync, createStateListenerSync, type StateListenerSync } from './stateListener';
 export { connectivity, createConnectivity, type Connectivity } from './connectivity';
+export {
+  syncStatusStore,
+  createSyncStatusStore,
+  type SyncStatusStoreApi,
+  type SyncStatusState,
+  type PendingJoin,
+} from './syncStatus';

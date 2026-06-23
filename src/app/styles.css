@@ -161,6 +161,29 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
+/* Member sync-status variants (cloud-sync Increment 4): offline/queued = amber
+   (cutting tokens), mid-sync = blue (process tokens). Status, not a nudge — no buttons. */
+.fs-sync-banner--warning {
+  background: var(--status-cutting-bg);
+  border-bottom-color: var(--status-cutting-text);
+}
+.fs-sync-banner--info {
+  background: var(--status-process-bg);
+  border-bottom-color: var(--status-process-text);
+}
+.fs-sync-banner-text {
+  flex: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font: var(--type-body-medium);
+}
+.fs-sync-banner--warning .fs-sync-banner-text {
+  color: var(--status-cutting-text);
+}
+.fs-sync-banner--info .fs-sync-banner-text {
+  color: var(--status-process-text);
+}
 .fs-shell-main {
   flex: 1;
   min-height: 0;

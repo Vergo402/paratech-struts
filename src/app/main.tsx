@@ -5,6 +5,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
 import { eventListenerSync, stateListenerSync, connectivity } from '@data/sync';
+import { departmentService } from '@data/dept';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -49,6 +50,9 @@ function App() {
         // titles / checklists, last-write-wins) — same lifecycle as the event listener.
         stateListenerSync.start();
         connectivity.start();
+        // Cloud-sync Increment 4: surface a join that was queued offline (banner reflects
+        // it across the reload); connectivity auto-completes it on reconnect. Fire-and-forget.
+        void departmentService.restorePendingJoin();
         if (!cancelled) setBooted(true);
       })
       .catch((err: unknown) => {
