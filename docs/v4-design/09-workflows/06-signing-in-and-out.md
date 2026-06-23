@@ -49,12 +49,18 @@ stateDiagram-v2
     SignInRoute --> SignInRoute : user · toggle Sign In ↔ Create Account → segmented
     SignInRoute --> Submitting : user · tap Sign In / Create / Email me a link → button
     Submitting --> SignedIn : auth succeeds → loading-state (shell now syncs under UID)
-    Submitting --> SignInRoute : auth fails → inline aria-invalid error (never alert)
-    Submitting --> QueuedOffline : offline → queues intent locally, tells user plainly
+    Submitting --> SignInRoute : auth fails / offline → calm inline network error (never alert)
 
     SignedIn --> GuestMode : user · Settings → Sign out → button (returns to guest; local work persists)
-    QueuedOffline --> SignedIn : on reconnect → auth completes from queued intent
 ```
+
+> **The offline auth window is a boot-restore, not a submit path** (reconciled 2026-06-23,
+> ADR-025). A member who already signed in once on this device **stays signed in offline** —
+> Firebase persists the user and re-hydrates it via `onAuthStateChanged` on the next launch,
+> with no network. That is the field-real case (basement, multi-day op). A *first-ever* sign-in
+> on a device with no signal is **not** auto-queued — that would mean caching a password on a
+> shared field device — it shows the calm inline network error and the member signs in when
+> back online. See Step 3.
 
 There is **no destructive/terminal path** — signing out is reversible (sign back in) and never discards
 local work. Guest is a first-class resting state, not a dead end.
@@ -126,10 +132,18 @@ control (cites [`loading-state.md`](../03-primitives/loading-state.md) §busy co
   user has no department yet, the natural next step is create ([#231](07-department-setup.md)) or join
   ([#232](08-joining-by-invite-code.md)) — but neither is forced.
 - **Online, failure →** inline error; the form stays; nothing destructive.
-- **Offline →** the **offline auth window**: the app **queues the sign-in intent locally and tells the user
-  plainly** ("You're offline — you'll be signed in when you reconnect"). Guest work continues uninterrupted;
-  the queued intent completes on reconnect. Local-first (ADR-009) means signing in is never a blocking
-  operation — the firefighter is never stranded at a login screen in a basement with no signal.
+- **Offline →** the **offline auth window** (ADR-025; reconciled 2026-06-23, no separate queue):
+  - **A returning member who already signed in on this device stays signed in offline** — Firebase
+    persists the user and re-hydrates it via `onAuthStateChanged` with no network
+    (`data/auth/authSession.ts`). This is the firefighter in the basement on a multi-day op: they
+    were never signed out, so there is nothing to queue. Local-first (ADR-009) means their work keeps
+    syncing the moment signal returns.
+  - **A first-ever sign-in on a device with no signal** is **not** auto-completed — replaying it on
+    reconnect would require caching the password on a shared field device, which v4.0 deliberately
+    does not do. The form shows a **calm inline network error** ("No network connection — check your
+    signal and try again", `data/auth/accountService.ts` `mapFirebaseError`) and stays put; the member
+    signs in when back online. Guest work continues uninterrupted throughout — they are never stranded
+    *behind* a login wall (ADR-015 guest-first), only told plainly that this one sign-in needs signal.
 
 ---
 
@@ -213,7 +227,7 @@ Screen-reader behavior particular to this workflow:
 - **Password show/hide:** **"Show password"** / **"Hide password"** button.
 - **Submit error:** the inline message is `aria-invalid` + read on focus — **"That email and password
   don't match."** (`aria-live="polite"`, not an alert).
-- **Offline queue:** **"You're offline. You'll be signed in when you reconnect."** (`aria-live="polite"`).
+- **Offline first sign-in:** the inline network error is announced — **"No network connection — check your signal and try again."** (`aria-live="polite"`). A returning member is restored silently at boot (no submit, nothing to announce).
 - **Continue as guest:** **"Continue as guest. You can sign in later from Settings."**
 - No new SR script row needed (input + button + segmented patterns already registered).
 
@@ -226,7 +240,10 @@ Screen-reader behavior particular to this workflow:
    one secondary action; the rest is unchanged.
 2. **Offline-auth token window:** how long a "trust this device" refresh token stays valid offline (so a
    previously-signed-in device keeps syncing through a multi-day operation with no signal) is a Phase H
-   infrastructure decision. This spec names the queued-intent behavior; the token lifetime is plumbing.
+   infrastructure decision — the token *lifetime* is plumbing. The **queued-intent behavior is RESOLVED
+   (2026-06-23, ADR-025, #379):** there is no offline sign-in queue — a returning member is restored
+   from Firebase persistence with no network, and a first-ever offline sign-in shows a calm inline
+   error rather than caching a password on a shared device. Only the token-lifetime plumbing remains.
 3. **Display-name capture point — DECIDED (gate review M8, ships v4.0):** **mandatory at account creation**
    here (the required Display name field in Create Account mode), because the v4.0 audit log + signed
    attestations attribute to it. Guests are attributed by their required unit tag at incident join. No longer
