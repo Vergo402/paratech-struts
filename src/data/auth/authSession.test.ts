@@ -16,6 +16,7 @@ import { createAuthSessionSync, type AuthSessionSync } from './authSession';
 import { newId } from '@core/id';
 
 const UID = 'device-uid-1';
+const reloadSpy = vi.fn();
 
 /** The callback passed to the most recent onAuthStateChanged registration. */
 function fireAuthState(user: unknown): void {
@@ -32,10 +33,11 @@ describe('authSessionSync — reconcile the session with Firebase Auth', () => {
   beforeEach(async () => {
     vi.mocked(onAuthStateChanged).mockClear();
     unsubSpy.mockClear();
+    reloadSpy.mockClear();
     db = createDB(`test-authsession-${newId()}`);
     session = createSessionStore(db);
     await session.boot(UID);
-    sync = createAuthSessionSync({ session: () => session });
+    sync = createAuthSessionSync({ session: () => session, reload: reloadSpy });
   });
 
   afterEach(async () => {
@@ -85,6 +87,14 @@ describe('authSessionSync — reconcile the session with Firebase Auth', () => {
     await Promise.resolve();
     await Promise.resolve();
     expect(session.store.getState().identity).toBe(before);
+    expect(reloadSpy).not.toHaveBeenCalled(); // no setMember → no bucket reboot
+  });
+
+  it('reboots onto the active bucket after restoring a member (replaces the removed reactive subscribe)', async () => {
+    sync.start();
+    fireAuthState({ uid: 'fb-9', displayName: 'Cap', email: 'c@d.gov' });
+    // setMember restores → departmentId differs from the (unactivated) bucket → reload.
+    await vi.waitFor(() => expect(reloadSpy).toHaveBeenCalled());
   });
 
   it('start() is idempotent — registers the listener once', () => {

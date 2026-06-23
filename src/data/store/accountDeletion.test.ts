@@ -30,7 +30,7 @@ describe('deleteLocalAccountData (account-delete local wipe)', () => {
       { key: MEMBERSHIPS_KEY, value: '{"acct":{}}' },
     ]);
 
-    await deleteLocalAccountData(DEPT);
+    await deleteLocalAccountData(DEPT, 'acct');
 
     expect(await Dexie.exists(deptDbName(DEPT))).toBe(false); // bucket gone
     expect(await globalDb.meta.get(SESSION_KEY)).toBeUndefined();
@@ -40,7 +40,20 @@ describe('deleteLocalAccountData (account-delete local wipe)', () => {
 
   it('a guest (null departmentId) deletes no bucket but still clears the session', async () => {
     await globalDb.meta.put({ key: SESSION_KEY, value: '{}' });
-    await deleteLocalAccountData(null);
+    await deleteLocalAccountData(null, null);
     expect(await globalDb.meta.get(SESSION_KEY)).toBeUndefined();
+  });
+
+  it('removes ONLY the deleting account from a shared memberships map (keeps others)', async () => {
+    await globalDb.meta.put({
+      key: MEMBERSHIPS_KEY,
+      value: JSON.stringify({ acctA: { id: 'dA' }, acctB: { id: 'dB' } }),
+    });
+    await deleteLocalAccountData(null, 'acctA'); // Capt. A deletes their account
+    const row = await globalDb.meta.get(MEMBERSHIPS_KEY);
+    expect(row).toBeDefined(); // row survives — Capt. B is still in it
+    const map = JSON.parse(row!.value);
+    expect(map.acctA).toBeUndefined();
+    expect(map.acctB).toEqual({ id: 'dB' });
   });
 });

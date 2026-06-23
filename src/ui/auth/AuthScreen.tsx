@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Button, Segmented, TextField } from '@ui/primitives';
 import { useSession, useDepartment, useOnboarding } from '@ui/hooks';
+import { reloadIntoActiveBucket } from '@ui/dept/switchBucket';
 
 /**
  * AuthScreen — the pre-shell sign-in / create-account route (workflow 06,
@@ -71,10 +72,17 @@ export function AuthScreen() {
   }, []);
 
   // Read the department FRESH at navigation time — setMember re-discovers it
-  // synchronously after auth, but the subscribed value is the stale mount-time
-  // one, which would misroute a returning member to dept setup.
-  const afterAuth = () =>
-    navigate({ to: currentDepartmentId() ? HOME : '/create-department' });
+  // synchronously after auth, but the subscribed value is the stale mount-time one.
+  // A returning member WITH a department must REBOOT onto that department's bucket
+  // (only boot/activateBucket selects it) — a client-side navigate would leave the
+  // app on the active guest bucket while the UI shows their department, so writes
+  // land in the wrong (guest) cache. The no-department case client-navigates to dept
+  // setup, which reloads on create/join. Mirrors the create/join/sign-out switch
+  // sites (ui/dept/switchBucket).
+  const afterAuth = () => {
+    if (currentDepartmentId()) reloadIntoActiveBucket();
+    else navigate({ to: '/create-department' });
+  };
 
   const canSubmit =
     email.trim() !== '' && password !== '' && (!isCreate || displayName.trim() !== '');

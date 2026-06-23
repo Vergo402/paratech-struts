@@ -30,11 +30,12 @@ export function useSession(): SessionApi {
     signIn: accountService.signIn,
     signOut: accountService.signOut,
     deleteAccount: async (password) => {
-      // Capture the dept bucket id BEFORE the auth delete — the async
-      // onAuthStateChanged→setGuest would otherwise blank it before the wipe.
-      const departmentId = sessionStore.store.getState().departmentId;
+      // Capture the dept bucket id + account id BEFORE the auth delete — the async
+      // onAuthStateChanged→setGuest would otherwise blank them before the wipe.
+      const { departmentId, identity } = sessionStore.store.getState();
+      const accountId = identity.kind === 'member' ? identity.accountId : null;
       const result = await accountService.deleteAccount(password);
-      if (result.ok) await deleteLocalAccountData(departmentId);
+      if (result.ok) await deleteLocalAccountData(departmentId, accountId);
       return result;
     },
     sendMagicLink: accountService.sendMagicLink,

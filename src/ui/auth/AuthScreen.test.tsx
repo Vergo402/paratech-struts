@@ -22,13 +22,18 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useNavigate: () => mockNavigate,
 }));
+vi.mock('@ui/dept/switchBucket', () => ({ reloadIntoActiveBucket: vi.fn() }));
 
 import { AuthScreen } from './AuthScreen';
+import { reloadIntoActiveBucket } from '@ui/dept/switchBucket';
+
+const mockReload = vi.mocked(reloadIntoActiveBucket);
 
 const OK = { ok: true, member: { accountId: 'a1', displayName: 'X' } };
 
 beforeEach(() => {
   mockNavigate.mockReset();
+  mockReload.mockReset();
   mockSignIn.mockReset().mockResolvedValue(OK);
   mockCreateAccount.mockReset().mockResolvedValue(OK);
   mockSendMagicLink.mockReset().mockResolvedValue({ ok: true });
@@ -103,7 +108,7 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
     await user.type(screen.getByLabelText('Password'), 'hunter2');
     await user.click(screen.getByRole('button', { name: 'Sign In' }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' });
+    expect(mockReload).toHaveBeenCalled();
   });
 
   it('Create Account passes the display name to the seam', async () => {
@@ -214,7 +219,7 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     // landing shows the "signing you in" view immediately
     expect(screen.getByText('Signing you in…')).toBeInTheDocument();
     await vi.waitFor(() => expect(mockCompleteMagicLink).toHaveBeenCalled());
-    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' }));
+    await vi.waitFor(() => expect(mockReload).toHaveBeenCalled());
   });
 
   it('a returning member (no dept at mount, re-discovered on completion) lands in the app, not setup', async () => {
@@ -229,7 +234,7 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
       currentDepartmentId: () => 'd1',
     });
     render(<AuthScreen />);
-    await vi.waitFor(() => expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' }));
+    await vi.waitFor(() => expect(mockReload).toHaveBeenCalled());
     expect(mockNavigate).not.toHaveBeenCalledWith({ to: '/create-department' });
   });
 

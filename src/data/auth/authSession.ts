@@ -1,5 +1,7 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
+import { currentBucket } from '../store/registry';
+import { GUEST_BUCKET } from '../store/db';
 import { resolveDisplayName } from './accountService';
 import { firebaseAuth } from './firebase';
 
@@ -25,12 +27,18 @@ export interface AuthSessionSync {
   stop(): void;
 }
 
-export function createAuthSessionSync(deps: { session: () => SessionStoreApi }): AuthSessionSync {
+export function createAuthSessionSync(deps: {
+  session: () => SessionStoreApi;
+  /** Reboot onto the active department's bucket. Injected so tests don't navigate;
+   *  defaults to a full reload (mirrors ui/dept/switchBucket — @data can't import @ui). */
+  reload?: () => void;
+}): AuthSessionSync {
   let unsub: (() => void) | null = null;
+  const reload = deps.reload ?? (() => window.location.assign('/operations'));
   return {
     start() {
       if (unsub) return;
-      unsub = onAuthStateChanged(firebaseAuth, (user) => {
+      unsub = onAuthStateChanged(firebaseAuth, async (user) => {
         const session = deps.session();
         const identity = session.store.getState().identity;
         if (user) {
@@ -38,7 +46,17 @@ export function createAuthSessionSync(deps: { session: () => SessionStoreApi }):
           // right after signIn/createAccount, which already set the member).
           if (identity.kind !== 'member' || identity.accountId !== user.uid) {
             const displayName = resolveDisplayName(user.displayName, user.email);
-            void session.setMember({ accountId: user.uid, displayName });
+            await session.setMember({ accountId: user.uid, displayName });
+            // setMember restored this account's department from local memory. If its
+            // bucket isn't the ACTIVE one, the app booted on the wrong bucket (a
+            // degraded session row, or a member restored mid guest-session) and would
+            // read/write the guest cache under their department — reboot onto the
+            // right bucket. (The reactive subscribe that used to catch every
+            // departmentId change was removed; this is the async writer that needs it.
+            // Gated to the setMember branch so sign-out / account-delete — the setGuest
+            // path, which drives its own navigation — is never hijacked here.)
+            const departmentId = session.store.getState().departmentId;
+            if ((departmentId || GUEST_BUCKET) !== currentBucket()) reload();
           }
         } else if (identity.kind === 'member') {
           // No authenticated Firebase user → can't act as a member for cloud
