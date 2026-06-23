@@ -74,4 +74,5 @@ export {
 } from './onboardingStore';
 export { buildSeedInventory, seedIfEmpty, seedApparatusRoster } from './seed';
 export { migrateLegacyDb } from './migrate';
+export { deleteLocalAccountData } from './accountDeletion';
 export { bootData, type BootResult } from './boot';

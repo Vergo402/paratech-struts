@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
-import { Badge, Button, Modal, Toggle } from '@ui/primitives';
+import { Badge, Button, Modal, TextField, Toggle } from '@ui/primitives';
 import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
@@ -37,12 +37,16 @@ const NATIVE_CONTROLS_KEY = 'fieldshore_native_controls';
  */
 export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
-  const { identity, signOut } = useSession();
+  const { identity, signOut, deleteAccount } = useSession();
   const { department, role, inviteCode } = useDepartment();
   const { roleFocus, replayTour, startLesson, setRoleFocus } = useOnboarding();
   const { titles: customTitles, add: addCustomTitle, remove: removeCustomTitle } = useCustomTitles();
   const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [addTitleOpen, setAddTitleOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [nativeControls, setNativeControls] = useState(
@@ -57,6 +61,25 @@ export function SettingsScreen() {
     } catch {
       /* clipboard unavailable — the code is shown for manual copy */
     }
+  }
+
+  async function doDeleteAccount() {
+    setDeleteError(null);
+    setDeleting(true);
+    const result = await deleteAccount(deletePassword);
+    setDeleting(false);
+    if (!result.ok) {
+      setDeleteError(result.reason);
+      return;
+    }
+    // Account gone + local data wiped → re-boot clean onto the sign-in screen.
+    window.location.assign('/auth');
+  }
+
+  function closeDelete() {
+    setConfirmDelete(false);
+    setDeletePassword('');
+    setDeleteError(null);
   }
 
   // Broadcast can be active via the gallery; show NO pill selected then — never a
@@ -96,6 +119,9 @@ export function SettingsScreen() {
             </p>
             <Button variant="secondary" destructive onPress={() => setConfirmOut(true)}>
               Log Out
+            </Button>
+            <Button variant="secondary" destructive onPress={() => setConfirmDelete(true)}>
+              Delete account
             </Button>
           </>
         ) : (
@@ -248,6 +274,47 @@ export function SettingsScreen() {
           Your work on this device stays put. You&rsquo;ll return to guest mode and can sign back in
           anytime.
         </p>
+      </Modal>
+
+      <Modal
+        open={confirmDelete}
+        onClose={closeDelete}
+        title="Delete account?"
+        variant="destructive"
+        footer={
+          <>
+            <Button variant="secondary" onPress={closeDelete}>
+              <span data-modal-cancel>Cancel</span>
+            </Button>
+            <Button
+              variant="primary"
+              destructive
+              disabled={deletePassword.trim() === '' || deleting}
+              disabledReason={deletePassword.trim() === '' ? 'Enter your password' : undefined}
+              onPress={() => void doDeleteAccount()}
+            >
+              {deleting ? 'Deleting…' : 'Delete account'}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <p>
+            This permanently deletes your account and removes FieldShore&rsquo;s data from this
+            device. It can&rsquo;t be undone.
+          </p>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body)' }}>
+            Your department is <strong>not</strong> deleted &mdash; it stays for your crew. Removing
+            an entire department is a request to the FieldShore admin.
+          </p>
+          <TextField
+            label="Enter your password to confirm"
+            type="password"
+            value={deletePassword}
+            onChange={setDeletePassword}
+            error={deleteError ?? undefined}
+          />
+        </div>
       </Modal>
     </div>
   );

@@ -16,6 +16,9 @@ vi.mock('firebase/auth', () => ({
   isSignInWithEmailLink: vi.fn(),
   signInWithEmailLink: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
+  deleteUser: vi.fn(),
+  reauthenticateWithCredential: vi.fn(),
+  EmailAuthProvider: { credential: vi.fn(() => ({ _: 'cred' })) },
 }));
 
 import {
@@ -27,7 +30,10 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
   sendPasswordResetEmail,
+  deleteUser,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
+import { firebaseAuth } from './firebase';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, SESSION_KEY, type SessionStoreApi } from '../store/session';
 import { createAccountService, type AccountServiceApi } from './accountService';
@@ -65,6 +71,9 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
       { user: { uid: FB_UID, displayName: 'Capt. Reyes' } } as never,
     );
     vi.mocked(sendPasswordResetEmail).mockResolvedValue(undefined);
+    vi.mocked(deleteUser).mockResolvedValue(undefined);
+    vi.mocked(reauthenticateWithCredential).mockResolvedValue({} as never);
+    (firebaseAuth as { currentUser: unknown }).currentUser = null;
     window.localStorage.clear();
 
     db = createDB(`test-account-${newId()}`);
@@ -246,5 +255,30 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
       'reyes@dept14.gov',
     );
     expect((await account.sendPasswordReset('   ')).ok).toBe(false);
+  });
+
+  it('deleteAccount: re-auths with the password, then deletes the Firebase user (ok)', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
+    const res = await account.deleteAccount('pw');
+    expect(res.ok).toBe(true);
+    expect(vi.mocked(reauthenticateWithCredential)).toHaveBeenCalledOnce();
+    expect(vi.mocked(deleteUser)).toHaveBeenCalledOnce();
+  });
+
+  it('deleteAccount: a wrong password fails with a password reason and never deletes', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
+    vi.mocked(reauthenticateWithCredential).mockRejectedValueOnce({ code: 'auth/invalid-credential' });
+    const res = await account.deleteAccount('wrong');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/password doesn't match/i);
+    expect(vi.mocked(deleteUser)).not.toHaveBeenCalled();
+  });
+
+  it('deleteAccount: no signed-in user → ok:false and never re-auths', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = null;
+    const res = await account.deleteAccount('pw');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/not signed in/i);
+    expect(vi.mocked(reauthenticateWithCredential)).not.toHaveBeenCalled();
   });
 });

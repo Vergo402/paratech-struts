@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mockUseTheme = vi.fn();
 const mockUseSession = vi.fn();
 const mockUseDepartment = vi.fn();
 const mockSignOut = vi.fn();
+const mockDeleteAccount = vi.fn();
 const mockNavigate = vi.fn();
 
 vi.mock('../theme', () => ({ useTheme: () => mockUseTheme() }));
@@ -32,6 +33,7 @@ import { SettingsScreen } from './settings';
 beforeEach(() => {
   mockNavigate.mockReset();
   mockSignOut.mockReset().mockResolvedValue(undefined);
+  mockDeleteAccount.mockReset().mockResolvedValue({ ok: true });
   mockUseTheme.mockReturnValue({ preference: 'system', setPreference: vi.fn() });
   mockUseSession.mockReturnValue({
     identity: { kind: 'guest' },
@@ -142,5 +144,68 @@ describe('SettingsScreen department section (workflow 07)', () => {
   it('a guest sees no department section', () => {
     render(<SettingsScreen />); // default mock = guest
     expect(screen.queryByRole('heading', { name: 'Department' })).not.toBeInTheDocument();
+  });
+});
+
+describe('SettingsScreen delete account', () => {
+  const realLocation = window.location;
+  let assignSpy: ReturnType<typeof vi.fn>;
+
+  function asMemberWithDept() {
+    mockUseSession.mockReturnValue({
+      identity: { kind: 'member', accountId: 'a1', displayName: 'Capt. Marchetti' },
+      signIn: vi.fn(),
+      createAccount: vi.fn(),
+      signOut: mockSignOut,
+      deleteAccount: mockDeleteAccount,
+    });
+    mockUseDepartment.mockReturnValue({
+      department: { id: 'd1', name: 'Hamden Fire Rescue' },
+      role: 'admin',
+      inviteCode: 'ABCD-2345',
+      createDepartment: vi.fn(),
+    });
+  }
+
+  beforeEach(() => {
+    assignSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...realLocation, assign: assignSpy },
+    });
+  });
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { configurable: true, value: realLocation });
+  });
+
+  it('a member sees a Delete account action', () => {
+    asMemberWithDept();
+    render(<SettingsScreen />);
+    expect(screen.getByRole('button', { name: 'Delete account' })).toBeInTheDocument();
+  });
+
+  it('confirming with the password deletes the account and re-boots to /auth', async () => {
+    const user = userEvent.setup();
+    asMemberWithDept();
+    render(<SettingsScreen />);
+    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete account?' });
+    await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'hunter2');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+    expect(mockDeleteAccount).toHaveBeenCalledWith('hunter2');
+    await vi.waitFor(() => expect(assignSpy).toHaveBeenCalledWith('/auth'));
+  });
+
+  it('a wrong password shows the reason inline and does not navigate', async () => {
+    const user = userEvent.setup();
+    mockDeleteAccount.mockResolvedValue({ ok: false, reason: "That password doesn't match." });
+    asMemberWithDept();
+    render(<SettingsScreen />);
+    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delete account?' });
+    await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'wrong');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
+    expect(await screen.findByText("That password doesn't match.")).toBeInTheDocument();
+    expect(assignSpy).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,9 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
   sendPasswordResetEmail,
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
 import { firebaseAuth } from './firebase';
@@ -69,6 +72,12 @@ export interface AccountServiceApi {
   signIn(input: SignInInput): Promise<AuthResult>;
   /** Sign out → guest. Never discards local work. */
   signOut(): Promise<void>;
+  /**
+   * Permanently delete the signed-in account. Re-authentication (the password) is
+   * required by Firebase for this destructive op and doubles as the confirm gate.
+   * Auth-only — the local data wipe is the caller's (useSession) job.
+   */
+  deleteAccount(password: string): Promise<ActionResult>;
   /** Email a one-time sign-in link (Firebase built-in email). Sign-in-only (ADR-025). */
   sendMagicLink(email: string): Promise<ActionResult>;
   /** True if this URL is an opened magic-link (drives the AuthScreen landing). */
@@ -147,6 +156,31 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
       // the UI never gets stuck in a signed-in limbo on network failure.
       await fbSignOut(firebaseAuth).catch(() => {});
       await deps.session().setGuest();
+    },
+
+    async deleteAccount(password) {
+      const user = firebaseAuth.currentUser;
+      if (!user || !user.email) return { ok: false, reason: "You're not signed in." };
+      try {
+        // Re-auth first (Firebase requires a fresh login for deleteUser; the password
+        // entry is also the confirmation). Does NOT touch the session store — the
+        // caller captured departmentId before this and wipes local data after, so an
+        // async onAuthStateChanged→setGuest can't blank the bucket id mid-flight.
+        const cred = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, cred);
+        await deleteUser(user);
+        return { ok: true };
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code ?? '';
+        if (
+          code === 'auth/invalid-credential' ||
+          code === 'auth/wrong-password' ||
+          code === 'auth/invalid-login-credentials'
+        ) {
+          return { ok: false, reason: "That password doesn't match." };
+        }
+        return { ok: false, reason: mapFirebaseError(err) };
+      }
     },
 
     async sendMagicLink(email) {
