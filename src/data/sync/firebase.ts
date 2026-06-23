@@ -13,4 +13,4 @@ import { firebaseApp } from '../auth/firebase';
 // stay in syncService.ts until that follow-on session.
 export const rtdb = getDatabase(firebaseApp);
 
-export { ref, get, set, update, child, serverTimestamp } from 'firebase/database';
+export { ref, get, set, update, child, onValue, remove, serverTimestamp } from 'firebase/database';

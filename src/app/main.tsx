@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
+import { eventListenerSync, connectivity } from '@data/sync';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -38,6 +39,13 @@ function App() {
         // updates the session store reactively and the persisted meta-row
         // session covers the first paint; start() is StrictMode-safe.
         authSessionSync.start();
+        // Cloud-sync Increment 2: the active dept bucket is hydrated by now, so the
+        // events listener (cloud → local + first-snapshot backlog push) and the
+        // reconnect-flush both start here. A dept switch reloads the page, tearing
+        // these down structurally and re-starting them on the new bucket. All three
+        // start() calls are idempotent (StrictMode-safe).
+        eventListenerSync.start();
+        connectivity.start();
         if (!cancelled) setBooted(true);
       })
       .catch((err: unknown) => {

@@ -119,6 +119,33 @@ const INVITE_CODE_CREATE = [
 // codes can't be enumerated; you can only read one you already hold.
 const INVITE_CODE_READ = 'auth != null';
 
+// EVENT (cloud-sync Increment 2) — the operations event log at
+// /orgs/{deptId}/events/{opId}/{eventId}. Write gate = department MEMBERSHIP + APPEND-
+// ONLY (Alex, 2026-06-23): any signed-in member may CREATE a new event, but `!data.exists()`
+// makes each event id write-once — a member can neither overwrite a peer's event nor
+// delete one (a delete sets newData=null, which `.validate` skips, so the immutability
+// MUST live in `.write`). The log is the immutable, append-only source of truth + audit
+// record (ADR-009); deletes/edits are modeled as NEW events, never RTDB removals. The
+// app's on-screen permission gates remain the fine-grained control; this is the floor
+// (stops non-members and other departments). One coarse rule covers the WHOLE event
+// stream — Firebase rules don't crack the discriminated union, so per-event-type gating
+// is deferred. Reads cascade from the dept node's READ_MEMBER (no .read needed here).
+// CAUTION: rule strings must contain NO literal { } — gen-rules.ts brace-matches the
+// orgs block; a literal brace would mis-slice the file (see scripts/gen-rules.ts).
+const EVENT_WRITE =
+  "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && !data.exists()";
+// Coarse envelope only — require the identity/clock/actor children with the right
+// primitive types. NOT the per-type fields: the client FieldShoreEvent.safeParse
+// (operationStore.doCommit) is the strict gate; the cloud is not the payload-integrity
+// boundary. No $other:false either — unknown per-type fields pass and are stripped by
+// the client Zod parse on read. `at` is REQUIRED because reconcile sorts on it (causal
+// order). DO NOT bind `by` to auth.uid: `by` is the per-DEVICE uid (ADR-024), a different
+// identity than the Firebase account auth.uid — binding them would reject every write.
+const EVENT_ENVELOPE_VALIDATE =
+  "newData.hasChildren(['id','opId','type','at','by']) && " +
+  "newData.child('id').isString() && newData.child('opId').isString() && " +
+  "newData.child('type').isString() && newData.child('at').isNumber()";
+
 /** The `orgs` value for database.rules.json. Pure — same output every run. */
 export function buildV4OrgsRules(): RuleTree {
   const deptFields = Department.omit({ id: true }).shape; // name/createdBy/createdAt (id is the key)
@@ -135,6 +162,13 @@ export function buildV4OrgsRules(): RuleTree {
   memberNode['.write'] = JOIN_SELF_WRITE; // founder writes via the dept create-cascade; joiners via this
   deptNode['members'] = { $uid: memberNode };
   deptNode['roles'] = { $roleId: objectRules(RoleNode) };
+
+  // The operations event log — hand-authored (membership gate + coarse envelope, NOT
+  // Zod-derived: objectRules can't express the FieldShoreEvent discriminated union).
+  // Reads cascade from the dept node's .read.
+  deptNode['events'] = {
+    $opId: { $eventId: { '.write': EVENT_WRITE, '.validate': EVENT_ENVELOPE_VALIDATE } },
+  };
 
   // The invite-code resolver — a sibling of $deptId under /orgs (a named child
   // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and

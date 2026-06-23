@@ -44,7 +44,14 @@ function build(bucket: string): void {
   operationStore = createOperationStore({
     db: deptDb,
     inventory: inventoryStore,
-    enqueue: (e) => syncService.enqueue(e), // wire commits to the sync queue
+    // Wire commits to the sync queue, then kick a best-effort upload. Fire-and-forget:
+    // flush() is guest-guarded + single-drain, and reconcile's fromRemote commits don't
+    // enqueue, so this never fires on a pulled-down event (no echo loop). Keeping the
+    // flush trigger HERE (not in operationStore) preserves the store's sync-ignorance.
+    enqueue: (e) => {
+      syncService.enqueue(e);
+      void syncService.flush();
+    },
     // Dev-only tripwire: a commit against a bucket that no longer matches the
     // signed-in department means a switch didn't reload (ui/dept/switchBucket).
     // Checked at write time (settled state), so the brief legit reload windows

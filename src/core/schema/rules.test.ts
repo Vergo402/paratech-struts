@@ -74,6 +74,22 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(committed.rules.orgs.inviteCodes.$other).toBeUndefined(); // no stray parent rule => no enumeration
   });
 
+  it('the event log is membership-gated, append-only, and validates the coarse envelope', () => {
+    const event = committed.rules.orgs.$deptId.events.$opId.$eventId;
+    // membership write gate (Alex 2026-06-23) — any member, looked up via root
+    expect(event['.write']).toContain("root.child('orgs').child($deptId).child('members').child(auth.uid).exists()");
+    // APPEND-ONLY: !data.exists() makes each event id write-once (no overwrite, no delete)
+    expect(event['.write']).toContain('!data.exists()');
+    // coarse envelope: identity/clock/actor children present, right primitive types.
+    // `at` is required (reconcile sorts on it); `by` is NOT bound to auth.uid (device uid)
+    expect(event['.validate']).toContain("newData.hasChildren(['id','opId','type','at','by'])");
+    expect(event['.validate']).toContain("newData.child('at').isNumber()");
+    expect(event['.write']).not.toContain("child('by').val() === auth.uid"); // by = device uid, not account
+    // reads cascade from the dept node's .read; no own .read, no $other (coarse — extras pass)
+    expect(event['.read']).toBeUndefined();
+    expect(event.$other).toBeUndefined();
+  });
+
   it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {
     expect(committed.rules.departments.$deptId.members.$uid['.validate']).toBe('newData.isBoolean()');
     expect(committed.rules.$other).toEqual({ '.read': false, '.write': false });
