@@ -66,4 +66,15 @@ describe('legacy DB migration (single-tenant → global + dept bucket)', () => {
     expect(await guest.inventory.get('inv-y')).toBeUndefined(); // not re-migrated
     guest.close();
   });
+
+  it('coalesces concurrent callers onto one migration (single-flight)', async () => {
+    await legacyDb.inventory.add(item('inv-c')); // no session → guest bucket
+    const p1 = migrateLegacyDb();
+    const p2 = migrateLegacyDb();
+    expect(p1).toBe(p2); // same in-flight promise — not a second racing migration
+    await Promise.all([p1, p2]);
+    const guest = createDB(deptDbName(GUEST_BUCKET));
+    expect(await guest.inventory.get('inv-c')).toBeTruthy();
+    guest.close();
+  });
 });

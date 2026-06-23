@@ -13,8 +13,12 @@ vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useNavigate: () => mockNavigate,
 }));
+vi.mock('./switchBucket', () => ({ reloadIntoActiveBucket: vi.fn() }));
 
 import { CreateDepartmentScreen } from './CreateDepartmentScreen';
+import { reloadIntoActiveBucket } from './switchBucket';
+
+const mockReload = vi.mocked(reloadIntoActiveBucket);
 
 const OK = {
   ok: true,
@@ -23,6 +27,7 @@ const OK = {
 
 beforeEach(() => {
   mockNavigate.mockReset();
+  mockReload.mockReset();
   mockCreateDepartment.mockReset().mockResolvedValue(OK);
 });
 
@@ -60,13 +65,14 @@ describe('CreateDepartmentScreen (workflow 07 — department setup)', () => {
     expect(screen.queryByText(/is ready/)).not.toBeInTheDocument();
   });
 
-  it('Done enters the app (navigates to Operations)', async () => {
+  it('Done switches onto the new department (reloads its bucket), after the code Sheet shows', async () => {
     const user = userEvent.setup();
     render(<CreateDepartmentScreen />);
     await user.type(screen.getByLabelText('Department name'), 'Hamden Fire Rescue');
     await user.click(screen.getByRole('button', { name: 'Create department' }));
+    // The Sheet (with the invite code) renders first — the reload is deferred to Done.
     await user.click(await screen.findByRole('button', { name: 'Done' }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' });
+    expect(mockReload).toHaveBeenCalled();
   });
 
   it('Skip for now exits without creating a department', async () => {

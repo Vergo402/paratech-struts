@@ -20,7 +20,24 @@ const MIGRATION_FLAG = 'fieldshore_migrated_buckets_v1';
 const GLOBAL_META_KEYS = [AUTH_UID_KEY, SESSION_KEY, MEMBERSHIPS_KEY, ONBOARDING_KEY];
 const DEPT_META_KEYS = [APPARATUS_ROSTER_KEY, CUSTOM_TITLES_KEY, CHECKLIST_TEMPLATES_KEY];
 
-export async function migrateLegacyDb(): Promise<void> {
+let migrating: Promise<void> | null = null;
+
+/**
+ * Single-flight wrapper: StrictMode's double-invoke of bootData (and a Splash-retry
+ * fired while a slow legacy-upgrade migration is still in flight) call this
+ * concurrently. The flag read (`:get`) and write (`:put`) are NOT atomic, so two
+ * racing runs could both pass the guard and both bulkPut. Coalesce concurrent callers
+ * onto the one in-flight migration; once it settles, the flag fast-paths every later call.
+ */
+export function migrateLegacyDb(): Promise<void> {
+  if (migrating) return migrating;
+  migrating = runMigration().finally(() => {
+    migrating = null;
+  });
+  return migrating;
+}
+
+async function runMigration(): Promise<void> {
   // Already migrated (also the steady-state fast path once the flag is set).
   if (await globalDb.meta.get(MIGRATION_FLAG)) return;
 
@@ -49,18 +66,22 @@ export async function migrateLegacyDb(): Promise<void> {
     }
   }
 
-  // Handle left open — IndexedDB supports concurrent connections, and boot's
-  // activateBucket opens its own handle to this same bucket immediately after.
+  // A short-lived second handle to this bucket (boot's activateBucket opens its own
+  // right after); close it when the copy is done so it doesn't linger for the page life.
   const deptDb = createDB(deptDbName(bucket));
-  const events = await legacyDb.events.toArray();
-  if (events.length) await deptDb.events.bulkPut(events); // preserves seq order
-  const inventory = await legacyDb.inventory.toArray();
-  if (inventory.length) await deptDb.inventory.bulkPut(inventory);
-  for (const key of DEPT_META_KEYS) {
-    const row = await legacyDb.meta.get(key);
-    if (row) await deptDb.meta.put(row);
+  try {
+    const events = await legacyDb.events.toArray();
+    if (events.length) await deptDb.events.bulkPut(events); // preserves seq order
+    const inventory = await legacyDb.inventory.toArray();
+    if (inventory.length) await deptDb.inventory.bulkPut(inventory);
+    for (const key of DEPT_META_KEYS) {
+      const row = await legacyDb.meta.get(key);
+      if (row) await deptDb.meta.put(row);
+    }
+  } finally {
+    deptDb.close();
   }
 
-  // 3. Mark done (idempotent vs StrictMode double-invoke / a reload mid-migration).
+  // 3. Mark done (idempotent vs a reload mid-migration; concurrent boots coalesce above).
   await globalDb.meta.put({ key: MIGRATION_FLAG, value: 'true' });
 }

@@ -20,6 +20,7 @@ import { JoinDepartmentRoute } from './routes/join-department';
 import { HelpRoute } from './routes/help';
 import { EmptyState } from '@ui/primitives';
 import { OnboardingHost } from '@ui/onboarding';
+import { RequireDepartment } from '@ui/dept';
 
 /**
  * Route tree — the locked 5-tab spine (ADR-014) + the /gallery dev surface,
@@ -70,11 +71,14 @@ const routeTree = rootRoute.addChildren([
         throw redirect({ to: '/operations' });
       },
     }),
+    // Quick Find is OPEN to everyone (stateless calculator, no department data).
     createRoute({ getParentRoute: () => shellRoute, path: '/quickfind', component: QuickFindScreen }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/operations', component: OperationsScreen }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/inventory', component: InventoryScreen }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/command', component: CommandScreen }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/settings', component: SettingsScreen }),
+    // The dept-scoped + account tabs are gated: a signed-in member with no department
+    // sees the set-up gate instead (RequireDepartment). Guests pass through.
+    createRoute({ getParentRoute: () => shellRoute, path: '/operations', component: () => <RequireDepartment><OperationsScreen /></RequireDepartment> }),
+    createRoute({ getParentRoute: () => shellRoute, path: '/inventory', component: () => <RequireDepartment><InventoryScreen /></RequireDepartment> }),
+    createRoute({ getParentRoute: () => shellRoute, path: '/command', component: () => <RequireDepartment><CommandScreen /></RequireDepartment> }),
+    createRoute({ getParentRoute: () => shellRoute, path: '/settings', component: () => <RequireDepartment><SettingsScreen /></RequireDepartment> }),
     createRoute({ getParentRoute: () => shellRoute, path: '/help', component: HelpRoute }),
     createRoute({ getParentRoute: () => shellRoute, path: '/gallery', component: GalleryScreen }),
   ]),

@@ -75,12 +75,14 @@ export async function seedApparatusRoster(db: FieldShoreDB): Promise<boolean> {
   return true;
 }
 
-/** Seed the inventory table if (and only if) it is empty. True when seeded. */
+/** Seed the inventory table only on a TRULY fresh bucket. True when seeded. */
 export async function seedIfEmpty(db: FieldShoreDB): Promise<boolean> {
   try {
-    return await db.transaction('rw', db.inventory, async () => {
-      const count = await db.inventory.count();
-      if (count > 0) return false;
+    return await db.transaction('rw', db.inventory, db.events, async () => {
+      // Fresh = empty inventory AND no events. A returning user who cleared their
+      // inventory but kept operations must NOT get the 17 demo struts injected on
+      // top of their real work (events are the source of truth — ADR-009).
+      if ((await db.inventory.count()) > 0 || (await db.events.count()) > 0) return false;
       await db.inventory.bulkAdd(buildSeedInventory());
       return true;
     });

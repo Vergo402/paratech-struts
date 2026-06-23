@@ -62,6 +62,21 @@ Given the five-tab spine ([ADR-014](ADR-014-tab-structure.md)), v4 needs one nav
 
 ---
 
+## Amendment (2026-06-22) — a signed-in member is bound to a department
+
+"Skip is always a first-class exit" applies to **guests**. It is **narrowed for signed-in members**: a
+member must belong to a department before reaching the department-scoped tabs (Operations, Inventory,
+Command, Settings). A member with no department sees an in-shell set-up gate (`RequireDepartment`,
+`src/ui/dept`) offering Create / Join / Sign out instead of those tabs — their work must never land in the
+shared, demo-seeded `guest` bucket alongside other no-department members (the per-department storage
+isolation invariant, cloud-sync Increment 1). **Quick Find stays open to everyone** (a stateless calculator
+with no department data), so the cold-open is still never walled, and **guests are unchanged**. Owner
+decision (Alex). Automatic new-device re-discovery of a member's department (no code re-entry) lands with
+cloud sync ([#232](https://github.com/Vergo402/paratech-struts/issues/232)); until then a returning member
+on a new device re-enters their invite code.
+
+---
+
 ## Notes
 
 The routing diagram (boot → guest shell → forward auth) and the per-surface navigation table live in [`00-ia-foundation.md`](../08-information-architecture/00-ia-foundation.md) §Navigation pattern.

@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { bootData, sessionStore, currentBucket, GUEST_BUCKET } from '@data/store';
+import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
@@ -48,18 +48,12 @@ function App() {
     };
   }, [attempt]);
 
-  // Department switch: when the active dept changes (create / join / leave →
-  // session.setDepartment/leaveDepartment), re-boot the whole app onto the new
-  // department's bucket. A full reload is bulletproof — boot is the one path that
-  // sets up the buckets + stores correctly — and avoids remounting RouterProvider
-  // (which crashes on a key change). Switches are rare, so the brief reload is fine.
-  useEffect(() => {
-    if (!booted) return;
-    return sessionStore.store.subscribe((s) => {
-      const bucket = s.departmentId || GUEST_BUCKET;
-      if (bucket !== currentBucket()) window.location.assign('/operations');
-    });
-  }, [booted]);
+  // Department switches (create / join / sign-out) reload onto the new bucket via an
+  // EXPLICIT reloadIntoActiveBucket() at each action site (ui/dept/switchBucket) — not
+  // a reactive subscribe here. The old subscribe fired the instant setDepartment()
+  // flipped departmentId, tearing the page down mid-create before the invite-code
+  // Sheet rendered and before the cloud writes settled. A member-with-no-department is
+  // held out of the dept-scoped tabs by RequireDepartment (ui/dept), not by a reload.
 
   if (!booted) return <Splash error={bootError} onRetry={() => setAttempt((n) => n + 1)} />;
   return <RouterProvider router={router} />;

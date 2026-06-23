@@ -14,12 +14,14 @@ import { syncService } from '../sync/syncService';
 // departments' data can never bleed (they're in different databases). The bucket
 // maps 1:1 to /orgs/{deptId} — it's the local cache the cloud sync targets.
 //
-// The 5 stores are exported as LIVE BINDINGS (`let`): the barrel re-exports them
-// and the 17 hooks read `store.store` — so after a switch they see the current
-// instance. Pairing: main.tsx remounts the routed tree on a switch (`key`), which
-// forces every hook to re-subscribe to the freshly-built stores. The global stores
-// (session/auth/onboarding) bind to the global DB and survive a switch — they are
-// NOT recreated here.
+// The 5 stores are exported as LIVE BINDINGS (`let`): the barrel re-exports them and
+// the hooks read `store.store`. A department switch is a FULL PAGE RELOAD
+// (ui/dept/switchBucket → window.location.assign), which re-imports this module and
+// re-runs build()/activateBucket fresh, so the new bindings always take effect. (An
+// in-process binding swap WITHOUT a reload would NOT be seen by already-mounted hooks
+// — they capture store.store at render — so the reload is what makes a switch safe.)
+// The global stores (session/auth/onboarding) bind to the global DB and survive a
+// switch — they are NOT recreated here.
 
 let deptDb: FieldShoreDB;
 let activeBucket = '';

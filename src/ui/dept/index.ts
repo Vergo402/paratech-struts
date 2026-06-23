@@ -4,3 +4,5 @@ export { CreateDepartmentScreen } from './CreateDepartmentScreen';
 export { JoinDepartmentScreen } from './JoinDepartmentScreen';
 export { QrImage, type QrImageProps } from './QrImage';
 export { QrScannerSheet, type QrScannerSheetProps } from './QrScannerSheet';
+export { RequireDepartment } from './RequireDepartment';
+export { reloadIntoActiveBucket } from './switchBucket';

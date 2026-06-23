@@ -53,6 +53,14 @@ describe('seed inventory', () => {
     expect(await db.inventory.count()).toBe(count);
   });
 
+  it('does NOT seed a bucket that already has events (returning user who cleared inventory)', async () => {
+    // Empty inventory, but an event log exists → NOT a fresh bucket. seedIfEmpty must
+    // leave it alone rather than inject 17 demo struts over real work (events = truth).
+    await db.events.add({ id: newId(), opId: 'op-1', at: 1 } as never);
+    expect(await seedIfEmpty(db)).toBe(false);
+    expect(await db.inventory.count()).toBe(0);
+  });
+
   it('degrades to empty inventory when seeding throws, instead of dead-ending boot (audit W6)', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const throwingDb = {

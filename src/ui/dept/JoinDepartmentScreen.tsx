@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Badge, Button, Sheet, TextField } from '@ui/primitives';
 import { useDepartment } from '@ui/hooks';
 import { QrScannerSheet } from './QrScannerSheet';
+import { reloadIntoActiveBucket } from './switchBucket';
 
 /**
  * JoinDepartmentScreen — the pre-shell "join an existing department" route
@@ -64,8 +65,9 @@ export function JoinDepartmentScreen() {
   }
 
   function enterApp() {
-    setJoined(null);
-    navigate({ to: HOME });
+    // Switch onto the joined department's bucket, deferred to this tap so the
+    // confirmation Sheet renders first (see ui/dept/switchBucket).
+    reloadIntoActiveBucket();
   }
 
   return (

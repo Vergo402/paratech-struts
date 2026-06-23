@@ -6,7 +6,7 @@ import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/h
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
-import { QrImage } from '@ui/dept';
+import { QrImage, reloadIntoActiveBucket } from '@ui/dept';
 import { kindLabel } from '@core/org';
 import { useTheme, type ThemePreference } from '../theme';
 
@@ -234,7 +234,9 @@ export function SettingsScreen() {
               destructive
               onPress={async () => {
                 await signOut();
-                setConfirmOut(false);
+                // Sign-out flips the dept→null; reload onto the (guest) bucket so no
+                // stale dept bucket lingers (the reactive subscribe used to do this).
+                reloadIntoActiveBucket();
               }}
             >
               Log Out

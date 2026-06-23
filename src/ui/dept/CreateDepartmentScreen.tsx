@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Badge, Button, Sheet, TextField } from '@ui/primitives';
 import { useDepartment } from '@ui/hooks';
 import { QrImage } from './QrImage';
+import { reloadIntoActiveBucket } from './switchBucket';
 
 /**
  * CreateDepartmentScreen — the pre-shell "stand up a department" route (workflow
@@ -40,8 +41,10 @@ export function CreateDepartmentScreen() {
   }
 
   function done() {
-    setCreated(null);
-    navigate({ to: HOME });
+    // Switch onto the just-created department's bucket. Deferred to this explicit tap
+    // so the invite-code Sheet renders and the cloud writes finish first — the page
+    // is no longer torn down mid-create (see ui/dept/switchBucket).
+    reloadIntoActiveBucket();
   }
 
   async function copyCode() {
@@ -104,7 +107,7 @@ export function CreateDepartmentScreen() {
           fullWidth
           onPress={() => navigate({ to: '/join-department' })}
         >
-          Join an existing department instead
+          Join an existing department
         </Button>
 
         <Button variant="tertiary" fullWidth onPress={() => navigate({ to: HOME })}>
