@@ -13,7 +13,7 @@ One job: read the four living sources of Phase I work — three design docs plus
 
 2. **Read all four sources** (in order):
    - `docs/v4-design/99-open-questions.md` — extract all items with Phase I relevance
-   - `docs/v4-design/13-slice/_PHASE-H-GATE-SCRIPT.md` — extract the gaps register; note which are Phase I blockers
+   - `docs/v4-design/13-slice/_PHASE-H-GATE-SCRIPT.md` — extract the gaps register; note which are Phase I blockers. **The numbered bullets are a frozen point-in-time gate snapshot — do NOT read them for current status. Read the "Resolution status" addendum blockquote for what's shipped vs. still-open; the bullets are intentionally never updated.**
    - `docs/v4-design/98-design-docket.md` — extract items marked `📋 Pending | Phase I queue` or `🔄 In Progress`
    - **v4 GitHub board (Project 2)** — the live status of every tracked Phase I issue:
      ```bash
@@ -36,7 +36,10 @@ One job: read the four living sources of Phase I work — three design docs plus
 
 5. **Reconcile docs ⇄ board.** Cross-walk the doc items against the board:
    - **Board-only items** — a non-Done Phase I issue with no row in any of the three docs → fold it into the backlog. This is the whole reason for the board read; doc-only runs miss these (e.g. the build / sim / decision issues).
-   - **Status mismatches** — a doc treats an item as open but the board shows it Done/closed (or the reverse) → flag it under "GitHub Tracking Status" for hygiene. Trust the board for status.
+   - **Status mismatches** — flag ONLY a *true* status conflict: a **live** doc and the board disagree about the **same issue number's** status (a doc says open, the board says Done/closed, or the reverse) → list under "GitHub Tracking Status." Trust the board for status. The docs are not mirrors of the board — each plays a distinct role, so most apparent differences are **not** mismatches. **Do NOT flag any of these** (they are expected, not drift):
+     - The **frozen gaps-register bullets** — they're a snapshot, never live (read its addendum instead, per step 2). A frozen bullet "not matching" the board is a category error, not a finding.
+     - **Scope / granularity differences** — a narrow struck docket observation (e.g. "theme picker shipped, needs polish," pointer #248) vs. a broader board issue tracking the *full* build (e.g. #321 "Build the Settings tab") are two different things, both correct. Only flag when the two genuinely describe the **same** unit of work.
+     - **Pointer-lineage overlaps** — two registers referencing the same origin (e.g. both note "was gaps #8") while pointing at different issues, where each issue is legitimately distinct (one shipped, one is a new design-exploration). Note it as context if helpful, but it is not a mismatch.
 
 6. **Output format:**
    ```markdown
