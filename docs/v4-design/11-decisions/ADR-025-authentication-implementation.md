@@ -82,6 +82,16 @@ One device = one **per-device Firebase anonymous UID** ([ADR-009](ADR-009-databa
 
 ---
 
+## Addendum — magic-link sign-up guard & nameless-member display (Phase A build, 2026-06-22)
+
+Two implementation policies the Phase A build (#379) locked in, recorded here so they don't silently regress:
+
+1. **Magic-link is sign-in-only — enforced in CODE, not just the UI.** Firebase's `signInWithEmailLink` *auto-creates* a real account when the email has never registered, so a member typing an unknown email in Sign-In mode would otherwise be seated with a fabricated, email-prefix name — bypassing the mandatory display name. The UI button placement (link offered only in Sign-In mode) is a hint, not a guard. **Enforcement lives in `completeMagicLink()`** (`src/data/auth/accountService.ts`): it detects the just-minted account (`metadata.creationTime === metadata.lastSignInTime` *and* no `displayName`), **deletes it, and rejects** ("No account found — create one first"). Deleting (not merely rejecting) is load-bearing — an orphaned account would pass the freshness check on the next link-open. A Firebase-console toggle forbidding email-link sign-up (Identity Platform / a blocking function) is recommended **belt-and-suspenders** but is explicitly **not** what the accountability anchor depends on; the code guard is the source of truth so a console-side regression can't reopen the gap.
+
+2. **Nameless-member display name = email local-part, then `"Member"`.** New accounts always have a typed name (createAccount requires it; guard #1 rejects nameless new accounts), so this only applies to legacy/edge accounts that somehow lack one. Deliberate choice: fall back to the email local-part (it still ties to a real person) before the generic `"Member"`. Centralized in one `resolveDisplayName()` shared by `signIn` / `completeMagicLink` / `authSessionSync` — one intentional default, not three copy-pasted chains.
+
+Tracked as a sub-issue of epic [#379](https://github.com/Vergo402/paratech-struts/issues/379).
+
 ## Notes
 
 The single open sub-item this ADR does not resolve is the offline-auth *token lifetime* (how long a "trust this device" refresh token stays valid offline) — that is plumbing flagged in [`06-signing-in-and-out.md`](../09-workflows/06-signing-in-and-out.md) §Open questions and rides the same Phase-H infrastructure pass as the email transport, not a design call. [ADR-009](ADR-009-database-firebase-rtdb.md) already establishes that Firebase's long-lived refresh token plus flush-time authorization covers multi-hour outages, so the offline window is safe; only the exact lifetime is a tuning question.

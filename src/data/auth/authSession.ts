@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
+import { resolveDisplayName } from './accountService';
 import { firebaseAuth } from './firebase';
 
 // data/auth — reconcile the local session with Firebase Auth's restored user on
@@ -36,8 +37,7 @@ export function createAuthSessionSync(deps: { session: () => SessionStoreApi }):
           // Align local → Firebase only when they differ (skip redundant writes
           // right after signIn/createAccount, which already set the member).
           if (identity.kind !== 'member' || identity.accountId !== user.uid) {
-            const displayName =
-              user.displayName || user.email?.split('@')[0]?.trim() || 'Member';
+            const displayName = resolveDisplayName(user.displayName, user.email);
             void session.setMember({ accountId: user.uid, displayName });
           }
         } else if (identity.kind === 'member') {

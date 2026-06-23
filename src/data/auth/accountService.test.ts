@@ -203,6 +203,41 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     expect(session.store.getState().identity.kind).toBe('guest');
   });
 
+  it('completeMagicLink: a never-registered email auto-creates → guard deletes it and rejects (ADR-025)', async () => {
+    window.localStorage.setItem('fieldshore_magic_email', 'newbie@dept14.gov');
+    const del = vi.fn().mockResolvedValue(undefined);
+    // Brand-new account: created === last-signed-in, no display name.
+    vi.mocked(signInWithEmailLink).mockResolvedValueOnce({
+      user: {
+        uid: FB_UID,
+        displayName: null,
+        metadata: { creationTime: 'Mon, 22 Jun 2026 10:00:00 GMT', lastSignInTime: 'Mon, 22 Jun 2026 10:00:00 GMT' },
+        delete: del,
+      },
+    } as never);
+    const res = await account.completeMagicLink('https://app/auth?oobCode=x');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/no account found/i);
+    expect(del).toHaveBeenCalledOnce();
+    expect(session.store.getState().identity.kind).toBe('guest');
+  });
+
+  it('completeMagicLink: an EXISTING nameless account signs in and falls back to email local-part', async () => {
+    window.localStorage.setItem('fieldshore_magic_email', 'marchetti@dept14.gov');
+    // Existing account: created !== last-signed-in → not freshly minted, passes the guard.
+    vi.mocked(signInWithEmailLink).mockResolvedValueOnce({
+      user: {
+        uid: FB_UID,
+        displayName: null,
+        metadata: { creationTime: 'Mon, 01 Jun 2026 09:00:00 GMT', lastSignInTime: 'Mon, 22 Jun 2026 10:00:00 GMT' },
+      },
+    } as never);
+    const res = await account.completeMagicLink('https://app/auth?oobCode=x');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.member.displayName).toBe('marchetti');
+    expect(session.store.getState().identity.kind).toBe('member');
+  });
+
   it('sendPasswordReset: emails a reset link for a non-empty address', async () => {
     const res = await account.sendPasswordReset('reyes@dept14.gov');
     expect(res.ok).toBe(true);

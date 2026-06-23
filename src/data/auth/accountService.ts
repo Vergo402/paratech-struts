@@ -17,10 +17,19 @@ import { firebaseAuth } from './firebase';
 // Firebase's BUILT-IN email (no custom transport). Callers (AuthScreen,
 // useSession) reach Firebase only through this seam.
 //
-// Magic-link is SIGN-IN-ONLY for existing accounts (ADR-025) — the AuthScreen
-// only offers it in Sign-In mode, because a new member must set a display name
-// (the accountability anchor) which the link flow can't capture. Password reset
-// uses Firebase's own hosted reset page, so it needs no landing handler here.
+// Magic-link is SIGN-IN-ONLY for existing accounts (ADR-025) — a new member must
+// set a display name (the accountability anchor) which the link flow can't
+// capture. Two guards, defense-in-depth:
+//   1. UI: AuthScreen offers the link only in Sign-In mode.
+//   2. Code: completeMagicLink() below deletes + rejects any account Firebase
+//      auto-creates on link-open. signInWithEmailLink MINTS a real account for a
+//      never-registered email, so without this guard a typed-in unknown email
+//      would seat a nameless member with a fabricated name.
+// A Firebase-console toggle that forbids email-link SIGN-UP (Identity Platform /
+// a blocking function) is recommended belt-and-suspenders, but the accountability
+// anchor does NOT depend on it — guard #2 enforces it in CODE, so a console
+// regression can't silently reopen the gap. Password reset uses Firebase's own
+// hosted reset page, so it needs no landing handler here.
 //
 // Offline auth window (ADR-025): signing in must never block a returning member
 // who last signed in online. The Firebase SDK handles its own credential cache;
@@ -86,6 +95,22 @@ function mapFirebaseError(err: unknown): string {
   return 'Something went wrong. Try again.';
 }
 
+/**
+ * The display name to show for a member. Deliberate decision (ADR-025), shared by
+ * signIn / completeMagicLink / authSessionSync so the fallback is ONE choice, not
+ * three copies: prefer the typed display name (the accountability anchor); for a
+ * nameless legacy/edge account fall back to the email local-part (still ties to a
+ * real person) before the generic "Member". A NEW account always has a typed name
+ * — createAccount requires it and completeMagicLink rejects nameless new accounts
+ * — so this fallback is a safety net, not the normal path.
+ */
+export function resolveDisplayName(
+  displayName: string | null | undefined,
+  email: string | null | undefined,
+): string {
+  return displayName?.trim() || email?.split('@')[0]?.trim() || 'Member';
+}
+
 export function createAccountService(deps: { session: () => SessionStoreApi }): AccountServiceApi {
   return {
     async createAccount({ email, password, displayName }) {
@@ -108,7 +133,7 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
     async signIn({ email, password }) {
       try {
         const cred = await signInWithEmailAndPassword(firebaseAuth, email, password);
-        const displayName = cred.user.displayName || email.split('@')[0]?.trim() || 'Member';
+        const displayName = resolveDisplayName(cred.user.displayName, email);
         const member = { accountId: cred.user.uid, displayName };
         await deps.session().setMember(member);
         return { ok: true, member };
@@ -172,12 +197,32 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
       }
       try {
         const cred = await signInWithEmailLink(firebaseAuth, email, url);
+
+        // Magic-link is sign-in-only (ADR-025). signInWithEmailLink AUTO-CREATES a
+        // real account for a never-registered email — that account never went
+        // through createAccount, so it has no display name (the accountability
+        // anchor). Detect the just-minted account (created === last-signed-in, and
+        // no name) and DELETE it, so a typed-in unknown email can't seat a nameless
+        // member. Delete (not just reject) is load-bearing: an orphaned account
+        // would have created !== last-sign-in on the next link-open and slip past
+        // this check. metadata absent → treat as not-fresh (don't block a sign-in).
+        const meta = cred.user.metadata;
+        const isFreshlyCreated = !!meta?.creationTime && meta.creationTime === meta.lastSignInTime;
+        if (isFreshlyCreated && !cred.user.displayName) {
+          try {
+            await cred.user.delete?.();
+          } catch {
+            /* best-effort — the next sign-in will re-hit this guard regardless */
+          }
+          return { ok: false, reason: 'No account found for that email — create one first.' };
+        }
+
         try {
           window.localStorage.removeItem(MAGIC_EMAIL_KEY);
         } catch {
           /* storage unavailable */
         }
-        const displayName = cred.user.displayName || email.split('@')[0]?.trim() || 'Member';
+        const displayName = resolveDisplayName(cred.user.displayName, email);
         const member = { accountId: cred.user.uid, displayName };
         await deps.session().setMember(member);
         return { ok: true, member };
