@@ -4,7 +4,7 @@
 >
 > **This is a curation index, not a source of truth.** Every row links to its canonical home — a [`99-open-questions.md`](99-open-questions.md) row, a [#248](https://github.com/Vergo402/paratech-struts/issues/248) comment, the [gate script's known-gaps register](13-slice/_PHASE-H-GATE-SCRIPT.md), or a queued fix-session issue. Items are *resolved at the source*; when one resolves, strike its row here with a pointer. (The Phase E audit showed what happens when registers go blind to each other — this file exists so the design passes never re-learn that lesson.)
 >
-> **Habits:** every fix session (S10–S12) and every Phase I design session **opens by reading this file**. New design-class observations on #248 get a row here. Rapid adds go through the **`/docket`** skill (`.claude/skills/docket/`) — one line, committed immediately. An **ad hoc** row (no canonical home yet) is promoted to `99-open-questions.md` or #248 when it's first worked. **Cosmetic items deferred past the full v4 build** land in the **Post-build polish** section, home [#341](https://github.com/Vergo402/paratech-struts/issues/341).
+> **Habits:** every fix session (S10–S12) and every Phase I design session **opens by reading this file**. New design-class observations on #248 get a row here. Rapid adds go through the **`/design-docket`** skill (`.claude/skills/design-docket/`) — one line, committed immediately. An **ad hoc** row (no canonical home yet) is promoted to `99-open-questions.md` or #248 when it's first worked. **Cosmetic items deferred past the full v4 build** land in the **Post-build polish** section, home [#341](https://github.com/Vergo402/paratech-struts/issues/341).
 
 ---
 
@@ -28,6 +28,7 @@
 | ICS org chart: layout & visual design pass — center-on-IC · command-staff clipping · broken/uneven connector lines · remove "Top of command" subtitle · "Add apparatus"/"Add individual" button placement | [#373](https://github.com/Vergo402/paratech-struts/issues/373) (was #248) | 2026-06-21 |
 | ICS node-detail modal: UX/flow overhaul — zero flow between sections and actions | [#374](https://github.com/Vergo402/paratech-struts/issues/374) (was #248) | 2026-06-21 |
 | Cutting Station: filter to show only cuts assigned to user's station, not full operation queue | [#375](https://github.com/Vergo402/paratech-struts/issues/375) (was #248) | 2026-06-21 |
+| Cutting Station: calm empty state ("No cuts queued") when the queue is empty — currently renders nothing (component returns null) | [#389](https://github.com/Vergo402/paratech-struts/issues/389) (design-idea) | 2026-06-22 |
 
 ## Doctrine deviation watch
 
@@ -43,9 +44,9 @@
 
 | Item | Canonical home | Added |
 |---|---|---|
-| Desktop: move the bottom tab bar to a true side selector (left nav rail) | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
-| Desktop: redesign the Operations / Cutting Station selector — bad UI | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
-| Dashed empty-shell (`.fs-ops-detail-shell`, pinned detail column ≥1200) is a net-new idiom — formalize as a reusable empty-state pattern, or re-style to the surface/hairline convention vs the 2px dashed border | [#341](https://github.com/Vergo402/paratech-struts/issues/341) | 2026-06-18 |
+| Desktop: move the bottom tab bar to a true side selector (left nav rail) | [#386](https://github.com/Vergo402/paratech-struts/issues/386) (sub-issue of #341) | 2026-06-18 |
+| Desktop: redesign the Operations / Cutting Station selector — bad UI | [#387](https://github.com/Vergo402/paratech-struts/issues/387) (sub-issue of #341) | 2026-06-18 |
+| Dashed empty-shell (`.fs-ops-detail-shell`, pinned detail column ≥1200) is a net-new idiom — formalize as a reusable empty-state pattern, or re-style to the surface/hairline convention vs the 2px dashed border | [#388](https://github.com/Vergo402/paratech-struts/issues/388) (sub-issue of #341) | 2026-06-18 |
 
 ## Unscheduled / watch
 
