@@ -1,5 +1,6 @@
 import { STRUTS, BASE_PLATES } from '@core/load';
 import { System, type InventoryItem } from '@core/schema';
+import { serialize } from '@core/csv';
 
 // Pure CSV round-trip for the inventory cache (40-inventory.md §Excel import/export).
 // The 10-column contract; CSV-only this slice (xlsx + Reference sheet deferred). No
@@ -64,10 +65,6 @@ function compareItems(a: InventoryItem, b: InventoryItem): number {
   return plateName(a.plateId).localeCompare(plateName(b.plateId));
 }
 
-function csvField(v: string): string {
-  return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
-}
-
 function rowFor(i: InventoryItem): string[] {
   const typeLabel = i.type === 'strut' ? 'Strut' : i.type === 'extension' ? 'Extension' : 'Plate';
   return [
@@ -82,10 +79,6 @@ function rowFor(i: InventoryItem): string[] {
     i.type === 'extension' && i.length != null ? String(i.length) : '',
     String(i.quantity),
   ];
-}
-
-function serialize(rows: readonly (readonly string[])[]): string {
-  return rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
 }
 
 /** The cache as CSV, sorted per the spec. Zero-quantity rows are omitted

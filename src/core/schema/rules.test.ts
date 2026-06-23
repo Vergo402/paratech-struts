@@ -161,14 +161,18 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(dept.members.$uid.$other['.validate']).toBe(false);
   });
 
-  it('the governance audit log is manageUsers-gated, append-only, and has no public read (#380)', () => {
+  it('the governance audit log is manageUsers-gated, append-only, and read-gated on the parent (#380/#381)', () => {
     const audit = committed.rules.orgs.$deptId.audit.$auditId;
     expect(audit['.write']).toContain("child('permissions').child('manageUsers').val() === true");
     expect(audit['.write']).toContain('!data.exists()'); // write-once — tamper-proof
     expect(audit['.validate']).toContain("newData.hasChildren(['id','type','at','by'])");
-    // default-deny read until the P4 Audit Log screen adds the IC/Operations-position gate
-    expect(audit['.read']).toBeUndefined();
-    expect(committed.rules.orgs.$deptId.audit['.read']).toBeUndefined();
+    // #381 — the Administrative view reads the WHOLE node, so the .read is on the PARENT
+    // (not per-entry), gated active-member + manageUsers (the Incident view's IC/Operations
+    // gate is client-side — an ICS position the rules can't see).
+    expect(audit['.read']).toBeUndefined(); // no per-entry read; it cascades from the parent
+    const parentRead = committed.rules.orgs.$deptId.audit['.read'];
+    expect(parentRead).toContain("child('permissions').child('manageUsers').val() === true");
+    expect(parentRead).toContain(".child('active').val() != false"); // active-aware (#381)
   });
 
   it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {

@@ -161,3 +161,106 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   gap: 0 var(--space-5);
 }
 .fs-um-delete-row { margin-top: var(--space-4); border-top: var(--stroke-width) solid var(--surface-stroke); padding-top: var(--space-3); }
+
+/* ============================================================================
+   Audit Log (#211) — the read-only, two-view trail. Reuses .fs-um shell + head.
+   ============================================================================ */
+
+/* the CSV export pill, pushed to the right edge of the header */
+.fs-al-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font: var(--type-label);
+  color: var(--text-secondary);
+  background: none;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+.fs-al-export:hover { background: var(--surface-card-hover); }
+.fs-al-export:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* the context + access-lock line under the tabs */
+.fs-al-lock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-al-lock-ctx { color: var(--text-secondary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-al-lock-who { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; flex: 0 0 auto; }
+
+/* the filter field (native search input — gloves/screen-reader friendly) */
+.fs-al-filter {
+  width: 100%;
+  min-height: 40px;
+  padding: var(--space-2) var(--space-3);
+  font: var(--type-body);
+  color: var(--text-primary);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+}
+.fs-al-filter:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* a scope group header (By action / By person) */
+.fs-al-group {
+  font: var(--type-label);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: var(--space-3) 0 var(--space-1);
+}
+
+/* the event/entry list — read-only rows */
+.fs-al-list { display: flex; flex-direction: column; }
+.fs-al-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) 0;
+  border: none;
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.fs-al-row[data-static] { cursor: default; }
+.fs-al-row:not([data-static]):hover { background: var(--surface-card-hover); }
+.fs-al-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-button); }
+
+.fs-al-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.fs-al-row-text { font: var(--type-body); color: var(--text-primary); min-width: 0; }
+.fs-al-row-meta { font: var(--type-caption); color: var(--text-secondary); }
+.fs-al-row-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--space-1);
+  padding-top: var(--space-2);
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-al-row-when { color: var(--text-tertiary); }
+
+/* action-type badges — text always carries the meaning; tone is decorative (P9) */
+.fs-al-badge {
+  flex: 0 0 auto;
+  font: var(--type-label);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+}
+.fs-al-badge--info { color: var(--status-process-text); background: var(--status-process-bg); }
+.fs-al-badge--good { color: var(--status-secured-text); background: var(--status-secured-bg); }
+.fs-al-badge--warn { color: var(--status-strutset-text); background: var(--status-strutset-bg); }
+.fs-al-badge--danger { color: var(--danger-text); background: color-mix(in srgb, var(--danger-text) 16%, transparent); }
+.fs-al-badge--accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.fs-al-badge--neutral { color: var(--text-secondary); border: var(--stroke-width) solid var(--surface-stroke); }

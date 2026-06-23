@@ -21,11 +21,18 @@ export interface UserManagerApi {
   deleteRole: typeof departmentService.deleteRole;
 }
 
-export function useUserManager(): UserManagerApi {
+export function useUserManager(enabled = true): UserManagerApi {
   const [members, setMembers] = useState<Record<string, Member> | null>(null);
   const [membersError, setMembersError] = useState(false);
 
+  // `enabled` (default true — the User Manager screen passes nothing) lets the Audit Log
+  // borrow the members read ONLY for an admin viewer, so a non-admin never fires a denied read.
   const refresh = useCallback(async () => {
+    if (!enabled) {
+      setMembersError(false);
+      setMembers(null);
+      return;
+    }
     setMembersError(false);
     const m = await departmentService.readMembers();
     if (m === null) {
@@ -34,7 +41,7 @@ export function useUserManager(): UserManagerApi {
     } else {
       setMembers(m);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     void refresh();

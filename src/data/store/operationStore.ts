@@ -60,6 +60,10 @@ export interface OperationStoreApi {
    *  node's history. A cold-path read over the retained log (the readShorePointHistory
    *  pattern); works for archived ops too. */
   readRoleHistory(opId: string, positionId?: string): Promise<FieldShoreEvent[]>;
+  /** Every event for ONE operation, in append (chronological) order — the Audit Log
+   *  Incident view (#211). A cold-path read over the retained log; works for archived
+   *  ops too. Local: the event log is already synced (the live board reads it). */
+  readEventLog(opId: string): Promise<FieldShoreEvent[]>;
 }
 
 // Collapse per-decrement snapshots to ONE mirror update per inventory id (last
@@ -335,6 +339,11 @@ export function createOperationStore(opts: {
     async readRoleHistory(opId: string, positionId?: string) {
       // loadEvents() = seq (append) order = chronological. The filter is pure (core/org).
       return roleHistory(await loadEvents(), opId, positionId);
+    },
+    async readEventLog(opId: string) {
+      // loadEvents() = seq (append = chronological) order; the Audit Log Incident view
+      // reverses for newest-first. Local read — the log is already synced.
+      return (await loadEvents()).filter((e) => e.opId === opId);
     },
   };
 }

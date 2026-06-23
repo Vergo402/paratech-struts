@@ -220,14 +220,18 @@ const ADMIN_MANAGE = [
   `( !(${adminLosingAdmin}) || ( ${actorIsAdmin} && $uid !== auth.uid ) )`,
 ].join(' && ');
 
-// AUDIT LOG (#380) — governance actions (role create/edit/delete, assign/promote/revoke) at
-// /orgs/{deptId}/audit/{auditId}. Append-only + manageUsers-gated: !data.exists() makes each
-// entry write-once (no edit, no delete) — tamper-proof. NO .read here → default-deny until
-// the P4 Audit Log screen adds the IC/Operations-position read gate (an ICS axis the rules
-// can't see). Coarse envelope only (id/type/at/by), like the event log; the per-entry schema
-// is finalized with the P4 writer. CAUTION: NO literal { }.
+// AUDIT LOG (#380 write, #381 read) — governance actions (role create/edit/delete, assign/
+// promote/revoke) at /orgs/{deptId}/audit/{auditId}. Append-only + manageUsers-gated:
+// !data.exists() makes each entry write-once (no edit, no delete) — tamper-proof. The P4
+// Audit Log screen's Administrative view reads the WHOLE node, so the .read sits on the
+// audit PARENT (below), gated active-member + manageUsers — the same axis as the write. The
+// Incident view reads the EVENT log instead (member-readable via the dept .read), gated to
+// IC/Operations CLIENT-side (an ICS position the rules can't see). Coarse envelope only
+// (id/type/at/by), like the event log; the per-entry schema stays client-side. CAUTION: NO
+// literal { }.
 const AUDIT_WRITE =
   'auth != null && ' + actorIsMember + ' && ' + permissionGate('manageUsers') + ' && !data.exists()';
+const AUDIT_READ = 'auth != null && ' + actorIsMember + ' && ' + permissionGate('manageUsers');
 const AUDIT_VALIDATE =
   "newData.hasChildren(['id','type','at','by']) && newData.child('id').isString() && " +
   "newData.child('type').isString() && newData.child('at').isNumber()";
@@ -267,9 +271,10 @@ export function buildV4OrgsRules(): RuleTree {
   deptNode['titles'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
   deptNode['checklists'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
 
-  // The append-only governance audit log (#380) — manageUsers-gated, write-once. Reads are
-  // default-deny here (no .read) until the P4 Audit Log screen adds the IC/Operations gate.
-  deptNode['audit'] = { $auditId: { '.write': AUDIT_WRITE, '.validate': AUDIT_VALIDATE } };
+  // The append-only governance audit log (#380 write, #381 read) — write-once per entry;
+  // the parent .read is manageUsers-gated for the Audit Log Administrative view. (The
+  // Incident view reads the event log, gated to IC/Operations client-side.)
+  deptNode['audit'] = { '.read': AUDIT_READ, $auditId: { '.write': AUDIT_WRITE, '.validate': AUDIT_VALIDATE } };
 
   // The invite-code resolver — a sibling of $deptId under /orgs (a named child
   // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and

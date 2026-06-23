@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Badge, Button, Modal, TextField, Toggle } from '@ui/primitives';
-import { useSession, useDepartment, useOnboarding, useCustomTitles, usePermissions } from '@ui/hooks';
+import { useSession, useDepartment, useOnboarding, useCustomTitles, usePermissions, useAuditAccess } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
@@ -42,6 +42,7 @@ export function SettingsScreen() {
   const { roleFocus, replayTour, startLesson, setRoleFocus } = useOnboarding();
   const { titles: customTitles, add: addCustomTitle, remove: removeCustomTitle } = useCustomTitles();
   const perms = usePermissions(); // back-office gate (ADR-017, #380) — manageSettings for dept config
+  const audit = useAuditAccess(); // Audit Log gateway: manageUsers OR an IC/Operations commander
   const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -201,16 +202,22 @@ export function SettingsScreen() {
         </Button>
       </section>
 
-      {/* Administration gateway (#381) — Admin-only entry to the User Manager. Visible to any
-          role granted "Manage users & roles"; hidden from everyone else (ADR-017). */}
-      {perms.manageUsers && (
+      {/* Administration gateway — the User Manager (#381, manageUsers) and the Audit Log
+          (#211). The Audit Log is also visible to an IC/Operations commander (canIncident),
+          so the section shows whenever either entry would. */}
+      {(perms.manageUsers || audit.canIncident) && (
         <section className="flex flex-col gap-3">
           <h2 style={{ font: 'var(--type-headline-2)' }}>Administration</h2>
           <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-            Manage who&rsquo;s in your department and what each role can do.
+            Manage your department and review the incident record.
           </p>
-          <Button variant="secondary" onPress={() => navigate({ to: '/users' })}>
-            Users &amp; roles
+          {perms.manageUsers && (
+            <Button variant="secondary" onPress={() => navigate({ to: '/users' })}>
+              Users &amp; roles
+            </Button>
+          )}
+          <Button variant="secondary" onPress={() => navigate({ to: '/audit-log' })}>
+            Audit log
           </Button>
         </section>
       )}

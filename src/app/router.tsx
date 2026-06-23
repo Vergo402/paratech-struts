@@ -18,7 +18,7 @@ import { AuthRoute } from './routes/auth';
 import { CreateDepartmentRoute } from './routes/create-department';
 import { JoinDepartmentRoute } from './routes/join-department';
 import { HelpRoute } from './routes/help';
-import { UserManagerScreen } from '@ui/admin';
+import { UserManagerScreen, AuditLogScreen } from '@ui/admin';
 import { EmptyState } from '@ui/primitives';
 import { OnboardingHost } from '@ui/onboarding';
 import { RequireDepartment } from '@ui/dept';
@@ -84,6 +84,10 @@ const routeTree = rootRoute.addChildren([
     // RequireDepartment gates the dept; the screen itself backstops the manageUsers permission
     // (a direct /users nav by a non-admin shows the access-only state).
     createRoute({ getParentRoute: () => shellRoute, path: '/users', component: () => <RequireDepartment><UserManagerScreen /></RequireDepartment> }),
+    // The Audit Log (#211) — reached from the Settings Administration gateway. RequireDepartment
+    // gates the dept; the screen itself backstops the per-view gates (Incident = IC/Operations
+    // position; Administrative = manageUsers) and shows the command-record state to neither.
+    createRoute({ getParentRoute: () => shellRoute, path: '/audit-log', component: () => <RequireDepartment><AuditLogScreen /></RequireDepartment> }),
     createRoute({ getParentRoute: () => shellRoute, path: '/help', component: HelpRoute }),
     createRoute({ getParentRoute: () => shellRoute, path: '/gallery', component: GalleryScreen }),
   ]),

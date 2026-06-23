@@ -1,6 +1,7 @@
 import type { OrgPositions, OrgResourceRef } from '../schema/org';
 import { rootPosition } from './tree';
 import { leaderOf } from './resource';
+import { defaultPositionId } from './defaultTree';
 
 // Command transfer (ADR-021) — the two-party handshake state. A DERIVED projection
 // field (never on the wire): set by CommandTransferInitiated, cleared by Accept /
@@ -35,4 +36,29 @@ export function canAccept(pending: PendingTransfer | null, by: string): boolean 
   if (!pending) return false;
   if (pending.toResource.ref === 'device') return pending.toResource.value === by;
   return true;
+}
+
+/**
+ * Is device `uid` the Incident Commander or Operations Section Chief of operation
+ * `opId`? The Audit Log Incident-view read gate (#211/#217) — a CLIENT gate (the RTDB
+ * rules can't see an ICS position). True when the device self-declared My Role at the
+ * IC/Ops node, OR is the device-ref leader assigned to it (individual/apparatus refs
+ * carry no uid, so only device assignments are verifiable — the gate's floor; the data
+ * is member-readable regardless). Works for an active OR an archived (projected) op.
+ */
+export function isCommanderOf(
+  positions: OrgPositions,
+  myRole: string | null,
+  opId: string,
+  uid: string,
+): boolean {
+  const icId = defaultPositionId(opId, 'ic');
+  const opsId = defaultPositionId(opId, 'ops');
+  if (myRole === icId || myRole === opsId) return true;
+  const ledByDevice = (id: string): boolean => {
+    const p = positions[id];
+    const l = p ? leaderOf(p) : null;
+    return !!l && l.ref === 'device' && l.value === uid;
+  };
+  return ledByDevice(icId) || ledByDevice(opsId);
 }

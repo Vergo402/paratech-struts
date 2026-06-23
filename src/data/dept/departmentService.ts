@@ -10,6 +10,7 @@ import {
   type Permissions,
 } from '@core/schema';
 import { newId } from '@core/id';
+import type { AuditEntry } from '@core/audit';
 import { rtdb, ref, get, set, update, remove } from '../sync/firebase';
 import { logSyncEvent } from '../sync/diagnostics';
 import { syncStatusStore } from '../sync/syncStatus';
@@ -87,6 +88,9 @@ export interface DepartmentServiceApi {
   // ---- User Manager (#381) — admin governance, manageUsers-gated by the rules ----
   /** Cold-read the department's members map (admin screen only — not a live store). */
   readMembers(): Promise<Record<string, Member> | null>;
+  /** Cold-read the append-only governance audit trail, chronological (the Audit Log
+   *  Administrative view, #211). manageUsers-gated server-side; null on read failure. */
+  readAudit(): Promise<AuditEntry[] | null>;
   /** Set a member's role (also the promote-to-Admin path: roleId = ADMIN_ROLE_ID). */
   assignRole(uid: string, roleId: string): Promise<AdminMutationResult>;
   /** Soft-revoke: mark the member inactive (row kept for the audit trail). */
@@ -407,6 +411,30 @@ export function createDepartmentService(deps: {
     }
   }
 
+  // Read the governance audit trail (the P3 /orgs/{dept}/audit append-only node). The
+  // rules gate the read on manageUsers (#381); a denial / offline read returns null →
+  // the hook shows a retry state, never a crash. Coarse shape-check, like readMembers.
+  async function readAudit(): Promise<AuditEntry[] | null> {
+    const c = adminCtx();
+    if (!c) return null;
+    try {
+      const snap = await get(ref(rtdb, `orgs/${c.deptId}/audit`));
+      const val = snap.val();
+      if (!val || typeof val !== 'object') return [];
+      const out: AuditEntry[] = [];
+      for (const body of Object.values(val as Record<string, unknown>)) {
+        const e = body as AuditEntry;
+        if (e && typeof e === 'object' && typeof e.id === 'string' && typeof e.type === 'string' && typeof e.at === 'number' && typeof e.by === 'string') {
+          out.push(e);
+        }
+      }
+      out.sort((a, b) => a.at - b.at); // chronological; the UI reverses for newest-first
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
   async function assignRole(uid: string, roleId: string): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
@@ -510,6 +538,7 @@ export function createDepartmentService(deps: {
     retryPendingJoin,
     restorePendingJoin,
     readMembers,
+    readAudit,
     assignRole,
     revokeMember,
     reactivateMember,

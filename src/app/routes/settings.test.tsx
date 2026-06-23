@@ -28,6 +28,9 @@ vi.mock('@ui/hooks', () => ({
     read: false, runFieldWork: false, manageOperations: false, manageInventory: false,
     manageRoster: false, manageSettings: false, manageUsers: false, manageData: false,
   }),
+  // #211 — the Audit Log gateway resolver; a guest is neither commander nor admin, so
+  // the Administration section stays hidden (not asserted by these tests).
+  useAuditAccess: () => ({ opId: null, opName: null, canIncident: false, canAdministrative: false, loading: false }),
 }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
