@@ -1,5 +1,5 @@
 import type { InventoryItem, Apparatus } from '@core/schema';
-import { globalDb as defaultDb, type FieldShoreDB } from './db';
+import { type FieldShoreDB } from './db';
 import { APPARATUS_ROSTER_KEY } from './apparatusStore';
 
 // Synthetic fixture inventory — NO real department data (the CSVs in the repo
@@ -68,7 +68,7 @@ const SEED_ROSTER: Apparatus[] = [
 ];
 
 /** Seed the apparatus roster meta row if absent. True when seeded. */
-export async function seedApparatusRoster(db: FieldShoreDB = defaultDb): Promise<boolean> {
+export async function seedApparatusRoster(db: FieldShoreDB): Promise<boolean> {
   const row = await db.meta.get(APPARATUS_ROSTER_KEY);
   if (row) return false;
   await db.meta.put({ key: APPARATUS_ROSTER_KEY, value: JSON.stringify(SEED_ROSTER) });
@@ -76,7 +76,7 @@ export async function seedApparatusRoster(db: FieldShoreDB = defaultDb): Promise
 }
 
 /** Seed the inventory table if (and only if) it is empty. True when seeded. */
-export async function seedIfEmpty(db: FieldShoreDB = defaultDb): Promise<boolean> {
+export async function seedIfEmpty(db: FieldShoreDB): Promise<boolean> {
   try {
     return await db.transaction('rw', db.inventory, async () => {
       const count = await db.inventory.count();

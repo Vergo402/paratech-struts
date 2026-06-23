@@ -61,10 +61,6 @@ export interface SessionStoreApi {
   setGuest(): Promise<void>;
   /** Workflow 07 — attach the founded department + the member's role + invite code. */
   setDepartment(dept: { id: string; name: string; role: string; inviteCode: string }): Promise<void>;
-  /** Leave the active department → back to no-dept (stays a member). Clears the
-   *  remembered dept so a re-sign-in doesn't re-attach it; the local bucket stays
-   *  on disk (re-join re-activates it). */
-  leaveDepartment(): Promise<void>;
 }
 
 const GUEST: Identity = { kind: 'guest' };
@@ -203,21 +199,6 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
       if (identity.kind === 'member') {
         const map = await readMemberships();
         map[identity.accountId] = { id, name, role, inviteCode };
-        await writeMemberships(map);
-      }
-      store.setState((s) => ({ ...s, ...next }), true);
-    },
-
-    async leaveDepartment() {
-      const identity = store.getState().identity;
-      const next = { departmentId: null, departmentName: null, role: null, inviteCode: null };
-      await persist({ identity, ...next });
-      // Forget this account's remembered dept so re-sign-in doesn't re-attach it
-      // (one dept per account — ADR-031/OQ#31). The dept's local bucket is NOT
-      // deleted; re-joining re-activates it (registry.ts), so leaving is non-lossy.
-      if (identity.kind === 'member') {
-        const map = await readMemberships();
-        delete map[identity.accountId];
         await writeMemberships(map);
       }
       store.setState((s) => ({ ...s, ...next }), true);
