@@ -13,6 +13,8 @@ const mockInventory = vi.fn((): InventoryItem[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
+// #380 — flips the back-office manageOperations capability per test (gates Start/Edit/End).
+let mockManageOps = true;
 
 vi.mock('@ui/hooks', () => ({
   useOperation: () => mockOperation(),
@@ -30,6 +32,11 @@ vi.mock('@ui/hooks', () => ({
   usePastOperations: () => ({ data: [] }),
   useArchivedOperation: () => ({ data: undefined }),
   useShorePointHistory: () => ({ events: [], deviceUid: 'device-test' }),
+  // #380 — these tests drive a full-control operator; manageOperations gates Start/Edit/End.
+  usePermissions: () => ({
+    read: true, runFieldWork: true, manageOperations: mockManageOps, manageInventory: true,
+    manageRoster: true, manageSettings: true, manageUsers: true, manageData: true,
+  }),
 }));
 
 const ACTIVE_OP: Operation = {
@@ -105,6 +112,21 @@ describe('OperationsBoard', () => {
     mockCommitMany.mockClear();
     Element.prototype.scrollIntoView = vi.fn();
     localStorage.clear(); // isolation: sort/filter prefs are persisted (#347)
+    mockManageOps = true; // default: a full-control operator (per-test override below)
+  });
+
+  it('gates Start/Edit/End on manageOperations but never the fireground (#380)', () => {
+    // no manageOperations → the empty state offers no Start Operation
+    mockManageOps = false;
+    render(<OperationsBoard />);
+    expect(screen.getByText('No active operation')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Start Operation' })).toBeNull();
+    // with an active op, Edit + End are hidden but Add Shore Point (fireground) stays
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    render(<OperationsBoard />);
+    expect(screen.queryByRole('button', { name: /edit operation/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /end operation/i })).toBeNull();
+    expect(screen.getAllByRole('button', { name: /add shore point/i }).length).toBeGreaterThan(0);
   });
 
   it('shows empty state when no operation', () => {

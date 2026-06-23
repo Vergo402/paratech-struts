@@ -22,6 +22,12 @@ vi.mock('@ui/hooks', () => ({
   }),
   useCustomTitles: () => ({ titles: [], add: vi.fn(), remove: vi.fn() }),
   useChecklistTemplates: () => ({ templates: [], setNodes: vi.fn(), reset: vi.fn() }),
+  // #380 — default guest has no back-office permissions; the manageSettings-gated
+  // custom-titles + checklist editor sections stay hidden (not asserted by these tests).
+  usePermissions: () => ({
+    read: false, runFieldWork: false, manageOperations: false, manageInventory: false,
+    manageRoster: false, manageSettings: false, manageUsers: false, manageData: false,
+  }),
 }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),

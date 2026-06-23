@@ -90,7 +90,7 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(event.$other).toBeUndefined();
   });
 
-  it('non-event state (inventory/apparatus/titles/checklists) is membership-gated + monotonic LWW', () => {
+  it('non-event state (inventory/apparatus/titles/checklists) is permission-gated (member→role→permission) + monotonic LWW', () => {
     const dept = committed.rules.orgs.$deptId;
     const writes = [
       dept.inventory.$itemId['.write'],
@@ -99,12 +99,24 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
       dept.checklists['.write'],
     ];
     for (const w of writes) {
-      // membership floor (any member; the app's manageInventory/manageSettings stay the fine gate)
+      // membership floor (any member of THIS dept)
       expect(w).toContain("root.child('orgs').child($deptId).child('members').child(auth.uid).exists()");
+      // data-driven capability: read the member's roleId, index into roles/{id}/permissions/...
+      expect(w).toContain("root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()");
+      expect(w).toContain("child('permissions')");
+      expect(w).toContain('.val() === true');
+      // no role NAMES in the STATE rule (ADR-017 invariant) — the capability is looked up, not hard-coded
+      expect(w).not.toContain("'admin'");
+      expect(w).not.toContain("'default'");
       // monotonic last-write-wins guard, >= so an idempotent re-push isn't wedged
       expect(w).toContain("newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val()");
       expect(w).not.toContain('!data.exists() &&'); // NOT append-only — state is overwrite
     }
+    // the capability MAPPING is the security-relevant part — a swapped key is a vuln
+    expect(dept.inventory.$itemId['.write']).toContain("child('manageInventory')");
+    expect(dept.apparatus['.write']).toContain("child('manageInventory')");
+    expect(dept.titles['.write']).toContain("child('manageSettings')");
+    expect(dept.checklists['.write']).toContain("child('manageSettings')");
     // validate requires the LWW clock as a number; inventory also keys on id (tombstone shape)
     expect(dept.inventory.$itemId['.validate']).toContain("newData.hasChildren(['id','lastWriteAt'])");
     expect(dept.apparatus['.validate']).toContain("newData.child('lastWriteAt').isNumber()");
@@ -114,6 +126,32 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     // reads cascade from the dept node's .read — no own .read on the state subtrees
     expect(dept.inventory['.read']).toBeUndefined();
     expect(dept.apparatus['.read']).toBeUndefined();
+  });
+
+  it('member management is manageUsers-gated with a count-free >=1-Admin anti-lockout (#380)', () => {
+    const w = committed.rules.orgs.$deptId.members.$uid['.write'];
+    // the self-join path survives (a joiner still creates their own Default row)
+    expect(w).toContain("newData.child('role').val() === 'default'");
+    expect(w).toContain('$uid === auth.uid');
+    // the admin-management path is manageUsers-gated (data-driven)
+    expect(w).toContain("child('permissions').child('manageUsers').val() === true");
+    // "an admin is losing admin" guard: currently admin, becoming non-admin OR deleted
+    expect(w).toContain("data.child('role').val() === 'admin'");
+    expect(w).toContain("newData.child('role').val() !== 'admin'");
+    expect(w).toContain('!newData.exists()');
+    // ...allowed only when the actor is a DIFFERENT admin → >=1 admin always remains
+    expect(w).toContain('$uid !== auth.uid');
+    expect(w).toContain("child(auth.uid).child('role').val() === 'admin'");
+  });
+
+  it('the governance audit log is manageUsers-gated, append-only, and has no public read (#380)', () => {
+    const audit = committed.rules.orgs.$deptId.audit.$auditId;
+    expect(audit['.write']).toContain("child('permissions').child('manageUsers').val() === true");
+    expect(audit['.write']).toContain('!data.exists()'); // write-once — tamper-proof
+    expect(audit['.validate']).toContain("newData.hasChildren(['id','type','at','by'])");
+    // default-deny read until the P4 Audit Log screen adds the IC/Operations-position gate
+    expect(audit['.read']).toBeUndefined();
+    expect(committed.rules.orgs.$deptId.audit['.read']).toBeUndefined();
   });
 
   it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {

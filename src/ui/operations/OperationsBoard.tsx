@@ -11,7 +11,7 @@ import {
 } from '@core/operation';
 import { newId } from '@core/id';
 import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
-import { useApparatus, useBriefing, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, useShorePoints } from '@ui/hooks';
+import { useApparatus, useBriefing, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, usePermissions, useShorePoints } from '@ui/hooks';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
@@ -414,6 +414,9 @@ export function OperationsBoard() {
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
+  // Create/end/edit an operation is the back-office manageOperations capability (ADR-017 #3,
+  // #380) — orthogonal to the ICS-position gates on the fireground actions (deploy/cut/secure).
+  const canManageOps = usePermissions().manageOperations;
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   // Past-operations archive drill-in (#238) — the opId being viewed read-only, or
@@ -1098,8 +1101,12 @@ export function OperationsBoard() {
         <EmptyState
           variant="first-run"
           headline="No active operation"
-          reason="Start a shoring operation to begin tracking shore points"
-          action={{ label: 'Start Operation', onPress: () => setModalMode('create') }}
+          reason={
+            canManageOps
+              ? 'Start a shoring operation to begin tracking shore points'
+              : 'No operation is active. An operations manager starts one.'
+          }
+          action={canManageOps ? { label: 'Start Operation', onPress: () => setModalMode('create') } : undefined}
         />
         <PastOperationsList onOpen={setViewArchiveOpId} />
         <StartOperationModal
@@ -1135,15 +1142,17 @@ export function OperationsBoard() {
     <div className="fs-ops-board">
       <header className="fs-ops-header">
         <h1 className="fs-ops-name">{operation.name}</h1>
-        {/* Edit sits right next to the incident name (Alex). */}
-        <button
-          className="fs-ops-edit"
-          type="button"
-          aria-label="Edit operation"
-          onClick={() => setModalMode('edit')}
-        >
-          <PencilIcon />
-        </button>
+        {/* Edit sits right next to the incident name (Alex). Gated on manageOperations (#380). */}
+        {canManageOps && (
+          <button
+            className="fs-ops-edit"
+            type="button"
+            aria-label="Edit operation"
+            onClick={() => setModalMode('edit')}
+          >
+            <PencilIcon />
+          </button>
+        )}
         {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
         {/* Phone keeps the inventory glance as a header icon (desktop gets the
             labeled Inventory button in the filter row). */}
@@ -1412,9 +1421,11 @@ export function OperationsBoard() {
             >
               {briefing.active ? 'Open Briefing' : 'Begin Briefing'}
             </Button>
-            <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
-              End Operation
-            </Button>
+            {canManageOps && (
+              <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
+                End Operation
+              </Button>
+            )}
           </div>
         </div>
         {/* Companions are surface-adaptive (ADR-037): on desktop they float over

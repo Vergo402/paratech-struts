@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useInventory, useApparatus, useInventoryActions, useOperation } from '@ui/hooks';
+import { useInventory, useApparatus, useInventoryActions, useOperation, usePermissions } from '@ui/hooks';
 import { EmptyState, Button } from '@ui/primitives';
 import { STRUTS, BASE_PLATES } from '@core/load';
 import type { InventoryItem, System } from '@core/schema';
@@ -31,6 +31,10 @@ export function InventoryScreen() {
   const { roster, add: addApparatus, remove: removeApparatus } = useApparatus();
   const actions = useInventoryActions();
   const op = useOperation();
+  // Back-office gates (ADR-017, #380) — manageInventory for stock/apparatus edits, manageData
+  // for export. A member without them still SEES stock + deployed counts (read), just can't edit.
+  const perms = usePermissions();
+  const canManage = perms.manageInventory;
 
   const rigs: ScopeRig[] = useMemo(() => {
     const byId = new Map<string, ScopeRig>();
@@ -69,8 +73,12 @@ export function InventoryScreen() {
         <EmptyState
           variant="first-run"
           headline="No apparatus yet"
-          reason="Add an apparatus to start stocking struts, extensions, and plates."
-          action={{ label: 'Add apparatus', onPress: () => setAddApparatusOpen(true) }}
+          reason={
+            canManage
+              ? 'Add an apparatus to start stocking struts, extensions, and plates.'
+              : 'No apparatus has been added for this department yet.'
+          }
+          action={canManage ? { label: 'Add apparatus', onPress: () => setAddApparatusOpen(true) } : undefined}
         />
         {addApparatusModal}
       </div>
@@ -83,6 +91,8 @@ export function InventoryScreen() {
         <h1 className="fs-inv-title">Inventory</h1>
         <ImportExport
           opActive={op != null}
+          canManage={canManage}
+          canExport={perms.manageData}
           exportCsv={actions.exportCsv}
           templateCsv={actions.templateCsv}
           onImport={actions.importCsv}
@@ -91,35 +101,43 @@ export function InventoryScreen() {
 
       <ApparatusScopeTabs rigs={rigs} value={activeId!} onChange={setSelected} />
 
-      <div className="fs-inv-actions">
-        <Button variant="primary" onPress={() => setAddEquipOpen(true)}>
-          Add equipment
-        </Button>
-        <Button variant="secondary" onPress={() => setAddApparatusOpen(true)}>
-          Add apparatus
-        </Button>
-      </div>
+      {canManage && (
+        <div className="fs-inv-actions">
+          <Button variant="primary" onPress={() => setAddEquipOpen(true)}>
+            Add equipment
+          </Button>
+          <Button variant="secondary" onPress={() => setAddApparatusOpen(true)}>
+            Add apparatus
+          </Button>
+        </div>
+      )}
 
       {rigItems.length === 0 ? (
         <>
           <EmptyState
             variant="first-run"
             headline={`No equipment on ${activeRig?.name ?? 'this rig'}`}
-            reason="Add the struts, extensions, or plates this apparatus carries."
-            action={{ label: 'Add equipment', onPress: () => setAddEquipOpen(true) }}
+            reason={
+              canManage
+                ? 'Add the struts, extensions, or plates this apparatus carries.'
+                : 'This apparatus has no equipment stocked yet.'
+            }
+            action={canManage ? { label: 'Add equipment', onPress: () => setAddEquipOpen(true) } : undefined}
           />
-          <div className="fs-inv-remove">
-            <Button
-              variant="tertiary"
-              destructive
-              onPress={() => {
-                void removeApparatus(activeId!);
-                setSelected(null);
-              }}
-            >
-              Remove {activeRig?.name}
-            </Button>
-          </div>
+          {canManage && (
+            <div className="fs-inv-remove">
+              <Button
+                variant="tertiary"
+                destructive
+                onPress={() => {
+                  void removeApparatus(activeId!);
+                  setSelected(null);
+                }}
+              >
+                Remove {activeRig?.name}
+              </Button>
+            </div>
+          )}
         </>
       ) : (
         <div className="fs-inv-list">
@@ -131,7 +149,7 @@ export function InventoryScreen() {
               <section key={g.system} className="fs-inv-group">
                 <h2 className="fs-inv-group-label">{g.label}</h2>
                 {[...struts, ...exts].map((i) => (
-                  <EquipmentRow key={i.id} item={i} onIncrement={actions.increment} onDecrement={actions.decrement} />
+                  <EquipmentRow key={i.id} item={i} onIncrement={actions.increment} onDecrement={actions.decrement} readOnly={!canManage} />
                 ))}
               </section>
             );
@@ -143,7 +161,7 @@ export function InventoryScreen() {
               <section className="fs-inv-group">
                 <h2 className="fs-inv-group-label">Connector Plates</h2>
                 {plates.map((i) => (
-                  <EquipmentRow key={i.id} item={i} onIncrement={actions.increment} onDecrement={actions.decrement} />
+                  <EquipmentRow key={i.id} item={i} onIncrement={actions.increment} onDecrement={actions.decrement} readOnly={!canManage} />
                 ))}
               </section>
             );

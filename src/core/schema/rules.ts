@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Department, Member, Role, InviteCode, DEFAULT_ROLE_ID } from './department';
+import { Department, Member, Role, InviteCode, ADMIN_ROLE_ID, DEFAULT_ROLE_ID } from './department';
 
 // core/schema — generate the v4 portion of database.rules.json from the SAME Zod
 // schemas the client validates against (L-11, the permanent fix for v3's worst
@@ -17,9 +17,12 @@ import { Department, Member, Role, InviteCode, DEFAULT_ROLE_ID } from './departm
 // SCOPE (this session) — only the rules an exercising client uses NOW: create a
 // department + read it back (workflow 07). Deferred to their own features, each
 // with its own exercising client (lesson 5: never ship an untested rule):
-//   · the data-driven permission GATES (operations/inventory writes) → with the
-//     operations event-log sync (Engine A) and Inventory.
-//   · member management writes → with the User Manager (ADR-017 #32).
+//   · the data-driven permission GATES on STATE writes (inventory/apparatus/titles/
+//     checklists) → LANDED #380; the operations event log stays membership-gated (its
+//     discriminated union can't be cracked by rules — per-event-type gating deferred).
+//   · member-management writes (the manageUsers role-change path + the ≥1-Admin
+//     anti-lockout) + the append-only audit log → RULES landed #380; the User Manager
+//     UI that exercises them is P4 (#381 / ADR-017 #32).
 //   · the invite-code cloud path + the join self-write → with workflow #232.
 //   · the racing founding-Admin "claim" latch → with the v3→v4 claim banner.
 // Until those land, those paths are default-deny (safe), not open.
@@ -151,16 +154,28 @@ const EVENT_ENVELOPE_VALIDATE =
 // OVERWRITE (last-write-wins): the write gate is department MEMBERSHIP + a MONOTONIC
 // lastWriteAt guard, so a stale write (older stamp) is rejected and a late-arriving
 // offline edit can't clobber a newer one. `>=` (NOT `>`) so an idempotent re-push of an
-// unchanged record (first-merge backlog) is never rejected and wedged. Membership-only
-// like EVENT_WRITE (Alex 2026-06-23): the app's manageInventory / manageSettings screens
-// stay the fine-grained gate; this is the floor (stops non-members + other departments).
-// Reads cascade from the dept node's READ_MEMBER. CAUTION: NO literal { } (gen-rules.ts
-// brace-matches the orgs block).
+// unchanged record (first-merge backlog) is never rejected and wedged. PERMISSION-GATED
+// (#380): membership is the floor, and the write additionally requires the member's role to
+// carry the matching capability (inventory/apparatus → manageInventory; titles/checklists →
+// manageSettings) via the data-driven member→role→permission lookup. The cloud is now the
+// fine-grained gate; the UI's usePermissions hook is the friendly front that hides what a
+// member can't do. Reads cascade from the dept node's READ_MEMBER. CAUTION: NO literal { }
+// (gen-rules.ts brace-matches the orgs block).
 const STATE_MEMBER =
   "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists()";
 const LWW_MONOTONIC =
   "(!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())";
-const STATE_WRITE = STATE_MEMBER + ' && ' + LWW_MONOTONIC;
+
+// Data-driven permission gate (ADR-017 §Enforcement, #380). Read THIS member's roleId from
+// their member row, index it straight into roles/{roleId}/permissions/{permKey}, require true.
+// NO role NAME appears — the roleId is read from the data, so one rule covers the built-in
+// Admin/Default AND any department-defined custom role (the exact ADR-017 enforcement chain).
+const memberRole = "root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()";
+const permissionGate = (permKey: string): string =>
+  `root.child('orgs').child($deptId).child('roles').child(${memberRole}).child('permissions').child('${permKey}').val() === true`;
+// A STATE write = membership + the looked-up capability + the monotonic LWW clock.
+const stateWrite = (permKey: string): string =>
+  STATE_MEMBER + ' && ' + permissionGate(permKey) + ' && ' + LWW_MONOTONIC;
 // Coarse envelope: require the LWW clock (also what the guard reads) as a number. Inventory
 // also requires `id` (its key echo / the tombstone shape). Per-field validation stays
 // client-side (Zod on read), like the event envelope. No $other:false (extras pass).
@@ -171,6 +186,41 @@ const STATE_WRITE = STATE_MEMBER + ' && ' + LWW_MONOTONIC;
 const STATE_BLOB_VALIDATE = "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()";
 const INVENTORY_ROW_VALIDATE =
   "newData.hasChildren(['id','lastWriteAt']) && newData.child('lastWriteAt').isNumber()";
+
+// MEMBER MANAGEMENT (#380, ≥1-Admin anti-lockout) — beyond the create-only self-join
+// (JOIN_SELF_WRITE), a manageUsers-holder may change or revoke OTHER members. The ≥1-Admin
+// guarantee is COUNT-FREE (RTDB can't count children; a cooperative counter is bypassable):
+// an admin can only LOSE the admin role by ANOTHER admin's action, so at least one admin
+// always remains and the LAST admin can never be removed. "Losing admin" = currently admin
+// AND becoming non-admin or deleted; that case additionally requires the actor to be a
+// DIFFERENT admin — which also closes the hole where a custom role granted manageUsers (but
+// not the admin role) could otherwise strand the dept. Uses the ADMIN_ROLE_ID stable token
+// structurally (same precedent as JOIN_SELF_WRITE's DEFAULT_ROLE_ID), NOT a role NAME. The
+// "disabled-with-reason" affordance is inherent to the P4 User Manager; this is the rule
+// floor. CAUTION: NO literal { }.
+const actorIsMember = "root.child('orgs').child($deptId).child('members').child(auth.uid).exists()";
+const actorIsAdmin = `${memberRole} === '${ADMIN_ROLE_ID}'`;
+const adminLosingAdmin =
+  `data.child('role').val() === '${ADMIN_ROLE_ID}' && ` +
+  `(!newData.exists() || newData.child('role').val() !== '${ADMIN_ROLE_ID}')`;
+const ADMIN_MANAGE = [
+  'auth != null',
+  actorIsMember,
+  permissionGate('manageUsers'),
+  `( !(${adminLosingAdmin}) || ( ${actorIsAdmin} && $uid !== auth.uid ) )`,
+].join(' && ');
+
+// AUDIT LOG (#380) — governance actions (role create/edit/delete, assign/promote/revoke) at
+// /orgs/{deptId}/audit/{auditId}. Append-only + manageUsers-gated: !data.exists() makes each
+// entry write-once (no edit, no delete) — tamper-proof. NO .read here → default-deny until
+// the P4 Audit Log screen adds the IC/Operations-position read gate (an ICS axis the rules
+// can't see). Coarse envelope only (id/type/at/by), like the event log; the per-entry schema
+// is finalized with the P4 writer. CAUTION: NO literal { }.
+const AUDIT_WRITE =
+  'auth != null && ' + actorIsMember + ' && ' + permissionGate('manageUsers') + ' && !data.exists()';
+const AUDIT_VALIDATE =
+  "newData.hasChildren(['id','type','at','by']) && newData.child('id').isString() && " +
+  "newData.child('type').isString() && newData.child('at').isNumber()";
 
 /** The `orgs` value for database.rules.json. Pure — same output every run. */
 export function buildV4OrgsRules(): RuleTree {
@@ -185,7 +235,9 @@ export function buildV4OrgsRules(): RuleTree {
     deptNode[key] = { '.validate': leafValidate(child as z.ZodTypeAny) };
   }
   const memberNode = objectRules(Member);
-  memberNode['.write'] = JOIN_SELF_WRITE; // founder writes via the dept create-cascade; joiners via this
+  // joiners self-write (create-only, Default); manageUsers-holders manage OTHERS, with the
+  // count-free ≥1-Admin anti-lockout. Founder's own row writes via the dept create-cascade.
+  memberNode['.write'] = `(${JOIN_SELF_WRITE}) || (${ADMIN_MANAGE})`;
   deptNode['members'] = { $uid: memberNode };
   deptNode['roles'] = { $roleId: objectRules(RoleNode) };
 
@@ -200,10 +252,14 @@ export function buildV4OrgsRules(): RuleTree {
   // lastWriteAt guard. Inventory is per-row (key = itemId; a live row or a tombstone);
   // apparatus/titles/checklists are whole { value, lastWriteAt } blobs. Reads cascade
   // from the dept node's .read.
-  deptNode['inventory'] = { $itemId: { '.write': STATE_WRITE, '.validate': INVENTORY_ROW_VALIDATE } };
-  deptNode['apparatus'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
-  deptNode['titles'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
-  deptNode['checklists'] = { '.write': STATE_WRITE, '.validate': STATE_BLOB_VALIDATE };
+  deptNode['inventory'] = { $itemId: { '.write': stateWrite('manageInventory'), '.validate': INVENTORY_ROW_VALIDATE } };
+  deptNode['apparatus'] = { '.write': stateWrite('manageInventory'), '.validate': STATE_BLOB_VALIDATE };
+  deptNode['titles'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
+  deptNode['checklists'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
+
+  // The append-only governance audit log (#380) — manageUsers-gated, write-once. Reads are
+  // default-deny here (no .read) until the P4 Audit Log screen adds the IC/Operations gate.
+  deptNode['audit'] = { $auditId: { '.write': AUDIT_WRITE, '.validate': AUDIT_VALIDATE } };
 
   // The invite-code resolver — a sibling of $deptId under /orgs (a named child
   // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and

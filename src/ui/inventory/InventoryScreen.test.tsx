@@ -4,11 +4,13 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InventoryScreen } from './InventoryScreen';
 import { ImportExport } from './ImportExport';
-import type { Apparatus, InventoryItem, Operation } from '@core/schema';
+import type { Apparatus, InventoryItem, Operation, Permissions } from '@core/schema';
+import { ADMIN_PERMISSIONS, DEFAULT_PERMISSIONS } from '@core/schema';
 
 const mockInventory = vi.fn((): InventoryItem[] => []);
 const mockApparatus = vi.fn(() => ({ roster: [] as Apparatus[], add: vi.fn(), remove: vi.fn() }));
 const mockOperation = vi.fn((): Operation | null => null);
+const mockPermissions = vi.fn((): Permissions => ADMIN_PERMISSIONS);
 const actions = {
   addOne: vi.fn(),
   increment: vi.fn(),
@@ -25,6 +27,7 @@ vi.mock('@ui/hooks', () => ({
   useApparatus: () => mockApparatus(),
   useInventoryActions: () => actions,
   useOperation: () => mockOperation(),
+  usePermissions: () => mockPermissions(),
 }));
 
 const rig = (id: string, name: string): Apparatus => ({ id, name, type: 'Engine' });
@@ -44,6 +47,7 @@ describe('InventoryScreen', () => {
     mockInventory.mockReturnValue([]);
     mockApparatus.mockReturnValue({ roster: [], add: vi.fn(), remove: vi.fn() });
     mockOperation.mockReturnValue(null);
+    mockPermissions.mockReturnValue(ADMIN_PERMISSIONS);
   });
 
   it('shows the first-run empty state when there are no apparatus', () => {
@@ -64,6 +68,22 @@ describe('InventoryScreen', () => {
     expect(screen.queryByText('AT 25-36')).toBeNull();
   });
 
+  it('hides management controls for a member without manageInventory but keeps stock visible (#380)', () => {
+    mockPermissions.mockReturnValue(DEFAULT_PERMISSIONS);
+    mockApparatus.mockReturnValue({ roster: [rig('e1', 'Engine 1')], add: vi.fn(), remove: vi.fn() });
+    mockInventory.mockReturnValue([item('a', 'e1', 'Engine 1', 'AT 25-36')]);
+    render(<InventoryScreen />);
+    // read access: the stock + its count are still visible
+    expect(screen.getByText('AT 25-36')).toBeInTheDocument();
+    // but every back-office control is hidden (hide treatment)
+    expect(screen.queryByRole('button', { name: 'Add equipment' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Add apparatus' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Import CSV' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
+    // no ± steppers — the row is read-only
+    expect(screen.queryByRole('button', { name: /Increase/ })).toBeNull();
+  });
+
   it('blocks CSV import while an operation is active', () => {
     mockApparatus.mockReturnValue({ roster: [rig('e1', 'Engine 1')], add: vi.fn(), remove: vi.fn() });
     mockOperation.mockReturnValue({ id: 'op-1', name: 'Surfside', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1 });
@@ -77,7 +97,7 @@ describe('ImportExport', () => {
     const user = userEvent.setup();
     const onImport = vi.fn().mockResolvedValue({ imported: 1, skipped: 1, warnings: [] });
     const { container } = render(
-      <ImportExport opActive={false} exportCsv={() => ''} templateCsv={() => ''} onImport={onImport} />,
+      <ImportExport opActive={false} canManage canExport exportCsv={() => ''} templateCsv={() => ''} onImport={onImport} />,
     );
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(['x'], 'inv.csv', { type: 'text/csv' }));

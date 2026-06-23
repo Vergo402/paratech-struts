@@ -108,3 +108,33 @@ export const DEFAULT_PERMISSIONS: Permissions = {
   manageUsers: false,
   manageData: false,
 };
+
+// The all-false floor: a guest / no-role / unknown context reads nothing, does nothing.
+export const NO_PERMISSIONS: Permissions = {
+  read: false,
+  runFieldWork: false,
+  manageOperations: false,
+  manageInventory: false,
+  manageRoster: false,
+  manageSettings: false,
+  manageUsers: false,
+  manageData: false,
+};
+
+/**
+ * Resolve a roleId to its permission set — keyed off PERMISSION, never role name.
+ *   admin       → ADMIN_PERMISSIONS
+ *   null / ''    → NO_PERMISSIONS (a guest is no one's member)
+ *   default + any custom id → DEFAULT_PERMISSIONS (the safe floor)
+ *
+ * ponytail: built-in constants are correct while only admin/default exist (custom
+ * roles can't be created until the P4 User Manager, #381). CEILING: once Admins can
+ * EDIT Default or create custom roles, the live set lives at /orgs/{dept}/roles/{id}/
+ * permissions — swap this body to read a synced roles table; the signature is unchanged,
+ * so every call site (usePermissions + the rules) stays put.
+ */
+export function permissionsForRole(roleId: string | null): Permissions {
+  if (roleId === ADMIN_ROLE_ID) return ADMIN_PERMISSIONS;
+  if (!roleId) return NO_PERMISSIONS;
+  return DEFAULT_PERMISSIONS;
+}

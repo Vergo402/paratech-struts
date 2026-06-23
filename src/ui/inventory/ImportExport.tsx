@@ -10,6 +10,10 @@ import type { ImportOutcome } from '@ui/hooks';
 
 export interface ImportExportProps {
   opActive: boolean;
+  /** manageInventory (#380) — gates Import (it mutates stock). */
+  canManage: boolean;
+  /** manageData (#380) — gates Export + Template (export/delete department data). */
+  canExport: boolean;
   exportCsv: () => string;
   templateCsv: () => string;
   onImport: (text: string) => Promise<ImportOutcome>;
@@ -35,7 +39,7 @@ function readFileText(file: File): Promise<string> {
   });
 }
 
-export function ImportExport({ opActive, exportCsv, templateCsv, onImport }: ImportExportProps) {
+export function ImportExport({ opActive, canManage, canExport, exportCsv, templateCsv, onImport }: ImportExportProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<ImportOutcome | null>(null);
 
@@ -46,22 +50,31 @@ export function ImportExport({ opActive, exportCsv, templateCsv, onImport }: Imp
     setResult(await onImport(await readFileText(file)));
   };
 
+  // A member with neither capability sees no data controls at all (hide treatment, #380).
+  if (!canManage && !canExport) return null;
+
   return (
     <div className="fs-inv-io">
-      <Button variant="secondary" onPress={() => download('fieldshore-inventory.csv', exportCsv())}>
-        Export CSV
-      </Button>
-      <Button variant="tertiary" onPress={() => download('fieldshore-inventory-template.csv', templateCsv())}>
-        Template
-      </Button>
-      <Button
-        variant="secondary"
-        onPress={() => fileRef.current?.click()}
-        disabled={opActive}
-        disabledReason="Finish the operation to import"
-      >
-        Import CSV
-      </Button>
+      {canExport && (
+        <>
+          <Button variant="secondary" onPress={() => download('fieldshore-inventory.csv', exportCsv())}>
+            Export CSV
+          </Button>
+          <Button variant="tertiary" onPress={() => download('fieldshore-inventory-template.csv', templateCsv())}>
+            Template
+          </Button>
+        </>
+      )}
+      {canManage && (
+        <Button
+          variant="secondary"
+          onPress={() => fileRef.current?.click()}
+          disabled={opActive}
+          disabledReason="Finish the operation to import"
+        >
+          Import CSV
+        </Button>
+      )}
       <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onFile} />
 
       <Modal

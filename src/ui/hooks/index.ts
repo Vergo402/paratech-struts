@@ -14,6 +14,7 @@ export { useDeviceUidValue } from './useDeviceUidValue';
 export { useSession, type SessionApi } from './useSession';
 export { useSyncStatus } from './useSyncStatus';
 export { useDepartment, type DepartmentApi } from './useDepartment';
+export { usePermissions } from './usePermissions';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
 export { useShorePointHistory, type ShorePointHistory } from './useShorePointHistory';

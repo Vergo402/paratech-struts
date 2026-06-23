@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Badge, Button, Modal, TextField, Toggle } from '@ui/primitives';
-import { useSession, useDepartment, useOnboarding, useCustomTitles } from '@ui/hooks';
+import { useSession, useDepartment, useOnboarding, useCustomTitles, usePermissions } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
@@ -41,6 +41,7 @@ export function SettingsScreen() {
   const { department, role, inviteCode } = useDepartment();
   const { roleFocus, replayTour, startLesson, setRoleFocus } = useOnboarding();
   const { titles: customTitles, add: addCustomTitle, remove: removeCustomTitle } = useCustomTitles();
+  const perms = usePermissions(); // back-office gate (ADR-017, #380) — manageSettings for dept config
   const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -200,8 +201,9 @@ export function SettingsScreen() {
         </Button>
       </section>
 
-      {/* Custom ICS titles (#323). Shown to all for now — device-local config like the
-          apparatus roster. TODO(ADR-017): gate add/remove behind admin once auth lands. */}
+      {/* Custom ICS titles (#323) — department config, so gated on manageSettings (ADR-017, #380).
+          The titles still render on the org chart picker for everyone; this is the editor. */}
+      {perms.manageSettings && (
       <section className="flex flex-col gap-3">
         <h2 style={{ font: 'var(--type-headline-2)' }}>Custom ICS titles</h2>
         <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
@@ -236,8 +238,9 @@ export function SettingsScreen() {
           Add custom title
         </Button>
       </section>
+      )}
 
-      {department && <ChecklistEditor />}
+      {department && perms.manageSettings && <ChecklistEditor />}
 
       <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
         FieldShore v4 — vertical slice build

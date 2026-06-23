@@ -12,6 +12,8 @@ export interface EquipmentRowProps {
   item: InventoryItem;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
+  /** Hide the ± stepper for a member without manageInventory — the count stays visible (read info). */
+  readOnly?: boolean;
 }
 
 export function itemLabel(item: InventoryItem): { label: string; sub?: string } {
@@ -23,7 +25,7 @@ export function itemLabel(item: InventoryItem): { label: string; sub?: string } 
   return { label: BASE_PLATES.find((x) => x.id === item.plateId)?.name ?? 'Plate' };
 }
 
-export function EquipmentRow({ item, onIncrement, onDecrement }: EquipmentRowProps) {
+export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false }: EquipmentRowProps) {
   const { label, sub } = itemLabel(item);
   const deployed = item.quantity - item.available;
   const canDecrement = item.available > 0;
@@ -35,29 +37,33 @@ export function EquipmentRow({ item, onIncrement, onDecrement }: EquipmentRowPro
       </div>
       {deployed > 0 && <Badge variant="dot" tone="accent" text={`${deployed} deployed`} />}
       <div className="fs-inv-stepper">
-        <button
-          type="button"
-          className="fs-inv-step"
-          aria-label={
-            canDecrement ? `Decrease ${label} quantity` : `Decrease ${label} quantity, none available`
-          }
-          aria-disabled={!canDecrement}
-          disabled={!canDecrement}
-          onClick={() => canDecrement && onDecrement(item.id)}
-        >
-          −
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            className="fs-inv-step"
+            aria-label={
+              canDecrement ? `Decrease ${label} quantity` : `Decrease ${label} quantity, none available`
+            }
+            aria-disabled={!canDecrement}
+            disabled={!canDecrement}
+            onClick={() => canDecrement && onDecrement(item.id)}
+          >
+            −
+          </button>
+        )}
         <span className="fs-inv-count" aria-live="polite" aria-label={`${item.available} of ${item.quantity} available`}>
           {item.available} / {item.quantity}
         </span>
-        <button
-          type="button"
-          className="fs-inv-step"
-          aria-label={`Increase ${label} quantity`}
-          onClick={() => onIncrement(item.id)}
-        >
-          +
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            className="fs-inv-step"
+            aria-label={`Increase ${label} quantity`}
+            onClick={() => onIncrement(item.id)}
+          >
+            +
+          </button>
+        )}
       </div>
     </div>
   );
