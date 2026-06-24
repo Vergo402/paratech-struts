@@ -18,6 +18,7 @@ export { usePermissions } from './usePermissions';
 export { useRoles } from './useRoles';
 export { useUserManager, type UserManagerApi } from './useUserManager';
 export { useMyMember, type MyMemberApi } from './useMyMember';
+export { useApparatusTypes, type ApparatusTypesApi } from './useApparatusTypes';
 export type { AdminMutationResult } from '@data/dept';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';

@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { Modal, Button, TextField } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
-import { APPARATUS_TYPES, type ApparatusType } from '@core/load';
+import { useApparatusTypes } from '@ui/hooks';
 
 // Add an apparatus — name + NIMS type. A form Modal (ADR-016: pins header/footer,
-// scrolls body); the type picker is the surface-adaptive BottomSheetPicker.
+// scrolls body); the type picker is the surface-adaptive BottomSheetPicker. The type
+// list = the built-in catalog + the department's custom apparatus types (#321 inc4b).
 
 export interface AddApparatusModalProps {
   open: boolean;
   onClose: () => void;
-  onAdd: (name: string, type: ApparatusType) => Promise<void> | void;
+  onAdd: (name: string, type: string) => Promise<void> | void;
 }
 
-const TYPE_OPTIONS = APPARATUS_TYPES.map((t) => ({ value: t, label: t }));
-
 export function AddApparatusModal({ open, onClose, onAdd }: AddApparatusModalProps) {
+  const { allNames } = useApparatusTypes();
+  const typeOptions = allNames.map((t) => ({ value: t, label: t }));
   const [name, setName] = useState('');
-  const [type, setType] = useState<ApparatusType>('Engine');
+  const [type, setType] = useState<string>('Engine');
 
   const close = () => {
     setName('');
@@ -48,7 +49,7 @@ export function AddApparatusModal({ open, onClose, onAdd }: AddApparatusModalPro
       }
     >
       <TextField label="Apparatus name" value={name} onChange={setName} placeholder="e.g. Engine 1" />
-      <BottomSheetPicker label="Type" options={TYPE_OPTIONS} value={type} onSelect={setType} />
+      <BottomSheetPicker label="Type" options={typeOptions} value={type} onSelect={setType} />
     </Modal>
   );
 }

@@ -28,6 +28,7 @@ vi.mock('@ui/hooks', () => ({
   useInventoryActions: () => actions,
   useOperation: () => mockOperation(),
   usePermissions: () => mockPermissions(),
+  useApparatusTypes: () => ({ types: [], allNames: ['Engine', 'Ladder'], add: vi.fn(), remove: vi.fn() }),
 }));
 
 const rig = (id: string, name: string): Apparatus => ({ id, name, type: 'Engine' });

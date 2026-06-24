@@ -9,6 +9,7 @@ export * from './hazard';
 export * from './checklist';
 export * from './inventory';
 export * from './apparatus';
+export * from './apparatusTypes';
 export * from './customTitle';
 export * from './event';
 export * from './department';

@@ -4,5 +4,6 @@ export { AccountPage } from './AccountPage';
 export { AppearancePage } from './AppearancePage';
 export { DepartmentPage } from './DepartmentPage';
 export { DataManagementPage } from './DataManagementPage';
+export { ApparatusTypesPage } from './ApparatusTypesPage';
 export { AdministrationPage } from './AdministrationPage';
 export { HelpReferencePage } from './HelpReferencePage';

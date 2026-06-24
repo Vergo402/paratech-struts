@@ -4,6 +4,7 @@ import { sessionStore } from './session';
 import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import { createApparatusStore, type ApparatusStoreApi } from './apparatusStore';
 import { createCustomTitlesStore, type CustomTitlesStoreApi } from './customTitlesStore';
+import { createApparatusTypesStore, type ApparatusTypesStoreApi } from './apparatusTypesStore';
 import { createChecklistTemplateStore, type ChecklistTemplateStoreApi } from './checklistTemplateStore';
 import { createRolesStore, type RolesStoreApi } from './rolesStore';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
@@ -33,6 +34,7 @@ export let operationStore: OperationStoreApi;
 export let inventoryStore: InventoryStoreApi;
 export let apparatusStore: ApparatusStoreApi;
 export let customTitlesStore: CustomTitlesStoreApi;
+export let apparatusTypesStore: ApparatusTypesStoreApi;
 export let checklistTemplateStore: ChecklistTemplateStoreApi;
 export let rolesStore: RolesStoreApi;
 
@@ -53,6 +55,9 @@ function build(bucket: string): void {
   });
   customTitlesStore = createCustomTitlesStore(deptDb, {
     onBlob: (env) => void syncService.setState('titles', env),
+  });
+  apparatusTypesStore = createApparatusTypesStore(deptDb, {
+    onBlob: (env) => void syncService.setState('apparatusTypes', env),
   });
   checklistTemplateStore = createChecklistTemplateStore(deptDb, {
     onBlob: (env) => void syncService.setState('checklists', env),
@@ -130,6 +135,7 @@ export function activateBucket(bucket: string): Promise<void> {
     await inventoryStore.boot();
     await apparatusStore.boot();
     await customTitlesStore.boot();
+    await apparatusTypesStore.boot();
     await checklistTemplateStore.boot();
     await operationStore.boot();
     activeBucket = bucket; // stamp only after a fully-booted activation

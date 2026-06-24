@@ -23,6 +23,7 @@ export {
   inventoryStore,
   apparatusStore,
   customTitlesStore,
+  apparatusTypesStore,
   checklistTemplateStore,
   rolesStore,
   activateBucket,
@@ -50,6 +51,12 @@ export {
   type CustomTitlesStoreApi,
   type CustomTitlesState,
 } from './customTitlesStore';
+export {
+  createApparatusTypesStore,
+  APPARATUS_TYPES_KEY,
+  type ApparatusTypesStoreApi,
+  type ApparatusTypesState,
+} from './apparatusTypesStore';
 export {
   createChecklistTemplateStore,
   CHECKLIST_TEMPLATES_KEY,

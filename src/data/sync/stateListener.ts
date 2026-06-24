@@ -3,6 +3,7 @@ import {
   inventoryStore,
   apparatusStore,
   customTitlesStore,
+  apparatusTypesStore,
   checklistTemplateStore,
 } from '../store/registry';
 import { sessionStore } from '../store/session';
@@ -10,6 +11,7 @@ import { syncService } from './syncService';
 import { eventListenerSync } from './eventListener';
 import {
   type BlobEnvelope,
+  type BlobPath,
   type CloudRow,
   inventoryPath,
   isTombstone,
@@ -60,7 +62,7 @@ export interface StateListenerSync {
 }
 
 export interface BlobConfig {
-  path: 'apparatus' | 'titles' | 'checklists';
+  path: BlobPath;
   localStamp: () => number;
   localValue: () => unknown;
   applyRemote: (value: unknown, stamp: number) => Promise<void>;
@@ -202,6 +204,12 @@ export const stateListenerSync = createStateListenerSync({
       localStamp: () => checklistTemplateStore.localStamp(),
       localValue: () => checklistTemplateStore.store.getState().overrides,
       applyRemote: (v, s) => checklistTemplateStore.applyRemote(v, s),
+    },
+    {
+      path: 'apparatusTypes',
+      localStamp: () => apparatusTypesStore.localStamp(),
+      localValue: () => apparatusTypesStore.store.getState().types,
+      applyRemote: (v, s) => apparatusTypesStore.applyRemote(v, s),
     },
   ],
 });

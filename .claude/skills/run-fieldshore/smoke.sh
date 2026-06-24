@@ -33,7 +33,7 @@ for _ in $(seq 1 40); do  # up to ~20s for Vite cold-start + dep optimize
   if curl -fsS "http://127.0.0.1:$PORT/" 2>/dev/null | grep -q '<title>FieldShore</title>'; then
     echo "OK — http://127.0.0.1:$PORT/ served <title>FieldShore</title> (HTTP 200)"
     echo
-    echo "ALL GREEN ✅  (types · 1044 tests · dev server)"
+    echo "ALL GREEN ✅  (types · 1055 tests · dev server)"
     exit 0
   fi
   sleep 0.5

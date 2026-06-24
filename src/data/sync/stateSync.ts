@@ -30,8 +30,8 @@ export type CloudRow = Omit<InventoryItem, 'available'> & { lastWriteAt: number 
 
 /** Relative cloud path (under /orgs/{deptId}) for one inventory row. */
 export const inventoryPath = (id: string): string => `inventory/${id}`;
-/** The three meta-blob relative cloud paths. */
-export const BLOB_PATHS = ['apparatus', 'titles', 'checklists'] as const;
+/** The meta-blob relative cloud paths. */
+export const BLOB_PATHS = ['apparatus', 'titles', 'checklists', 'apparatusTypes'] as const;
 export type BlobPath = (typeof BLOB_PATHS)[number];
 
 /** Drop `available` (event-owned); carry the stamp (0 for never-stamped local rows). */

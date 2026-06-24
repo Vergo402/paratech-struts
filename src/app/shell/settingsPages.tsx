@@ -90,6 +90,17 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     show: ({ perms }) => perms.manageData || perms.manageInventory,
   },
   {
+    to: '/settings/apparatus-types',
+    label: 'Apparatus types',
+    // truck
+    icon: (
+      <SIcon>
+        <path d="M3 6h11v9H3zM14 9h4l3 3v3h-7zM7 18a2 2 0 100-4 2 2 0 000 4zM18 18a2 2 0 100-4 2 2 0 000 4z" />
+      </SIcon>
+    ),
+    show: ({ perms }) => perms.manageSettings,
+  },
+  {
     to: '/settings/administration',
     label: 'Administration',
     // shield

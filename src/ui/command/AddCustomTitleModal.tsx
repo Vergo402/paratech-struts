@@ -1,7 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 import { Modal, Button, TextField } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
-import { APPARATUS_TYPES } from '@core/load';
+import { useApparatusTypes } from '@ui/hooks';
 import { POSITION_CLASS_GROUPS, kindLabel } from '@core/org';
 import type { OrgPositionKind, TeamMember } from '@core/schema';
 
@@ -21,6 +21,7 @@ export interface AddCustomTitleModalProps {
 }
 
 export function AddCustomTitleModal({ open, onClose, onAdd }: AddCustomTitleModalProps) {
+  const { allNames } = useApparatusTypes();
   const [title, setTitle] = useState('');
   const [groupKey, setGroupKey] = useState('group');
   const [subKind, setSubKind] = useState<OrgPositionKind>('group');
@@ -116,7 +117,7 @@ export function AddCustomTitleModal({ open, onClose, onAdd }: AddCustomTitleModa
                 onChange={(e) => setMember(i, { type: e.target.value })}
                 style={selStyle}
               >
-                {APPARATUS_TYPES.map((t) => (
+                {allNames.map((t) => (
                   <option key={t} value={t}>
                     {t}
                   </option>
