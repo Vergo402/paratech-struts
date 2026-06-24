@@ -8,9 +8,9 @@ import type { SheetPickerOption } from './BottomSheetPicker';
  * needing search/filter. Search appears only when the set exceeds 7 items
  * (universal rule 1) and filters locally — all data is on-device, no async.
  * Single-select: a row tap commits immediately and closes; Cancel leaves the
- * value untouched. DELIBERATE DEVIATION (session log): ships as a fullscreen
- * overlay rather than a pushed route — no 8+ consumer exists until S4+, and
- * the route-push form is a screen-spec concern, not the primitive's.
+ * value untouched. Ships as a fullscreen overlay with History API page
+ * semantics (#371): Back button dismisses the picker via a synthetic pushState
+ * entry — not a full route push, but real back-button behavior.
  */
 export interface FullScreenListProps<T extends string> {
   open: boolean;
@@ -45,6 +45,26 @@ export function FullScreenList<T extends string>({
       opener: document.activeElement instanceof HTMLElement ? document.activeElement : null,
     });
     return () => releaseOverlay(close);
+  }, [open]);
+
+  // Back-button page semantics (#371): push a synthetic history entry so the
+  // device Back button dismisses the picker instead of navigating the router.
+  useEffect(() => {
+    if (!open) return;
+    let pushed = true;
+    history.pushState({ fsPicker: true }, '');
+    const onPop = () => {
+      pushed = false;
+      closeRef.current();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if (pushed) {
+        pushed = false;
+        history.back();
+      }
+    };
   }, [open]);
 
   const searchable = options.length > 7;

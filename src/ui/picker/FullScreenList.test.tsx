@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { vi } from 'vitest';
 import { FullScreenList } from './FullScreenList';
 
 const small = ['A', 'B', 'C'].map((x) => ({ value: x, label: `Apparatus ${x}` }));
@@ -56,5 +57,24 @@ describe('FullScreenList', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByTestId('value').textContent).toBe('none');
+  });
+
+  describe('back-button page semantics', () => {
+    it('popstate dismisses the picker', async () => {
+      render(<Harness options={small} />);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: null })));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('programmatic close calls history.back() to clean up the synthetic entry', async () => {
+      const user = userEvent.setup();
+      const spy = vi.spyOn(history, 'back').mockImplementation(() => {});
+      render(<Harness options={small} />);
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+      expect(spy).toHaveBeenCalledTimes(1);
+      spy.mockRestore();
+    });
   });
 });
