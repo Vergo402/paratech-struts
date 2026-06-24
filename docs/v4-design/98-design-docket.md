@@ -29,6 +29,7 @@
 | ICS node-detail modal: UX/flow overhaul — zero flow between sections and actions | [#374](https://github.com/Vergo402/paratech-struts/issues/374) (was #248) | 2026-06-21 |
 | Cutting Station: filter to show only cuts assigned to user's station, not full operation queue | [#375](https://github.com/Vergo402/paratech-struts/issues/375) (was #248) | 2026-06-21 |
 | Cutting Station: calm empty state ("No cuts queued") when the queue is empty — currently renders nothing (component returns null) | [#389](https://github.com/Vergo402/paratech-struts/issues/389) (design-idea) | 2026-06-22 |
+| Individual saw stations A/B/+N each on their own screen; officers see only their assigned station's current cut + full pending list | [#390](https://github.com/Vergo402/paratech-struts/issues/390) (design-idea) | 2026-06-23 |
 
 ## Doctrine deviation watch
 
