@@ -62,6 +62,10 @@ export const Member = z.object({
   // access. Reactivation flips it back to true. The ≥1-Admin anti-lockout treats
   // deactivating an admin the same as demoting one (rules.ts).
   active: z.boolean().optional(),
+  // Free-text rank/title the member sets on themselves (#321 P5 inc3). Per-membership
+  // (rank can differ per dept). Self-editable via the SELF_EDIT_RANK rule branch — the
+  // ONLY field a member may change on their own row after join; admins may also set it.
+  rank: z.string().max(80).optional(),
 });
 export type Member = z.infer<typeof Member>;
 

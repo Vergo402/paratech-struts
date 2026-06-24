@@ -20,6 +20,7 @@ export interface SessionApi {
   isMagicLink: AccountServiceApi['isMagicLink'];
   completeMagicLink: AccountServiceApi['completeMagicLink'];
   sendPasswordReset: AccountServiceApi['sendPasswordReset'];
+  currentEmail: AccountServiceApi['currentEmail'];
 }
 
 export function useSession(): SessionApi {
@@ -42,5 +43,6 @@ export function useSession(): SessionApi {
     isMagicLink: accountService.isMagicLink,
     completeMagicLink: accountService.completeMagicLink,
     sendPasswordReset: accountService.sendPasswordReset,
+    currentEmail: accountService.currentEmail,
   };
 }

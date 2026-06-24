@@ -93,6 +93,10 @@ export interface DepartmentServiceApi {
   readAudit(): Promise<AuditEntry[] | null>;
   /** Set a member's role (also the promote-to-Admin path: roleId = ADMIN_ROLE_ID). */
   assignRole(uid: string, roleId: string): Promise<AdminMutationResult>;
+  /** Admin sets another member's rank/title (manageUsers-gated; audited). */
+  setMemberRank(uid: string, rank: string): Promise<AdminMutationResult>;
+  /** The signed-in member sets their OWN rank/title (SELF_EDIT_RANK rule branch). */
+  setRank(rank: string): Promise<AdminMutationResult>;
   /** Soft-revoke: mark the member inactive (row kept for the audit trail). */
   revokeMember(uid: string): Promise<AdminMutationResult>;
   /** Restore a revoked member. */
@@ -447,6 +451,39 @@ export function createDepartmentService(deps: {
     return { ok: true };
   }
 
+  // Admin sets another member's rank (#321 inc3). manageUsers-gated by the rules; audited.
+  async function setMemberRank(uid: string, rank: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const trimmed = rank.trim();
+    if (trimmed.length > 80) return { ok: false, reason: 'Rank is too long (max 80 characters).' };
+    try {
+      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { rank: trimmed });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'memberRankSet', { targetUid: uid });
+    return { ok: true };
+  }
+
+  // A member sets their OWN rank (#321 inc3) — the SELF_EDIT_RANK rule branch. No audit
+  // (a self-profile edit isn't a governance action). Writes own row via update (merge), so
+  // every other field stays put and the rule's equality guards hold.
+  async function setRank(rank: string): Promise<AdminMutationResult> {
+    const s = deps.session().store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId) {
+      return { ok: false, reason: 'Sign in and connect to a department first.' };
+    }
+    const trimmed = rank.trim();
+    if (trimmed.length > 80) return { ok: false, reason: 'Rank is too long (max 80 characters).' };
+    try {
+      await update(ref(rtdb, `orgs/${s.departmentId}/members/${s.identity.accountId}`), { rank: trimmed });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    return { ok: true };
+  }
+
   async function setActive(uid: string, active: boolean, type: string): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
@@ -540,6 +577,8 @@ export function createDepartmentService(deps: {
     readMembers,
     readAudit,
     assignRole,
+    setMemberRank,
+    setRank,
     revokeMember,
     reactivateMember,
     createRole,

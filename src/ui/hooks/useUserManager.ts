@@ -14,6 +14,7 @@ export interface UserManagerApi {
   membersError: boolean;
   refresh: () => Promise<void>;
   assignRole: typeof departmentService.assignRole;
+  setMemberRank: typeof departmentService.setMemberRank;
   revokeMember: typeof departmentService.revokeMember;
   reactivateMember: typeof departmentService.reactivateMember;
   createRole: typeof departmentService.createRole;
@@ -52,6 +53,7 @@ export function useUserManager(enabled = true): UserManagerApi {
     membersError,
     refresh,
     assignRole: departmentService.assignRole,
+    setMemberRank: departmentService.setMemberRank,
     revokeMember: departmentService.revokeMember,
     reactivateMember: departmentService.reactivateMember,
     createRole: departmentService.createRole,

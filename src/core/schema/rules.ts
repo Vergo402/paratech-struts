@@ -220,6 +220,26 @@ const ADMIN_MANAGE = [
   `( !(${adminLosingAdmin}) || ( ${actorIsAdmin} && $uid !== auth.uid ) )`,
 ].join(' && ');
 
+// SELF-EDIT RANK (#321 P5 inc3) — the ONE narrow exception to "member rows are write-once on
+// join, admin-only after": a member may edit ONLY their own `rank` (free-text title). NO
+// privilege escalation — every other field must equal its prior value, so role/displayName/
+// joinedAt/viaCode/active are all immutable on this branch; `rank` is the only thing free to
+// change (still bounded by its leaf `.validate`, ≤80 chars). `data.exists()` = edit not create;
+// a revoked member (active === false) is locked out. An absent optional field reads as null on
+// both sides, so the equality holds for rows that never carried viaCode/active. CAUTION: NO
+// literal { }.
+const SELF_EDIT_RANK = [
+  'auth != null',
+  '$uid === auth.uid',
+  'data.exists()',
+  "data.child('active').val() != false",
+  "newData.child('role').val() === data.child('role').val()",
+  "newData.child('displayName').val() === data.child('displayName').val()",
+  "newData.child('joinedAt').val() === data.child('joinedAt').val()",
+  "newData.child('viaCode').val() === data.child('viaCode').val()",
+  "newData.child('active').val() === data.child('active').val()",
+].join(' && ');
+
 // AUDIT LOG (#380 write, #381 read) — governance actions (role create/edit/delete, assign/
 // promote/revoke) at /orgs/{deptId}/audit/{auditId}. Append-only + manageUsers-gated:
 // !data.exists() makes each entry write-once (no edit, no delete) — tamper-proof. The P4
@@ -251,7 +271,7 @@ export function buildV4OrgsRules(): RuleTree {
   const memberNode = objectRules(Member);
   // joiners self-write (create-only, Default); manageUsers-holders manage OTHERS, with the
   // count-free ≥1-Admin anti-lockout. Founder's own row writes via the dept create-cascade.
-  memberNode['.write'] = `(${JOIN_SELF_WRITE}) || (${ADMIN_MANAGE})`;
+  memberNode['.write'] = `(${JOIN_SELF_WRITE}) || (${SELF_EDIT_RANK}) || (${ADMIN_MANAGE})`;
   deptNode['members'] = { $uid: memberNode };
   deptNode['roles'] = { $roleId: objectRules(RoleNode) };
 

@@ -7,8 +7,16 @@ const mockUseSession = vi.fn();
 const mockSignOut = vi.fn();
 const mockDeleteAccount = vi.fn();
 const mockNavigate = vi.fn();
+const mockSetRank = vi.fn();
+const mockRefreshMember = vi.fn();
+let mockMember: { rank?: string } | null = null;
 
-vi.mock('@ui/hooks', () => ({ useSession: () => mockUseSession() }));
+vi.mock('@ui/hooks', () => ({
+  useSession: () => mockUseSession(),
+  useDepartment: () => ({ role: 'admin' }),
+  useRoles: () => ({ admin: { id: 'admin', name: 'Admin', builtIn: true, permissions: {} } }),
+  useMyMember: () => ({ member: mockMember, setRank: mockSetRank, refresh: mockRefreshMember }),
+}));
 vi.mock('@ui/dept', () => ({ reloadIntoActiveBucket: vi.fn() }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -22,6 +30,7 @@ function asMember() {
     identity: { kind: 'member', accountId: 'a1', displayName: 'Capt. Marchetti' },
     signOut: mockSignOut,
     deleteAccount: mockDeleteAccount,
+    currentEmail: () => 'marchetti@dept.gov',
   });
 }
 
@@ -29,10 +38,14 @@ beforeEach(() => {
   mockNavigate.mockReset();
   mockSignOut.mockReset().mockResolvedValue(undefined);
   mockDeleteAccount.mockReset().mockResolvedValue({ ok: true });
+  mockSetRank.mockReset().mockResolvedValue({ ok: true });
+  mockRefreshMember.mockReset().mockResolvedValue(undefined);
+  mockMember = null;
   mockUseSession.mockReturnValue({
     identity: { kind: 'guest' },
     signOut: mockSignOut,
     deleteAccount: mockDeleteAccount,
+    currentEmail: () => null,
   });
 });
 
@@ -48,11 +61,31 @@ describe('AccountPage (workflow 06)', () => {
     const user = userEvent.setup();
     asMember();
     render(<AccountPage />);
-    expect(screen.getByText('Capt. Marchetti')).toBeInTheDocument();
+    expect(screen.getAllByText('Capt. Marchetti').length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: 'Log Out' }));
     const dialog = screen.getByRole('dialog', { name: 'Log out?' });
     await user.click(within(dialog).getByRole('button', { name: 'Log Out' }));
     expect(mockSignOut).toHaveBeenCalled();
+  });
+
+  it('a member edits their rank and saves it through the seam', async () => {
+    const user = userEvent.setup();
+    asMember();
+    mockMember = { rank: '' };
+    render(<AccountPage />);
+    const rank = screen.getByLabelText('Rank / title');
+    await user.type(rank, 'Rescue Squad Lieutenant');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(mockSetRank).toHaveBeenCalledWith('Rescue Squad Lieutenant');
+    expect(mockRefreshMember).toHaveBeenCalled();
+  });
+
+  it('shows the email read-only and no Save until the rank changes', () => {
+    asMember();
+    mockMember = { rank: 'Captain' };
+    render(<AccountPage />);
+    expect(screen.getByText('marchetti@dept.gov')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 });
 

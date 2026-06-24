@@ -86,6 +86,8 @@ export interface AccountServiceApi {
   completeMagicLink(url: string): Promise<AuthResult>;
   /** Email a password-reset link (Firebase hosts the reset page). */
   sendPasswordReset(email: string): Promise<ActionResult>;
+  /** The signed-in account's email (read-only, from Firebase Auth). null when guest. */
+  currentEmail(): string | null;
 }
 
 function mapFirebaseError(err: unknown): string {
@@ -274,6 +276,10 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
       } catch (err: unknown) {
         return { ok: false, reason: mapFirebaseError(err) };
       }
+    },
+
+    currentEmail() {
+      return firebaseAuth.currentUser?.email ?? null;
     },
   };
 }

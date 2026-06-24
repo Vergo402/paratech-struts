@@ -61,6 +61,25 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(committed.rules.orgs.$deptId.members.$uid.viaCode['.validate']).toContain('isString');
   });
 
+  it('a member may self-edit ONLY their own rank — no privilege escalation', () => {
+    const w = committed.rules.orgs.$deptId.members.$uid['.write'];
+    // the self-edit branch exists: editing an existing row (not create) for your own uid
+    expect(w).toContain('$uid === auth.uid');
+    expect(w).toContain('data.exists()');
+    // a revoked member can't self-edit
+    expect(w).toContain("data.child('active').val() != false");
+    // every field EXCEPT rank is pinned to its prior value — member can't promote own role,
+    // rename, or rewrite provenance; writing ANOTHER member's row fails on $uid === auth.uid
+    expect(w).toContain("newData.child('role').val() === data.child('role').val()");
+    expect(w).toContain("newData.child('displayName').val() === data.child('displayName').val()");
+    expect(w).toContain("newData.child('joinedAt').val() === data.child('joinedAt').val()");
+    expect(w).toContain("newData.child('active').val() === data.child('active').val()");
+    // rank is the one mutable field — bounded to a string ≤80 by its leaf validate
+    expect(committed.rules.orgs.$deptId.members.$uid.rank['.validate']).toBe(
+      '!newData.exists() || (newData.isString() && newData.val().length <= 80)',
+    );
+  });
+
   it('an invite code is create-only by the dept founder and readable by any signed-in holder', () => {
     const code = committed.rules.orgs.inviteCodes.$code;
     expect(code['.read']).toBe('auth != null'); // know-the-code is the authorization; no enumeration

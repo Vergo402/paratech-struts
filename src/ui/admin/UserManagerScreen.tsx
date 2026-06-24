@@ -59,7 +59,7 @@ export function UserManagerScreen() {
   const um = useUserManager();
 
   const [face, setFace] = useState<Face>('members');
-  const [assignTo, setAssignTo] = useState<{ uid: string; name: string; role: string } | null>(null);
+  const [assignTo, setAssignTo] = useState<{ uid: string; name: string; role: string; rank: string } | null>(null);
   const [roleEditor, setRoleEditor] = useState<{ role: Role | null } | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{ uid: string; name: string } | null>(null);
   const [deleteRoleTarget, setDeleteRoleTarget] = useState<Role | null>(null);
@@ -193,7 +193,7 @@ export function UserManagerScreen() {
                       key={uid}
                       type="button"
                       className="fs-um-row"
-                      onClick={() => setAssignTo({ uid, name: m.displayName, role: m.role })}
+                      onClick={() => setAssignTo({ uid, name: m.displayName, role: m.role, rank: m.rank ?? '' })}
                     >
                       <span className="fs-um-row-main">
                         <span className="fs-um-row-name">{m.displayName}</span>
@@ -255,6 +255,11 @@ export function UserManagerScreen() {
         isLastAdmin={assignTo ? isLastAdmin(assignTo.uid) : false}
         onAssign={async (roleId) => {
           const res = await um.assignRole(assignTo!.uid, roleId);
+          if (res.ok) await um.refresh();
+          return res;
+        }}
+        onSetRank={async (rank) => {
+          const res = await um.setMemberRank(assignTo!.uid, rank);
           if (res.ok) await um.refresh();
           return res;
         }}
