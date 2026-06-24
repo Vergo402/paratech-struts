@@ -18,7 +18,7 @@ export { FloatingPanel, type FloatingPanelProps } from './FloatingPanel';
 export { clampPanelPosition, nextZ, type Pos, type Size } from './floatingPanelGeometry';
 export { Popover, type PopoverProps } from './Popover';
 export { PickerSurface, type PickerSurfaceProps } from './PickerSurface';
-export { useMediaQuery, useIsDesktop, useIsWide } from './useMediaQuery';
+export { useMediaQuery, useIsDesktop, useIsWide, useHasRailNav } from './useMediaQuery';
 export { Slider, type SliderProps } from './Slider';
 export { TextField, type TextFieldProps } from './Input';
 export { Toggle, type ToggleProps } from './Toggle';

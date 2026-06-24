@@ -55,6 +55,18 @@ export function useIsWide(): boolean {
 }
 
 /**
+ * useHasRailNav — true at ≥1024px, where the app's primary navigation becomes a
+ * LEFT SIDE RAIL (the command-post surface) instead of the fixed bottom tab bar.
+ * Phone AND tablet-portrait keep the bottom tabs (the rail wants real width to
+ * earn its column). Default = false so test/SSR keep the bottom-nav branch
+ * (jsdom has no matchMedia). 1024 is a deliberate step above the 768 tablet
+ * breakpoint so a portrait iPad doesn't get a cramped rail.
+ */
+export function useHasRailNav(): boolean {
+  return useMediaQuery('(min-width: 1024px)');
+}
+
+/**
  * useHasMouse — true when the PRIMARY input is a mouse/trackpad (a fine pointer
  * that can hover): desktops and laptops. False on every touchscreen — phones AND
  * field tablets, regardless of screen width — because the status-commit slide's

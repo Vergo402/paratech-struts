@@ -7,7 +7,9 @@ import {
 } from '@tanstack/react-router';
 import { AppHeader } from './shell/AppHeader';
 import { BottomNav } from './shell/BottomNav';
+import { SideNav } from './shell/SideNav';
 import { SyncBanner } from './shell/SyncBanner';
+import { useHasRailNav } from '@ui/primitives';
 import { QuickFindScreen } from './routes/quickfind';
 import { OperationsScreen } from './routes/operations';
 import { InventoryScreen } from './routes/inventory';
@@ -35,16 +37,27 @@ function RootBare() {
   return <Outlet />;
 }
 
-// The tab shell: header + guest sync banner + scroll pane + fixed bottom nav.
+// The tab shell. Phone/tablet-portrait: header + sync banner + scroll pane +
+// fixed bottom nav, stacked in a column. Desktop (≥1024, useHasRailNav): a left
+// SideNav rail beside the content column (the bottom nav is hidden — the rail is
+// the primary nav). The content stays wrapped in .fs-shell-col so the column
+// internals (header/banner/main) are identical on both surfaces.
 function RootLayout() {
+  const rail = useHasRailNav();
   return (
-    <div className="fs-shell">
-      <AppHeader />
-      <SyncBanner />
-      <main className="fs-shell-main">
-        <Outlet />
-      </main>
-      <BottomNav />
+    <div className={rail ? 'fs-shell fs-shell--rail' : 'fs-shell'}>
+      {rail && <SideNav />}
+      <div className="fs-shell-col">
+        {/* Desktop: the rail carries the brand, so the top command-header is
+            dropped and that height goes to content; each screen owns its heading.
+            Phone keeps the header (its title bar). */}
+        {!rail && <AppHeader />}
+        <SyncBanner />
+        <main className="fs-shell-main">
+          <Outlet />
+        </main>
+        {!rail && <BottomNav />}
+      </div>
       {/* First-run tour — renders only when active (account-creation or a Settings
           replay); mounted here so it survives tab changes and overlays the chrome. */}
       <OnboardingHost />

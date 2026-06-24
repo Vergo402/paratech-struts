@@ -3,7 +3,7 @@ import type { Deductions, ShorePoint } from '@core/schema';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { sysKeyOf, type StrutSysKey } from '@core/load';
 import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
-import { Button, EmptyState, Sheet, TextField } from '@ui/primitives';
+import { Button, EmptyState, Sheet, TextField, useHasRailNav } from '@ui/primitives';
 // Deep import (not the @ui/operations barrel) — Add Shore Point already imports
 // from @ui/quickfind, so going through the barrel would close an import cycle.
 import { RecommendationCard } from '@ui/operations/RecommendationCard';
@@ -27,6 +27,7 @@ const MAX_LOAD_LBS = 500_000;
  * capacity check. The v3 hold-to-start FAB is retired (button.md Principle 4).
  */
 export function QuickFind() {
+  const rail = useHasRailNav();
   const [measurementEighths, setMeasurementEighths] = useState(0);
   const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
   const [estimatedLoad, setEstimatedLoad] = useState('');
@@ -86,6 +87,13 @@ export function QuickFind() {
 
   return (
     <div className="fs-quickfind">
+      {/* Desktop carries no top command-header (the rail has the brand), so the
+          screen owns its title here; phone gets it from AppHeader. */}
+      {rail && (
+        <h1 className="fs-qf-title" style={{ font: 'var(--type-headline-1)' }}>
+          Quick Find
+        </h1>
+      )}
       {/* data-tour anchors feed the first-run guided tips (OnboardingHost). Plain
           wrappers — they add no layout, just a stable target the coachmark queries. */}
       <div data-tour="qf-measurement">
