@@ -24,6 +24,7 @@ import {
   ApparatusTypesPage,
   AdministrationPage,
   HelpReferencePage,
+  AboutPage,
 } from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
 import { AuthRoute } from './routes/auth';
@@ -125,6 +126,7 @@ const routeTree = rootRoute.addChildren([
       createRoute({ getParentRoute: () => settingsRoute, path: 'apparatus-types', component: ApparatusTypesPage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'administration', component: AdministrationPage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'help', component: HelpReferencePage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'about', component: AboutPage }),
     ]),
     // The Admin-gated User Manager (#381) — reached from the Settings Administration gateway.
     // RequireDepartment gates the dept; the screen itself backstops the manageUsers permission

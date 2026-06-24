@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Button } from '@ui/primitives';
 import { useOnboarding } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
+import { FeedbackSheet } from '@ui/settings/FeedbackSheet';
 
 // The role-guided tour split (ADR — ICS position). Two buckets for the slice —
 // the field role (measure & shore) vs the command role (IC & org).
@@ -17,6 +19,7 @@ type RoleFocus = (typeof ROLE_OPTIONS)[number]['value'];
 export function HelpReferencePage() {
   const { roleFocus, replayTour, startLesson, setRoleFocus } = useOnboarding();
   const navigate = useNavigate();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,7 +43,12 @@ export function HelpReferencePage() {
         <Button variant="secondary" onPress={() => navigate({ to: '/help' })}>
           Open user guide
         </Button>
+        <Button variant="secondary" onPress={() => setFeedbackOpen(true)}>
+          Send feedback
+        </Button>
       </section>
+
+      <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

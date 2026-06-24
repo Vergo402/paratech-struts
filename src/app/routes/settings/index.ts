@@ -5,5 +5,6 @@ export { AppearancePage } from './AppearancePage';
 export { DepartmentPage } from './DepartmentPage';
 export { DataManagementPage } from './DataManagementPage';
 export { ApparatusTypesPage } from './ApparatusTypesPage';
+export { AboutPage } from './AboutPage';
 export { AdministrationPage } from './AdministrationPage';
 export { HelpReferencePage } from './HelpReferencePage';

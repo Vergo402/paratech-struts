@@ -1,7 +1,9 @@
 import { useRouterState } from '@tanstack/react-router';
 
-/** Build identity shown as the header's mono version tag (and the SideNav footer). */
-export const APP_VERSION = 'v4.0.0-slice.1';
+/** Build identity shown as the header's mono version tag (and the SideNav footer).
+ *  The constant lives in @core/version; re-exported here for existing importers. */
+export { APP_VERSION } from '@core/version';
+import { APP_VERSION } from '@core/version';
 
 const TITLES: Record<string, string> = {
   '/quickfind': 'FieldShore',

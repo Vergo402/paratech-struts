@@ -29,6 +29,10 @@ export interface TextFieldProps {
   disabled?: boolean;
   /** 56pt operational (field default) vs 48pt non-operational. */
   size?: 'operational' | 'standard';
+  /** Multi-line variant — renders a <textarea> (e.g. the feedback message). */
+  multiline?: boolean;
+  /** Visible rows for the multiline variant (default 4). */
+  rows?: number;
 }
 
 export function TextField({
@@ -44,13 +48,28 @@ export function TextField({
   autoComplete,
   disabled = false,
   size = 'operational',
+  multiline = false,
+  rows = 4,
 }: TextFieldProps) {
   const id = useId();
   const messageId = useId();
   const message = error ?? helper;
   const isPassword = type === 'password';
   const [revealed, setRevealed] = useState(false);
-  const input = (
+  const input = multiline ? (
+    <textarea
+      id={id}
+      className={`fs-field-input fs-field-input--multiline${error ? ' fs-field-input--invalid' : ''}`}
+      value={value}
+      placeholder={placeholder}
+      rows={rows}
+      maxLength={maxLength}
+      disabled={disabled}
+      aria-invalid={error ? true : undefined}
+      aria-describedby={message ? messageId : undefined}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ) : (
     <input
       id={id}
       className={`fs-field-input ${size === 'operational' ? 'fs-field-input--op' : 'fs-field-input--std'}${

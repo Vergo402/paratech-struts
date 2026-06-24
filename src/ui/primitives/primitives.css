@@ -401,6 +401,14 @@ p.fs-gate--disclaimer {
 }
 .fs-field-input--op { min-height: 56px; }
 .fs-field-input--std { min-height: 48px; }
+.fs-field-input--multiline {
+  min-height: 0;
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
 .fs-field-input::placeholder { color: var(--text-tertiary); }
 .fs-field-input:focus { border-color: var(--accent); outline: none; }
 .fs-field-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }

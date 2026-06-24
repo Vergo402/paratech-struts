@@ -20,6 +20,7 @@ export { useUserManager, type UserManagerApi } from './useUserManager';
 export { useMyMember, type MyMemberApi } from './useMyMember';
 export { useApparatusTypes, type ApparatusTypesApi } from './useApparatusTypes';
 export { useDeptPolicies, type DeptPoliciesApi } from './useDeptPolicies';
+export { useFeedback, type FeedbackApi } from './useFeedback';
 export type { AdminMutationResult } from '@data/dept';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
