@@ -20,6 +20,7 @@ import {
   AccountPage,
   AppearancePage,
   DepartmentPage,
+  DataManagementPage,
   AdministrationPage,
   HelpReferencePage,
 } from './routes/settings';
@@ -119,6 +120,7 @@ const routeTree = rootRoute.addChildren([
       createRoute({ getParentRoute: () => settingsRoute, path: 'account', component: AccountPage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'appearance', component: AppearancePage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'department', component: DepartmentPage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'data', component: DataManagementPage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'administration', component: AdministrationPage }),
       createRoute({ getParentRoute: () => settingsRoute, path: 'help', component: HelpReferencePage }),
     ]),
