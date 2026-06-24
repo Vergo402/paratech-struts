@@ -33,7 +33,7 @@ describe('feedbackService', () => {
     const res = await svc.submit({ category: 'bug', text: '  busted  ' });
     expect(res).toEqual({ ok: true });
     expect(refMock).toHaveBeenCalledWith(expect.anything(), 'feedback');
-    const payload = pushMock.mock.calls[0][1];
+    const payload = pushMock.mock.calls[0]![1];
     expect(payload).toMatchObject({
       category: 'bug',
       text: 'busted', // trimmed
