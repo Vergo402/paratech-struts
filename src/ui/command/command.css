@@ -955,6 +955,133 @@
   color: var(--text-tertiary);
 }
 
+/* ---- Command transfer handshake (#393, ADR-021) ------------------------- */
+
+/* Pending — the outgoing IC's waiting state (command has NOT moved). Amber = waiting. */
+.fs-cmd-xfer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-cmd-xfer--pending {
+  background: var(--status-cutting-bg);
+  border-color: var(--status-cutting-text);
+}
+.fs-cmd-xfer-pending-text {
+  font: var(--type-body-medium);
+  color: var(--status-cutting-text);
+}
+.fs-cmd-xfer-quiet {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
+/* Incoming — "you are being given command". Gold = command (the one accent). */
+.fs-cmd-xfer--incoming {
+  border-color: var(--accent);
+  border-width: 2px;
+}
+.fs-cmd-xfer-head {
+  font: var(--type-body-medium);
+  font-weight: 600;
+  color: var(--accent);
+}
+.fs-cmd-xfer-sub {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-cmd-xfer-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.fs-cmd-xfer-actions > * {
+  flex: 1;
+}
+
+/* Full-screen Transfer Command takeover (mirrors .fs-org-full chrome). */
+.fs-xfer {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: var(--surface-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.fs-xfer[data-state='open'] {
+  animation: fs-fade-in var(--motion-transition) var(--ease-standard);
+}
+.fs-xfer[data-state='closed'] {
+  animation: fs-fade-out var(--motion-exit) var(--ease-exit);
+}
+.fs-xfer-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: max(var(--space-3), env(safe-area-inset-top)) var(--space-4) var(--space-3);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-xfer-title {
+  flex: 1;
+  text-align: center;
+  font: var(--type-body-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fs-xfer-cancel {
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.fs-xfer-cancel:hover {
+  color: var(--text-primary);
+}
+.fs-xfer-cancel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-xfer-head-spacer {
+  width: 56px;
+}
+.fs-xfer-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+.fs-xfer-current {
+  display: flex;
+  flex-direction: column;
+}
+.fs-xfer-current-name {
+  margin-top: 3px;
+  font: var(--type-body-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fs-xfer-newname {
+  margin-top: var(--space-1);
+}
+.fs-xfer-foot {
+  padding: var(--space-3) var(--space-4) max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-xfer-foot > button {
+  width: 100%;
+}
+.fs-xfer-note {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
 /* ---- node sheet (Assigned · Subordinates · Manage) --------------------- */
 .fs-node-subtitle {
   margin: 0 0 var(--space-2);

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
-import { currentIC, leaderOf, defaultPositionId } from '@core/org';
+import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
-import { useOperation, useShorePoints, useOrg, useHazards } from '@ui/hooks';
+import { useOperation, useShorePoints, useOrg, useHazards, useCommandTransfer, useDeviceUidValue } from '@ui/hooks';
 import { useElapsed } from './useElapsed';
+import { useOrgCommit } from './useOrgCommit';
 import { SitStatRollup } from './SitStatRollup';
+import { TransferCommand } from './TransferCommand';
 
 // SitStat scope toggle (#353): the whole-incident board (default, unchanged) vs
 // the per-Division roll-up table for "which Division is behind" at scale.
@@ -36,7 +38,11 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const positions = useOrg();
   const hazards = useHazards();
   const isDesktop = useIsDesktop();
+  const pending = useCommandTransfer();
+  const uid = useDeviceUidValue();
+  const emit = useOrgCommit();
   const [scope, setScope] = useState<SitStatScope>('all');
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const counts = useMemo(() => {
     const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
@@ -73,6 +79,9 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   if (!operation) return null;
 
   const ic = currentIC(positions);
+  // Pre-auth IC gate (ADR-021), same shape as SitStat: this device commands when the IC
+  // is unstaffed, isn't a device ref, or is this device's uid. Real auth verifies later.
+  const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
   const ops = positions[defaultPositionId(operation.id, 'ops')];
   const safety = positions[defaultPositionId(operation.id, 'safety')];
   const opsName = (ops && leaderOf(ops)?.label) ?? 'Unassigned';
@@ -107,16 +116,52 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         </div>
       </div>
 
-      {/* Incident Commander — full width, the one gold accent + Transfer (P8) */}
+      {/* Incident Commander — full width, the one gold accent + the command-transfer
+          handshake (#393, ADR-021). The gold accent follows currentIC automatically;
+          while a transfer is Pending command has NOT moved (outgoing stays IC of record). */}
       <Card className="fs-cmd-ic">
         <div className="fs-cmd-ic-main">
           <span className="fs-cmd-eyebrow">Incident Commander</span>
           <span className="fs-cmd-ic-name">{ic?.label ?? 'Unassigned'}</span>
         </div>
-        <Button variant="tertiary" size="standard" disabled disabledReason="Builds next" onPress={() => {}}>
-          Transfer
-        </Button>
+        {!pending && isIC && (
+          <Button variant="tertiary" size="standard" onPress={() => setTransferOpen(true)}>
+            Transfer
+          </Button>
+        )}
       </Card>
+
+      {/* Pending handshake states (mutually exclusive). The INITIATOR always sees the
+          pending/cancel view — it takes precedence over canAccept, which is true for
+          any device when the recipient is an individual (soft claim, transfer.ts). */}
+      {pending && pending.initiatedBy === uid ? (
+        <Card className="fs-cmd-xfer fs-cmd-xfer--pending">
+          <span className="fs-cmd-xfer-pending-text">⏳ Transfer pending → {pending.toResource.label}</span>
+          <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled' })}>
+            Cancel transfer
+          </Button>
+        </Card>
+      ) : pending && canAccept(pending, uid ?? '') ? (
+        <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
+          <span className="fs-cmd-xfer-head">⚑ You are being given command</span>
+          <span className="fs-cmd-xfer-sub">
+            from {ic?.label ?? 'the current IC'}
+            {operation.name ? ` · ${operation.name}` : ''}
+          </span>
+          <div className="fs-cmd-xfer-actions">
+            <Button variant="primary" size="standard" onPress={() => void emit({ type: 'CommandTransferAccepted' })}>
+              Accept command
+            </Button>
+            <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined' })}>
+              Decline
+            </Button>
+          </div>
+        </Card>
+      ) : pending ? (
+        <div className="fs-cmd-xfer-quiet">⏳ Transfer pending → {pending.toResource.label}</div>
+      ) : null}
+
+      <TransferCommand open={transferOpen} onClose={() => setTransferOpen(false)} />
 
       {/* Operations Section Chief | Safety Officer — the two-up datum row */}
       <div className="fs-cmd-pair">

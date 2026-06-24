@@ -16,7 +16,11 @@ type OrgEvent = Extract<
       | 'PositionRemoved'
       | 'PositionReparented'
       | 'PositionReordered'
-      | 'MyRoleSet';
+      | 'MyRoleSet'
+      | 'CommandTransferInitiated'
+      | 'CommandTransferAccepted'
+      | 'CommandTransferDeclined'
+      | 'CommandTransferCancelled';
   }
 >;
 type WithoutBase<T> = T extends unknown ? Omit<T, 'id' | 'opId' | 'at' | 'by'> : never;
