@@ -291,6 +291,7 @@ export function buildV4OrgsRules(): RuleTree {
   deptNode['titles'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
   deptNode['checklists'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
   deptNode['apparatusTypes'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
+  deptNode['deptPolicies'] = { '.write': stateWrite('manageSettings'), '.validate': STATE_BLOB_VALIDATE };
 
   // The append-only governance audit log (#380 write, #381 read) — write-once per entry;
   // the parent .read is manageUsers-gated for the Audit Log Administrative view. (The

@@ -251,6 +251,10 @@
           ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
           ".validate": "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
         },
+        "deptPolicies": {
+          ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageSettings').val() === true && (!data.exists() || newData.child('lastWriteAt').val() >= data.child('lastWriteAt').val())",
+          ".validate": "newData.hasChildren(['lastWriteAt']) && newData.child('lastWriteAt').isNumber()"
+        },
         "audit": {
           ".read": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true",
           "$auditId": {

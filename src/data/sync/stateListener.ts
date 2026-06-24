@@ -4,6 +4,7 @@ import {
   apparatusStore,
   customTitlesStore,
   apparatusTypesStore,
+  deptPoliciesStore,
   checklistTemplateStore,
 } from '../store/registry';
 import { sessionStore } from '../store/session';
@@ -210,6 +211,12 @@ export const stateListenerSync = createStateListenerSync({
       localStamp: () => apparatusTypesStore.localStamp(),
       localValue: () => apparatusTypesStore.store.getState().types,
       applyRemote: (v, s) => apparatusTypesStore.applyRemote(v, s),
+    },
+    {
+      path: 'deptPolicies',
+      localStamp: () => deptPoliciesStore.localStamp(),
+      localValue: () => deptPoliciesStore.store.getState(),
+      applyRemote: (v, s) => deptPoliciesStore.applyRemote(v, s),
     },
   ],
 });

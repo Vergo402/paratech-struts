@@ -24,6 +24,7 @@ export {
   apparatusStore,
   customTitlesStore,
   apparatusTypesStore,
+  deptPoliciesStore,
   checklistTemplateStore,
   rolesStore,
   activateBucket,
@@ -57,6 +58,12 @@ export {
   type ApparatusTypesStoreApi,
   type ApparatusTypesState,
 } from './apparatusTypesStore';
+export {
+  createDeptPoliciesStore,
+  DEPT_POLICIES_KEY,
+  type DeptPoliciesStoreApi,
+  type DeptPoliciesState,
+} from './deptPoliciesStore';
 export {
   createChecklistTemplateStore,
   CHECKLIST_TEMPLATES_KEY,

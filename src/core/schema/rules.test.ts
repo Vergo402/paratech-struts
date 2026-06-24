@@ -117,6 +117,7 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
       dept.titles['.write'],
       dept.checklists['.write'],
       dept.apparatusTypes['.write'],
+      dept.deptPolicies['.write'],
     ];
     for (const w of writes) {
       // membership floor (any member of THIS dept)
@@ -138,6 +139,7 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(dept.titles['.write']).toContain("child('manageSettings')");
     expect(dept.checklists['.write']).toContain("child('manageSettings')");
     expect(dept.apparatusTypes['.write']).toContain("child('manageSettings')");
+    expect(dept.deptPolicies['.write']).toContain("child('manageSettings')");
     // validate requires the LWW clock as a number; inventory also keys on id (tombstone shape)
     expect(dept.inventory.$itemId['.validate']).toContain("newData.hasChildren(['id','lastWriteAt'])");
     expect(dept.apparatus['.validate']).toContain("newData.child('lastWriteAt').isNumber()");

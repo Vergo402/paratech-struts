@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Button } from '@ui/primitives';
-import { useDepartment, usePermissions, useAuditAccess, useCustomTitles } from '@ui/hooks';
+import { Button, Toggle } from '@ui/primitives';
+import { useDepartment, usePermissions, useAuditAccess, useCustomTitles, useDeptPolicies } from '@ui/hooks';
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
 import { kindLabel } from '@core/org';
@@ -18,6 +18,7 @@ export function AdministrationPage() {
   const perms = usePermissions();
   const audit = useAuditAccess();
   const { titles: customTitles, add: addCustomTitle, remove: removeCustomTitle } = useCustomTitles();
+  const { afterActionEmail, setAfterActionEmail } = useDeptPolicies();
   const navigate = useNavigate();
   const [addTitleOpen, setAddTitleOpen] = useState(false);
 
@@ -79,6 +80,29 @@ export function AdministrationPage() {
       )}
 
       {department && perms.manageSettings && <ChecklistEditor />}
+
+      {perms.manageSettings && (
+        <section className="flex flex-col gap-3">
+          <h2 style={{ font: 'var(--type-headline-2)' }}>Department policies</h2>
+          <Toggle
+            size="standard"
+            label="Send after-action record by email"
+            helper={
+              <>
+                When an incident closes, email the assembled after-action record to the Incident
+                Commander and Operations Section Chief. On by default; your department can switch it
+                off.
+                <br />
+                <span className="text-ink-tertiary">
+                  Email delivery turns on in a later release &mdash; this saves your preference now.
+                </span>
+              </>
+            }
+            checked={afterActionEmail}
+            onChange={(next) => void setAfterActionEmail(next)}
+          />
+        </section>
+      )}
 
       <AddCustomTitleModal open={addTitleOpen} onClose={() => setAddTitleOpen(false)} onAdd={addCustomTitle} />
     </div>
