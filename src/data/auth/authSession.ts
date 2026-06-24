@@ -58,6 +58,11 @@ export function createAuthSessionSync(deps: {
             const departmentId = session.store.getState().departmentId;
             if ((departmentId || GUEST_BUCKET) !== currentBucket()) reload();
           }
+          // Seed the cloud reverse index (/userDepts/{uid}) on every authenticated
+          // boot — not just a fresh sign-in — so an account created BEFORE the index
+          // existed self-heals on its next ordinary app open (no sign-out ritual).
+          // Idempotent fire-and-forget; no-ops when the member has no department.
+          session.seedUserDeptIndex();
         } else if (identity.kind === 'member') {
           // No authenticated Firebase user → can't act as a member for cloud
           // work. Drop to guest; setGuest never touches local events/inventory.

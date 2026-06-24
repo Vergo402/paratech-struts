@@ -1,5 +1,17 @@
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Hoist the Firebase-seam mock before session.ts (which reaches it for the
+// /userDepts reverse index) runs. getMock/setMock are controllable per test;
+// the recovery suite routes get() by path. Default: no cloud entry, set resolves.
+const { getMock, setMock } = vi.hoisted(() => ({ getMock: vi.fn(), setMock: vi.fn() }));
+vi.mock('../sync/firebase', () => ({
+  rtdb: {},
+  ref: (_: unknown, path: string) => ({ path }),
+  get: getMock,
+  set: setMock,
+}));
+
 import { createDB, type FieldShoreDB } from './db';
 import { createSessionStore, SESSION_KEY, MEMBERSHIPS_KEY, type SessionStoreApi } from './session';
 import { newId } from '@core/id';
@@ -7,6 +19,11 @@ import type { InventoryItem } from '@core/schema';
 
 const UID = 'device-test-uid';
 const member = { accountId: 'acc-1', displayName: 'Capt. T. Marchetti' };
+
+const okSnap = (val: unknown) => ({ exists: () => val != null, val: () => val });
+/** Route get({path}) to a fixture map; unknown paths resolve to a non-existent snap. */
+const routeGet = (map: Record<string, unknown>) => ({ path }: { path: string }) =>
+  Promise.resolve(okSnap(map[path] ?? null));
 
 // A sentinel inventory row sign-out must never touch (workflow 06 §Step 4).
 const sentinel: InventoryItem = {
@@ -20,6 +37,8 @@ describe('session store (guest ⇄ member, persisted)', () => {
   let session: SessionStoreApi;
 
   beforeEach(() => {
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
+    setMock.mockReset().mockResolvedValue(undefined);
     name = `test-session-${newId()}`;
     db = createDB(name);
     session = createSessionStore(db);
@@ -189,5 +208,83 @@ describe('session store (guest ⇄ member, persisted)', () => {
     await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
     await session.setGuest();
     expect(await db.meta.get(MEMBERSHIPS_KEY)).toBeDefined();
+  });
+});
+
+// New-device recovery (#371 follow-up): the local account-keyed memory is empty on a
+// device that has never signed in, so setMember falls back to the cloud reverse index
+// /userDepts/{uid}, then re-reads the authoritative member record for the live role.
+describe('session store — new-device department recovery (cloud reverse index)', () => {
+  let db: FieldShoreDB;
+  let session: SessionStoreApi;
+
+  beforeEach(() => {
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
+    setMock.mockReset().mockResolvedValue(undefined);
+    db = createDB(`test-recovery-${newId()}`);
+    session = createSessionStore(db);
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('recovers the department from the cloud reverse index on a cache miss', async () => {
+    getMock.mockImplementation(
+      routeGet({
+        'userDepts/acc-1': { deptId: 'dept-1', deptName: 'Hamden Fire Rescue', inviteCode: 'ABCD-2345' },
+        'orgs/dept-1/members/acc-1': { role: 'admin' },
+      }),
+    );
+    await session.boot(UID);
+    await session.setMember(member); // local cache empty → recover from cloud
+    const s = session.store.getState();
+    expect(s.departmentId).toBe('dept-1');
+    expect(s.departmentName).toBe('Hamden Fire Rescue');
+    expect(s.role).toBe('admin'); // authoritative role from the member record, not the index
+    expect(s.inviteCode).toBe('ABCD-2345');
+  });
+
+  it('a removed/revoked member (member record gone) falls through to the set-up screen', async () => {
+    getMock.mockImplementation(
+      routeGet({
+        'userDepts/acc-1': { deptId: 'dept-1', deptName: 'Hamden Fire Rescue', inviteCode: 'ABCD-2345' },
+        'orgs/dept-1/members/acc-1': null, // index points at a dept they no longer belong to
+      }),
+    );
+    await session.boot(UID);
+    await session.setMember(member);
+    const s = session.store.getState();
+    expect(s.identity).toEqual({ kind: 'member', ...member });
+    expect(s.departmentId).toBeNull(); // no stale role — RequireDepartment shows set-up
+  });
+
+  it('no reverse-index entry → stays department-less (a pre-seed account)', async () => {
+    getMock.mockResolvedValue({ exists: () => false });
+    await session.boot(UID);
+    await session.setMember(member);
+    expect(session.store.getState().departmentId).toBeNull();
+  });
+
+  it('an offline cloud read degrades to the set-up screen (never throws)', async () => {
+    getMock.mockRejectedValue(new Error('network'));
+    await session.boot(UID);
+    await expect(session.setMember(member)).resolves.toBeUndefined();
+    expect(session.store.getState().departmentId).toBeNull();
+  });
+
+  it('seedUserDeptIndex writes /userDepts/{uid} from current state, no-ops without a dept', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    setMock.mockClear();
+    session.seedUserDeptIndex(); // member but no department yet → no write
+    expect(setMock).not.toHaveBeenCalled();
+
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
+    setMock.mockClear();
+    session.seedUserDeptIndex();
+    expect(setMock).toHaveBeenCalledWith(
+      { path: 'userDepts/acc-1' },
+      { deptId: 'dept-1', deptName: 'Hamden Fire Rescue', inviteCode: 'ABCD-2345' },
+    );
   });
 });

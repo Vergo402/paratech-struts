@@ -62,6 +62,10 @@ export interface SessionStoreApi {
   setGuest(): Promise<void>;
   /** Workflow 07 — attach the founded department + the member's role + invite code. */
   setDepartment(dept: { id: string; name: string; role: string; inviteCode: string }): Promise<void>;
+  /** Seed the cloud reverse index (/userDepts/{uid}) from current state so a new
+   *  device can recover this account's department. Idempotent fire-and-forget;
+   *  called on every authenticated boot (authSession) AND on create/join. */
+  seedUserDeptIndex(): void;
 }
 
 const GUEST: Identity = { kind: 'guest' };
@@ -168,6 +172,22 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
     return db.meta.put({ key: MEMBERSHIPS_KEY, value: JSON.stringify(map) });
   }
 
+  // Seed /userDepts/{uid} — the cloud reverse index recoverDeptFromCloud() reads on a
+  // cache miss to find a new device's department. Written from current state, member +
+  // dept only. Fire-and-forget: an offline / permission failure is benign — recovery
+  // just degrades to the set-up screen until the next seed. Called on every
+  // authenticated boot (authSession) so accounts created BEFORE the index existed
+  // self-heal on a plain reload, not only on a fresh sign-out → sign-in.
+  function seedUserDeptIndex(): void {
+    const s = store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId) return;
+    set(ref(rtdb, `userDepts/${s.identity.accountId}`), {
+      deptId: s.departmentId,
+      deptName: s.departmentName ?? '',
+      inviteCode: s.inviteCode ?? '',
+    }).catch(() => {});
+  }
+
   return {
 
     store,
@@ -197,7 +217,6 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
       // this accountId, restore its dept (+ code); otherwise try the RTDB reverse
       // index (new-device recovery), then fall back to current state (plain reload).
       let remembered = (await readMemberships())[member.accountId];
-      const fromLocalCache = !!remembered;
       if (!remembered) {
         remembered = (await recoverDeptFromCloud(member.accountId)) ?? undefined;
       }
@@ -211,15 +230,9 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
         : deptOf(store.getState());
       await persist({ identity, ...dept });
       store.setState((s) => ({ ...s, identity, ...dept }), true);
-      // Backfill: seed /userDepts/{uid} from the local cache on sign-in so a
-      // second device can recover immediately without re-entering the invite code.
-      // Only fires when the local cache had the dept (fromLocalCache); if we just
-      // recovered from the cloud the RTDB entry already exists.
-      if (fromLocalCache && remembered) {
-        set(ref(rtdb, `userDepts/${member.accountId}`), {
-          deptId: remembered.id, deptName: remembered.name, inviteCode: remembered.inviteCode,
-        }).catch(() => {});
-      }
+      // The cloud reverse index (/userDepts/{uid}) is seeded by seedUserDeptIndex(),
+      // which the auth-reconcile listener calls on every authenticated boot — so it
+      // covers a plain reload too, not just a fresh sign-in.
     },
 
     async setGuest() {
@@ -239,12 +252,14 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
         const map = await readMemberships();
         map[identity.accountId] = { id, name, role, inviteCode };
         await writeMemberships(map);
-        // ponytail: backfill — seeds /userDepts/{uid} so new-device recovery works.
-        // Fire-and-forget: offline failure is benign (recovery falls back to setup).
-        set(ref(rtdb, `userDepts/${identity.accountId}`), { deptId: id, deptName: name, inviteCode }).catch(() => {});
       }
       store.setState((s) => ({ ...s, ...next }), true);
+      // Seed the cloud reverse index immediately on create/join, so a second device
+      // can recover before this account's next authenticated boot.
+      seedUserDeptIndex();
     },
+
+    seedUserDeptIndex,
   };
 }
 
