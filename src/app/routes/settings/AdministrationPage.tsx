@@ -26,7 +26,7 @@ export function AdministrationPage() {
     <div className="flex flex-col gap-6">
       <h1 style={{ font: 'var(--type-headline-1)' }}>Administration</h1>
 
-      {(perms.manageUsers || audit.canIncident) && (
+      {(perms.manageUsers || !!department) && (
         <section className="flex flex-col gap-3">
           <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
             Manage your department and review the incident record.
@@ -36,9 +36,20 @@ export function AdministrationPage() {
               Users &amp; roles
             </Button>
           )}
-          <Button variant="secondary" onPress={() => navigate({ to: '/audit-log' })}>
+          {/* ponytail: Audit Log visible to all connected members, ICS-position-checked at entry (50-settings.md §Administration) */}
+          <Button
+            variant="secondary"
+            disabled={!audit.canIncident}
+            onPress={() => navigate({ to: '/audit-log' })}
+          >
             Audit log
           </Button>
+          {!audit.canIncident && (
+            <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
+              Access requires Incident Commander or Operations Section Chief assignment in an active
+              operation.
+            </p>
+          )}
         </section>
       )}
 

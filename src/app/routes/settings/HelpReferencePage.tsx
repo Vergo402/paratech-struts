@@ -48,6 +48,29 @@ export function HelpReferencePage() {
         </Button>
       </section>
 
+      <section className="flex flex-col gap-3">
+        <h2 style={{ font: 'var(--type-headline-2)' }}>Reference materials</h2>
+        <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
+          Field doctrine and technical references.
+        </p>
+        <a
+          href="https://web.archive.org/web/2*/https://www.usace.army.mil/Portals/2/docs/Emergency%20Ops/US%26R/Shoring_Operations_Guide_2009.pdf"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fs-button fs-button--secondary fs-button--std"
+        >
+          USACE Shoring Operations Guide (PDF, via archive)
+        </a>
+        <a
+          href="https://www.fema.gov/emergency-managers/national-preparedness/frameworks/national-urban-search-rescue-response-system"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fs-button fs-button--secondary fs-button--std"
+        >
+          FEMA US&amp;R Response System
+        </a>
+      </section>
+
       <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
