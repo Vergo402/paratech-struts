@@ -113,7 +113,7 @@ export function UserManagerScreen() {
           variant="upstream-blocked"
           headline="Admin access only"
           reason="Managing users and roles needs the “Manage users & roles” permission."
-          action={{ label: 'Back to Settings', onPress: () => navigate({ to: '/settings' }) }}
+          action={{ label: 'Back to Settings', onPress: () => navigate({ to: '/settings/account' }) }}
         />
       </div>
     );
@@ -127,7 +127,7 @@ export function UserManagerScreen() {
   return (
     <div className="fs-um">
       <div className="fs-um-head">
-        <button type="button" className="fs-um-back" aria-label="Back to Settings" onClick={() => navigate({ to: '/settings' })}>
+        <button type="button" className="fs-um-back" aria-label="Back to Settings" onClick={() => navigate({ to: '/settings/account' })}>
           <BackIcon />
         </button>
         <h1 className="fs-um-title">User manager</h1>

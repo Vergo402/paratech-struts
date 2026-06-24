@@ -14,7 +14,15 @@ import { QuickFindScreen } from './routes/quickfind';
 import { OperationsScreen } from './routes/operations';
 import { InventoryScreen } from './routes/inventory';
 import { CommandScreen } from './routes/command';
-import { SettingsScreen } from './routes/settings';
+import {
+  SettingsLayout,
+  SettingsIndex,
+  AccountPage,
+  AppearancePage,
+  DepartmentPage,
+  AdministrationPage,
+  HelpReferencePage,
+} from './routes/settings';
 import { GalleryScreen } from './routes/gallery';
 import { AuthRoute } from './routes/auth';
 import { CreateDepartmentRoute } from './routes/create-department';
@@ -74,6 +82,19 @@ const shellRoute = createRoute({
   component: RootLayout,
 });
 
+// Settings is a layout route (master/detail, B): the rail/list navigates between
+// its sub-pages; the detail pane is the routed <Outlet/>. RequireDepartment wraps
+// the layout once, so every sub-page inherits the gate.
+const settingsRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: '/settings',
+  component: () => (
+    <RequireDepartment>
+      <SettingsLayout />
+    </RequireDepartment>
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   shellRoute.addChildren([
     // Cold open lands on Operations — the working screen, not the calculator
@@ -92,7 +113,15 @@ const routeTree = rootRoute.addChildren([
     createRoute({ getParentRoute: () => shellRoute, path: '/operations', component: () => <RequireDepartment><OperationsScreen /></RequireDepartment> }),
     createRoute({ getParentRoute: () => shellRoute, path: '/inventory', component: () => <RequireDepartment><InventoryScreen /></RequireDepartment> }),
     createRoute({ getParentRoute: () => shellRoute, path: '/command', component: () => <RequireDepartment><CommandScreen /></RequireDepartment> }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/settings', component: () => <RequireDepartment><SettingsScreen /></RequireDepartment> }),
+    settingsRoute.addChildren([
+      // Index: desktop forwards to Account (rail carries the nav); phone shows the page list.
+      createRoute({ getParentRoute: () => settingsRoute, path: '/', component: SettingsIndex }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'account', component: AccountPage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'appearance', component: AppearancePage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'department', component: DepartmentPage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'administration', component: AdministrationPage }),
+      createRoute({ getParentRoute: () => settingsRoute, path: 'help', component: HelpReferencePage }),
+    ]),
     // The Admin-gated User Manager (#381) — reached from the Settings Administration gateway.
     // RequireDepartment gates the dept; the screen itself backstops the manageUsers permission
     // (a direct /users nav by a non-admin shows the access-only state).

@@ -124,7 +124,7 @@ export function AuditLogScreen() {
           variant="upstream-blocked"
           headline="Command record"
           reason="The audit log is for the Incident Commander, the Operations Section Chief, or a department admin."
-          action={{ label: 'Back to Settings', onPress: () => navigate({ to: '/settings' }) }}
+          action={{ label: 'Back to Settings', onPress: () => navigate({ to: '/settings/account' }) }}
         />
       </div>
     );
@@ -148,7 +148,7 @@ export function AuditLogScreen() {
   return (
     <div className="fs-um">
       <div className="fs-um-head">
-        <button type="button" className="fs-um-back" aria-label="Back to Settings" onClick={() => navigate({ to: '/settings' })}>
+        <button type="button" className="fs-um-back" aria-label="Back to Settings" onClick={() => navigate({ to: '/settings/account' })}>
           <BackIcon />
         </button>
         <h1 className="fs-um-title">Audit log</h1>

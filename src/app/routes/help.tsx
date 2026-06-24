@@ -19,7 +19,7 @@ export function HelpRoute() {
   return (
     <div className="fs-help">
       <div className="fs-help-head">
-        <Button variant="tertiary" size="standard" onPress={() => navigate({ to: '/settings' })}>
+        <Button variant="tertiary" size="standard" onPress={() => navigate({ to: '/settings/account' })}>
           Back to Settings
         </Button>
         <h1 style={{ font: 'var(--type-headline-1)' }}>User guide</h1>
