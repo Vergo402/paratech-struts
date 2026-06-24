@@ -6,6 +6,12 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Hoist mocks before any module that imports firebase runs.
+vi.mock('../sync/firebase', () => ({
+  rtdb: {},
+  ref: (_: unknown, path: string) => ({ path }),
+  get: vi.fn().mockResolvedValue({ exists: () => false }),
+  set: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('./firebase', () => ({ firebaseAuth: {} }));
 vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),

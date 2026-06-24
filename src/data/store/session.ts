@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { globalDb as defaultDb, type FieldShoreDB } from './db';
+import { rtdb, ref, get, set } from '../sync/firebase';
 
 // data/store — the local session/identity (workflow 06 sign-in/out + workflow 07
 // department). Guest is the resting default (ADR-015: cold-open to guest, never
@@ -106,6 +107,30 @@ const PersistedSchema = z.object({
   inviteCode: z.string().nullable().catch(null),
 });
 
+// New-device dept recovery: reads /userDepts/{uid} (a reverse index written on
+// create/join via setDepartment), then fetches the authoritative role from the
+// member record. Called only when the local cache misses (first sign-in on a new
+// device). Returns null on offline, revoked, or not-yet-backfilled accounts.
+async function recoverDeptFromCloud(uid: string): Promise<RememberedDept | null> {
+  try {
+    const snap = await get(ref(rtdb, `userDepts/${uid}`));
+    if (!snap.exists()) return null;
+    const { deptId, deptName, inviteCode } = snap.val() as {
+      deptId: string;
+      deptName: string;
+      inviteCode?: string;
+    };
+    if (!deptId || !deptName) return null;
+    const memberSnap = await get(ref(rtdb, `orgs/${deptId}/members/${uid}`));
+    if (!memberSnap.exists()) return null; // removed / revoked → fall through to setup
+    const { role } = memberSnap.val() as { role: string };
+    if (!role) return null;
+    return { id: deptId, name: deptName, role, inviteCode: inviteCode ?? '' };
+  } catch {
+    return null; // offline or PERMISSION_DENIED (revoked) → fall through to setup
+  }
+}
+
 export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreApi {
   // deviceUid is '' until boot() fills it; boot runs before any UI mounts.
   const store = createStore<SessionState>(() => ({ ...GUEST_SESSION, deviceUid: '' }));
@@ -144,6 +169,7 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
   }
 
   return {
+
     store,
 
     async boot(deviceUid) {
@@ -168,9 +194,13 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
       const identity: Identity = { kind: 'member', ...member };
       // Re-discover this account's department from the account-keyed memory: a
       // sign-out cleared the session row, but the memory survived. If we remember
-      // this accountId, restore its dept (+ code); otherwise preserve whatever's in
-      // state (covers the plain-reload re-confirm, where boot already restored it).
-      const remembered = (await readMemberships())[member.accountId];
+      // this accountId, restore its dept (+ code); otherwise try the RTDB reverse
+      // index (new-device recovery), then fall back to current state (plain reload).
+      let remembered = (await readMemberships())[member.accountId];
+      const fromLocalCache = !!remembered;
+      if (!remembered) {
+        remembered = (await recoverDeptFromCloud(member.accountId)) ?? undefined;
+      }
       const dept = remembered
         ? {
             departmentId: remembered.id,
@@ -181,6 +211,15 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
         : deptOf(store.getState());
       await persist({ identity, ...dept });
       store.setState((s) => ({ ...s, identity, ...dept }), true);
+      // Backfill: seed /userDepts/{uid} from the local cache on sign-in so a
+      // second device can recover immediately without re-entering the invite code.
+      // Only fires when the local cache had the dept (fromLocalCache); if we just
+      // recovered from the cloud the RTDB entry already exists.
+      if (fromLocalCache && remembered) {
+        set(ref(rtdb, `userDepts/${member.accountId}`), {
+          deptId: remembered.id, deptName: remembered.name, inviteCode: remembered.inviteCode,
+        }).catch(() => {});
+      }
     },
 
     async setGuest() {
@@ -200,6 +239,9 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
         const map = await readMemberships();
         map[identity.accountId] = { id, name, role, inviteCode };
         await writeMemberships(map);
+        // ponytail: backfill — seeds /userDepts/{uid} so new-device recovery works.
+        // Fire-and-forget: offline failure is benign (recovery falls back to setup).
+        set(ref(rtdb, `userDepts/${identity.accountId}`), { deptId: id, deptName: name, inviteCode }).catch(() => {});
       }
       store.setState((s) => ({ ...s, ...next }), true);
     },

@@ -4,6 +4,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Hoist mocks before any module that imports firebase runs. The unsub spy is
 // hoisted so the onAuthStateChanged factory can return a stable reference.
 const { unsubSpy } = vi.hoisted(() => ({ unsubSpy: vi.fn() }));
+vi.mock('../sync/firebase', () => ({
+  rtdb: {},
+  ref: (_: unknown, path: string) => ({ path }),
+  get: vi.fn().mockResolvedValue({ exists: () => false }),
+  set: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('./firebase', () => ({ firebaseAuth: {} }));
 vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn(() => unsubSpy),

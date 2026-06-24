@@ -32,6 +32,7 @@ describe('departmentService.createDepartment', () => {
 
   beforeEach(async () => {
     setMock.mockReset().mockResolvedValue(undefined);
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
     logMock.mockReset().mockResolvedValue(undefined);
     db = createDB(`test-dept-${newId()}`);
     session = createSessionStore(db);
@@ -83,9 +84,9 @@ describe('departmentService.createDepartment', () => {
     const r = await svc.createDepartment('Hamden Fire Rescue');
     if (!r.ok) throw new Error('expected ok');
 
-    // Two writes: the dept subtree, then the invite-code resolver.
-    expect(setMock).toHaveBeenCalledTimes(2);
-    const [refArg, payload] = setMock.mock.calls[0]!;
+    // Three writes: backfill /userDepts (from setDepartment), the dept subtree, the invite-code resolver.
+    expect(setMock).toHaveBeenCalledTimes(3);
+    const [refArg, payload] = setMock.mock.calls[1]!;
     expect(refArg).toEqual({ path: `orgs/${r.department.id}` });
     expect(payload.createdBy).toBe(FB_UID);
     expect(payload.members[FB_UID].role).toBe('admin');
@@ -100,7 +101,7 @@ describe('departmentService.createDepartment', () => {
     const r = await svc.createDepartment('Hamden Fire Rescue');
     if (!r.ok) throw new Error('expected ok');
 
-    const [refArg, payload] = setMock.mock.calls[1]!;
+    const [refArg, payload] = setMock.mock.calls[2]!;
     expect(refArg).toEqual({ path: `orgs/inviteCodes/${r.department.inviteCode}` });
     expect(payload).toEqual({
       deptId: r.department.id,
@@ -113,7 +114,8 @@ describe('departmentService.createDepartment', () => {
 
   it('survives a cloud-write failure (local dept stands; failure logged)', async () => {
     await session.setMember({ accountId: FB_UID, displayName: memberName });
-    setMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    // call[0] = backfill /userDepts (fire-and-forget from setDepartment); call[1] = org write fails.
+    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
 
     const r = await svc.createDepartment('Hamden Fire Rescue');
     expect(r.ok).toBe(true); // local-first — the dept is real locally regardless
@@ -126,8 +128,8 @@ describe('departmentService.createDepartment', () => {
 
   it('logs invite_code_publish_failed (not dept_create_failed) when only the code write fails', async () => {
     await session.setMember({ accountId: FB_UID, displayName: memberName });
-    // dept write succeeds, invite-code write fails — distinct ledger label.
-    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    // call[0] = backfill /userDepts; call[1] = dept write succeeds; call[2] = invite-code write fails.
+    setMock.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
 
     const r = await svc.createDepartment('Hamden Fire Rescue');
     expect(r.ok).toBe(true); // the dept stands locally
@@ -156,13 +158,16 @@ describe('departmentService.joinByCode', () => {
 
   beforeEach(async () => {
     setMock.mockReset().mockResolvedValue(undefined);
-    getMock.mockReset();
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
     logMock.mockReset().mockResolvedValue(undefined);
     db = createDB(`test-join-${newId()}`);
     session = createSessionStore(db);
     await session.boot(UID);
     svc = createDepartmentService({ session: () => session });
     await session.setMember({ accountId: FB_UID, displayName: memberName });
+    // recoverDeptFromCloud fires during setMember above — clear so per-test assertions start clean.
+    getMock.mockClear();
+    setMock.mockClear();
   });
 
   afterEach(async () => {
@@ -274,7 +279,7 @@ describe('departmentService — offline join queue (Increment 4)', () => {
 
   beforeEach(async () => {
     setMock.mockReset().mockResolvedValue(undefined);
-    getMock.mockReset();
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
     logMock.mockReset().mockResolvedValue(undefined);
     syncStatusStore.setPendingJoin(null);
     db = createDB(`test-join-q-${newId()}`);
@@ -282,6 +287,8 @@ describe('departmentService — offline join queue (Increment 4)', () => {
     await session.boot(UID);
     svc = createDepartmentService({ session: () => session, db });
     await session.setMember({ accountId: FB_UID, displayName: memberName });
+    // recoverDeptFromCloud fires during setMember above — clear so per-test assertions start clean.
+    getMock.mockClear();
   });
   afterEach(async () => {
     await db.delete();
