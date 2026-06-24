@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
 import { firebaseAuth } from './firebase';
+import { rtdb, ref, remove } from '../sync/firebase';
 
 // data/auth — the account seam: the ONE path a member creates an account /
 // signs in / signs out / requests a magic-link or password reset. Firebase Auth
@@ -170,6 +171,11 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
         // async onAuthStateChanged→setGuest can't blank the bucket id mid-flight.
         const cred = EmailAuthProvider.credential(user.email, password);
         await reauthenticateWithCredential(user, cred);
+        // Drop this account's reverse-index entry BEFORE deleteUser revokes the
+        // token (the rule gates it to auth.uid == $uid). Best-effort: a stale entry
+        // can never grant access (recoverDeptFromCloud re-checks the member record),
+        // so a failure here is hygiene-only — await it, swallow the error, move on.
+        await remove(ref(rtdb, `userDepts/${user.uid}`)).catch(() => {});
         await deleteUser(user);
         return { ok: true };
       } catch (err: unknown) {

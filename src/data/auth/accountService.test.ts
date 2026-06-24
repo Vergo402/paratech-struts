@@ -11,6 +11,7 @@ vi.mock('../sync/firebase', () => ({
   ref: (_: unknown, path: string) => ({ path }),
   get: vi.fn().mockResolvedValue({ exists: () => false }),
   set: vi.fn().mockResolvedValue(undefined),
+  remove: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('./firebase', () => ({ firebaseAuth: {} }));
 vi.mock('firebase/auth', () => ({
@@ -40,6 +41,7 @@ import {
   reauthenticateWithCredential,
 } from 'firebase/auth';
 import { firebaseAuth } from './firebase';
+import { remove } from '../sync/firebase';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, SESSION_KEY, type SessionStoreApi } from '../store/session';
 import { createAccountService, type AccountServiceApi } from './accountService';
@@ -268,6 +270,25 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     const res = await account.deleteAccount('pw');
     expect(res.ok).toBe(true);
     expect(vi.mocked(reauthenticateWithCredential)).toHaveBeenCalledOnce();
+    expect(vi.mocked(deleteUser)).toHaveBeenCalledOnce();
+  });
+
+  it('deleteAccount: drops the /userDepts reverse-index entry before deleting the user', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
+    const order: string[] = [];
+    vi.mocked(remove).mockImplementationOnce(async () => { order.push('remove'); });
+    vi.mocked(deleteUser).mockImplementationOnce(async () => { order.push('delete'); });
+    const res = await account.deleteAccount('pw');
+    expect(res.ok).toBe(true);
+    expect(vi.mocked(remove)).toHaveBeenCalledWith({ path: `userDepts/${FB_UID}` });
+    expect(order).toEqual(['remove', 'delete']); // index cleared while still authenticated
+  });
+
+  it('deleteAccount: a failed reverse-index cleanup is swallowed (account still deletes)', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
+    vi.mocked(remove).mockRejectedValueOnce(new Error('permission denied'));
+    const res = await account.deleteAccount('pw');
+    expect(res.ok).toBe(true);
     expect(vi.mocked(deleteUser)).toHaveBeenCalledOnce();
   });
 
