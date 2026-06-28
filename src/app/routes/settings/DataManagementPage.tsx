@@ -5,9 +5,10 @@ import { ImportExport } from '@ui/inventory/ImportExport';
  * Data management — the ONE Excel/CSV implementation, shared with Inventory and
  * reached from both (50-settings.md §4, #307). It mounts the same `ImportExport`
  * the Inventory screen does, with identical gating (Export/Template = manageData,
- * Import = manageInventory). Import is blocked while an operation is active — the
- * 10-column file has no Available column, so a round-trip would reset deployed
- * counts; the warning shows only when an op is actually running.
+ * Import = manageInventory). Import is ALLOWED while an operation is active (ADR-038):
+ * the store preserves deployed counts and skips any row that would strand deployed
+ * gear, so the banner here only informs — it never blocks (matches the import flow's
+ * own Step-3 banner).
  */
 export function DataManagementPage() {
   const op = useOperation();
@@ -33,8 +34,8 @@ export function DataManagementPage() {
             padding: 'var(--space-3) var(--space-4)',
           }}
         >
-          Import is locked while an operation is active &mdash; finish the operation first, so a
-          round-trip can&rsquo;t reset deployed counts.
+          An operation is active &mdash; importing is fine. Deployed items aren&rsquo;t changed, and
+          any row that would strand deployed gear is skipped.
         </p>
       )}
 
@@ -44,7 +45,7 @@ export function DataManagementPage() {
         canExport={perms.manageData}
         exportCsv={actions.exportCsv}
         templateCsv={actions.templateCsv}
-        onImport={actions.importCsv}
+        importRows={actions.importRows}
       />
     </div>
   );

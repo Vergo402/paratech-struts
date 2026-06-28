@@ -95,7 +95,7 @@ export function InventoryScreen() {
           canExport={perms.manageData}
           exportCsv={actions.exportCsv}
           templateCsv={actions.templateCsv}
-          onImport={actions.importCsv}
+          importRows={actions.importRows}
         />
       </header>
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { inventoryStore, apparatusStore, type AddSpec } from '@data/store';
-import { parseCsv, toCsv, getTemplateCSV } from '@data/inventory/excel';
+import { parseCsv, toCsv, getTemplateCSV, type ParsedImportRow } from '@data/inventory/excel';
 
 // Stock mutations + CSV round-trip, behind the @ui/hooks seam. Stable callbacks
 // (singleton stores → empty deps). Reads happen at call time from the store, so the
@@ -25,6 +25,9 @@ export interface InventoryActionsApi {
   templateCsv(): string;
   /** Parse + merge a CSV file's stock; returns counts + per-row warnings. */
   importCsv(text: string): Promise<ImportOutcome>;
+  /** Commit already-validated rows (the 4-step flow's Step-4 path — mapping + any
+   *  inline fixes are resolved in the UI). Returns counts (warnings handled in-flow). */
+  importRows(rows: ParsedImportRow[]): Promise<{ imported: number; skipped: number }>;
 }
 
 export function useInventoryActions(): InventoryActionsApi {
@@ -42,6 +45,7 @@ export function useInventoryActions(): InventoryActionsApi {
         const { imported, skipped } = await inventoryStore.upsertImport(rows, apparatusStore);
         return { imported, skipped, warnings };
       },
+      importRows: (rows: ParsedImportRow[]) => inventoryStore.upsertImport(rows, apparatusStore),
     }),
     [],
   );

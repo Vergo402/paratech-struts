@@ -4,9 +4,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockUseOperation = vi.fn();
 const mockUsePermissions = vi.fn();
-const mockActions = { exportCsv: () => 'csv', templateCsv: () => 'tpl', importCsv: vi.fn() };
+const mockActions = { exportCsv: () => 'csv', templateCsv: () => 'tpl', importCsv: vi.fn(), importRows: vi.fn() };
 
-vi.mock('@ui/hooks', () => ({
+vi.mock('@ui/hooks', async () => ({
+  // real pure CSV helpers the barrel re-exports (ImportFlow needs them); hooks stay mocked
+  ...(await vi.importActual<typeof import('@data/inventory/excel')>('@data/inventory/excel')),
   useOperation: () => mockUseOperation(),
   usePermissions: () => mockUsePermissions(),
   useInventoryActions: () => mockActions,
@@ -47,13 +49,13 @@ describe('DataManagementPage (50-settings §4)', () => {
     expect(screen.getByRole('button', { name: 'Import CSV' })).toBeInTheDocument();
   });
 
-  it('shows the op-active lock warning only when an operation is running', () => {
+  it('shows the op-active import notice only when an operation is running (informs, never blocks)', () => {
     mockUseOperation.mockReturnValue(null);
     const { rerender } = render(<DataManagementPage />);
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     mockUseOperation.mockReturnValue({ id: 'op-1' });
     rerender(<DataManagementPage />);
-    expect(screen.getByRole('status')).toHaveTextContent('Import is locked');
+    expect(screen.getByRole('status')).toHaveTextContent('importing is fine');
   });
 
   it('the nav entry is hidden from a member with neither data permission', () => {

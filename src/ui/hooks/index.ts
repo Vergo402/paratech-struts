@@ -7,6 +7,19 @@ export { useInventory } from './useInventory';
 export { useApparatus, type ApparatusApi } from './useApparatus';
 export { useCustomTitles, type CustomTitlesApi } from './useCustomTitles';
 export { useInventoryActions, type InventoryActionsApi, type ImportOutcome } from './useInventoryActions';
+// Pure CSV parse/validate helpers for the 4-step import flow — re-exported through
+// the hooks seam so ui/* never imports @data directly (invariant 3).
+export {
+  parseRecords,
+  autoMap,
+  validateRows,
+  validateRow,
+  CSV_HEADERS,
+  type ColumnMapping,
+  type FieldKey,
+  type RowOutcome,
+  type ParsedImportRow,
+} from '@data/inventory/excel';
 export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';

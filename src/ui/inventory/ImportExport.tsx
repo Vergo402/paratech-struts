@@ -1,13 +1,14 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { Button, Modal } from '@ui/primitives';
-import type { ImportOutcome } from '@ui/hooks';
+import { useState } from 'react';
+import { Button } from '@ui/primitives';
+import type { ParsedImportRow } from '@ui/hooks';
 import { download } from '@ui/util/download';
+import { ImportFlow } from './ImportFlow';
 
-// Export / template / import controls. CSV-only this slice. Import is hard-blocked
-// while an operation is active (the 10-column file has no Available column, so a
-// round-trip on a deployed item would silently reset its available count). The
-// post-import outcome — including any orphan-skipped rows — surfaces in a Modal
-// (ADR-016: inventory-consequential result, not a toast).
+// Export / template / import controls. Import opens the 4-step validated flow
+// (ImportFlow, ADR-038) — file pick → column map → row validation → review+commit.
+// Importing during an active operation is allowed (no longer hard-blocked): the
+// store preserves deployed counts and skips any row that would strand deployed
+// gear, and Step 3 surfaces a banner. CSV-only this slice.
 
 export interface ImportExportProps {
   opActive: boolean;
@@ -17,29 +18,11 @@ export interface ImportExportProps {
   canExport: boolean;
   exportCsv: () => string;
   templateCsv: () => string;
-  onImport: (text: string) => Promise<ImportOutcome>;
+  importRows: (rows: ParsedImportRow[]) => Promise<{ imported: number; skipped: number }>;
 }
 
-// FileReader, not Blob.text() — broader support (older Safari, and jsdom in tests).
-function readFileText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ''));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
-}
-
-export function ImportExport({ opActive, canManage, canExport, exportCsv, templateCsv, onImport }: ImportExportProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [result, setResult] = useState<ImportOutcome | null>(null);
-
-  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = ''; // allow re-importing the same file
-    if (!file) return;
-    setResult(await onImport(await readFileText(file)));
-  };
+export function ImportExport({ opActive, canManage, canExport, exportCsv, templateCsv, importRows }: ImportExportProps) {
+  const [flowOpen, setFlowOpen] = useState(false);
 
   // A member with neither capability sees no data controls at all (hide treatment, #380).
   if (!canManage && !canExport) return null;
@@ -57,45 +40,12 @@ export function ImportExport({ opActive, canManage, canExport, exportCsv, templa
         </>
       )}
       {canManage && (
-        <Button
-          variant="secondary"
-          onPress={() => fileRef.current?.click()}
-          disabled={opActive}
-          disabledReason="Finish the operation to import"
-        >
+        <Button variant="secondary" onPress={() => setFlowOpen(true)}>
           Import CSV
         </Button>
       )}
-      <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onFile} />
 
-      <Modal
-        open={result != null}
-        onClose={() => setResult(null)}
-        title="Import complete"
-        variant="alert"
-        footer={
-          <Button variant="primary" onPress={() => setResult(null)}>
-            OK
-          </Button>
-        }
-      >
-        {result && (
-          <div className="fs-inv-import-result">
-            <p>
-              {result.imported} row{result.imported === 1 ? '' : 's'} imported
-              {result.skipped > 0 ? `, ${result.skipped} skipped (would strand deployed stock)` : ''}.
-            </p>
-            {result.warnings.length > 0 && (
-              <ul className="fs-inv-warnings">
-                {result.warnings.slice(0, 8).map((w, i) => (
-                  <li key={i}>{w}</li>
-                ))}
-                {result.warnings.length > 8 && <li>…and {result.warnings.length - 8} more</li>}
-              </ul>
-            )}
-          </div>
-        )}
-      </Modal>
+      <ImportFlow open={flowOpen} onClose={() => setFlowOpen(false)} opActive={opActive} importRows={importRows} />
     </div>
   );
 }

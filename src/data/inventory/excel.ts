@@ -119,15 +119,50 @@ export interface ParsedImportRow {
   quantity: number;
 }
 
+/** Per-data-row result — what the import UI's Step 4 needs to offer inline
+ *  fix/skip. Exactly one of `row` (valid) or `error` (flagged) is set; a flagged
+ *  row names the offending `field` (when there is one) so the UI can focus it. */
+export interface RowOutcome {
+  /** 1-based file line, header included — matches what a spreadsheet shows. */
+  line: number;
+  /** The raw row cells, so an edit re-writes one cell and re-validates. */
+  cells: string[];
+  /** Catalog-resolved row — present iff the row is valid. */
+  row?: ParsedImportRow;
+  /** The reason a row is flagged, with the field to fix (omitted for a whole-row
+   *  structural problem like a column-count mismatch — only Skip applies there). */
+  error?: { field?: FieldKey; message: string };
+}
+
 export interface ParseResult {
   rows: ParsedImportRow[];
   /** Human-readable notes for rows skipped or coerced (surfaced after import). */
   warnings: string[];
+  /** Per-row outcomes (valid + flagged), in file order. Drives Step-4 fix/skip;
+   *  the no-UI callers read `rows`/`warnings` and ignore this. */
+  outcomes: RowOutcome[];
+}
+
+/** A FieldShore field name (the 10-column contract). */
+export type FieldKey = (typeof CSV_HEADERS)[number];
+
+/** Which file column feeds each FieldShore field. -1 = not mapped (ignored).
+ *  `autoMap` derives it from the header; the import UI's Step 2 lets the operator
+ *  override it before `validateRows` consumes it. */
+export type ColumnMapping = Record<FieldKey, number>;
+
+/** Auto-detect: case-insensitive header-name match, FieldShore field → file column
+ *  index (-1 when the header has no matching column). The Step-2 pre-fill. */
+export function autoMap(header: string[]): ColumnMapping {
+  const lower = header.map((h) => h.trim().toLowerCase());
+  const mapping = {} as ColumnMapping;
+  for (const key of CSV_HEADERS) mapping[key] = lower.indexOf(key.toLowerCase());
+  return mapping;
 }
 
 // RFC-4180 char-by-char parse: quotes protect commas/newlines; "" is an escaped
 // quote. \r\n, lone \n, and lone \r each terminate a record (when not in quotes).
-function parseRecords(text: string): { records: string[][]; unterminated: boolean } {
+export function parseRecords(text: string): { records: string[][]; unterminated: boolean } {
   const records: string[][] = [];
   let field = '';
   let row: string[] = [];
@@ -171,98 +206,107 @@ function parsePosInt(raw: string): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-export function parseCsv(text: string): ParseResult {
-  const rows: ParsedImportRow[] = [];
-  const warnings: string[] = [];
+/** Validate + catalog-resolve ONE data row against the mapping. Returns a
+ *  `RowOutcome` (valid `row` or flagged `error`) — or `null` for a blank /
+ *  template row the caller drops entirely. `width` is the file's column count
+ *  (the header's length); a row that disagrees is a structural mismatch
+ *  (Skip-only, no field). Re-run on an edited `cells` to re-validate a single
+ *  Step-4 row without re-running the whole batch. */
+export function validateRow(
+  cells: string[],
+  line: number,
+  mapping: ColumnMapping,
+  width: number,
+): RowOutcome | null {
+  if (cells.join('').trim() === '') return null; // blank line
+  const base = { line, cells };
+  // A run-on (e.g. a mis-pasted multi-line value) collapses to a single field —
+  // flag any row whose field count disagrees with the header instead of guessing.
+  if (cells.length !== width) {
+    return { ...base, error: { message: `${cells.length} columns, expected ${width} — skipped` } };
+  }
+  const at = (key: FieldKey) => {
+    const i = mapping[key];
+    return i >= 0 ? (cells[i] ?? '').trim() : '';
+  };
 
+  const typeRaw = at('Type');
+  const type = typeRaw.toLowerCase();
+  if (type !== 'strut' && type !== 'extension' && type !== 'plate') {
+    return { ...base, error: { field: 'Type', message: `unknown Type "${typeRaw}" — skipped` } };
+  }
+  const apparatus = at('Apparatus');
+  if (apparatus === TEMPLATE_SENTINEL) return null; // the template's example rows
+  if (!apparatus) {
+    return { ...base, error: { field: 'Apparatus', message: `missing Apparatus — skipped` } };
+  }
+  const quantity = parsePosInt(at('Quantity'));
+  if (quantity === null) {
+    return { ...base, error: { field: 'Quantity', message: `invalid Quantity "${at('Quantity')}" — skipped` } };
+  }
+  const id = at('ID');
+  const apparatusId = at('Apparatus ID');
+
+  if (type === 'strut') {
+    const model = at('Model');
+    const strut = STRUTS.find((s) => s.model === model);
+    if (!strut) {
+      return { ...base, error: { field: 'Model', message: `unknown strut Model "${model}" — skipped` } };
+    }
+    return { ...base, row: { id, apparatus, apparatusId, type: 'strut', model, system: strut.system, quantity } };
+  }
+  if (type === 'extension') {
+    const length = parsePosInt(at('Extension Length (in)'));
+    if (length === null) {
+      return { ...base, error: { field: 'Extension Length (in)', message: `invalid Extension Length "${at('Extension Length (in)')}" — skipped` } };
+    }
+    const system = labelToSystem(at('System'));
+    if (!system) {
+      return { ...base, error: { field: 'System', message: `unknown extension System "${at('System')}" — skipped` } };
+    }
+    return { ...base, row: { id, apparatus, apparatusId, type: 'extension', system, length, quantity } };
+  }
+  const plateId = at('Plate ID');
+  if (!BASE_PLATES.some((p) => p.id === plateId)) {
+    return { ...base, error: { field: 'Plate ID', message: `unknown Plate ID "${plateId}" — skipped` } };
+  }
+  return { ...base, row: { id, apparatus, apparatusId, type: 'plate', plateId, quantity } };
+}
+
+/** Validate + catalog-resolve data rows against an explicit column mapping. The
+ *  import UI calls this after Step 2; `parseCsv` calls it with the auto-mapping.
+ *  `records` includes the header row (records[0]); data starts at records[1]. */
+export function validateRows(records: string[][], mapping: ColumnMapping): ParseResult {
+  if (records.length === 0) return { rows: [], warnings: [], outcomes: [] };
+
+  // No recognizable mapping → the file's first row was mis-read as the header (or
+  // the operator mapped nothing essential). Say so once, not per line.
+  if (REQUIRED_COLS.every((c) => mapping[c as FieldKey] < 0)) {
+    return { rows: [], warnings: [`No recognizable header row — expected columns: ${CSV_HEADERS.join(', ')}.`], outcomes: [] };
+  }
+
+  const width = records[0]?.length ?? 0;
+  const outcomes: RowOutcome[] = [];
+  for (let n = 1; n < records.length; n++) {
+    const o = validateRow(records[n] ?? [], n + 1, mapping, width);
+    if (o) outcomes.push(o);
+  }
+
+  const rows = outcomes.flatMap((o) => (o.row ? [o.row] : []));
+  const warnings = outcomes.flatMap((o) => (o.error ? [`Row ${o.line}: ${o.error.message}`] : []));
+  return { rows, warnings, outcomes };
+}
+
+/** One-pass parse with auto-mapping — the no-UI path (round-trip, tests, and the
+ *  store's import facade). The 4-step import UI composes the same pieces but lets
+ *  the operator edit the mapping between parse and validate. */
+export function parseCsv(text: string): ParseResult {
   const { records, unterminated } = parseRecords(text);
   // A stray/unescaped quote opens a string that never closes, swallowing every row
   // below it into one mega-field. Reject the whole file loudly — never import a
   // silently-truncated set.
   if (unterminated) {
-    return { rows: [], warnings: ['Unterminated quote (") in the file — fix the quoting and re-import. Nothing was imported.'] };
+    return { rows: [], warnings: ['Unterminated quote (") in the file — fix the quoting and re-import. Nothing was imported.'], outcomes: [] };
   }
-  if (records.length === 0) return { rows, warnings };
-
-  const header = (records[0] ?? []).map((h) => h.trim().toLowerCase());
-  const col = (name: string): number => header.indexOf(name.toLowerCase());
-  // No recognizable header → the first data row was mis-read as the header. Say so
-  // once, instead of emitting an opaque "unknown Type" for every line.
-  if (REQUIRED_COLS.every((c) => col(c) < 0)) {
-    return { rows: [], warnings: [`No recognizable header row — expected columns: ${CSV_HEADERS.join(', ')}.`] };
-  }
-
-  const idxId = col('ID');
-  const idxAppar = col('Apparatus');
-  const idxApparId = col('Apparatus ID');
-  const idxType = col('Type');
-  const idxModel = col('Model');
-  const idxSystem = col('System');
-  const idxPlateId = col('Plate ID');
-  const idxLength = col('Extension Length (in)');
-  const idxQty = col('Quantity');
-
-  for (let n = 1; n < records.length; n++) {
-    const rec = records[n];
-    if (!rec) continue;
-    const line = n + 1; // 1-based, including header — matches what a spreadsheet shows
-    if (rec.join('').trim() === '') continue; // blank line
-    // A run-on (e.g. a mis-pasted multi-line value) collapses to a single field —
-    // reject any row whose field count disagrees with the header instead of guessing.
-    if (rec.length !== header.length) {
-      warnings.push(`Row ${line}: ${rec.length} columns, expected ${header.length} — skipped`);
-      continue;
-    }
-    const at = (i: number) => (i >= 0 ? (rec[i] ?? '').trim() : '');
-
-    const typeRaw = at(idxType);
-    const type = typeRaw.toLowerCase();
-    if (type !== 'strut' && type !== 'extension' && type !== 'plate') {
-      warnings.push(`Row ${line}: unknown Type "${typeRaw}" — skipped`);
-      continue;
-    }
-    const apparatus = at(idxAppar);
-    if (apparatus === TEMPLATE_SENTINEL) continue; // the template's example rows
-    if (!apparatus) {
-      warnings.push(`Row ${line}: missing Apparatus — skipped`);
-      continue;
-    }
-    const quantity = parsePosInt(at(idxQty));
-    if (quantity === null) {
-      warnings.push(`Row ${line}: invalid Quantity "${at(idxQty)}" — skipped`);
-      continue;
-    }
-    const id = at(idxId);
-    const apparatusId = at(idxApparId);
-
-    if (type === 'strut') {
-      const model = at(idxModel);
-      const strut = STRUTS.find((s) => s.model === model);
-      if (!strut) {
-        warnings.push(`Row ${line}: unknown strut Model "${model}" — skipped`);
-        continue;
-      }
-      rows.push({ id, apparatus, apparatusId, type: 'strut', model, system: strut.system, quantity });
-    } else if (type === 'extension') {
-      const length = parsePosInt(at(idxLength));
-      if (length === null) {
-        warnings.push(`Row ${line}: invalid Extension Length "${at(idxLength)}" — skipped`);
-        continue;
-      }
-      const system = labelToSystem(at(idxSystem));
-      if (!system) {
-        warnings.push(`Row ${line}: unknown extension System "${at(idxSystem)}" — skipped`);
-        continue;
-      }
-      rows.push({ id, apparatus, apparatusId, type: 'extension', system, length, quantity });
-    } else {
-      const plateId = at(idxPlateId);
-      if (!BASE_PLATES.some((p) => p.id === plateId)) {
-        warnings.push(`Row ${line}: unknown Plate ID "${plateId}" — skipped`);
-        continue;
-      }
-      rows.push({ id, apparatus, apparatusId, type: 'plate', plateId, quantity });
-    }
-  }
-  return { rows, warnings };
+  return validateRows(records, autoMap(records[0] ?? []));
 }

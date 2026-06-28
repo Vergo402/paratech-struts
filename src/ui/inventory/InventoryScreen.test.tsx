@@ -20,9 +20,12 @@ const actions = {
   exportCsv: () => '',
   templateCsv: () => '',
   importCsv: vi.fn(),
+  importRows: vi.fn(),
 };
 
-vi.mock('@ui/hooks', () => ({
+vi.mock('@ui/hooks', async () => ({
+  // real pure CSV helpers the barrel re-exports (ImportFlow needs them); hooks stay mocked
+  ...(await vi.importActual<typeof import('@data/inventory/excel')>('@data/inventory/excel')),
   useInventory: () => mockInventory(),
   useApparatus: () => mockApparatus(),
   useInventoryActions: () => actions,
@@ -85,24 +88,22 @@ describe('InventoryScreen', () => {
     expect(screen.queryByRole('button', { name: /Increase/ })).toBeNull();
   });
 
-  it('blocks CSV import while an operation is active', () => {
+  it('allows CSV import while an operation is active (the store guards deployed gear; warned in-flow)', () => {
     mockApparatus.mockReturnValue({ roster: [rig('e1', 'Engine 1')], add: vi.fn(), remove: vi.fn() });
     mockOperation.mockReturnValue({ id: 'op-1', name: 'Surfside', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1 });
     render(<InventoryScreen />);
-    expect(screen.getByRole('button', { name: 'Import CSV' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Import CSV' })).toBeEnabled();
   });
 });
 
 describe('ImportExport', () => {
-  it('surfaces an orphan-skipping import outcome in a Modal (not a toast)', async () => {
+  it('opens the 4-step import flow from the Import button', async () => {
     const user = userEvent.setup();
-    const onImport = vi.fn().mockResolvedValue({ imported: 1, skipped: 1, warnings: [] });
-    const { container } = render(
-      <ImportExport opActive={false} canManage canExport exportCsv={() => ''} templateCsv={() => ''} onImport={onImport} />,
+    const importRows = vi.fn().mockResolvedValue({ imported: 1, skipped: 1 });
+    render(
+      <ImportExport opActive={false} canManage canExport exportCsv={() => ''} templateCsv={() => ''} importRows={importRows} />,
     );
-    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    await user.upload(input, new File(['x'], 'inv.csv', { type: 'text/csv' }));
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveTextContent(/skipped/);
+    await user.click(screen.getByRole('button', { name: 'Import CSV' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent(/Pick your file/);
   });
 });

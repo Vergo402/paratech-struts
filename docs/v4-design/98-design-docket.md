@@ -32,6 +32,7 @@
 | Individual saw stations A/B/+N each on their own screen; officers see only their assigned station's current cut + full pending list | [#390](https://github.com/Vergo402/paratech-struts/issues/390) (design-idea) | 2026-06-23 |
 | Collapsible nav bar — hide the nav to reclaim screen space on dense workflows | [#391](https://github.com/Vergo402/paratech-struts/issues/391) (design-idea) | 2026-06-23 |
 | Change Command nav icon to a simple hierarchy-tree glyph | [#392](https://github.com/Vergo402/paratech-struts/issues/392) (design-idea) | 2026-06-23 |
+| Inventory import: bespoke 4-step validated flow (file pick → column map → row validation → commit) — Step-2 mapper built on existing primitives, no library | [ADR-038](11-decisions/ADR-038-bespoke-column-mapping.md) (OQ #36 resolved) | 2026-06-28 |
 
 ## Doctrine deviation watch
 

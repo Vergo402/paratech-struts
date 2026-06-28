@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toCsv, parseCsv, getTemplateCSV, CSV_HEADERS } from './excel';
+import { toCsv, parseCsv, getTemplateCSV, CSV_HEADERS, autoMap, validateRow, validateRows, parseRecords, type ColumnMapping } from './excel';
 import type { InventoryItem } from '@core/schema';
 
 const items: InventoryItem[] = [
@@ -95,5 +95,95 @@ describe('inventory CSV round-trip', () => {
     const { rows } = parseCsv([header, row].join('\r\n'));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ apparatus: 'EXAMPLE Co', plateId: 'rigid6' });
+  });
+});
+
+describe('autoMap (header → FieldShore field column index)', () => {
+  it('maps every standard header by case-insensitive name', () => {
+    const m = autoMap(['ID', 'apparatus', 'Apparatus ID', 'TYPE', 'Model', 'System', 'Plate ID', 'Plate Name', 'Extension Length (in)', 'quantity']);
+    expect(m['Type']).toBe(3);
+    expect(m['Quantity']).toBe(9);
+    expect(m['Apparatus']).toBe(1);
+  });
+
+  it('leaves a FieldShore field at -1 when the file has no matching column', () => {
+    const m = autoMap(['Truck', 'Kind', 'Count']); // none match the contract
+    expect(m['Type']).toBe(-1);
+    expect(m['Apparatus']).toBe(-1);
+    expect(m['Quantity']).toBe(-1);
+  });
+});
+
+describe('validateRows (operator-supplied mapping drives resolution)', () => {
+  // A file whose columns are in a non-standard ORDER + an extra column the operator
+  // chooses to ignore. The mapping — not the header names — decides which column
+  // feeds each field.
+  const records = parseRecords(
+    [
+      ['Count', 'Rig', 'Kind', 'StrutModel', 'Sys', 'Note'].join(','),
+      ['4', 'Rescue 2', 'Strut', 'LS 203', 'Gold', 'spare'].join(','),
+    ].join('\r\n'),
+  ).records;
+
+  const mapping: ColumnMapping = {
+    ID: -1,
+    Apparatus: 1,
+    'Apparatus ID': -1,
+    Type: 2,
+    Model: 3,
+    System: 4,
+    'Plate ID': -1,
+    'Plate Name': -1,
+    'Extension Length (in)': -1,
+    Quantity: 0,
+  };
+
+  it('resolves a row through a remapped, reordered file (Note column ignored)', () => {
+    const { rows, warnings } = validateRows(records, mapping);
+    expect(warnings).toEqual([]);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ apparatus: 'Rescue 2', type: 'strut', model: 'LS 203', quantity: 4 });
+  });
+
+  it('warns "No recognizable header" when Type/Apparatus/Quantity are all unmapped', () => {
+    const blank: ColumnMapping = { ...mapping, Apparatus: -1, Type: -1, Quantity: -1 };
+    const { rows, warnings } = validateRows(records, blank);
+    expect(rows).toEqual([]);
+    expect(warnings[0]).toMatch(/No recognizable header/);
+  });
+});
+
+describe('RowOutcome (Step-4 inline fix/skip)', () => {
+  const header = CSV_HEADERS.join(',');
+  const good = ['', 'Rescue 2', 'app-r2', 'Strut', 'LS 203', 'Gold', '', '', '', '4'].join(',');
+  const badQty = ['', 'Rescue 2', 'app-r2', 'Strut', 'LS 203', 'Gold', '', '', '', 'two'].join(',');
+  const badModel = ['', 'Rescue 2', 'app-r2', 'Strut', 'LS 999', 'Gold', '', '', '', '2'].join(',');
+
+  it('returns one outcome per data row, each carrying either a row or a field-tagged error', () => {
+    const { outcomes } = parseCsv([header, good, badQty, badModel].join('\r\n'));
+    expect(outcomes).toHaveLength(3);
+    expect(outcomes[0]!.row).toMatchObject({ model: 'LS 203', quantity: 4 });
+    expect(outcomes[1]!.error).toMatchObject({ field: 'Quantity' });
+    expect(outcomes[2]!.error).toMatchObject({ field: 'Model' });
+    // the flagged outcomes still surface in `warnings` (the no-UI path), unchanged
+    expect(parseCsv([header, badQty].join('\r\n')).warnings[0]).toMatch(/invalid Quantity/);
+  });
+
+  it('blank + template rows produce no outcome (dropped, not flagged)', () => {
+    const tpl = ['', 'EXAMPLE — delete before importing', '', 'Strut', 'LS 203', 'Gold', '', '', '', '4'].join(',');
+    const { outcomes } = parseCsv([header, good, '', tpl].join('\r\n'));
+    expect(outcomes).toHaveLength(1); // only `good`
+  });
+
+  it('re-validating an edited row (validateRow) flips a flagged row to valid', () => {
+    const records = parseRecords([header, badQty].join('\r\n')).records;
+    const width = records[0]!.length;
+    const map = autoMap(records[0]!);
+    const fixed = [...records[1]!];
+    fixed[map['Quantity']] = '2'; // operator corrects "two" → 2
+    const outcome = validateRow(fixed, 2, map, width);
+    // a fixed row is a RowOutcome object with `row` set (never the IGNORED sentinel)
+    expect(outcome).toBeTypeOf('object');
+    expect((outcome as { row?: unknown }).row).toMatchObject({ quantity: 2 });
   });
 });
