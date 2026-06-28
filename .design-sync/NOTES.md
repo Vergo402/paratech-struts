@@ -121,6 +121,46 @@ synthesizes an entry from src). Gotchas below are what make that work.
 - **`find … -exec sh -c '…'` HANGS in this sandbox.** Build path lists with a flat
   `find … | grep -E "<regex>"` instead of per-item `-exec` subshells.
 
+## `check_design_system` token-scope warning — INTENTIONAL, do not "fix" (2026-06-28)
+
+`check_design_system` is a **claude.ai/design product tool** (runs server-side inside a
+Design-project chat — seen as `_[tool: check_design_system]_` alongside `show_html` /
+`eval_js` / `fork_verifier_agent`). It is **NOT** in this repo or the design-sync skill, and
+**nothing design-sync emits changes what it flags** — it builds its own token registry from
+the shipped CSS via "the app's scope filter" (the permissive heuristic described in
+`lib/css.mjs:132`). So you can't run it or patch it from Claude Code, and you must NOT add
+scope-recognition / ignore-list logic to `css.mjs` or `package-validate.mjs` to chase it —
+that's motion without progress (`package-validate.mjs` provably never emits this warning).
+
+It flags ~25 custom properties as "declared under component-style selectors and not registered
+as design-system tokens." **Every one is intentional and must NOT be moved to `:root`** —
+relocating them breaks sunlight status colors, the org chart, the system-filter chips, and
+shadow-DOM theming. The real declarations (verified 2026-06-28):
+
+- **`--sp-solid` sunlight overrides** — `src/ui/primitives/primitives.css:24-38`, scope
+  `[data-theme='sunlight'] .is-<status>` (the saturated status hue; in sunlight it must swap
+  to `--status-*-bg` to kill the white stripe). Base `.is-<status>` defs at lines 15-21.
+- **`--org-line`, `--org-gap`** — `src/ui/command/command.css` `.fs-org` (org-chart connector
+  lines/gaps; scoped so the chart owns them, not the global theme).
+- **`--chip-color`** — `src/ui/quickfind/quickfind.css:181-183`,
+  `.fs-sysfilter-chip--{gold,grey,lockstroke}` (per-chip accent; the whole point is per-variant).
+- **`--fs-gs-stroke-strong`** — `src/ui/operations/operations.css:1539` `.fs-gs` (grouped-shore
+  marker stroke).
+- Plus Tailwind's `--tw-*` internals (75 in the built CSS, on the `*,::before,…` reset and
+  `.ring`) — never design tokens.
+
+**Spec for the product-side scope filter** (file as a `check_design_system` bug — these four
+rules make it stop flagging the above without anyone moving CSS):
+1. Treat a `:root, :host` selector list exactly like `:root`. Tailwind v4 emits `:root,:host`
+   for its `@theme` layer so tokens reach shadow DOM (confirmed in the built `dist/assets/
+   index-*.css`); props there are real tokens.
+2. Ignore any property whose name starts with `--tw-` (Tailwind internals). Never tokens.
+3. Treat a compound `[data-theme=<theme>] .is-<status>` selector as a recognized theme-scoped
+   override (same class as a bare `.is-<status>`), so the `--sp-solid` sunlight overrides
+   register WITH their scope instead of being flagged as orphan component-scoped props.
+4. Allow-list as intentionally component-scoped (not tokens): `--org-line`, `--org-gap`
+   (`.fs-org`); `--chip-color` (`.fs-sysfilter-chip--*`); `--fs-gs-stroke-strong` (`.fs-gs`).
+
 ## Known render warns (triaged — not new on re-sync)
 
 - **[FONT_MISSING] "Inter", "Geist"** — these are the *bare fallback aliases* in the
