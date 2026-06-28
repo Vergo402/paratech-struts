@@ -71,6 +71,21 @@ export const SawAdded = z.object({
   sawId: z.string().min(1),
 });
 
+// A new operational period started — the IC's OP rollover (#395). Period 1 is
+// implicit (reducer-seeded on OperationCreated at its `at`, the divisions/saws
+// model), so the first emitted OperationPeriodStarted is normally period 2.
+// Idempotent by periodNumber (a re-applied event whose period already exists
+// no-ops), so two devices rolling over concurrently converge. The period a given
+// OTHER event belongs to is DERIVED (periodOf, core/operation) from this marker's
+// `at` — not stamped on every event (ADR-039, the D-10 intent without the field).
+export const OperationPeriodStarted = z.object({
+  type: z.literal('OperationPeriodStarted'),
+  ...base,
+  periodNumber: z.number().int().min(2),
+  plannedDurationMs: z.number().int().positive().optional(), // omitted → no progress bar / amber
+  iapRef: z.string().optional(), //                            ICS-202 / IAP reference, free text
+});
+
 export const ShorePointAdded = z.object({
   type: z.literal('ShorePointAdded'),
   ...base,
@@ -368,6 +383,7 @@ export const FieldShoreEvent = z.discriminatedUnion('type', [
   OperationReopened,
   DivisionAdded,
   SawAdded,
+  OperationPeriodStarted,
   ShorePointAdded,
   ShorePointEdited,
   ShorePointDeleted,

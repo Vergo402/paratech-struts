@@ -98,6 +98,10 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           saws: ['A'], // one saw by default (#354) — grown via SawAdded, never on the wire
           status: 'active',
           createdAt: event.at,
+          // OP 1 is implicit (#395) — seeded here at createdAt, grown via
+          // OperationPeriodStarted; legacy ops get this for free (no migration).
+          currentPeriod: 1,
+          periods: [{ number: 1, startedAt: event.at }],
         },
         // Seed the ADR-008 default org chart with the founding device as IC (free on
         // re-fold for existing ops — the divisions:[1] precedent, no migration).
@@ -141,6 +145,31 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       if (!state.operation) return state;
       if (state.operation.saws.includes(event.sawId)) return state;
       return { ...state, operation: { ...state.operation, saws: [...state.operation.saws, event.sawId] } };
+    }
+
+    case 'OperationPeriodStarted': {
+      // OP rollover (#395). Idempotent by periodNumber (DivisionAdded/SawAdded
+      // model): a period already on the list no-ops, so concurrent rollovers from
+      // two devices converge. currentPeriod tracks the highest number reached, so an
+      // out-of-order replay of an earlier period never regresses the header.
+      if (!state.operation) return state;
+      if (state.operation.periods.some((p) => p.number === event.periodNumber)) return state;
+      return {
+        ...state,
+        operation: {
+          ...state.operation,
+          currentPeriod: Math.max(state.operation.currentPeriod, event.periodNumber),
+          periods: [
+            ...state.operation.periods,
+            {
+              number: event.periodNumber,
+              startedAt: event.at,
+              plannedDurationMs: event.plannedDurationMs,
+              iapRef: event.iapRef,
+            },
+          ],
+        },
+      };
     }
 
     case 'CuttingClaimed':

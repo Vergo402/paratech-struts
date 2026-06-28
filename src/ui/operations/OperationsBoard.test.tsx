@@ -48,6 +48,8 @@ const ACTIVE_OP: Operation = {
   saws: ['A'],
   status: 'active',
   createdAt: 1000,
+  currentPeriod: 1,
+  periods: [{ number: 1, startedAt: 1000 }],
 };
 
 function makeSP(id: string, status: ShorePointStatus, division = '1'): ShorePoint {

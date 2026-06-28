@@ -28,5 +28,21 @@ export const Operation = z.object({
   saws: z.array(z.string()),
   status: OperationStatus,
   createdAt: z.number().int(), // epoch ms
+  // Operational-period projection (#395). Period 1 is reducer-seeded on
+  // OperationCreated (startedAt = createdAt), grown via OperationPeriodStarted —
+  // never written whole, like `divisions`/`saws`, so legacy ops (no rollover event)
+  // project a single period for free (no migration). `currentPeriod` = the highest
+  // period number reached. `periodOf` (core/operation) maps any event's `at` to its
+  // period from this list — periods are NOT stamped on every event (ADR-039).
+  currentPeriod: z.number().int().min(1),
+  periods: z.array(
+    z.object({
+      number: z.number().int().min(1),
+      startedAt: z.number().int(), // epoch ms
+      plannedDurationMs: z.number().int().positive().optional(),
+      iapRef: z.string().optional(),
+    }),
+  ),
 });
 export type Operation = z.infer<typeof Operation>;
+export type OperationPeriod = Operation['periods'][number];

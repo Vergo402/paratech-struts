@@ -5,10 +5,10 @@ import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
 import { useOperation, useShorePoints, useOrg, useHazards, useCommandTransfer, useDeviceUidValue } from '@ui/hooks';
-import { useElapsed } from './useElapsed';
 import { useOrgCommit } from './useOrgCommit';
 import { SitStatRollup } from './SitStatRollup';
 import { TransferCommand } from './TransferCommand';
+import { OpPeriodIndicator, OpRolloverCard } from './OpPeriod';
 
 // SitStat scope toggle (#353): the whole-incident board (default, unchanged) vs
 // the per-Division roll-up table for "which Division is behind" at scale.
@@ -17,11 +17,6 @@ const SCOPE_OPTIONS = [
   { value: 'all', label: 'All incident' },
   { value: 'division', label: 'By Division' },
 ] as const;
-
-// The running clock as its own leaf — the 1s tick re-renders ONLY this node.
-function ElapsedClock({ since }: { since: number | undefined }) {
-  return <span className="fs-cmd-clock">{useElapsed(since)}</span>;
-}
 
 /**
  * The Command situation rail — the six canonical datums in the user-mandated order:
@@ -43,6 +38,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const emit = useOrgCommit();
   const [scope, setScope] = useState<SitStatScope>('all');
   const [transferOpen, setTransferOpen] = useState(false);
+  const [rolloverOpen, setRolloverOpen] = useState(false);
 
   const counts = useMemo(() => {
     const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
@@ -110,10 +106,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
           <h1 className="fs-cmd-title">{operation.name}</h1>
           {operation.location && <p className="fs-cmd-loc">{operation.location}</p>}
         </div>
-        <div className="fs-cmd-op">
-          <span className="fs-cmd-eyebrow">OP 1 · Elapsed</span>
-          <ElapsedClock since={operation.createdAt} />
-        </div>
+        <OpPeriodIndicator operation={operation} onOpen={() => setRolloverOpen(true)} />
       </div>
 
       {/* Incident Commander — full width, the one gold accent + the command-transfer
@@ -162,6 +155,13 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
       ) : null}
 
       <TransferCommand open={transferOpen} onClose={() => setTransferOpen(false)} />
+
+      {/* OP rollover (#395) — surfaces at the boundary OR when opened from the header,
+          non-blocking. Sequenced after command transfer: hidden while a handoff is
+          pending so the two never stack. */}
+      {!pending && (
+        <OpRolloverCard operation={operation} open={rolloverOpen} onClose={() => setRolloverOpen(false)} />
+      )}
 
       {/* Operations Section Chief | Safety Officer — the two-up datum row */}
       <div className="fs-cmd-pair">

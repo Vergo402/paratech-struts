@@ -4,6 +4,7 @@ import { InlineSegmented } from '@ui/picker';
 import { EmptyState } from '@ui/primitives';
 import { useAuditAccess, useAuditTrail, useEventLog, useRoles, useUserManager } from '@ui/hooks';
 import { describeAuditLog, describeEventLog, auditRowsToCsv, type AuditRow } from '@core/audit';
+import { periodOf, projectOperationById } from '@core/operation';
 import { download } from '@ui/util/download';
 import './admin.css';
 
@@ -14,13 +15,16 @@ import './admin.css';
 // taps to expand its detail inline. Phone is the floor; reuses the User Manager row CSS.
 
 type Face = 'incident' | 'administrative';
-type Scope = 'all' | 'action' | 'person';
+type Scope = 'all' | 'action' | 'person' | 'period';
 
 const SCOPE_OPTIONS = [
   { value: 'all' as const, label: 'All' },
   { value: 'action' as const, label: 'By action' },
   { value: 'person' as const, label: 'By person' },
 ];
+// "By period" is a first-class v4.0 axis (gate review M12) — but only the Incident
+// view has operational periods, so it's appended for that face alone (#395).
+const PERIOD_OPTION = { value: 'period' as const, label: 'By period' };
 
 function BackIcon() {
   return (
@@ -79,6 +83,12 @@ export function AuditLogScreen() {
     () => (opId ? describeEventLog(incident.events, opId).slice().reverse() : []),
     [incident.events, opId],
   );
+  // The active op's period boundaries (#395) — drives the "By period" grouping.
+  // Projected from the same event log the Incident view already reads (cold path).
+  const periods = useMemo(
+    () => (opId ? projectOperationById(incident.events, opId).operation?.periods ?? [] : []),
+    [incident.events, opId],
+  );
   const auditRows = useMemo<AuditRow[]>(() => {
     if (!audit.entries) return [];
     return describeAuditLog(audit.entries, {
@@ -96,13 +106,19 @@ export function AuditLogScreen() {
     return rows.filter((r) => `${r.text} ${r.detail ?? ''} ${r.actor ?? ''} ${r.badge}`.toLowerCase().includes(q));
   }, [rows, q]);
 
-  // Scope grouping: 'all' = the flat newest-first list; 'action'/'person' cluster under a
-  // group header (stable sort by key, newest-first within). (By operational period is
-  // deferred — no OP-period data is modeled yet.)
+  // Scope grouping: 'all' = the flat newest-first list; 'action'/'person'/'period'
+  // cluster under a group header (stable sort by key, newest-first within). 'period'
+  // groups by the operational period an entry's `at` falls in (#395).
   const display = useMemo<Array<{ header?: string; row?: AuditRow }>>(() => {
     if (scope === 'all') return filtered.map((row) => ({ row }));
-    const keyOf = (r: AuditRow) => (scope === 'action' ? r.badge : whoLabel(r));
-    const sorted = filtered.slice().sort((a, b) => keyOf(a).localeCompare(keyOf(b)) || b.at - a.at);
+    const periodNum = (r: AuditRow) => periodOf(r.at, periods) ?? 0;
+    const keyOf = (r: AuditRow) =>
+      scope === 'action' ? r.badge : scope === 'person' ? whoLabel(r) : `OP ${periodNum(r)}`;
+    const cmp =
+      scope === 'period'
+        ? (a: AuditRow, b: AuditRow) => periodNum(a) - periodNum(b) || b.at - a.at
+        : (a: AuditRow, b: AuditRow) => keyOf(a).localeCompare(keyOf(b)) || b.at - a.at;
+    const sorted = filtered.slice().sort(cmp);
     const out: Array<{ header?: string; row?: AuditRow }> = [];
     let last: string | null = null;
     for (const r of sorted) {
@@ -115,7 +131,7 @@ export function AuditLogScreen() {
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, scope, incident.deviceUid]);
+  }, [filtered, scope, incident.deviceUid, periods]);
 
   if (!access.loading && allowed.length === 0) {
     return (
@@ -194,7 +210,12 @@ export function AuditLogScreen() {
         aria-label="Filter the log"
       />
 
-      <InlineSegmented label="Scope" options={SCOPE_OPTIONS} value={scope} onChange={setScope} />
+      <InlineSegmented
+        label="Scope"
+        options={activeFace === 'incident' ? [...SCOPE_OPTIONS, PERIOD_OPTION] : SCOPE_OPTIONS}
+        value={scope}
+        onChange={setScope}
+      />
 
       {loadingFace ? (
         <p className="fs-um-row-sub" style={{ padding: 'var(--space-3) 0' }}>Loading…</p>

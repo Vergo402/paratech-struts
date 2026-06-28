@@ -21,6 +21,8 @@ const MOCK_OP: Operation = {
   saws: ['A'],
   status: 'active',
   createdAt: 1000,
+  currentPeriod: 1,
+  periods: [{ number: 1, startedAt: 1000 }],
 };
 
 describe('StartOperationModal', () => {

@@ -40,6 +40,116 @@
   color: var(--text-primary);
 }
 
+/* ---- OP period indicator (#395) ---------------------------------------- */
+/* The header OP clock. The eyebrow + thin progress carry the period; the
+   amber state (last 30 min + overdue) is the quiet IAP-cycle nudge. NOTE: the
+   gold here is a second use of --accent in the chrome — accepted at the mockup;
+   flag for the Phase J one-accent doctrine audit (ADR-011). */
+.fs-cmd-op {
+  min-width: 6.5rem;
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.fs-cmd-op:hover {
+  border-color: var(--accent);
+}
+.fs-cmd-op-eyebrow {
+  color: var(--accent);
+}
+.fs-cmd-op-track {
+  margin-top: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-stroke);
+  overflow: hidden;
+}
+.fs-cmd-op-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 1s linear;
+}
+.fs-cmd-op.is-amber {
+  border-color: var(--status-waiting-text);
+}
+.fs-cmd-op.is-amber .fs-cmd-op-eyebrow {
+  color: var(--status-waiting-text);
+}
+.fs-cmd-op.is-amber .fs-cmd-op-fill {
+  background: var(--status-waiting-text);
+}
+
+/* ---- OP rollover card (#395) ------------------------------------------- */
+.fs-cmd-rollover {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--accent);
+  border-radius: var(--radius-card);
+  padding: var(--space-3) var(--space-3) var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-cmd-rollover-title {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-cmd-rollover-sub {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-cmd-rollover-opt {
+  color: var(--text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.fs-cmd-rollover-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fs-cmd-rollover-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.fs-cmd-chip {
+  padding: 7px 14px;
+  border-radius: var(--radius-button);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  background: transparent;
+  color: var(--text-secondary);
+  font: var(--type-body);
+  cursor: pointer;
+}
+.fs-cmd-chip.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.fs-cmd-rollover-hours {
+  width: 5rem;
+}
+.fs-cmd-rollover-iap,
+.fs-cmd-rollover-hours {
+  background: var(--surface-card-hover);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  padding: 9px 12px;
+  font: var(--type-body);
+  color: var(--text-primary);
+}
+.fs-cmd-rollover-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: var(--space-2);
+}
+.fs-cmd-rollover-actions > * {
+  flex: 1;
+}
+
 /* ---- incident name ----------------------------------------------------- */
 .fs-cmd-incident {
   flex: 1;

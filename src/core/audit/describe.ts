@@ -116,6 +116,13 @@ function describeOne(e: FieldShoreEvent, c: Ctx): Described {
       return { badge: 'Structure', tone: 'neutral', text: `Division added: ${divisionLabel(String(e.division))}` };
     case 'SawAdded':
       return { badge: 'Cutting', tone: 'info', text: `Saw ${e.sawId} added to the Cutting Station` };
+    case 'OperationPeriodStarted':
+      return {
+        badge: 'Op period',
+        tone: 'accent',
+        text: `Operational period ${e.periodNumber} started`,
+        detail: e.iapRef ? `IAP ${e.iapRef}` : undefined,
+      };
     case 'ShorePointAdded':
       return {
         badge: 'Shore point',

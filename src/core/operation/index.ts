@@ -5,3 +5,4 @@ export * from './projection';
 export * from './division';
 export * from './seq';
 export * from './saw';
+export * from './period';

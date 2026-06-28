@@ -20,7 +20,7 @@ function sp(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
 
 function stateWith(points: ShorePoint[]): OperationState {
   return {
-    operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1 },
+    operation: { id: 'op1', name: 'Test', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1, currentPeriod: 1, periods: [{ number: 1, startedAt: 1 }] },
     shorePoints: points,
     positions: {},
     myRoles: {},
@@ -262,6 +262,45 @@ describe('divisions — the grow-the-building model (#220)', () => {
 
   it('DivisionAdded with no operation is a no-op', () => {
     expect(operationReducer(EMPTY_OPERATION_STATE, divAdded('e1', 2))).toEqual(EMPTY_OPERATION_STATE);
+  });
+});
+
+describe('operational periods — OP rollover (#395)', () => {
+  const created: FieldShoreEvent = {
+    type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false,
+  };
+  const rollover = (id: string, periodNumber: number, at: number, over: Partial<{ plannedDurationMs: number; iapRef: string }> = {}): FieldShoreEvent => ({
+    type: 'OperationPeriodStarted', id, opId: 'op1', at, by: 'ic', periodNumber, ...over,
+  });
+
+  it('OperationCreated seeds period 1 at createdAt', () => {
+    const state = operationReducer(EMPTY_OPERATION_STATE, created);
+    expect(state.operation?.currentPeriod).toBe(1);
+    expect(state.operation?.periods).toEqual([{ number: 1, startedAt: 100 }]);
+  });
+
+  it('OperationPeriodStarted appends the period, carries its planned length + IAP, and bumps currentPeriod', () => {
+    const state = [created, rollover('e2', 2, 200, { plannedDurationMs: 43_200_000, iapRef: 'IAP-2' })].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.currentPeriod).toBe(2);
+    expect(state.operation?.periods).toEqual([
+      { number: 1, startedAt: 100 },
+      { number: 2, startedAt: 200, plannedDurationMs: 43_200_000, iapRef: 'IAP-2' },
+    ]);
+  });
+
+  it('is idempotent — a re-applied rollover for an existing period converges', () => {
+    const state = [created, rollover('e2', 2, 200), rollover('e3', 2, 999)].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.periods).toHaveLength(2);
+    expect(state.operation?.currentPeriod).toBe(2);
+  });
+
+  it('an out-of-order earlier period never regresses currentPeriod', () => {
+    const state = [created, rollover('e2', 3, 300), rollover('e3', 2, 200)].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.currentPeriod).toBe(3);
+  });
+
+  it('OperationPeriodStarted with no operation is a no-op', () => {
+    expect(operationReducer(EMPTY_OPERATION_STATE, rollover('e1', 2, 200))).toEqual(EMPTY_OPERATION_STATE);
   });
 });
 
