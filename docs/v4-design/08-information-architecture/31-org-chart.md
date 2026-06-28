@@ -18,7 +18,9 @@ The incident's ICS command structure: who holds each position, who reports to wh
 ## Primary role(s) and surface(s)
 
 - **Primary role(s):** the **Incident Commander** (the only role that may restructure — the v3 `canReparent` lock); the **Operations Section Chief** and **Group Supervisors** read it.
-- **Primary surface(s):** **phone is the floor** (read + tap-to-assign; reparent via button equivalents). **Tablet** is where the chart is comfortably edited (drag-reparent). Broadcast renders it read-only to Section-Chief depth (C-13).
+- **Primary surface(s):** **phone is the floor** (read + tap-to-assign; reparent via button equivalents **or** press-and-hold/drag — see the amendment note). **Tablet** is where the chart is comfortably edited (drag-reparent). Broadcast renders it read-only to Section-Chief depth (C-13).
+
+> **Amendment (2026-06-28, [#367](https://github.com/Vergo402/paratech-struts/issues/367)).** Phone now **also** supports press-and-hold/drag reparent as an **additive convenience** (built off-spec in #323, blessed here by Alex). This overrides the original Phase-F-gate decision that phone "does NOT render drag-reparent." The **assistive-tech-cannot-drag contract is unchanged** — the node-sheet "Move…" buttons remain the keyboard/AT path and the guaranteed floor; drag is an enhancement on top. Flagged for the Phase J doctrine audit ([`98-design-docket.md`](../98-design-docket.md) §Doctrine deviation watch).
 
 ## Information hierarchy (above / below fold) — per surface
 
@@ -87,13 +89,13 @@ The default chart must render **≤ 7 cards × 2 levels in tablet portrait witho
 
 - **Tap a node** → the node [`sheet`](../03-primitives/sheet.md): assigned resources + assign/clear; (IC) add sub-role, rename, promote/demote/reparent. **Editing is IC-only** (the v3 `canReparent` / lock-state).
 - **Role history one tap from a node** (rec K-13 — **new in v4**; v3 has no org history): who has held this position, with timestamps (the audit thread the command-transfer + assignment events feed).
-- **Reparent** = **tablet drag** (the v3 three-method drag, simplified) / **phone + AT = button equivalents** ("move under…", move-up/down) — the *assistive-tech-cannot-drag* contract ([`accessibility.md`](../07-design-system/accessibility.md)).
+- **Reparent** = **tablet drag** (the v3 three-method drag, simplified) / **phone = button equivalents** ("move under…", move-up/down) **plus** an additive press-and-hold/drag ([#367](https://github.com/Vergo402/paratech-struts/issues/367) amendment) / **AT = button equivalents only** — the *assistive-tech-cannot-drag* contract ([`accessibility.md`](../07-design-system/accessibility.md)).
 - **Span-of-control warning** kept (caution at 6–7 direct reports, over at >7) — a [`badge`](../03-primitives/badge.md) on the node, informational (never a block — Principle 10).
 - **Collapse/expand** a branch (the v3 `orgCollapsedNodes`); collapse snaps, only the chevron animates ([`motion.md`](../07-design-system/motion.md)).
 
 ## Locked cross-cutting rules this screen honors
 
-- [x] **Phone is the floor** — read + assign + reparent (via buttons) all work phone-only.
+- [x] **Phone is the floor** — read + assign + reparent (via buttons; phone also supports press-and-hold/drag as an additive convenience, [#367](https://github.com/Vergo402/paratech-struts/issues/367)) all work phone-only.
 - [x] **NIMS terminology + structure** ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)) — two Groups, tasks beneath, Cutting Station out, titles spelled out, `group` → **assignedResource**.
 - [x] **K-12 budget** — ≤ 7 cards × 2 levels tablet portrait; tap-to-descend; populated roles only.
 - [x] **Visible, never blocking** — span-of-control is a caution badge, not a gate (Principle 10); no safety-hold.
@@ -108,9 +110,9 @@ The default chart must render **≤ 7 cards × 2 levels in tablet portrait witho
 |---|---|---|---|---|
 | Layout | IC + direct reports; tap-to-descend | chart to Section-Chief depth, ≤ 7×2 (K-12) | dense, keyboard-nav | read-only to Section-Chief depth |
 | Above fold | IC + Safety + Ops Section Chief | + the two Groups + Staging + Cutting Station | + role-history panel | populated roles only |
-| Edit affordance | tap-assign; reparent buttons | tap-assign; **drag-reparent** | keyboard reparent | — (read-only) |
+| Edit affordance | tap-assign; reparent buttons **+ press-and-hold/drag** ([#367](https://github.com/Vergo402/paratech-struts/issues/367)) | tap-assign; **drag-reparent** | keyboard reparent | — (read-only) |
 | Role history | node sheet | node sheet / side panel | side panel | — |
-| Does NOT render | drag-reparent | — | — | any edit, any overlay |
+| Does NOT render | — (AT path = buttons only; see [#367](https://github.com/Vergo402/paratech-struts/issues/367)) | — | — | any edit, any overlay |
 
 ## Empty / error / loading states
 

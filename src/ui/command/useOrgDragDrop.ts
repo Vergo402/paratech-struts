@@ -7,14 +7,14 @@ import { useOrgCommit } from './useOrgCommit';
 
 // Drag-and-drop controller for the command org chart (#323). One state machine drives
 // BOTH dragging a position card and dragging a roster chip. Pickup is surface-adaptive
-// (ADR-032): a grab handle on desktop (drag starts immediately), press-and-hold on the
-// card body on phone (a quick tap still opens the node sheet). Hand-rolled Pointer
+// (ADR-032): a grab handle on desktop (drag starts immediately), press-and-hold OR drag
+// on the card body on phone (a quick tap still opens the node sheet). Hand-rolled Pointer
 // Events — the proven Slider/FloatingPanel idiom (setPointerCapture + touch-action) —
 // so no dnd dependency. Drag is an ADDITIVE enhancement: the node-sheet Move… buttons
 // stay the keyboard/AT path, and every drop commits the SAME core events.
 
 const HOLD_MS = 180; //     press-and-hold before a body lift (phone)
-const MOVE_BUDGET = 8; //   px of horizontal pre-arm travel that reads as a scroll, not a lift
+const MOVE_BUDGET = 8; //   finger travel that turns a press into a drag (and the tap tolerance)
 const ARM_MOVE = 3; //      px before an immediate (grip/chip) drag shows its ghost
 // ponytail: fixed band/speed — wire to settings only if a field user asks for it.
 const EDGE_BAND = 56; //    px from a scroller's edge where drag auto-pan begins
@@ -342,8 +342,12 @@ export function useOrgDragDrop(opts: {
     if (!st.armed) {
       if (st.mode === 'immediate') {
         if (Math.abs(dx) > ARM_MOVE || Math.abs(dy) > ARM_MOVE) arm(e.clientX, e.clientY);
-      } else if (Math.abs(dx) > MOVE_BUDGET && Math.abs(dx) > Math.abs(dy)) {
-        cleanup(); // a horizontal swipe before the hold fires = scroll the chart, not a drag
+      } else if (Math.hypot(dx, dy) > MOVE_BUDGET) {
+        // A deliberate drag from the card body lifts it — no dead-still hold required.
+        // The card is touch-action:none, so a touch here never scrolls the chart anyway
+        // (the chart pans from surrounding whitespace). The hold timer still arms a press
+        // that never moves; a quick tap (released under MOVE_BUDGET) still opens the sheet.
+        arm(e.clientX, e.clientY);
       }
       return;
     }
