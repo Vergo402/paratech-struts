@@ -88,6 +88,39 @@ synthesizes an entry from src). Gotchas below are what make that work.
 - **`cfg.overrides`:** CuttingStation `{cardMode:single, viewport:960x720}` (desktop hero
   split, `useIsDesktop` ≥768px); GroupedShorePoint `{cardMode:column}` (rolodex full width).
 
+## Wave 3 (re-sync 2026-06-28 — Auth P3–P5 + OP support + command-transfer + CSV import)
+
+- **31 components uploaded** (10 new + 1 changed + 20 presentation-churned). New authored
+  good: `OpPeriodIndicator` (prop-only — needs a full `Operation` object: id/name/
+  multiBuilding/inlineDeploy/divisions/saws/status/createdAt/currentPeriod/periods[]),
+  `FeedbackSheet` (inject the `api?: FeedbackApi` prop = `{submit: async ()=>({ok:true})}`
+  to dodge Firebase). New floor cards (store/hook-bound): `AssignRoleSheet`,
+  `AuditLogScreen`, `RoleEditorSheet`, `UserManagerScreen` (admin RBAC stores),
+  `OpRolloverCard` (`useCommit`+`useDeviceUid`), `TransferCommand` (`useOrg`/`useOrgCommit`
+  + embeds ICS201Brief), `ImportFlow` (4-step import store), `RequireDepartment` (router gate).
+- **3 new barrel-dir mappings** were needed in `tsconfig.sync.json` for the admin imports:
+  `@core/audit`, `@data/feedback`, `@data/sync` (each a dir → map to its `index.ts`
+  BEFORE the `@core/*`/`@data/*` wildcards). Same failure mode as before ("is a directory").
+- **`OpPeriod.tsx` exports TWO components** (`OpPeriodIndicator` + `OpRolloverCard`), not one
+  named for the file — check exports, don't assume one-per-file.
+- **`preview-rebuild.mjs` is NOT auto-staged into `.ds-sync/`.** It lives in the skill's
+  `lib/` only. To fix GRID_OVERFLOW targeted-rebuilds: `cp "$SKILL/lib/preview-rebuild.mjs"
+  .ds-sync/lib/` then run `node .ds-sync/lib/preview-rebuild.mjs …` (running from the skill
+  base dir fails — esbuild only resolves from `.ds-sync/node_modules`).
+- **After editing `cfg.overrides`, re-run the FULL `resync.mjs`, not just preview-rebuild.**
+  A cardMode change alters render hashes for components that were "unchanged" by source, so
+  they must re-enter the upload partition and the `_ds_sync.json` anchor — only the full
+  driver recomputes both. (preview-rebuild alone leaves the anchor inconsistent.)
+- **14 portal/wide components needed cardMode overrides this run** (the GRID_OVERFLOW set):
+  single+primaryStory for fixed/portal overlays (ChecklistTab, FeedbackSheet, FloatingPanel,
+  Modal, PickerSurface, Popover, Sheet); column for wide-but-flowable (EmptyState,
+  NestedChecklist, Segmented, SideDrawer, Slider, Toggle, WarningGate). GRID_OVERFLOW is a
+  presentation warning, non-blocking — but fixing it is cheap and makes the picker cards read.
+- **`ChecklistTab` renders as a lone checkbox glyph by design** — it's an edge summon-tab
+  affordance, not a panel. Single-mode card looks near-empty but is correct (graded good).
+- **`find … -exec sh -c '…'` HANGS in this sandbox.** Build path lists with a flat
+  `find … | grep -E "<regex>"` instead of per-item `-exec` subshells.
+
 ## Known render warns (triaged — not new on re-sync)
 
 - **[FONT_MISSING] "Inter", "Geist"** — these are the *bare fallback aliases* in the
@@ -104,7 +137,7 @@ synthesizes an entry from src). Gotchas below are what make that work.
 - The self-symlink and `.ds-sync/node_modules` (incl. playwright) are gitignored —
   recreate both on a fresh clone (symlink line above; `cd .ds-sync && npm i` then
   `npx playwright install chromium`).
-- `cssEntry` is pinned to a hashed Vite output (currently `index-Y8xbzYp1.css`). **It
+- `cssEntry` is pinned to a hashed Vite output (currently `index-2nbYp6m1.css`). **It
   changes on every `npm run build`** — ALWAYS `npm run build` first, then re-point
   `cfg.cssEntry` to the new `dist/assets/index-*.css` hash. A stale dist silently ships
   outdated component CSS (this bit wave 2: CuttingStation's hero rules were missing from a

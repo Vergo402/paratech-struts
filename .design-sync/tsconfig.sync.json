@@ -24,6 +24,9 @@
       "@core/shorepoint": [
         "src/core/shorepoint/index.ts"
       ],
+      "@core/audit": [
+        "src/core/audit/index.ts"
+      ],
       "@data/auth": [
         "src/data/auth/index.ts"
       ],
@@ -32,6 +35,12 @@
       ],
       "@data/store": [
         "src/data/store/index.ts"
+      ],
+      "@data/feedback": [
+        "src/data/feedback/index.ts"
+      ],
+      "@data/sync": [
+        "src/data/sync/index.ts"
       ],
       "@ui/hooks": [
         "src/ui/hooks/index.ts"
