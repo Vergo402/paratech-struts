@@ -385,7 +385,10 @@
 @media (min-width: 768px) {
   .fs-ops-gutter { width: 88px; }
   .fs-ops-bay { flex-flow: row wrap; align-content: flex-start; }
-  .fs-ops-bay > * { width: clamp(200px, 23%, 300px); }
+  /* `> .fs-spchip` (0-2-0) outranks the base `.fs-spchip{width:100%}` (0-1-0) so
+     the floor bay wraps its chips into a grid on desktop instead of stacking
+     them full-width (which read like the phone layout). */
+  .fs-ops-bay > .fs-spchip { width: clamp(200px, 23%, 300px); }
 }
 
 /* ---- compact scan chip (Division + List views) --------------------------- */
@@ -497,7 +500,8 @@
    list wide on the command post). */
 @media (min-width: 768px) {
   .fs-ops-lrows { flex-flow: row wrap; }
-  .fs-ops-lrows > * { width: clamp(260px, 32%, 420px); }
+  /* Specificity > the base `.fs-spchip{width:100%}` so the list grid wraps too. */
+  .fs-ops-lrows > .fs-spchip { width: clamp(260px, 32%, 420px); }
 }
 
 /* ---- phone lane phase grouping (Item 2) ---------------------------------- */
