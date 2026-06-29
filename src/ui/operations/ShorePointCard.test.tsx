@@ -277,17 +277,17 @@ describe('ShorePointCard', () => {
     expect(screen.getByRole('button', { name: 'Assign Equipment' })).toBeInTheDocument();
   });
 
-  it('hazard: renders the hazard pill after the status badge', () => {
+  it('hazard: renders the severity hazard pill after the status badge', () => {
     render(
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
           deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
-        hazard
+        hazard="high"
       />,
     );
-    expect(screen.getByText('⚠ Hazard')).toBeInTheDocument();
+    expect(screen.getByText('⚠ HIGH hazard in area')).toBeInTheDocument();
   });
 
   it('removed: shows the slash chip, drops the slides and the Assign action', () => {

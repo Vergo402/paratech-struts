@@ -429,6 +429,86 @@
   color: var(--text-tertiary);
 }
 
+/* ===== hazard log (ICS-208 register, #394) ============================== */
+.fs-haz {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.fs-haz-top {
+  display: flex;
+  justify-content: flex-end;
+}
+.fs-haz-sec {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fs-haz-sec-title {
+  margin: 0;
+  font: var(--type-label);
+  color: var(--text-secondary);
+}
+.fs-haz-sec.is-mitigated .fs-haz-sec-title {
+  color: var(--text-tertiary);
+}
+.fs-haz-none {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-haz-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.fs-haz-row.is-mitigated {
+  opacity: 0.72;
+}
+.fs-haz-row-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fs-haz-row-type {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-haz-row.is-mitigated .fs-haz-row-type {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+.fs-haz-row-loc {
+  font: var(--type-body);
+  color: var(--text-primary);
+}
+.fs-haz-row-meta {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-haz-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+.fs-haz-detail-loc {
+  margin: 0;
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-haz-detail-notes {
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-secondary);
+}
+.fs-haz-detail-meta {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
 /* ===== org chart (read view) ============================================ */
 .fs-org {
   /* Connector hairline: visible but quiet, themed (the raw --surface-stroke at

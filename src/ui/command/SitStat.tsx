@@ -6,6 +6,7 @@ import { CommandRail } from './CommandRail';
 import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
 import { EndOperationButton } from './EndOperationButton';
 import { OrgChart } from './OrgChart';
+import { HazardLog } from './HazardLog';
 import { ICCommandChecklist } from './ICCommandChecklist';
 import './command.css';
 
@@ -90,14 +91,7 @@ export function SitStat() {
         <EndOperationButton />
 
         <Sheet open={sheet !== null} onClose={() => setSheet(null)} title={sheet === 'hazard' ? 'Hazard Log' : 'Org Chart'}>
-          {sheet === 'hazard' ? (
-            <div className="fs-cmd-ws-soon">
-              <p>The ICS-208 hazard register builds next.</p>
-              <p className="fs-cmd-ws-soon-sub">Open hazards already show in the rail summary.</p>
-            </div>
-          ) : (
-            <OrgChart allowFullScreen />
-          )}
+          {sheet === 'hazard' ? <HazardLog /> : <OrgChart allowFullScreen />}
         </Sheet>
       </div>
       {checklist}

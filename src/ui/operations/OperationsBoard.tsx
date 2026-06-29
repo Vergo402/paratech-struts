@@ -21,6 +21,7 @@ import {
   useCommitMany,
   useDeviceUid,
   useDeviceUidValue,
+  useHazards,
   useInventory,
   useMyRole,
   useOperation,
@@ -29,6 +30,7 @@ import {
   useShorePoints,
 } from '@ui/hooks';
 import { MyRoleSheet } from '@ui/command';
+import { hazardsForDivision, type HazardSeverity } from '@core/hazard';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
@@ -279,6 +281,8 @@ interface ItemCallbacks {
   onRemoveReturn: (sp: ShorePoint) => void;
   /** Group gate (#221 OQ2): set while a grouped Equipment Assigned point has mates still Pending Equipment. */
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
+  /** Highest open-hazard severity in the card's Division, or undefined (#394). */
+  hazardFor: (sp: ShorePoint) => HazardSeverity | undefined;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
   activeStackId: string | null;
 }
@@ -306,6 +310,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onStepBack={cb.onStepBack}
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
+                hazard={cb.hazardFor(item.members[0]!)}
               />
             </CardBoundary>
           </div>
@@ -324,6 +329,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onStepBack={cb.onStepBack}
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
+                hazard={cb.hazardFor(item.sp)}
               />
             </CardBoundary>
           </div>
@@ -433,6 +439,7 @@ export function OperationsBoard() {
   const operation = useOperation();
   const shorePoints = useShorePoints();
   const inventory = useInventory();
+  const hazards = useHazards();
   const { roster } = useApparatus();
   // ≥768px (tablet/command-post): the board gets the drilldown rail + a dominant
   // canvas, and the Details / Available-Inventory companions float over it as
@@ -1177,6 +1184,14 @@ export function OperationsBoard() {
     });
   }, []);
 
+  // Highest open-hazard severity in a card's Division (#394) — conservative
+  // exact-division match; an unresolvable location badges nothing (log + header
+  // only). Informs the card, never gates its advance (Principle 10).
+  const hazardFor = useCallback(
+    (sp: ShorePoint): HazardSeverity | undefined => hazardsForDivision(hazards, sp.division)[0]?.severity,
+    [hazards],
+  );
+
   // One <Lane> with its full prop set — rendered flat (desktop, STATUS_ORDER) or
   // wrapped in phase groups (phone, PHASE_GROUPS). DRYs the two lane layouts.
   const renderLane = (status: ShorePointStatus) => (
@@ -1198,6 +1213,7 @@ export function OperationsBoard() {
       onStepBack={handleStepBack}
       onRemoveReturn={openRemoveReturn}
       advanceDisabledReasonFor={advanceDisabledReasonFor}
+      hazardFor={hazardFor}
       activeStackId={scrollToId}
     />
   );

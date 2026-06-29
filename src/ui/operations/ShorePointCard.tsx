@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
+import type { HazardSeverity } from '@core/hazard';
+import { severityWord } from '@core/hazard';
 import { divisionLabel, sideLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
 import {
@@ -155,10 +157,13 @@ export interface ShorePointCardProps {
    */
   removed?: boolean;
   /**
-   * Presentational only — no slice schema state yet. Surfaces a "⚠ Hazard" pill
-   * after the status badge (the gallery + future hazard-log workflow set it).
+   * The highest open-hazard severity in this shore point's Division (#394) — fed
+   * from `hazardsForDivision()` on the live board. Surfaces a "⚠ HIGH hazard in
+   * area" pill after the status badge. Informs, never blocks (Principle 10) — the
+   * advance slide stays live. One-tone red, distinguished by the word (Alex).
+   * Undefined = no open hazard in this Division (or location unresolvable).
    */
-  hazard?: boolean;
+  hazard?: HazardSeverity;
   /** Focus/selected styling — accent border, no scale change (design-system
    *  ShorePointCard `active`; States doctrine in the styleguide README). */
   active?: boolean;
@@ -188,7 +193,7 @@ export function ShorePointCard({
   onRemoveReturn,
   advanceDisabledReason,
   removed = false,
-  hazard = false,
+  hazard,
   active = false,
   caption,
   readOnly = false,
@@ -288,10 +293,18 @@ export function ShorePointCard({
         ) : (
           <Badge variant="status" status={sp.status} />
         )}
-        {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
       </span>
     </>
   );
+
+  // The hazard badge rides its OWN line below the identity (#394, workflow §Step 4
+  // drawing) — never crammed into the top-right status cluster (it crushes the
+  // title on a narrow card). Informs the advance, never gates it (Principle 10).
+  const hazardRow = hazard ? (
+    <div className="fs-spc-hazard-row">
+      <span className="fs-spc-hazard">{`⚠ ${severityWord(hazard)} hazard in area`}</span>
+    </div>
+  ) : null;
 
   const valueShelf = (
     <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
@@ -345,6 +358,7 @@ export function ShorePointCard({
           </span>
         </div>
       )}
+      {hazardRow}
 
       {valueShelf}
 
