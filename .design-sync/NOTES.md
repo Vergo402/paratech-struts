@@ -155,9 +155,17 @@ rules make it stop flagging the above without anyone moving CSS):
    for its `@theme` layer so tokens reach shadow DOM (confirmed in the built `dist/assets/
    index-*.css`); props there are real tokens.
 2. Ignore any property whose name starts with `--tw-` (Tailwind internals). Never tokens.
-3. Treat a compound `[data-theme=<theme>] .is-<status>` selector as a recognized theme-scoped
-   override (same class as a bare `.is-<status>`), so the `--sp-solid` sunlight overrides
-   register WITH their scope instead of being flagged as orphan component-scoped props.
+3. **(The precise upstream-fix target.)** A compound `[data-theme=<theme>] .<component-class> { --x }`
+   rule is a **component rule, not a token declaration** — it must get the SAME component-scoped
+   handling the validator already gives the bare `.is-<status>` rules (the only difference is a
+   theme-attr prefix on the same class). The concrete instance to point the fix at:
+   **`src/ui/primitives/primitives.css:24-38`** — the `[data-theme='sunlight'] .is-<status> { --sp-solid: … }`
+   overrides. Two equally good remedies, fix EITHER end:
+   - **Validator end:** recognize `[data-theme=…] .<class>` as component-scoped (generalize the
+     existing bare-`.is-*` handling to the theme-prefixed form). Preferred — one rule, covers future cases.
+   - **Source end:** re-emit those sunlight `--sp-solid` overrides in whatever shape the validator
+     already accepts as component-internal. Do NOT move them to `:root` — sunlight needs them
+     scoped per-status, and `:root` would flatten that.
 4. Allow-list as intentionally component-scoped (not tokens): `--org-line`, `--org-gap`
    (`.fs-org`); `--chip-color` (`.fs-sysfilter-chip--*`); `--fs-gs-stroke-strong` (`.fs-gs`).
 
