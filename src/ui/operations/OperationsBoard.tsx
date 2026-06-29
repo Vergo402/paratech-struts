@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs } from '@core/shorepoint';
 import {
@@ -7,6 +7,8 @@ import {
   compareDivisionValues,
   compareShorePointsByLocation,
   divisionLabel,
+  formatDivisionShort,
+  parseDivisionNumber,
   nextSawId,
 } from '@core/operation';
 import { myApparatusKeys } from '@core/org';
@@ -43,6 +45,9 @@ import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
+import { ShorePointChip } from './ShorePointChip';
+import { shoreSafety } from './shoreSafety';
+import { VerifyBanner, DivisionRail } from './OperationsVerify';
 import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
@@ -57,8 +62,10 @@ type OpsView = 'board' | 'cutting';
 // live in the Sort menu, not a separate pill. 'location' = division→area.
 type SortMode = 'location' | 'added-newest' | 'added-oldest';
 
-/** List-view sort (#356): the list also gains a Status order the tiles can't have. */
-type ListSort = 'added-newest' | 'added-oldest' | 'status' | 'location';
+/** List-view sort (#356 + 3 Views × 2 Devices): the scan list adds Status, Crew,
+ *  and Measure orders the tile board can't have. 'location' is labeled "Level"
+ *  (it leads with the floor). */
+type ListSort = 'added-newest' | 'added-oldest' | 'status' | 'location' | 'crew' | 'measure';
 
 /** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
@@ -536,13 +543,19 @@ export function OperationsBoard() {
     const asSort = (v: unknown): SortMode =>
       v === 'added-oldest' ? 'added-oldest' : v === 'added' || v === 'added-newest' ? 'added-newest' : 'location';
     const asListSort = (v: unknown): ListSort =>
-      v === 'status' ? 'status' : v === 'location' ? 'location' : asSort(v) as ListSort;
+      v === 'status' || v === 'location' || v === 'crew' || v === 'measure'
+        ? v
+        : v === 'added-oldest'
+          ? 'added-oldest'
+          : v === 'added' || v === 'added-newest'
+            ? 'added-newest'
+            : 'location';
     try {
       const raw = localStorage.getItem(`fs-board-prefs-${operation.id}`);
       if (!raw) { resetPrefs(); return; }
       const p = JSON.parse(raw) as Record<string, unknown>;
       setSortMode(asSort(p.sortMode));
-      setLayout(p.layout === 'list' ? 'list' : 'lanes');
+      setLayout(p.layout === 'list' ? 'list' : p.layout === 'division' ? 'division' : 'lanes');
       setListSort(asListSort(p.listSort));
       setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
@@ -1056,9 +1069,71 @@ export function OperationsBoard() {
       if (listSort === 'status') {
         return statusKey(a) - statusKey(b) || compareShorePointsByLocation(ra, rb);
       }
+      if (listSort === 'crew') {
+        // Assigned crew (apparatus) ascending; unassigned sorts last; ties by location.
+        const ca = ra.assignedResource || '￿';
+        const cb = rb.assignedResource || '￿';
+        return ca.localeCompare(cb) || compareShorePointsByLocation(ra, rb);
+      }
+      if (listSort === 'measure') {
+        // Opening measurement, largest span first; ties by location.
+        return rb.measurementEighths - ra.measurementEighths || compareShorePointsByLocation(ra, rb);
+      }
       return compareShorePointsByLocation(ra, rb);
     });
   }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
+
+  // Division view (3 Views × 2 Devices) — the same filtered points read as a
+  // building cross-section: grouped by floor, top floor first (compareDivisionValues),
+  // each floor's points sorted by location. `n` is the signed floor (positive =
+  // above grade, negative = sub-grade, null = blank/legacy free text) — the render
+  // drops the "Grade · Ground" divider at the above→below boundary and hatches the
+  // sub-grade floors off `n`'s sign (parseDivisionNumber; 0 never exists, ADR-008).
+  const byFloor = useMemo(() => {
+    const visible = shorePoints
+      .filter(
+        (sp) =>
+          sp.deletedAt == null &&
+          (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
+          (!filterDivision || sp.division === filterDivision) &&
+          (!filterArea || (sp.area ?? '') === filterArea) &&
+          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus),
+      )
+      .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
+    const byDiv = new Map<string, ShorePoint[]>();
+    for (const sp of visible) {
+      const key = sp.division ?? '';
+      const arr = byDiv.get(key);
+      if (arr) arr.push(sp);
+      else byDiv.set(key, [sp]);
+    }
+    return [...byDiv.entries()]
+      .sort((a, b) => compareDivisionValues(a[0], b[0]))
+      .map(([division, pts]) => ({
+        division,
+        n: parseDivisionNumber(division),
+        points: [...pts].sort(compareShorePointsByLocation),
+      }));
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus]);
+
+  // Flagged points (3 Views × 2 Devices "verify") — the standing verify surface
+  // reuses the existing re-verified safety check (Alex 2026-06-29): a DEPLOYED point
+  // whose recomputed verdict is `warn` (over-capacity / unrated) flags red on the
+  // scan chips, drives the verify banner, and fills the Division rail's flagged card.
+  const flaggedIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const sp of shorePoints) {
+      if (sp.deletedAt != null || !sp.deployedBom) continue;
+      if (shoreSafety(sp).kind === 'warn') s.add(sp.id);
+    }
+    return s;
+  }, [shorePoints]);
+  // The flagged points themselves (op-wide, location-ordered) for the verify banner
+  // + the Division rail's safety card.
+  const flaggedPoints = useMemo(
+    () => shorePoints.filter((sp) => flaggedIds.has(sp.id)).sort(compareShorePointsByLocation),
+    [shorePoints, flaggedIds],
+  );
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(
@@ -1126,6 +1201,29 @@ export function OperationsBoard() {
       activeStackId={scrollToId}
     />
   );
+
+  // List scan view (3 Views × 2 Devices) — a LaneItem renders as one compact chip
+  // (the front leg carries a grouped shore, with a ×N badge). Read-only: tap opens
+  // Quick View; advancing stays on the Board (Alex 2026-06-29).
+  const renderListChip = (it: LaneItem) =>
+    it.kind === 'group' ? (
+      <ShorePointChip
+        key={it.groupId}
+        sp={it.members[0]!}
+        variant="list"
+        onOpen={openDetail}
+        groupCount={it.members.length}
+        flagged={flaggedIds.has(it.members[0]!.id)}
+      />
+    ) : (
+      <ShorePointChip key={it.sp.id} sp={it.sp} variant="list" onOpen={openDetail} flagged={flaggedIds.has(it.sp.id)} />
+    );
+  // A LaneItem's status for the List's status grouping: a split group sits under
+  // its LEAST-advanced leg (matches the status sort key).
+  const listChipStatusIdx = (it: LaneItem) =>
+    it.kind === 'group'
+      ? Math.min(...it.members.map((m) => STATUS_ORDER.indexOf(m.status)))
+      : STATUS_ORDER.indexOf(it.sp.status);
 
   // ---- No active operation --------------------------------------------------
   if (!operation || operation.status === 'ended') {
@@ -1244,8 +1342,10 @@ export function OperationsBoard() {
             </Button>
           </div>
         )}
-        <div className="fs-ops-stage">
-        {isDesktop && (
+        <div className={`fs-ops-stage${isDesktop && layout === 'division' ? ' is-division' : ''}`}>
+        {/* Division on desktop drops the left drilldown rail for its right verify
+            rail (the floor view is the cross-section; filtering stays on the chips). */}
+        {isDesktop && layout !== 'division' && (
           <div className="fs-ops-railcol">
             {/* Add leads the left column; the drilldown tree sits beneath it
                 (the tree appears once the op has shore points). */}
@@ -1264,7 +1364,14 @@ export function OperationsBoard() {
           </div>
         )}
         <div className="fs-ops-main">
-          <StatusSummaryBar byStatus={byStatus} />
+          {/* Verify banner — the safety-check surface on Board + List, and on phone
+              Division (which has no rail). Desktop Division routes it into the rail. */}
+          {flaggedPoints.length > 0 && !(layout === 'division' && isDesktop) && (
+            <VerifyBanner flagged={flaggedPoints} onReview={openDetail} />
+          )}
+          {/* The per-status summary bar is desktop-only and duplicates the Division
+              rail's rollup — so it shows on Board + List, not Division. */}
+          {layout !== 'division' && <StatusSummaryBar byStatus={byStatus} />}
 
       {shorePoints.length > 0 && (
         <div className="fs-ops-filterbar">
@@ -1294,7 +1401,7 @@ export function OperationsBoard() {
                 </button>
               )}
             </div>
-            {layout === 'lanes' ? (
+            {layout !== 'list' ? (
               <FilterPicker
                 label="Sort"
                 hideLabel
@@ -1315,13 +1422,15 @@ export function OperationsBoard() {
                 hideLabel
                 leadingIcon={<SortGlyph />}
                 value={listSort}
-                placeholder="Location"
+                placeholder="Level"
                 nullable={false}
                 options={[
+                  { value: 'status', label: 'Status' },
+                  { value: 'location', label: 'Level' },
+                  { value: 'crew', label: 'Crew' },
+                  { value: 'measure', label: 'Measure' },
                   { value: 'added-newest', label: 'Added — newest first' },
                   { value: 'added-oldest', label: 'Added — oldest first' },
-                  { value: 'status', label: 'Status' },
-                  { value: 'location', label: 'Location' },
                 ]}
                 onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
               />
@@ -1445,7 +1554,64 @@ export function OperationsBoard() {
         />
       )}
 
-      {layout === 'lanes' ? (
+      {layout === 'division' ? (
+        <div className="fs-ops-floors">
+          {byFloor.length === 0 ? (
+            <p className="fs-lane-empty">No shore points</p>
+          ) : (
+            byFloor.map((floor, i) => {
+              const subgrade = floor.n != null && floor.n < 0;
+              // Grade · Ground divider: once, at the above→below-grade boundary
+              // (the first sub-grade floor whose predecessor is above grade, or
+              // index 0 when the whole op is sub-grade). Nulls (legacy/blank) sort
+              // last, so a sub-grade floor's predecessor is never null.
+              const prevN = i > 0 ? byFloor[i - 1]!.n : null;
+              const showGrade = subgrade && (prevN == null || prevN > 0);
+              return (
+                <Fragment key={floor.division || `legacy-${i}`}>
+                  {showGrade && (
+                    <div className="fs-ops-grade" aria-hidden="true">
+                      <span className="fs-ops-grade-label">Grade · Ground</span>
+                    </div>
+                  )}
+                  <section className={`fs-ops-floor${subgrade ? ' is-subgrade' : ''}`} aria-label={floor.division ? divisionLabel(floor.division) : 'Unplaced'}>
+                    <div className="fs-ops-gutter" aria-hidden="true">
+                      <span className="fs-ops-gutter-n">
+                        {floor.n != null ? (floor.n > 0 ? floor.n : `S${-floor.n}`) : '—'}
+                      </span>
+                      <span className="fs-ops-gutter-l">
+                        {floor.division ? formatDivisionShort(floor.n ?? 0) || floor.division : 'Unplaced'}
+                      </span>
+                    </div>
+                    <div className="fs-ops-bay" role="list">
+                      {groupLanePoints(floor.points).map((it) =>
+                        it.kind === 'group' ? (
+                          <ShorePointChip
+                            key={it.groupId}
+                            sp={it.members[0]!}
+                            variant="division"
+                            onOpen={openDetail}
+                            groupCount={it.members.length}
+                            flagged={flaggedIds.has(it.members[0]!.id)}
+                          />
+                        ) : (
+                          <ShorePointChip
+                            key={it.sp.id}
+                            sp={it.sp}
+                            variant="division"
+                            onOpen={openDetail}
+                            flagged={flaggedIds.has(it.sp.id)}
+                          />
+                        ),
+                      )}
+                    </div>
+                  </section>
+                </Fragment>
+              );
+            })
+          )}
+        </div>
+      ) : layout === 'lanes' ? (
         <div className="fs-ops-lanes">
           {/* Desktop keeps the flat STATUS_ORDER map — its 2-up/3-1-3 grids need
               .fs-lane as a direct child of .fs-ops-lanes; phone groups the seven
@@ -1460,22 +1626,32 @@ export function OperationsBoard() {
               ))}
         </div>
       ) : (
-        <div className="fs-ops-list" role="list">
+        <div className="fs-ops-list">
           {listItems.length === 0 ? (
             <p className="fs-lane-empty">No shore points</p>
+          ) : listSort === 'status' ? (
+            // Grouped by status under thin headers (dot + label + count). An empty
+            // status — incl. Returned on an op that hasn't recovered any gear —
+            // simply doesn't render (hidden-when-empty, Alex 2026-06-29).
+            STATUS_ORDER.map((status) => {
+              const idx = STATUS_ORDER.indexOf(status);
+              const items = listItems.filter((it) => listChipStatusIdx(it) === idx);
+              if (items.length === 0) return null;
+              return (
+                <section key={status} className={`fs-ops-lgroup is-${status}`} aria-label={STATUS_LABELS[status]}>
+                  <div className="fs-ops-lgh">
+                    <span className="fs-ops-lgh-dot" aria-hidden="true" />
+                    <span className="fs-ops-lgh-label">{STATUS_LABELS[status]}</span>
+                    <span className="fs-ops-lgh-count">{items.length}</span>
+                  </div>
+                  <div className="fs-ops-lrows" role="list">
+                    {items.map(renderListChip)}
+                  </div>
+                </section>
+              );
+            })
           ) : (
-            <LaneItems
-              items={listItems}
-              onEdit={openEdit}
-              onDelete={openDelete}
-              onOpenDetail={openDetail}
-              onAssignEquipment={assignEquipment}
-              onAdvance={handleAdvance}
-              onStepBack={handleStepBack}
-              onRemoveReturn={openRemoveReturn}
-              advanceDisabledReasonFor={advanceDisabledReasonFor}
-              activeStackId={scrollToId}
-            />
+            <div className="fs-ops-lrows" role="list">{listItems.map(renderListChip)}</div>
           )}
         </div>
       )}
@@ -1506,6 +1682,17 @@ export function OperationsBoard() {
             )}
           </div>
         </div>
+        {/* Division (desktop) right rail: safety check · operation rollup · flagged
+            point — mirrors the Command Deck two-pane. Phone Division has no rail
+            (the verify rides the top banner instead). */}
+        {isDesktop && layout === 'division' && (
+          <DivisionRail
+            flagged={flaggedPoints}
+            byStatus={byStatus}
+            total={Object.values(byStatus).reduce((n, a) => n + a.length, 0)}
+            onOpen={openDetail}
+          />
+        )}
         {/* Companions are surface-adaptive (ADR-037): on desktop they float over
             the board as draggable FloatingPanels (the board keeps full width); on
             phone they stay full-screen modal SideDrawers. The bodies are

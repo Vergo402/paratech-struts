@@ -978,15 +978,15 @@ describe('OperationsBoard', () => {
   // top-level data-sp-id, so ordering tests use singletons).
   function listCardIds(): string[] {
     const list = document.querySelector('.fs-ops-list')!;
-    return Array.from(list.querySelectorAll(':scope > [role="listitem"][data-sp-id]')).map(
-      (el) => el.getAttribute('data-sp-id')!,
-    );
+    // The List scan view renders compact chips (data-sp-id) — flat under .fs-ops-lrows
+    // for most sorts, or nested in per-status sections when sorted by Status.
+    return Array.from(list.querySelectorAll('[data-sp-id]')).map((el) => el.getAttribute('data-sp-id')!);
   }
 
-  // jsdom has no matchMedia → useIsDesktop() is false → the phone single-button
-  // ViewToggle. In tiles view (default) the button reads "Switch to list view".
+  // The view switcher (3 Views × 2 Devices) is one labeled Segmented —
+  // Division | Board | List — identical on phone and desktop (Radix radios).
   async function switchToList(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
+    await user.click(screen.getByRole('radio', { name: 'List' }));
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
@@ -1048,10 +1048,12 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     await switchToList(user);
     await setListSort(user, 'Status');
-    const items = Array.from(document.querySelectorAll('.fs-ops-list > [role="listitem"]'));
-    // Group keys on its least-advanced leg (cutting) → ahead of the runner singleton.
-    expect(items[0]!.querySelector('.fs-gs')).not.toBeNull();
-    expect(items[1]!.getAttribute('data-sp-id')).toBe('sp-runner');
+    const chips = Array.from(document.querySelectorAll('.fs-ops-list [data-sp-id]'));
+    // Group keys on its least-advanced leg (cutting) → its single chip (×2) lands
+    // ahead of the runner singleton; the front leg carries the chip's identity.
+    expect(chips[0]!.getAttribute('data-sp-id')).toBe('sp-g-secured');
+    expect(within(chips[0] as HTMLElement).getByText('×2')).toBeInTheDocument();
+    expect(chips[1]!.getAttribute('data-sp-id')).toBe('sp-runner');
   });
 
   it('list Sort → Added — newest first is newest-first', async () => {
@@ -1083,18 +1085,19 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
   });
 
-  it('a grouped multi-leg shore stays one stacked card in the list (not split rows)', async () => {
+  it('a grouped multi-leg shore is one chip with a count badge in the list (not split rows)', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([grouped3Post('sp-1', 1), grouped3Post('sp-2', 2), grouped3Post('sp-3', 3)]);
     render(<OperationsBoard />);
     await switchToList(user);
     const list = document.querySelector('.fs-ops-list')!;
-    // One rolodex stack, not three separate list rows.
-    expect(list.querySelectorAll('.fs-gs')).toHaveLength(1);
-    expect(list.querySelectorAll(':scope > [role="listitem"]')).toHaveLength(1);
-    // Collapsed stack shows exactly one front slide (the fan-out is unchanged).
-    expect(within(list as HTMLElement).getAllByText('Slide to set Strut Set')).toHaveLength(1);
+    // One chip with a ×3 badge — not three rows, and not the Board's interactive
+    // rolodex (the scan chip is read-only; advancing stays on the Board).
+    expect(list.querySelectorAll('[data-sp-id]')).toHaveLength(1);
+    expect(within(list as HTMLElement).getByText('×3')).toBeInTheDocument();
+    expect(list.querySelectorAll('.fs-gs')).toHaveLength(0);
+    expect(within(list as HTMLElement).queryByText('Slide to set Strut Set')).toBeNull();
   });
 
   it('list Added direction lives in the Sort menu: newest ↔ oldest', async () => {
@@ -1113,22 +1116,25 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-a', 'sp-b', 'sp-c']);
   });
 
-  it('phone: one view button toggles between Status tiles and List', async () => {
+  it('the view switcher swaps between Division, Board, and List', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
     render(<OperationsBoard />);
-    // Default tiles; the lone button offers to switch to list.
+    // Default is the status Board (lanes).
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
+    await user.click(screen.getByRole('radio', { name: 'List' }));
     expect(document.querySelector('.fs-ops-list')).not.toBeNull();
-    // Now it offers the way back to tiles.
-    await user.click(screen.getByRole('button', { name: 'Switch to tile view' }));
-    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    expect(document.querySelector('.fs-ops-lanes')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    expect(document.querySelector('.fs-ops-floors')).not.toBeNull();
     expect(document.querySelector('.fs-ops-list')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Board' }));
+    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    expect(document.querySelector('.fs-ops-floors')).toBeNull();
   });
 
-  it('desktop: the view toggle is two radio buttons (List + Status tiles)', () => {
+  it('desktop: the view switcher is the same labeled Division/Board/List control', () => {
     const mql = {
       matches: true, media: '', onchange: null,
       addEventListener: () => {}, removeEventListener: () => {},
@@ -1139,8 +1145,9 @@ describe('OperationsBoard', () => {
       mockOperation.mockReturnValue(ACTIVE_OP);
       mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
       render(<OperationsBoard />);
+      expect(screen.getByRole('radio', { name: 'Division' })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: 'Board' })).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'Status tiles' })).toBeInTheDocument();
     } finally {
       vi.unstubAllGlobals();
     }

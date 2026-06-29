@@ -310,6 +310,196 @@
   gap: var(--space-3);
 }
 
+/* ---- Division (by-floor) view (3 Views × 2 Devices) ---------------------- */
+/* The incident read as a building cross-section: floors stacked top → ground →
+   basement, each point on its actual floor. A narrow gutter is pinned left of
+   every floor behind one continuous vertical rule (the border-right, unbroken
+   because every floor row carries it); the "Grade · Ground" band marks the
+   above→below-grade line; sub-grade floors carry a faint diagonal hatch. Phase 1
+   reuses the full ShorePointCard inside each bay — the compact chip is Phase 2. */
+.fs-ops-floors {
+  display: flex;
+  flex-direction: column;
+  border: var(--stroke-width, 1px) solid var(--surface-stroke);
+  border-radius: var(--radius-card, 14px);
+  overflow: hidden;
+}
+.fs-ops-floor {
+  display: flex;
+  align-items: stretch;
+  border-bottom: var(--stroke-width, 1px) solid var(--surface-stroke);
+}
+.fs-ops-floor:last-child { border-bottom: none; }
+.fs-ops-floor.is-subgrade {
+  background-image: repeating-linear-gradient(135deg, transparent 0 9px, color-mix(in srgb, var(--text-secondary) 6%, transparent) 9px 10px);
+}
+.fs-ops-gutter {
+  flex: none;
+  width: 56px;
+  border-right: var(--stroke-width, 1px) solid var(--surface-stroke);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) 0;
+}
+.fs-ops-gutter-n {
+  font: var(--type-headline-2, 600 20px/1 system-ui);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.fs-ops-gutter-l {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.fs-ops-bay {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.fs-ops-grade {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-top: var(--stroke-width, 1px) solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-bottom: var(--stroke-width, 1px) solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.fs-ops-grade-label {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+/* ≥768px: wider gutter, bays flow their cards as a wrapping grid (the canvas
+   spreads each floor wide). Refined to the mockup's chip bays in Phase 3. */
+@media (min-width: 768px) {
+  .fs-ops-gutter { width: 88px; }
+  .fs-ops-bay { flex-flow: row wrap; align-content: flex-start; }
+  .fs-ops-bay > * { width: clamp(200px, 23%, 300px); }
+}
+
+/* ---- compact scan chip (Division + List views) --------------------------- */
+/* A read-only glance tile: status-colored left edge (--sp-solid, theme-correct in
+   all four themes — never a hard-coded hex), tap → Quick View. The flagged variant
+   swaps the edge + border to the danger red (the standing-verify surface reuses the
+   re-verified safety check). Two layouts: division = measurement-led tile, list =
+   compact row with the measure pinned right. */
+.fs-spchip {
+  position: relative;
+  display: flex;
+  text-align: left;
+  width: 100%;
+  background: var(--surface-card);
+  border: var(--stroke-width, 1px) solid var(--surface-stroke);
+  border-radius: var(--radius-card, 12px);
+  color: var(--text-primary);
+  cursor: pointer;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  font: inherit;
+}
+.fs-spchip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--sp-solid);
+}
+.fs-spchip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-spchip:hover { background: var(--surface-card-hover, var(--surface-elevated)); }
+.fs-spchip.is-flagged { border-color: var(--danger-text); }
+.fs-spchip.is-flagged::before { background: var(--danger-text); }
+.fs-spchip-flag {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger-text);
+  flex: none;
+  display: inline-block;
+}
+
+/* division tile — measurement leads big */
+.fs-spchip--division {
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 3px);
+}
+.fs-spchip-top { display: flex; align-items: center; gap: var(--space-1); }
+.fs-spchip-id {
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+.fs-spchip-meas {
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+.fs-spchip-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.fs-spchip-type { font: var(--type-caption); color: var(--text-tertiary); }
+.fs-spchip-crew { font: var(--type-caption); color: var(--text-secondary); }
+
+/* list row — location leads, measure pinned right */
+.fs-spchip--list {
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3) var(--space-2) calc(var(--space-3) + 3px);
+}
+.fs-spchip-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fs-spchip-loc {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fs-spchip-sub { font: var(--type-caption); color: var(--text-tertiary); }
+.fs-spchip--list .fs-spchip-meas { flex: none; font-size: 16px; }
+
+/* ---- List view: status groups (3 Views × 2 Devices) ---------------------- */
+/* Thin per-status headers (dot + label + count) wrapping the compact rows. The
+   .is-<status> hook on each section mints --sp-solid for its dot. */
+.fs-ops-list { display: flex; flex-direction: column; gap: var(--space-4); }
+.fs-ops-lgroup { display: flex; flex-direction: column; gap: var(--space-2); }
+.fs-ops-lgh { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-1) var(--space-1); }
+.fs-ops-lgh-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--sp-solid); flex: none; }
+.fs-ops-lgh-label {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+.fs-ops-lgh-count {
+  margin-left: auto;
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+.fs-ops-lrows { display: flex; flex-direction: column; gap: var(--space-2); }
+/* ≥768px: the list rows flow as a wrapping grid of cards (the canvas spreads the
+   list wide on the command post). */
+@media (min-width: 768px) {
+  .fs-ops-lrows { flex-flow: row wrap; }
+  .fs-ops-lrows > * { width: clamp(260px, 32%, 420px); }
+}
+
 /* ---- phone lane phase grouping (Item 2) ---------------------------------- */
 /* Three labeled dividers wrapping the seven lanes into the workflow phases the
    laptop 3-1-3 grid shows. Phone-only in the markup (desktop renders the flat
@@ -2502,6 +2692,117 @@ button.fs-spc-head {
     padding-right: var(--space-2);
   }
 }
+
+/* Division (desktop): swap the left drilldown rail for the right verify rail —
+   board column + a fixed 344px rail (mirrors the Command Deck's 340px two-pane). */
+@media (min-width: 768px) {
+  .fs-ops-stage.is-division {
+    grid-template-columns: [board] minmax(0, 1fr) [vrail] 344px;
+  }
+  .fs-ops-stage.is-division > .fs-ops-vrail {
+    grid-column: vrail;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: calc(100dvh - 8rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-left: var(--stroke-width, 1px) solid var(--surface-stroke);
+    padding-left: var(--space-4);
+  }
+}
+
+/* ---- verify surface (3 Views × 2 Devices) -------------------------------- */
+/* The standing safety check, backed by the existing re-verified capacity verdict.
+   Banner on Board/List + phone Division; the same content rides the Division rail
+   on desktop. The danger tokens carry the red in every theme. */
+.fs-ops-verify {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: var(--danger-bg);
+  border: var(--stroke-width, 1px) solid var(--danger-text);
+  border-radius: var(--radius-card, 12px);
+}
+.fs-ops-verify-ic {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--danger-text) 20%, transparent);
+  color: var(--danger-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+.fs-ops-verify-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fs-ops-verify-txt b { font: var(--type-body); font-weight: 600; color: var(--danger-text); }
+.fs-ops-verify-txt span { font: var(--type-caption); color: var(--text-secondary); }
+.fs-ops-verify-act {
+  flex: none;
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--danger-text);
+  background: transparent;
+  border: var(--stroke-width, 1px) solid var(--danger-text);
+  border-radius: var(--radius-badge, 8px);
+  padding: var(--space-1) var(--space-3);
+  cursor: pointer;
+}
+
+/* The Division right rail content */
+.fs-ops-vrail { display: flex; flex-direction: column; }
+.fs-vr-sec { padding-bottom: var(--space-4); }
+.fs-vr-sec + .fs-vr-sec { border-top: var(--stroke-width, 1px) solid var(--surface-stroke); padding-top: var(--space-1); }
+.fs-vr-h {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  margin: var(--space-3) 0;
+}
+.fs-vr-card {
+  background: var(--surface-bg);
+  border: var(--stroke-width, 1px) solid var(--surface-stroke);
+  border-radius: var(--radius-card, 12px);
+  padding: var(--space-3);
+}
+.fs-vr-card.is-flagged { border-color: var(--danger-text); }
+.fs-vr-card-top { display: flex; align-items: center; justify-content: space-between; }
+.fs-vr-card-id { font: var(--type-body); font-weight: 600; }
+.fs-vr-card-meas {
+  font-size: 28px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  margin: var(--space-2) 0;
+}
+.fs-vr-card-meta { font: var(--type-caption); color: var(--text-secondary); }
+.fs-vr-card-note { font: var(--type-caption); color: var(--text-secondary); margin: var(--space-2) 0 var(--space-3); }
+.fs-vr-card-act {
+  width: 100%;
+  font: var(--type-body);
+  font-weight: 600;
+  color: var(--danger-text);
+  background: color-mix(in srgb, var(--danger-text) 14%, transparent);
+  border: var(--stroke-width, 1px) solid var(--danger-text);
+  border-radius: var(--radius-badge, 10px);
+  padding: var(--space-2);
+  cursor: pointer;
+}
+.fs-vr-rollup { display: flex; flex-direction: column; gap: var(--space-3); }
+.fs-vr-big { display: flex; align-items: baseline; gap: var(--space-2); }
+.fs-vr-big b { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fs-vr-big small { font: var(--type-caption); color: var(--text-secondary); }
+.fs-vr-bar { display: flex; gap: 3px; height: 10px; }
+.fs-vr-bar i { border-radius: 2px; background: var(--sp-solid); min-width: 2px; }
+.fs-vr-counts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); }
+.fs-vr-count { display: flex; align-items: center; gap: var(--space-2); font: var(--type-caption); color: var(--text-secondary); }
+.fs-vr-count i { width: 9px; height: 9px; border-radius: 2px; background: var(--sp-solid); flex: none; }
+.fs-vr-count b { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-primary); }
 
 /* ---- drilldown rail (20-operations.md §Drilldown) ------------------------- */
 .fs-rail-list,
