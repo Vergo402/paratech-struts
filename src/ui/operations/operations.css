@@ -857,6 +857,9 @@ button.fs-spc-head {
 /* Hazard pill (handoff Hazard) — danger pair at badge emphasis, after the
    status badge. Sunlight resolves --danger-text→white on --danger-bg→solid red
    (white-on-red banner, already correct — mirrors how the status badge reads). */
+.fs-spc-hazard-row {
+  margin-top: var(--space-2);
+}
 .fs-spc-hazard {
   display: inline-flex;
   align-items: center;

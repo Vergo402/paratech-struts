@@ -1,5 +1,6 @@
 import { Segmented } from '@ui/primitives';
 import { OrgChart } from './OrgChart';
+import { HazardLog } from './HazardLog';
 
 export type WorkspaceView = 'org' | 'hazard';
 
@@ -23,14 +24,7 @@ export function CommandWorkspace({ view, onView }: { view: WorkspaceView; onView
         {view === 'org' && <span className="fs-cmd-ws-hint">Tap a position to assign or edit</span>}
       </div>
       <div className="fs-cmd-ws-body">
-        {view === 'org' ? (
-          <OrgChart />
-        ) : (
-          <div className="fs-cmd-ws-soon">
-            <p>The ICS-208 hazard register builds next.</p>
-            <p className="fs-cmd-ws-soon-sub">Open hazards already show in the rail summary.</p>
-          </div>
-        )}
+        {view === 'org' ? <OrgChart /> : <HazardLog />}
       </div>
     </div>
   );

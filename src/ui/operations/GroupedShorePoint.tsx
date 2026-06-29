@@ -39,6 +39,9 @@ export interface GroupedShorePointProps {
   onRemoveReturn?: ShorePointCardProps['onRemoveReturn'];
   /** Per-member group gate (#221 OQ2) — resolved against the member's own sp. */
   advanceDisabledReasonFor?: (sp: ShorePoint) => string | undefined;
+  /** Highest open-hazard severity in the group's Division (#394) — one location
+   *  per group, so the same badge rides every member card. */
+  hazard?: ShorePointCardProps['hazard'];
 }
 
 // The "Post 2" style member label. groupIndex is 1-based; fall back to array
@@ -69,6 +72,7 @@ export function GroupedShorePoint({
   onStepBack,
   onRemoveReturn,
   advanceDisabledReasonFor,
+  hazard,
 }: GroupedShorePointProps) {
   const n = members.length;
   const initialActive = Math.max(
@@ -145,6 +149,7 @@ export function GroupedShorePoint({
         onStepBack={onStepBack}
         onRemoveReturn={onRemoveReturn}
         advanceDisabledReason={advanceDisabledReasonFor?.(member)}
+        hazard={hazard}
         // The member's own group badge ("2 / 3") rides the card header already.
         key={`spc-${member.id}-${fallbackIndex}`}
       />

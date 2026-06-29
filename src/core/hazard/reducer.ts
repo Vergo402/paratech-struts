@@ -46,6 +46,12 @@ export function hazardReducer(state: HazardState, event: FieldShoreEvent): Hazar
 
 const SEVERITY_RANK: Record<HazardSeverity, number> = { high: 3, medium: 2, low: 1 };
 
+/** The short severity word for badges (one-tone red, distinguished by the word —
+ *  Alex 2026-06-29, #394). Shared by the register rows and the SP-card badge. */
+export function severityWord(sev: HazardSeverity): 'HIGH' | 'MED' | 'LOW' {
+  return sev === 'high' ? 'HIGH' : sev === 'medium' ? 'MED' : 'LOW';
+}
+
 /**
  * Hazards in list order (the v3 sort): OPEN first, then by severity (high→low),
  * then by recency (newest first); mitigated hazards drop to the bottom in the same

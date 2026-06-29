@@ -602,7 +602,7 @@ export function GalleryScreen() {
         {/* Hazard pill + removed slash (presentational props, #222 surfaces). */}
         <ShorePointCard
           shorePoint={spFixture({ seq: 10, label: 'C-1', status: 'process', deployedBom: DEPLOYED_BOM })}
-          hazard
+          hazard="high"
           onAdvance={() => {}}
           onStepBack={() => {}}
         />
