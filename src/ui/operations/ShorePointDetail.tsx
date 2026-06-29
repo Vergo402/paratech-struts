@@ -6,17 +6,16 @@ import {
   componentLabel,
   deductionTotalInches,
   deployedRigs,
-  deployedStrutOf,
   effectiveLengthInches,
-  findForShorePoint,
   hasUntracked,
   isUntracked,
   STATUS_LABELS,
 } from '@core/shorepoint';
 import { Badge, MeasurementValue } from '@ui/primitives';
 import { useInventory, useShorePointHistory } from '@ui/hooks';
-import { pieceIdentity, sameExtensions } from './pieceIdentity';
+import { pieceIdentity } from './pieceIdentity';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
+import { shoreSafety } from './shoreSafety';
 
 /**
  * ShorePointDetail — the read-only Quick View body for a DEPLOYED shore (ADR-019
@@ -129,23 +128,10 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
         ? 'Effective length'
         : 'Opening length';
 
-  // Safety — a CONFIRMED re-verification, not a guess (decision F). Re-run the
-  // real fit and match the deployed assembly by strut model + extension multiset;
-  // no match (stock changed, or off-book) → "not re-verifiable", never a false pass.
-  const safety = useMemo(() => {
-    const strut = deployedStrutOf(sp);
-    if (!strut?.model) return { kind: 'unknown' as const, msg: 'No strut on record for this shore.' };
-    // Read sp.deployedBom directly (not the outer `bom`) so the memo's deps are just
-    // sp + inventory — no exhaustive-deps suppression, no stale closure.
-    const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
-    const match = findForShorePoint(sp, inventory).find(
-      (c) => c.strut.model === strut.model && sameExtensions(c.extensions, exts),
-    );
-    if (!match) return { kind: 'unknown' as const, msg: 'Capacity not re-verifiable for the deployed assembly.' };
-    if (match.unrated) return { kind: 'warn' as const, msg: match.unratedReason ?? 'Unrated zone — capacity is not published at this length.' };
-    if (match.exceedsCapacity) return { kind: 'warn' as const, msg: match.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
-    return { kind: 'ok' as const, msg: `Within rated capacity — ${Math.floor(match.capacity).toLocaleString()} lbs per strut.` };
-  }, [sp, inventory]);
+  // Safety — a CONFIRMED re-verification, not a guess (decision F). The verdict is
+  // computed by the shared shoreSafety() helper so the Quick View hero and the
+  // board's verify surface (red edge / banner / Division rail) read identically.
+  const safety = useMemo(() => shoreSafety(sp, inventory), [sp, inventory]);
 
   // Only an actual FLAG (over-capacity / unrated) earns a spot in the hero, loud
   // and assertive. A clean pass or an unverifiable read is reference, not an
