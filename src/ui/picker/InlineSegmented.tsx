@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Segmented, type SegmentedOption } from '@ui/primitives';
+import { Segmented, type SegmentedOption, useNativeControls } from '@ui/primitives';
+import { PowerSelect } from './PowerSelect';
 
 /**
  * InlineSegmented — picker variant 1 (picker.md): 2–5 options, single-select,
@@ -25,6 +26,12 @@ export function InlineSegmented<T extends string>({
   size,
   trailing,
 }: InlineSegmentedProps<T>) {
+  // Native-controls fallback (accessibility.md §The Power Select fallback): an
+  // OS-native <select>, never a custom control faking native semantics.
+  if (useNativeControls()) {
+    return <PowerSelect label={label} options={options} value={value} onChange={onChange} />;
+  }
+
   return (
     <div className="fs-picker-field">
       {trailing != null ? (

@@ -33,7 +33,7 @@ export function PowerSelect<T extends string>({
         onChange={(e) => onChange(e.target.value as T)}
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
+          <option key={opt.value} value={opt.value} disabled={opt.disabled}>
             {opt.label}
           </option>
         ))}

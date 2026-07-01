@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { claimOverlay, releaseOverlay } from '@ui/primitives';
+import { claimOverlay, releaseOverlay, useNativeControls } from '@ui/primitives';
 import { PlateSwatch } from './PlateSwatch';
+import { PowerSelect } from './PowerSelect';
 
 /**
  * VisualGridPicker — the v3 plate/wood picker carried forward VERBATIM in
@@ -57,6 +58,8 @@ export function VisualGridPicker({
   const gridRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const labelId = useId();
+
+  const nativeControls = useNativeControls();
 
   const isAvailable = (id: string) => !availableIds || id === 'none' || availableIds.has(id);
   const filtering = !!availableIds;
@@ -116,6 +119,22 @@ export function VisualGridPicker({
     onSelect(id); // single-select commits immediately…
     setOpen(false); // …and closes (picker.md rule 2)
   };
+
+  // Native-controls fallback (accessibility.md §The Power Select fallback): an
+  // OS-native <select>, out-of-stock rows disabled just like the grid (v3 #121).
+  // The visual grid (photos/swatches) is a gloved-thumb affordance; a screen
+  // reader gets real platform semantics instead. Placed after all hooks so the
+  // effect order never changes (rules-of-hooks).
+  if (nativeControls) {
+    return (
+      <PowerSelect
+        label={label}
+        options={options.map((o) => ({ value: o.id, label: o.name, disabled: !isAvailable(o.id) }))}
+        value={value}
+        onChange={onSelect}
+      />
+    );
+  }
 
   return (
     <div className="fs-picker-field">

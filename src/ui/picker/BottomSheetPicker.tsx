@@ -1,5 +1,6 @@
 import { useId, useRef, useState } from 'react';
-import { PickerSurface } from '@ui/primitives';
+import { PickerSurface, useNativeControls } from '@ui/primitives';
+import { PowerSelect } from './PowerSelect';
 
 /**
  * BottomSheetPicker — picker variant 2 (picker.md): 5–7 options, single-select,
@@ -16,6 +17,8 @@ export interface SheetPickerOption<T extends string> {
   label: string;
   /** Quiet secondary line (e.g. "deducts 1″"). */
   sub?: string;
+  /** Non-selectable (e.g. out-of-stock in ops mode) — honored by PowerSelect. */
+  disabled?: boolean;
 }
 
 export interface BottomSheetPickerProps<T extends string> {
@@ -35,6 +38,12 @@ export function BottomSheetPicker<T extends string>({
   const labelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const current = options.find((o) => o.value === value);
+
+  // Native-controls fallback (accessibility.md §The Power Select fallback): an
+  // OS-native <select>, never a custom control faking native semantics.
+  if (useNativeControls()) {
+    return <PowerSelect label={label} options={options} value={value} onChange={onSelect} />;
+  }
 
   if (import.meta.env.DEV && options.length > 7) {
     console.warn(
