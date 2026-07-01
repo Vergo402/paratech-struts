@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import type { FieldShoreEvent, OrgResourceRef } from '@core/schema';
-import { childrenOf, orderForUp, orderForDown, validParentsFor } from '@core/org';
-import { Sheet, Modal, Button, TextField } from '@ui/primitives';
-import { useOrg, useOperation, useRoleHistory } from '@ui/hooks';
+import {
+  childrenOf,
+  orderForUp,
+  orderForDown,
+  validParentsFor,
+  sameResource,
+  positionForResource,
+  spanOfControl,
+  spanLevel,
+  kindLabel,
+  leaderOf,
+} from '@core/org';
+import { Sheet, SideDrawer, Modal, Button, TextField, useMediaQuery } from '@ui/primitives';
+import { useOrg, useOperation, useRoleHistory, useApparatus } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
-import { AssignResourceSheet } from './AssignResourceSheet';
-import { AddPositionSheet } from './AddPositionSheet';
+import { AddPositionForm } from './AddPositionForm';
 
 // One-line role-history description (events naming this node, append order).
 function describe(e: FieldShoreEvent): string {
@@ -40,14 +50,23 @@ function describe(e: FieldShoreEvent): string {
 const fmtTime = (ms: number) =>
   new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-type Mode = 'menu' | 'move' | 'history';
+type Mode = 'menu' | 'move' | 'add';
 
 /**
- * The org-node sheet (#295/#225) — tap a node. Grouped into Assigned · Subordinates ·
- * Manage so it scans at a glance (the flat menu was unreadable — Alex). Reads for
- * everyone; the IC edits. All reparenting lives behind one Move… sub-view (reorder
- * up/down + move under a different position); promote/demote are just move-under
- * targets, so there are no separate buttons and no reason-label clutter.
+ * The org-node panel (#295 / #374). Tap a node → one SINGLE scrolling flow: the ICS-class
+ * eyebrow, the assigned resources (with an INLINE assign — roster toggles + a named
+ * individual, no separate modal), the direct reports, the manage actions, and the role
+ * history. Add / Move open as inline sub-views WITHIN the same panel (the "zero flow
+ * between actions" fix — no more stacked sheets). Reads for everyone; the IC edits.
+ *
+ * Surface-adaptive (ADR-019 / ADR-032): on the desktop Command Deck (≥1024px) it is the
+ * SideDrawer's docked, non-modal companion column — the board stays live beside it; below
+ * that it is a bottom Sheet (the phone floor, matching the org-in-a-Sheet layout). We key
+ * off the DECK breakpoint (1024), not the SideDrawer's own 768, so the 768–1024 band
+ * (org still in a Sheet) gets a bottom sheet, never an orphaned dock.
+ *
+ * Removing a POPULATED position stays a Modal confirm (ADR-016) — the one destructive
+ * step that is NOT inlined.
  */
 export function NodeSheet({
   positionId,
@@ -62,22 +81,34 @@ export function NodeSheet({
   const op = useOperation();
   const emit = useOrgCommit();
   const history = useRoleHistory(op?.id ?? null, positionId);
+  const { roster } = useApparatus();
+  const isDeck = useMediaQuery('(min-width: 1024px)');
   const [mode, setMode] = useState<Mode>('menu');
-  const [assignOpen, setAssignOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState('');
+  const [individual, setIndividual] = useState('');
 
   const pos = positions[positionId];
   if (!pos) return null;
 
-  const parent = pos.parentId ? positions[pos.parentId] : null;
   const subs = childrenOf(positions, positionId).filter((c) => c.kind !== 'command-staff');
   const upOrder = orderForUp(positions, positionId);
   const downOrder = orderForDown(positions, positionId);
+  const span = spanOfControl(positions, positionId);
+  const level = spanLevel(span);
+  const assigned = pos.assignedResources;
 
-  const clear = (resource: OrgResourceRef) => emit({ type: 'ResourceCleared', positionId, resource });
+  const has = (r: OrgResourceRef) => assigned.some((a) => sameResource(a, r));
+  const clear = (r: OrgResourceRef) => emit({ type: 'ResourceCleared', positionId, resource: r });
+  const toggle = (r: OrgResourceRef) =>
+    emit(has(r) ? { type: 'ResourceCleared', positionId, resource: r } : { type: 'ResourceAssigned', positionId, resource: r });
+  const addIndividual = () => {
+    const n = individual.trim();
+    if (!n) return;
+    emit({ type: 'ResourceAssigned', positionId, resource: { ref: 'individual', value: n, label: n } });
+    setIndividual('');
+  };
   const reparent = (newParentId: string) => {
     emit({ type: 'PositionReparented', positionId, newParentId });
     setMode('menu');
@@ -87,21 +118,23 @@ export function NodeSheet({
     if (t && t !== pos.title) emit({ type: 'PositionRenamed', positionId, title: t });
     setRenaming(false);
   };
-  const subsLabel = `${subs.length} ${subs.length === 1 ? 'subordinate' : 'subordinates'}`;
+
+  const Shell = isDeck ? SideDrawer : Sheet;
+  const eyebrow = `${kindLabel(pos.kind)}${level !== 'ok' ? ` · span ${span} ${level}` : ''}`;
 
   return (
-    <Sheet open onClose={onClose} title={pos.title}>
-      <p className="fs-node-subtitle">{parent ? `Reports to ${parent.title}` : 'Top of command'}</p>
+    <Shell open onClose={onClose} title={pos.title}>
+      <p className="fs-node-subtitle">{eyebrow}</p>
 
       {mode === 'menu' && (
         <>
-          {/* ASSIGNED */}
-          <div className="fs-node-section">Assigned</div>
-          {pos.assignedResources.length === 0 ? (
+          {/* ASSIGNED + inline assign (no separate modal — the #374 flow fix) */}
+          <div className="fs-node-section">Assigned{assigned.length ? ` · ${assigned.length}` : ''}</div>
+          {assigned.length === 0 ? (
             <p className="fs-node-empty">Unassigned</p>
           ) : (
             <ul className="fs-node-resources">
-              {pos.assignedResources.map((r, i) => (
+              {assigned.map((r, i) => (
                 <li key={`${r.ref}:${r.value}`} className="fs-node-resource">
                   <span className="fs-assign-name">
                     {r.label}
@@ -116,30 +149,60 @@ export function NodeSheet({
               ))}
             </ul>
           )}
-          {isIC &&
-            (renaming ? null : (
-              <Button variant="primary" size="standard" fullWidth onPress={() => setAssignOpen(true)}>
-                Assign resource
-              </Button>
-            ))}
-          {/* #401 — steer the IC away from the clear/assign workaround for command
-              handoff: ResourceCleared/ResourceAssigned leaves no transfer record. */}
-          {isIC && !parent && (
-            <p className="fs-node-note">To hand off command with a record, use Transfer Command.</p>
-          )}
-
-          {/* SUBORDINATES — count only; the whole tree is visible in the chart */}
-          {subs.length > 0 && (
+          {isIC && (
             <>
-              <div className="fs-node-section">Subordinates</div>
-              <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
-                {subsLabel}
-              </p>
+              {roster.length > 0 && (
+                <>
+                  <div className="fs-node-section">Apparatus on roster</div>
+                  <ul className="fs-assign-list">
+                    {roster.map((app) => {
+                      const r: OrgResourceRef = { ref: 'apparatus', value: app.id, label: app.name };
+                      const home = positionForResource(positions, r);
+                      const onHere = has(r);
+                      return (
+                        <li key={app.id}>
+                          <button type="button" className={`fs-assign-row${onHere ? ' is-on' : ''}`} onClick={() => toggle(r)}>
+                            <span className="fs-assign-name">{app.name}</span>
+                            <span className="fs-assign-meta">{onHere ? '✓ assigned here' : home ? `at ${home.title}` : 'unassigned'}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
+              )}
+              {/* #401 — steer the IC away from the clear/assign toggle for command
+                  handoff: ResourceCleared/ResourceAssigned leaves no transfer record.
+                  Only on the command root (no parent), where command actually transfers. */}
+              {pos.parentId === null && (
+                <p className="fs-node-note">To hand off command with a record, use Transfer Command.</p>
+              )}
+              <div className="fs-assign-individual">
+                <TextField label="Add individual" value={individual} onChange={setIndividual} placeholder="e.g. FF Lopez" size="standard" />
+                <Button variant="secondary" size="standard" disabled={!individual.trim()} onPress={addIndividual}>
+                  Add
+                </Button>
+              </div>
             </>
           )}
 
-          {/* MANAGE (IC) / read row (others) */}
-          {isIC ? (
+          {/* DIRECT REPORTS */}
+          {subs.length > 0 && (
+            <>
+              <div className="fs-node-section">Direct reports · {subs.length}</div>
+              <ul className="fs-node-resources">
+                {subs.map((s) => (
+                  <li key={s.id} className="fs-node-resource">
+                    <span className="fs-assign-name">{s.title}</span>
+                    <span className="fs-assign-meta">{leaderOf(s)?.label ?? 'Unassigned'}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {/* MANAGE (IC) — rename inline; add / move as inline sub-views */}
+          {isIC && (
             <>
               <div className="fs-node-section">Manage position</div>
               {renaming ? (
@@ -161,16 +224,12 @@ export function NodeSheet({
                   >
                     <span>Rename</span>
                   </button>
-                  <button type="button" className="fs-node-grow" onClick={() => setAddOpen(true)}>
+                  <button type="button" className="fs-node-grow" onClick={() => setMode('add')}>
                     <span>Add position under this</span>
                     <span aria-hidden="true">›</span>
                   </button>
                   <button type="button" className="fs-node-grow" onClick={() => setMode('move')}>
                     <span>Move…</span>
-                    <span aria-hidden="true">›</span>
-                  </button>
-                  <button type="button" className="fs-node-grow" onClick={() => setMode('history')}>
-                    <span>Role history</span>
                     <span aria-hidden="true">›</span>
                   </button>
                 </div>
@@ -183,13 +242,21 @@ export function NodeSheet({
                 <p className="fs-node-note">Built-in position · cannot be removed</p>
               )}
             </>
+          )}
+
+          {/* ROLE HISTORY — an always-visible section (read for everyone) */}
+          <div className="fs-node-section">Role history</div>
+          {history.events.length === 0 ? (
+            <p className="fs-node-empty">No history yet.</p>
           ) : (
-            <div className="fs-node-group">
-              <button type="button" className="fs-node-grow" onClick={() => setMode('history')}>
-                <span>Role history</span>
-                <span aria-hidden="true">›</span>
-              </button>
-            </div>
+            <ul className="fs-node-history">
+              {history.events.map((e) => (
+                <li key={e.id}>
+                  <span className="fs-node-hist-line">{describe(e)}</span>
+                  <span className="fs-node-hist-time">{fmtTime(e.at)}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </>
       )}
@@ -236,33 +303,16 @@ export function NodeSheet({
         </>
       )}
 
-      {mode === 'history' && (
+      {mode === 'add' && (
         <>
           <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
             ‹ Back
           </button>
-          <div className="fs-node-section">Role history</div>
-          {history.events.length === 0 ? (
-            <p className="fs-node-empty">No history yet.</p>
-          ) : (
-            <ul className="fs-node-history">
-              {history.events.map((e) => (
-                <li key={e.id}>
-                  <span className="fs-node-hist-line">{describe(e)}</span>
-                  <span className="fs-node-hist-time">{fmtTime(e.at)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="fs-node-section">Add position under {pos.title}</div>
+          <AddPositionForm parentId={positionId} parentKind={pos.kind} onDone={() => setMode('menu')} />
         </>
       )}
 
-      {assignOpen && (
-        <AssignResourceSheet open onClose={() => setAssignOpen(false)} positionId={positionId} positionTitle={pos.title} />
-      )}
-      {addOpen && (
-        <AddPositionSheet open onClose={() => setAddOpen(false)} parentId={positionId} parentKind={pos.kind} parentTitle={pos.title} />
-      )}
       <Modal
         open={removeOpen}
         onClose={() => setRemoveOpen(false)}
@@ -289,6 +339,6 @@ export function NodeSheet({
       >
         <p>This removes the position{subs.length > 0 ? ' and everything under it' : ''}. Assignments here are cleared.</p>
       </Modal>
-    </Sheet>
+    </Shell>
   );
 }

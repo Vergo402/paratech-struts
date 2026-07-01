@@ -6,6 +6,7 @@ import { CommandRail } from './CommandRail';
 import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
 import { EndOperationButton } from './EndOperationButton';
 import { OrgChart } from './OrgChart';
+import { NodeSheet } from './NodeSheet';
 import { HazardLog } from './HazardLog';
 import { ICCommandChecklist } from './ICCommandChecklist';
 import './command.css';
@@ -31,6 +32,7 @@ export function SitStat() {
   const [view, setView] = useState<WorkspaceView>('org');
   const [sheet, setSheet] = useState<WorkspaceView | null>(null);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  const [openNodeId, setOpenNodeId] = useState<string | null>(null);
 
   if (!operation) {
     return (
@@ -57,6 +59,14 @@ export function SitStat() {
     </>
   );
 
+  // The node panel is hosted at the shell level (NOT inside the chart) so its desktop
+  // posture — the SideDrawer's docked companion column — sits BESIDE the board (the
+  // .fs-cmd-shell flex row hosts the dock), exactly like the checklist. Below the deck
+  // breakpoint it is a bottom Sheet (NodeSheet picks the surface). #374.
+  const nodePanel = openNodeId != null && (
+    <NodeSheet positionId={openNodeId} isIC={isIC} onClose={() => setOpenNodeId(null)} />
+  );
+
   if (isDeck) {
     return (
       <div className="fs-cmd-shell">
@@ -66,10 +76,11 @@ export function SitStat() {
             <EndOperationButton />
           </div>
           <div className="fs-cmd-deck-ws">
-            <CommandWorkspace view={view} onView={setView} />
+            <CommandWorkspace view={view} onView={setView} onOpenNode={setOpenNodeId} />
           </div>
         </div>
         {checklist}
+        {nodePanel}
       </div>
     );
   }
@@ -91,10 +102,11 @@ export function SitStat() {
         <EndOperationButton />
 
         <Sheet open={sheet !== null} onClose={() => setSheet(null)} title={sheet === 'hazard' ? 'Hazard Log' : 'Org Chart'}>
-          {sheet === 'hazard' ? <HazardLog /> : <OrgChart allowFullScreen />}
+          {sheet === 'hazard' ? <HazardLog /> : <OrgChart allowFullScreen onOpenNode={setOpenNodeId} />}
         </Sheet>
       </div>
       {checklist}
+      {nodePanel}
     </div>
   );
 }

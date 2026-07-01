@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FieldShoreEvent, OrgPositionKind, TeamMember } from '@core/schema';
 import { classGroupsAddableUnder, libraryItemsAddableUnder, kindLabel, nextChildOrder } from '@core/org';
 import { newId } from '@core/id';
-import { Sheet, TextField, Button } from '@ui/primitives';
+import { TextField, Button } from '@ui/primitives';
 import { useOrg, useOperation, useDeviceUid, useCommitMany, useCustomTitles } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { ClassSelector } from './ClassSelector';
@@ -10,26 +10,24 @@ import { ClassSelector } from './ClassSelector';
 const memberSummary = (members: TeamMember[]): string => members.map((m) => `${m.count} ${m.type}`).join(', ');
 
 /**
- * Add a position beneath `parentId` — class-first (#323). The top is an ICS-class chip
- * row (only classes legal under this parent); selecting a class lists that class's roles
+ * Add a position beneath `parentId` — class-first (#323). Rendered INLINE inside the
+ * node panel (#374 — the single-flow overhaul, no stacked modal), so `onDone` returns
+ * to the panel menu rather than closing an overlay. The top is an ICS-class chip row
+ * (only classes legal under this parent); selecting a class lists that class's roles
  * (built-in + the department's custom titles), each a tap-to-add. A quick "+ new title"
  * creates a one-off that BOTH saves into the custom library AND places it. Strike Team /
  * Task Force titles that carry a composition spawn their member slots as unassigned
- * single-resource children in one batch. Leaf parents (nothing reports under them) show
- * an empty state. Full title management lives in Settings.
+ * single-resource children in one batch. Leaf parents show an empty state. Full title
+ * management lives in Settings.
  */
-export function AddPositionSheet({
-  open,
-  onClose,
+export function AddPositionForm({
   parentId,
   parentKind,
-  parentTitle,
+  onDone,
 }: {
-  open: boolean;
-  onClose: () => void;
   parentId: string;
   parentKind: OrgPositionKind;
-  parentTitle: string;
+  onDone: () => void;
 }) {
   const positions = useOrg();
   const op = useOperation();
@@ -58,7 +56,7 @@ export function AddPositionSheet({
       type: 'PositionAdded',
       position: { id: newId(), title, kind, parentId, builtIn: false, order: nextChildOrder(positions, parentId), assignedResources: [] },
     });
-    onClose();
+    onDone();
   };
 
   // A team template: leader + one unassigned single-resource child per member unit, all
@@ -88,7 +86,7 @@ export function AddPositionSheet({
       }
     }
     await commitMany(events);
-    onClose();
+    onDone();
   };
 
   const place = (title: string, kind: OrgPositionKind, members?: TeamMember[]) => {
@@ -107,79 +105,79 @@ export function AddPositionSheet({
   const builtIns = group ? libraryItemsAddableUnder(parentKind).filter((i) => group.kinds.includes(i.kind)) : [];
   const customs = group ? titles.filter((t) => group.kinds.includes(t.kind)) : [];
 
+  if (groups.length === 0 || !group) {
+    return (
+      <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
+        Nothing reports under a {kindLabel(parentKind)}.
+      </p>
+    );
+  }
+
   return (
-    <Sheet open={open} onClose={onClose} title={`Add under ${parentTitle}`}>
-      {groups.length === 0 || !group ? (
-        <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
-          Nothing reports under a {kindLabel(parentKind)}.
-        </p>
-      ) : (
-        <>
-          <ClassSelector
-            groups={groups}
-            value={group.key}
-            onChange={(k) => {
-              setSelKey(k);
-              setNewKind(null);
-            }}
-          />
+    <>
+      <ClassSelector
+        groups={groups}
+        value={group.key}
+        onChange={(k) => {
+          setSelKey(k);
+          setNewKind(null);
+        }}
+      />
 
-          <ul className="fs-assign-list" style={{ marginTop: 'var(--space-3)' }}>
-            {builtIns.map((i) => (
-              <li key={i.key}>
-                <button type="button" className="fs-assign-row" onClick={() => place(i.title, i.kind)}>
-                  <span className="fs-assign-name-wrap">
-                    <span className="fs-assign-name">{i.title}</span>
-                    {multi && <span className="fs-assign-tag">{kindLabel(i.kind)}</span>}
-                  </span>
-                  <span className="fs-assign-meta">add ›</span>
-                </button>
-              </li>
-            ))}
-            {customs.map((c) => (
-              <li key={c.id}>
-                <button type="button" className="fs-assign-row" onClick={() => place(c.title, c.kind, c.members)}>
-                  <span className="fs-assign-name-wrap">
-                    <span className="fs-assign-name">{c.title}</span>
-                    {multi && <span className="fs-assign-tag">{kindLabel(c.kind)}</span>}
-                    <span className="fs-assign-tag">custom</span>
-                  </span>
-                  <span className="fs-assign-meta">{c.members && c.members.length ? `${memberSummary(c.members)} · add ›` : 'add ›'}</span>
-                </button>
-              </li>
-            ))}
-            {builtIns.length === 0 && customs.length === 0 && (
-              <li>
-                <p className="fs-node-empty">No roles in this class yet — add one below.</p>
-              </li>
-            )}
-          </ul>
+      <ul className="fs-assign-list" style={{ marginTop: 'var(--space-3)' }}>
+        {builtIns.map((i) => (
+          <li key={i.key}>
+            <button type="button" className="fs-assign-row" onClick={() => place(i.title, i.kind)}>
+              <span className="fs-assign-name-wrap">
+                <span className="fs-assign-name">{i.title}</span>
+                {multi && <span className="fs-assign-tag">{kindLabel(i.kind)}</span>}
+              </span>
+              <span className="fs-assign-meta">add ›</span>
+            </button>
+          </li>
+        ))}
+        {customs.map((c) => (
+          <li key={c.id}>
+            <button type="button" className="fs-assign-row" onClick={() => place(c.title, c.kind, c.members)}>
+              <span className="fs-assign-name-wrap">
+                <span className="fs-assign-name">{c.title}</span>
+                {multi && <span className="fs-assign-tag">{kindLabel(c.kind)}</span>}
+                <span className="fs-assign-tag">custom</span>
+              </span>
+              <span className="fs-assign-meta">{c.members && c.members.length ? `${memberSummary(c.members)} · add ›` : 'add ›'}</span>
+            </button>
+          </li>
+        ))}
+        {builtIns.length === 0 && customs.length === 0 && (
+          <li>
+            <p className="fs-node-empty">No roles in this class yet — add one below.</p>
+          </li>
+        )}
+      </ul>
 
-          <div className="fs-node-section">New title{newKindResolved ? ` · ${kindLabel(newKindResolved)}` : ''}</div>
-          {multi && (
-            <div className="fs-newkind-chips" role="radiogroup" aria-label="New title kind">
-              {group.kinds.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  role="radio"
-                  aria-checked={k === newKindResolved}
-                  className={`fs-newkind-chip${k === newKindResolved ? ' is-active' : ''}`}
-                  onClick={() => setNewKind(k)}
-                >
-                  {kindLabel(k)}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="fs-assign-individual">
-            <TextField label="Title" value={newTitle} onChange={setNewTitle} placeholder="e.g. Tunneling Group Supervisor" size="standard" />
-            <Button variant="secondary" size="standard" disabled={!newTitle.trim()} onPress={addNew}>
-              Add
-            </Button>
-          </div>
-        </>
+      <div className="fs-node-section">New title{newKindResolved ? ` · ${kindLabel(newKindResolved)}` : ''}</div>
+      {multi && (
+        <div className="fs-newkind-chips" role="radiogroup" aria-label="New title kind">
+          {group.kinds.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={k === newKindResolved}
+              className={`fs-newkind-chip${k === newKindResolved ? ' is-active' : ''}`}
+              onClick={() => setNewKind(k)}
+            >
+              {kindLabel(k)}
+            </button>
+          ))}
+        </div>
       )}
-    </Sheet>
+      <div className="fs-assign-individual">
+        <TextField label="Title" value={newTitle} onChange={setNewTitle} placeholder="e.g. Tunneling Group Supervisor" size="standard" />
+        <Button variant="secondary" size="standard" disabled={!newTitle.trim()} onPress={addNew}>
+          Add
+        </Button>
+      </div>
+    </>
   );
 }
