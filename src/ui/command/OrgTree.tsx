@@ -43,7 +43,7 @@ function OrgNode({
   pos,
   isRoot,
   editable,
-  spanText,
+  span,
   onOpen,
   dnd,
   interactive = true,
@@ -51,13 +51,15 @@ function OrgNode({
   pos: OrgPosition;
   isRoot?: boolean;
   editable: boolean;
-  spanText?: string;
+  /** Direct-report count (command-staff excluded) — drives the span-of-control badge. */
+  span?: number;
   onOpen: () => void;
   dnd: OrgDragApi;
   /** False in the full-screen view: a static card — no tap, no drag, no grip. */
   interactive?: boolean;
 }) {
   const leader = leaderOf(pos);
+  const isResource = pos.kind === 'single-resource';
   const canDrag = interactive && editable && !isRoot;
   const role = dnd.roleFor(pos.id);
   const hot = dnd.hotZoneFor(pos.id);
@@ -65,7 +67,8 @@ function OrgNode({
     'fs-org-node',
     interactive ? 'fs-org-node--press' : '',
     isRoot ? 'is-ic' : '',
-    leader ? 'is-filled' : '',
+    leader ? 'is-filled' : 'is-unassigned',
+    isResource ? 'is-resource' : '',
     pos.kind === 'workstation' ? 'is-workstation' : '',
     role === 'source' ? 'is-lifted' : '',
     role === 'valid' ? 'is-valid' : '',
@@ -77,12 +80,42 @@ function OrgNode({
     .filter(Boolean)
     .join(' ');
 
+  // Meta badges (#373): extra-resource count, geographic locator, span-of-control.
+  const level = span != null ? spanLevel(span) : 'ok';
+  const extra = pos.assignedResources.length - 1;
+  const badges = (
+    <>
+      {extra > 0 && (
+        <span className="fs-org-badge is-count">
+          +{extra} resource{extra > 1 ? 's' : ''}
+        </span>
+      )}
+      {pos.kind === 'division' && pos.floor != null && (
+        <span className="fs-org-badge is-loc">
+          Div {pos.floor}
+          {pos.side ? ` · ${pos.side} side` : ''}
+        </span>
+      )}
+      {level !== 'ok' && (
+        <span className={`fs-org-badge ${level === 'over' ? 'is-span-over' : 'is-span-caution'}`}>
+          Span {span} · {level === 'over' ? 'over' : 'caution'}
+        </span>
+      )}
+    </>
+  );
+  const hasBadges = extra > 0 || (pos.kind === 'division' && pos.floor != null) || level !== 'ok';
+
   const body = (
     <>
-      {pos.kind === 'single-resource' && <span className="fs-org-node-kind">{kindLabel(pos.kind)}</span>}
-      <span className="fs-org-node-eyebrow">{pos.title}</span>
-      <span className={`fs-org-node-leader${leader ? '' : ' is-unassigned'}`}>{leader ? leader.label : 'Unassigned'}</span>
-      {spanText && <span className="fs-org-node-span">{spanText}</span>}
+      <span className="fs-org-node-dot" aria-hidden="true" />
+      <span className="fs-org-node-body">
+        <span className="fs-org-node-eyebrow">{kindLabel(pos.kind)}</span>
+        <span className="fs-org-node-title">{pos.title}</span>
+        {!isResource && (
+          <span className={`fs-org-node-leader${leader ? '' : ' is-unassigned'}`}>{leader ? leader.label : 'Unassigned'}</span>
+        )}
+        {hasBadges && <span className="fs-org-node-meta">{badges}</span>}
+      </span>
     </>
   );
 
@@ -154,9 +187,6 @@ export function SubTree({
   const staff = kids.filter((k) => k.kind === 'command-staff');
   const reports = kids.filter((k) => k.kind !== 'command-staff');
   const span = spanOfControl(positions, id);
-  const level = spanLevel(span);
-  const spanText =
-    reports.length > 0 && level !== 'ok' ? `Span ${span} · ${level === 'over' ? 'over' : 'caution'}` : undefined;
   // Stack a group's children vertically (indented spine) ONLY at the bottom-most
   // parent→single-resource relationship: below the Operations groups row (depth ≥ 2)
   // AND when every child is a single resource (apparatus/crew). A group whose children
@@ -167,7 +197,7 @@ export function SubTree({
   return (
     <li className={stacked ? 'fs-org-li--stackparent' : undefined}>
       <div className="fs-org-top">
-        <OrgNode pos={pos} isRoot={id === rootId} editable={editable} spanText={spanText} onOpen={() => onOpen(id)} dnd={dnd} interactive={interactive} />
+        <OrgNode pos={pos} isRoot={id === rootId} editable={editable} span={span} onOpen={() => onOpen(id)} dnd={dnd} interactive={interactive} />
         {staff.length > 0 && (
           <div className="fs-org-staff" aria-label="Command staff">
             {staff.map((s) => (

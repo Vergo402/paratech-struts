@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
 import { rootPosition, currentIC } from '@core/org';
 import { useOrg, useDeviceUidValue } from '@ui/hooks';
@@ -6,6 +6,7 @@ import { NodeSheet } from './NodeSheet';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
 import { OrgDragLayer } from './OrgDragLayer';
+import { OrgConnectors } from './OrgConnectors';
 import { useOrgDragDrop } from './useOrgDragDrop';
 import { OrgFullScreen } from './OrgFullScreen';
 import { SubTree } from './OrgTree';
@@ -32,7 +33,27 @@ export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolea
   const [myRoleOpen, setMyRoleOpen] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   const dnd = useOrgDragDrop({ positions, isIC, containerRef, onOpenNode: setOpenNodeId });
+
+  const rootId = root?.id;
+  // Center-on-IC (#373): open the chart scrolled so the Incident Commander sits in the
+  // middle, not jammed at the left edge. Once, after first layout (root id is stable
+  // for an operation — we deliberately don't re-center on every structural edit).
+  useLayoutEffect(() => {
+    const scroll = scrollRef.current;
+    const canvas = canvasRef.current;
+    if (!scroll || !canvas || !rootId) return;
+    const raf = requestAnimationFrame(() => {
+      const rootEl = canvas.querySelector<HTMLElement>(`[data-org-node="${rootId}"]`);
+      if (!rootEl) return;
+      let x = 0;
+      for (let n: HTMLElement | null = rootEl; n && n !== canvas; n = n.offsetParent as HTMLElement | null) x += n.offsetLeft;
+      scroll.scrollLeft = x + rootEl.offsetWidth / 2 - scroll.clientWidth / 2;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [rootId]);
 
   if (!root) return null;
 
@@ -56,11 +77,14 @@ export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolea
 
       {isIC && <RosterStrip dnd={dnd} />}
 
-      <div className={`fs-org-scroll${dnd.drag ? ' is-dragging' : ''}`}>
-        <div className="fs-org-tree">
-          <ul>
-            <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} dnd={dnd} editable={isIC} />
-          </ul>
+      <div className={`fs-org-scroll${dnd.drag ? ' is-dragging' : ''}`} ref={scrollRef}>
+        <div className="fs-org-canvas" ref={canvasRef}>
+          <OrgConnectors canvasRef={canvasRef} deps={positions} />
+          <div className="fs-org-tree">
+            <ul>
+              <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} dnd={dnd} editable={isIC} />
+            </ul>
+          </div>
         </div>
       </div>
 
