@@ -64,7 +64,9 @@ export function SitStat() {
   // .fs-cmd-shell flex row hosts the dock), exactly like the checklist. Below the deck
   // breakpoint it is a bottom Sheet (NodeSheet picks the surface). #374.
   const nodePanel = openNodeId != null && (
-    <NodeSheet positionId={openNodeId} isIC={isIC} onClose={() => setOpenNodeId(null)} />
+    // key by id → a fresh instance per node so its mode / rename / assign draft never
+    // leaks when the IC taps a different position without closing the panel first.
+    <NodeSheet key={openNodeId} positionId={openNodeId} isIC={isIC} onClose={() => setOpenNodeId(null)} />
   );
 
   if (isDeck) {

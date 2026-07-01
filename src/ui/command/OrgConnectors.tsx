@@ -27,17 +27,25 @@ interface Box {
   my: number;
 }
 
-// Layout position of `el` relative to the canvas content box — immune to the
-// canvas transform/zoom (that's the whole point; see the header note).
-function boxOf(el: HTMLElement, canvas: HTMLElement): Box {
+/**
+ * Layout offset of `el` within `canvas` — the offsetParent walk (NOT
+ * getBoundingClientRect), so it's pre-transform and zoom-immune. The one primitive
+ * behind both boxOf here and OrgChart's center-on-IC; the contract (walk to `canvas`
+ * exclusive, use offsetParent) lives in one place so it can't drift.
+ */
+export function offsetWithin(el: HTMLElement, canvas: HTMLElement): { x: number; y: number } {
   let x = 0;
   let y = 0;
-  let n: HTMLElement | null = el;
-  while (n && n !== canvas) {
+  for (let n: HTMLElement | null = el; n && n !== canvas; n = n.offsetParent as HTMLElement | null) {
     x += n.offsetLeft;
     y += n.offsetTop;
-    n = n.offsetParent as HTMLElement | null;
   }
+  return { x, y };
+}
+
+// Position of `el` relative to the canvas content box (immune to the canvas transform).
+function boxOf(el: HTMLElement, canvas: HTMLElement): Box {
+  const { x, y } = offsetWithin(el, canvas);
   const w = el.offsetWidth;
   const h = el.offsetHeight;
   return { l: x, t: y, r: x + w, b: y + h, mx: x + w / 2, my: y + h / 2 };
