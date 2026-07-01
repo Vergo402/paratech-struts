@@ -4,6 +4,7 @@ import type { OrgPositions } from '@core/schema';
 import { rootPosition } from '@core/org';
 import { claimOverlay, releaseOverlay, isTopOverlay } from '@ui/primitives';
 import { SubTree, READ_ONLY_DND } from './OrgTree';
+import { OrgConnectors } from './OrgConnectors';
 import { zoomAt, panBy, fitTransform, IDENTITY, type Transform } from './pinchZoom';
 
 const NOOP = () => {};
@@ -21,6 +22,7 @@ export function OrgFullScreen({ positions, open, onClose }: { positions: OrgPosi
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const connectorsRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
@@ -153,21 +155,24 @@ export function OrgFullScreen({ positions, open, onClose }: { positions: OrgPosi
               style={{ transform: `translate3d(${t.x}px, ${t.y}px, 0) scale(${t.scale})`, transformOrigin: '0 0' }}
             >
               <div className="fs-org fs-org--readonly">
-                <div className="fs-org-tree">
-                  <ul>
-                    {root && (
-                      <SubTree
-                        positions={positions}
-                        id={root.id}
-                        rootId={root.id}
-                        depth={0}
-                        onOpen={NOOP}
-                        dnd={READ_ONLY_DND}
-                        editable={false}
-                        interactive={false}
-                      />
-                    )}
-                  </ul>
+                <div className="fs-org-canvas" ref={connectorsRef}>
+                  <OrgConnectors canvasRef={connectorsRef} deps={positions} />
+                  <div className="fs-org-tree">
+                    <ul>
+                      {root && (
+                        <SubTree
+                          positions={positions}
+                          id={root.id}
+                          rootId={root.id}
+                          depth={0}
+                          onOpen={NOOP}
+                          dnd={READ_ONLY_DND}
+                          editable={false}
+                          interactive={false}
+                        />
+                      )}
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
