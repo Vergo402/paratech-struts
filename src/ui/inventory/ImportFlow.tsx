@@ -1,8 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useState, type ChangeEvent } from 'react';
 import { STRUTS, BASE_PLATES } from '@core/load';
-import { Button, Modal, TextField } from '@ui/primitives';
-import { BottomSheetPicker, FullScreenList, type SheetPickerOption } from '@ui/picker';
+import { Button, Modal, TextField, useNativeControls } from '@ui/primitives';
+import { BottomSheetPicker, FullScreenList, PowerSelect, type SheetPickerOption } from '@ui/picker';
 import {
   parseRecords,
   autoMap,
@@ -100,6 +100,16 @@ function SelectField({
 }) {
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value);
+
+  // Native-controls fallback (accessibility.md §The Power Select fallback): the
+  // controlled overlay collapses to an OS-native <select>; a leading disabled
+  // option carries the placeholder while nothing is chosen.
+  if (useNativeControls()) {
+    const nativeOptions =
+      value == null ? [{ value: '', label: placeholder, disabled: true }, ...options] : options;
+    return <PowerSelect label={label} options={nativeOptions} value={value ?? ''} onChange={onSelect} />;
+  }
+
   return (
     <>
       <button

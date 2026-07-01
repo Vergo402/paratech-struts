@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { InlineSegmented } from '@ui/picker';
-import { Toggle } from '@ui/primitives';
+import { Toggle, useNativeControls, setNativeControls } from '@ui/primitives';
 import { useTheme, type ThemePreference } from '../../theme';
 
 const THEME_OPTIONS = [
@@ -10,14 +9,10 @@ const THEME_OPTIONS = [
   { value: 'sunlight', label: 'Sunlight' },
 ] as const;
 
-const NATIVE_CONTROLS_KEY = 'fieldshore_native_controls';
-
 /** Appearance — theme + the Native-controls accessibility fallback (50-settings.md §1/§3). */
 export function AppearancePage() {
   const { preference, setPreference } = useTheme();
-  const [nativeControls, setNativeControls] = useState(
-    () => localStorage.getItem(NATIVE_CONTROLS_KEY) === 'true',
-  );
+  const nativeControls = useNativeControls();
 
   // Broadcast can be active via the gallery; show NO pill selected then — never a
   // misleading "Dark" highlight (audit W8). '' matches no option → nothing checked.
@@ -33,14 +28,7 @@ export function AppearancePage() {
         label="Native controls"
         helper="Use the phone's own pickers instead of FieldShore's (screen-reader friendly)"
         checked={nativeControls}
-        onChange={(next) => {
-          setNativeControls(next);
-          try {
-            localStorage.setItem(NATIVE_CONTROLS_KEY, String(next));
-          } catch {
-            /* storage unavailable — session-only */
-          }
-        }}
+        onChange={setNativeControls}
       />
     </div>
   );
