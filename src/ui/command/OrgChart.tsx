@@ -5,7 +5,7 @@ import { useOrg, useDeviceUidValue } from '@ui/hooks';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
 import { OrgDragLayer } from './OrgDragLayer';
-import { OrgConnectors } from './OrgConnectors';
+import { OrgConnectors, offsetWithin } from './OrgConnectors';
 import { useOrgDragDrop } from './useOrgDragDrop';
 import { OrgFullScreen } from './OrgFullScreen';
 import { SubTree } from './OrgTree';
@@ -53,8 +53,7 @@ export function OrgChart({
     const raf = requestAnimationFrame(() => {
       const rootEl = canvas.querySelector<HTMLElement>(`[data-org-node="${rootId}"]`);
       if (!rootEl) return;
-      let x = 0;
-      for (let n: HTMLElement | null = rootEl; n && n !== canvas; n = n.offsetParent as HTMLElement | null) x += n.offsetLeft;
+      const { x } = offsetWithin(rootEl, canvas);
       scroll.scrollLeft = x + rootEl.offsetWidth / 2 - scroll.clientWidth / 2;
     });
     return () => cancelAnimationFrame(raf);

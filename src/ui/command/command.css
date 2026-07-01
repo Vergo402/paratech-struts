@@ -832,12 +832,6 @@
      drag right after it lifts. Scroll the chart from the surrounding whitespace. */
   touch-action: none;
 }
-/* Single-resource type kicker (the only card that shows its ICS type — the title
-   already names the type for groups/sections). */
-.fs-org-node-kind {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
 
 /* Desktop grab handle. Phone uses press-and-hold on the body (no handle). */
 .fs-org-grip {
