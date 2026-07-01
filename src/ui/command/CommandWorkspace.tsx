@@ -16,7 +16,15 @@ const VIEW_OPTIONS = [
  * six datums in the rail stay pinned while the IC works. Org chart = read view
  * (P6); Hazard Log register = P9 (placeholder here); Edit structure = P7.
  */
-export function CommandWorkspace({ view, onView }: { view: WorkspaceView; onView: (v: WorkspaceView) => void }) {
+export function CommandWorkspace({
+  view,
+  onView,
+  onOpenNode,
+}: {
+  view: WorkspaceView;
+  onView: (v: WorkspaceView) => void;
+  onOpenNode: (id: string) => void;
+}) {
   return (
     <div className="fs-cmd-ws">
       <div className="fs-cmd-ws-head">
@@ -24,7 +32,7 @@ export function CommandWorkspace({ view, onView }: { view: WorkspaceView; onView
         {view === 'org' && <span className="fs-cmd-ws-hint">Tap a position to assign or edit</span>}
       </div>
       <div className="fs-cmd-ws-body">
-        {view === 'org' ? <OrgChart /> : <HazardLog />}
+        {view === 'org' ? <OrgChart onOpenNode={onOpenNode} /> : <HazardLog />}
       </div>
     </div>
   );

@@ -2,7 +2,6 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
 import { rootPosition, currentIC } from '@core/org';
 import { useOrg, useDeviceUidValue } from '@ui/hooks';
-import { NodeSheet } from './NodeSheet';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
 import { OrgDragLayer } from './OrgDragLayer';
@@ -20,7 +19,14 @@ import { SubTree } from './OrgTree';
  * screen-reader path. Tap any node → the node sheet. My Role lets any device declare
  * its own position.
  */
-export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolean } = {}) {
+export function OrgChart({
+  allowFullScreen = false,
+  onOpenNode,
+}: {
+  allowFullScreen?: boolean;
+  /** Tap a node → the node panel (owned by SitStat so the desktop dock sits beside the board). */
+  onOpenNode: (id: string) => void;
+}) {
   const positions: OrgPositions = useOrg();
   const root = rootPosition(positions);
   const uid = useDeviceUidValue();
@@ -29,13 +35,12 @@ export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolea
   // the IC device-ref, or no device owns the IC. Real auth verifies later.
   const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
 
-  const [openNodeId, setOpenNodeId] = useState<string | null>(null);
   const [myRoleOpen, setMyRoleOpen] = useState(false);
   const [fullOpen, setFullOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const dnd = useOrgDragDrop({ positions, isIC, containerRef, onOpenNode: setOpenNodeId });
+  const dnd = useOrgDragDrop({ positions, isIC, containerRef, onOpenNode });
 
   const rootId = root?.id;
   // Center-on-IC (#373): open the chart scrolled so the Incident Commander sits in the
@@ -82,7 +87,7 @@ export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolea
           <OrgConnectors canvasRef={canvasRef} deps={positions} />
           <div className="fs-org-tree">
             <ul>
-              <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={setOpenNodeId} dnd={dnd} editable={isIC} />
+              <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={onOpenNode} dnd={dnd} editable={isIC} />
             </ul>
           </div>
         </div>
@@ -92,7 +97,6 @@ export function OrgChart({ allowFullScreen = false }: { allowFullScreen?: boolea
 
       {allowFullScreen && <OrgFullScreen positions={positions} open={fullOpen} onClose={() => setFullOpen(false)} />}
 
-      {openNodeId && <NodeSheet key={openNodeId} positionId={openNodeId} isIC={isIC} onClose={() => setOpenNodeId(null)} />}
       <MyRoleSheet open={myRoleOpen} onClose={() => setMyRoleOpen(false)} />
     </div>
   );
