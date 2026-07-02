@@ -450,16 +450,15 @@
   gap: var(--space-4);
 }
 
-/* Division · Area · Group share one line (v3 form-row-3). Children shrink
-   equally; min-width:0 + ellipsis on the picker value keeps a long division
-   label ("Div 1 (Ground level)") from forcing the row wider than the modal. */
+/* Division · Side · Area/Room # share one line (O-9). Children shrink equally;
+   min-width:0 + ellipsis on the picker value keeps a long division label
+   ("Div 1 (Ground level)") from forcing the row wider than the modal. */
 .fs-ops-row3 {
   display: grid;
-  /* Division is just a number — keep it tight. Area/Room # needs only its label
-     width (values are short room #s); GROUP gets the most room — apparatus names
-     ("Engine 1", "Task Force 1") are the longest values. align-items: end seats
-     the three controls on one baseline even if a label wraps. */
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.5fr);
+  /* Division and Side are both compact triggers (a number, a letter/corner) — keep
+     them tight; Area/Room # takes the rest. align-items: end seats the three
+     controls on one baseline even if a label wraps. */
+  grid-template-columns: auto auto minmax(0, 1fr);
   gap: var(--space-2);
   align-items: end;
 }

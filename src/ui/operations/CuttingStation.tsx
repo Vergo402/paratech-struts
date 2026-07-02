@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { ShorePoint } from '@core/schema';
-import { divisionLabel, assignSaws, rosterOf } from '@core/operation';
+import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
 import { cutLengthInches } from '@core/shorepoint';
 import { Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
@@ -58,6 +58,7 @@ function cutSubtitle(sp: ShorePoint): string {
   const loc = [
     ...(sp.building ? [sp.building] : []),
     divisionLabel(sp.division),
+    ...(sp.side ? [sideLabel(sp.side)] : []),
     ...(sp.area ? [sp.area] : []),
     `${SHORE_TYPE_LABELS[sp.shoreType]}${
       sp.groupIndex && sp.groupTotal ? ` ${sp.groupIndex} / ${sp.groupTotal}` : ''

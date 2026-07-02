@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
+import type { BuildingSide, Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES } from '@core/load';
@@ -21,6 +21,7 @@ import {
 } from '@ui/hooks';
 import { DivisionPicker } from './DivisionPicker';
 import { BuildingPicker } from './BuildingPicker';
+import { SidePicker } from './SidePicker';
 import { RecommendationCard, comboModel } from './RecommendationCard';
 
 // Short labels for the form control; full names (`Vertical T-Shore`, …) stay in
@@ -81,6 +82,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const [division, setDivision] = useState(1);
   const [building, setBuilding] = useState('');
   const [area, setArea] = useState('');
+  const [side, setSide] = useState<BuildingSide | undefined>(undefined);
   const [assignedResource, setAssignedResource] = useState('');
   const [shoreType, setShoreType] = useState<ShoreTypeId>('t-shore');
   const [qty, setQty] = useState('1');
@@ -100,6 +102,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDivision(parseDivisionNumber(shorePoint.division) ?? 1);
       setBuilding(shorePoint.building ?? '');
       setArea(shorePoint.area ?? '');
+      setSide(shorePoint.side);
       setAssignedResource(shorePoint.assignedResource ?? '');
       setShoreType(shorePoint.shoreType);
       setMeasurementEighths(shorePoint.measurementEighths);
@@ -108,15 +111,18 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setLabel(shorePoint.label ?? '');
     } else {
       // Last-used defaults (#220, #248 re-drive): the newest point in the op seeds
-      // building / division / area / crew / shore type — the whole location block
-      // carries over so a new point in the same spot is near-zero effort. First
-      // point of the op starts Div 1 / T-Shore / blank.
+      // the LOCATION block — building / division / area / crew — so a new point in
+      // the same spot is near-zero effort. Shore type is DELIBERATELY not carried
+      // (SIM-IV O-6, Alex 2026-07-02): each shore's type is its own decision, and a
+      // silent carry-over made SP2 a 3-Post nobody chose. It resets to T-Shore every
+      // open; the operator picks it per point.
       const last = shorePoints[shorePoints.length - 1];
       setDivision(parseDivisionNumber(last?.division) ?? 1);
       setBuilding(last?.building ?? '');
       setArea(last?.area ?? '');
+      setSide(last?.side); // side is a location attribute — carries over like division/area
       setAssignedResource(last?.assignedResource ?? '');
-      setShoreType(last?.shoreType ?? 't-shore');
+      setShoreType('t-shore');
       setMeasurementEighths(0);
       setDeductions(NO_DEDUCTIONS);
       setEstimatedLoad('');
@@ -241,6 +247,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       division: String(division),
       ...(building.trim() ? { building: building.trim() } : {}),
       ...(area.trim() ? { area: area.trim() } : {}),
+      ...(side ? { side } : {}),
       shoreType: type,
       ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: perShore } : {}),
       measurementEighths,
@@ -398,6 +405,8 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     if (newBuilding !== (sp.building ?? null)) patch.building = newBuilding;
     const newArea = area.trim() || null;
     if (newArea !== (sp.area ?? null)) patch.area = newArea;
+    const newSide = side ?? null;
+    if (newSide !== (sp.side ?? null)) patch.side = newSide;
     const newResource = assignedResource || null;
     if (newResource !== (sp.assignedResource ?? null)) patch.assignedResource = newResource;
     if (shoreType !== sp.shoreType) patch.shoreType = shoreType;
@@ -498,19 +507,20 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
         {buildingRequired && (
           <BuildingPicker value={building} onChange={setBuilding} buildings={buildingsUsed} />
         )}
-        {/* Division · Area/Room # · Group share one line. */}
+        {/* Division · Side · Area/Room # share one line (O-9); Group drops below. */}
         <div className="fs-ops-row3">
           <DivisionPicker value={division} onChange={setDivision} />
+          <SidePicker value={side} onChange={setSide} />
           <TextField label="Area / Room #" value={area} onChange={setArea} placeholder="Optional" />
-          {(apparatusOptions.length > 1 || assignedResource) && (
-            <BottomSheetPicker
-              label="Group"
-              options={apparatusOptions}
-              value={assignedResource}
-              onSelect={setAssignedResource}
-            />
-          )}
         </div>
+        {(apparatusOptions.length > 1 || assignedResource) && (
+          <BottomSheetPicker
+            label="Group"
+            options={apparatusOptions}
+            value={assignedResource}
+            onSelect={setAssignedResource}
+          />
+        )}
         <TextField label="Label" value={label} onChange={setLabel} placeholder="Optional — e.g. West Wall Window" />
         <InlineSegmented label="Shore type" options={SHORE_TYPE_OPTIONS} value={shoreType} onChange={selectShoreType} />
         {!editing && (

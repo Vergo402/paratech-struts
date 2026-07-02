@@ -193,6 +193,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       division: sp.division,
       ...(sp.building ? { building: sp.building } : {}),
       ...(sp.area ? { area: sp.area } : {}),
+      ...(sp.side ? { side: sp.side } : {}),
       shoreType: targetType,
       groupId: gid,
       groupIndex: i + 1,

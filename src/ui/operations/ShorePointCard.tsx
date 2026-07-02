@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
-import { divisionLabel } from '@core/operation';
+import { divisionLabel, sideLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
 import {
   bomModelLabel,
@@ -251,6 +251,7 @@ export function ShorePointCard({
   const identity = [
     ...(sp.building ? [sp.building] : []),
     divisionLabel(sp.division),
+    ...(sp.side ? [sideLabel(sp.side)] : []),
     ...(sp.area ? [sp.area] : []),
     ...(sp.assignedResource ? [sp.assignedResource] : []),
   ].join(' · ');

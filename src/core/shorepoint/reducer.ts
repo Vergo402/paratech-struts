@@ -240,6 +240,10 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     if (patch.area === null) delete next.area;
     else next.area = patch.area;
   }
+  if (patch.side !== undefined) {
+    if (patch.side === null) delete next.side;
+    else next.side = patch.side;
+  }
   if (patch.shoreType !== undefined) next.shoreType = patch.shoreType;
   if (patch.measurementEighths !== undefined) next.measurementEighths = patch.measurementEighths;
   if (patch.deductions !== undefined) next.deductions = patch.deductions;

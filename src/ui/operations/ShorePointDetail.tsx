@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { FieldShoreEvent, ShorePoint, WoodSizeId } from '@core/schema';
 import { BASE_PLATES, WOOD_SIZES } from '@core/load';
-import { divisionLabel } from '@core/operation';
+import { divisionLabel, sideLabel } from '@core/operation';
 import {
   componentLabel,
   deductionTotalInches,
@@ -107,7 +107,12 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
   const bom = sp.deployedBom ?? [];
   const rigs = deployedRigs(sp);
 
-  const where = [...(sp.building ? [sp.building] : []), divisionLabel(sp.division), ...(sp.area ? [sp.area] : [])].join(' · ');
+  const where = [
+    ...(sp.building ? [sp.building] : []),
+    divisionLabel(sp.division),
+    ...(sp.side ? [sideLabel(sp.side)] : []),
+    ...(sp.area ? [sp.area] : []),
+  ].join(' · ');
 
   const ledger = [
     woodRow('Header', sp.deductions.headerWood),

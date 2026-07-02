@@ -26,6 +26,15 @@ export type ShoreTypeId = z.infer<typeof ShoreTypeId>;
 export const WoodSizeId = z.enum(['none', '4x4', '6x6']);
 export type WoodSizeId = z.infer<typeof WoodSizeId>;
 
+// The building face or corner a shore addresses (ADR-008 §4). Sides A/B/C/D with A
+// the address/street side, B–D clockwise viewed from above; the four corners sit
+// between adjacent faces. A structured locator, separate from the floor-numbered
+// `division` and the free-text `area` (SIM-IV O-9). Order = the picker's bird's-eye
+// reading (faces, then corners).
+export const BuildingSide = z.enum(['A', 'B', 'C', 'D', 'A/B', 'B/C', 'C/D', 'D/A']);
+export type BuildingSide = z.infer<typeof BuildingSide>;
+export const BUILDING_SIDES = BuildingSide.options;
+
 // What the operator SELECTED for each deduction slot. The exact catalog heights
 // are resolved at compute time by the reducer (L-2 — store the choice, deduct
 // the exact value, floor only the final effective length). topPlate/bottomPlate
@@ -100,6 +109,7 @@ export const ShorePoint = z.object({
   division: z.string(), // floor-based, e.g. "1", "2", "Roof"
   building: z.string().optional(), // only when the operation is multi-building
   area: z.string().optional(),
+  side: BuildingSide.optional(), // A–D face / corner (SIM-IV O-9) — separate from area
   shoreType: ShoreTypeId,
   // grouping (KB-7) — a multi-strut shore type writes one point per strut, all
   // sharing a groupId; one group per PHYSICAL shore (a 3-Post = 3 points badged
@@ -157,6 +167,7 @@ export const ShorePointPatch = z
     division: z.string(),
     building: z.string().nullable(),
     area: z.string().nullable(),
+    side: BuildingSide.nullable(),
     shoreType: ShoreTypeId,
     measurementEighths: Eighths,
     deductions: Deductions,

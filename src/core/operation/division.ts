@@ -54,6 +54,12 @@ export function divisionLabel(division: string): string {
   return n !== null ? formatDivisionShort(n) : division;
 }
 
+/** Display label for a building side (SIM-IV O-9): "A side" for a face, "A/B corner"
+ *  for a corner. Takes the raw side string so display sites needn't import the enum. */
+export function sideLabel(side: string): string {
+  return side.includes('/') ? `${side} corner` : `${side} side`;
+}
+
 /** The next floor above: max positive (or 0 when none) + 1. */
 export function nextFloorAbove(divisions: readonly number[]): number {
   return divisions.filter((n) => n > 0).reduce((a, b) => Math.max(a, b), 0) + 1;

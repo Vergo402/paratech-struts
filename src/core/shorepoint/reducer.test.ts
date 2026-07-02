@@ -328,6 +328,24 @@ describe('#220 field-lock — editable fields by status', () => {
     expect('label' in next).toBe(false);
   });
 
+  it('sets and null-clears the building side (O-9)', () => {
+    const set = shorePointReducer(sp({ status: 'pending' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { side: 'C' },
+    } satisfies FieldShoreEvent);
+    expect(set.side).toBe('C');
+
+    const cleared = shorePointReducer(set, {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { side: null },
+    } satisfies FieldShoreEvent);
+    expect('side' in cleared).toBe(false);
+  });
+
   it('label null-clear still works past Pending Equipment; locked optionals do not clear', () => {
     const next = shorePointReducer(sp({ status: 'cutting', area: 'NW corner', label: 'tagged' }), {
       type: 'ShorePointEdited',

@@ -254,7 +254,7 @@ describe('AddShorePointModal — create', () => {
     expect(submitButton()).toBeEnabled();
   });
 
-  it('seeds building / division / area / shore type from the newest shore point', () => {
+  it('seeds building / division / area from the newest shore point, but resets shore type (O-6)', () => {
     mockOperation.mockReturnValue({ ...OP, multiBuilding: true, divisions: [1, 2] });
     mockShorePoints.mockReturnValue([
       makeSP({ id: 'a', division: '1' }),
@@ -263,8 +263,11 @@ describe('AddShorePointModal — create', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
     expect(screen.getByRole('button', { name: /Division/ })).toHaveTextContent('2'); // compact: bare floor number
     const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
-    expect(within(shoreType).getByRole('radio', { name: 'Double-T' })).toHaveAttribute('aria-checked', 'true');
-    // The whole location block carries over from the newest point (#248 re-drive).
+    // Shore type is DELIBERATELY not carried (SIM-IV O-6) — every new point starts
+    // at T-Shore so a carried 3-Post/Double-T can't silently mis-type the next shore.
+    expect(within(shoreType).getByRole('radio', { name: 'T-Shore' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(shoreType).getByRole('radio', { name: 'Double-T' })).toHaveAttribute('aria-checked', 'false');
+    // The rest of the location block still carries over from the newest point (#248 re-drive).
     expect(screen.getByRole('button', { name: /Building/ })).toHaveTextContent('North tower');
     expect(screen.getByRole('textbox', { name: 'Area / Room #' })).toHaveValue('NW corner');
   });

@@ -61,6 +61,58 @@
 .fs-picker-row-sub { font: var(--type-caption); color: var(--text-secondary); }
 .fs-picker-row-check { flex: none; color: var(--accent); font-weight: 700; }
 
+/* ---- side picker — bird's-eye A–D face/corner grid (SIM-IV O-9) --------------
+   A faces the street at the bottom, B–D clockwise, corners on the diagonals, the
+   dashed centre clears. Cells are ≥52px so gloves land (O-7 sibling floor). */
+.fs-side-hint {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0 0 var(--space-2);
+}
+.fs-side-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  max-width: 280px;
+  margin: 0 auto;
+  padding: var(--space-2) 0;
+}
+.fs-side-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  font: var(--type-body-lg);
+  color: var(--text-primary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-side-cell--corner { font: var(--type-body); color: var(--text-secondary); }
+.fs-side-cell--center { border-style: dashed; color: var(--text-secondary); }
+.fs-side-cell[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: calc(500 + var(--type-weight-bump));
+}
+.fs-side-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-side-street {
+  max-width: 280px;
+  margin: var(--space-1) auto 0;
+  padding-top: var(--space-1);
+  border-top: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
 /* ---- the visual grid (v3 .plate-option-grid, verbatim behavior) ------------- */
 .fs-plate-grid {
   /* L-9: visibility instead of display so iOS Safari initializes the touch
