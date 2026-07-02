@@ -4,6 +4,7 @@ import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation'
 import { cutLengthInches } from '@core/shorepoint';
 import { Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
+import { usePeerCuts } from '@ui/hooks';
 import { ShorePointCard, SHORE_TYPE_LABELS, CuttingControls } from './ShorePointCard';
 
 /**
@@ -101,6 +102,9 @@ export function CuttingStation({
   const isDesktop = useIsDesktop();
   const roster = rosterOf(saws);
   const multiSaw = roster.length > 1;
+  // Cuts that arrived from another device since this cutter last left the station
+  // (#404) — the "someone sent you work" badge. Clears on unmount (usePeerCuts).
+  const newPeerCuts = usePeerCuts();
   // Resolve the saw roster against the FIFO queue: each saw's current cut (hero) +
   // the shared unclaimed list. Honors persisted claims first, then hands each free
   // saw the next top-unclaimed cut (assignSaws is pure + tested).
@@ -328,7 +332,18 @@ export function CuttingStation({
   return (
     <section className="fs-cutstation" aria-label="Cutting Station">
       <div className="fs-cutstation-head">
-        <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
+        <div className="fs-cutstation-titlerow">
+          <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
+          {newPeerCuts > 0 && (
+            <span
+              className="fs-cutstation-newbadge"
+              role="status"
+              aria-label={`${newPeerCuts} new ${newPeerCuts === 1 ? 'cut' : 'cuts'} sent from another device`}
+            >
+              {newPeerCuts} new
+            </span>
+          )}
+        </div>
         {sawRoster}
       </div>
 

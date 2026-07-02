@@ -17,3 +17,4 @@ export {
   type SyncStatusState,
   type PendingJoin,
 } from './syncStatus';
+export { peerCutStore, createPeerCutStore, type PeerCutStoreApi } from './peerCuts';

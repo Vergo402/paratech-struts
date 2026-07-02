@@ -3,6 +3,7 @@ import { type OperationStoreApi } from '../store/operationStore';
 import { operationStore } from '../store/registry';
 import { sessionStore } from '../store/session';
 import { syncStatusStore } from './syncStatus';
+import { peerCutStore } from './peerCuts';
 
 // data/sync — the ONE backend path (module-boundaries.md). Cloud-sync Increment 2:
 // the real event upload + the merge guard. flush() drains the in-memory queue to
@@ -84,12 +85,16 @@ export function createSyncService(deps: {
   /** Reactive "uploads are stuck" sink (Increment 4 banner). True after a flush leaves
    *  changes queued on failure; false once the queue drains. Injected; defaults to the store. */
   notifyError?: (stuck: boolean) => void;
+  /** Reactive "N cuts arrived from a peer" sink (#404 Cutting Station badge). Called with
+   *  the count of remote cutting-arrivals per reconcile. Injected; defaults to the store. */
+  notifyRemoteCuts?: (count: number) => void;
 }): SyncServiceApi {
   const queue: FieldShoreEvent[] = [];
   const set = deps.set ?? firebaseSet;
   const log = deps.log ?? firebaseLog;
   const notifyPending = deps.notifyPending ?? ((count) => syncStatusStore.setPending(count));
   const notifyError = deps.notifyError ?? ((stuck) => syncStatusStore.setSyncError(stuck));
+  const notifyRemoteCuts = deps.notifyRemoteCuts ?? ((count) => peerCutStore.add(count));
   const emitPending = () => notifyPending(queue.length); // after every queue mutation
   let flushing = false; // one drain at a time — post-commit + reconnect must not race
 
@@ -172,6 +177,14 @@ export function createSyncService(deps: {
         const result = await ops.commit(event, { fromRemote: true });
         (result.ok ? applied : dropped).push(event);
       }
+
+      // A peer moved shore points INTO the cutting queue — the "someone sent you work"
+      // signal for the Cutting Station badge (#404). Only status changes to `cutting`
+      // count; other applied peer events don't touch the queue.
+      const arrivals = applied.filter(
+        (e) => e.type === 'ShorePointStatusChanged' && e.to === 'cutting',
+      ).length;
+      if (arrivals > 0) notifyRemoteCuts(arrivals);
 
       return { applied, dropped };
     },

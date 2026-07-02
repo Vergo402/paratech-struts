@@ -115,6 +115,30 @@ describe('syncService (event cloud sync + L-7 merge guard)', () => {
     expect(sync.pendingCount()).toBe(queueBefore); // fromRemote — no echo
   });
 
+  it('counts remote arrivals INTO cutting for the #404 badge, not other peer changes', async () => {
+    const cuts: number[] = [];
+    const w: Record<string, unknown> = {};
+    // A second point advanced locally to strutset (ready to enter the cut queue).
+    await ops.commit(spAdded(makeSp('sp-2')));
+    await ops.commit(deploy('sp-2', 'inv-1'));
+    await ops.commit(statusChanged('sp-2', 'process', 'strutset'));
+
+    const s = createSyncService({
+      ops: () => ops,
+      deptId: () => 'dept-1',
+      set: async (p, v) => void (w[p] = v),
+      notifyRemoteCuts: (n) => cuts.push(n),
+    });
+
+    // A peer sends sp-2 into cutting → one arrival counted.
+    await s.reconcile([statusChanged('sp-2', 'strutset', 'cutting')]);
+    expect(cuts).toEqual([1]);
+
+    // A peer forward that ISN'T into cutting → no bump.
+    await s.reconcile([statusChanged('sp-2', 'cutting', 'runner')]);
+    expect(cuts).toEqual([1]);
+  });
+
   it('drops a peer event already merged once (duplicate id fails the unique index)', async () => {
     const forward = statusChanged('sp-1', 'cutting', 'runner');
     await sync.reconcile([forward]);

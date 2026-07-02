@@ -32,6 +32,7 @@ vi.mock('@ui/hooks', () => ({
   usePastOperations: () => ({ data: [] }),
   useArchivedOperation: () => ({ data: undefined }),
   useShorePointHistory: () => ({ events: [], deviceUid: 'device-test' }),
+  usePeerCuts: () => 0,
   // #380 — these tests drive a full-control operator; manageOperations gates Start/Edit/End.
   usePermissions: () => ({
     read: true, runFieldWork: true, manageOperations: mockManageOps, manageInventory: true,

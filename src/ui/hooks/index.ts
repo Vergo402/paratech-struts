@@ -26,6 +26,7 @@ export { useDeviceUid } from './useDeviceUid';
 export { useDeviceUidValue } from './useDeviceUidValue';
 export { useSession, type SessionApi } from './useSession';
 export { useSyncStatus } from './useSyncStatus';
+export { usePeerCuts } from './usePeerCuts';
 export { useDepartment, type DepartmentApi } from './useDepartment';
 export { usePermissions } from './usePermissions';
 export { useRoles } from './useRoles';

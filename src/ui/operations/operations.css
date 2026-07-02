@@ -1863,10 +1863,27 @@ button.fs-spc-head {
   justify-content: space-between;
   gap: var(--space-2);
 }
+.fs-cutstation-titlerow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
 .fs-cutstation-title {
   font: var(--type-headline-1);
   color: var(--text-primary);
   margin: 0;
+}
+/* #404: the "N new" peer-arrival badge — a gold pill beside the title that draws
+   the eye when another device sends cuts to the queue. */
+.fs-cutstation-newbadge {
+  flex: none;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: var(--type-label);
+  white-space: nowrap;
 }
 .fs-cutstation-count {
   font: var(--type-body-medium);

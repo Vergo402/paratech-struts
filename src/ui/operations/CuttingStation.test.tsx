@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import { slideToCommit } from '@ui/primitives/Slider.testkit';
+import { peerCutStore } from '@data/sync';
 import { CuttingStation } from './CuttingStation';
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
 
@@ -23,6 +24,25 @@ function makeSP(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
 const noop = vi.fn();
 
 describe('CuttingStation', () => {
+  afterEach(() => peerCutStore.reset()); // the badge store is a singleton — don't leak
+
+  it('#404: shows the "N new" peer-cut badge and clears the count on unmount', () => {
+    peerCutStore.add(2); // two cuts arrived from another device
+    const { unmount } = render(
+      <CuttingStation
+        queue={[makeSP('a')]}
+        sent={[]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+      />,
+    );
+    expect(screen.getByText('2 new')).toBeInTheDocument();
+    unmount(); // leaving the station clears it — next visit reflects only new arrivals
+    expect(peerCutStore.store.getState().count).toBe(0);
+  });
+
   it('empty queue: shows the "No cuts in queue" empty state', () => {
     render(
       <CuttingStation
