@@ -108,17 +108,25 @@ export function findStrutCombinations(
   // can trust the type.
   estimatedLoad = Number(estimatedLoad) || 0;
   requiredLength = Number(requiredLength) || 0;
-  // Apply deductions to get effective strut length needed
-  let effectiveLength = requiredLength;
+  // Apply deductions to get effective strut length needed. TWO lengths come out:
+  //  - exactLength: the true post-deduction length, UNFLOORED — the capacity domain.
+  //  - searchLength: exactLength floored to ⅛″ — the SELECTION + DISPLAY domain.
+  // #300 (ADR-012): flooring is the safe side for picking/displaying the strut
+  // (a short strut is taken up by the loading wedge; long is the hazard). But it
+  // is ANTI-conservative for the capacity LOOKUP: table rows are whole inches, so a
+  // true length just above a row (e.g. 60.1″ from a 3.4″ plate) floors onto the
+  // lower row and reads its HIGHER capacity — defeating getLoadCapacity's own
+  // conservative next-longer-row rule and over-reporting the safe load (the
+  // 2026-07-02 audit finding; the v3 S2 cliff class). So capacity is always looked
+  // up at exactLength; the floor never touches the capacity number.
+  let exactLength = requiredLength;
   if (deductions) {
     const totalDed =
       (deductions.header || 0) + (deductions.sole || 0) + (deductions.topPlate || 0) + (deductions.bottomPlate || 0);
-    // #300 (ADR-012): floor to nearest 1/8" — round DOWN is the safe side
-    // (short is absorbed by the loading wedge; long is the hazard).
-    effectiveLength = Math.floor((requiredLength - totalDed) * 8) / 8;
-    if (effectiveLength <= 0) return [];
+    exactLength = requiredLength - totalDed;
+    if (Math.floor(exactLength * 8) / 8 <= 0) return [];
   }
-  const searchLength = effectiveLength;
+  const searchLength = Math.floor(exactLength * 8) / 8;
 
   const results: StrutCombination[] = [];
   // v3 used a `useInventory` boolean; here `inv` (narrowed truthy) drives the same
@@ -203,14 +211,18 @@ export function findStrutCombinations(
         if (!extAvailable) continue;
       }
 
-      const capacity = getLoadCapacity(strut.system, searchLength, sfIndex);
+      // Capacity is looked up at the EXACT (unfloored) length — see the exactLength
+      // comment above. getLoadCapacity already returns the conservative next-longer
+      // row for a between-rows length, so the exact value is the safe one.
+      const capacity = getLoadCapacity(strut.system, exactLength, sfIndex);
 
       // Detect "unrated zone": physically valid LongShore configuration but the requested
       // length is beyond Paratech's published working load chart (>192" / 16 ft).
       // Paratech doesn't publish capacity at these lengths, but the strut can physically
       // reach. We surface these combos as deployable WARNINGS so a team that has consulted
-      // rescue engineering can still proceed if they accept responsibility.
-      const isUnratedZone = capacity <= 0 && strut.system === 'LongShore' && searchLength > 192;
+      // rescue engineering can still proceed if they accept responsibility. Uses exactLength
+      // (the capacity domain), so a length fractionally past 192″ is caught, not floored in.
+      const isUnratedZone = capacity <= 0 && strut.system === 'LongShore' && exactLength > 192;
 
       // Skip if capacity is zero for any other reason (truly out of range)
       if (capacity <= 0 && !isUnratedZone) continue;
@@ -237,9 +249,9 @@ export function findStrutCombinations(
       const capacityAll = isUnratedZone
         ? [0, 0, 0]
         : [
-            getLoadCapacity(strut.system, searchLength, 0),
-            getLoadCapacity(strut.system, searchLength, 1),
-            getLoadCapacity(strut.system, searchLength, 2),
+            getLoadCapacity(strut.system, exactLength, 0),
+            getLoadCapacity(strut.system, exactLength, 1),
+            getLoadCapacity(strut.system, exactLength, 2),
           ];
 
       const totalCapacity = isUnratedZone ? 0 : capacity * recommendedQty;

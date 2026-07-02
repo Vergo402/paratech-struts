@@ -115,21 +115,47 @@ describe('ShorePointDetail — timeline', () => {
 });
 
 describe('ShorePointDetail — safety (re-verified, never a false pass)', () => {
-  it('within rated capacity when the deployed assembly matches a clean combo', () => {
+  it('within rated capacity when the deployed assembly matches a clean combo (load recorded)', () => {
     mockFind.mockReturnValue([combo({ capacity: 12000 })]);
-    render(<ShorePointDetail sp={makeSp()} />);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 5000 })} />);
     expect(screen.getByText(/Within rated capacity — 12,000 lbs per strut\./)).toBeInTheDocument();
   });
 
   it('leads the strip with a one-word verdict (color is never the only signal)', () => {
     mockFind.mockReturnValue([combo({ capacity: 12000 })]);
-    const { unmount } = render(<ShorePointDetail sp={makeSp()} />);
+    const { unmount } = render(<ShorePointDetail sp={makeSp({ estimatedLoad: 5000 })} />);
     expect(screen.getByText('Safe')).toBeInTheDocument();
     unmount();
 
     mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'] })]);
-    render(<ShorePointDetail sp={makeSp()} />);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 5000 })} />);
     expect(screen.getByText('Unverified')).toBeInTheDocument();
+  });
+
+  // The 2026-07-02 audit finding: a deployed shore with NO recorded load can't be
+  // verified within capacity — the verdict must NOT assert a pass. (The load field
+  // is optional, so this is the common case.)
+  it('no load recorded → "Unverified", never an affirmative Safe (blank-load false SAFE)', () => {
+    mockFind.mockReturnValue([combo({ capacity: 22000 })]);
+    render(<ShorePointDetail sp={makeSp()} />); // makeSp has no estimatedLoad
+    expect(screen.getByText('Unverified')).toBeInTheDocument();
+    expect(screen.getByText(/No load estimate recorded — capacity not verified/)).toBeInTheDocument();
+    expect(screen.queryByText(/Within rated capacity/)).toBeNull();
+    expect(screen.queryByText('Safe')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull(); // unverified is quiet, not an alarm
+  });
+
+  // The 2026-07-02 audit finding: the deployed-shore verdict dropped the card's
+  // fully-extended zero-margin caution. It is load-independent, so it must surface
+  // even with no recorded load.
+  it('surfaces the fully-extended zero-margin boundary (load-independent)', () => {
+    mockFind.mockReturnValue([
+      combo({ capacity: 22000, boundaryWarning: 'fully-extended', adjExtended: 73 }),
+    ]);
+    render(<ShorePointDetail sp={makeSp()} />);
+    expect(screen.getByText(/Fully extended — zero margin/)).toBeInTheDocument();
+    expect(screen.getByText(/maximum reach \(73″\)/)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
   it('flags the unrated zone', () => {

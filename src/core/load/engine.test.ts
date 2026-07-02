@@ -64,6 +64,31 @@ describe('findStrutCombinations — selection, deductions, warnings', () => {
     expect(res[0]!.effectiveLength).toBe(39.875);
   });
 
+  it('capacity is looked up at the EXACT length, not the ⅛″-floored one (row-cliff over-report, 2026-07-02 audit)', () => {
+    // AcmeThread opening 63.5″ − a 3.4″ top plate = 60.1″ TRUE effective length.
+    // The displayed/selection length floors to 60.0″, but capacity must NOT: the
+    // 60″ row is higher-capacity than the 72″ row, so looking up at the floored
+    // 60.0″ would over-report. 60.1″ is strictly between → conservative 72″ row.
+    const res = findStrutCombinations(63.5, 0, 2, null, null, { topPlate: 3.4 });
+    const combo = res.find((r) => r.strut.system === 'AcmeThread' && r.extensions.length === 0);
+    expect(combo).toBeDefined();
+    // Display still floors to ⅛″ (60.0″), the selection/display domain is unchanged.
+    expect(combo!.effectiveLength).toBe(60);
+    // But capacity is the conservative 72″-row value (exact 60.1″ is between rows),
+    // NOT the inflated 60″-row value.
+    expect(combo!.capacity).toBe(getLoadCapacity('AcmeThread', 60.1, 2));
+    expect(combo!.capacity).toBe(getLoadCapacity('AcmeThread', 72, 2));
+    expect(combo!.capacity).not.toBe(getLoadCapacity('AcmeThread', 60, 2));
+    expect(getLoadCapacity('AcmeThread', 60, 2)).toBeGreaterThan(combo!.capacity); // the over-report that was
+  });
+
+  it('a length landing exactly on a whole-inch row still reads that row (no deduction cliff)', () => {
+    // 60″ opening, no deduction → exact 60.0″ → the 60″ row exactly (not floored past it).
+    const res = findStrutCombinations(60, 0, 2, null, null, null);
+    const combo = res.find((r) => r.strut.system === 'AcmeThread' && r.extensions.length === 0);
+    if (combo) expect(combo.capacity).toBe(getLoadCapacity('AcmeThread', 60, 2));
+  });
+
   it('surfaces a deployable unrated-zone warning for LongShore beyond 192″', () => {
     const res = findStrutCombinations(200, 0, 2, null, null, null);
     expect(res.some((r) => r.unrated === true)).toBe(true);

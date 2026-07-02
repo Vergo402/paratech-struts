@@ -15,7 +15,7 @@ import {
   strutLoadShare,
 } from '@core/shorepoint';
 import { Badge, MeasurementValue } from '@ui/primitives';
-import { useInventory, useShorePointHistory } from '@ui/hooks';
+import { useShorePointHistory } from '@ui/hooks';
 import { pieceIdentity, sameExtensions } from './pieceIdentity';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 
@@ -102,7 +102,6 @@ function whenLabel(at: number): string {
 const SAFETY_WORD = { ok: 'Safe', warn: 'Check', unknown: 'Unverified' } as const;
 
 export function ShorePointDetail({ sp }: ShorePointDetailProps) {
-  const inventory = useInventory();
   const { events, deviceUid } = useShorePointHistory(sp.id);
 
   const bom = sp.deployedBom ?? [];
@@ -130,16 +129,18 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
         ? 'Effective length'
         : 'Opening length';
 
-  // Safety — a CONFIRMED re-verification, not a guess (decision F). Re-run the
-  // real fit and match the deployed assembly by strut model + extension multiset;
-  // no match (stock changed, or off-book) → "not re-verifiable", never a false pass.
+  // Safety — a CONFIRMED re-verification, not a guess. Re-run the real fit against
+  // the CATALOG (not live inventory) and match the deployed assembly by strut model
+  // + extension multiset. Catalog mode is deliberate (2026-07-02 audit): a strut's
+  // rating is physics — system + length — not a function of what's left in stock, so
+  // deploying the LAST unit of a model must not turn a real over-capacity / unrated
+  // warning into "not re-verifiable" by dropping the model out of an available>0
+  // filter. It also aligns this verdict with the store's catalog-mode deploy guard.
   const safety = useMemo(() => {
     const strut = deployedStrutOf(sp);
     if (!strut?.model) return { kind: 'unknown' as const, msg: 'No strut on record for this shore.' };
-    // Read sp.deployedBom directly (not the outer `bom`) so the memo's deps are just
-    // sp + inventory — no exhaustive-deps suppression, no stale closure.
     const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
-    const match = findForShorePoint(sp, inventory).find(
+    const match = findForShorePoint(sp, null).find(
       (c) => c.strut.model === strut.model && sameExtensions(c.extensions, exts),
     );
     if (!match) return { kind: 'unknown' as const, msg: 'Capacity not re-verifiable for the deployed assembly.' };
@@ -147,22 +148,42 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
     if (match.exceedsCapacity) return { kind: 'warn' as const, msg: match.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
     // Per-strut over-capacity: this point deploys exactly ONE strut, but the engine
     // returns combos needing 2–4 struts unflagged (recommendedQty is advisory).
-    // Compare this strut's SHARE of the load to its rated capacity, or a
-    // multi-strut load reads as a false SAFE (the 2026-07-01 bug).
-    const share = strutLoadShare(sp);
-    if (share > match.capacity) {
-      const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
-      const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;
+    // Compare this strut's SHARE of the load to its rated capacity, or a multi-strut
+    // load reads as a false SAFE (#408). Only checkable when a load was recorded.
+    if (sp.estimatedLoad != null) {
+      const share = strutLoadShare(sp);
+      if (share > match.capacity) {
+        const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
+        const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;
+        return {
+          kind: 'warn' as const,
+          msg:
+            (sp.groupTotal ?? 1) > 1
+              ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds its ${capTxt} rating at this length.`
+              : `Over capacity — estimated load ${shareTxt} exceeds this strut's ${capTxt} rating at this length.`,
+        };
+      }
+    }
+    // Fully-extended zero-margin (load-independent): the card shows this caution but
+    // the deployed-shore verdict dropped it (2026-07-02 audit). Surface it — a strut
+    // at maximum reach has no room to compensate if the opening grows.
+    if (match.boundaryWarning === 'fully-extended') {
       return {
         kind: 'warn' as const,
-        msg:
-          (sp.groupTotal ?? 1) > 1
-            ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds its ${capTxt} rating at this length.`
-            : `Over capacity — estimated load ${shareTxt} exceeds this strut's ${capTxt} rating at this length.`,
+        msg: `Fully extended — zero margin. The strut is at its maximum reach (${match.adjExtended}″); no room to compensate if the opening grows.`,
+      };
+    }
+    // No load recorded → the capacity can't be VERIFIED, so never assert a pass
+    // (the absent-load false SAFE, 2026-07-02 audit). The load field is optional, so
+    // this is a common case, not an edge one; it reads as unverified, not as safe.
+    if (sp.estimatedLoad == null) {
+      return {
+        kind: 'unknown' as const,
+        msg: `No load estimate recorded — capacity not verified. This strut is rated ${Math.floor(match.capacity).toLocaleString()} lbs at this length.`,
       };
     }
     return { kind: 'ok' as const, msg: `Within rated capacity — ${Math.floor(match.capacity).toLocaleString()} lbs per strut.` };
-  }, [sp, inventory]);
+  }, [sp]);
 
   // Only an actual FLAG (over-capacity / unrated) earns a spot in the hero, loud
   // and assertive. A clean pass or an unverifiable read is reference, not an
