@@ -175,6 +175,11 @@ export const EquipmentDeployed = z.object({
   // store's deploy guard can re-verify it off-UI (a peer/replay must carry it too).
   // Absent ⟺ not acknowledged; meaningful only for an unrated configuration.
   unratedAcknowledged: z.boolean().optional(),
+  // The team's recorded acknowledgment when deploying FEWER struts than the
+  // estimated load requires (per-strut over-capacity — the strut's share of the
+  // load exceeds its rated capacity). Same doctrine as unratedAcknowledged: rides
+  // the immutable event so the store's deploy guard re-verifies it off-UI.
+  overCapacityAcknowledged: z.boolean().optional(),
 });
 
 export const EquipmentReturned = z.object({

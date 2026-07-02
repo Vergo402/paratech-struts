@@ -69,12 +69,55 @@ export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | 
  * inventory) is the most permissive on load, so a verdict here is the conservative
  * one stock can only worsen.
  */
-export function deployVerdict(sp: ShorePoint, bom: DeployedComponent[]): { exceedsCapacity: boolean; unrated: boolean } {
+export function deployVerdict(
+  sp: ShorePoint,
+  bom: DeployedComponent[],
+): { exceedsCapacity: boolean; unrated: boolean; overCapacity: boolean } {
   const combos = findForShorePoint(sp, null);
-  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false };
+  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false, overCapacity: false };
   const model = bom.find((c) => c.role === 'strut')?.model;
-  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model) };
+  // Per-strut over-capacity (the 2026-07-01 family): this point deploys ONE strut,
+  // so its SHARE of the load must fit the matched combo's per-strut capacity.
+  // Capacity depends on system + length only — extensions never change it — so a
+  // model match is sufficient. No match → not judgeable here (the UI's
+  // "not re-verifiable" path); never a false block.
+  const match = combos.find((c) => c.strut.model === model);
+  const overCapacity = !!match && !match.unrated && strutLoadShare(sp) > match.capacity;
+  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model), overCapacity };
 }
+
+/**
+ * The load THIS point's single strut carries — the recorded estimate split evenly
+ * across the linked group's struts (T-Shore 1, Double-T 2, 3-Post 3; equal sharing
+ * is the USACE design basis for symmetric shores). 0 when no estimate was recorded.
+ * Every deployed point is exactly ONE strut, so a safety verdict must compare THIS
+ * number to the matched combo's per-strut capacity — the engine's recommendedQty
+ * (2–4 struts) never blocks a combo, so a single-strut deploy under a multi-strut
+ * load passes silently without this check (the v4 false-SAFE bug, 2026-07-01).
+ */
+export function strutLoadShare(sp: ShorePoint): number {
+  return (sp.estimatedLoad ?? 0) / (sp.groupTotal ?? 1);
+}
+
+/**
+ * Struts a load needs at a given per-strut capacity — the same ceil(load/capacity)
+ * the engine uses for recommendedQty, exposed so the card/store can compare it to
+ * the struts a shore actually HAS. 1 when either number is absent (no basis to
+ * demand more). Values above 4 never reach a real combo — the engine rejects
+ * those into its exceeds-4-strut sentinel first.
+ */
+export function strutsNeededFor(loadLbs: number, capacity: number): number {
+  if (loadLbs <= 0 || capacity <= 0) return 1;
+  return Math.ceil(loadLbs / capacity);
+}
+
+/** The standard shore type that carries N struts (KB-7). No entry (4+) means no
+ *  one-tap conversion exists — the shoring plan is the officer's call. */
+export const SHORE_TYPE_FOR_STRUTS: Partial<Record<number, ShoreTypeId>> = {
+  1: 't-shore',
+  2: 'double-t',
+  3: '3-post',
+};
 
 /**
  * Total deduction (inches) — the EXACT sum of the four component heights (not

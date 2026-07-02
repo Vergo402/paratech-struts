@@ -148,6 +148,7 @@ export function QuickFind() {
                   key={`${combo.strut.inventoryId ?? combo.strut.id}|${combo.extensions.join('+')}`}
                   combo={combo}
                   deductions={deductions}
+                  estimatedLoad={loadNum > 0 ? loadNum : undefined}
                 />
               ))}
             </div>

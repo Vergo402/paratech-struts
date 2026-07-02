@@ -16,12 +16,21 @@ export const GATE_COPY = {
     'LongShore above 16 ft (192″) is not rated by Paratech — rescue engineering consultation required.',
   'over-capacity':
     'Load exceeds rated capacity at the 4:1 safety factor — this strut cannot be deployed for this opening.',
+  'over-capacity-short': 'Deploying short of the required struts needs a recorded team acknowledgment.',
   disclaimer: 'Planning aid, not an engineering certification.',
+} as const;
+
+/** The acknowledgment control's label, per acknowledgeable use. */
+const ACK_LABEL = {
+  unrated: 'Team acknowledges the unrated zone',
+  'over-capacity-short': 'Team acknowledges the over-capacity deploy',
 } as const;
 
 export type WarningGateProps =
   | {
-      use: 'unrated';
+      /** unrated zone / deploying fewer struts than the load requires — both
+       *  deployable WITH an explicit team acknowledgment. */
+      use: 'unrated' | 'over-capacity-short';
       /** Parent owns the ack state and derives its deploy button's disabled from it. */
       acknowledged: boolean;
       onAcknowledge: () => void;
@@ -59,7 +68,7 @@ export function WarningGate(props: WarningGateProps) {
         <WarningGlyph />
         <p className="fs-gate-caveat">{GATE_COPY[props.use]}</p>
       </div>
-      {props.use === 'unrated' && (
+      {(props.use === 'unrated' || props.use === 'over-capacity-short') && (
         <button
           type="button"
           className="fs-gate-ack"
@@ -70,7 +79,7 @@ export function WarningGate(props: WarningGateProps) {
           <span className="fs-gate-ack-box" aria-hidden="true">
             {props.acknowledged ? '✓' : ''}
           </span>
-          Team acknowledges the unrated zone
+          {ACK_LABEL[props.use]}
         </button>
       )}
     </div>

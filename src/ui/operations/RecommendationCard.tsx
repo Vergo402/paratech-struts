@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, sysKeyOf, type StrutCombination } from '@core/load';
-import type { Deductions, WoodSizeId } from '@core/schema';
-import type { BomSourceStatus } from '@core/shorepoint';
+import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
+import { SHORE_TYPE_FOR_STRUTS, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
 import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
+import { SHORE_TYPE_LABELS } from './ShorePointCard';
 
 /**
  * RecommendationCard — the result card (card.md §RecommendationCard; restyled
@@ -37,6 +38,15 @@ export interface RecommendationCardProps {
   stock?: BomSourceStatus;
   /** Sheet-level single-flight lock while a deploy is in flight. */
   deployDisabled?: boolean;
+  /** The shore's planning load (lbs). With it the card judges whether ONE strut's
+   *  share fits the rating — the ×N struts-needed tell (accepted mockup 2026-07-01). */
+  estimatedLoad?: number;
+  /** Struts the shore currently has (groupTotal; 1 for a T-Shore / Quick Find). */
+  currentStruts?: number;
+  /** The one-tap fix: convert the shore to the type that carries the needed strut
+   *  count and deploy every member (the "Add N more struts" primary). Absent →
+   *  the card offers only the acknowledged short deploy. */
+  onAddStruts?: (combo: StrutCombination, targetType: ShoreTypeId, targetTotal: number) => void;
 }
 
 /** Face identity word — keyed off the strut SYSTEM, not its color: a LockStroke
@@ -107,10 +117,25 @@ export function RecommendationCard({
   onDeploy,
   stock,
   deployDisabled,
+  estimatedLoad,
+  currentStruts,
+  onAddStruts,
 }: RecommendationCardProps) {
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const gated = !!combo.unrated || !!combo.exceedsCapacity;
+  // Per-strut over-capacity (accepted mockup 2026-07-01): the engine returns 2–4-
+  // strut combos unflagged (recommendedQty is advisory), but this card deploys ONE
+  // strut per point — so judge the load against the struts the shore actually has.
+  // Mutually exclusive with unrated (capacity 0) and exceeds-4 (no real combo).
+  const struts = currentStruts ?? 1;
+  const needed =
+    combo.unrated || combo.exceedsCapacity ? struts : strutsNeededFor(estimatedLoad ?? 0, combo.capacity);
+  const shortDeploy = needed > struts;
+  const targetType = SHORE_TYPE_FOR_STRUTS[needed];
+  const canAutoFix = shortDeploy && !!onAddStruts && !!onDeploy && !!targetType;
+  const perStrutAfter = shortDeploy ? Math.ceil((estimatedLoad ?? 0) / needed) : 0;
+
+  const gated = !!combo.unrated || !!combo.exceedsCapacity || shortDeploy;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
   // Identity keys off the SYSTEM: LockStroke struts are grey-colored but carry
   // their own cyan word + stripe (sysKeyOf in struts.ts — every lk-* is color:'grey').
@@ -136,7 +161,9 @@ export function RecommendationCard({
   // print (0 for unrated; the per-strut best is meaningless once load exceeds
   // 4-strut capacity).
   const capLb = Math.floor(combo.capacity);
-  const showCapacity = capLb > 0 && !combo.unrated && !combo.exceedsCapacity;
+  // A short-deploy card in DEPLOY mode moves the honest numbers into the ×N tile
+  // (mockup A); the Quick Find variant keeps the quiet footer (mockup B).
+  const showCapacity = capLb > 0 && !combo.unrated && !combo.exceedsCapacity && !(shortDeploy && onDeploy);
 
   // Full strut identity in the button's accessible name (workflow #221 §Accessibility).
   const fx = eighthsToParts(effectiveEighths);
@@ -174,7 +201,7 @@ export function RecommendationCard({
             needs no "Fits" flag: being recommended IS fitting (#248). */}
         {gated && (
           <span className="fs-rec-fit fs-rec-fit--no">
-            {combo.exceedsCapacity ? 'Over capacity' : 'Unrated'}
+            {combo.unrated ? 'Unrated' : 'Over capacity'}
           </span>
         )}
       </div>
@@ -221,7 +248,38 @@ export function RecommendationCard({
           <span className="fs-rec-slot-label">Required strut length</span>
           <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
         </div>
+        {shortDeploy && (
+          <div className="fs-rec-row">
+            <span className="fs-rec-slot-label">Estimated load</span>
+            <span className="fs-rec-opening">{(estimatedLoad ?? 0).toLocaleString('en-US')} lbs</span>
+          </div>
+        )}
       </div>
+
+      {shortDeploy && (
+        /* ×N struts-needed tell (accepted mockup) — the extension-tile anatomy in
+           the danger pair: how many struts this load needs, and the shore type
+           that carries them. */
+        <div className="fs-rec-ext fs-rec-need">
+          <span className="fs-rec-ext-tile fs-rec-need-tile" aria-hidden="true">
+            ×{needed}
+          </span>
+          <div className="fs-rec-ext-amt">
+            <span className="fs-rec-need-word">struts needed for this load</span>
+          </div>
+          <p className="fs-rec-ext-note">
+            One strut is rated {capLb.toLocaleString('en-US')} lb at <MeasurementValue eighths={effectiveEighths} />.{' '}
+            {targetType ? (
+              <>
+                {needed} struts as a <b>{SHORE_TYPE_LABELS[targetType]}</b> carry {perStrutAfter.toLocaleString('en-US')} lbs
+                each — within rating.
+              </>
+            ) : (
+              <>This load needs {needed} struts — plan additional shore sets, or consult rescue engineering.</>
+            )}
+          </p>
+        </div>
+      )}
 
       {combo.boundaryWarning === 'fully-extended' && (
         <p className="fs-rec-caution">
@@ -243,7 +301,48 @@ export function RecommendationCard({
         </>
       )}
 
-      {onDeploy && (
+      {shortDeploy && onDeploy && (
+        /* Short-deploy block (accepted mockup A): the FIX is the primary action —
+           convert to the right shore type and deploy every strut. Deploying short
+           stays possible but demoted, locked behind the recorded acknowledgment. */
+        <>
+          {canAutoFix && (
+            <>
+              <Button
+                variant="primary"
+                fullWidth
+                disabled={!!deployDisabled}
+                onPress={() => onAddStruts!(combo, targetType!, needed)}
+              >
+                Add {needed - struts} more strut{needed - struts > 1 ? 's' : ''} — deploy as{' '}
+                {SHORE_TYPE_LABELS[targetType!]}
+              </Button>
+              <p className="fs-rec-add-note">
+                Converts this shore to a {SHORE_TYPE_LABELS[targetType!]} and deploys{' '}
+                {needed === 2 ? 'both' : `all ${needed}`} {model}
+                {source ? ` from ${source}` : ''}
+              </p>
+            </>
+          )}
+          <WarningGate
+            use="over-capacity-short"
+            acknowledged={acknowledged}
+            onAcknowledge={() => setAcknowledged((a) => !a)}
+          />
+          <Button
+            variant="secondary"
+            fullWidth
+            disabled={!acknowledged || !!deployDisabled}
+            disabledReason={!acknowledged && !deployDisabled ? 'Acknowledge the over-capacity deploy first' : undefined}
+            onPress={() => onDeploy(combo)}
+          >
+            Deploy {struts} of {needed} anyway
+            <span className="fs-sr-only">{deploySrLabel.slice('Deploy'.length)}</span>
+          </Button>
+        </>
+      )}
+
+      {!shortDeploy && onDeploy && (
         <Button
           variant="primary"
           fullWidth

@@ -188,6 +188,38 @@ describe('operationStore.commit', () => {
       expect((await ops.commit(deploy('sp-1', 'inv-1'))).ok).toBe(true);
       expect(getSp('sp-1')!.status).toBe('process');
     });
+
+    // Per-strut over-capacity (the 2026-07-01 family): 58.5″ + 34,000 lbs on ONE
+    // LS 406 (rated 22,000 lb at that length, 4:1). The engine returns the combo
+    // unflagged (recommendedQty 2 is advisory) — the store must gate it itself.
+    const ls406Bom = (): DeployedComponent[] => [
+      { role: 'strut', model: 'LS 406', system: 'LongShore', source: 'untracked' },
+    ];
+
+    it('rejects a single-strut deploy whose load share exceeds the rating (no ack)', async () => {
+      await ops.commit(spAdded(makeSp('sp-short', { measurementEighths: 468, estimatedLoad: 34000 })));
+      const res = await ops.commit(deployEvt('sp-short', ls406Bom()));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('acknowledgment') });
+      expect(getSp('sp-short')!.status).toBe('pending');
+    });
+
+    it('allows the SAME short deploy once the over-capacity acknowledgment is recorded', async () => {
+      await ops.commit(spAdded(makeSp('sp-short', { measurementEighths: 468, estimatedLoad: 34000 })));
+      const res = await ops.commit(deployEvt('sp-short', ls406Bom(), { overCapacityAcknowledged: true }));
+      expect(res.ok).toBe(true);
+      expect(getSp('sp-short')!.status).toBe('process');
+    });
+
+    it('needs NO ack once the load is shared across a linked group (Double-T member)', async () => {
+      // Same 34,000 lbs, but groupTotal 2 → 17,000 per strut ≤ 22,000 rating.
+      await ops.commit(
+        spAdded(makeSp('sp-dt1', { measurementEighths: 468, estimatedLoad: 34000, groupId: 'g1', groupIndex: 1, groupTotal: 2 })),
+      );
+      const res = await ops.commit(deployEvt('sp-dt1', ls406Bom()));
+      expect(res.ok).toBe(true);
+      expect(getSp('sp-dt1')!.status).toBe('process');
+    });
   });
 
   // ADR-033 — a deployed shore is a SOURCED bill of materials: strut + plates +

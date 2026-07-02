@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Deductions, DeployedComponent, ShorePoint } from '@core/schema';
+import type { Deductions, DeployedComponent, ShorePoint, ShoreTypeId } from '@core/schema';
 import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { divisionLabel } from '@core/operation';
-import { bomSourceStatus, findForShorePoint, pendingReasonFor } from '@core/shorepoint';
+import { bomSourceStatus, findForShorePoint, pendingReasonFor, strutLoadShare } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
-import { useCommit, useDeviceUid, useInventory, useRecommendations } from '@ui/hooks';
+import { useCommit, useCommitMany, useDeviceUid, useInventory, useRecommendations, useShorePoints } from '@ui/hooks';
 import { RecommendationCard, comboModel } from './RecommendationCard';
 import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
@@ -36,7 +36,18 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
   const recommendations = useRecommendations(sp);
   const inventory = useInventory();
   const commit = useCommit();
+  const commitMany = useCommitMany();
   const getUid = useDeviceUid();
+  const shorePoints = useShorePoints();
+
+  // The physical shore's live members (the point itself when ungrouped). The
+  // Add-N-struts fix rebuilds the WHOLE shore, so it's offered only while every
+  // member is still Pending — never tear down a deployed mate (the edit-path rule).
+  const members = useMemo(
+    () => (sp ? (sp.groupId ? shorePoints.filter((p) => p.groupId === sp.groupId && p.deletedAt == null) : [sp]) : []),
+    [sp, shorePoints],
+  );
+  const allPending = members.length > 0 && members.every((m) => m.status === 'pending');
 
   // Single-flight lock — two in-flight deploys for the same SP would BOTH pass
   // the store pre-flight and both decrement stock. The ref is the guard; the
@@ -70,6 +81,10 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
     // (the button is disabled until then), so reaching here IS the ack. Persisted
     // on the event so the store's deploy guard can re-verify it off-UI (#76).
     unratedAck: boolean,
+    // True when this deploy leaves the shore short of the struts its load needs
+    // (per-strut over-capacity) — the card's short-deploy gate held Deploy until
+    // the team acknowledged, so reaching here IS that ack too.
+    overCapacityAck: boolean,
     deductions?: Deductions,
   ): Promise<{ ok: boolean; reason?: string }> {
     if (!sp || inFlight.current) return { ok: false, reason: 'A deploy is already in flight.' };
@@ -103,6 +118,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       spId: sp.id,
       deployedBom,
       ...(unratedAck ? { unratedAcknowledged: true } : {}),
+      ...(overCapacityAck ? { overCapacityAcknowledged: true } : {}),
     });
     if (result.ok) {
       commitHaptic();
@@ -113,6 +129,13 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
     inFlight.current = false;
     setDeploying(false);
     return { ok: false, reason: result.reason };
+  }
+
+  // This deploy leaves the shore short of the struts its load needs (per-strut
+  // over-capacity). The card gated Deploy behind the team acknowledgment, so a
+  // deploy that fires with this true carries the recorded ack on its event.
+  function isShortDeploy(combo: StrutCombination): boolean {
+    return !!sp && !combo.unrated && !combo.exceedsCapacity && combo.capacity > 0 && strutLoadShare(sp) > combo.capacity;
   }
 
   function handleDeploy(combo: StrutCombination) {
@@ -137,10 +160,101 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
     // missing piece before commit.
     const status = bomSourceStatus(combo, sp.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
     if (status.status === 'complete') {
-      void commitBom(status.bom, comboModel(combo), !!combo.unrated);
+      void commitBom(status.bom, comboModel(combo), !!combo.unrated, isShortDeploy(combo));
     } else {
       setError(null);
       setResolving(combo);
+    }
+  }
+
+  // The Add-N-struts one-tap fix (accepted mockup 2026-07-01): rebuild the physical
+  // shore at the strut count its load needs (the edit path's hard-remove + re-add
+  // pattern, KEEPING the shore's number), then deploy the chosen combo to every
+  // member. An exhausted-stock / unclean-source member stays Pending — honest
+  // partial, never a silent success (the modal batch's W1 rule).
+  async function handleAddStruts(combo: StrutCombination, targetType: ShoreTypeId, targetTotal: number) {
+    if (!sp || inFlight.current) return;
+    const inventoryId = combo.strut.inventoryId;
+    const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
+    if (!inventoryId || !item) {
+      setError('That strut is no longer in inventory — pull down to re-check stock.');
+      return;
+    }
+    inFlight.current = true;
+    setDeploying(true);
+    setError(null);
+    const uid = await getUid();
+    const at = Date.now();
+    const gid = newId();
+    const rebuilt: ShorePoint[] = Array.from({ length: targetTotal }, (_, i) => ({
+      id: newId(),
+      opId: sp.opId,
+      ...(sp.seq != null ? { seq: sp.seq } : {}),
+      division: sp.division,
+      ...(sp.building ? { building: sp.building } : {}),
+      ...(sp.area ? { area: sp.area } : {}),
+      shoreType: targetType,
+      groupId: gid,
+      groupIndex: i + 1,
+      groupTotal: targetTotal,
+      measurementEighths: sp.measurementEighths,
+      deductions: sp.deductions,
+      ...(sp.label ? { label: sp.label } : {}),
+      ...(sp.assignedResource ? { assignedResource: sp.assignedResource } : {}),
+      ...(sp.estimatedLoad != null ? { estimatedLoad: sp.estimatedLoad } : {}),
+      status: 'pending',
+    }));
+    const restructure = await commitMany([
+      ...members.map((m) => ({
+        type: 'ShorePointDeleted' as const,
+        id: newId(),
+        opId: sp.opId,
+        at,
+        by: uid,
+        spId: m.id,
+        hard: true,
+      })),
+      ...rebuilt.map((p) => ({
+        type: 'ShorePointAdded' as const,
+        id: newId(),
+        opId: sp.opId,
+        at,
+        by: uid,
+        shorePoint: p,
+      })),
+    ]);
+    if (!restructure.ok) {
+      setError(restructure.reason);
+      inFlight.current = false;
+      setDeploying(false);
+      return;
+    }
+    const deployed: ShorePoint[] = [];
+    for (const p of rebuilt) {
+      // Each member sources its own full BOM (ADR-033). Post-conversion every
+      // member's load share is within rating, so no acknowledgment rides these.
+      const status = bomSourceStatus(combo, p.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
+      if (status.status !== 'complete') continue; // unclean source → stays Pending for the per-point flow
+      const result = await commit({
+        type: 'EquipmentDeployed',
+        id: newId(),
+        opId: sp.opId,
+        at: Date.now(),
+        by: uid,
+        spId: p.id,
+        deployedBom: status.bom,
+      });
+      if (result.ok) deployed.push(p);
+      else break; // stock exhausted — every remaining member stays Pending
+    }
+    const model = comboModel(combo);
+    if (deployed.length > 0) {
+      commitHaptic();
+      onDeployed(deployed[0]!, deployed.length > 1 ? `${deployed.length}× ${model}` : model);
+    } else {
+      // Nothing deployed (stock/source shifted underfoot) — the converted members
+      // sit in Pending; close so the board shows them, not a stale sheet target.
+      onClose();
     }
   }
 
@@ -182,7 +296,9 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           combo={resolving}
           submitting={deploying}
           onBack={() => setResolving(null)}
-          onConfirm={(bom, deductions) => commitBom(bom, comboModel(resolving), !!resolving.unrated, deductions)}
+          onConfirm={(bom, deductions) =>
+            commitBom(bom, comboModel(resolving), !!resolving.unrated, isShortDeploy(resolving), deductions)
+          }
         />
       )}
       {sp && !resolving && recommendations.length > 0 && (
@@ -210,6 +326,9 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
                 stock={stock}
                 onDeploy={handleDeploy}
                 deployDisabled={deploying}
+                estimatedLoad={sp.estimatedLoad}
+                currentStruts={sp.groupTotal ?? 1}
+                onAddStruts={allPending ? handleAddStruts : undefined}
               />
             );
           })}
@@ -237,6 +356,8 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
                 stock={bomSourceStatus(combo, sp.deductions, { apparatus: UNTRACKED_SOURCE }, inventory)}
                 onDeploy={handleDeploy}
                 deployDisabled={deploying}
+                estimatedLoad={sp.estimatedLoad}
+                currentStruts={sp.groupTotal ?? 1}
               />
             ))}
           </div>

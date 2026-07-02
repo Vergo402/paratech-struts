@@ -1112,6 +1112,37 @@ button.fs-spc-head {
   line-height: 1.45;
 }
 
+/* ×N struts-needed tell (accepted mockup 2026-07-01) — the extension-tile anatomy
+   in the danger pair: the load needs more struts than the shore has. The note
+   drops BELOW the tile row at full width (mockup) — a narrow phone column of
+   one-word lines is unreadable with gloves on. */
+.fs-rec-need {
+  flex-wrap: wrap;
+}
+.fs-rec-need .fs-rec-ext-note {
+  flex-basis: 100%;
+}
+.fs-rec-need-tile {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+.fs-rec-need-word {
+  font: var(--type-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fs-rec-need .fs-rec-ext-note b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+/* The caption under the Add-N-struts primary — what the one tap does. */
+.fs-rec-add-note {
+  margin: var(--space-1) 0 0;
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 /* The deduction ledger — fixed physical order, every slot always shown. */
 .fs-rec-ledger {
   display: flex;

@@ -210,17 +210,19 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // The struts of ONE physical shore (KB-7: T-Shore=1, Double-T=2, 3-Post=3,
   // sharing a groupId), carrying the given created-order number. Shared by the add
   // flow (one call per shore) and the edit-time type-change rebuild (handleSaveEdit).
-  function buildShoreStruts(seq: number | undefined): ShorePoint[] {
-    const groupId = strutsPerShore > 1 ? newId() : undefined;
-    return Array.from({ length: strutsPerShore }, (_, strut) => ({
+  // `type` overrides the form's selection for the Add-N-struts one-tap fix.
+  function buildShoreStruts(seq: number | undefined, type: ShoreTypeId = shoreType): ShorePoint[] {
+    const perShore = strutsPerShoreOf(type);
+    const groupId = perShore > 1 ? newId() : undefined;
+    return Array.from({ length: perShore }, (_, strut) => ({
       id: newId(),
       opId: operation!.id,
       ...(seq != null ? { seq } : {}),
       division: String(division),
       ...(building.trim() ? { building: building.trim() } : {}),
       ...(area.trim() ? { area: area.trim() } : {}),
-      shoreType,
-      ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: strutsPerShore } : {}),
+      shoreType: type,
+      ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: perShore } : {}),
       measurementEighths,
       deductions,
       ...(label.trim() ? { label: label.trim() } : {}),
@@ -234,11 +236,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // share one groupId per physical shore. Shared by Save-as-Pending and Deploy.
   // Stable per-op number: max(existing)+1 per PHYSICAL shore (max, not count, so a
   // deleted number is never reused).
-  function buildPoints(): ShorePoint[] {
+  function buildPoints(type: ShoreTypeId = shoreType): ShorePoint[] {
     const baseSeq = nextSeqBase(shorePoints);
     const points: ShorePoint[] = [];
     for (let shore = 0; shore < qtyNum; shore++) {
-      points.push(...buildShoreStruts(baseSeq + shore + 1));
+      points.push(...buildShoreStruts(baseSeq + shore + 1, type));
     }
     return points;
   }
@@ -261,8 +263,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   }
 
   // One-step deploy: create the point(s), then put the chosen combo on each.
-  async function handleDeploy(combo: StrutCombination) {
+  // `typeOverride` is the Add-N-struts one-tap fix — build at the shore type the
+  // load needs instead of the form's selection (accepted mockup 2026-07-01).
+  async function handleDeploy(combo: StrutCombination, typeOverride?: ShoreTypeId) {
     if (!operation || deploying) return;
+    const type = typeOverride ?? shoreType;
     const inventoryId = combo.strut.inventoryId;
     const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
     if (!inventoryId || !item) {
@@ -273,7 +278,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     setDeployError(null);
     const uid = await getUid();
     const at = Date.now();
-    const points = buildPoints();
+    const points = buildPoints(type);
+    // Per-strut over-capacity at the BUILT type: deploying short of the struts the
+    // load needs. The card gated Deploy behind the team ack, so firing IS the ack.
+    const shortDeploy =
+      !combo.unrated && combo.capacity > 0 && loadNum > 0 && loadNum / strutsPerShoreOf(type) > combo.capacity;
     const addResult = await commitMany(
       points.map((sp) => ({ type: 'ShorePointAdded', id: newId(), opId: operation.id, at, by: uid, shorePoint: sp })),
     );
@@ -302,6 +311,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
         by: uid,
         spId: p.id,
         deployedBom,
+        // The card's gates held Deploy until acknowledged — persist the acks so the
+        // store's off-UI deploy guard accepts what the operator already recorded.
+        ...(combo.unrated ? { unratedAcknowledged: true } : {}),
+        ...(shortDeploy ? { overCapacityAcknowledged: true } : {}),
       });
       if (result.ok) deployed.push(p);
       else break; // stock exhausted — every remaining point stays Pending
@@ -531,6 +544,14 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                     location={draftLocation}
                     onDeploy={handleDeploy}
                     deployDisabled={deploying}
+                    estimatedLoad={loadNum > 0 ? loadNum : undefined}
+                    currentStruts={strutsPerShore}
+                    onAddStruts={(c, targetType) => {
+                      // One tap: build at the shore type the load needs. The form
+                      // control follows so the officer sees what was built.
+                      setShoreType(targetType);
+                      void handleDeploy(c, targetType);
+                    }}
                   />
                 ))}
               </div>

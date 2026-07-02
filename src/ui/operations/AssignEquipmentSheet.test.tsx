@@ -9,11 +9,15 @@ import type { StrutCombination } from '@core/load';
 const mockInventory = vi.fn((): InventoryItem[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
 const mockCommit = vi.fn();
+const mockCommitMany = vi.fn();
+const mockShorePoints = vi.fn((): ShorePoint[] => []);
 
 vi.mock('@ui/hooks', () => ({
   useInventory: () => mockInventory(),
   useRecommendations: () => mockRecommendations(),
   useCommit: () => mockCommit,
+  useCommitMany: () => mockCommitMany,
+  useShorePoints: () => mockShorePoints(),
   useDeviceUid: () => () => Promise.resolve('device-test'),
 }));
 
@@ -72,8 +76,11 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
   beforeEach(() => {
     mockInventory.mockReturnValue([]);
     mockRecommendations.mockReturnValue([]);
+    mockShorePoints.mockReturnValue([]);
     mockCommit.mockReset();
     mockCommit.mockResolvedValue({ ok: true });
+    mockCommitMany.mockReset();
+    mockCommitMany.mockResolvedValue({ ok: true });
   });
 
   it('renders nothing when shorePoint is null', () => {
@@ -221,5 +228,71 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     expect(screen.getByText(/Deploy one off-book, or add it to a truck/)).toBeInTheDocument();
     // The fitting catalog struts are surfaced as deployable cards (no dead end).
     expect(screen.getAllByRole('button', { name: /Deploy/ }).length).toBeGreaterThan(0);
+  });
+
+  // Per-strut over-capacity (accepted mockup 2026-07-01): 60″ @ 34,000 lbs on one
+  // 22,000 lb strut — the shore needs 2 struts. The one-tap fix rebuilds the shore
+  // as a Double-T and deploys BOTH; deploying short carries the recorded ack.
+  describe('Add-N-struts fix + acknowledged short deploy', () => {
+    const shortSp = (over: Partial<ShorePoint> = {}) => makeSP({ estimatedLoad: 34000, seq: 7, ...over });
+
+    it('Add 1 more strut: rebuilds as a linked Double-T (same seq) and deploys both', async () => {
+      const user = userEvent.setup();
+      const onDeployed = vi.fn();
+      const sp = shortSp();
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={onDeployed} />);
+
+      await user.click(screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ }));
+
+      // Restructure: hard-remove the old point + add 2 linked members keeping seq 7.
+      const batch = mockCommitMany.mock.calls[0]![0] as Array<Record<string, unknown>>;
+      expect(batch[0]).toMatchObject({ type: 'ShorePointDeleted', spId: 'sp-1', hard: true });
+      const added = batch.filter((e) => e.type === 'ShorePointAdded').map((e) => e.shorePoint as ShorePoint);
+      expect(added).toHaveLength(2);
+      expect(added.map((p) => p.groupIndex)).toEqual([1, 2]);
+      for (const p of added) {
+        expect(p).toMatchObject({ shoreType: 'double-t', groupTotal: 2, seq: 7, estimatedLoad: 34000 });
+        expect(p.groupId).toBe(added[0]!.groupId);
+      }
+      // Both members deployed — one EquipmentDeployed per new point, NO ack needed
+      // (each strut now carries 17,000 lbs ≤ its 22,000 lb rating).
+      const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+      expect(deploys).toHaveLength(2);
+      expect(deploys.map((e) => e.spId).sort()).toEqual(added.map((p) => p.id).sort());
+      for (const e of deploys) expect(e.overCapacityAcknowledged).toBeUndefined();
+      expect(onDeployed).toHaveBeenCalledWith(expect.objectContaining({ shoreType: 'double-t' }), '2× LS 406');
+    });
+
+    it('Deploy 1 of 2 anyway: locked until acknowledged; the event carries the recorded ack', async () => {
+      const user = userEvent.setup();
+      const sp = shortSp();
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} />);
+
+      const anyway = screen.getByRole('button', { name: /Deploy 1 of 2 anyway/ });
+      expect(anyway).toBeDisabled();
+      await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ }));
+      await user.click(anyway);
+      expect(mockCommit).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'EquipmentDeployed', spId: 'sp-1', overCapacityAcknowledged: true }),
+      );
+    });
+
+    it('never offers the one-tap fix when a group mate is already deployed', () => {
+      const sp = shortSp({ groupId: 'g1', groupIndex: 1, groupTotal: 2, estimatedLoad: 60000 });
+      const mate = shortSp({ groupId: 'g1', groupIndex: 2, groupTotal: 2, estimatedLoad: 60000 });
+      mockShorePoints.mockReturnValue([sp, { ...mate, id: 'sp-2', status: 'process' }]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      // 60,000 lbs over 2 struts = 30,000 each > 22,000 → short, needs 3 (3-Post).
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} />);
+      expect(screen.queryByRole('button', { name: /more strut/ })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Deploy 2 of 3 anyway/ })).toBeInTheDocument();
+    });
   });
 });

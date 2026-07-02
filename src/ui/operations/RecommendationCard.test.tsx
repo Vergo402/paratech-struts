@@ -271,3 +271,98 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(screen.queryByText('Acknowledge the unrated zone first')).not.toBeInTheDocument();
   });
 });
+
+// Per-strut over-capacity (accepted mockup 2026-07-01): 58½″ @ 34,000 lbs — the
+// LS 406 fits and is rated 22,000 lb (4:1), so ONE strut can't carry the load.
+// The engine returns it UNFLAGGED (recommendedQty 2 is advisory) — the exact
+// combo that produced the false SAFE; the card must judge it itself.
+describe('RecommendationCard — short deploy (×N struts needed)', () => {
+  const SHORT = findStrutCombinations(58.5, 34000, 2, null, null, null).find(
+    (c) => c.strut.model === 'LS 406' && c.extensions.length === 0,
+  )!;
+
+  it('engine fixture is the state it claims to be — unflagged, needs 2 struts', () => {
+    expect(SHORT.capacity).toBe(22000);
+    expect(SHORT.recommendedQty).toBe(2);
+    expect(SHORT.unrated ?? false).toBe(false);
+    expect(SHORT.exceedsCapacity ?? false).toBe(false);
+  });
+
+  it('deploy mode: ×2 tile, Add-1-more-strut primary, gated Deploy-anyway (mockup A)', async () => {
+    const user = userEvent.setup();
+    const onDeploy = vi.fn();
+    const onAddStruts = vi.fn();
+    const { container } = render(
+      <RecommendationCard
+        combo={SHORT}
+        deductions={NO_DEDUCTIONS}
+        source="Eng 1"
+        onDeploy={onDeploy}
+        onAddStruts={onAddStruts}
+        estimatedLoad={34000}
+        currentStruts={1}
+      />,
+    );
+    // Badge + ×N tile: the danger tell and the plain-numbers explanation.
+    expect(container.querySelector('.fs-rec-fit')!.textContent).toBe('Over capacity');
+    expect(container.querySelector('.fs-rec-need-tile')!.textContent).toBe('×2');
+    expect(screen.getByText('struts needed for this load')).toBeInTheDocument();
+    expect(screen.getByText(/One strut is rated 22,000 lb/)).toBeInTheDocument();
+    expect(screen.getByText('34,000 lbs')).toBeInTheDocument(); // ledger row
+    // The FIX is the primary action — converts and deploys as a Double-T.
+    const add = screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ });
+    await user.click(add);
+    expect(onAddStruts).toHaveBeenCalledWith(SHORT, 'double-t', 2);
+    // Deploying short stays possible but locked behind the recorded acknowledgment.
+    const anyway = screen.getByRole('button', { name: /Deploy 1 of 2 anyway/ });
+    expect(anyway).toBeDisabled();
+    expect(screen.getByText('Acknowledge the over-capacity deploy first')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ }));
+    expect(anyway).toBeEnabled();
+    await user.click(anyway);
+    expect(onDeploy).toHaveBeenCalledWith(SHORT);
+    // No plain Deploy button — the short-deploy block replaces it.
+    expect(screen.queryByRole('button', { name: /^Deploy LS 406/ })).not.toBeInTheDocument();
+  });
+
+  it('display-only (Quick Find, mockup B): tile + badge, no gate, keeps the capacity footer', () => {
+    const { container } = render(<RecommendationCard combo={SHORT} deductions={NO_DEDUCTIONS} estimatedLoad={34000} />);
+    expect(container.querySelector('.fs-rec-need-tile')!.textContent).toBe('×2');
+    expect(container.querySelector('.fs-rec-fit')!.textContent).toBe('Over capacity');
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Deploy/ })).not.toBeInTheDocument();
+    expect(container.querySelector('.fs-rec-cap')).toBeTruthy();
+  });
+
+  it('a Double-T member carrying its 17,000 lb share reads clean — no tile, plain Deploy (mockup C)', () => {
+    const { container } = render(
+      <RecommendationCard
+        combo={SHORT}
+        deductions={NO_DEDUCTIONS}
+        source="Eng 1"
+        onDeploy={vi.fn()}
+        estimatedLoad={34000}
+        currentStruts={2}
+      />,
+    );
+    expect(container.querySelector('.fs-rec-need-tile')).toBeNull();
+    expect(container.querySelector('.fs-rec-fit')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeEnabled();
+  });
+
+  it('no one-tap fix without onAddStruts (deployed group mate) — gate + Deploy-anyway only', () => {
+    render(
+      <RecommendationCard
+        combo={SHORT}
+        deductions={NO_DEDUCTIONS}
+        source="Eng 1"
+        onDeploy={vi.fn()}
+        estimatedLoad={34000}
+        currentStruts={1}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /Add 1 more strut/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Deploy 1 of 2 anyway/ })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ })).toBeInTheDocument();
+  });
+});

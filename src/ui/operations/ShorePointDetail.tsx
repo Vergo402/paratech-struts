@@ -12,6 +12,7 @@ import {
   hasUntracked,
   isUntracked,
   STATUS_LABELS,
+  strutLoadShare,
 } from '@core/shorepoint';
 import { Badge, MeasurementValue } from '@ui/primitives';
 import { useInventory, useShorePointHistory } from '@ui/hooks';
@@ -144,6 +145,22 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
     if (!match) return { kind: 'unknown' as const, msg: 'Capacity not re-verifiable for the deployed assembly.' };
     if (match.unrated) return { kind: 'warn' as const, msg: match.unratedReason ?? 'Unrated zone — capacity is not published at this length.' };
     if (match.exceedsCapacity) return { kind: 'warn' as const, msg: match.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
+    // Per-strut over-capacity: this point deploys exactly ONE strut, but the engine
+    // returns combos needing 2–4 struts unflagged (recommendedQty is advisory).
+    // Compare this strut's SHARE of the load to its rated capacity, or a
+    // multi-strut load reads as a false SAFE (the 2026-07-01 bug).
+    const share = strutLoadShare(sp);
+    if (share > match.capacity) {
+      const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
+      const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;
+      return {
+        kind: 'warn' as const,
+        msg:
+          (sp.groupTotal ?? 1) > 1
+            ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds its ${capTxt} rating at this length.`
+            : `Over capacity — estimated load ${shareTxt} exceeds this strut's ${capTxt} rating at this length.`,
+      };
+    }
     return { kind: 'ok' as const, msg: `Within rated capacity — ${Math.floor(match.capacity).toLocaleString()} lbs per strut.` };
   }, [sp, inventory]);
 

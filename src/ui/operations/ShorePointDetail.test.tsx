@@ -144,6 +144,33 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
     expect(screen.getByText('Load exceeds 4 struts.')).toBeInTheDocument();
   });
 
+  // The 2026-07-01 false-SAFE bug: the engine returns 2–4-strut combos unflagged
+  // (recommendedQty is advisory), but a shore point deploys exactly ONE strut.
+  it('flags a single strut whose load exceeds its rated capacity (never a false pass)', () => {
+    mockFind.mockReturnValue([combo({ capacity: 22000 })]);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 34000 })} />);
+    expect(screen.getByText('Check')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Over capacity — estimated load 34,000 lbs exceeds this strut's 22,000 lbs rating/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('splits the load across a linked group before judging (Double-T shares evenly)', () => {
+    mockFind.mockReturnValue([combo({ capacity: 22000 })]);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 34000, groupId: 'g1', groupIndex: 1, groupTotal: 2 })} />);
+    // 34,000 / 2 = 17,000 per strut — within the 22,000 rating.
+    expect(screen.getByText(/Within rated capacity — 22,000 lbs per strut\./)).toBeInTheDocument();
+  });
+
+  it('flags a grouped strut when even its SHARE of the load exceeds the rating', () => {
+    mockFind.mockReturnValue([combo({ capacity: 22000 })]);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 50000, groupId: 'g1', groupIndex: 2, groupTotal: 2 })} />);
+    expect(
+      screen.getByText(/Over capacity — this strut's share of the load \(25,000 lbs\) exceeds its 22,000 lbs rating/),
+    ).toBeInTheDocument();
+  });
+
   it('says "not re-verifiable" when no combo matches the deployed assembly', () => {
     mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'] })]);
     render(<ShorePointDetail sp={makeSp()} />);

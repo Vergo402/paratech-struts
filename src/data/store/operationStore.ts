@@ -176,6 +176,9 @@ export function createOperationStore(opts: {
         if (verdict.unrated && !event.unratedAcknowledged) {
           return { ok: false, reason: 'unrated-zone deploy requires a recorded team acknowledgment' };
         }
+        if (verdict.overCapacity && !event.overCapacityAcknowledged) {
+          return { ok: false, reason: 'over-capacity deploy requires a recorded team acknowledgment' };
+        }
         const updates: InventoryItem[] = [];
         await db.transaction('rw', db.events, db.inventory, async () => {
           for (const c of event.deployedBom) {
