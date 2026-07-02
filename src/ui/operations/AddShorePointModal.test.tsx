@@ -349,6 +349,31 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
     expect(adds[0]!.shorePoint.seq).toBe(7); // number preserved
     expect(adds[0]!.shorePoint.groupId).toBeUndefined(); // no longer grouped
   });
+
+  // 2026-07-02 audit #3: a same-count measurement/deduction edit on ONE leg of a
+  // grouped shore must fan out to every leg, or the physical shore's struts diverge
+  // into different effective + cut lengths.
+  it('editing one Double-T leg (count unchanged) fans the SAME patch to every live group-mate', async () => {
+    const user = userEvent.setup();
+    const member = (id: string, i: number) =>
+      makeSP({ id, seq: 4, shoreType: 'double-t', measurementEighths: 96 * 8, groupId: 'g1', groupIndex: i, groupTotal: 2 });
+    const members = [member('dt-1', 1), member('dt-2', 2)];
+    mockShorePoints.mockReturnValue(members);
+    render(<AddShorePointModal open onClose={() => {}} shorePoint={members[0]} />);
+
+    // Change ONLY the measurement (shore type / count unchanged → the patch path).
+    await setMeasurementFeet(user, 6); // 6 ft = 72"
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    // NOT a single-target commit — a fan-out via commitMany, one edit per leg.
+    expect(mockCommit).not.toHaveBeenCalled();
+    expect(mockCommitMany).toHaveBeenCalledTimes(1);
+    const edits = mockCommitMany.mock.calls[0]![0] as Extract<FieldShoreEvent, { type: 'ShorePointEdited' }>[];
+    expect(edits).toHaveLength(2);
+    expect(new Set(edits.map((e) => e.spId))).toEqual(new Set(['dt-1', 'dt-2']));
+    // Both legs get the identical measurement patch — no divergence.
+    expect(edits.every((e) => e.patch.measurementEighths === 72 * 8)).toBe(true);
+  });
 });
 
 describe('AddShorePointModal — one-step inline deploy', () => {

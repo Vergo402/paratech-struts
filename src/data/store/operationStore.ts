@@ -246,6 +246,22 @@ export function createOperationStore(opts: {
         // from the empty state; this is defense-in-depth). Plain append otherwise.
         if (state.operation) return { ok: false, reason: 'an operation is already active' };
         await db.events.add({ ...event });
+      } else if (event.type === 'ShorePointDeleted') {
+        // A delete must not strand stock. A point still HOLDING a deployed BOM
+        // (units decremented, not yet restored) can't be removed without first
+        // returning its equipment — otherwise those units are orphaned (a hard
+        // delete also erases the BOM, so they could never be reconciled). In-app the
+        // delete affordance is Pending-only (ShorePointCard gates on pending), so
+        // this guards the OFF-UI path the store owns — a peer/replayed delete of a
+        // deployed point (2026-07-02 audit #6). A `returned` point keeps its BOM as
+        // history but its stock is already restored (EquipmentReclaimed), so deleting
+        // it strands nothing; a `pending` point never carries a BOM. Unknown point →
+        // fall through and let the reducer no-op it.
+        const sp = state.shorePoints.find((s) => s.id === event.spId);
+        if (sp && sp.deployedBom && sp.status !== 'returned') {
+          return { ok: false, reason: 'cannot delete a shore point holding deployed equipment — return it first' };
+        }
+        await db.events.add({ ...event });
       } else {
         // Plain append — the reducers already no-op illegal/stale events
         // deterministically, so projection can never crash on a logged event.

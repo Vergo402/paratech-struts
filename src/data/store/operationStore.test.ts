@@ -665,4 +665,53 @@ describe('operationStore.commit', () => {
       expect((await ops.commit(e)).ok).toBe(false);
     });
   });
+
+  // 2026-07-02 audit #6: ShorePointDeleted must not strand deployed stock. In-app
+  // the delete affordance is Pending-only, so this guards the off-UI / peer / replay
+  // path the store owns.
+  describe('ShorePointDeleted stock guard', () => {
+    const durable = async (id: string) => (await db.inventory.get(id))!.available;
+    const deleteEvt = (spId: string, hard = false): FieldShoreEvent => ({
+      type: 'ShorePointDeleted', ...base(), spId, ...(hard ? { hard: true } : {}),
+    });
+
+    it('allows deleting a Pending point (no BOM, no stock consequence)', async () => {
+      const before = await db.events.count();
+      expect((await ops.commit(deleteEvt('sp-1'))).ok).toBe(true);
+      expect(await db.events.count()).toBe(before + 1); // logged
+      expect(getSp('sp-1')!.deletedAt).toBeTruthy(); // soft-deleted
+    });
+
+    it('rejects deleting a DEPLOYED point — stock stays decremented, point stays on the board', async () => {
+      expect((await ops.commit(deploy('sp-1', 'inv-1'))).ok).toBe(true);
+      expect(await durable('inv-1')).toBe(1); // one unit held by sp-1
+      const before = await db.events.count();
+      const res = await ops.commit(deleteEvt('sp-1', true));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('deployed equipment') });
+      expect(await db.events.count()).toBe(before); // nothing logged
+      expect(await durable('inv-1')).toBe(1); // NOT stranded, NOT restored
+      expect(getSp('sp-1')!.status).toBe('process'); // still on the board
+    });
+
+    it('still rejects a peer (fromRemote) delete of a deployed point — the real threat', async () => {
+      await ops.commit(deploy('sp-1', 'inv-1'));
+      const res = await ops.commit(deleteEvt('sp-1', true), { fromRemote: true });
+      expect(res.ok).toBe(false);
+      expect(await durable('inv-1')).toBe(1);
+    });
+
+    it('allows deleting a RETURNED point — its stock is already restored, nothing to strand', async () => {
+      await ops.commit(deploy('sp-1', 'inv-1'));
+      for (const [from, to] of [
+        ['process', 'strutset'], ['strutset', 'cutting'], ['cutting', 'runner'], ['runner', 'secured'],
+      ] as [ShorePointStatus, ShorePointStatus][]) {
+        await ops.commit(statusChanged('sp-1', from, to));
+      }
+      expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true); // → returned, stock back to 2
+      expect(await durable('inv-1')).toBe(2);
+      expect((await ops.commit(deleteEvt('sp-1', true))).ok).toBe(true); // no stranding → allowed
+      expect(await durable('inv-1')).toBe(2); // unchanged
+    });
+  });
 });

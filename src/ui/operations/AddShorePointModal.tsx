@@ -400,15 +400,25 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       return;
     }
 
-    const result = await commit({
-      type: 'ShorePointEdited',
+    // A grouped shore is ONE physical shore — its legs must stay identical in every
+    // edited field (measurement, deductions, location, load, label, assigned crew),
+    // or they diverge into different effective + cut lengths for the same shore
+    // (2026-07-02 audit #3: editing one leg's measurement left its mate at the old
+    // length — an unbuildable, un-warned shore). Fan the SAME patch to every live
+    // group-mate (`members`, computed above); an ungrouped shore is just [sp], so a
+    // single-strut edit keeps the existing one-event path. A shore-type change never
+    // reaches here (it always changes the strut count → the rebuild branch above).
+    const at = Date.now();
+    const edits = members.map((m) => ({
+      type: 'ShorePointEdited' as const,
       id: newId(),
       opId: operation.id,
-      at: Date.now(),
+      at,
       by: uid,
-      spId: sp.id,
+      spId: m.id,
       patch,
-    });
+    }));
+    const result = edits.length > 1 ? await commitMany(edits) : await commit(edits[0]!);
     if (result.ok) {
       commitHaptic();
       onClose();
