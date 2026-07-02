@@ -103,3 +103,16 @@ The **scope + mechanism decisions are locked now.** The **camera scanner impleme
 ## Notes
 
 The line ADR-003 drew on *scale* (local, not federal) is untouched. What changed is *timing* (v4.0 not v4.5) and *mechanism* (QR + guest). The guest path is the same guest-first philosophy the app already runs on, pointed at the one moment it matters most — the company that rolled up to help and has never seen the app. The camera scanner is the only genuinely new platform surface; everything else reuses anonymous auth, external-equipment handling, scoped rules, and the event log the app already has.
+
+---
+
+## Addendum — join transport decided (2026-07-02, resolves OQ #42)
+
+**Decision (Alex, transport-decision batch S2): the join QR is a plain web link, scanned with the phone's own camera; NO app install.**
+
+- **No install gate.** The QR encodes a **web URL** to the incident-join page. The arriving officer scans it with the **phone's built-in camera / scanner** (the OS QR affordance every modern phone has) and **lands straight in the join page in the mobile browser** — no "add to home screen," no PWA install, no app-store step. A walk-up crew is in **within seconds**, in whatever browser they already have. This refines the earlier "camera scanner + deep-link/install path" framing: the guest path is **pure web**, install is explicitly **not** a precondition.
+- **Scanning.** The phone's native camera scanner is the primary path; an **in-app camera scanner** (a small `BarcodeDetector`-with-JS-fallback surface) is offered for the case where a member is already inside FieldShore and wants to scan without leaving it — but it is a convenience, never the requirement, since the OS scanner + a plain URL already gets a stranger in.
+- **The join page must stand alone in a cold browser tab.** Because there is no install and the joiner may never have opened FieldShore, the join URL renders and functions in a first-time mobile browser session (guest identity = a typed unit tag, per the body above) with no prior app state.
+- **Fallbacks unchanged.** The **human-readable code** printed beneath the QR stays the radio / no-camera path (body §above); typing it opens the same join URL.
+
+Resolves [`99-open-questions.md`](../99-open-questions.md) #42. GitHub: [#407](https://github.com/Vergo402/paratech-struts/issues/407).

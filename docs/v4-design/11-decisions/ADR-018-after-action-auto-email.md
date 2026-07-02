@@ -113,3 +113,16 @@ The specifics — and the reason it stays plainly **records, not communication**
 The boundary is clean: **during-incident / life-safety / tactical communication** is what Principle 10 governs — and prohibits in the app; **an after-action record read later** is documentation outside that scope. This feature is the latter, fully. It is **not** a foothold for the former — any future outbound request is judged against that same line, on its own merits.
 
 The exact email mechanism (a transactional email service vs. a backend function vs. a platform integration) and address verification are Phase H ([`99-open-questions.md`](../99-open-questions.md) #35), behind the `data/sync` seam ([ADR-009](ADR-009-database-firebase-rtdb.md)).
+
+---
+
+## Addendum — email transport decided (2026-07-02, resolves OQ #35)
+
+**Decision (Alex, transport-decision batch S2): automatic send via a transactional email service, triggered by a backend function.**
+
+- **Mechanism.** On **End Operation**, a **server-side function on the existing Firebase project** (`fieldshore-database`) assembles the after-action packet from the event log and hands it to a **transactional email provider** (e.g. Resend / SendGrid / SES — the specific vendor is an implementation detail chosen at build time, swappable behind the send interface). This is the app's **first server-side code**; it lives behind the `data/sync` seam ([ADR-009](ADR-009-database-firebase-rtdb.md)) and touches no client flow.
+- **Automatic, not user-initiated.** The record sends on its own when the incident closes — no "open your mail app / hit send" step. A client-side `mailto:`/share-sheet path was **rejected**: it is not automatic, can't reliably carry a generated packet, and depends on each commander remembering to send.
+- **Addresses** come from the IC's and Operations Section Chief's **authenticated account/profile email** ([ADR-017](ADR-017-custom-department-roles.md) member identity), as already specified above. A guest commander with no account gets no email; the in-app [Audit Log](../08-information-architecture/53-audit-log.md) record is unaffected (email is a **sink**, never the record — Principle 8).
+- **Decision now, plumbing later.** The transport is settled; the function + provider wiring ships with the after-action review feature ([#305](https://github.com/Vergo402/paratech-struts/issues/305) / the UI-ship question #32), not before. Deliverability/bounce handling is the provider's job; a bounce never costs the record.
+
+Resolves [`99-open-questions.md`](../99-open-questions.md) #35. GitHub: [#406](https://github.com/Vergo402/paratech-struts/issues/406).

@@ -57,7 +57,7 @@
 
 | Item | Canonical home | Added |
 |---|---|---|
-| `--motion-loop` — continuous-loop timing (spinner/shimmer): behavior value vs ADR-gated 7th duration token; decide when a spinner first ships | [`99-open-questions.md`](99-open-questions.md) #19 ([#355](https://github.com/Vergo402/paratech-struts/issues/355)) | 2026-06-11 (seed) |
+| ~~`--motion-loop` — continuous-loop timing (spinner/shimmer)~~ **Resolved 2026-07-02: a behavior value, not a 7th duration token; value set when the first spinner/shimmer ships (none in v4 yet).** | [`99-open-questions.md`](99-open-questions.md) #19 ([#355](https://github.com/Vergo402/paratech-struts/issues/355)) | 2026-06-11 (seed) |
 
 ## Resolved (struck rows land here)
 
