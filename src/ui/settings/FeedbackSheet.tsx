@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Sheet, Button, TextField } from '@ui/primitives';
 import { InlineSegmented } from '@ui/picker';
-import { useFeedback, type FeedbackApi } from '@ui/hooks';
-import type { FeedbackCategory } from '@data/feedback';
+import { useFeedback, type FeedbackApi, type FeedbackCategory } from '@ui/hooks';
 
 // Feedback (#321 inc4d, 50-settings.md §7) — the v3 feedback modal re-homed to a Sheet
 // (ADR-016). Category + message → the /feedback node via useFeedback. A brief success
