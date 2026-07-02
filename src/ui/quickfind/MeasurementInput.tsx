@@ -1,7 +1,8 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
 import { useId, useState } from 'react';
 import { MAX_MEASUREMENT_EIGHTHS } from '@core/schema';
-import { eighthsToParts, tapHaptic } from '@ui/primitives';
+import { eighthsToParts, tapHaptic, useNativeControls } from '@ui/primitives';
+import { PowerSelect } from '@ui/picker';
 
 /**
  * MeasurementInput — the gloved measurement entry (KB-3).
@@ -25,6 +26,12 @@ export interface MeasurementInputProps {
 }
 
 const EIGHTHS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+// The eighths as options for the OS-native fallback (#398): same values the
+// tap-strip offers, so switching surfaces never changes what you can pick.
+const EIGHTHS_OPTIONS = EIGHTHS.map((n) => {
+  const p = eighthsToParts(n);
+  return { value: String(n), label: n === 0 ? '0' : `${p.n}/${p.d}` };
+});
 const digitsOnly = (s: string) => s.replace(/\D/g, '');
 const toInt = (s: string) => Math.max(0, parseInt(s, 10) || 0);
 
@@ -51,6 +58,7 @@ export function MeasurementInput({
   const [feetStr, setFeetStr] = useState(() => seedFields(value).feet);
   const [inchesStr, setInchesStr] = useState(() => seedFields(value).inches);
   const [lastWhole, setLastWhole] = useState(value - (value % 8));
+  const nativeControls = useNativeControls();
 
   const frac = value % 8;
 
@@ -153,27 +161,39 @@ export function MeasurementInput({
         </div>
       </div>
 
-      {/* Eighths tap-strip — the fraction (KB-2): 1/8 1/4 3/8 1/2 5/8 3/4 7/8. */}
-      <RadioGroup.Root
-        className="fs-eighths-strip"
-        aria-label={`${label} — eighths of an inch`}
-        value={String(frac)}
-        onValueChange={onFrac}
-      >
-        {EIGHTHS.map((n) => {
-          const p = eighthsToParts(n);
-          return (
-            <RadioGroup.Item
-              key={n}
-              className="fs-eighth"
-              value={String(n)}
-              aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
-            >
-              {n === 0 ? '0' : `${p.n}/${p.d}`}
-            </RadioGroup.Item>
-          );
-        })}
-      </RadioGroup.Root>
+      {/* Eighths — the fraction (KB-2): 1/8 1/4 3/8 1/2 5/8 3/4 7/8. Native-controls
+          fallback (accessibility.md §Power Select) routes this raw strip to an OS
+          <select> under VoiceOver/TalkBack-or-Native-controls (#398); the four
+          picker variants already fell back, this raw consumer did not. */}
+      {nativeControls ? (
+        <PowerSelect
+          label={`${label} — eighths of an inch`}
+          options={EIGHTHS_OPTIONS}
+          value={String(frac)}
+          onChange={onFrac}
+        />
+      ) : (
+        <RadioGroup.Root
+          className="fs-eighths-strip"
+          aria-label={`${label} — eighths of an inch`}
+          value={String(frac)}
+          onValueChange={onFrac}
+        >
+          {EIGHTHS.map((n) => {
+            const p = eighthsToParts(n);
+            return (
+              <RadioGroup.Item
+                key={n}
+                className="fs-eighth"
+                value={String(n)}
+                aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
+              >
+                {n === 0 ? '0' : `${p.n}/${p.d}`}
+              </RadioGroup.Item>
+            );
+          })}
+        </RadioGroup.Root>
+      )}
 
       {overMax && (
         <span className="fs-field-msg fs-field-msg--error" role="status">

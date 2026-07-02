@@ -1,7 +1,8 @@
 import 'fake-indexeddb/auto';
-import { describe, it, expect, afterEach } from 'vitest';
+import Dexie from 'dexie';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { migrateLegacyDb } from './migrate';
-import { legacyDb, globalDb, createDB, deptDbName, GUEST_BUCKET } from './db';
+import { globalDb, createDB, deptDbName, GUEST_BUCKET, LEGACY_DB_NAME } from './db';
 import { AUTH_UID_KEY } from './auth';
 import { SESSION_KEY } from './session';
 import { APPARATUS_ROSTER_KEY } from './apparatusStore';
@@ -19,25 +20,27 @@ const item = (id: string): InventoryItem => ({
 });
 
 describe('legacy DB migration (single-tenant → global + dept bucket)', () => {
+  // A FRESH legacy handle per test. The migration now deletes the legacy DB after
+  // the split, which force-closes any open handle to it — a reused singleton would
+  // be poisoned for the next test, so each test opens its own instance.
+  let legacy: ReturnType<typeof createDB>;
+  beforeEach(() => {
+    legacy = createDB(LEGACY_DB_NAME);
+  });
   afterEach(async () => {
-    // Clear (not delete) the singleton DBs so the next test can reuse them — a
-    // Dexie .delete() closes the instance and fake-indexeddb won't reopen it.
-    await legacyDb.meta.clear();
-    await legacyDb.inventory.clear();
-    await legacyDb.events.clear();
-    await globalDb.meta.clear(); // also clears the one-time migration flag
-    // The dept buckets are throwaway handles — deleting them is fine.
+    await globalDb.meta.clear(); // resets the migration + deletion flags
+    await Dexie.delete(LEGACY_DB_NAME); // drop any legacy DB a test left behind
     await createDB(deptDbName('dept-1')).delete();
     await createDB(deptDbName(GUEST_BUCKET)).delete();
   });
 
   it('routes global meta to the global DB and dept data to the active dept bucket', async () => {
-    await legacyDb.meta.bulkPut([
+    await legacy.meta.bulkPut([
       { key: AUTH_UID_KEY, value: 'uid-legacy' },
       { key: SESSION_KEY, value: JSON.stringify({ departmentId: 'dept-1' }) },
       { key: APPARATUS_ROSTER_KEY, value: '[]' }, // a dept-scoped meta row
     ]);
-    await legacyDb.inventory.add(item('inv-1'));
+    await legacy.inventory.add(item('inv-1'));
 
     await migrateLegacyDb();
 
@@ -55,10 +58,13 @@ describe('legacy DB migration (single-tenant → global + dept bucket)', () => {
   });
 
   it('is idempotent — a second run never re-copies', async () => {
-    await legacyDb.inventory.add(item('inv-x')); // no session → guest bucket
+    await legacy.inventory.add(item('inv-x')); // no session → guest bucket
     await migrateLegacyDb();
-    // Mutate the legacy DB AFTER migrating; a second run must ignore it.
-    await legacyDb.inventory.add(item('inv-y'));
+    // The legacy DB is deleted after the split; even a re-appeared legacy DB must be
+    // ignored by a second run (the flag short-circuits, never re-copies).
+    const revived = createDB(LEGACY_DB_NAME);
+    await revived.inventory.add(item('inv-y'));
+    revived.close();
     await migrateLegacyDb();
 
     const guest = createDB(deptDbName(GUEST_BUCKET));
@@ -67,8 +73,22 @@ describe('legacy DB migration (single-tenant → global + dept bucket)', () => {
     guest.close();
   });
 
+  it('deletes the orphaned legacy DB once the split is done (O-1, #399)', async () => {
+    await legacy.inventory.add(item('inv-del')); // no session → guest bucket
+    expect(await Dexie.exists(LEGACY_DB_NAME)).toBe(true);
+
+    await migrateLegacyDb();
+
+    // The orphan is gone…
+    expect(await Dexie.exists(LEGACY_DB_NAME)).toBe(false);
+    // …but its rows were copied out first (never a lossy delete).
+    const guest = createDB(deptDbName(GUEST_BUCKET));
+    expect(await guest.inventory.get('inv-del')).toBeTruthy();
+    guest.close();
+  });
+
   it('coalesces concurrent callers onto one migration (single-flight)', async () => {
-    await legacyDb.inventory.add(item('inv-c')); // no session → guest bucket
+    await legacy.inventory.add(item('inv-c')); // no session → guest bucket
     const p1 = migrateLegacyDb();
     const p2 = migrateLegacyDb();
     expect(p1).toBe(p2); // same in-flight promise — not a second racing migration

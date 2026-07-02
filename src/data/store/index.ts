@@ -10,7 +10,6 @@ export {
   createDB,
   FieldShoreDB,
   globalDb,
-  legacyDb,
   deptDbName,
   GLOBAL_DB_NAME,
   GUEST_BUCKET,

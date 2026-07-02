@@ -275,8 +275,9 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(confirm).toBeEnabled();
     await user.click(confirm);
     // The over-capacity ack (3rd arg) is recorded true — the store would otherwise
-    // reject the amended-deductions deploy with no way to clear it.
-    expect(onConfirm.mock.calls[0]![2]).toBe(true);
+    // reject the amended-deductions deploy with no way to clear it. (The mock's call
+    // tuple is untyped; read the 3rd positional arg through an unknown[] view.)
+    expect((onConfirm.mock.calls[0] as unknown[])[2]).toBe(true);
   });
 
   it('quick-add count > 1: addOne is called per unit, then the piece is re-pointed once', async () => {

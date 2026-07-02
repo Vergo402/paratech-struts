@@ -73,9 +73,10 @@ export function isBucketStale(boundBucket: string, sessionDepartmentId: string |
 export const globalDb = createDB(GLOBAL_DB_NAME);
 
 /**
- * The LEGACY single-tenant database (pre-bucketing). No store binds to it anymore;
- * it is read once by the boot migration (registry.ts) which splits its rows into
- * the global DB + the active dept bucket, then leaves it in place as a safety net.
+ * The LEGACY single-tenant database name (pre-bucketing). No store binds to it; the
+ * boot migration (migrate.ts) opens a throwaway handle to split its rows into the
+ * global DB + the active dept bucket, then deletes it (SIM-IV O-1, #399). There is
+ * deliberately no module-level singleton — a persistent handle to a soon-deleted DB
+ * is exactly the orphaned connection this cleanup removes.
  */
 export const LEGACY_DB_NAME = 'fieldshore';
-export const legacyDb = createDB(LEGACY_DB_NAME);

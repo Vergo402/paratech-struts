@@ -2,6 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { setNativeControls } from '@ui/primitives';
 import { MeasurementInput } from './MeasurementInput';
 
 function Harness({ initial = 0 }: { initial?: number }) {
@@ -19,6 +20,8 @@ const feetField = () => screen.getByRole('textbox', { name: 'Feet' });
 const inchesField = () => screen.getByRole('textbox', { name: 'Inches' });
 
 describe('MeasurementInput', () => {
+  afterEach(() => setNativeControls(false)); // never leak the fallback into the strip tests
+
   it('feet and inches type straight into exact eighths (#248)', async () => {
     const user = userEvent.setup();
     render(<Harness initial={0} />);
@@ -81,6 +84,18 @@ describe('MeasurementInput', () => {
     expect(eighths()).toBe(40 * 8 + 4);
     await user.click(screen.getByRole('radio', { name: '3/4 inch' }));
     expect(eighths()).toBe(40 * 8 + 6);
+  });
+
+  it('falls back to an OS-native <select> for the fraction under Native controls (#398)', async () => {
+    const user = userEvent.setup();
+    setNativeControls(true);
+    render(<Harness initial={40 * 8} />);
+
+    // The custom tap-strip is gone; a native <select> carries the fraction instead.
+    expect(screen.queryByRole('radio')).toBeNull();
+    const select = screen.getByRole('combobox', { name: /eighths of an inch/i });
+    await user.selectOptions(select, '4'); // 1/2 inch
+    expect(eighths()).toBe(40 * 8 + 4);
   });
 
   it('holds at the 30 ft ceiling with an inline message — never over max', async () => {
