@@ -9,6 +9,7 @@ import {
   NO_DEDUCTIONS,
   type FieldShoreEvent,
   type InventoryItem,
+  type OrgResourceRef,
   type ShorePoint,
   type ShorePointStatus,
 } from '@core/schema';
@@ -26,6 +27,13 @@ const statusChanged = (spId: string, from: ShorePointStatus, to: ShorePointStatu
 });
 const deploy = (spId: string, inventoryId: string): FieldShoreEvent => ({
   type: 'EquipmentDeployed', ...base(), spId, deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId }],
+});
+const rescue2: OrgResourceRef = { ref: 'apparatus', value: 'app-r2', label: 'Rescue 2' };
+const resourceAssigned = (positionId: string, resource: OrgResourceRef = rescue2): FieldShoreEvent => ({
+  type: 'ResourceAssigned', ...base(), positionId, resource,
+});
+const resourceCleared = (positionId: string, resource?: OrgResourceRef): FieldShoreEvent => ({
+  type: 'ResourceCleared', ...base(), positionId, resource,
 });
 
 const makeSp = (id: string): ShorePoint => ({
@@ -252,6 +260,44 @@ describe('syncService (event cloud sync + L-7 merge guard)', () => {
     expect(counts.at(-1)).toBe(2); // grew with the queue
     await s.flush();
     expect(counts.at(-1)).toBe(0); // drained to empty
+  });
+
+  it('pendingResourceKeys tracks DISTINCT apparatus/individual keys, not raw event count (#352)', async () => {
+    const w: Record<string, unknown> = {};
+    const s = createSyncService({
+      ops: () => ops,
+      deptId: () => 'dept-1',
+      set: async (p, v) => void (w[p] = v),
+    });
+    const lopez = { ref: 'individual' as const, value: 'FF Lopez', label: 'FF Lopez' };
+    s.enqueue(resourceAssigned('pos-rescue')); // Rescue 2
+    s.enqueue(resourceAssigned('pos-rescue', lopez)); // + FF Lopez
+    s.enqueue(resourceCleared('pos-rescue')); // clears Rescue 2 — same key, still one distinct key
+    expect(s.pendingResourceKeys()).toEqual(new Set(['apparatus:app-r2', 'individual:FF Lopez']));
+    expect(s.pendingCount()).toBe(3); // the raw queue is 3 events, not 2
+
+    await s.flush();
+    expect(s.pendingResourceKeys().size).toBe(0); // drains alongside the event queue
+  });
+
+  it('pendingResourceKeys skips a clear-ALL ResourceCleared (no resource) — unattributable, not counted', async () => {
+    const s = createSyncService({ ops: () => ops, deptId: () => 'dept-1', set: async () => {} });
+    s.enqueue(resourceCleared('pos-rescue')); // resource omitted — clears every resource on the position
+    expect(s.pendingResourceKeys().size).toBe(0);
+  });
+
+  it('pushes pendingResourceCount alongside pendingCount on enqueue and flush (#352 Command chrome)', async () => {
+    const resourceCounts: number[] = [];
+    const s = createSyncService({
+      ops: () => ops,
+      deptId: () => 'dept-1',
+      set: async () => {},
+      notifyPendingResources: (c) => resourceCounts.push(c),
+    });
+    s.enqueue(resourceAssigned('pos-rescue'));
+    expect(resourceCounts.at(-1)).toBe(1);
+    await s.flush();
+    expect(resourceCounts.at(-1)).toBe(0);
   });
 
   it('flags syncError when a flush leaves changes stuck, clears it once drained (Increment 4)', async () => {

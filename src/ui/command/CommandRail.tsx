@@ -4,7 +4,15 @@ import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
-import { useOperation, useShorePoints, useOrg, useHazards, useCommandTransfer, useDeviceUidValue } from '@ui/hooks';
+import {
+  useOperation,
+  useShorePoints,
+  useOrg,
+  useHazards,
+  useCommandTransfer,
+  useDeviceUidValue,
+  usePendingResourceCount,
+} from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { SitStatRollup } from './SitStatRollup';
 import { TransferCommand } from './TransferCommand';
@@ -35,6 +43,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const isDesktop = useIsDesktop();
   const pending = useCommandTransfer();
   const uid = useDeviceUidValue();
+  const pendingResourceCount = usePendingResourceCount();
   const emit = useOrgCommit();
   const [scope, setScope] = useState<SitStatScope>('all');
   const [transferOpen, setTransferOpen] = useState(false);
@@ -214,6 +223,19 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
           <span className="fs-cmd-eyebrow">Individuals</span>
           <span className="fs-cmd-metric-num">{resources.individualCount}</span>
         </Card>
+        {/* PAR/pending-sync indicator (#352) — how many apparatus/individual rows
+            have a queued (not-yet-synced) assignment change, so the IC never has to
+            tab-switch to Accountability mid-PAR. Hidden entirely at 0 — no "All
+            synced" text, no lingering gap (Principle 10, calm chrome). Gold-accented
+            by Alex's explicit call (2026-07-02) to stand out faster than the other
+            two counts — an intentional exception to the one-accent-per-screen rule,
+            not an oversight to "fix" later. */}
+        {pendingResourceCount > 0 && (
+          <Card className="fs-cmd-metric">
+            <span className="fs-cmd-eyebrow">Pending sync</span>
+            <span className="fs-cmd-metric-num fs-cmd-metric-num--accent">{pendingResourceCount}</span>
+          </Card>
+        )}
       </div>
 
       {/* Shore-point status board */}

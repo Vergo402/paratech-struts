@@ -52,3 +52,20 @@ export function shorePointsForResource(shorePoints: ShorePoint[], ref: OrgResour
       (sp.assignedResource === ref.label || sp.assignedResource === ref.value),
   );
 }
+
+// The device's own apparatus, via its declared My Role position — the "Mine" lens
+// (#370) narrows the board to shore points these rigs are working. A position may
+// hold zero, one, or several apparatus (e.g. Staging); each match key is both the
+// label AND value form so callers can test `sp.assignedResource` membership the
+// same way positionForShorePoint/shorePointsForResource do.
+export function myApparatusKeys(positions: OrgPositions, myRoleId: string | null | undefined): string[] {
+  if (!myRoleId) return [];
+  const position = positions[myRoleId];
+  if (!position) return [];
+  const keys: string[] = [];
+  for (const r of position.assignedResources) {
+    if (r.ref !== 'apparatus') continue;
+    keys.push(r.label, r.value);
+  }
+  return keys;
+}

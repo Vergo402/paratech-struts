@@ -27,6 +27,11 @@ export interface SyncStatusState {
   // forever when writes fail for a non-network reason (a rule rejection, a wedge). Cleared
   // the moment the queue drains. A life-safety trust signal must not show false progress.
   syncError: boolean;
+  // The Command-chrome PAR/pending-sync indicator (#352): how many DISTINCT
+  // apparatus/individual resources have a ResourceAssigned/ResourceCleared event
+  // still queued (not yet synced). A subset of pendingCount's raw event count —
+  // one resource can own several queued events but only counts once here.
+  pendingResourceCount: number;
 }
 
 export interface SyncStatusStoreApi {
@@ -35,6 +40,7 @@ export interface SyncStatusStoreApi {
   setPending(count: number): void;
   setPendingJoin(pendingJoin: PendingJoin | null): void;
   setSyncError(syncError: boolean): void;
+  setPendingResourceCount(count: number): void;
 }
 
 export function createSyncStatusStore(): SyncStatusStoreApi {
@@ -43,6 +49,7 @@ export function createSyncStatusStore(): SyncStatusStoreApi {
     pendingCount: 0,
     pendingJoin: null,
     syncError: false,
+    pendingResourceCount: 0,
   }));
   return {
     store,
@@ -50,6 +57,7 @@ export function createSyncStatusStore(): SyncStatusStoreApi {
     setPending: (pendingCount) => store.setState({ pendingCount }),
     setPendingJoin: (pendingJoin) => store.setState({ pendingJoin }),
     setSyncError: (syncError) => store.setState({ syncError }),
+    setPendingResourceCount: (pendingResourceCount) => store.setState({ pendingResourceCount }),
   };
 }
 

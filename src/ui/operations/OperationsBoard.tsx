@@ -9,9 +9,24 @@ import {
   divisionLabel,
   nextSawId,
 } from '@core/operation';
+import { myApparatusKeys } from '@core/org';
 import { newId } from '@core/id';
 import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
-import { useApparatus, useBriefing, useCommit, useCommitMany, useDeviceUid, useInventory, useOperation, usePermissions, useShorePoints } from '@ui/hooks';
+import {
+  useApparatus,
+  useBriefing,
+  useCommit,
+  useCommitMany,
+  useDeviceUid,
+  useDeviceUidValue,
+  useInventory,
+  useMyRole,
+  useOperation,
+  useOrg,
+  usePermissions,
+  useShorePoints,
+} from '@ui/hooks';
+import { MyRoleSheet } from '@ui/command';
 import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
@@ -47,6 +62,12 @@ type ListSort = 'added-newest' | 'added-oldest' | 'status' | 'location';
 
 /** The Add/Edit Shore Point modal state: closed, creating, or editing a point. */
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
+
+// "Mine" lens (#370) — All ↔ Mine, the first chip in the filter row.
+const MINE_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'mine', label: 'Mine' },
+] as const;
 
 // ---- Chevron SVG (matches BottomNav inline-glyph pattern) -------------------
 function Chevron() {
@@ -414,6 +435,15 @@ export function OperationsBoard() {
   const commit = useCommit();
   const commitMany = useCommitMany();
   const getUid = useDeviceUid();
+  // "Mine" lens (#370) — resolves this device's own apparatus via its declared My
+  // Role position. uid resolves asynchronously (undefined on first render), so
+  // mineAvailable stays false — never flashing available-then-unavailable — until
+  // it settles.
+  const deviceUid = useDeviceUidValue();
+  const positions = useOrg();
+  const myRoleId = useMyRole(deviceUid);
+  const mineKeys = useMemo(() => myApparatusKeys(positions, myRoleId), [positions, myRoleId]);
+  const mineAvailable = mineKeys.length > 0;
   // Create/end/edit an operation is the back-office manageOperations capability (ADR-017 #3,
   // #380) — orthogonal to the ICS-position gates on the fireground actions (deploy/cut/secure).
   const canManageOps = usePermissions().manageOperations;
@@ -456,6 +486,11 @@ export function OperationsBoard() {
   // Filter by assigned apparatus (assignedResource) — a 4th board filter beside
   // building/division/area (Alex). Same lifecycle: persisted, cleared together.
   const [filterApparatus, setFilterApparatus] = useState<string | null>(null);
+  // "Mine" lens (#370) — a per-device view lens (like sort/layout), NOT auditable
+  // incident state, so it lives in the same localStorage blob as the other board
+  // prefs rather than an OperationState event (must never round-trip through sync).
+  const [mineOn, setMineOn] = useState(false);
+  const [myRoleSheetOpen, setMyRoleSheetOpen] = useState(false);
   // Current op id for the prefs key, without making it an effect dep (#347).
   const opIdRef = useRef<string | undefined>(undefined);
   opIdRef.current = operation?.id;
@@ -495,6 +530,7 @@ export function OperationsBoard() {
     const resetPrefs = () => {
       setSortMode('location'); setLayout('lanes'); setListSort('location');
       setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); setFilterApparatus(null);
+      setMineOn(false);
     };
     // Back-compat: an older stored 'added' (pre-directional) reads as newest-first.
     const asSort = (v: unknown): SortMode =>
@@ -512,15 +548,16 @@ export function OperationsBoard() {
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
       setFilterBuilding(typeof p.filterBuilding === 'string' ? p.filterBuilding : null);
       setFilterApparatus(typeof p.filterApparatus === 'string' ? p.filterApparatus : null);
+      setMineOn(p.mine === true);
     } catch { resetPrefs(); }
   }, [operation?.id]);
 
   // Write the current prefs + a patch for the field(s) that just changed. Called
   // from the change handlers so only real user actions persist (StrictMode-safe).
-  function persistPrefs(patch: Partial<{ sortMode: SortMode; layout: BoardLayout; listSort: ListSort; filterDivision: string | null; filterArea: string | null; filterBuilding: string | null; filterApparatus: string | null }>) {
+  function persistPrefs(patch: Partial<{ sortMode: SortMode; layout: BoardLayout; listSort: ListSort; filterDivision: string | null; filterArea: string | null; filterBuilding: string | null; filterApparatus: string | null; mine: boolean }>) {
     const opId = opIdRef.current;
     if (!opId) return;
-    const prefs = { sortMode, layout, listSort, filterDivision, filterArea, filterBuilding, filterApparatus, ...patch };
+    const prefs = { sortMode, layout, listSort, filterDivision, filterArea, filterBuilding, filterApparatus, mine: mineOn, ...patch };
     try { localStorage.setItem(`fs-board-prefs-${opId}`, JSON.stringify(prefs)); }
     catch { /* private mode / quota — prefs are best-effort */ }
   }
@@ -966,6 +1003,10 @@ export function OperationsBoard() {
       if (filterDivision && sp.division !== filterDivision) continue;
       if (filterArea && (sp.area ?? '') !== filterArea) continue;
       if (filterApparatus && (sp.assignedResource ?? '') !== filterApparatus) continue;
+      // "Mine" lens (#370): narrows FURTHER on top of the filters above (AND, never
+      // replaces them). A no-op when unavailable (no My Role / no apparatus on it) —
+      // the toggle stays inert rather than silently hiding the whole board.
+      if (mineOn && mineAvailable && !mineKeys.includes(sp.assignedResource ?? '')) continue;
       // Display-only enrichment — the computed reason never re-serializes
       // (ShorePointPatch has no such field; events are built from live SPs).
       map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
@@ -978,7 +1019,7 @@ export function OperationsBoard() {
       for (const lane of Object.values(map)) lane.reverse();
     }
     return map;
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, sortMode]);
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, sortMode]);
 
   // List view (#356): every visible point in one column, grouped shores kept as
   // one stack (Alex's call), sorted by the list's own key. A group sits at its
@@ -992,7 +1033,8 @@ export function OperationsBoard() {
           (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
           (!filterDivision || sp.division === filterDivision) &&
           (!filterArea || (sp.area ?? '') === filterArea) &&
-          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus),
+          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus) &&
+          (!mineOn || !mineAvailable || mineKeys.includes(sp.assignedResource ?? '')),
       )
       .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
     const items = groupLanePoints(visible);
@@ -1016,7 +1058,7 @@ export function OperationsBoard() {
       }
       return compareShorePointsByLocation(ra, rb);
     });
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, listSort]);
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(
@@ -1230,6 +1272,28 @@ export function OperationsBoard() {
               the left; the List/Status-tiles View toggle is pinned on the right.
               Added direction lives inside the Sort menu (newest/oldest), no pill. */}
           <div className="fs-ops-filter-chips">
+            {/* "Mine" lens (#370) — combines with the filters that follow (AND, never
+                clears them). Visible but inert with no My Role / apparatus set on it;
+                tapping Mine while unavailable opens the same declare-your-role sheet
+                instead of silently doing nothing. */}
+            <div className="fs-ops-mine-toggle">
+              <Segmented
+                size="standard"
+                aria-label="Mine or all shore points"
+                options={MINE_OPTIONS}
+                value={mineOn ? 'mine' : 'all'}
+                onChange={(v) => {
+                  if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
+                  setMineOn(v === 'mine');
+                  persistPrefs({ mine: v === 'mine' });
+                }}
+              />
+              {!mineAvailable && (
+                <button type="button" className="fs-ops-mine-hint" onClick={() => setMyRoleSheetOpen(true)}>
+                  Set My Role to use Mine
+                </button>
+              )}
+            </div>
             {layout === 'lanes' ? (
               <FilterPicker
                 label="Sort"
@@ -1353,6 +1417,20 @@ export function OperationsBoard() {
             value={layout}
             onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
           />
+        </div>
+      )}
+
+      {/* "Mine" summary (#370) — "left" = everything before the shore is wood-secured
+          or fully returned; "done" = secured + returned. byStatus is already
+          Mine-filtered above, so this reads the same narrowed set the board shows. */}
+      {mineOn && mineAvailable && (
+        <div className="fs-ops-mine-summary">
+          {byStatus.pending.length +
+            byStatus.process.length +
+            byStatus.strutset.length +
+            byStatus.cutting.length +
+            byStatus.runner.length}{' '}
+          left · {byStatus.secured.length + byStatus.returned.length} done
         </div>
       )}
 
@@ -1539,6 +1617,11 @@ export function OperationsBoard() {
       />
 
       <AssignEquipmentSheet shorePoint={assignSp} onClose={() => setAssignSpId(null)} onDeployed={handleDeployed} />
+
+      {/* "Mine" lens (#370) nudge: tapping Mine (or its hint) while unavailable opens
+          this device-wide sheet — the same one Command uses — rather than a
+          duplicate "declare my role" surface. */}
+      <MyRoleSheet open={myRoleSheetOpen} onClose={() => setMyRoleSheetOpen(false)} />
 
       <StepBackConfirmModal
         shorePoint={stepBackSp}

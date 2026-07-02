@@ -47,6 +47,16 @@ function jsonClean(value: unknown): unknown {
   return JSON.parse(JSON.stringify(value));
 }
 
+/** The PAR/pending-sync indicator's resource key (#352) — `ref:value`, matching the
+ *  same key CommandRail's roster already builds. A queued ResourceCleared with no
+ *  `resource` (clear-ALL-on-position) can't be attributed to one resource — skipped,
+ *  not counted, rather than guessed. */
+function pendingResourceKeyOf(event: FieldShoreEvent): string | null {
+  if (event.type === 'ResourceAssigned') return `${event.resource.ref}:${event.resource.value}`;
+  if (event.type === 'ResourceCleared' && event.resource) return `${event.resource.ref}:${event.resource.value}`;
+  return null;
+}
+
 export type RowSyncState = 'queued' | 'synced';
 
 export interface ReconcileResult {
@@ -65,6 +75,9 @@ export interface SyncServiceApi {
   /** Per-row sync state for the repo hooks (staleness is life-safety — ADR-024). */
   getRowSyncState(eventId: string): RowSyncState;
   pendingCount(): number;
+  /** Distinct apparatus/individual resource keys with a queued (not-yet-synced)
+   *  assignment change — the PAR/pending-sync indicator's data source (#352). */
+  pendingResourceKeys(): Set<string>;
   /** Push a non-event STATE record (cloud-sync Increment 3) to orgs/{deptId}/{relPath}
    *  — an LWW overwrite (not the append-only event queue). Best-effort, guest-guarded,
    *  strips undefined. Fire-and-forget: callers void the promise. */
@@ -88,6 +101,9 @@ export function createSyncService(deps: {
   /** Reactive "N cuts arrived from a peer" sink (#404 Cutting Station badge). Called with
    *  the count of remote cutting-arrivals per reconcile. Injected; defaults to the store. */
   notifyRemoteCuts?: (count: number) => void;
+  /** Reactive PAR/pending-sync count sink (#352 Command chrome). Injected so unit tests
+   *  stay store-free; defaults to the syncStatus singleton. */
+  notifyPendingResources?: (count: number) => void;
 }): SyncServiceApi {
   const queue: FieldShoreEvent[] = [];
   const set = deps.set ?? firebaseSet;
@@ -95,7 +111,22 @@ export function createSyncService(deps: {
   const notifyPending = deps.notifyPending ?? ((count) => syncStatusStore.setPending(count));
   const notifyError = deps.notifyError ?? ((stuck) => syncStatusStore.setSyncError(stuck));
   const notifyRemoteCuts = deps.notifyRemoteCuts ?? ((count) => peerCutStore.add(count));
-  const emitPending = () => notifyPending(queue.length); // after every queue mutation
+  const notifyPendingResources =
+    deps.notifyPendingResources ?? ((count) => syncStatusStore.setPendingResourceCount(count));
+  const computePendingResourceKeys = (): Set<string> => {
+    const keys = new Set<string>();
+    for (const event of queue) {
+      const key = pendingResourceKeyOf(event);
+      if (key) keys.add(key);
+    }
+    return keys;
+  };
+  // After every queue mutation — both the raw event count (existing banner) and the
+  // distinct-resource count (#352) move together, from the same queue snapshot.
+  const emitPending = () => {
+    notifyPending(queue.length);
+    notifyPendingResources(computePendingResourceKeys().size);
+  };
   let flushing = false; // one drain at a time — post-commit + reconnect must not race
 
   return {
@@ -195,6 +226,10 @@ export function createSyncService(deps: {
 
     pendingCount() {
       return queue.length;
+    },
+
+    pendingResourceKeys() {
+      return computePendingResourceKeys();
     },
 
     async setState(relPath, value) {

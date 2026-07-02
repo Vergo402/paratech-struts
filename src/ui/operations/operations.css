@@ -157,6 +157,53 @@
 }
 .fs-ops-filter-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
+/* ---- "Mine" lens (#370) --------------------------------------------------- */
+/* The Segmented primitive is width:100% by design (segmented.md) — it needs a
+   fixed-width, flex:none wrapper to sit as ONE chip in the scrolling row rather
+   than stretching it. std height (48px) sits close enough to the 44px chip row
+   to read as one row. */
+.fs-ops-mine-toggle {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 132px;
+  /* Without a snap point on the FIRST chip, the row's scroll-snap-type (only the
+     Sort/filter FilterPickers carry scroll-snap-align) left the initial scroll
+     position resting on the SECOND chip instead of 0 — the toggle rendered
+     partly clipped off the left edge on load. Matching the same align makes this
+     the first, and correct, snap point. */
+  scroll-snap-align: start;
+}
+/* Visible-but-inert copy for when My Role isn't set (or holds no apparatus) —
+   never auto-prompts, but stays one tap from fixing itself (Principle 10). */
+.fs-ops-mine-hint {
+  flex: none;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fs-ops-mine-hint:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* "X left · Y done" — Done = secured + returned only (Alex, 2026-07-02). Sits
+   just under the filter row so it reads as commentary on what's now showing,
+   not a duplicate of the summary bar above the filter row. */
+.fs-ops-mine-summary {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 var(--space-3);
+  margin: 0 0 var(--space-2);
+  background: var(--accent-subtle);
+  border-radius: var(--radius-input);
+  font: var(--type-body-medium);
+  color: var(--accent);
+}
+
 /* ---- phone Scope chip (Item 1) ------------------------------------------- */
 /* Opens the location drilldown Sheet (the desktop rail's phone form). Sits in
    the filter row at the shared 44px chip height (#356 row, raised for O-7); lights

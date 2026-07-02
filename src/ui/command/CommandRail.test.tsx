@@ -10,6 +10,7 @@ import type { PendingTransfer } from '@core/org';
 
 const mockEmit = vi.fn();
 let pending: PendingTransfer | null = null;
+let pendingResourceCount = 0;
 
 vi.mock('./useOrgCommit', () => ({ useOrgCommit: () => mockEmit }));
 // Null out children that drag in their own hook graphs — not under test here.
@@ -23,6 +24,7 @@ vi.mock('@ui/hooks', () => ({
   useHazards: () => [],
   useCommandTransfer: () => pending,
   useDeviceUidValue: () => 'dev-1',
+  usePendingResourceCount: () => pendingResourceCount,
 }));
 
 import { CommandRail } from './CommandRail';
@@ -33,6 +35,7 @@ const DEVICE = { ref: 'device', value: 'dev-2', label: 'Tablet 2' } as const;
 beforeEach(() => {
   mockEmit.mockReset().mockResolvedValue(undefined);
   pending = null;
+  pendingResourceCount = 0;
 });
 
 describe('CommandRail — hand-the-tablet accept (#401)', () => {
@@ -66,5 +69,21 @@ describe('CommandRail — hand-the-tablet accept (#401)', () => {
     render(<CommandRail />);
     await user.click(screen.getByRole('button', { name: 'Accept command' }));
     expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+  });
+});
+
+describe('CommandRail — PAR/pending-sync indicator (#352)', () => {
+  it('shows no third metric card when nothing is pending sync', () => {
+    pendingResourceCount = 0;
+    render(<CommandRail />);
+    expect(screen.queryByText('Pending sync')).not.toBeInTheDocument();
+  });
+
+  it('shows the gold-accented count as a third metric card when resources are pending sync', () => {
+    pendingResourceCount = 2;
+    render(<CommandRail />);
+    expect(screen.getByText('Pending sync')).toBeInTheDocument();
+    const num = screen.getByText('2');
+    expect(num.className).toContain('fs-cmd-metric-num--accent');
   });
 });

@@ -25,7 +25,7 @@ export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';
 export { useDeviceUidValue } from './useDeviceUidValue';
 export { useSession, type SessionApi } from './useSession';
-export { useSyncStatus } from './useSyncStatus';
+export { useSyncStatus, usePendingResourceCount } from './useSyncStatus';
 export { usePeerCuts } from './usePeerCuts';
 export { useDepartment, type DepartmentApi } from './useDepartment';
 export { usePermissions } from './usePermissions';

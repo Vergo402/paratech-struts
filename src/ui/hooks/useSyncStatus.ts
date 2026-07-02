@@ -11,3 +11,12 @@ import { syncStatusStore, type SyncStatusState } from '@data/sync';
 export function useSyncStatus(): SyncStatusState {
   return useStore(syncStatusStore.store, (s) => s);
 }
+
+/**
+ * The Command-chrome PAR/pending-sync indicator (#352): a narrow selector so the
+ * metric card only re-renders on ITS number changing, not on every online/syncError
+ * flicker the full useSyncStatus() subscribes to.
+ */
+export function usePendingResourceCount(): number {
+  return useStore(syncStatusStore.store, (s) => s.pendingResourceCount);
+}

@@ -219,6 +219,11 @@
   font: var(--type-display-2);
   color: var(--text-primary);
 }
+/* Pending-sync indicator (#352) — gold, by Alex's explicit call, so it catches the
+   eye faster than the two neutral counts beside it. Scoped to this one card. */
+.fs-cmd-metric-num--accent {
+  color: var(--accent);
+}
 
 /* ---- status board ------------------------------------------------------ */
 .fs-cmd-board-head {

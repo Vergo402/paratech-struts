@@ -26,6 +26,10 @@ vi.mock('@ui/hooks', () => ({
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useDeviceUidValue: () => 'device-test',
+  // "Mine" lens (#370) — no role/apparatus by default; Mine renders inert. Tests
+  // that need it available override via vi.mocked(useOrg/useMyRole).
+  useOrg: () => ({}),
+  useMyRole: () => null,
   useChecklists: () => ({ attestations: {}, check: vi.fn(), uncheck: vi.fn() }),
   useChecklistTemplate: () => ({ id: 'orm-tcrm', title: 'T', source: 'fieldshore-baseline', autoCollapseCompleted: false, nodes: [] }),
   useBriefing: () => ({ active: null, begin: vi.fn(), end: vi.fn() }),

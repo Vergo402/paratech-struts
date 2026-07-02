@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest';
 import type { ShorePoint } from '../schema/shorepoint';
 import type { OrgResourceRef } from '../schema/org';
 import { buildDefaultTree, defaultPositionId } from './defaultTree';
-import { leaderOf, positionForResource, positionForShorePoint, shorePointsForResource } from './resource';
+import {
+  leaderOf,
+  myApparatusKeys,
+  positionForResource,
+  positionForShorePoint,
+  shorePointsForResource,
+} from './resource';
 
 const id = (k: Parameters<typeof defaultPositionId>[1]) => defaultPositionId('op1', k);
 const rescue2: OrgResourceRef = { ref: 'apparatus', value: 'app-r2', label: 'Rescue 2' };
@@ -50,5 +56,27 @@ describe('Operations ↔ Command resource link', () => {
       sp({ id: 'd', assignedResource: 'app-r2' }), //                 matches by value too
     ];
     expect(shorePointsForResource(pts, rescue2).map((p) => p.id)).toEqual(['a', 'd']);
+  });
+
+  it('myApparatusKeys resolves a device’s Mine-lens apparatus via its declared position', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('rescue')]!.assignedResources = [rescue2, { ref: 'individual', value: 'FF Lopez', label: 'FF Lopez' }];
+    expect(myApparatusKeys(tree, id('rescue'))).toEqual(['Rescue 2', 'app-r2']);
+  });
+
+  it('myApparatusKeys handles multiple apparatus on one position (e.g. Staging)', () => {
+    const tree = buildDefaultTree('op1');
+    const engine9: OrgResourceRef = { ref: 'apparatus', value: 'app-e9', label: 'Engine 9' };
+    tree[id('rescue')]!.assignedResources = [rescue2, engine9];
+    expect(myApparatusKeys(tree, id('rescue'))).toEqual(['Rescue 2', 'app-r2', 'Engine 9', 'app-e9']);
+  });
+
+  it('myApparatusKeys is empty when My Role is unset, unknown, or holds no apparatus', () => {
+    const tree = buildDefaultTree('op1');
+    expect(myApparatusKeys(tree, null)).toEqual([]);
+    expect(myApparatusKeys(tree, undefined)).toEqual([]);
+    expect(myApparatusKeys(tree, 'not-a-real-position')).toEqual([]);
+    tree[id('rescue')]!.assignedResources = [{ ref: 'individual', value: 'FF Lopez', label: 'FF Lopez' }];
+    expect(myApparatusKeys(tree, id('rescue'))).toEqual([]);
   });
 });
