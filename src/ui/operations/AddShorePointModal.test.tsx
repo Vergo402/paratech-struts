@@ -228,7 +228,7 @@ describe('AddShorePointModal — create', () => {
     const headerGroup = () => screen.getByRole('radiogroup', { name: 'Header wood' });
 
     // #349: the deduction pickers start collapsed in the modal — open to reach Header wood.
-    await user.click(screen.getByRole('button', { name: 'Deductions' }));
+    await user.click(screen.getByRole('button', { name: /Deductions/ }));
     expect(within(headerGroup()).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true');
     await user.click(within(shoreType).getByRole('radio', { name: '3-Post' }));
     expect(within(headerGroup()).getByRole('radio', { name: '6×6' })).toHaveAttribute('aria-checked', 'true');

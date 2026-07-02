@@ -104,35 +104,44 @@
 
 /* Collapsible disclosure (#349, Add Shore Point only) — tucks the editable pickers
    behind a toggle; the Required strut length + summary + danger warning stay put. */
+/* The Deductions disclosure header — bordered like the form's picker triggers so it
+   reads as a control, not a heading (Alex, 2026-07-02). Its subtitle carries the
+   applied state / "tap to add" hint; the chevron points down collapsed, up open. */
 .fs-ledger-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-2);
   width: 100%;
-  min-height: 44px;
-  padding: 0;
-  background: none;
-  border: none;
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
   cursor: pointer;
   color: var(--text-primary);
   text-align: left;
 }
-.fs-ledger-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-ledger-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.fs-ledger-toggle-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .fs-ledger-toggle-label {
   font: var(--type-body-medium);
   font-weight: calc(600 + var(--type-weight-bump));
 }
+.fs-ledger-toggle-state {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .fs-ledger-chevron {
   flex-shrink: 0;
   color: var(--text-secondary);
-  transform: rotate(0deg); /* explicit base — transition to/from `none` doesn't settle */
+  transform: rotate(0deg); /* down when collapsed — explicit base so the transition settles */
   transition: transform var(--motion-micro) var(--ease-micro);
 }
-.fs-ledger-toggle[aria-expanded="false"] .fs-ledger-chevron { transform: rotate(-90deg); }
-.fs-ledger-summary {
-  font: var(--type-caption);
-  color: var(--text-secondary);
-}
+.fs-ledger-toggle[aria-expanded="true"] .fs-ledger-chevron { transform: rotate(180deg); }
 
 /* ---- Quick Find screen (10-quick-find.md) ----------------------------------- */
 /* The standalone calculator: measurement → deductions → load → system filter →

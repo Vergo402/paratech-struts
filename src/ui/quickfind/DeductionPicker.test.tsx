@@ -105,19 +105,20 @@ describe('DeductionPicker — collapsible (#349, Add Shore Point)', () => {
     Element.prototype.scrollIntoView = vi.fn();
   });
 
-  it('collapsed by default: pickers hidden, but Required strut length + "No deductions" stay visible', () => {
+  it('collapsed by default: pickers hidden, but Required strut length + the "tap to add" hint stay visible', () => {
     render(<Harness collapsible />);
     expect(screen.queryByRole('radiogroup', { name: 'Header wood' })).toBeNull();
     // Principle 7 — the safety output is never hidden by the collapse.
     expect(screen.getByText('Required strut length')).toBeInTheDocument();
-    expect(screen.getByText('No deductions')).toBeInTheDocument();
+    // The bordered toggle carries its state + an explicit tap affordance (Alex 2026-07-02).
+    expect(screen.getByText('None — tap to add')).toBeInTheDocument();
   });
 
   it('the toggle reveals the editable pickers', async () => {
     const user = userEvent.setup();
     render(<Harness collapsible />);
     expect(screen.queryByRole('radiogroup', { name: 'Header wood' })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Deductions' }));
+    await user.click(screen.getByRole('button', { name: /Deductions/ }));
     expect(screen.getByRole('radiogroup', { name: 'Header wood' })).toBeInTheDocument();
   });
 

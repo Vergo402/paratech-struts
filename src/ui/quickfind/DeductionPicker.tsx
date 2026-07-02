@@ -99,7 +99,12 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
   const [expanded, setExpanded] = useState(false);
   // impossible force-opens: you can't fix a wood/plate you can't see (Principle 7).
   const isOpen = !collapsible || expanded || impossible;
-  const showSummary = collapsible && !isOpen;
+  const hasDeductions =
+    value.headerWood !== 'none' || value.topPlate !== 'none' || value.bottomPlate !== 'none' || value.footerWood !== 'none';
+  // The toggle's own subtitle carries the state (folded in from the old separate
+  // summary) — and, when empty + collapsed, an explicit "tap to add" so the bordered
+  // row reads as a control, not a heading (SIM-IV follow-up, Alex 2026-07-02).
+  const toggleState = hasDeductions ? appliedSummary(value) : isOpen ? 'None' : 'None — tap to add';
 
   const set = <K extends keyof Deductions>(key: K, v: Deductions[K]) =>
     onChange({ ...value, [key]: v });
@@ -113,11 +118,13 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
           aria-expanded={isOpen}
           onClick={() => setExpanded((e) => !e)}
         >
-          <span className="fs-ledger-toggle-label">Deductions</span>
+          <span className="fs-ledger-toggle-text">
+            <span className="fs-ledger-toggle-label">Deductions</span>
+            <span className="fs-ledger-toggle-state">{toggleState}</span>
+          </span>
           <LedgerChevron />
         </button>
       )}
-      {showSummary && <div className="fs-ledger-summary">{appliedSummary(value)}</div>}
       {isOpen && (
         <>
           <div className="fs-ledger-row fs-ledger-raw">
