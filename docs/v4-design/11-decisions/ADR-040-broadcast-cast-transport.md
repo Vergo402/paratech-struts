@@ -12,6 +12,14 @@
 **Author:** v4 build session (transport-decision batch, S2)
 **Reviewer(s):** Alex (decision — screen-mirror over browser-on-TV)
 
+> **Addendum (2026-07-02, Phase I reconciliation — Alex): NO app-side build for v4.0.**
+> "TV Broadcast is just casting." The "single app-side deliverable" below (the dedicated
+> full-screen read-only board *view*/route) is **dropped for v4.0** — the operator mirrors
+> the normal Operations board screen as-is with the OS. The broadcast *theme*
+> (`[data-theme='broadcast']`) already exists and covers TV legibility; no `BroadcastBoard`
+> screen is built. #213 / #405 stay CLOSED with **no further Phase I work**. A dedicated
+> read-only projection view can return as a v4.1+ enhancement if the field wants one.
+
 ---
 
 ## Context
