@@ -119,10 +119,16 @@ export function CuttingStation({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimKey, onClaim]);
 
-  // Phone: which saw this view acts as. Default the first saw; clamp if it leaves
-  // the roster. (Single-device for v4.0 — this is a per-view selection, not synced.)
-  const [viewSaw, setViewSaw] = useState(roster[0] ?? 'A');
-  const activeSaw = roster.includes(viewSaw) ? viewSaw : (roster[0] ?? 'A');
+  // Phone: which saw this view acts as, OR 'all' to see the whole queue (#375).
+  // Defaults to the first saw so a cutter sees only their OWN station's work; 'all'
+  // is the opt-out. Clamped if the chosen saw leaves the roster. (Single-device for
+  // v4.0 — a per-view selection, not synced.)
+  const [viewSaw, setViewSaw] = useState<string>(roster[0] ?? 'A');
+  const viewingAll = viewSaw === 'all';
+  const activeSaw = !viewingAll && roster.includes(viewSaw) ? viewSaw : (roster[0] ?? 'A');
+  // #375: on phone with >1 saw, a specific-saw view HIDES the other saws' claimed
+  // cuts (they'd otherwise show muted) so the queue is just this station's work.
+  const filterToSaw = multiSaw && !isDesktop && !viewingAll;
 
   // A card stepped back OUT of cutting leaves the queue, but Principle 10 forbids
   // a silent vanish: hold a brief red-slash snapshot the cutter sees (and dismisses).
@@ -226,12 +232,24 @@ export function CuttingStation({
   // ---- the saw-roster header control (only when relevant) --------------------
   const sawRoster = (multiSaw || onAddSaw) && (
     <div className="fs-cutstation-saws" role="group" aria-label="Saw roster">
+      {/* #375: phone gets an "All saws" chip beside the per-saw chips — pick a saw to
+          see only that station's cuts, "All saws" to see the whole queue. */}
+      {multiSaw && !isDesktop && (
+        <button
+          type="button"
+          className={`fs-cutstation-saw-chip${viewingAll ? ' is-selected' : ''}`}
+          aria-pressed={viewingAll}
+          onClick={() => setViewSaw('all')}
+        >
+          All saws
+        </button>
+      )}
       {multiSaw &&
         roster.map((sawId) => {
           // On phone, the chips SELECT which saw this view acts as; on tablet every
           // saw has its own hero, so the chips are just the roster (non-selecting).
           const selectable = !isDesktop;
-          const selected = selectable && sawId === activeSaw;
+          const selected = selectable && !viewingAll && sawId === viewSaw;
           return selectable ? (
             <button
               key={sawId}
@@ -265,9 +283,11 @@ export function CuttingStation({
 
   // The hero(es) for the current surface + saw count.
   let heroes: ReactNode;
-  // The up-next list as an array of rows — unclaimed cuts, plus (phone, multi-saw)
-  // the other saws' active cuts shown muted so this saw's cutter sees they're handled.
+  // The up-next list as an array of rows — unclaimed cuts, plus (phone, multi-saw,
+  // "All" view) the other saws' active cuts shown muted so this saw's cutter sees
+  // they're handled. A specific-saw view hides those and counts them here (#375).
   let upNextRows: ReactNode[];
+  let hiddenOnOtherSaws = 0;
 
   if (isDesktop && multiSaw) {
     // Tablet/desktop, >1 saw: one hero per saw (idle placeholder if free), then the
@@ -288,7 +308,8 @@ export function CuttingStation({
     upNextRows = unclaimed.map((s) => upNextRow(s));
   } else {
     // Phone, any saw count: one saw's hero (the selected saw) + the up-next list.
-    // With >1 saw, the OTHER saws' active cuts also appear, muted "on Saw B".
+    // In the "All" view, the OTHER saws' active cuts appear muted "on Saw B"; a
+    // specific-saw view hides them (#375) and counts them for the note below.
     const sp = heroBySaw[activeSaw] ?? null;
     heroes = sp ? hero(sp, activeSaw) : idleHero(activeSaw);
     const otherSawCuts = multiSaw
@@ -297,8 +318,9 @@ export function CuttingStation({
           .map((s) => ({ sp: heroBySaw[s], sawId: s }))
           .filter((x): x is { sp: ShorePoint; sawId: string } => x.sp != null)
       : [];
+    hiddenOnOtherSaws = filterToSaw ? otherSawCuts.length : 0;
     upNextRows = [
-      ...otherSawCuts.map(({ sp: osp, sawId }) => upNextRow(osp, sawId)),
+      ...(filterToSaw ? [] : otherSawCuts.map(({ sp: osp, sawId }) => upNextRow(osp, sawId))),
       ...unclaimed.map((s) => upNextRow(s)),
     ];
   }
@@ -327,6 +349,11 @@ export function CuttingStation({
               <div className="fs-cutstation-heroside">{heroes}</div>
               <div className="fs-cutstation-upnext">
                 <p className="fs-cutstation-upnext-head">The queue · up next</p>
+                {hiddenOnOtherSaws > 0 && (
+                  <p className="fs-cutstation-filternote" role="status">
+                    Showing Saw {activeSaw}’s cuts only · {hiddenOnOtherSaws} on other saws hidden
+                  </p>
+                )}
                 <div role="list">
                   {/* An empty up-next reads honestly — nothing left to work. With one
                       saw it's "the last cut"; with more, the rest are all claimed. */}

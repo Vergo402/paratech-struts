@@ -126,15 +126,15 @@
 .fs-ops-filter-chips::-webkit-scrollbar { display: none; }
 /* Chips size to their content and never shrink (they scroll instead). */
 .fs-ops-filter-chips .fs-picker-field { flex: none; scroll-snap-align: start; }
-/* Compact, content-width trigger (form pickers are 56px / full-width).
-   DELIBERATE EXCEPTION (Alex, 2026-06-19): the sort/filter chips, View toggle,
-   and Clear run at 40px — below spacing-grid.md's 44px absolute / 56px
-   active-op floor. Signed off to keep this a single compact row after the
-   multi-row bar was rejected as too tall on a phone. Not an oversight; do not
-   "fix" to 56 without re-confirming. (#356) */
+/* Compact, content-width trigger (form pickers are 56px / full-width). The
+   sort/filter chips, Scope chip, Clear, and View toggle share ONE tight row
+   (#356). Originally 40px (Alex, 2026-06-19) to keep it single-row after a
+   multi-row bar was rejected as too tall on a phone; raised to the 44px touch
+   floor (SIM-IV O-7, Alex 2026-07-02) — still one row (only +4px), so the
+   single-row intent holds while gloves land. Do not drop below 44 again. */
 .fs-ops-filterbar .fs-filterbar-trigger {
   width: auto;
-  min-height: 40px;
+  min-height: 44px;
   font: var(--type-body);
   padding: 0 var(--space-3);
   gap: var(--space-1);
@@ -152,22 +152,22 @@
   border: none;
   border-radius: var(--radius-button);
   padding: var(--space-2) var(--space-3);
-  min-height: 40px;
+  min-height: 44px; /* O-7 touch floor (was 40, #356) */
   cursor: pointer;
 }
 .fs-ops-filter-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 /* ---- phone Scope chip (Item 1) ------------------------------------------- */
 /* Opens the location drilldown Sheet (the desktop rail's phone form). Sits in
-   the filter row at the 40px chip height (the #356 exception); lights with an
-   accent ring + tint when a scope is active — the breadcrumb carries the path
-   text, so this is never state-by-color-alone (Principle 9). */
+   the filter row at the shared 44px chip height (#356 row, raised for O-7); lights
+   with an accent ring + tint when a scope is active — the breadcrumb carries the
+   path text, so this is never state-by-color-alone (Principle 9). */
 .fs-ops-scope-chip {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  min-height: 40px;
+  min-height: 44px; /* O-7 touch floor (was 40, #356) */
   padding: 0 var(--space-3);
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
@@ -230,8 +230,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
   border-radius: var(--radius-input);
@@ -756,7 +756,9 @@ button.fs-spc-head {
    stripe + slides so it never competes with the commit gesture (ADR-019). */
 .fs-spc-details {
   align-self: flex-start;
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* O-7 touch floor (was 32) — text stays small, hit area grows */
   padding: var(--space-1) 0;
   background: none;
   border: none;
@@ -2048,6 +2050,12 @@ button.fs-spc-head {
   font: var(--type-label);
   color: var(--text-secondary);
   margin: 0 0 var(--space-1);
+}
+/* #375: the "showing this saw only · N hidden" note under the up-next head. */
+.fs-cutstation-filternote {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-2);
 }
 /* A compact queue row: grip handle · cut length (mid) · location subtitle. */
 .fs-cutstation-row {

@@ -129,6 +129,30 @@ describe('CuttingStation', () => {
     expect(screen.queryByText('Removed from cut list')).not.toBeInTheDocument();
   });
 
+  it('#375: a specific-saw view hides other saws’ cuts with a count note; "All saws" shows them', async () => {
+    const user = userEvent.setup();
+    render(
+      <CuttingStation
+        queue={[makeSP('a', { sawId: 'A' }), makeSP('b', { sawId: 'B', division: '2' })]}
+        saws={['A', 'B']}
+        sent={[]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+        onClaim={noop}
+      />,
+    );
+    // Default = Saw A's own view: Saw B's cut is hidden, with a count note.
+    expect(screen.getByText(/Showing Saw A.*1 on other saws hidden/)).toBeInTheDocument();
+    expect(screen.queryByText(/on Saw B/)).not.toBeInTheDocument();
+
+    // "All saws" opts out of the filter — Saw B's cut reappears (muted), note gone.
+    await user.click(screen.getByRole('button', { name: 'All saws' }));
+    expect(screen.queryByText(/on other saws hidden/)).not.toBeInTheDocument();
+    expect(screen.getByText(/on Saw B/)).toBeInTheDocument();
+  });
+
   it('renders the read-only sent-to-runner tail', () => {
     render(
       <CuttingStation
