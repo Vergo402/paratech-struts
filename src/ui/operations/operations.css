@@ -676,6 +676,25 @@ button.fs-spc-head {
   white-space: nowrap;
 }
 
+/* Persistent unrated / over-capacity flag (2026-07-02 audit #7) — a small danger
+   pill on its OWN line below the header (Alex), left-aligned, never sharing the
+   status-badge row. Same danger pair as the deploy warning gate. */
+.fs-spc-flag-row {
+  margin-top: var(--space-2);
+}
+.fs-spc-flag {
+  display: inline-flex;
+  align-items: center;
+  font: var(--type-caption);
+  font-weight: 600;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-text);
+  border-radius: var(--radius-badge);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
 /* The lifecycle value shelf (handoff §1.2 — Treatment C). Full-bleed: the
    negative margins exactly cancel the card padding (.fs-card top/btm --space-3,
    right --space-4; .fs-card--edged left --space-6 — the SP card is always

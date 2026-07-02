@@ -580,3 +580,48 @@ describe('ShorePointCard — created-order number tab (#318)', () => {
     expect(tab()!.textContent).toBe('#147');
   });
 });
+
+// The persistent unrated / over-capacity flag on a DEPLOYED card (2026-07-02 audit
+// #7, v3 parity) — its own line below the header, never on the status-badge row.
+describe('ShorePointCard — persistent capacity flag', () => {
+  const ls406 = (over: Partial<ShorePoint> = {}) =>
+    makeSP({
+      status: 'process',
+      measurementEighths: 468, // 58 1/2″
+      deployedBom: [{ role: 'strut', model: 'LS 406', system: 'LongShore', source: 'Eng 1', inventoryId: 'inv-1' }],
+      ...over,
+    });
+
+  it('shows "⚠ Over capacity" on a deployed shore whose strut share exceeds its rating', () => {
+    render(<ShorePointCard shorePoint={ls406({ estimatedLoad: 34000 })} />);
+    const flag = document.querySelector('.fs-spc-flag');
+    expect(flag).toBeInTheDocument();
+    expect(flag!.textContent).toContain('Over capacity');
+    expect(flag).toHaveClass('fs-spc-flag--over-capacity');
+    // Its OWN line — not inside the meta row that carries the status badge.
+    expect(flag!.closest('.fs-spc-meta')).toBeNull();
+  });
+
+  it('shows "⚠ Unrated" on a LongShore shore beyond the published chart', () => {
+    render(
+      <ShorePointCard
+        shorePoint={ls406({
+          measurementEighths: 195 * 8,
+          deployedBom: [{ role: 'strut', model: 'LS 1016', system: 'LongShore', source: 'Eng 1', inventoryId: 'inv-1' }],
+        })}
+      />,
+    );
+    const flag = document.querySelector('.fs-spc-flag');
+    expect(flag!.textContent).toContain('Unrated');
+    expect(flag).toHaveClass('fs-spc-flag--unrated');
+  });
+
+  it('shows NO flag on a clean deployed shore or a load-less one', () => {
+    const { rerender } = render(<ShorePointCard shorePoint={ls406({ estimatedLoad: 5000 })} />);
+    expect(document.querySelector('.fs-spc-flag')).toBeNull();
+    rerender(<ShorePointCard shorePoint={ls406()} />); // no load recorded
+    expect(document.querySelector('.fs-spc-flag')).toBeNull();
+    rerender(<ShorePointCard shorePoint={makeSP()} />); // pending, no strut
+    expect(document.querySelector('.fs-spc-flag')).toBeNull();
+  });
+});

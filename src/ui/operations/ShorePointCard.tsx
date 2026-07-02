@@ -2,7 +2,14 @@ import { useMemo, useState } from 'react';
 import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
 import { divisionLabel } from '@core/operation';
 import { strutSysKey } from '@core/load';
-import { bomModelLabel, cutLengthInches, deployedStrutOf, effectiveLengthFrom, pendingNeedModels } from '@core/shorepoint';
+import {
+  bomModelLabel,
+  cutLengthInches,
+  deployedCapacityFlag,
+  deployedStrutOf,
+  effectiveLengthFrom,
+  pendingNeedModels,
+} from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 
 // Short display labels — the full catalog names stay in core/load/plates.ts.
@@ -208,6 +215,12 @@ export function ShorePointCard({
   // header/model lines read the strut exactly as before.
   const deployedStrut = deployedStrutOf(sp);
 
+  // Persistent at-a-glance safety flag on a DEPLOYED card (2026-07-02 audit #7, v3
+  // parity): 'unrated' / 'over-capacity', re-derived catalog-mode so it agrees with
+  // Quick View and a relief IC sees a beyond-rating shore without opening anything.
+  // Null for pending (no strut on record) / clean shores.
+  const capacityFlag = useMemo(() => deployedCapacityFlag(sp), [sp]);
+
   // Created-order number tab (top-left): a ghost outline while no strut is
   // assigned, then FILLS with the deployed strut's SYSTEM color (gold/grey/
   // lockstroke) once equipped — outline-vs-fill keeps a Grey-system point distinct
@@ -319,6 +332,17 @@ export function ShorePointCard({
         </button>
       ) : (
         <div className="fs-spc-head">{headContent}</div>
+      )}
+
+      {/* Persistent unrated / over-capacity flag on its OWN line below the header
+          (Alex's call), never sharing the status-badge row. Danger red, non-
+          dismissable; the card still opens Quick View for the full verdict. */}
+      {capacityFlag && (
+        <div className="fs-spc-flag-row">
+          <span className={`fs-spc-flag fs-spc-flag--${capacityFlag}`} role="status">
+            ⚠ {capacityFlag === 'unrated' ? 'Unrated' : 'Over capacity'}
+          </span>
+        </div>
       )}
 
       {valueShelf}

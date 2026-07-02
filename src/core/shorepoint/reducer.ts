@@ -18,6 +18,7 @@ import {
   type StrutCombination,
 } from '../load';
 import { canTransition } from './status';
+import { deployedStrutOf } from './bom';
 
 // Resolve the shore point's deduction SELECTIONS to exact catalog heights for the
 // engine. L-2: the exact value is deducted; only the final effective length floors.
@@ -118,6 +119,38 @@ export const SHORE_TYPE_FOR_STRUTS: Partial<Record<number, ShoreTypeId>> = {
   2: 'double-t',
   3: '3-post',
 };
+
+/** Multiset compare of two extension-length lists (order-independent). */
+function sameExtLengths(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const s = [...a].sort((x, y) => x - y);
+  const t = [...b].sort((x, y) => x - y);
+  return s.every((v, i) => v === t[i]);
+}
+
+/**
+ * The persistent board-card safety flag for a DEPLOYED shore (2026-07-02 audit #7,
+ * v3 parity): 'unrated' (LongShore beyond the published chart) or 'over-capacity'
+ * (this strut's share of the load exceeds its rating at the deployed length), else
+ * null. Catalog-mode — capacity is physics (system + length), not stock — so it
+ * agrees with the Quick View verdict and doesn't flicker as inventory changes.
+ * Null when there's no strut on record, no catalog match, or (for over-capacity) no
+ * recorded load: the ABSENCE of data is never a flag. Matches the deployed assembly
+ * by strut model + extension multiset, exactly like the drawer.
+ */
+export function deployedCapacityFlag(sp: ShorePoint): 'unrated' | 'over-capacity' | null {
+  const strut = deployedStrutOf(sp);
+  if (!strut?.model) return null;
+  const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
+  const match = findForShorePoint(sp, null).find(
+    (c) => c.strut.model === strut.model && sameExtLengths(c.extensions, exts),
+  );
+  if (!match) return null;
+  if (match.unrated) return 'unrated';
+  if (match.exceedsCapacity) return 'over-capacity';
+  if (sp.estimatedLoad != null && strutLoadShare(sp) > match.capacity) return 'over-capacity';
+  return null;
+}
 
 /**
  * Total deduction (inches) — the EXACT sum of the four component heights (not

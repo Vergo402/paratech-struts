@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent, type DeployedBom } from '../schema';
-import { shorePointReducer, effectiveLengthInches, effectiveLengthFrom, deductionTotalInches, cutLengthInches } from './reducer';
+import {
+  shorePointReducer,
+  effectiveLengthInches,
+  effectiveLengthFrom,
+  deductionTotalInches,
+  cutLengthInches,
+  deployedCapacityFlag,
+} from './reducer';
 import { deployedStrutOf } from './bom';
 import { canTransition } from './status';
 
@@ -370,5 +377,41 @@ describe('#220 field-lock — editable fields by status', () => {
       patch: { estimatedLoad: 25000 },
     } satisfies FieldShoreEvent);
     expect(next.estimatedLoad).toBe(10000); // unchanged — locked
+  });
+});
+
+describe('deployedCapacityFlag — persistent board-card safety flag (#410 audit #7)', () => {
+  const strutBom = (model: string): DeployedBom => [{ role: 'strut', model, system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' }];
+
+  it('flags over-capacity when a single strut’s load share exceeds its rating', () => {
+    // 58.5″ + 34,000 lb on ONE LS 406 (rated 22,000 @4:1) → over capacity.
+    const point = sp({ measurementEighths: 468, estimatedLoad: 34000, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('over-capacity');
+  });
+
+  it('flags unrated for a LongShore shore beyond the published 192″ chart', () => {
+    // 195″ — LS 1016 (114–198) reaches it with no extension; past the chart → unrated.
+    const point = sp({ measurementEighths: 195 * 8, deployedBom: strutBom('LS 1016') });
+    expect(deployedCapacityFlag(point)).toBe('unrated');
+  });
+
+  it('no flag for a clean deploy within rating', () => {
+    const point = sp({ measurementEighths: 468, estimatedLoad: 5000, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBeNull();
+  });
+
+  it('no flag when a linked group shares the load within rating (Double-T member)', () => {
+    // 34,000 / 2 = 17,000 per strut ≤ 22,000 rating.
+    const point = sp({ measurementEighths: 468, estimatedLoad: 34000, groupTotal: 2, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBeNull();
+  });
+
+  it('no over-capacity flag when NO load was recorded (absence of data is never a flag)', () => {
+    const point = sp({ measurementEighths: 468, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBeNull();
+  });
+
+  it('no flag for a pending shore with no strut on record', () => {
+    expect(deployedCapacityFlag(sp())).toBeNull();
   });
 });
