@@ -124,6 +124,16 @@ describe('L-7 group fan-out', () => {
     expect(byId(next, 'a').status).toBe('strutset');
     expect(byId(next, 'b').status).toBe('pending'); // untouched
   });
+
+  it('ignores a raw ShorePointStatusChanged across the secured→returned boundary (audit #2)', () => {
+    // That inventory boundary is owned by EquipmentReclaimed (it restores stock). A
+    // raw status change would land 'returned' with stock still held (strand). No
+    // in-app path drives it; a peer/replay could — the reducer no-ops it, like the
+    // symmetric pending boundary.
+    const state = stateWith([sp('a', { status: 'secured', deployedBom: [{ role: 'strut', model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' }] })]);
+    const next = operationReducer(state, statusEvent('a', 'secured', 'returned'));
+    expect(byId(next, 'a').status).toBe('secured'); // held — reclaim owns this edge
+  });
 });
 
 describe('EquipmentReclaimed (#224) — terminal Remove & Return routes to the SP reducer', () => {

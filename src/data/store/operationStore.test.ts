@@ -211,6 +211,17 @@ describe('operationStore.commit', () => {
       expect(getSp('sp-short')!.status).toBe('process');
     });
 
+    it('rejects a geometrically-impossible deploy — no strut spans the opening (audit #1)', async () => {
+      // 3000″ is beyond every strut's max extended reach → findForShorePoint returns
+      // ZERO combos → deployVerdict.noFit. In-app the card shows "nothing fits", so
+      // this only arrives off-UI; the store must reject, not all-clear on no flag.
+      await ops.commit(spAdded(makeSp('sp-nofit', { measurementEighths: 24000 })));
+      const res = await ops.commit(deployEvt('sp-nofit', ls406Bom()));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('no strut fits') });
+      expect(getSp('sp-nofit')!.status).toBe('pending');
+    });
+
     it('needs NO ack once the load is shared across a linked group (Double-T member)', async () => {
       // Same 34,000 lbs, but groupTotal 2 → 17,000 per strut ≤ 22,000 rating.
       await ops.commit(

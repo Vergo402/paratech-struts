@@ -14,7 +14,7 @@ import {
   STATUS_LABELS,
   strutLoadShare,
 } from '@core/shorepoint';
-import { Badge, MeasurementValue } from '@ui/primitives';
+import { Badge, MeasurementValue, WarningGate } from '@ui/primitives';
 import { useShorePointHistory } from '@ui/hooks';
 import { pieceIdentity, sameExtensions } from './pieceIdentity';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
@@ -118,16 +118,13 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
   const effectiveEighths = Math.round(effectiveLengthInches(sp) * 8);
   const hasDeductions = deductionTotalInches(sp.deductions) > 0;
   const estLoad = sp.estimatedLoad; // blank renders as "—", not "0 lbs" (undefined ≠ 0)
-  // One label for the hero figure AND the ledger's final row, so they agree.
-  // Secured/returned shores show the as-built "Set length"; with deductions the
-  // number is the deducted "Effective length"; with none, raw == effective so it
-  // is just the "Opening length" (no twin-number duplicate).
-  const lengthLabel =
-    sp.status === 'secured' || sp.status === 'returned'
-      ? 'Set length'
-      : hasDeductions
-        ? 'Effective length'
-        : 'Opening length';
+  // One label for the hero figure AND the ledger's final row, so they agree — and
+  // it names the number the ledger actually computes: raw − deductions = the STRUT
+  // effective length. NOT "Set length": that term is the board card's WOOD cut
+  // length (cutLengthInches, #361), a different number; reusing it here collided
+  // two distinct figures under one word (2026-07-02 audit #8). With deductions it
+  // is the "Effective length"; with none, raw == effective, so "Opening length".
+  const lengthLabel = hasDeductions ? 'Effective length' : 'Opening length';
 
   // Safety — a CONFIRMED re-verification, not a guess. Re-run the real fit against
   // the CATALOG (not live inventory) and match the deployed assembly by strut model
@@ -312,6 +309,12 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
           </p>
         </section>
       )}
+
+      {/* The standing liability disclaimer — the drawer is the one v4 surface that
+          states capacity AS A VERDICT (the RecommendationCard's is a pre-deploy
+          recommendation), so it carries the same permanent, unsoftened last word
+          every recommendation card does (2026-07-02 audit #3). */}
+      <WarningGate use="disclaimer" />
     </div>
   );
 }

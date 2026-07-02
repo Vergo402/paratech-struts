@@ -65,6 +65,13 @@ function groupAdvance(
   const trigger = shorePoints.find((sp) => sp.id === spId);
   if (!trigger) return shorePoints;
   if (from === 'pending' || to === 'pending') return shorePoints; // deploy/return owns this boundary
+  // Symmetric to the pending guard (2026-07-02 audit #2): the secured↔returned edge
+  // is an inventory boundary owned by EquipmentReclaimed (it restores the BOM to
+  // stock). A raw ShorePointStatusChanged across it — no in-app path drives it, but
+  // a peer/replay/off-UI event could — would land 'returned' with the stock still
+  // held (strand), or bounce back to 'secured' and let a second reclaim double-
+  // restore. In-app secured→returned is a Button→EquipmentReclaimed, never a slide.
+  if (from === 'returned' || to === 'returned') return shorePoints; // reclaim owns this boundary
   if (!canTransition(from, to)) return shorePoints; // single-step only
   if (trigger.status !== from) return shorePoints; // stale / out-of-order trigger
 

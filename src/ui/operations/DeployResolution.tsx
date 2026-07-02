@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Apparatus, Deductions, DeployedComponent, InventoryItem, ShorePoint } from '@core/schema';
 import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
-import { assembleBom, componentLabel, findForShorePoint } from '@core/shorepoint';
+import { assembleBom, componentLabel, findForShorePoint, strutLoadShare } from '@core/shorepoint';
 import { Button, MeasurementValue } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
 import { useApparatus, useInventory, useInventoryActions } from '@ui/hooks';
@@ -33,9 +33,18 @@ export interface DeployResolutionProps {
    * Commit the finalized BOM. `deductions` is the (possibly amended) deduction set
    * — when a plate was dropped it differs from sp.deductions and the caller
    * persists it first, so the deployed point never claims a plate it didn't use.
-   * Resolves to the store result so failures show inline.
+   * `overCapacityAck` is the recorded team acknowledgment for a per-strut
+   * over-capacity assembly, computed here against the AMENDED deductions (a dropped
+   * plate can lengthen the span into over-capacity the card never saw, 2026-07-02
+   * audit #9) — the parent's original-combo verdict would miss it, and the store
+   * rejects an over-capacity deploy that arrives without the ack. Resolves to the
+   * store result so failures show inline.
    */
-  onConfirm: (bom: DeployedComponent[], deductions: Deductions) => Promise<{ ok: boolean; reason?: string }>;
+  onConfirm: (
+    bom: DeployedComponent[],
+    deductions: Deductions,
+    overCapacityAck: boolean,
+  ) => Promise<{ ok: boolean; reason?: string }>;
   /** Sheet-level single-flight lock while a deploy is in flight. */
   submitting: boolean;
 }
@@ -179,7 +188,27 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
     return combos.some((x) => x.strut.model === combo.strut.model && sameExtensions(x.extensions, combo.extensions));
   }, [deductions, inventory, sp, combo]);
 
-  const needsAck = !stillReaches;
+  // Per-strut over-capacity against the AMENDED deductions (2026-07-02 audit #9).
+  // Dropping a plate shrinks the deduction → the strut spans MORE → a lower
+  // capacity row → a deploy that was within capacity on the card can cross the
+  // line here. Catalog mode: a strut's rating is physics (system + length), not a
+  // function of stock. This is the TRUE final-assembly verdict, passed up to be
+  // recorded on the event; the store rejects an over-capacity deploy without it.
+  const overCapacity = useMemo(() => {
+    if (sp.estimatedLoad == null) return false;
+    const m = findForShorePoint({ ...sp, deductions }, null).find(
+      (x) => x.strut.model === combo.strut.model && sameExtensions(x.extensions, combo.extensions),
+    );
+    return !!m && !m.unrated && !m.exceedsCapacity && m.capacity > 0 && strutLoadShare(sp) > m.capacity;
+  }, [deductions, sp, combo]);
+
+  // The panel's own ack gate fires only for a risk the DROP introduced — reach
+  // loss, or a drop that newly crossed into over-capacity. An assembly that was
+  // already over-capacity from the card carries the card's ack (it gated Deploy
+  // before this step), so it isn't re-acked here; `overCapacity` still records the
+  // true state on the event either way.
+  const dropCrossedOverCapacity = deductions !== sp.deductions && overCapacity;
+  const needsAck = !stillReaches || dropCrossedOverCapacity;
   const unresolved = pieces.some((w) => !w.c.inventoryId && !w.offBook);
 
   // ≥2 distinct rigs (by apparatus id, not display name) supplying TRACKED pieces.
@@ -264,7 +293,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   async function handleConfirm() {
     setError(null);
     const bom = pieces.map((w) => w.c);
-    const result = await onConfirm(bom, deductions);
+    const result = await onConfirm(bom, deductions, overCapacity);
     if (!result.ok) setError(result.reason ?? 'Deploy failed');
   }
 
@@ -347,8 +376,17 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
       {needsAck && (
         <div className="fs-gate fs-gate--unrated" role="alert">
           <p className="fs-gate-caveat">
-            Without this plate, {combo.strut.model} no longer reaches <MeasurementValue eighths={sp.measurementEighths} /> at
-            this load.
+            {!stillReaches ? (
+              <>
+                Without this plate, {combo.strut.model} no longer reaches{' '}
+                <MeasurementValue eighths={sp.measurementEighths} /> at this load.
+              </>
+            ) : (
+              <>
+                Without this plate, {combo.strut.model} spans farther — its share of the load now exceeds its rating at
+                this length.
+              </>
+            )}
           </p>
           <button
             type="button"

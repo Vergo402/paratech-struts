@@ -172,6 +172,7 @@ export function createOperationStore(opts: {
         // different rig without touching measurement/load/strut model, so the verdict
         // is invariant under it.)
         const verdict = deployVerdict(sp, event.deployedBom);
+        if (verdict.noFit) return { ok: false, reason: 'no strut fits this opening at this length' };
         if (verdict.exceedsCapacity) return { ok: false, reason: 'deploy exceeds 4-strut capacity for this load' };
         if (verdict.unrated && !event.unratedAcknowledged) {
           return { ok: false, reason: 'unrated-zone deploy requires a recorded team acknowledgment' };

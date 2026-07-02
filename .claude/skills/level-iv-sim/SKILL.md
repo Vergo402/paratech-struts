@@ -31,7 +31,7 @@ This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.
 | secured | **Wood Shore Secured** |
 | returned | **Strut Equipment Returned** |
 
-**T-Shore group mechanics (v4-new):** a "T-Shore group of 3" = create a **Vertical T-Shore with quantity 3** (the Add form's quantity = number of shores; each T-Shore is 1 strut → 3 grouped cards sharing a `groupId`). Pre-cutting transitions move the group lock-step; cutting→runner→secured move members individually. This is reducer-enforced — the marquee data test (D-1/D-2/D-3) PASSES.
+**Grouped-shore mechanics (v4-new) — CORRECTED 2026-07-02 (SIM-IV O-5, [#400]):** the shared-`groupId` lock-step group is driven by the shore **TYPE**, not by quantity. A grouped shore = one physical shore whose type takes **>1 strut** — **Double-T (2 struts)** or **3-Post (3 struts)** — and those struts share a `groupId` / `groupIndex` / `groupTotal`. **"Number of Shore Sets" (the Add form's quantity) stamps N INDEPENDENT shores** that do NOT share a groupId and do NOT move lock-step. So a **T-Shore (1 strut) with quantity 3 = three loose, independent cards — NOT a group** (the v3 "qty>1 shares a groupId" model is wrong for v4; it primed the SIM-IV false alarm). **To exercise the grouped phase-split (D-1/D-2/D-3), create a Double-T or a 3-Post** (one shore, 2–3 grouped struts): pre-cutting transitions move the group lock-step; cutting→runner→secured move members individually. This is reducer-enforced. **Where the body below says "T-Shore group of 3 / quantity 3," substitute a 3-Post** (3 grouped struts, closest to the intended 3-member group).
 
 **Checks that are N/A in v4 — do NOT log these as findings (the feature is deliberately deferred):**
 - **D-6** (Firebase security-rule validation) — N/A: v4 writes to local Dexie event log, not Firebase.
@@ -40,7 +40,7 @@ This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.
 - **U-9 attribution half** (Quick Find shows which rig has the strut) — N/A by design (catalog-only Quick Find). Keep the lookup half (does it return matching struts?).
 - **Safety hazard logging** (Safety persona, E+2:30) — N/A: the Hazard Log is a placeholder ("ICS-208 register builds next"); display-only. Safety communicates verbally. *(This is its own future ICS-208 workflow, not #369.)*
 
-**Still fully live in v4 (run these hard — this is the real signal):** operation lifecycle end-to-end · T-Shore group phase-split · multi-apparatus deploy bill-of-materials + return-to-source rig (#330) · org chart / Safety Officer / Division-Area fields / span-of-control · Quick Find lookup · rain/mobile UX.
+**Still fully live in v4 (run these hard — this is the real signal):** operation lifecycle end-to-end · grouped-shore phase-split (**Double-T / 3-Post**, per the corrected mechanic above) · multi-apparatus deploy bill-of-materials + return-to-source rig (#330) · org chart / Safety Officer / Division-Area fields / span-of-control · Quick Find lookup · rain/mobile UX.
 
 **Preview-MCP gotchas (moderators):** synthetic clicks & native-setter inputs don't flush React synchronously — read resulting state in a **separate** `eval` call (same-call reads are stale); `focus()`/`blur()` unreliable headless (dispatch a bubbling `focusout` to fire `onBlur`); TanStack `<Link>` can't be driven (use `location.assign`); Sheet scrim-close doesn't fire (reload to dismiss); buttons/`.click()` are reliable.
 

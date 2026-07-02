@@ -144,6 +144,26 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const totalStruts = qtyValid ? qtyNum * strutsPerShore : 0;
   const effective = effectiveLengthFrom(measurementEighths, deductions);
 
+  // "Number of Shore Sets" stamps N INDEPENDENT physical shores — they do NOT share
+  // a groupId or move in lock-step (that grouping is per-shore, driven by the shore
+  // TYPE: Double-T = 2 struts, 3-Post = 3). The v3 "qty>1 shares a groupId" mental
+  // model primes exactly the wrong expectation, so the form says so out loud when
+  // qty>1 (SIM-IV O-5, #400). The struts-per-shore ratio note rides alongside it.
+  const qtyHelper = (() => {
+    if (!qtyValid) return undefined;
+    const parts: string[] = [];
+    if (qtyNum > 1) parts.push('Each set is its own independent shore point');
+    // The KB-7 struts-per-shore ratio, shown only when it's non-trivial (Double-T,
+    // 3-Post). For a 1-strut T-Shore "N T-Shore = N struts" is noise.
+    if (strutsPerShore > 1)
+      parts.push(
+        `${qtyNum} ${shoreTypeLabel(shoreType)} = ${totalStruts} struts${
+          totalStruts > QTY_WARN_THRESHOLD ? ' — double-check the count' : ''
+        }`,
+      );
+    return parts.length ? parts.join(' · ') : undefined;
+  })();
+
   // Estimated load (lbs) — optional planning input feeding the engine's capacity
   // gating. Blank = 0 (no-load). Must be non-negative and within range.
   const loadTrim = estimatedLoad.trim();
@@ -500,13 +520,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
             onChange={setQty}
             inputMode="numeric"
             maxLength={3}
-            helper={
-              qtyValid && totalStruts > 1
-                ? `i.e. ${qtyNum} ${shoreTypeLabel(shoreType)} = ${totalStruts} struts${
-                    totalStruts > QTY_WARN_THRESHOLD ? ' — double-check the count' : ''
-                  }`
-                : undefined
-            }
+            helper={qtyHelper}
           />
         )}
         <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />

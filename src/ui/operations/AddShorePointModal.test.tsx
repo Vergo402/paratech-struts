@@ -177,12 +177,25 @@ describe('AddShorePointModal — create', () => {
     expect(screen.queryByText(/= \d+ struts/)).not.toBeInTheDocument(); // 1 × T-Shore: silent
 
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
-    expect(screen.getByText('i.e. 1 3-Post = 3 struts')).toBeInTheDocument();
+    expect(screen.getByText('1 3-Post = 3 struts')).toBeInTheDocument();
 
     const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');
-    expect(screen.getByText('i.e. 3 3-Post = 9 struts')).toBeInTheDocument();
+    // qty > 1 also states the sets are independent (SIM-IV O-5, #400).
+    expect(screen.getByText('Each set is its own independent shore point · 3 3-Post = 9 struts')).toBeInTheDocument();
+  });
+
+  it('states "sets" are independent shore points for a 1-strut T-Shore (SIM-IV O-5, #400)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    // T-Shore is 1 strut, so the ratio note stays silent; the independence line
+    // is the whole point — qty 3 T-Shores are 3 loose cards, not a linked group.
+    const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
+    await user.clear(qty);
+    await user.type(qty, '3');
+    expect(screen.getByText('Each set is its own independent shore point')).toBeInTheDocument();
+    expect(screen.queryByText(/= \d+ struts/)).not.toBeInTheDocument();
   });
 
   it('the warn threshold reads TOTAL struts — 4 × 3-Post = 12 trips it, never blocks (#220 OQ2)', async () => {
@@ -193,7 +206,9 @@ describe('AddShorePointModal — create', () => {
     const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '4');
-    expect(screen.getByText('i.e. 4 3-Post = 12 struts — double-check the count')).toBeInTheDocument();
+    expect(
+      screen.getByText('Each set is its own independent shore point · 4 3-Post = 12 struts — double-check the count'),
+    ).toBeInTheDocument();
     expect(submitButton()).toBeEnabled();
   });
 

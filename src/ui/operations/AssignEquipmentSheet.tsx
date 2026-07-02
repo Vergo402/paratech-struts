@@ -296,8 +296,8 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
           combo={resolving}
           submitting={deploying}
           onBack={() => setResolving(null)}
-          onConfirm={(bom, deductions) =>
-            commitBom(bom, comboModel(resolving), !!resolving.unrated, isShortDeploy(resolving), deductions)
+          onConfirm={(bom, deductions, overCapacityAck) =>
+            commitBom(bom, comboModel(resolving), !!resolving.unrated, overCapacityAck, deductions)
           }
         />
       )}

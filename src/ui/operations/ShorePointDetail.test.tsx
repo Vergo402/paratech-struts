@@ -83,9 +83,13 @@ describe('ShorePointDetail — measurement ledger', () => {
     expect(screen.getAllByText('Opening length').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('labels the length "Set length" once secured (hero + ledger)', () => {
-    render(<ShorePointDetail sp={makeSp({ status: 'secured' })} />);
-    expect(screen.getAllByText('Set length').length).toBeGreaterThanOrEqual(1);
+  it('names its deducted figure "Effective length" — never the card\'s wood "Set length" (audit #8)', () => {
+    // The drawer hero + ledger show raw − deductions = the STRUT effective length.
+    // "Set length" is the board card\'s WOOD cut length (a different number); the
+    // drawer must not reuse that word (2026-07-02 audit #8 — the collision).
+    render(<ShorePointDetail sp={makeSp({ status: 'secured', deductions: { ...NO_DEDUCTIONS, topPlate: 'swivel6' } })} />);
+    expect(screen.getAllByText('Effective length').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Set length')).toBeNull();
   });
 });
 

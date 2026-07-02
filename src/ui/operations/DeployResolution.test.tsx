@@ -121,6 +121,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
         expect.objectContaining({ role: 'top-plate', source: 'Engine 1', inventoryId: 'inv-plate-e1' }),
       ]),
       expect.anything(),
+      false, // overCapacityAck — no plate dropped, no over-capacity (audit #9 signature)
     );
   });
 
@@ -136,6 +137,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ role: 'top-plate', source: 'Ladder 3', inventoryId: 'inv-plate-l3' })]),
       expect.anything(),
+      false,
     );
   });
 
@@ -182,6 +184,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ role: 'top-plate', source: 'Rescue 2', inventoryId: 'inv-new' })]),
       expect.anything(),
+      false,
     );
   });
 
@@ -249,6 +252,31 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(bom.some((c) => c.role === 'top-plate')).toBe(false);
     // the record stays honest — the dropped plate is flipped to none
     expect(deductions.topPlate).toBe('none');
+  });
+
+  it('drop crosses into over-capacity: surfaces the ack + records it on Confirm (audit #9)', async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn(async () => ({ ok: true }));
+    mockInventory.mockReturnValue([STRUT_R2]);
+    // The amended re-fit STILL reaches, but at a lower capacity than the load share
+    // (10,000 rated vs 34,000 / 1 strut) — so the drop crosses into over-capacity
+    // the card never saw. The panel must show its own ack, not the reach one.
+    mockFindForShorePoint.mockReturnValue([
+      { strut: { model: 'LS 406' }, extensions: [], unrated: false, exceedsCapacity: false, capacity: 10000 } as unknown as StrutCombination,
+    ]);
+    render(<DeployResolution sp={makeSP({ estimatedLoad: 34000 })} combo={COMBO} onBack={vi.fn()} onConfirm={onConfirm} submitting={false} />);
+
+    await user.click(screen.getByRole('button', { name: /Drop this plate/i }));
+    expect(screen.getByText(/exceeds its rating/i)).toBeInTheDocument();
+    const confirm = screen.getByRole('button', { name: /Confirm/ });
+    expect(confirm).toBeDisabled();
+
+    await user.click(screen.getByRole('checkbox'));
+    expect(confirm).toBeEnabled();
+    await user.click(confirm);
+    // The over-capacity ack (3rd arg) is recorded true — the store would otherwise
+    // reject the amended-deductions deploy with no way to clear it.
+    expect(onConfirm.mock.calls[0]![2]).toBe(true);
   });
 
   it('quick-add count > 1: addOne is called per unit, then the piece is re-pointed once', async () => {

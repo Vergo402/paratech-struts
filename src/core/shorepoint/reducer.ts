@@ -73,9 +73,16 @@ export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | 
 export function deployVerdict(
   sp: ShorePoint,
   bom: DeployedComponent[],
-): { exceedsCapacity: boolean; unrated: boolean; overCapacity: boolean } {
+): { exceedsCapacity: boolean; unrated: boolean; overCapacity: boolean; noFit: boolean } {
   const combos = findForShorePoint(sp, null);
-  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false, overCapacity: false };
+  // No catalog strut spans this opening at all (out of every strut's geometric
+  // range) — a geometrically-impossible deploy. In-app the card shows the "nothing
+  // fits" empty state instead of a Deploy, so an empty-combo deploy only arrives
+  // off-UI (peer/replay/malformed); the store must reject it rather than all-clear
+  // on the absence of a flag (2026-07-02 audit #1). exceedsCapacity combos ARE
+  // returned (a load problem, not a geometry one), so this is purely non-fit.
+  if (combos.length === 0) return { exceedsCapacity: false, unrated: false, overCapacity: false, noFit: true };
+  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false, overCapacity: false, noFit: false };
   const model = bom.find((c) => c.role === 'strut')?.model;
   // Per-strut over-capacity (the 2026-07-01 family): this point deploys ONE strut,
   // so its SHARE of the load must fit the matched combo's per-strut capacity.
@@ -84,7 +91,7 @@ export function deployVerdict(
   // "not re-verifiable" path); never a false block.
   const match = combos.find((c) => c.strut.model === model);
   const overCapacity = !!match && !match.unrated && strutLoadShare(sp) > match.capacity;
-  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model), overCapacity };
+  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model), overCapacity, noFit: false };
 }
 
 /**
