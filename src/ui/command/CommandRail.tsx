@@ -39,6 +39,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const [scope, setScope] = useState<SitStatScope>('all');
   const [transferOpen, setTransferOpen] = useState(false);
   const [rolloverOpen, setRolloverOpen] = useState(false);
+  const [announce, setAnnounce] = useState('');
 
   const counts = useMemo(() => {
     const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
@@ -98,8 +99,20 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
     </span>
   );
 
+  // Accept the pending handshake (either end — the incoming device's card or the
+  // #401 hand-the-tablet section on the initiator's card). The announcement lives in
+  // a persistent live region because the pending card unmounts when the event folds.
+  const acceptTransfer = () => {
+    if (!pending) return;
+    setAnnounce(`Command transferred to ${pending.toResource.label}.`);
+    void emit({ type: 'CommandTransferAccepted' });
+  };
+
   return (
     <>
+      <div className="fs-sr-only" role="status" aria-live="polite">
+        {announce}
+      </div>
       {/* Incident name up top + OP/elapsed (Safety Officer lives in the pair row below) */}
       <div className="fs-cmd-top">
         <div className="fs-cmd-incident">
@@ -133,6 +146,22 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
           <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled' })}>
             Cancel transfer
           </Button>
+          {/* Hand-the-tablet accept (#401) — the single-device completion of ADR-021.
+              Named individual/apparatus targets only: canAccept (transfer.ts) already
+              lets any uid accept on a named commander's behalf; a device-ref target
+              keeps the strict named-device Accept, so this section never renders for it. */}
+          {pending.toResource.ref !== 'device' && (
+            <div className="fs-cmd-xfer-handover">
+              <span className="fs-cmd-xfer-handover-head">Accepting on this device?</span>
+              <span className="fs-cmd-xfer-sub">
+                Give the briefing, then hand this device to {pending.toResource.label}.
+              </span>
+              <Button variant="primary" size="standard" fullWidth onPress={acceptTransfer}>
+                {pending.toResource.label}: Accept command
+              </Button>
+              <span className="fs-cmd-xfer-footnote">Records the transfer — time, from, and to.</span>
+            </div>
+          )}
         </Card>
       ) : pending && canAccept(pending, uid ?? '') ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
@@ -142,7 +171,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
             {operation.name ? ` · ${operation.name}` : ''}
           </span>
           <div className="fs-cmd-xfer-actions">
-            <Button variant="primary" size="standard" onPress={() => void emit({ type: 'CommandTransferAccepted' })}>
+            <Button variant="primary" size="standard" onPress={acceptTransfer}>
               Accept command
             </Button>
             <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined' })}>

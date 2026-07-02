@@ -241,6 +241,16 @@ Principle 10; the verbal "you have command / I have command" happens on the radi
 - **Outgoing IC taps Cancel** (or **incoming IC taps Decline**) → the pending transfer ends; **command
   stays with the outgoing IC**. The outgoing IC may reassign.
 
+**Same-device hand-over ([#401](https://github.com/Vergo402/paratech-struts/issues/401), 2026-07-01).**
+When the incoming commander is a **named individual** (not a device ref), the outgoing IC's pending card
+*also* offers the accept — below Cancel, behind a hairline: heading **"Accepting on this device?"**,
+sub-line **"Give the briefing, then hand this device to {name}."**, gold button **"{name}: Accept
+command"**, footnote **"Records the transfer — time, from, and to."** The verbal handshake and briefing
+still happen out loud; the tablet changes hands, and the tap records the same `CommandTransferAccepted`
+event as the two-device path. On accept the app announces **"Command transferred to {name}."** via a
+polite `aria-live` region. Device-ref targets are unchanged — only the named device sees Accept. (Covers
+the Level IV single-BC-arrival case: one shared command tablet, no second session.)
+
 **Never a no-IC state:** because command only leaves on Accept, there is always exactly one IC of
 record — so the IC-gated [End Operation](16-end-of-operation.md) is always reachable, even if the incoming
 IC is offline and never accepts ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)).
@@ -277,6 +287,7 @@ only the IC edits structure.
 | Any device | 1 | Sets its own My Role; the org chart reflects the staffing on next sync |
 | IC's **tablet** (CP) | 2–4 | Assigns resources, reparents (drag), **initiates** transfer; stays IC while Pending |
 | Incoming IC's **phone** | 4-P | On next sync: a prominent **pending-acceptance** state ("You are being given command"); taps **Accept** → becomes IC (or **Decline**) |
+| IC's shared **tablet** (single device) | 4-P | The pending card also offers "{name}: Accept command" (named-individual targets only, [#401](https://github.com/Vergo402/paratech-struts/issues/401)) — brief, hand the tablet, tap Accept |
 | Operations Section Chief's **device** | — | On next sync: org chart updates; read-only |
 | **Broadcast** (C-13) | — | On next sync: the IC name in the header changes only **after Accept** (never on a still-pending transfer) |
 

@@ -122,6 +122,11 @@ export function NodeSheet({
                 Assign resource
               </Button>
             ))}
+          {/* #401 — steer the IC away from the clear/assign workaround for command
+              handoff: ResourceCleared/ResourceAssigned leaves no transfer record. */}
+          {isIC && !parent && (
+            <p className="fs-node-note">To hand off command with a record, use Transfer Command.</p>
+          )}
 
           {/* SUBORDINATES — count only; the whole tree is visible in the chart */}
           {subs.length > 0 && (

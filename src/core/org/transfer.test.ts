@@ -51,6 +51,23 @@ describe('command transfer (ADR-021 handshake)', () => {
     exactlyOneIC(s.positions);
   });
 
+  it('single shared device (#401): the INITIATOR uid may accept an individual-ref transfer', () => {
+    let s = seedOrgState(OP, DEV);
+    s = orgReducer(s, initiate(DEV, INCOMING_PERSON));
+    expect(canAccept(s.commandTransfer, DEV)).toBe(true); // same uid that initiated
+    s = orgReducer(s, accept(DEV)); // hand-the-tablet: SAME device emits the accept
+    expect(s.commandTransfer).toBeNull();
+    expect(currentIC(s.positions)).toEqual(INCOMING_PERSON);
+    exactlyOneIC(s.positions);
+  });
+
+  it('single shared device (#401): a device-ref target stays strict — the initiator cannot self-accept', () => {
+    let s = seedOrgState(OP, DEV);
+    s = orgReducer(s, initiate(DEV, INCOMING_DEVICE));
+    expect(canAccept(s.commandTransfer, DEV)).toBe(false);
+    expect(orgReducer(s, accept(DEV))).toBe(s); // no-op; still pending for dev-2
+  });
+
   it('a device-targeted transfer accepts ONLY from that device', () => {
     let s = seedOrgState(OP, DEV);
     s = orgReducer(s, initiate(DEV, INCOMING_DEVICE));

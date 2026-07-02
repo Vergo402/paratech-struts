@@ -145,3 +145,31 @@ The "two ICs or none" problem is the classic distributed-handoff hazard. The res
 technology — it is the fireground rule encoded faithfully: **one party holds command until the other
 acknowledges, and the acknowledgment happens on the radio.** The app's job is to record both ends and to
 make the pending state impossible to miss when a commander looks — never to page them.
+
+---
+
+## Addendum — single-device completion for named-individual targets (2026-07-01, [#401](https://github.com/Vergo402/paratech-struts/issues/401))
+
+**Problem.** The Level IV sim (finding O-2, [#399](https://github.com/Vergo402/paratech-struts/issues/399))
+drove a real transfer on one shared command tablet and could not complete it: the initiator's pending view
+suppressed the Accept (the pending-card ternary gave the outgoing view exclusive precedence), so the crew
+fell back to clear/assign on the IC node — `ResourceCleared`/`ResourceAssigned` only, **no transfer
+record**. That is the exact v3 no-handoff-record gap this ADR exists to close, resurfacing through a UI
+reachability hole. A single shared device is a realistic Level IV/V posture (one command tablet; a chief
+taking command on the same iPad the captain was using).
+
+**Resolution.** For **named-individual (and apparatus) targets**, the outgoing IC's pending card also
+offers the accept: heading "Accepting on this device?", sub-line "Give the briefing, then hand this device
+to {name}.", gold "{name}: Accept command", footnote "Records the transfer — time, from, and to." This is
+a **UI reachability fix, not a new auth model** — `canAccept` (the pre-auth soft claim, `core/org/transfer.ts`)
+has always permitted any uid to accept on a named commander's behalf; the reducer and event schema are
+untouched. **Device-ref targets keep the strict uid match** — only the named device sees Accept.
+
+**Invariant unchanged.** The transfer is still a two-party handshake with exactly one IC of record:
+command moves only on Accept, and the second party's acknowledgment is physical — the briefing happens
+out loud and the incoming commander takes the tablet and taps. The tap records it.
+
+**Recorded consequence.** On a shared device both `CommandTransferInitiated` and `CommandTransferAccepted`
+carry the same device uid in `by`. The from/to/time record is derived from `Initiated.toResource` plus the
+prior IC, so the audit trail (N-1: time, from, to) is complete even though the actor column repeats the
+device.
