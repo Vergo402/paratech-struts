@@ -54,10 +54,10 @@ const THEMES = {
   ],
   DARK: [
     ['text-primary  / surface-card',     '#F0EFEC', '#252930', 'normal'],
-    ['text-primary  / surface-bg',       '#F0EFEC', '#1C1F23', 'normal'],
+    ['text-primary  / surface-bg',       '#F0EFEC', '#101214', 'normal'],
     ['text-secondary/ surface-card',     '#9B9A97', '#252930', 'normal'],
     ['text-tertiary / surface-card',     '#8A8A86', '#252930', 'large'],
-    ['accent        / surface-bg',       '#D4A017', '#1C1F23', 'normal'],
+    ['accent        / surface-bg',       '#D4A017', '#101214', 'normal'],
     ['accent        / surface-card',     '#D4A017', '#252930', 'normal'],
     ['on-accent     / accent fill',      '#1C1F23', '#D4A017', 'normal'],
     // status: bright status-text on dark status-tint
@@ -70,7 +70,7 @@ const THEMES = {
     ['status returned','#A8A29E', '#26231F', 'normal'],
     ['status warning', '#F87171', '#2A1416', 'normal'],
     // sys-lockstroke strut-system color (S12 handoff §4) — on bg AND card
-    ['sys-lockstroke / surface-bg',   '#06B6D4', '#1C1F23', 'normal'],
+    ['sys-lockstroke / surface-bg',   '#06B6D4', '#101214', 'normal'],
     ['sys-lockstroke / surface-card', '#06B6D4', '#252930', 'normal'],
     // waiting — amber presentation of pending+reason (S12 design audit)
     ['status waiting', '#E6BE55', '#2A2410', 'normal'],

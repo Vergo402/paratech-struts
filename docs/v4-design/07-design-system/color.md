@@ -13,7 +13,7 @@ Color does **not** carry urgency theater. No flashing reds, no anxious saturatio
 
 ### Design position — exit the dispatch-console aesthetic
 
-Every fire-service app in the [reference corpus](../04-references/) shares one palette: navy primary, white background, legacy red, amber warning, system fonts. It is the 1990s dispatch console carried forward, and it is *invisible* — an IC glancing at a FieldShore screen must not mistake it for the CAD. FieldShore exits that aesthetic with a **muted warm-slate dark surface** (`#1C1F23` — not navy, not OLED black) and a **single specific warm gold accent**. That dark slate is the single biggest visual differentiator from the competitive set; protect it.
+Every fire-service app in the [reference corpus](../04-references/) shares one palette: navy primary, white background, legacy red, amber warning, system fonts. It is the 1990s dispatch console carried forward, and it is *invisible* — an IC glancing at a FieldShore screen must not mistake it for the CAD. FieldShore exits that aesthetic with a **deep charcoal dark surface** (`#101214` — not navy, not OLED black) and a **single specific warm gold accent**. That dark ground is the single biggest visual differentiator from the competitive set; protect it. *(Revised 2026-07-01, Alex: darkened from the original `#1C1F23` warm slate — at `#1C1F23` the page and its `#252930` cards read as one flat plane; `#101214` restores card lift while staying charcoal, not OLED black.)*
 
 ---
 
@@ -80,7 +80,7 @@ The default during night operations. A muted, desaturated, **warm** slate — th
 ### Surfaces & strokes
 | Token | Value | Role |
 |---|---|---|
-| `--surface-bg` | `#1C1F23` | Page background (muted warm slate — **protect this value**) |
+| `--surface-bg` | `#101214` | Page background (deep charcoal — **protect this value**; darkened from `#1C1F23`, 2026-07-01) |
 | `--surface-card` | `#252930` | Card / row surface |
 | `--surface-card-hover` | `#2A2E36` | Card hover fill |
 | `--surface-elevated` | `#2E333B` | Sheet / modal / focused surface |
@@ -322,7 +322,7 @@ The **sync indicator** maps to existing tokens, no new color: synced = `--status
 - **A second accent in the UI.** FieldShore has exactly one accent (the gold); a "secondary brand color" is forbidden in product chrome. **Two carve-outs, neither a second UI accent:** (1) the brand **emblem** ([`logo-and-mark.md`](logo-and-mark.md)) is full-color by [`ADR-013`](../11-decisions/ADR-013-brand-emblem-full-color.md) — its aluminum / steel / wood / plywood hues live *only* inside the emblem and never leak into UI tokens; the in-product mark is the single-ink mono mark that inherits `--accent`. (2) the **strut-system colors** (`--sys-*`, §System colors below) are a distinct, fixed family that identifies a *physical strut system* on result/recommendation surfaces — gold = LongShore, grey = AcmeThread, **cyan = LockStroke** ([ADR-011 Addendum 2](../11-decisions/ADR-011-color-token-system.md)). They are identity, not emphasis: a `--sys-*` color never styles a button, a status, or chrome, and the one-gold-accent rule still binds every interactive affordance.
 - **Color as the only state signal.** Banned by Principle 9 (see above).
 - **Navy + saturated red.** That is the dispatch-console look v4 exits. Status reds are the muted `--danger`, never a fire-engine red header.
-- **OLED black (`#000`) as the dark background.** The differentiator is the warm slate `#1C1F23`; `#000` is reserved for sunlight text only.
+- **OLED black (`#000`) as the dark background.** The differentiator is the deep charcoal `#101214`; `#000` is reserved for sunlight text only.
 - **Pulsing/animated status or sync color.** Calm in chaos (Principle 3).
 - **Inventing a status hue per call type.** The seven lifecycle tokens are the complete set.
 

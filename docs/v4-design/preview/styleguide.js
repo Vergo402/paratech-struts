@@ -61,9 +61,9 @@
         returned: ['#57534E', '#F5F5F4', '6.99'], danger: ['#B91C1C', '#FEF2F2', '5.91'] }
     },
     dark: {
-      name: 'Dark', tag: 'incident operations · the differentiator', bg: '#1C1F23', card: '#252930', elev: '#2E333B',
+      name: 'Dark', tag: 'incident operations · the differentiator', bg: '#101214', card: '#252930', elev: '#2E333B',
       text: { primary: ['#F0EFEC', '12.70'], secondary: ['#9B9A97', '5.19'], tertiary: ['#8A8A86', '4.21'] },
-      accent: ['#D4A017', '6.96'], mode: 'tint',
+      accent: ['#D4A017', '7.90'], mode: 'tint',
       status: { pending: ['#9CA3AF', '#2A2D31', '5.45'], process: ['#60A5FA', '#172033', '6.40'],
         strutset: ['#A78BFA', '#221A38', '6.06'], cutting: ['#FBBF24', '#2A2410', '9.26'],
         runner: ['#FB923C', '#2A1B0F', '7.35'], secured: ['#34D399', '#0F2620', '8.29'],

@@ -139,13 +139,13 @@
    THEME 2 — DARK (incident operations) — the differentiator: warm slate
    ============================================================================ */
 [data-theme="dark"] {
-  --surface-bg: #1C1F23;      /* muted warm slate — protect this value */
+  --surface-bg: #101214;      /* deep charcoal — darkened from #1C1F23 (Alex, 2026-07-01) so cards lift off the page */
   --surface-card: #252930;
   --surface-card-hover: #2A2E36;
   --surface-elevated: #2E333B;
   --surface-stroke: rgba(255, 255, 255, 0.07);
   --stroke-width: 1px;
-  --accent: #D4A017;          /* 6.96:1 on bg, 6.15:1 on card */
+  --accent: #D4A017;          /* 7.90:1 on bg, 6.15:1 on card */
   --accent-subtle: #2A2310;
   --on-accent: #1C1F23;       /* warm-slate ink on --accent fill — 6.96:1 (button.md primary) */
 
@@ -163,7 +163,7 @@
   --danger-text:         #F87171;  --danger-bg:         #2A1416;  /* 6.27 */
   /* waiting — amber presentation of pending+reason (v4 styleguide waiting card) */
   --status-waiting-text: #E6BE55;  --status-waiting-bg: #2A2410;  /* 8.73 (8.25 on card) */
-  --sys-lockstroke: #06B6D4;  --sys-lockstroke-bg: #0E262D;  /* LockStroke strut-system color, S12 handoff §4 — 6.81 bg / 6.01 card */
+  --sys-lockstroke: #06B6D4;  --sys-lockstroke-bg: #0E262D;  /* LockStroke strut-system color, S12 handoff §4 — 7.73 bg / 6.01 card */
 
   --scrim: rgba(0, 0, 0, 0.40);                      /* sheet/modal backdrop (color.md) */
   --shadow-sheet: 0 -4px 24px rgba(0, 0, 0, 0.18);
