@@ -1645,10 +1645,12 @@ button.fs-spc-head {
     flex-direction: column;
     background: var(--surface-bg); /* the subtle well tint kept (Alex) */
   }
-  /* Header border-bottom spans the full column (prototype .ch); cards inset. */
+  /* Header border-bottom spans the full column (prototype .ch); cards inset.
+     min-height 62px normalises all 7 column headers to the same height (the
+     tallest short label, "Strut Set" in Geist 600, renders at exactly 62px). */
   .fs-lane-header {
     padding: var(--space-3) var(--space-3) var(--space-2);
-    min-height: 44px;
+    min-height: 62px;
   }
   .fs-lane-cards {
     flex: 1;

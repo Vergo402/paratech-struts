@@ -180,9 +180,8 @@ interface ItemCallbacks {
   activeStackId: string | null;
 }
 
-// Short status labels for the List-view status dividers (the prototype look) —
-// the concise forms that used to head the removed summary bar. The full
-// STATUS_LABELS stay on the Board lane headers.
+// Short status labels for the List-view dividers AND Board lane headers — these
+// fit on one line at the 160px column minimum, keeping all headers equal height.
 const LIST_STATUS_LABEL: Record<ShorePointStatus, string> = {
   pending: 'Pending',
   process: 'Assigned',
@@ -283,7 +282,7 @@ function Lane({ status, points, collapsed, onToggle, toggledOff = false, ...cb }
         aria-expanded={!collapsed}
       >
         <span className="fs-lane-title">
-          {STATUS_LABELS[status]}
+          {LIST_STATUS_LABEL[status]}
           {toggledOff && <span className="fs-lane-off">(toggled off)</span>}
         </span>
         <Badge variant="count" value={points.length} srLabel={`${points.length} shore points`} />
