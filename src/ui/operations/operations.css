@@ -973,21 +973,21 @@ button.fs-spc-head {
   gap: var(--space-2);
 }
 .fs-rec--gold {
-  --rec-color: var(--accent);
+  --rec-color: var(--accent); /* @kind color */
 }
 .fs-rec--grey {
-  --rec-color: var(--text-secondary);
+  --rec-color: var(--text-secondary); /* @kind color */
 }
 /* LockStroke is keyed off the strut SYSTEM, not its color (every lk-* is
    physically grey): cyan is the opposite pole from gold and unmistakable from
    grey (S12 §4 — the lockstroke token carries its own per-theme contrast). */
 .fs-rec--lockstroke {
-  --rec-color: var(--sys-lockstroke);
+  --rec-color: var(--sys-lockstroke); /* @kind color */
 }
 /* #40 — the gated card (unrated / over-capacity) reads as danger at a glance,
    an accent and a word, never a full red fill (Principle 3). */
 .fs-rec.is-gated {
-  --rec-color: var(--danger-text);
+  --rec-color: var(--danger-text); /* @kind color */
 }
 
 .fs-rec-bar {
@@ -1634,7 +1634,7 @@ button.fs-spc-head {
 .fs-gs {
   /* A local stronger-stroke so the open-list border-left + tab hover read
      above the hairline without minting a global token. */
-  --fs-gs-stroke-strong: color-mix(in srgb, var(--text-primary) 25%, var(--surface-stroke));
+  --fs-gs-stroke-strong: color-mix(in srgb, var(--text-primary) 25%, var(--surface-stroke)); /* @kind color */
   font-family: var(--font-sans);
 }
 
