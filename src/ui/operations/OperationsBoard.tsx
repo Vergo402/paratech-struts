@@ -47,7 +47,6 @@ import { DivisionView } from './DivisionView';
 import { ShorePointListRow } from './ShorePointListRow';
 import { HeaderPill, OpsMetaLine } from './OpsHeaderMeta';
 import { OpsFilterSheet } from './OpsFilterSheet';
-import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
 import { buildRailTree, type ScopePath } from './railTree';
@@ -1194,6 +1193,14 @@ export function OperationsBoard() {
             </button>
           )}
           <span className="fs-ops-titlebar-spacer" />
+          {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
+          {/* Add moved to the top bar (Alex 2026-07-03): the left rail is gone so
+              the board runs the full width; Add rides beside the view toggle. */}
+          {isDesktop && (
+            <Button variant="primary" onPress={() => setSpModal({ mode: 'create' })}>
+              + Shore Point
+            </Button>
+          )}
           {/* Persona pill — YOUR role on phone, the IC on desktop (2026-07-02). */}
           <HeaderPill
             isDesktop={isDesktop}
@@ -1201,7 +1208,6 @@ export function OperationsBoard() {
             myRoleTitle={myRoleTitle}
             onSetRole={() => setMyRoleSheetOpen(true)}
           />
-          {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
           {/* Phone keeps the inventory glance as a header icon (desktop gets the
               labeled Inventory button in the filter row). */}
           {!isDesktop && (
@@ -1262,25 +1268,48 @@ export function OperationsBoard() {
           </div>
         )}
         <div className="fs-ops-stage">
-        {isDesktop && (
-          <div className="fs-ops-railcol">
-            {/* Add leads the left column; the drilldown tree sits beneath it
-                (the tree appears once the op has shore points). */}
-            <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
-              + Add Shore Point
-            </Button>
-            {shorePoints.length > 0 && (
-              <OperationsRail
-                tree={railTree}
-                filterBuilding={filterBuilding}
-                filterDivision={filterDivision}
-                filterArea={filterArea}
-                onSelect={applyRailFilter}
-              />
-            )}
-          </div>
-        )}
         <div className="fs-ops-main">
+
+      {/* Division filter as a horizontal chip row at the top (Alex 2026-07-03) —
+          the left drilldown rail moved up here so the board runs full width. Top
+          level only (divisions, or buildings when multi-building); deeper
+          building/area filtering stays in the Filters sheet. Desktop-only; phone
+          filters through the Filters sheet as before. */}
+      {isDesktop && shorePoints.length > 0 && (
+        <div className="fs-ops-divchips" role="group" aria-label="Filter by location">
+          <button
+            type="button"
+            className={`fs-ops-divchip${!filterBuilding && !filterDivision && !filterArea ? ' is-active' : ''}`}
+            aria-pressed={!filterBuilding && !filterDivision && !filterArea}
+            onClick={() => applyRailFilter({ building: null, division: null, area: null })}
+          >
+            All shore points <span className="fs-ops-divchip-ct">{railTree.total}</span>
+          </button>
+          {railTree.multiBuilding
+            ? railTree.buildings.map((b) => (
+                <button
+                  key={b.building}
+                  type="button"
+                  className={`fs-ops-divchip${filterBuilding === b.building && !filterDivision && !filterArea ? ' is-active' : ''}`}
+                  aria-pressed={filterBuilding === b.building && !filterDivision && !filterArea}
+                  onClick={() => applyRailFilter({ building: b.building, division: null, area: null })}
+                >
+                  {b.building} <span className="fs-ops-divchip-ct">{b.count}</span>
+                </button>
+              ))
+            : railTree.divisions.map((d) => (
+                <button
+                  key={d.division}
+                  type="button"
+                  className={`fs-ops-divchip${filterDivision === d.division && !filterArea ? ' is-active' : ''}`}
+                  aria-pressed={filterDivision === d.division && !filterArea}
+                  onClick={() => applyRailFilter({ building: null, division: d.division, area: null })}
+                >
+                  {divisionLabel(d.division)} <span className="fs-ops-divchip-ct">{d.count}</span>
+                </button>
+              ))}
+        </div>
+      )}
 
       {shorePoints.length > 0 && (
         <>

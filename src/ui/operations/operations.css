@@ -424,7 +424,6 @@
 .fs-divtile-appar {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 62%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -482,11 +481,25 @@
 
 .fs-lane-title {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   text-align: left;
   font: var(--type-body-medium);
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+/* Status dot before the lane label (prototype iPad board) — the column's status
+   hue as a small square, echoing the card's left edge. Scoped to real status
+   lanes so the Deleted section's header stays dot-less. */
+.fs-lane .fs-lane-title::before {
+  content: '';
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--sp-solid);
 }
 
 /* Pending lane bypassed (one-step deploy mode, "Utilize Pending Card" OFF, and
@@ -972,27 +985,10 @@ button.fs-spc-head {
   gap: var(--space-2);
   padding-top: var(--space-1);
 }
-/* On a MOUSE desktop the slides are tap-once buttons (ADR-034), so they sit on
-   ONE row: Back (left, ~1/3) + the forward action (right, ~2/3) — Alex. Same
-   media query as useHasMouse, so this only applies where buttons (not slide
-   tracks) render; touch surfaces keep the full-width stacked tracks for sliding.
-   row-reverse: the DOM order is [advance, step-back], so reversing puts Back on
-   the left and the forward action on the right. */
-@media (hover: hover) and (pointer: fine) {
-  .fs-spc-slides {
-    flex-direction: row-reverse;
-    align-items: stretch;
-  }
-  .fs-spc-slides > .fs-slide--advance,
-  .fs-spc-slides > .fs-button {
-    flex: 2 1 0; /* the forward action — ~2/3 */
-    min-width: 0;
-  }
-  .fs-spc-slides > .fs-slide--stepback {
-    flex: 1 1 0; /* Back — ~1/3 */
-    min-width: 0;
-  }
-}
+/* Slides STACK full-width (Alex 2026-07-03, board full-width redesign): the board
+   columns are narrower than a phone card, so the old one-row Back+forward layout
+   (ADR-034) wrapped and clipped. Stacking keeps every label on one line — the
+   forward action on top, Back beneath (base column direction, both surfaces). */
 
 /* Removed from cut list (handoff §1.4) — the content dims, but the slash and
    the chip stay full strength. The stripe (edge slot) renders before children,
@@ -1618,48 +1614,45 @@ button.fs-spc-head {
     padding: var(--space-6) var(--space-8);
   }
 
-  /* The board goes multi-column: 2-up on tablet. align-items: start keeps a
-     collapsed lane compact instead of stretching to its row's tallest mate. */
+  /* The board = the prototype iPad kanban (Alex 2026-07-03, "exactly like this"):
+     the seven status lanes are equal columns filling the width, a single hairline
+     divider between each (the 1px gaps reveal the stroke gutter behind), cards
+     stacked per column. Columns share the width equally and only scroll if the
+     surface is too narrow to keep them legible — no outer panel, flat on the page. */
   .fs-ops-lanes {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-4);
-    align-items: start;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1px;
+    background: var(--surface-stroke);
+    overflow-x: auto;
+    min-height: calc(100dvh - 15rem);
   }
-
-  /* Side-by-side lanes read as recessed wells on the board panel — a step down
-     from the panel surface (--surface-bg) with a hairline edge, so the cards
-     inside lift off them. */
   .fs-lane {
-    background: var(--surface-bg);
-    border: 1px solid var(--surface-stroke);
-    border-radius: var(--radius-card);
-    padding: 0 var(--space-3) var(--space-1);
+    flex: 1 1 0;
+    min-width: 160px; /* legible floor (stacked slides fit here); scroll below this */
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-bg); /* the subtle well tint kept (Alex) */
+  }
+  /* Header border-bottom spans the full column (prototype .ch); cards inset. */
+  .fs-lane-header {
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    min-height: 44px;
+  }
+  .fs-lane-cards {
+    flex: 1;
+    padding: var(--space-3);
   }
 }
 
 @media (min-width: 1200px) {
   .fs-ops-board {
-    padding: var(--space-8) var(--space-12);
+    padding: var(--space-8) var(--space-6);
   }
-
-  /* Laptop: the board groups by workflow phase into three rows (Alex, 2026-06-20):
-       row 1  Pending Equipment · Equipment Assigned · Strut Set   (strut placement)
-       row 2  Cutting Station                                       (the cut pivot)
-       row 3  Runner · Wood Shore Secured · Strut Equipment Returned (wood & return)
-     Three equal columns; the Cutting Station lane SPANS the full width so it sits
-     alone on its own row (the workflow funnels through it) with no dead columns. */
-  .fs-ops-lanes {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  /* Cutting Station sits ALONE on row 2, a normal column width, left-justified
-     (Alex). Forcing Runner to start a fresh row at column 1 leaves Cutting (the
-     prior auto-placed item) by itself in row 2 col 1 — cols 2-3 empty — and puts
-     Runner · Wood Shore Secured · Strut Equipment Returned on row 3. Cutting
-     cards flow vertically like every other lane. */
-  .fs-ops-lanes .fs-lane.is-runner {
-    grid-column: 1;
-  }
+  /* Wide (Toughbook): all seven columns fit without scrolling — the flex rule
+     above already sizes them equally; the tighter side padding hands more of the
+     width to the columns so they read like the prototype (no rail in that mockup). */
 }
 
 /* ==========================================================================
@@ -2547,43 +2540,52 @@ button.fs-spc-head {
    display:contents (the rail isn't rendered; companions are SideDrawers that
    portal over).
    ========================================================================== */
+/* Full-width board (Alex 2026-07-03): the left drilldown rail moved to the top
+   (+ Add Shore Point → header, division filter → chip row), so the board runs the
+   ENTIRE width and the seven columns breathe — the prototype iPad look. `stage`
+   is now a pass-through (display:contents); `main` is a plain full-width block. */
 .fs-ops-stage {
   display: contents;
 }
 @media (min-width: 768px) {
-  .fs-ops-stage {
-    display: grid;
-    grid-template-columns: [rail] auto [board] minmax(0, 1fr);
-    gap: var(--space-4);
-    align-items: start;
-    /* The board sits on a shaded panel — the rail + lane wells read as one work
-       surface lifted off the page (the redesign's "background behind the cards"). */
-    background: var(--surface-card);
-    border: var(--stroke-width) solid var(--surface-stroke);
-    border-radius: var(--radius-card);
-    padding: var(--space-4);
-  }
-  .fs-ops-stage > .fs-ops-main {
-    grid-column: board;
+  .fs-ops-main {
     min-width: 0;
   }
-  /* The left column = the + Add Shore Point button + the drilldown rail (Alex).
-     It owns the column width + sticky behaviour; the rail nav flows inside it. */
-  .fs-ops-stage > .fs-ops-railcol {
-    grid-column: rail;
-    width: clamp(180px, 18vw, 240px);
-    position: sticky;
-    top: 0;
-    align-self: start;
-    max-height: calc(100dvh - 8rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-    border-right: 1px solid var(--surface-stroke);
-    padding-right: var(--space-2);
-  }
+}
+
+/* Division filter chips (the old drilldown rail, now a horizontal row up top). */
+.fs-ops-divchips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.fs-ops-divchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  background: transparent;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-badge);
+  padding: 5px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fs-ops-divchip:hover {
+  background: var(--surface-card-hover);
+}
+.fs-ops-divchip.is-active {
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border-color: var(--text-tertiary);
+}
+.fs-ops-divchip-ct {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 /* ---- drilldown rail (20-operations.md §Drilldown) ------------------------- */
