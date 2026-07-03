@@ -1533,8 +1533,8 @@ export function OperationsBoard() {
         )}
         {/* The Filters surface (2026-07-02 redesign) — Sort + Location + Apparatus
             on both surfaces (sheet on phone, popover anchored to the Filters button
-            on desktop). Desktop also keeps the always-visible OperationsRail as the
-            power drill-down path. */}
+            on desktop). Building/area drill-down lives here; the top division chips
+            (full-width redesign, 2026-07-03) are the quick filter. */}
         <OpsFilterSheet
           open={filterSheetOpen}
           onClose={() => setFilterSheetOpen(false)}

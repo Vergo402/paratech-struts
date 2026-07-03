@@ -10,7 +10,8 @@ import type { BoardLayout } from './ViewToggle';
  * desktop, ADR-032). Pure relocation: every value + handler is the board's
  * existing filter state, passed in — no new filtering logic. Sections render
  * only when they have options; Sort hides in the Division view (spatially
- * ordered). The desktop OperationsRail stays the power drill-down path.
+ * ordered). This is the building/area drill-down path (the old desktop rail is
+ * gone; the top division chips are the quick filter).
  */
 
 type SortMode = 'location' | 'added-newest' | 'added-oldest';
