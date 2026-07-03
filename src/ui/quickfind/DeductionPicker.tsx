@@ -3,8 +3,7 @@ import { BASE_PLATES, WOOD_SIZES, plateHeight, woodHeight } from '@core/load';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import type { Deductions } from '@core/schema';
 import { MeasurementValue } from '@ui/primitives';
-import { InlineSegmented, PlateSwatch, VisualGridPicker } from '@ui/picker';
-import type { VisualGridOption } from '@ui/picker';
+import { InlineSegmented, PlateThumb, VisualGridPicker } from '@ui/picker';
 
 /**
  * DeductionPicker — the fixed-order deduction ledger (card.md / input.md):
@@ -44,20 +43,6 @@ export interface DeductionPickerProps {
    * shore point has an assigned resource, absent → "in inventory".
    */
   stockLabel?: string;
-}
-
-function PlateThumb({ id, name }: VisualGridOption) {
-  const [err, setErr] = useState(false);
-  if (id === 'none' || err) return <PlateSwatch name={name} />;
-  return (
-    <img
-      className="fs-swatch fs-swatch--photo"
-      src={`/plates/${id}.jpg`}
-      alt=""
-      aria-hidden="true"
-      onError={() => setErr(true)}
-    />
-  );
 }
 
 function DeductionAmount({ heightInches }: { heightInches: number }) {

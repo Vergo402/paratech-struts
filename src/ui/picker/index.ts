@@ -7,6 +7,6 @@ import './picker.css';
 export { BottomSheetPicker, type BottomSheetPickerProps, type SheetPickerOption } from './BottomSheetPicker';
 export { FullScreenList, type FullScreenListProps } from './FullScreenList';
 export { InlineSegmented, type InlineSegmentedProps } from './InlineSegmented';
-export { PlateSwatch } from './PlateSwatch';
+export { PlateSwatch, PlateThumb } from './PlateSwatch';
 export { PowerSelect, type PowerSelectProps } from './PowerSelect';
 export { VisualGridPicker, type VisualGridPickerProps, type VisualGridOption } from './VisualGridPicker';
