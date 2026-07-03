@@ -1961,16 +1961,8 @@ button.fs-spc-head {
   background: var(--surface-card);
   color: var(--text-secondary);
 }
-.fs-cutstation-saw-chip {
-  cursor: pointer;
-}
 .fs-cutstation-saw-chip.is-static {
   cursor: default;
-}
-.fs-cutstation-saw-chip.is-selected {
-  border-color: var(--status-cutting-text);
-  background: var(--status-cutting-bg);
-  color: var(--status-cutting-text);
 }
 .fs-cutstation-saw-add {
   cursor: pointer;
@@ -2115,11 +2107,66 @@ button.fs-spc-head {
   color: var(--text-secondary);
   margin: 0 0 var(--space-1);
 }
-/* #375: the "showing this saw only · N hidden" note under the up-next head. */
-.fs-cutstation-filternote {
-  font: var(--type-caption);
+/* #390: the phone two-screen flow — pick-your-station cards + the scoped view's
+   back control and muted "other saw is busy" line. */
+.fs-cutstation-select-intro {
+  font: var(--type-body);
   color: var(--text-secondary);
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+.fs-cutstation-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.fs-cutstation-stationcard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  text-align: left;
+  cursor: pointer;
+}
+.fs-cutstation-stationcard:active {
+  background: var(--surface-card-hover);
+}
+.fs-cutstation-station-letter {
+  font: var(--type-headline-2);
+  font-weight: 700;
+  color: var(--status-cutting-text);
+}
+.fs-cutstation-station-now {
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+  font-variant-numeric: diagonal-fractions tabular-nums;
+}
+.fs-cutstation-station-now.is-idle {
+  color: var(--text-secondary);
+}
+.fs-cutstation-station-sub {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-cutstation-back {
+  border: none;
+  background: none;
+  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  font: var(--type-body-medium);
+  font-weight: 600;
+  color: var(--status-cutting-text);
+  cursor: pointer;
+}
+.fs-cutstation-mutedline {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  margin: var(--space-2) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 /* A compact queue row: grip handle · cut length (mid) · location subtitle. */
 .fs-cutstation-row {
@@ -2164,15 +2211,6 @@ button.fs-spc-head {
   display: block;
   font: var(--type-body);
   color: var(--text-secondary);
-}
-/* A cut another saw is actively cutting (#354): muted in this saw's up-next list
-   with an "on Saw B" marker, so the cutter sees it's handled and skips it. */
-.fs-cutstation-row.is-on-other-saw {
-  opacity: 0.6;
-}
-.fs-cutstation-row-onsaw {
-  font-weight: 600;
-  color: var(--status-cutting-text);
 }
 /* The sent-to-runner tail in the right column reuses .fs-cutstation-sent. */
 .fs-cutstation-split .fs-cutstation-sent {
