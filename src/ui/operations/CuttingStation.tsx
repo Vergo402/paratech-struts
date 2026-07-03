@@ -123,16 +123,14 @@ export function CuttingStation({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claimKey, onClaim]);
 
-  // Phone: which saw this view acts as, OR 'all' to see the whole queue (#375).
-  // Defaults to the first saw so a cutter sees only their OWN station's work; 'all'
-  // is the opt-out. Clamped if the chosen saw leaves the roster. (Single-device for
-  // v4.0 — a per-view selection, not synced.)
-  const [viewSaw, setViewSaw] = useState<string>(roster[0] ?? 'A');
-  const viewingAll = viewSaw === 'all';
-  const activeSaw = !viewingAll && roster.includes(viewSaw) ? viewSaw : (roster[0] ?? 'A');
-  // #375: on phone with >1 saw, a specific-saw view HIDES the other saws' claimed
-  // cuts (they'd otherwise show muted) so the queue is just this station's work.
-  const filterToSaw = multiSaw && !isDesktop && !viewingAll;
+  // Phone + multi-saw = the #390 two-screen flow (Idea 390, supersedes the #375
+  // chips): null = the pick-your-station screen; a saw id = the view locked to
+  // that saw. Single-saw phone and desktop never see the select screen. Clamped
+  // if the chosen saw leaves the roster. (Single-device for v4.0 — a per-view
+  // selection, not synced.)
+  const [viewSaw, setViewSaw] = useState<string | null>(null);
+  const activeSaw = viewSaw && roster.includes(viewSaw) ? viewSaw : (roster[0] ?? 'A');
+  const phoneScoped = multiSaw && !isDesktop;
 
   // A card stepped back OUT of cutting leaves the queue, but Principle 10 forbids
   // a silent vanish: hold a brief red-slash snapshot the cutter sees (and dismisses).
@@ -209,15 +207,10 @@ export function CuttingStation({
     </div>
   );
 
-  /** A read-only up-next row. `onSawId` (another saw owns it) mutes it + names the
-   *  saw; otherwise it reads "up next". */
-  const upNextRow = (sp: ShorePoint, onSawId?: string | null) => (
-    <div
-      key={sp.id}
-      role="listitem"
-      data-sp-id={sp.id}
-      className={`fs-cutstation-row${onSawId ? ' is-on-other-saw' : ''}`}
-    >
+  /** A read-only up-next row — an unclaimed cut in the shared queue. (Other saws'
+   *  claimed cuts are never rows: #390 reduces each to one muted sentence.) */
+  const upNextRow = (sp: ShorePoint) => (
+    <div key={sp.id} role="listitem" data-sp-id={sp.id} className="fs-cutstation-row">
       <span className="fs-cutstation-grip" aria-hidden="true">
         <GripIcon />
       </span>
@@ -225,51 +218,24 @@ export function CuttingStation({
         <span className="fs-cutstation-row-num">
           <MeasurementValue eighths={cutEighths(sp)} />
         </span>
-        <span className="fs-cutstation-row-where">
-          {cutSubtitle(sp)}
-          {onSawId ? <span className="fs-cutstation-row-onsaw"> · on Saw {onSawId}</span> : null}
-        </span>
+        <span className="fs-cutstation-row-where">{cutSubtitle(sp)}</span>
       </span>
     </div>
   );
 
-  // ---- the saw-roster header control (only when relevant) --------------------
-  const sawRoster = (multiSaw || onAddSaw) && (
+  // ---- the saw-roster header control ------------------------------------------
+  // Desktop: static roster chips + add. Phone: chips are superseded by the #390
+  // select screen — only single-saw phone keeps "+ Add saw" here (that's how the
+  // 2nd saw is born); multi-saw phone manages stations on the select screen.
+  const sawRoster = ((isDesktop && (multiSaw || onAddSaw)) || (!isDesktop && !multiSaw && onAddSaw)) && (
     <div className="fs-cutstation-saws" role="group" aria-label="Saw roster">
-      {/* #375: phone gets an "All saws" chip beside the per-saw chips — pick a saw to
-          see only that station's cuts, "All saws" to see the whole queue. */}
-      {multiSaw && !isDesktop && (
-        <button
-          type="button"
-          className={`fs-cutstation-saw-chip${viewingAll ? ' is-selected' : ''}`}
-          aria-pressed={viewingAll}
-          onClick={() => setViewSaw('all')}
-        >
-          All saws
-        </button>
-      )}
-      {multiSaw &&
-        roster.map((sawId) => {
-          // On phone, the chips SELECT which saw this view acts as; on tablet every
-          // saw has its own hero, so the chips are just the roster (non-selecting).
-          const selectable = !isDesktop;
-          const selected = selectable && !viewingAll && sawId === viewSaw;
-          return selectable ? (
-            <button
-              key={sawId}
-              type="button"
-              className={`fs-cutstation-saw-chip${selected ? ' is-selected' : ''}`}
-              aria-pressed={selected}
-              onClick={() => setViewSaw(sawId)}
-            >
-              Saw {sawId}
-            </button>
-          ) : (
-            <span key={sawId} className="fs-cutstation-saw-chip is-static">
-              Saw {sawId}
-            </span>
-          );
-        })}
+      {isDesktop &&
+        multiSaw &&
+        roster.map((sawId) => (
+          <span key={sawId} className="fs-cutstation-saw-chip is-static">
+            Saw {sawId}
+          </span>
+        ))}
       {onAddSaw && (
         <button
           type="button"
@@ -283,17 +249,34 @@ export function CuttingStation({
     </div>
   );
 
+  // The "N new" peer-cut badge (#404) — shared by every header variant below.
+  const peerBadge = newPeerCuts > 0 && (
+    <span
+      className="fs-cutstation-newbadge"
+      role="status"
+      aria-label={`${newPeerCuts} new ${newPeerCuts === 1 ? 'cut' : 'cuts'} sent from another device`}
+    >
+      {newPeerCuts} new
+    </span>
+  );
+
   // ---- per-surface body ------------------------------------------------------
 
   // The hero(es) for the current surface + saw count.
   let heroes: ReactNode;
-  // The up-next list as an array of rows — unclaimed cuts, plus (phone, multi-saw,
-  // "All" view) the other saws' active cuts shown muted so this saw's cutter sees
-  // they're handled. A specific-saw view hides those and counts them here (#375).
+  // The up-next list as an array of rows — the shared unclaimed cuts. On the
+  // phone scoped view (#390), other saws' active cuts are NOT rows — each is one
+  // muted sentence below the list, so they can't be grabbed by mistake.
   let upNextRows: ReactNode[];
-  let hiddenOnOtherSaws = 0;
+  let otherSawLines: ReactNode = null;
 
-  if (isDesktop && multiSaw) {
+  if (queue.length === 0) {
+    // Nothing to cut — the split (heroes + up-next) never renders, but heroes was
+    // computed EAGERLY below and the single-saw desktop branch dereferenced
+    // queue[0] on an empty queue (crash surfaced by the #389 empty-state work).
+    heroes = null;
+    upNextRows = [];
+  } else if (isDesktop && multiSaw) {
     // Tablet/desktop, >1 saw: one hero per saw (idle placeholder if free), then the
     // shared up-next = unclaimed only.
     heroes = (
@@ -311,48 +294,139 @@ export function CuttingStation({
     heroes = hero(sp, null);
     upNextRows = unclaimed.map((s) => upNextRow(s));
   } else {
-    // Phone, any saw count: one saw's hero (the selected saw) + the up-next list.
-    // In the "All" view, the OTHER saws' active cuts appear muted "on Saw B"; a
-    // specific-saw view hides them (#375) and counts them for the note below.
+    // Phone (#390): the view is locked to ONE saw — its hero (or a calm per-saw
+    // all-clear) + the shared pending list. Other saws' active cuts are each one
+    // muted sentence, never selectable rows.
     const sp = heroBySaw[activeSaw] ?? null;
-    heroes = sp ? hero(sp, activeSaw) : idleHero(activeSaw);
-    const otherSawCuts = multiSaw
-      ? roster
-          .filter((s) => s !== activeSaw)
-          .map((s) => ({ sp: heroBySaw[s], sawId: s }))
-          .filter((x): x is { sp: ShorePoint; sawId: string } => x.sp != null)
-      : [];
-    hiddenOnOtherSaws = filterToSaw ? otherSawCuts.length : 0;
-    upNextRows = [
-      ...(filterToSaw ? [] : otherSawCuts.map(({ sp: osp, sawId }) => upNextRow(osp, sawId))),
-      ...unclaimed.map((s) => upNextRow(s)),
-    ];
+    heroes = sp ? (
+      hero(sp, activeSaw)
+    ) : phoneScoped ? (
+      <EmptyState
+        variant="all-clear"
+        headline={`Saw ${activeSaw} is clear`}
+        reason="Nothing claimed and nothing waiting — stand by for the next shore point"
+      />
+    ) : (
+      idleHero(activeSaw)
+    );
+    upNextRows = unclaimed.map((s) => upNextRow(s));
+    if (phoneScoped) {
+      const otherBusy = roster
+        .filter((s) => s !== activeSaw)
+        .map((s) => ({ sawId: s, sp: heroBySaw[s] }))
+        .filter((x): x is { sawId: string; sp: ShorePoint } => x.sp != null);
+      otherSawLines = otherBusy.length > 0 && (
+        <p className="fs-cutstation-mutedline">
+          {otherBusy.map(({ sawId, sp: osp }) => (
+            <span key={sawId}>
+              Saw {sawId} is on its own cut{osp.seq ? ` (SP-${osp.seq})` : ''} — not in your queue.
+            </span>
+          ))}
+        </p>
+      );
+    }
+  }
+
+  // #390 screen 1 — pick your station (phone, multi-saw, work present). Each card
+  // names the saw, its current cut, and the shared backlog; picking locks the view.
+  if (phoneScoped && viewSaw === null && queue.length > 0) {
+    return (
+      <section className="fs-cutstation" aria-label="Cutting Station">
+        <div className="fs-cutstation-head">
+          <div className="fs-cutstation-titlerow">
+            <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
+            {peerBadge}
+          </div>
+        </div>
+        <p className="fs-cutstation-select-intro">
+          You’re assigned to a saw. Pick it — you’ll see only your cut and the shared pending
+          list.
+        </p>
+        <div className="fs-cutstation-select">
+          {roster.map((sawId) => {
+            const sp = heroBySaw[sawId] ?? null;
+            return (
+              <button
+                key={sawId}
+                type="button"
+                className="fs-cutstation-stationcard"
+                onClick={() => setViewSaw(sawId)}
+              >
+                <span className="fs-cutstation-station-letter">Saw {sawId}</span>
+                {sp ? (
+                  <span className="fs-cutstation-station-now">
+                    Cutting <MeasurementValue eighths={cutEighths(sp)} />
+                    {sp.seq ? ` · SP-${sp.seq}` : ''}
+                  </span>
+                ) : (
+                  <span className="fs-cutstation-station-now is-idle">Idle — no cut claimed</span>
+                )}
+                <span className="fs-cutstation-station-sub">
+                  {unclaimed.length} waiting in the shared queue
+                </span>
+              </button>
+            );
+          })}
+          {onAddSaw && (
+            <button
+              type="button"
+              className="fs-cutstation-saw-add"
+              onClick={() => void onAddSaw()}
+              aria-label="Add a saw"
+            >
+              + Add saw
+            </button>
+          )}
+        </div>
+      </section>
+    );
   }
 
   return (
     <section className="fs-cutstation" aria-label="Cutting Station">
       <div className="fs-cutstation-head">
         <div className="fs-cutstation-titlerow">
-          <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
-          {newPeerCuts > 0 && (
-            <span
-              className="fs-cutstation-newbadge"
-              role="status"
-              aria-label={`${newPeerCuts} new ${newPeerCuts === 1 ? 'cut' : 'cuts'} sent from another device`}
-            >
-              {newPeerCuts} new
-            </span>
+          {phoneScoped && queue.length > 0 ? (
+            // #390 screen 2 — locked to one saw: back to the station list + which
+            // saw you are, always in the header.
+            <>
+              <button
+                type="button"
+                className="fs-cutstation-back"
+                onClick={() => setViewSaw(null)}
+              >
+                ‹ Stations
+              </button>
+              <h1 className="fs-cutstation-title">Saw {activeSaw}</h1>
+            </>
+          ) : (
+            <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
           )}
+          {peerBadge}
         </div>
         {sawRoster}
       </div>
 
       {empty ? (
+        // #389: the queue fills from ANOTHER screen, so an idle station is
+        // upstream-blocked, not first-run (Idea 389 exploration, variant A).
         <EmptyState
-          variant="first-run"
-          headline="No cuts in queue"
-          reason="Move a shore point to Cutting Station on the Operations board to queue it"
+          variant="upstream-blocked"
+          headline="No cuts queued"
+          reason="Cuts arrive when a shore point is moved to Cutting Station on the Operations board"
         />
+      ) : queue.length === 0 && sent.length > 0 ? (
+        // #389 variant C: work existed and ALL of it went to the runner — a calm
+        // all-clear (never shown to a station that had no work; that reads as A).
+        <>
+          <EmptyState
+            variant="all-clear"
+            headline="All cuts done"
+            reason="Every queued cut has been sent to the runner"
+          />
+          {removedCards}
+          {sentTail}
+        </>
       ) : (
         <>
           <p className="fs-cutstation-count" role="status">
@@ -363,12 +437,9 @@ export function CuttingStation({
             <div className="fs-cutstation-split">
               <div className="fs-cutstation-heroside">{heroes}</div>
               <div className="fs-cutstation-upnext">
-                <p className="fs-cutstation-upnext-head">The queue · up next</p>
-                {hiddenOnOtherSaws > 0 && (
-                  <p className="fs-cutstation-filternote" role="status">
-                    Showing Saw {activeSaw}’s cuts only · {hiddenOnOtherSaws} on other saws hidden
-                  </p>
-                )}
+                <p className="fs-cutstation-upnext-head">
+                  {phoneScoped ? 'Pending · shared queue' : 'The queue · up next'}
+                </p>
                 <div role="list">
                   {/* An empty up-next reads honestly — nothing left to work. With one
                       saw it's "the last cut"; with more, the rest are all claimed. */}
@@ -382,6 +453,7 @@ export function CuttingStation({
                     upNextRows
                   )}
                 </div>
+                {otherSawLines}
                 {removedCards}
                 {sentTail}
               </div>

@@ -187,9 +187,9 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.fs-sysfilter-chip--gold { --chip-color: var(--accent); }
-.fs-sysfilter-chip--grey { --chip-color: var(--text-secondary); }
-.fs-sysfilter-chip--lockstroke { --chip-color: var(--sys-lockstroke); }
+.fs-sysfilter-chip--gold { --chip-color: var(--accent); /* @kind color */ }
+.fs-sysfilter-chip--grey { --chip-color: var(--text-secondary); /* @kind color */ }
+.fs-sysfilter-chip--lockstroke { --chip-color: var(--sys-lockstroke); /* @kind color */ }
 .fs-sysfilter-chip.is-active {
   border-color: var(--chip-color);
   color: var(--text-primary);

@@ -3,8 +3,7 @@ import { BASE_PLATES, WOOD_SIZES, plateHeight, woodHeight } from '@core/load';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import type { Deductions } from '@core/schema';
 import { MeasurementValue } from '@ui/primitives';
-import { InlineSegmented, PlateSwatch, VisualGridPicker } from '@ui/picker';
-import type { VisualGridOption } from '@ui/picker';
+import { InlineSegmented, PlateThumb, VisualGridPicker } from '@ui/picker';
 
 /**
  * DeductionPicker — the fixed-order deduction ledger (card.md / input.md):
@@ -32,20 +31,18 @@ export interface DeductionPickerProps {
    * and the gallery keep the ledger fully expanded, where it IS the task.
    */
   collapsible?: boolean;
-}
-
-function PlateThumb({ id, name }: VisualGridOption) {
-  const [err, setErr] = useState(false);
-  if (id === 'none' || err) return <PlateSwatch name={name} />;
-  return (
-    <img
-      className="fs-swatch fs-swatch--photo"
-      src={`/plates/${id}.jpg`}
-      alt=""
-      aria-hidden="true"
-      onError={() => setErr(true)}
-    />
-  );
+  /**
+   * #409 (Idea 409): plate ids in stock. Sorts those plates under an "Available"
+   * header in the picker grid and dims the rest — visibly demoted, still
+   * selectable (crews borrow parts; blocking would be wrong). Absent → the flat
+   * unfiltered catalog, as before.
+   */
+  availablePlateIds?: ReadonlySet<string>;
+  /**
+   * Names the stock scope in the off-stock warning — a rig ("Rescue 1") when the
+   * shore point has an assigned resource, absent → "in inventory".
+   */
+  stockLabel?: string;
 }
 
 function DeductionAmount({ heightInches }: { heightInches: number }) {
@@ -89,7 +86,14 @@ function appliedSummary(value: Deductions): string {
   return parts.length ? parts.join(' · ') : 'No deductions';
 }
 
-export function DeductionPicker({ measurementEighths, value, onChange, collapsible = false }: DeductionPickerProps) {
+export function DeductionPicker({
+  measurementEighths,
+  value,
+  onChange,
+  collapsible = false,
+  availablePlateIds,
+  stockLabel,
+}: DeductionPickerProps) {
   const effectiveInches = effectiveLengthFrom(measurementEighths, value);
   const effectiveEighths = Math.round(effectiveInches * 8); // exact — already ⅛″-floored
   // Only a danger once a real opening is entered — a blank (0) measurement is the
@@ -108,6 +112,12 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
 
   const set = <K extends keyof Deductions>(key: K, v: Deductions[K]) =>
     onChange({ ...value, [key]: v });
+
+  // #409: selected plates that aren't in the provided stock — warns, never blocks
+  // (the deploy step double-checks; mutual aid happens). 'none' is always in stock.
+  const offStockCount = availablePlateIds
+    ? [value.topPlate, value.bottomPlate].filter((id) => id !== 'none' && !availablePlateIds.has(id)).length
+    : 0;
 
   return (
     <div className="fs-ledger">
@@ -147,6 +157,7 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
             options={PLATE_OPTIONS}
             value={value.topPlate}
             onSelect={(id) => set('topPlate', id)}
+            availableIds={availablePlateIds}
             renderThumb={(opt) => <PlateThumb {...opt} />}
             trailing={
               <span className="fs-ledger-value">
@@ -159,6 +170,7 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
             options={PLATE_OPTIONS}
             value={value.bottomPlate}
             onSelect={(id) => set('bottomPlate', id)}
+            availableIds={availablePlateIds}
             renderThumb={(opt) => <PlateThumb {...opt} />}
             trailing={
               <span className="fs-ledger-value">
@@ -186,6 +198,12 @@ export function DeductionPicker({ measurementEighths, value, onChange, collapsib
       {impossible && (
         <span className="fs-field-msg fs-field-msg--error" role="status">
           Deductions consume the whole opening — check the wood and plate selections
+        </span>
+      )}
+      {offStockCount > 0 && (
+        <span className="fs-field-msg fs-field-msg--error" role="status">
+          ⚠ Selected {offStockCount === 1 ? 'plate is' : 'plates are'} not{' '}
+          {stockLabel ? `on ${stockLabel}` : 'in inventory'} — confirm before deploying
         </span>
       )}
     </div>

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { STRUTS, EXTENSIONS, BASE_PLATES } from '@core/load';
 import { Sheet } from '@ui/primitives';
-import { PlateSwatch } from '@ui/picker';
+import { PlateThumb } from '@ui/picker';
 import type { InventoryItem, System } from '@core/schema';
 
 // Quick-add for the selected rig. Full-width tap rows for struts + extensions and a
@@ -103,7 +103,7 @@ export function AddEquipmentSheet({ open, onClose, apparatusId, apparatusName, i
                 key={p.id}
                 label={p.name}
                 count={plateCount(p.id)}
-                thumb={<PlateSwatch name={p.name} />}
+                thumb={<PlateThumb id={p.id} name={p.name} />}
                 onPick={() => onAdd({ ...base, type: 'plate', plateId: p.id })}
               />
             ))}

@@ -43,7 +43,7 @@ describe('CuttingStation', () => {
     expect(peerCutStore.store.getState().count).toBe(0);
   });
 
-  it('empty queue: shows the "No cuts in queue" empty state', () => {
+  it('empty queue, nothing sent: shows the upstream-blocked "No cuts queued" empty state (#389)', () => {
     render(
       <CuttingStation
         queue={[]}
@@ -54,8 +54,24 @@ describe('CuttingStation', () => {
         onStepBack={noop}
       />,
     );
-    expect(screen.getByText('No cuts in queue')).toBeInTheDocument();
-    expect(screen.getByText(/Move a shore point to Cutting/)).toBeInTheDocument();
+    expect(screen.getByText('No cuts queued')).toBeInTheDocument();
+    expect(screen.getByText(/Cuts arrive when a shore point is moved to Cutting/)).toBeInTheDocument();
+  });
+
+  it('empty queue but cuts were sent: shows the "All cuts done" all-clear + the sent tail (#389)', () => {
+    render(
+      <CuttingStation
+        queue={[]}
+        sent={[makeSP('a', { label: 'A-1' })]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+      />,
+    );
+    expect(screen.getByText('All cuts done')).toBeInTheDocument();
+    expect(screen.getByText(/sent to the runner/)).toBeInTheDocument();
+    expect(screen.getByText('Sent to runner')).toBeInTheDocument(); // the tail stays visible
   });
 
   it('renders the queue in the order given, with a live count', () => {
@@ -149,11 +165,11 @@ describe('CuttingStation', () => {
     expect(screen.queryByText('Removed from cut list')).not.toBeInTheDocument();
   });
 
-  it('#375: a specific-saw view hides other saws’ cuts with a count note; "All saws" shows them', async () => {
+  it('#390: phone multi-saw = pick-your-station screen, then the view locks to that saw', async () => {
     const user = userEvent.setup();
     render(
       <CuttingStation
-        queue={[makeSP('a', { sawId: 'A' }), makeSP('b', { sawId: 'B', division: '2' })]}
+        queue={[makeSP('a', { sawId: 'A', seq: 22 }), makeSP('b', { sawId: 'B', division: '2', seq: 23 })]}
         saws={['A', 'B']}
         sent={[]}
         onMarkCutDone={noop}
@@ -163,14 +179,41 @@ describe('CuttingStation', () => {
         onClaim={noop}
       />,
     );
-    // Default = Saw A's own view: Saw B's cut is hidden, with a count note.
-    expect(screen.getByText(/Showing Saw A.*1 on other saws hidden/)).toBeInTheDocument();
-    expect(screen.queryByText(/on Saw B/)).not.toBeInTheDocument();
+    // Screen 1 — the station select: one card per saw, each naming its current cut.
+    expect(screen.getByText(/Pick it — you’ll see only your cut/)).toBeInTheDocument();
+    const sawACard = screen.getByRole('button', { name: /Saw A.*SP-22/s });
+    expect(screen.getByRole('button', { name: /Saw B.*SP-23/s })).toBeInTheDocument();
 
-    // "All saws" opts out of the filter — Saw B's cut reappears (muted), note gone.
-    await user.click(screen.getByRole('button', { name: 'All saws' }));
-    expect(screen.queryByText(/on other saws hidden/)).not.toBeInTheDocument();
-    expect(screen.getByText(/on Saw B/)).toBeInTheDocument();
+    // Pick Saw A → screen 2, locked: header says which saw, back control present,
+    // Saw B's cut is one muted sentence — not a selectable row.
+    await user.click(sawACard);
+    expect(screen.getByRole('heading', { name: 'Saw A' })).toBeInTheDocument();
+    expect(screen.getByText('Pending · shared queue')).toBeInTheDocument();
+    expect(screen.getByText(/Saw B is on its own cut \(SP-23\) — not in your queue/)).toBeInTheDocument();
+
+    // Back returns to the station select.
+    await user.click(screen.getByRole('button', { name: '‹ Stations' }));
+    expect(screen.getByText(/Pick it — you’ll see only your cut/)).toBeInTheDocument();
+  });
+
+  it('#390: a clear saw shows the per-saw all-clear, not a blank card', async () => {
+    const user = userEvent.setup();
+    // Saw B holds the only cut; Saw A has nothing claimed and nothing waiting.
+    render(
+      <CuttingStation
+        queue={[makeSP('b', { sawId: 'B' })]}
+        saws={['A', 'B']}
+        sent={[]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+        onClaim={noop}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Saw A/ }));
+    expect(screen.getByText('Saw A is clear')).toBeInTheDocument();
+    expect(screen.getByText(/stand by for the next shore point/)).toBeInTheDocument();
   });
 
   it('renders the read-only sent-to-runner tail', () => {

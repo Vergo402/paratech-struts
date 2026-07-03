@@ -10,10 +10,10 @@ import { shoreSafety } from './shoreSafety';
 // findForShorePoint must be called with `null`, never live inventory (#408/#410,
 // the 2026-07-02 false-SAFE audit — deploying the last unit must not drop a real
 // warning to "not re-verifiable").
-const mockFind = vi.fn((): StrutCombination[] => []);
+const mockFind = vi.fn((..._args: unknown[]): StrutCombination[] => []);
 vi.mock('@core/shorepoint', async (importActual) => {
   const actual = await importActual<typeof import('@core/shorepoint')>();
-  return { ...actual, findForShorePoint: (...args: unknown[]) => mockFind(...(args as [])) };
+  return { ...actual, findForShorePoint: (...args: unknown[]) => mockFind(...args) };
 });
 
 function makeSp(over: Partial<ShorePoint> = {}): ShorePoint {

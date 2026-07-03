@@ -512,8 +512,12 @@
 /* ===== org chart (read view) ============================================ */
 .fs-org {
   /* Connector hairline: visible but quiet, themed (the raw --surface-stroke at
-     0.07α reads as no line on an org chart). */
-  --org-line: color-mix(in srgb, var(--text-secondary) 55%, transparent);
+     0.07α reads as no line on an org chart). Component-local knobs, NOT theme
+     tokens — @kind tags register them scope-attached for the Design validator
+     (design-sync NOTES §token-scope); never hoist to :root. --org-gap is the
+     connector segment height, declared here ONCE (deduped 2026-07-02). */
+  --org-line: color-mix(in srgb, var(--text-secondary) 55%, transparent); /* @kind color */
+  --org-gap: 22px; /* @kind size */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);

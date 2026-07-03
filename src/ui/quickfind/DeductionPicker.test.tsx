@@ -150,3 +150,37 @@ describe('DeductionPicker — collapsible (#349, Add Shore Point)', () => {
     expect(screen.getByText('Header 6×6 · Footer 6×6')).toBeInTheDocument();
   });
 });
+
+describe('DeductionPicker — in-stock-first plates (#409)', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  function StockHarness({ initial = NO_DEDUCTIONS, stockLabel }: { initial?: Deductions; stockLabel?: string }) {
+    const [d, setD] = useState<Deductions>(initial);
+    return (
+      <DeductionPicker
+        measurementEighths={56 * 8}
+        value={d}
+        onChange={setD}
+        availablePlateIds={new Set(['multi', 'swivel6'])}
+        stockLabel={stockLabel}
+      />
+    );
+  }
+
+  it('an off-stock selected plate warns with the rig name — never blocks', () => {
+    render(<StockHarness initial={{ ...NO_DEDUCTIONS, topPlate: 'base45' }} stockLabel="Rescue 1" />);
+    expect(screen.getByText(/not on Rescue 1 — confirm before deploying/)).toBeInTheDocument();
+  });
+
+  it('no stockLabel → the generic "not in inventory" phrasing; plural for two plates', () => {
+    render(<StockHarness initial={{ ...NO_DEDUCTIONS, topPlate: 'base45', bottomPlate: 'vbase' }} />);
+    expect(screen.getByText(/Selected plates are not in inventory/)).toBeInTheDocument();
+  });
+
+  it('in-stock or None selections do not warn', () => {
+    render(<StockHarness initial={{ ...NO_DEDUCTIONS, topPlate: 'multi' }} stockLabel="Rescue 1" />);
+    expect(screen.queryByText(/confirm before deploying/)).toBeNull();
+  });
+});

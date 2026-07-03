@@ -66,13 +66,17 @@ export const TABS: NavTab[] = [
       </NavIcon>
     ),
   },
-  // command mast — same grid/stroke as the shipped set
+  // box org chart (#392, Idea 392 variant B) — rectangles read as position
+  // cards, exactly what the Command org chart draws. Same grid/stroke as the set.
   {
     to: '/command',
     label: 'Command',
     icon: (
       <NavIcon>
-        <path d="M12 3v6M12 9l-6 10M12 9l6 10M5 19h14" />
+        <rect x="9" y="3" width="6" height="4.6" rx="1" />
+        <rect x="3" y="16.4" width="6" height="4.6" rx="1" />
+        <rect x="15" y="16.4" width="6" height="4.6" rx="1" />
+        <path d="M12 7.6V12M6 16.4V13h12v3.4" />
       </NavIcon>
     ),
   },

@@ -1,18 +1,16 @@
 import { Segmented } from '@ui/primitives';
 
-// The Operations view switcher (3 Views × 2 Devices). One labeled control —
-// Division | Board | List — shown identically on phone and desktop (the design's
-// "a view switcher sits on every screen"). 'lanes' is the internal id for the
-// status Board (kept to avoid colliding with the OpsView 'board'|'cutting' scope
-// toggle, which is a separate control). Was a 2-way icon toggle (#356); widened
-// to 3 with the Division by-floor view.
+// The Operations view switcher (#356 → tri-view). Three coordinated reads of the
+// same shore points: Division (by floor), Board (kanban lanes by status), List
+// (flat + sortable). The internal 'lanes' value keeps its name (its label is
+// "Board") so it never collides with the OpsView 'board'|'cutting' value.
 export type BoardLayout = 'division' | 'lanes' | 'list';
 
-const OPTIONS = [
+const VIEW_OPTIONS = [
   { value: 'division', label: 'Division' },
   { value: 'lanes', label: 'Board' },
   { value: 'list', label: 'List' },
-] as const satisfies ReadonlyArray<{ value: BoardLayout; label: string }>;
+] as const;
 
 export function ViewToggle({
   value,
@@ -24,10 +22,10 @@ export function ViewToggle({
   return (
     <Segmented
       aria-label="Operations view"
-      size="standard"
-      options={OPTIONS}
+      size="operational"
+      options={VIEW_OPTIONS}
       value={value}
-      onChange={onChange}
+      onChange={(v) => onChange(v as BoardLayout)}
     />
   );
 }
