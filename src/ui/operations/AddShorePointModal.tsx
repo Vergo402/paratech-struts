@@ -206,6 +206,16 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     return [{ value: '', label: '— None —' }, ...names.map((n) => ({ value: n, label: n }))];
   }, [inventory]);
 
+  // #409: in-stock plates sort first in the deduction pickers — scoped to the
+  // assigned rig when one is set, department-wide otherwise. Only filters when
+  // plate stock is tracked at all (an empty inventory keeps the flat catalog).
+  const availablePlateIds = useMemo(() => {
+    const plates = inventory.filter((i) => i.type === 'plate' && i.plateId);
+    if (plates.length === 0) return undefined;
+    const scoped = assignedResource ? plates.filter((i) => i.apparatus === assignedResource) : plates;
+    return new Set(scoped.filter((i) => i.available > 0).map((i) => i.plateId!));
+  }, [inventory, assignedResource]);
+
   // Draft shore point for the inline recommendation engine — same fields a saved
   // point carries, so findForShorePoint computes identically (no UI-side math).
   const draftSp = useMemo<ShorePoint | null>(() => {
@@ -534,7 +544,14 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
           />
         )}
         <MeasurementInput value={measurementEighths} onChange={setMeasurementEighths} />
-        <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} collapsible />
+        <DeductionPicker
+          measurementEighths={measurementEighths}
+          value={deductions}
+          onChange={setDeductions}
+          collapsible
+          availablePlateIds={availablePlateIds}
+          stockLabel={assignedResource || undefined}
+        />
         <TextField
           label="Estimated load (lbs) — optional"
           value={estimatedLoad}

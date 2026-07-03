@@ -4,6 +4,7 @@ import { NO_DEDUCTIONS } from '@core/schema';
 import { sysKeyOf, type StrutSysKey } from '@core/load';
 import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
 import { Button, EmptyState, Sheet, TextField, useHasRailNav } from '@ui/primitives';
+import { useInventory } from '@ui/hooks';
 // Deep import (not the @ui/operations barrel) — Add Shore Point already imports
 // from @ui/quickfind, so going through the barrel would close an import cycle.
 import { RecommendationCard } from '@ui/operations/RecommendationCard';
@@ -34,6 +35,16 @@ export function QuickFind() {
   const [systems, setSystems] = useState<Set<StrutSysKey>>(() => new Set());
   const [dedOpen, setDedOpen] = useState(false);
   const [found, setFound] = useState(false);
+
+  // #409: in-stock plates sort first in the plate pickers. Department-wide here
+  // (Quick Find has no assigned rig). Only filters when plate stock is actually
+  // tracked — a guest/empty inventory keeps the flat catalog (v3 parity intact).
+  const inventory = useInventory();
+  const availablePlateIds = useMemo(() => {
+    const plates = inventory.filter((i) => i.type === 'plate' && i.plateId);
+    if (plates.length === 0) return undefined;
+    return new Set(plates.filter((i) => i.available > 0).map((i) => i.plateId!));
+  }, [inventory]);
 
   const effective = effectiveLengthFrom(measurementEighths, deductions);
   const loadTrim = estimatedLoad.trim();
@@ -107,7 +118,12 @@ export function QuickFind() {
           {dedOpen ? 'Hide deductions' : 'Add deductions (header, footer, plates)'}
         </Button>
         {dedOpen && (
-          <DeductionPicker measurementEighths={measurementEighths} value={deductions} onChange={setDeductions} />
+          <DeductionPicker
+            measurementEighths={measurementEighths}
+            value={deductions}
+            onChange={setDeductions}
+            availablePlateIds={availablePlateIds}
+          />
         )}
       </div>
 
