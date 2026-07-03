@@ -180,10 +180,10 @@ export function CuttingStation({
       <span className="fs-cutstation-hero-badge">
         {sawId && multiSaw ? `Saw ${sawId} · cut this now` : 'Cut this now'}
       </span>
-      <p className="fs-cutstation-hero-label">Cut length</p>
       <p className="fs-cutstation-hero-num">
         <MeasurementValue eighths={cutEighths(sp)} />
       </p>
+      <p className="fs-cutstation-hero-label">Cut length</p>
       <p className="fs-cutstation-hero-where">{cutSubtitle(sp)}</p>
       {sp.cuttingDone && <p className="fs-cutstation-hero-cutdone">✓ Cut done</p>}
       <div className="fs-cutstation-hero-slide">

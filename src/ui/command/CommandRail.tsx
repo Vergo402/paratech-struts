@@ -259,7 +259,12 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
       ) : (
         <div className="fs-cmd-board" role="list" aria-label="Shore points by status">
           {STATUS_ORDER.map((status) => (
-            <div key={status} className={`fs-cmd-stat is-${status}`} role="listitem">
+            <div
+              key={status}
+              className={`fs-cmd-stat is-${status}`}
+              role="listitem"
+              data-zero={counts.m[status] === 0 || undefined}
+            >
               <span className="fs-cmd-stat-label">{STATUS_LABELS[status]}</span>
               <span className="fs-cmd-stat-count">{counts.m[status]}</span>
             </div>

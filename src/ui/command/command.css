@@ -179,11 +179,11 @@
 .fs-cmd-ic .fs-cmd-ic-name {
   display: inline-block;
   margin-top: 3px;
-  font: var(--type-body-lg);
-  font-weight: 600;
+  font: var(--type-headline-1);
+  font-weight: 700;
   color: var(--text-primary);
   border-bottom: 3px solid var(--accent);
-  padding-bottom: 2px;
+  padding-bottom: 3px;
 }
 
 /* ---- Operations Section Chief | Safety Officer two-up row --------------- */
@@ -247,46 +247,32 @@
   gap: var(--space-2);
   border-radius: var(--radius-badge);
   padding: var(--space-2) var(--space-3);
+  border-left: 3px solid transparent;
 }
 .fs-cmd-stat-label {
   font: var(--type-caption);
 }
 .fs-cmd-stat-count {
-  font: var(--type-body-medium);
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
+}
+/* Zero counts fade back so non-zero counts jump. */
+.fs-cmd-stat[data-zero] .fs-cmd-stat-label,
+.fs-cmd-stat[data-zero] .fs-cmd-stat-count {
+  opacity: 0.35;
 }
 .fs-cmd-stat.is-returned {
   grid-column: 1 / -1;
 }
-.fs-cmd-stat.is-pending {
-  color: var(--status-pending-text);
-  background: var(--status-pending-bg);
-}
-.fs-cmd-stat.is-process {
-  color: var(--status-process-text);
-  background: var(--status-process-bg);
-}
-.fs-cmd-stat.is-strutset {
-  color: var(--status-strutset-text);
-  background: var(--status-strutset-bg);
-}
-.fs-cmd-stat.is-cutting {
-  color: var(--status-cutting-text);
-  background: var(--status-cutting-bg);
-}
-.fs-cmd-stat.is-runner {
-  color: var(--status-runner-text);
-  background: var(--status-runner-bg);
-}
-.fs-cmd-stat.is-secured {
-  color: var(--status-secured-text);
-  background: var(--status-secured-bg);
-}
-.fs-cmd-stat.is-returned {
-  color: var(--status-returned-text);
-  background: var(--status-returned-bg);
-}
+.fs-cmd-stat.is-pending  { color: var(--status-pending-text);  background: var(--status-pending-bg);  border-left-color: var(--status-pending-text); }
+.fs-cmd-stat.is-process  { color: var(--status-process-text);  background: var(--status-process-bg);  border-left-color: var(--status-process-text); }
+.fs-cmd-stat.is-strutset { color: var(--status-strutset-text); background: var(--status-strutset-bg); border-left-color: var(--status-strutset-text); }
+.fs-cmd-stat.is-cutting  { color: var(--status-cutting-text);  background: var(--status-cutting-bg);  border-left-color: var(--status-cutting-text); }
+.fs-cmd-stat.is-runner   { color: var(--status-runner-text);   background: var(--status-runner-bg);   border-left-color: var(--status-runner-text); }
+.fs-cmd-stat.is-secured  { color: var(--status-secured-text);  background: var(--status-secured-bg);  border-left-color: var(--status-secured-text); }
+.fs-cmd-stat.is-returned { color: var(--status-returned-text); background: var(--status-returned-bg); border-left-color: var(--status-returned-text); }
 
 /* ---- divider / entries / roster --------------------------------------- */
 .fs-cmd-divider {
@@ -1626,6 +1612,14 @@
 .fs-rollup-corner {
   text-align: left;
 }
+/* Color each column header by its status — matches the status board accent colors. */
+.fs-rollup-colhead.col-pending  { color: var(--status-pending-text); }
+.fs-rollup-colhead.col-process  { color: var(--status-process-text); }
+.fs-rollup-colhead.col-strutset { color: var(--status-strutset-text); }
+.fs-rollup-colhead.col-cutting  { color: var(--status-cutting-text); }
+.fs-rollup-colhead.col-runner   { color: var(--status-runner-text); }
+.fs-rollup-colhead.col-secured  { color: var(--status-secured-text); }
+.fs-rollup-colhead.col-returned { color: var(--status-returned-text); }
 .fs-rollup-row .fs-rollup-div,
 .fs-rollup-subrow .fs-rollup-grouplabel {
   text-align: left;
@@ -1673,10 +1667,11 @@
   font-size: 0.8em;
   width: 1em;
 }
-/* The lagging-Division flag: danger tint across the row + the alert triangle. */
-.fs-rollup-row.is-lagging .fs-rollup-div,
-.fs-rollup-row.is-lagging .fs-rollup-cell {
-  background: var(--danger-bg);
+/* The lagging-Division flag: left red border instead of a full row tint —
+   more tactical, less alarming; the ⚠ still carries the message. */
+.fs-rollup-row.is-lagging .fs-rollup-div {
+  border-left: 3px solid var(--danger-text);
+  padding-left: calc(var(--space-2) - 3px);
 }
 .fs-rollup-alert {
   color: var(--danger-text);
@@ -1693,13 +1688,28 @@
 }
 .fs-rollup-allrow .fs-rollup-div,
 .fs-rollup-allrow .fs-rollup-cell {
-  border-top: calc(var(--stroke-width) * 2) solid var(--surface-stroke);
+  border-top: 2px solid var(--surface-stroke);
   border-bottom: none;
   font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 .fs-rollup-allrow .fs-rollup-divname {
   font: var(--type-body-medium);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  font-weight: 400;
+  color: var(--text-secondary);
 }
+/* Color the totals row by status column so the IC reads the per-status pattern
+   without having to look back up at the header row. */
+.fs-rollup-allrow .fs-rollup-cell.col-pending  { color: var(--status-pending-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-process  { color: var(--status-process-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-strutset { color: var(--status-strutset-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-cutting  { color: var(--status-cutting-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-runner   { color: var(--status-runner-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-secured  { color: var(--status-secured-text); }
+.fs-rollup-allrow .fs-rollup-cell.col-returned { color: var(--status-returned-text); }
 .fs-rollup-legend {
   margin: 0;
   font: var(--type-caption);

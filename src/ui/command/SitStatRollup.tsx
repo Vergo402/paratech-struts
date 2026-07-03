@@ -20,11 +20,15 @@ const STATUS_ABBR: Record<ShorePointStatus, string> = {
 
 const LEGEND = STATUS_ORDER.map((s) => `${STATUS_ABBR[s]} = ${STATUS_LABELS[s]}`).join(' · ');
 
-function CountCells({ counts }: { counts: Record<ShorePointStatus, number> }) {
+function CountCells({ counts, colored }: { counts: Record<ShorePointStatus, number>; colored?: boolean }) {
   return (
     <>
       {STATUS_ORDER.map((s) => (
-        <td key={s} className="fs-rollup-cell" data-zero={counts[s] === 0 || undefined}>
+        <td
+          key={s}
+          className={`fs-rollup-cell${colored ? ` col-${s}` : ''}`}
+          data-zero={counts[s] === 0 || undefined}
+        >
           {counts[s]}
         </td>
       ))}
@@ -111,7 +115,7 @@ export function SitStatRollup() {
                 Division
               </th>
               {STATUS_ORDER.map((s) => (
-                <th key={s} scope="col" className="fs-rollup-colhead" title={STATUS_LABELS[s]}>
+                <th key={s} scope="col" className={`fs-rollup-colhead col-${s}`} title={STATUS_LABELS[s]}>
                   {STATUS_ABBR[s]}
                 </th>
               ))}
@@ -130,7 +134,7 @@ export function SitStatRollup() {
               <th scope="row" className="fs-rollup-div">
                 <span className="fs-rollup-divname">All divisions</span>
               </th>
-              <CountCells counts={rollup.totals} />
+              <CountCells counts={rollup.totals} colored />
               <td className="fs-rollup-cell fs-rollup-total">{rollup.grandTotal}</td>
             </tr>
           </tfoot>
