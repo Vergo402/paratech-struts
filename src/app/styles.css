@@ -213,6 +213,48 @@ body {
     padding-inline: var(--space-4);
   }
 }
+/* #391 pull-tab wrap: hosts the handle on the nav's top edge; collapsed, only
+   the handle strip remains (the bar's 56px+ returns to the content). No
+   transitions — navigation never animates (00-ia-foundation.md). */
+.fs-nav-wrap {
+  flex: none;
+  position: relative;
+}
+.fs-nav-wrap--collapsed {
+  height: env(safe-area-inset-bottom);
+  background: var(--surface-card);
+}
+.fs-nav-handle {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 64px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  color: var(--text-secondary);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-nav-handle svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* chevron points up (= "show") only when collapsed; expanded it points down. */
+.fs-nav-wrap:not(.fs-nav-wrap--collapsed) .fs-nav-handle svg { transform: rotate(180deg); }
+.fs-nav-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
 .fs-nav {
   flex: none;
   display: flex;
@@ -289,6 +331,44 @@ body {
   font-family: var(--font-mono); /* the font shorthand resets family */
   color: var(--text-tertiary);
 }
+
+/* #391: icons-only slim rail + the collapse toggle at the rail's foot. Same
+   deliberate-operation principle as the phone pull-tab; no transitions. */
+.fs-rail-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-button);
+  background: none;
+  color: var(--text-tertiary);
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  cursor: pointer;
+}
+.fs-rail-toggle:hover { background: var(--surface-card-hover); color: var(--text-secondary); }
+.fs-rail-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-rail-toggle svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fs-rail--slim { width: 72px; padding-inline: var(--space-2); }
+.fs-rail--slim .fs-rail-brand { padding-inline: 0; text-align: center; }
+.fs-rail--slim .fs-rail-link,
+.fs-rail--slim .fs-rail-toggle { justify-content: center; padding: 0; }
+.fs-rail--slim .fs-rail-link span,
+.fs-rail--slim .fs-rail-toggle span,
+.fs-rail--slim .fs-rail-ver { display: none; }
+.fs-rail--slim .fs-rail-toggle { margin-top: auto; } /* ver is hidden — the toggle takes the foot */
+.fs-rail--slim .fs-rail-toggle svg { transform: rotate(180deg); }
 
 /* Desktop rail: Settings sub-pages nested under the Settings tab (master/detail nav). */
 .fs-rail-sub {
