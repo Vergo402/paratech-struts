@@ -1038,8 +1038,10 @@ describe('OperationsBoard', () => {
     await switchToList(user);
     await setListSort(user, 'Status');
     const items = Array.from(document.querySelectorAll('.fs-ops-list > [role="listitem"]'));
-    // Group keys on its least-advanced leg (cutting) → ahead of the runner singleton.
-    expect(items[0]!.querySelector('.fs-gs')).not.toBeNull();
+    // Group keys on its least-advanced leg (cutting) → its compact row sits ahead
+    // of the runner singleton. The row carries the group's front-leg id + ×2.
+    expect(items[0]!.getAttribute('data-sp-id')).toBe('sp-g-secured');
+    expect(items[0]!.querySelector('.fs-splist-grp')!.textContent).toContain('×2');
     expect(items[1]!.getAttribute('data-sp-id')).toBe('sp-runner');
   });
 
@@ -1072,18 +1074,18 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-d2', 'sp-d1a', 'sp-d1b']);
   });
 
-  it('a grouped multi-leg shore stays one stacked card in the list (not split rows)', async () => {
+  it('a grouped multi-leg shore is one compact row (×N), not split rows, in the List', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([grouped3Post('sp-1', 1), grouped3Post('sp-2', 2), grouped3Post('sp-3', 3)]);
     render(<OperationsBoard />);
     await switchToList(user);
     const list = document.querySelector('.fs-ops-list')!;
-    // One rolodex stack, not three separate list rows.
-    expect(list.querySelectorAll('.fs-gs')).toHaveLength(1);
-    expect(list.querySelectorAll(':scope > [role="listitem"]')).toHaveLength(1);
-    // Collapsed stack shows exactly one front slide (the fan-out is unchanged).
-    expect(within(list as HTMLElement).getAllByText('Slide to set Strut Set')).toHaveLength(1);
+    // One row for the whole shore (front leg id), tagged ×3 — not three rows.
+    const rows = list.querySelectorAll(':scope > [role="listitem"]');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.getAttribute('data-sp-id')).toBe('sp-1');
+    expect(rows[0]!.querySelector('.fs-splist-grp')!.textContent).toContain('×3');
   });
 
   it('list Added direction lives in the Sort menu: newest ↔ oldest', async () => {

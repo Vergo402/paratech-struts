@@ -44,6 +44,7 @@ import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { DivisionView } from './DivisionView';
+import { ShorePointListRow } from './ShorePointListRow';
 import { OpsFilterSheet } from './OpsFilterSheet';
 import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
@@ -177,6 +178,31 @@ interface ItemCallbacks {
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
   activeStackId: string | null;
+}
+
+// Short status labels for the List-view status dividers (the prototype look) —
+// the concise forms that used to head the removed summary bar. The full
+// STATUS_LABELS stay on the Board lane headers.
+const LIST_STATUS_LABEL: Record<ShorePointStatus, string> = {
+  pending: 'Pending',
+  process: 'Assigned',
+  strutset: 'Strut Set',
+  cutting: 'Cutting',
+  runner: 'Runner',
+  secured: 'Secured',
+  returned: 'Returned',
+};
+
+// A LaneItem's representative point + count + status for the compact List row. A
+// group sits at its LEAST-ADVANCED leg (same rule as the status sort) so a shore
+// with any leg still in an earlier status reads at that status, not a done front
+// leg.
+function laneItemRep(it: LaneItem): { sp: ShorePoint; count: number; status: ShorePointStatus } {
+  if (it.kind === 'single') return { sp: it.sp, count: 1, status: it.sp.status };
+  const least = it.members.reduce((a, b) =>
+    STATUS_ORDER.indexOf(b.status) < STATUS_ORDER.indexOf(a.status) ? b : a,
+  );
+  return { sp: it.members[0]!, count: it.members.length, status: least.status };
 }
 
 // LaneItems — the card/group mapping shared by the lane board and the list view
@@ -382,7 +408,9 @@ export function OperationsBoard() {
   // Sort/filter board controls (#347/#356) — persisted per-op in localStorage.
   const [sortMode, setSortMode] = useState<SortMode>('location');
   const [layout, setLayout] = useState<BoardLayout>('lanes');
-  const [listSort, setListSort] = useState<ListSort>('location');
+  // List defaults to Status sort so it opens grouped under status dividers (the
+  // prototype look, Alex 2026-07-02).
+  const [listSort, setListSort] = useState<ListSort>('status');
   const [filterDivision, setFilterDivision] = useState<string | null>(null);
   const [filterArea, setFilterArea] = useState<string | null>(null);
   const [filterBuilding, setFilterBuilding] = useState<string | null>(null);
@@ -431,7 +459,7 @@ export function OperationsBoard() {
   useEffect(() => {
     if (!operation?.id) return;
     const resetPrefs = () => {
-      setSortMode('location'); setLayout('lanes'); setListSort('location');
+      setSortMode('location'); setLayout('lanes'); setListSort('status');
       setFilterDivision(null); setFilterArea(null); setFilterBuilding(null); setFilterApparatus(null);
       setMineOn(false);
     };
@@ -1326,19 +1354,31 @@ export function OperationsBoard() {
         <div className="fs-ops-list" role="list">
           {listItems.length === 0 ? (
             <p className="fs-lane-empty">No shore points</p>
+          ) : listSort === 'status' ? (
+            // Status sort → status-divided sections (the prototype look): a thin
+            // divider (colored square + short label + count) then the compact rows.
+            // Dividers + rows are FLAT siblings so the rows stay direct-child
+            // listitems (ordering + a11y). listItems is already status-ordered.
+            STATUS_ORDER.flatMap((status) => {
+              const inStatus = listItems.filter((it) => laneItemRep(it).status === status);
+              if (inStatus.length === 0) return [];
+              return [
+                <div key={`div-${status}`} className={`fs-ops-list-divider is-${status}`} role="presentation">
+                  <span className="fs-ops-list-dot" aria-hidden="true" />
+                  <span className="fs-ops-list-label">{LIST_STATUS_LABEL[status]}</span>
+                  <span className="fs-ops-list-count">{inStatus.length}</span>
+                </div>,
+                ...inStatus.map((it) => {
+                  const rep = laneItemRep(it);
+                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} onOpen={openDetail} />;
+                }),
+              ];
+            })
           ) : (
-            <LaneItems
-              items={listItems}
-              onEdit={openEdit}
-              onDelete={openDelete}
-              onOpenDetail={openDetail}
-              onAssignEquipment={assignEquipment}
-              onAdvance={handleAdvance}
-              onStepBack={handleStepBack}
-              onRemoveReturn={openRemoveReturn}
-              advanceDisabledReasonFor={advanceDisabledReasonFor}
-              activeStackId={scrollToId}
-            />
+            listItems.map((it) => {
+              const rep = laneItemRep(it);
+              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} onOpen={openDetail} />;
+            })
           )}
         </div>
       )}

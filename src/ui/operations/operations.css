@@ -253,13 +253,85 @@
   gap: var(--space-3);
 }
 
-/* ---- single-list view (#356) --------------------------------------------- */
-/* One scrolling column of cards (grouped shores stay stacked). Same card gap as
-   a lane's cards so the density matches the board. */
+/* ---- single-list view (#356, reskinned 2026-07-02) ----------------------- */
+/* Status-divided sections of compact rows (the tri-view prototype look). Dividers
+   and rows are flat siblings; a small gap tightens the rows, dividers add their
+   own top margin to separate the sections. */
 .fs-ops-list {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+/* Status divider: colored square + short label (uppercase) + right-aligned count. */
+.fs-ops-list-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-1) var(--space-1);
+  margin-top: var(--space-3);
+}
+.fs-ops-list-divider:first-child { margin-top: 0; }
+.fs-ops-list-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex: none;
+  background: var(--sp-solid);
+}
+.fs-ops-list-label {
+  font: var(--type-caption);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.fs-ops-list-count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+/* Compact row — status left-edge · location bold + subline · measurement (mono). */
+.fs-splist-row {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-left: 3px solid var(--sp-solid);
+  border-radius: var(--radius-card);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-splist-row:hover { background: var(--surface-card-hover); }
+.fs-splist-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-splist-main { flex: 1; min-width: 0; }
+.fs-splist-loc {
+  display: block;
+  font: var(--type-body-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.fs-splist-grp { color: var(--text-tertiary); font-weight: 500; }
+.fs-splist-sub {
+  display: block;
+  margin-top: 2px;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-splist-ms {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* ---- phone lane phase grouping (Item 2) ---------------------------------- */
