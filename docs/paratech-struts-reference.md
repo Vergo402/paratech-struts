@@ -62,8 +62,11 @@ These extensions attach to the solid shaft end of any AcmeThread or LockStroke s
 | LS 304 | 22-796720 | 36" | 50" | 14" |
 | LS 406 | 22-796730 | 48" | 73" | 25" |
 | LS 610 | 22-796360 | 72" | 116" | 44" |
-| LS 812 | `[TBD]` | 92" | 147" | 55" |
 | LS 1016 | 22-796390 | 114" | 198" | 84" |
+
+> **No LS 812.** An older fire-trade article listed a sixth 92"–147" size, but Paratech's
+> live site and Product Catalog v.19 both confirm the LongShore line is exactly these five
+> models. The phantom LS 812 was removed from the app catalog in v3.22.3 — do not re-add.
 
 > **Model naming:** The numbers (e.g. "610") represent the approximate range in feet (6-10 ft).
 
@@ -214,7 +217,7 @@ The following values could not be confirmed from online sources and should be ve
 
 - [ ] AcmeThread exact part numbers (22-7962xx pattern assumed)
 - [ ] LongShore extension exact part numbers
-- [ ] LongShore LS 812 part number
+- [x] ~~LongShore LS 812 part number~~ — resolved: LS 812 is not a current Paratech product (see LongShore section); removed from the app in v3.22.3
 - [ ] LockStroke load capacity table (assumed same as AcmeThread — verify)
 - [ ] HydraFusion collapsed/extended lengths (only stroke confirmed)
 - [ ] Whether load tables apply to strut+extension combos the same as bare struts
