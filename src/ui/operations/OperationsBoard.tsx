@@ -7,6 +7,7 @@ import {
   compareDivisionValues,
   compareShorePointsByLocation,
   divisionLabel,
+  parseDivisionNumber,
   nextSawId,
 } from '@core/operation';
 import { myApparatusKeys } from '@core/org';
@@ -43,6 +44,7 @@ import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
+import { DivisionView } from './DivisionView';
 import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
@@ -542,7 +544,7 @@ export function OperationsBoard() {
       if (!raw) { resetPrefs(); return; }
       const p = JSON.parse(raw) as Record<string, unknown>;
       setSortMode(asSort(p.sortMode));
-      setLayout(p.layout === 'list' ? 'list' : 'lanes');
+      setLayout(p.layout === 'list' || p.layout === 'division' ? p.layout : 'lanes');
       setListSort(asListSort(p.listSort));
       setFilterDivision(typeof p.filterDivision === 'string' ? p.filterDivision : null);
       setFilterArea(typeof p.filterArea === 'string' ? p.filterArea : null);
@@ -1060,6 +1062,49 @@ export function OperationsBoard() {
     });
   }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
 
+  // Division view (tri-view): the same visible set, grouped into floor bands top
+  // (highest Div) → ground → basement (lowest Sub), matching the building cross-
+  // section. Same filter predicate as byStatus/listItems. A band's `n` is the
+  // signed floor number (Div 1 = ground level, −1 = basement) or null for legacy
+  // free-text divisions ("Roof"), which collect in a trailing "Unplaced" band so
+  // they're never silently dropped (Principle 7). Grouped shores stay one stack.
+  const divisionBands = useMemo(() => {
+    const visible = shorePoints
+      .filter(
+        (sp) =>
+          sp.deletedAt == null &&
+          (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
+          (!filterDivision || sp.division === filterDivision) &&
+          (!filterArea || (sp.area ?? '') === filterArea) &&
+          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus) &&
+          (!mineOn || !mineAvailable || mineKeys.includes(sp.assignedResource ?? '')),
+      )
+      .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
+
+    // Group by the raw division string, then order the bands by floor (descending).
+    const byKey = new Map<string, ShorePoint[]>();
+    for (const sp of visible) {
+      const arr = byKey.get(sp.division);
+      if (arr) arr.push(sp);
+      else byKey.set(sp.division, [sp]);
+    }
+    return [...byKey.entries()]
+      .map(([division, pts]) => ({
+        division,
+        n: parseDivisionNumber(division),
+        // Within a floor: side (A→D, corners after) then area then seq.
+        items: groupLanePoints(
+          [...pts].sort(
+            (a, b) =>
+              (a.side ?? '').localeCompare(b.side ?? '') ||
+              compareAreaValues(a.area, b.area) ||
+              (a.seq ?? 0) - (b.seq ?? 0),
+          ),
+        ),
+      }))
+      .sort((a, b) => compareDivisionValues(a.division, b.division));
+  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys]);
+
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(
     () =>
@@ -1294,7 +1339,8 @@ export function OperationsBoard() {
                 </button>
               )}
             </div>
-            {layout === 'lanes' ? (
+            {/* Division view is spatially ordered (floor → side → area) — no Sort. */}
+            {layout === 'lanes' && (
               <FilterPicker
                 label="Sort"
                 hideLabel
@@ -1309,7 +1355,8 @@ export function OperationsBoard() {
                 ]}
                 onChange={(v) => { const m = (v ?? 'location') as SortMode; setSortMode(m); persistPrefs({ sortMode: m }); }}
               />
-            ) : (
+            )}
+            {layout === 'list' && (
               <FilterPicker
                 label="Sort"
                 hideLabel
@@ -1445,7 +1492,13 @@ export function OperationsBoard() {
         />
       )}
 
-      {layout === 'lanes' ? (
+      {layout === 'division' ? (
+        divisionBands.length === 0 ? (
+          <p className="fs-lane-empty">No shore points</p>
+        ) : (
+          <DivisionView bands={divisionBands} onOpenDetail={openDetail} />
+        )
+      ) : layout === 'lanes' ? (
         <div className="fs-ops-lanes">
           {/* Desktop keeps the flat STATUS_ORDER map — its 2-up/3-1-3 grids need
               .fs-lane as a direct child of .fs-ops-lanes; phone groups the seven

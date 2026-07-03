@@ -983,10 +983,10 @@ describe('OperationsBoard', () => {
     );
   }
 
-  // jsdom has no matchMedia → useIsDesktop() is false → the phone single-button
-  // ViewToggle. In tiles view (default) the button reads "Switch to list view".
+  // The view switcher is a 3-option Segmented (Division · Board · List) — pick the
+  // option by its radio name.
   async function switchToList(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
+    await user.click(screen.getByRole('radio', { name: 'List' }));
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
@@ -1113,37 +1113,80 @@ describe('OperationsBoard', () => {
     expect(listCardIds()).toEqual(['sp-a', 'sp-b', 'sp-c']);
   });
 
-  it('phone: one view button toggles between Status tiles and List', async () => {
+  it('the view switcher moves between Division, Board (lanes), and List', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
     render(<OperationsBoard />);
-    // Default tiles; the lone button offers to switch to list.
+    // Default = Board (lanes).
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Switch to list view' }));
+    await user.click(screen.getByRole('radio', { name: 'List' }));
     expect(document.querySelector('.fs-ops-list')).not.toBeNull();
-    // Now it offers the way back to tiles.
-    await user.click(screen.getByRole('button', { name: 'Switch to tile view' }));
-    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    expect(document.querySelector('.fs-div')).not.toBeNull();
     expect(document.querySelector('.fs-ops-list')).toBeNull();
+    await user.click(screen.getByRole('radio', { name: 'Board' }));
+    expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
+    expect(document.querySelector('.fs-div')).toBeNull();
   });
 
-  it('desktop: the view toggle is two radio buttons (List + Status tiles)', () => {
-    const mql = {
-      matches: true, media: '', onchange: null,
-      addEventListener: () => {}, removeEventListener: () => {},
-      addListener: () => {}, removeListener: () => {}, dispatchEvent: () => true,
-    } as unknown as MediaQueryList;
-    vi.stubGlobal('matchMedia', vi.fn(() => mql));
-    try {
-      mockOperation.mockReturnValue(ACTIVE_OP);
-      mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
-      render(<OperationsBoard />);
-      expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'Status tiles' })).toBeInTheDocument();
-    } finally {
-      vi.unstubAllGlobals();
-    }
+  it('the view switcher is a three-option segmented (Division · Board · List)', () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
+    render(<OperationsBoard />);
+    expect(screen.getByRole('radio', { name: 'Division' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Board' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
+  });
+
+  it('Division view stacks floors top→bottom with the Grade line between Div 1 and Sub 1', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-sub', 'pending', '-1'),
+      makeSP('sp-grd', 'cutting', '1'),
+      makeSP('sp-up', 'secured', '2'),
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: 'Division' }));
+
+    // Bands read top floor → ground → basement.
+    const gutters = [...document.querySelectorAll('.fs-div-gutter b')].map((e) => e.textContent);
+    expect(gutters).toEqual(['2', '1', 'S1']);
+
+    // Exactly one Grade line, and it sits with the sub-grade band (i.e. AFTER Div 1),
+    // not above Div 1 (Alex's correction to the prototype).
+    expect(document.querySelectorAll('.fs-div-grade')).toHaveLength(1);
+    const subWrap = document.querySelector('.fs-div-lvl.is-sub')!.parentElement!;
+    expect(subWrap.querySelector('.fs-div-grade')).not.toBeNull();
+  });
+
+  it('Division view drops legacy free-text divisions into a trailing Unplaced band, no grade', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      makeSP('sp-1', 'pending', '1'),
+      makeSP('sp-roof', 'pending', 'Roof'),
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: 'Division' }));
+
+    const unplaced = document.querySelector('.fs-div-lvl.is-unplaced');
+    expect(unplaced).not.toBeNull();
+    expect(unplaced!.querySelector('.fs-div-gutter span')!.textContent).toBe('Roof');
+    // No above/below-grade split among unnumbered floors → no grade line at all here.
+    expect(document.querySelectorAll('.fs-div-grade')).toHaveLength(0);
+  });
+
+  it('a Division tile opens the shore-point detail on tap', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([makeSP('sp-1', 'cutting', '2')]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    await user.click(document.querySelector('.fs-divtile')! as HTMLElement);
+    // The detail surface (drawer/sheet) opens for the tapped point.
+    expect(document.querySelector('[data-sp-id="sp-1"]')).not.toBeNull();
   });
 
   it('layout + list sort persist across a remount (per-op localStorage)', async () => {

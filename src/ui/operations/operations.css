@@ -2818,3 +2818,143 @@ button.fs-spc-head {
   color: var(--text-tertiary);
   line-height: 1.4;
 }
+
+/* ===== Division view (tri-view) — shore points stacked by building level =====
+   Floors top → ground → basement, each point on the floor it's on, a dashed
+   Grade · Ground line between the ground floor (Div 1) and the first sub-grade
+   level (Sub 1). Tile color rides the .is-<status> tokens (primitives.css). */
+.fs-div {
+  display: flex;
+  flex-direction: column;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.fs-div-lvl {
+  display: flex;
+  min-height: 84px;
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-div > div:last-child .fs-div-lvl {
+  border-bottom: none;
+}
+/* Sub-grade bands (basement and below) carry a faint diagonal hatch. */
+.fs-div-lvl.is-sub {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0 9px,
+    var(--surface-card) 9px 10px
+  );
+}
+.fs-div-lvl.is-unplaced .fs-div-gutter b {
+  color: var(--text-tertiary);
+}
+.fs-div-gutter {
+  width: 52px;
+  flex: none;
+  border-right: var(--stroke-width) solid var(--surface-stroke);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background: var(--surface-card);
+}
+.fs-div-gutter b {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-primary);
+}
+.fs-div-gutter span {
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+.fs-div-bay {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-content: flex-start;
+}
+/* Grade · Ground — the dashed ground-line demarcation between above/below grade. */
+.fs-div-grade {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 3px var(--space-3);
+  background: var(--accent-subtle);
+  border-top: var(--stroke-width) solid var(--accent);
+  border-bottom: var(--stroke-width) solid var(--accent);
+}
+.fs-div-grade > span:first-child {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.fs-div-grade-ln {
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 11px);
+  opacity: 0.6;
+}
+/* Compact shore-point tile — mono measurement, then SP-id + side + status abbrev. */
+.fs-divtile {
+  width: 108px;
+  text-align: left;
+  background: var(--surface-elevated);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-left: 3px solid var(--sp-solid);
+  border-radius: var(--radius-input);
+  padding: var(--space-2);
+  cursor: pointer;
+}
+.fs-divtile:hover {
+  background: var(--surface-card-hover);
+}
+.fs-divtile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-divtile-ms {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.fs-divtile-b {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: 3px;
+}
+.fs-divtile-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-divtile-grp,
+.fs-divtile-side {
+  color: var(--text-tertiary);
+}
+.fs-divtile-st {
+  flex: none;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sp-text);
+}
