@@ -10,7 +10,7 @@ import {
   parseDivisionNumber,
   nextSawId,
 } from '@core/operation';
-import { myApparatusKeys } from '@core/org';
+import { myApparatusKeys, currentIC } from '@core/org';
 import { newId } from '@core/id';
 import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
 import {
@@ -45,6 +45,7 @@ import { PastOperationView } from './PastOperationView';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { DivisionView } from './DivisionView';
 import { ShorePointListRow } from './ShorePointListRow';
+import { HeaderPill, OpsMetaLine } from './OpsHeaderMeta';
 import { OpsFilterSheet } from './OpsFilterSheet';
 import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
@@ -1148,6 +1149,14 @@ export function OperationsBoard() {
   }
 
   // ---- Active operation -----------------------------------------------------
+  // Header instruments (2026-07-02): op-start clock, OP period, IC, my-role title,
+  // point + crew counts — all from existing state, no new store.
+  const opSince = operation.periods?.[0]?.startedAt;
+  const icLabel = currentIC(positions)?.label ?? null;
+  const myRoleTitle = (myRoleId ? positions[myRoleId]?.title : null) ?? null;
+  const activePointCount = shorePoints.filter((sp) => sp.deletedAt == null).length;
+  const crewCount = apparatusPresent.length;
+
   // The Operations ↔ Cutting Station scope toggle (#222 / 21-cutting-station.md) —
   // a workstation under Operations, not a sixth tab (ADR-008 / ADR-014). Rendered
   // ONCE: inline in the header on desktop (a compact top-right switch), or as a
@@ -1171,32 +1180,52 @@ export function OperationsBoard() {
   return (
     <div className="fs-ops-board">
       <header className="fs-ops-header">
-        <h1 className="fs-ops-name">{operation.name}</h1>
-        {/* Edit sits right next to the incident name (Alex). Gated on manageOperations (#380). */}
-        {canManageOps && (
-          <button
-            className="fs-ops-edit"
-            type="button"
-            aria-label="Edit operation"
-            onClick={() => setModalMode('edit')}
-          >
-            <PencilIcon />
-          </button>
-        )}
-        {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
-        {/* Phone keeps the inventory glance as a header icon (desktop gets the
-            labeled Inventory button in the filter row). */}
-        {!isDesktop && (
-          <button
-            className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
-            type="button"
-            aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
-            aria-pressed={inventoryOpen}
-            onClick={() => setInventoryOpen((v) => !v)}
-          >
-            <InventoryIcon />
-          </button>
-        )}
+        <div className="fs-ops-titlebar">
+          <h1 className="fs-ops-name">{operation.name}</h1>
+          {/* Edit sits right next to the incident name (Alex). Gated on manageOperations (#380). */}
+          {canManageOps && (
+            <button
+              className="fs-ops-edit"
+              type="button"
+              aria-label="Edit operation"
+              onClick={() => setModalMode('edit')}
+            >
+              <PencilIcon />
+            </button>
+          )}
+          <span className="fs-ops-titlebar-spacer" />
+          {/* Persona pill — YOUR role on phone, the IC on desktop (2026-07-02). */}
+          <HeaderPill
+            isDesktop={isDesktop}
+            icLabel={icLabel}
+            myRoleTitle={myRoleTitle}
+            onSetRole={() => setMyRoleSheetOpen(true)}
+          />
+          {isDesktop && <div className="fs-ops-header-toggle">{viewToggle}</div>}
+          {/* Phone keeps the inventory glance as a header icon (desktop gets the
+              labeled Inventory button in the filter row). */}
+          {!isDesktop && (
+            <button
+              className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
+              type="button"
+              aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
+              aria-pressed={inventoryOpen}
+              onClick={() => setInventoryOpen((v) => !v)}
+            >
+              <InventoryIcon />
+            </button>
+          )}
+        </div>
+        {/* The mono instrument line — elapsed · OP · IC · counts. */}
+        <OpsMetaLine
+          since={opSince}
+          opNum={operation.currentPeriod}
+          opTotal={operation.periods?.length ?? 0}
+          icLabel={icLabel}
+          points={activePointCount}
+          crews={crewCount}
+          isDesktop={isDesktop}
+        />
       </header>
 
       {!isDesktop && <div className="fs-ops-subnav">{viewToggle}</div>}

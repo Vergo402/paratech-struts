@@ -12,14 +12,89 @@
 /* ---- header (name + edit) ------------------------------------------------ */
 .fs-ops-header {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+/* The title row: name + edit on the left, the persona pill + toggle/inventory on
+   the right. The instrument meta line drops below it (2026-07-02). */
+.fs-ops-titlebar {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
 }
+/* Shrink-only: the op name grows to claim the slack instead, so a long role pill
+   ellipsizes before the incident name does. */
+.fs-ops-titlebar-spacer { flex: 0 1 auto; }
+
+/* Instrument line — mono, muted: elapsed · OP · IC · counts. */
+.fs-ops-meta {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The gold persona pill — IC (desktop) / YOU + role (phone). Shrinks 4× faster
+   than the op name, so a long role ellipsizes before the incident name does. */
+.fs-ops-pill {
+  flex: 0 4 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: 9px;
+  background: var(--accent-subtle);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  white-space: nowrap;
+  max-width: 46vw;
+}
+.fs-ops-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--accent);
+}
+.fs-ops-pill-dot.is-empty { background: var(--text-tertiary); }
+.fs-ops-pill-k {
+  font: var(--type-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.fs-ops-pill-v {
+  min-width: 0;
+  font: var(--type-body-medium);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-ops-pill--set {
+  cursor: pointer;
+  font: var(--type-body-medium);
+  color: var(--text-secondary);
+  background: var(--surface-card);
+  border-color: var(--surface-stroke);
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-ops-pill--set:hover { background: var(--surface-card-hover); color: var(--text-primary); }
+.fs-ops-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .fs-ops-name {
-  /* Content-width (not flex:1) so the edit pencil sits right beside it; still
-     shrinks + ellipsizes a long name. The toggle/inventory are pushed right. */
-  flex: 0 1 auto;
+  /* Grows to claim the titlebar slack (pushing the pill + toggle/inventory right).
+     Does NOT shrink (flex-shrink 0) — the role pill absorbs any deficit and
+     ellipsizes first, so the incident name stays whole (2026-07-02). */
+  flex: 1 0 auto;
   min-width: 0;
   margin: 0;
   font: var(--type-headline-1);
@@ -28,12 +103,8 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Whatever follows the pencil (the desktop scope toggle, or the phone inventory
-   icon) is pushed to the right edge. */
-.fs-ops-header-toggle,
-.fs-ops-inv-btn {
-  margin-left: auto;
-}
+/* The pill + toggle/inventory group at the right edge — the titlebar spacer
+   (flex:1) does the pushing now, so no margin-left:auto (it would gap them). */
 
 .fs-ops-edit {
   flex-shrink: 0;
