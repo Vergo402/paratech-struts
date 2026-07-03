@@ -1,14 +1,16 @@
 import type { ShorePoint } from '@core/schema';
-import { divisionLabel } from '@core/operation';
+import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { SHORE_TYPE_LABELS } from './ShorePointCard';
+import { cardLocation, cardLabelType } from './cardParts';
 
 /**
- * ShorePointListRow — the compact List-view row (tri-view prototype look, Alex
- * 2026-07-02). Read-only overview: a status left-edge, the location bold, a muted
- * `SP-N · type · crew` subline, and the measurement big + mono on the right. Tap
- * opens the detail drawer — actions live there (and on the Board), not here.
- * Status color rides the `.is-<status>` tokens (primitives.css), never raw hex.
+ * ShorePointListRow — the List-view row, at the unified card anatomy (Alex
+ * 2026-07-03, `unified_card_anatomy_three_views`): a top row of SP-# (left) and
+ * the assigned-apparatus pill (right), the LOCATION bold as the focus,
+ * `label · type` secondary, then a quiet mono `model · length` line. Medium
+ * density — read-only, tap opens the detail drawer; actions live there (and the
+ * Board). Status color rides the `.is-<status>` left edge (primitives.css), never
+ * raw hex. List/Division show the OPENING measurement; the Board is cut-phase aware.
  */
 export function ShorePointListRow({
   sp,
@@ -20,10 +22,7 @@ export function ShorePointListRow({
   count: number;
   onOpen: (sp: ShorePoint) => void;
 }) {
-  const loc = [divisionLabel(sp.division), sp.side].filter(Boolean).join(' · ') || '—';
-  const sub = [`SP-${sp.seq ?? '—'}`, SHORE_TYPE_LABELS[sp.shoreType], sp.assignedResource || 'Unassigned'].join(
-    ' · ',
-  );
+  const model = bomModelLabel(sp);
   return (
     <button
       type="button"
@@ -32,15 +31,18 @@ export function ShorePointListRow({
       className={`fs-splist-row is-${sp.status}`}
       onClick={() => onOpen(sp)}
     >
-      <span className="fs-splist-main">
-        <span className="fs-splist-loc">
-          {loc}
-          {count > 1 ? <span className="fs-splist-grp"> ×{count}</span> : null}
-        </span>
-        <span className="fs-splist-sub">{sub}</span>
+      <span className="fs-splist-top">
+        <span className="fs-splist-seq">{sp.seq != null ? `#${sp.seq}` : ''}</span>
+        {sp.assignedResource ? <span className="fs-splist-appar">{sp.assignedResource}</span> : null}
       </span>
-      <span className="fs-splist-ms">
-        <MeasurementValue eighths={sp.measurementEighths} />
+      <span className="fs-splist-loc">
+        {cardLocation(sp) || '—'}
+        {count > 1 ? <span className="fs-splist-grp"> ×{count}</span> : null}
+      </span>
+      <span className="fs-splist-sub">{cardLabelType(sp)}</span>
+      <span className="fs-splist-val">
+        {model ? <span className="fs-splist-model">{model} · </span> : null}
+        <MeasurementValue eighths={sp.measurementEighths} className="fs-splist-num" />
       </span>
     </button>
   );

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { ShorePoint, ShoreTypeId, ShorePointStatus } from '@core/schema';
-import { divisionLabel, sideLabel } from '@core/operation';
+import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { strutSysKey } from '@core/load';
 import {
   bomModelLabel,
@@ -11,13 +10,11 @@ import {
   pendingNeedModels,
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
+import { SHORE_TYPE_LABELS, cardLocation, cardLabelType } from './cardParts';
 
-// Short display labels — the full catalog names stay in core/load/plates.ts.
-export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
-  't-shore': 'T-Shore',
-  'double-t': 'Double-T',
-  '3-post': '3-Post',
-};
+// Short display labels live in cardParts (shared by all three views); re-exported
+// here for the existing callers that import them from ShorePointCard.
+export { SHORE_TYPE_LABELS };
 
 /** The Quick View drawer title for a shore point — "#7 · B-2 · 3-Post" (the #N and
  *  label are optional). One source of truth for the OperationsBoard + archive drawers. */
@@ -47,34 +44,12 @@ function needLine(models: string[]): string {
   return `Needs ${models[0]} or ${models[1]} (+${models.length - 2} more) — none on scene`;
 }
 
-// The lifecycle value shelf. The shelf number is ALWAYS the effective length
-// (raw − deductions, floored to ⅛″ by the engine); only the LABEL changes per
-// phase: pre-cut it is the "Required strut length" (the cut-to answer), "Cut
-// length" while cutting, "Set length" once set (S12 SME review SF-1: the raw
-// opening would mislabel the setting). Card compaction (2026-06-20): the raw
-// opening + deduction + load detail line is retired from the card face (it lives
-// in Details now); the bar instead carries the deployed strut + extensions as a
-// sub-line. Amends the S12 "one length that matters" shelf (card.md / ADR-011
-// Addendum 2).
-// Short labels (card compaction 2026-06-20) so the label + measurement + strut
-// fit on one line in the narrow board lanes. The deduction LEDGER keeps the full
-// "Required strut length" wording (card.md §Ledger vocabulary); only the card's
-// bar label is shortened.
-const REQUIRED_LABEL = 'Strut system';
-const VALUE_LABEL: Record<ShorePointStatus, string> = {
-  pending: REQUIRED_LABEL,
-  process: REQUIRED_LABEL,
-  strutset: REQUIRED_LABEL,
-  cutting: 'Cut length',
-  runner: 'Cut length',
-  secured: 'Set length',
-  returned: 'Set length',
-};
-// Statuses whose value number is the live working length and reads big (#351).
-const PROMOTED_VALUE = new Set<ShorePointStatus>(['pending', 'process', 'strutset', 'cutting']);
-// Once a point goes to the saw, the shelf is the wood CUT length, not the strut
-// effective length (#361). The Cut / Set labels both name the wood, so every phase
-// from cutting onward reads the cut length; pre-cut reads the required strut length.
+// Once a point goes to the saw, the value is the wood CUT length, not the strut
+// effective length (#361): every phase from cutting onward reads the cut length,
+// pre-cut reads the required strut length. The strut·length is a quiet tertiary
+// line now (Alex 2026-07-03 unified card anatomy) — no per-phase label, no
+// promoted number; the LOCATION is the card's focus, not the length. The full
+// "Required strut length" ledger vocabulary still lives in Quick View / Details.
 const CUT_PHASES = new Set<ShorePointStatus>(['cutting', 'runner', 'secured', 'returned']);
 
 /**
@@ -198,11 +173,6 @@ export function ShorePointCard({
   // interactive region branches on `pending` / status — one gate, no per-region edits.
   const interactive = !readOnly;
   const pending = sp.status === 'pending';
-  // Promote the value number (28px/700) on every card where it's the LIVE working
-  // length: the pre-cutting Required strut length (pending/process/strutset, #351)
-  // and the cutting Cut length. Post-cut (runner/secured/returned) stays at shelf
-  // weight — that number is a record, not the next thing to read at a glance.
-  const promoted = PROMOTED_VALUE.has(sp.status);
   const waiting = pending && !!sp.pendingReason;
   // A no-inventory wait names the strut(s) that fit (catalog-only — no inventory
   // dep, deterministic on the opening). Memoized so it runs only for waiting cards.
@@ -237,24 +207,11 @@ export function ShorePointCard({
       </span>
     ) : null;
 
-  // The headline is "label · type" — "B-2 · 3-Post" — at headline-2 (the
-  // design-system ShorePointCard title; the type no longer rides the meta row).
-  const title = sp.label
-    ? `${sp.label} · ${SHORE_TYPE_LABELS[sp.shoreType]}`
-    : SHORE_TYPE_LABELS[sp.shoreType];
-
-  // Location reads Building · Division · Area · assigned-apparatus (broad →
-  // narrow → who). Building leads in multi-building ops; single-building points
-  // open on the division (e.g. "Div 1 · West Wall · Rescue 2"). The assigned
-  // resource rides the end of this line now (card compaction) — its own line is
-  // gone; the strut's SOURCE rig moves to Details.
-  const identity = [
-    ...(sp.building ? [sp.building] : []),
-    divisionLabel(sp.division),
-    ...(sp.side ? [sideLabel(sp.side)] : []),
-    ...(sp.area ? [sp.area] : []),
-    ...(sp.assignedResource ? [sp.assignedResource] : []),
-  ].join(' · ');
+  // Card identity (Alex 2026-07-03): the LOCATION is the primary/focus line; the
+  // label + type ride the secondary line; the assigned apparatus is a top-right
+  // pill (below), not inline. Shared across all three views via cardParts.
+  const location = cardLocation(sp);
+  const labelType = cardLabelType(sp);
 
   // Pre-cut, the shelf is the required STRUT length; from the cutting phase on it
   // is the wood CUT length — a different number (shore-type lumber + wedge, no
@@ -264,45 +221,41 @@ export function ShorePointCard({
     (CUT_PHASES.has(sp.status) ? cutLengthInches(sp) : effectiveLengthFrom(sp.measurementEighths, sp.deductions)) * 8,
   );
 
-  // The deployed strut + extensions now ride INSIDE the value bar as a sub-line
-  // (card compaction) — except at the Cutting Station, where the bar is the cut
-  // length alone ("cutting only needs the cut length", Alex). Pending has no
-  // strut. The raw-opening / deduction / load detail line is gone from the face
-  // (it lives in Details).
-  const showStrutInBar = !!deployedStrut && sp.status !== 'cutting';
+  // The strut model rides the tertiary length line once deployed (bomModelLabel)
+  // — except at the Cutting Station, where the value is the cut length alone
+  // ("cutting only needs the cut length", Alex). Pending has no strut.
+  const showStrutModel = !!deployedStrut && sp.status !== 'cutting';
 
   const headContent = (
     <>
-      <span className="fs-spc-identity">
-        <span className="fs-spc-title">{title}</span>
-        <span className="fs-spc-where">{identity}</span>
-      </span>
+      {/* Top row: the assigned-apparatus pill (top-right) aligned with the corner
+          #N tab (top-left) — the unified anatomy's SP-# + pill row (Alex 2026-07-03).
+          Absent-apparatus → no pill. Status is the left stripe now, not a chip. */}
       <span className="fs-spc-meta">
+        {sp.assignedResource ? (
+          <span className="fs-spc-appar">{sp.assignedResource}</span>
+        ) : null}
         {sp.groupIndex && sp.groupTotal ? (
           <Badge variant="label">{`${sp.groupIndex} / ${sp.groupTotal}`}</Badge>
         ) : null}
-        {/* Waiting presents its own amber badge — the operational status stays
-            pending; the is-waiting hook on the card recolors the geometry. */}
-        {waiting ? (
-          <span className="fs-badge fs-badge--status is-waiting">Waiting</span>
-        ) : (
-          <Badge variant="status" status={sp.status} />
-        )}
+        {/* Waiting stays an explicit amber badge — it's a pending SUB-state
+            (equipment now available), not the plain status the stripe carries. */}
+        {waiting ? <span className="fs-badge fs-badge--status is-waiting">Waiting</span> : null}
         {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
+      </span>
+      {/* Location leads (the focus); label · type on the secondary line, full width. */}
+      <span className="fs-spc-identity">
+        <span className="fs-spc-title">{location || '—'}</span>
+        {labelType && <span className="fs-spc-where">{labelType}</span>}
       </span>
     </>
   );
 
   const valueShelf = (
-    <div className={`fs-spc-value${promoted ? ' is-promoted' : ''}`}>
-      <span className="fs-spc-value-row">
-        <span className="fs-spc-value-label">{VALUE_LABEL[sp.status]}</span>
-        <span className="fs-spc-value-num">
-          <MeasurementValue eighths={valueEighths} />
-        </span>
-      </span>
-      {showStrutInBar && <span className="fs-spc-value-eq">{bomModelLabel(sp)}</span>}
-    </div>
+    <p className="fs-spc-value">
+      {showStrutModel && <span className="fs-spc-value-model">{bomModelLabel(sp)} · </span>}
+      <MeasurementValue eighths={valueEighths} className="fs-spc-value-num" />
+    </p>
   );
 
   return (

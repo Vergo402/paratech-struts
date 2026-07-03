@@ -1,5 +1,7 @@
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
+import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
+import { cardLocation, cardLabelType } from './cardParts';
 
 /**
  * DivisionView (tri-view) — the incident read by BUILDING LEVEL: floors stacked
@@ -7,10 +9,11 @@ import { MeasurementValue } from '@ui/primitives';
  * on, with a dashed Grade · Ground line between the ground floor (Div 1) and the
  * first sub-grade level (Sub 1). Sub-grade bands carry a striped background.
  * The novel spatial paradigm from the "3 Views × 2 Devices" prototype — a
- * situational overview, not the interactive card surface: each point is a compact
- * tile (mono measurement + SP-id + side + status abbrev) that opens the existing
- * detail drawer on tap. Color comes from the .is-<status> tokens (primitives.css),
- * never raw hex.
+ * situational overview. Each point is a tile carrying the SAME card anatomy as
+ * the Board card and List row (Alex 2026-07-03 unified anatomy), at the TIGHTEST
+ * density: SP-# + apparatus pill on top, the LOCATION as the focus, `label · type`
+ * secondary, a quiet `model · length` line. Tap opens the detail drawer. Color
+ * comes from the .is-<status> tokens (primitives.css), never raw hex.
  */
 
 /** A representative point for a tile — a single, or a group's front leg + count. */
@@ -57,6 +60,7 @@ function tilesOf(items: LaneItem[]): BandTile[] {
 }
 
 function DivisionTile({ sp, count, onOpen }: BandTile & { onOpen: (sp: ShorePoint) => void }) {
+  const model = bomModelLabel(sp);
   return (
     <button
       type="button"
@@ -64,15 +68,22 @@ function DivisionTile({ sp, count, onOpen }: BandTile & { onOpen: (sp: ShorePoin
       data-sp-id={sp.id}
       onClick={() => onOpen(sp)}
     >
-      <span className="fs-divtile-ms">
-        <MeasurementValue eighths={sp.measurementEighths} />
+      <span className="fs-divtile-top">
+        <span className="fs-divtile-seq">{sp.seq != null ? `#${sp.seq}` : ''}</span>
+        {sp.assignedResource ? <span className="fs-divtile-appar">{sp.assignedResource}</span> : null}
       </span>
-      <span className="fs-divtile-b">
-        <span className="fs-divtile-id">
-          SP-{sp.seq ?? '—'}
-          {count > 1 ? <span className="fs-divtile-grp"> ×{count}</span> : null}
-          {sp.side ? <span className="fs-divtile-side"> · {sp.side}</span> : null}
+      <span className="fs-divtile-loc">
+        {cardLocation(sp) || '—'}
+        {count > 1 ? <span className="fs-divtile-grp"> ×{count}</span> : null}
+      </span>
+      <span className="fs-divtile-sub">{cardLabelType(sp)}</span>
+      <span className="fs-divtile-val">
+        <span className="fs-divtile-ml">
+          {model ? <span className="fs-divtile-model">{model} · </span> : null}
+          <MeasurementValue eighths={sp.measurementEighths} className="fs-divtile-num" />
         </span>
+        {/* Status stays a TEXT abbrev here (not color-only): tiles group by floor,
+            so the left-edge hue is the only other status cue (Principle 9). */}
         <span className="fs-divtile-st">{STATUS_ABBR[sp.status]}</span>
       </span>
     </button>
