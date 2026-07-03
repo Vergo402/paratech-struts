@@ -129,7 +129,7 @@ export function VisualGridPicker({
     return (
       <PowerSelect
         label={label}
-        options={options.map((o) => ({ value: o.id, label: o.name, disabled: !isAvailable(o.id) }))}
+        options={options.map((o) => ({ value: o.id, label: o.name }))}
         value={value}
         onChange={onSelect}
       />
@@ -197,7 +197,7 @@ export function VisualGridPicker({
                   className={`fs-plate-option${opt.id === value ? ' selected' : ''}${
                     stocked ? '' : ' fs-plate-option--unavailable'
                   }`}
-                  tabIndex={open && stocked ? 0 : -1}
+                  tabIndex={open ? 0 : -1}
                   onClick={() => pick(opt.id)}
                 >
                   {renderThumb ? renderThumb(opt) : <PlateSwatch name={opt.name} />}
