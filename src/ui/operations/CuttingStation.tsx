@@ -293,7 +293,13 @@ export function CuttingStation({
   let upNextRows: ReactNode[];
   let hiddenOnOtherSaws = 0;
 
-  if (isDesktop && multiSaw) {
+  if (queue.length === 0) {
+    // Nothing to cut — the split (heroes + up-next) never renders, but heroes was
+    // computed EAGERLY below and the single-saw desktop branch dereferenced
+    // queue[0] on an empty queue (crash surfaced by the #389 empty-state work).
+    heroes = null;
+    upNextRows = [];
+  } else if (isDesktop && multiSaw) {
     // Tablet/desktop, >1 saw: one hero per saw (idle placeholder if free), then the
     // shared up-next = unclaimed only.
     heroes = (
@@ -348,11 +354,25 @@ export function CuttingStation({
       </div>
 
       {empty ? (
+        // #389: the queue fills from ANOTHER screen, so an idle station is
+        // upstream-blocked, not first-run (Idea 389 exploration, variant A).
         <EmptyState
-          variant="first-run"
-          headline="No cuts in queue"
-          reason="Move a shore point to Cutting Station on the Operations board to queue it"
+          variant="upstream-blocked"
+          headline="No cuts queued"
+          reason="Cuts arrive when a shore point is moved to Cutting Station on the Operations board"
         />
+      ) : queue.length === 0 && sent.length > 0 ? (
+        // #389 variant C: work existed and ALL of it went to the runner — a calm
+        // all-clear (never shown to a station that had no work; that reads as A).
+        <>
+          <EmptyState
+            variant="all-clear"
+            headline="All cuts done"
+            reason="Every queued cut has been sent to the runner"
+          />
+          {removedCards}
+          {sentTail}
+        </>
       ) : (
         <>
           <p className="fs-cutstation-count" role="status">

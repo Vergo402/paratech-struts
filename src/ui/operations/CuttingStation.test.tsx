@@ -43,7 +43,7 @@ describe('CuttingStation', () => {
     expect(peerCutStore.store.getState().count).toBe(0);
   });
 
-  it('empty queue: shows the "No cuts in queue" empty state', () => {
+  it('empty queue, nothing sent: shows the upstream-blocked "No cuts queued" empty state (#389)', () => {
     render(
       <CuttingStation
         queue={[]}
@@ -54,8 +54,24 @@ describe('CuttingStation', () => {
         onStepBack={noop}
       />,
     );
-    expect(screen.getByText('No cuts in queue')).toBeInTheDocument();
-    expect(screen.getByText(/Move a shore point to Cutting/)).toBeInTheDocument();
+    expect(screen.getByText('No cuts queued')).toBeInTheDocument();
+    expect(screen.getByText(/Cuts arrive when a shore point is moved to Cutting/)).toBeInTheDocument();
+  });
+
+  it('empty queue but cuts were sent: shows the "All cuts done" all-clear + the sent tail (#389)', () => {
+    render(
+      <CuttingStation
+        queue={[]}
+        sent={[makeSP('a', { label: 'A-1' })]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+      />,
+    );
+    expect(screen.getByText('All cuts done')).toBeInTheDocument();
+    expect(screen.getByText(/sent to the runner/)).toBeInTheDocument();
+    expect(screen.getByText('Sent to runner')).toBeInTheDocument(); // the tail stays visible
   });
 
   it('renders the queue in the order given, with a live count', () => {
