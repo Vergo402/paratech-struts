@@ -13,7 +13,6 @@ const STRUTS = [
   { id:'ls-304', model:'LS 304', system:'LongShore', color:'gold', collapsed:36, extended:50 },
   { id:'ls-406', model:'LS 406', system:'LongShore', color:'gold', collapsed:48, extended:73 },
   { id:'ls-610', model:'LS 610', system:'LongShore', color:'gold', collapsed:72, extended:116 },
-  { id:'ls-812', model:'LS 812', system:'LongShore', color:'gold', collapsed:92, extended:147 },
   { id:'ls-1016', model:'LS 1016', system:'LongShore', color:'gold', collapsed:114, extended:198 },
   // LockStroke (Grey — same load table as AcmeThread)
   { id:'lk-19-25', model:'LK 19-25', system:'LockStroke', color:'grey', collapsed:19, extended:25 },
@@ -131,7 +130,7 @@ const SHORE_TYPES = [
   { id:'3-post', name:'3-Post Vertical Shore', desc:'Three struts with 6×6 header and footer', defaultHeader:'6x6', defaultFooter:'6x6' },
 ];
 const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
-const APP_VERSION = '3.22.2';
+const APP_VERSION = '3.22.3';
 
 // v3.16.3 #carry-over: Disable ICS org-chart drag-and-drop on touch-primary
 // devices (phones, tablets). HTML5 drag events are flaky on touch; the
