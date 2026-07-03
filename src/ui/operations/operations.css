@@ -1612,6 +1612,12 @@ button.fs-spc-head {
 @media (min-width: 768px) {
   .fs-ops-board {
     padding: var(--space-6) var(--space-8);
+    /* Fill the scroll viewport so the flex-fill chain has a height to divide.
+       .fs-shell-main is a flex column (below), so flex:1 fills it reliably — a
+       percentage min-height didn't resolve against the scroll container. main +
+       lanes then grow into this height so the columns reach the bottom edge. */
+    flex: 1;
+    min-height: 0;
   }
 
   /* The board = the prototype iPad kanban (Alex 2026-07-03, "exactly like this"):
@@ -1626,7 +1632,11 @@ button.fs-spc-head {
     gap: 1px;
     background: var(--surface-stroke);
     overflow-x: auto;
-    min-height: calc(100dvh - 15rem);
+    /* Fill the height left below the toolbar so the columns + dividers reach the
+       bottom edge (prototype), regardless of how tall the top chrome grows: the
+       flex-fill chain is board min-height 100% → main flex:1 → lanes flex:1. */
+    flex: 1;
+    min-height: 0;
   }
   .fs-lane {
     flex: 1 1 0;
@@ -2548,8 +2558,14 @@ button.fs-spc-head {
   display: contents;
 }
 @media (min-width: 768px) {
+  /* main grows to fill the board (flex-fill middle link) AND is itself a flex
+     column so the lanes can flex:1 into the space below the toolbar rows. */
   .fs-ops-main {
     min-width: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 }
 

@@ -211,6 +211,11 @@ body {
 @media (min-width: 768px) {
   .fs-shell-main {
     padding-inline: var(--space-4);
+    /* Flex column so a screen can opt into filling the scroll viewport (the
+       Operations board sets flex:1 to reach the bottom edge). Screens that don't
+       set flex just stack top-down as before — same as block flow. */
+    display: flex;
+    flex-direction: column;
   }
 }
 /* #391 pull-tab wrap: hosts the handle on the nav's top edge; collapsed, only
