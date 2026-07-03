@@ -96,203 +96,155 @@
   color: var(--text-primary);
 }
 
-/* ---- filter / sort bar (#347 / #356) ------------------------------------- */
-/* One tight row (#356): label-less sort + filter chips that scroll sideways on
-   the left, the View toggle pinned on the right. Reclaims the vertical real
-   estate the old labelled multi-row bar ate. Added direction (newest/oldest)
-   lives inside the Sort menu, so it costs no bar space. */
-.fs-ops-filterbar {
+/* ---- control zone (2026-07-02 redesign) ---------------------------------- */
+/* Three tiers replace the old overwhelming single filter row: the view switch on
+   its own row, a compact utility row (Mine + one Filters trigger + Inventory on
+   desktop), and a removable active-filter chip row. */
+
+/* Tier 1 — the view switcher on its own prominent row. The Segmented primitive
+   is width:100% by design, so it fills the row. */
+.fs-ops-viewswitch { padding: var(--space-2) 0; }
+
+/* Tier 2 — compact utility row. */
+.fs-ops-utility {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) 0;
+  padding-bottom: var(--space-2);
 }
-.fs-ops-filter-chips {
-  display: flex;
+/* Mine (Segmented) is width:100% by design — fix its width so it reads as one
+   control, not a stretched bar. */
+.fs-ops-utility > .fs-segmented { flex: none; width: 132px; }
+.fs-ops-utility-spacer { flex: 1 1 auto; }
+
+.fs-ops-filters-btn {
+  flex: none;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none; /* the row scrolls; no scrollbar chrome on a phone */
-  /* Keep a sideways swipe from chaining to the page / back-gesture (review nit). */
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  /* Fade the right edge so an off-screen chip peeks — a "there's more" hint
-     (review #2). Only bites when content overflows into the fade zone. */
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
-}
-.fs-ops-filter-chips::-webkit-scrollbar { display: none; }
-/* Chips size to their content and never shrink (they scroll instead). */
-.fs-ops-filter-chips .fs-picker-field { flex: none; scroll-snap-align: start; }
-/* Compact, content-width trigger (form pickers are 56px / full-width). The
-   sort/filter chips, Scope chip, Clear, and View toggle share ONE tight row
-   (#356). Originally 40px (Alex, 2026-06-19) to keep it single-row after a
-   multi-row bar was rejected as too tall on a phone; raised to the 44px touch
-   floor (SIM-IV O-7, Alex 2026-07-02) — still one row (only +4px), so the
-   single-row intent holds while gloves land. Do not drop below 44 again. */
-.fs-ops-filterbar .fs-filterbar-trigger {
-  width: auto;
   min-height: 44px;
-  font: var(--type-body);
-  padding: 0 var(--space-3);
-  gap: var(--space-1);
-}
-/* A long building/area name can't push a chip past the viewport — ellipsize. */
-.fs-ops-filter-chips .fs-picker-trigger-value { max-width: 14ch; }
-/* The Sort chip's glyph is the accent gold so it reads apart from the place
-   filters beside it without re-adding a label (review #3). */
-.fs-picker-trigger-icon { flex: none; display: inline-flex; color: var(--accent); }
-.fs-ops-filter-clear {
-  flex: none;
-  font: var(--type-body-medium);
-  color: var(--accent);
-  background: none;
-  border: none;
-  border-radius: var(--radius-button);
-  padding: var(--space-2) var(--space-3);
-  min-height: 44px; /* O-7 touch floor (was 40, #356) */
-  cursor: pointer;
-}
-.fs-ops-filter-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-/* ---- "Mine" lens (#370) --------------------------------------------------- */
-/* The Segmented primitive is width:100% by design (segmented.md) — it needs a
-   fixed-width, flex:none wrapper to sit as ONE chip in the scrolling row rather
-   than stretching it. std height (48px) sits close enough to the 44px chip row
-   to read as one row. */
-.fs-ops-mine-toggle {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 132px;
-  /* Without a snap point on the FIRST chip, the row's scroll-snap-type (only the
-     Sort/filter FilterPickers carry scroll-snap-align) left the initial scroll
-     position resting on the SECOND chip instead of 0 — the toggle rendered
-     partly clipped off the left edge on load. Matching the same align makes this
-     the first, and correct, snap point. */
-  scroll-snap-align: start;
-}
-/* Visible-but-inert copy for when My Role isn't set (or holds no apparatus) —
-   never auto-prompts, but stays one tap from fixing itself (Principle 10). */
-.fs-ops-mine-hint {
-  flex: none;
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.fs-ops-mine-hint:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-/* "X left · Y done" — Done = secured + returned only (Alex, 2026-07-02). Sits
-   just under the filter row so it reads as commentary on what's now showing,
-   not a duplicate of the summary bar above the filter row. */
-.fs-ops-mine-summary {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding: 0 var(--space-3);
-  margin: 0 0 var(--space-2);
-  background: var(--accent-subtle);
-  border-radius: var(--radius-input);
-  font: var(--type-body-medium);
-  color: var(--accent);
-}
-
-/* ---- phone Scope chip (Item 1) ------------------------------------------- */
-/* Opens the location drilldown Sheet (the desktop rail's phone form). Sits in
-   the filter row at the shared 44px chip height (#356 row, raised for O-7); lights
-   with an accent ring + tint when a scope is active — the breadcrumb carries the
-   path text, so this is never state-by-color-alone (Principle 9). */
-.fs-ops-scope-chip {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: 44px; /* O-7 touch floor (was 40, #356) */
   padding: 0 var(--space-3);
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
   border-radius: var(--radius-input);
-  font: var(--type-body);
+  font: var(--type-body-medium);
   color: var(--text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.fs-ops-scope-chip svg { flex: none; color: var(--accent); }
-.fs-ops-scope-chip:hover { background: var(--surface-card-hover); color: var(--text-primary); }
-.fs-ops-scope-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.fs-ops-scope-chip.is-active {
+.fs-ops-filters-btn:hover { background: var(--surface-card-hover); color: var(--text-primary); }
+.fs-ops-filters-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-filters-btn.is-active {
   border-color: var(--accent);
-  background: var(--accent-soft, var(--surface-card-hover));
+  background: var(--accent-subtle);
   color: var(--text-primary);
 }
-
-/* ---- phone scope breadcrumb (Item 1) ------------------------------------- */
-/* The active scope path above the lanes; tap a segment to step out a level. A
-   thin row that scrolls sideways (contained) if a deep path overflows. */
-.fs-ops-breadcrumb {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: var(--space-1);
-  padding: var(--space-1) 0 var(--space-2);
-  overflow-x: auto;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-}
-.fs-ops-breadcrumb::-webkit-scrollbar { display: none; }
-.fs-ops-bc-seg { display: inline-flex; align-items: center; gap: var(--space-1); flex: none; }
-.fs-ops-bc-sep { color: var(--text-tertiary); }
-.fs-ops-bc-link {
-  background: none;
-  border: none;
-  padding: var(--space-1);
-  font: var(--type-body);
-  color: var(--accent);
-  white-space: nowrap;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-ops-bc-link:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-  border-radius: var(--radius-badge);
-}
-.fs-ops-bc-current { font: var(--type-body-medium); color: var(--text-primary); white-space: nowrap; }
-
-/* ---- View toggle (#356) — two square icon buttons (desktop), one (phone) --- */
-.fs-view-toggle {
-  display: flex;
-  gap: var(--space-2);
-  flex: none;
-}
-.fs-view-btn--single { flex: none; } /* phone: lone button, never shrinks */
-.fs-view-btn {
+.fs-ops-filters-btn svg { flex: none; color: var(--accent); }
+.fs-ops-filters-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: var(--type-caption);
+  font-weight: 600;
+}
+/* Phone: no Inventory here (it's a header icon), so Filters grows beside Mine. */
+@media (max-width: 767px) {
+  .fs-ops-filters-btn { flex: 1 1 auto; justify-content: center; }
+  .fs-ops-utility-spacer { display: none; }
+}
+
+/* Tier 3 — active-filter chips (removable) + Clear all. Replaces the always-on
+   pickers, the phone breadcrumb, and the Mine summary. */
+.fs-ops-activechips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+.fs-ops-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0 var(--space-2) 0 var(--space-3);
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
-  border-radius: var(--radius-input);
+  border-radius: 999px;
+  font: var(--type-body);
   color: var(--text-secondary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.fs-view-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-/* Selected: accent ring + tint + brighter icon (Principle 9 — not color alone). */
-.fs-view-btn[data-state='checked'] {
-  border-color: var(--accent);
-  background: var(--accent-soft, var(--surface-card-hover));
-  color: var(--text-primary);
+.fs-ops-chip:hover { background: var(--surface-card-hover); color: var(--text-primary); }
+.fs-ops-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-chip-x { color: var(--text-tertiary); font-size: 11px; }
+.fs-ops-chip:hover .fs-ops-chip-x { color: var(--text-primary); }
+.fs-ops-chip-clear {
+  flex: none;
+  font: var(--type-body-medium);
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: var(--space-1) var(--space-2);
+  min-height: 32px;
+  cursor: pointer;
 }
+.fs-ops-chip-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---- Filters surface (PickerSurface content) ----------------------------- */
+.fs-filtsheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+}
+.fs-filtsheet-section { display: flex; flex-direction: column; gap: 2px; }
+.fs-filtsheet-head {
+  font: var(--type-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  padding: 0 var(--space-2) var(--space-1);
+}
+.fs-filtsheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  background: none;
+  border: none;
+  border-radius: var(--radius-input);
+  font: var(--type-body);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fs-filtsheet-row:hover { background: var(--surface-card-hover); }
+.fs-filtsheet-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-filtsheet-row.is-selected { color: var(--accent); }
+.fs-filtsheet-row.is-selected svg { color: var(--accent); }
+.fs-filtsheet-clear {
+  margin-top: var(--space-2);
+  min-height: 44px;
+  background: none;
+  border: 1px solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  font: var(--type-body-medium);
+  color: var(--accent);
+  cursor: pointer;
+}
+.fs-filtsheet-clear:disabled { color: var(--text-tertiary); cursor: default; }
+.fs-filtsheet-clear:not(:disabled):hover { background: var(--surface-card-hover); }
 
 /* ---- lane grid ----------------------------------------------------------- */
 .fs-ops-lanes {
@@ -335,14 +287,6 @@
   flex: 1;
   height: 1px;
   background: var(--surface-stroke);
-}
-
-/* ---- status-summary bar (rec G-15) ---------------------------------------- */
-/* Counts per lane above the board — tablet/laptop only (G-15: phone does not
-   show it). A visual glance aid: aria-hidden in the markup, since the lane
-   headers already carry the same counts for assistive tech. */
-.fs-ops-summary {
-  display: none;
 }
 
 /* ---- single lane --------------------------------------------------------- */
@@ -1529,48 +1473,6 @@ button.fs-spc-head {
 @media (min-width: 768px) {
   .fs-ops-board {
     padding: var(--space-6) var(--space-8);
-  }
-
-  /* G-15 status-summary bar — visible from tablet up. Short labels (SUMMARY_LABEL)
-     + nowrap + tight chips so all seven counts sit on ONE line (Alex); if a very
-     narrow board can't hold them, the row scrolls sideways rather than wrapping. */
-  .fs-ops-summary {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: var(--space-1);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .fs-ops-summary::-webkit-scrollbar { display: none; }
-
-  .fs-ops-summary-item {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    padding: 0 var(--space-2);
-    border: 1px solid var(--surface-stroke);
-    border-radius: var(--radius-button);
-    font: var(--type-caption);
-    color: var(--text-secondary);
-    white-space: nowrap;
-  }
-
-  /* The status dot rides the shared is-{status} hue hooks (primitives.css). */
-  .fs-ops-summary-item::before {
-    content: '';
-    flex: none;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--sp-solid); /* sunlight-safe: --sp-text is white there, --sp-solid keeps the hue */
-  }
-
-  .fs-ops-summary-count {
-    font: var(--type-mono);
-    font-weight: 600;
-    color: var(--text-primary);
   }
 
   /* The board goes multi-column: 2-up on tablet. align-items: start keeps a

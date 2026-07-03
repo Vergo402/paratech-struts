@@ -207,26 +207,9 @@ describe('OperationsBoard', () => {
     expect(screen.getByRole('heading', { name: 'Pending Equipment' })).toBeInTheDocument();
   });
 
-  it('the G-15 status-summary bar carries a count per lane and stays out of the a11y tree', () => {
-    mockOperation.mockReturnValue(ACTIVE_OP);
-    mockShorePoints.mockReturnValue([
-      makeSP('sp-1', 'pending'),
-      makeSP('sp-2', 'pending'),
-      makeSP('sp-3', 'cutting'),
-    ]);
-    const { container } = render(<OperationsBoard />);
-    const bar = container.querySelector('.fs-ops-summary');
-    expect(bar).not.toBeNull();
-    // Visual glance aid only — the lane headers carry the counts for AT.
-    expect(bar).toHaveAttribute('aria-hidden', 'true');
-    const items = bar!.querySelectorAll('.fs-ops-summary-item');
-    expect(items).toHaveLength(7);
-    // Short chip labels (SUMMARY_LABEL) so all seven fit on one line; the full
-    // STATUS_LABELS stay on the lane headers (asserted elsewhere).
-    expect(items[0]!.textContent).toBe('Pending2');
-    expect(items[1]!.textContent).toBe('Assigned0');
-    expect(items[3]!.textContent).toBe('Cutting1');
-  });
+  // The G-15 status-summary bar was removed in the 2026-07-02 control-zone
+  // redesign (Alex: the count strip was a big part of the clutter; the Board
+  // lanes already carry per-status counts). No summary-bar test remains.
 
   it('lane collapse toggles card visibility', async () => {
     const user = userEvent.setup();
@@ -698,6 +681,26 @@ describe('OperationsBoard', () => {
     return Array.from(region.querySelectorAll('[data-sp-id]')).map((el) => el.getAttribute('data-sp-id')!);
   }
 
+  // The 2026-07-02 redesign moved Sort + Location + Apparatus into one Filters
+  // surface (PickerSurface). Open it, pick a radio row, then close it (Escape) so
+  // the board — an aria-hidden sibling of the open modal sheet — is queryable.
+  async function openFilters(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: /Filters/ }));
+  }
+  async function pickInFilters(user: ReturnType<typeof userEvent.setup>, name: string | RegExp) {
+    const dialog = screen.getByRole('dialog', { name: 'Filters & sort' });
+    await user.click(within(dialog).getByRole('radio', { name }));
+  }
+  async function closeFilters(user: ReturnType<typeof userEvent.setup>) {
+    await user.keyboard('{Escape}');
+  }
+  // Open Filters, pick a row, close — the common single-filter flow.
+  async function applyFilter(user: ReturnType<typeof userEvent.setup>, name: string | RegExp) {
+    await openFilters(user);
+    await pickInFilters(user, name);
+    await closeFilters(user);
+  }
+
   it('default sort: cards order by division (desc) then area (asc) within a lane', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     // Added scrambled; expect Div 2 first, then Div 1 with area "A" before "B".
@@ -720,8 +723,7 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     // Default = division/area: Div 2 (sp-1) before Div 1 (sp-2).
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1', 'sp-2']);
-    await user.click(screen.getByRole('button', { name: 'Sort' }));
-    await user.click(screen.getByRole('option', { name: 'Added — newest first' }));
+    await applyFilter(user, 'Added — newest first');
     // Added = newest-first insertion order: sp-2 then sp-1.
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
@@ -737,18 +739,15 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']); // div 2 before div 1
 
-    // Phone (jsdom): location filtering goes through the Scope drilldown Sheet,
-    // not flat chips. A division with no areas is a leaf, so selecting it
-    // "picks and goes" — the sheet closes and the board is revealed (Item 1).
-    await user.click(screen.getByRole('button', { name: 'Scope' }));
-    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
-    await user.click(within(sheet).getByRole('button', { name: /Div 1/ }));
+    // Location filtering now lives in the Filters surface (a Division radio row).
+    await applyFilter(user, 'Div 1');
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
     expect(laneCardIds('Cutting Station')).toEqual([]); // sp-3 is Div 2 — filtered out
     const pendingSection = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(within(pendingSection).getByText('1')).toBeInTheDocument(); // count now 1
 
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    // Clear via the active-filter chip row.
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
     expect(laneCardIds('Cutting Station')).toEqual(['sp-3']);
   });
@@ -763,11 +762,10 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     expect(laneCardIds('Pending Equipment').slice().sort()).toEqual(['sp-1', 'sp-2']);
 
-    await user.click(screen.getByRole('button', { name: 'Apparatus' }));
-    await user.click(screen.getByRole('option', { name: 'Rescue 2' }));
+    await applyFilter(user, 'Rescue 2');
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']); // only the Rescue 2 point
 
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
     expect(laneCardIds('Pending Equipment').slice().sort()).toEqual(['sp-1', 'sp-2']);
   });
 
@@ -911,16 +909,12 @@ describe('OperationsBoard', () => {
     // Building groups first (North before South); within North, Div 2 before Div 1.
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
 
-    // Filter to North tower via the Scope sheet. A building WITH divisions isn't a
-    // leaf, so the sheet stays open to keep drilling — dismiss it to read the board.
-    await user.click(screen.getByRole('button', { name: 'Scope' }));
-    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
-    // /^North tower/ targets the select row, not the "Expand North tower" toggle.
-    await user.click(within(sheet).getByRole('button', { name: /^North tower/ }));
-    await user.keyboard('{Escape}');
+    // Filter to North tower via the Filters surface (a Building radio row, shown
+    // only for multi-building ops).
+    await applyFilter(user, 'North tower');
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1']);
 
-    await user.click(screen.getByRole('button', { name: 'Clear' }));
+    await user.click(screen.getByRole('button', { name: 'Clear all' }));
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-north-2', 'sp-north-1', 'sp-south']);
   });
 
@@ -938,37 +932,33 @@ describe('OperationsBoard', () => {
     }
   });
 
-  it('phone: the Scope chip opens the location drilldown sheet (the reused rail)', async () => {
+  it('the Filters surface carries the Location (Division) options', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending', '1'), makeSP('sp-2', 'pending', '2')]);
     render(<OperationsBoard />);
-    await user.click(screen.getByRole('button', { name: 'Scope' }));
-    const sheet = screen.getByRole('dialog', { name: 'Jump to location' });
-    // The desktop rail is reused verbatim — "All shore points" + a node per division.
-    expect(within(sheet).getByRole('button', { name: /All shore points/ })).toBeInTheDocument();
-    expect(within(sheet).getByRole('button', { name: /Div 2/ })).toBeInTheDocument();
+    await openFilters(user);
+    const dialog = screen.getByRole('dialog', { name: 'Filters & sort' });
+    expect(within(dialog).getByRole('radio', { name: 'All divisions' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: 'Div 2' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: 'Div 1' })).toBeInTheDocument();
   });
 
-  it('phone: the scope breadcrumb appears once scoped and steps back out a level', async () => {
+  it('an active filter shows a removable chip that clears it on tap', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending', '1'), makeSP('sp-2', 'pending', '2')]);
     render(<OperationsBoard />);
-    // No breadcrumb until a scope is set.
-    expect(screen.queryByRole('navigation', { name: 'Active scope' })).toBeNull();
+    // No chips until a filter is set.
+    expect(screen.queryByRole('button', { name: /Remove .* filter/ })).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Scope' }));
-    await user.click(
-      within(screen.getByRole('dialog', { name: 'Jump to location' })).getByRole('button', { name: /Div 1/ }),
-    );
-    // Leaf division → picks-and-goes; board narrows and the breadcrumb shows the path.
+    await applyFilter(user, 'Div 1');
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-1']);
-    const bc = screen.getByRole('navigation', { name: 'Active scope' });
-    expect(within(bc).getByText('Div 1')).toBeInTheDocument();
+    const chip = screen.getByRole('button', { name: 'Remove Div 1 filter' });
+    expect(chip).toBeInTheDocument();
 
-    // Tapping "All" steps back out to the whole board.
-    await user.click(within(bc).getByRole('button', { name: 'All' }));
+    // Tapping the chip removes just that filter — the whole board returns.
+    await user.click(chip);
     expect(laneCardIds('Pending Equipment')).toEqual(['sp-2', 'sp-1']);
   });
 
@@ -990,8 +980,7 @@ describe('OperationsBoard', () => {
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
-    await user.click(screen.getByRole('button', { name: 'Sort' }));
-    await user.click(screen.getByRole('option', { name: optionName }));
+    await applyFilter(user, optionName);
   }
 
   it('the List toggle replaces the seven lanes with one flat list of every point', async () => {
@@ -1199,8 +1188,12 @@ describe('OperationsBoard', () => {
 
     unmount();
     render(<OperationsBoard />);
-    // Restored into List view with the Status sort.
+    // Restored into List view with the Status sort — the Filters surface shows
+    // Status as the selected sort row.
     expect(document.querySelector('.fs-ops-list')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Sort' })).toHaveTextContent('Status');
+    await openFilters(user);
+    expect(
+      within(screen.getByRole('dialog', { name: 'Filters & sort' })).getByRole('radio', { name: 'Status' }),
+    ).toBeChecked();
   });
 });

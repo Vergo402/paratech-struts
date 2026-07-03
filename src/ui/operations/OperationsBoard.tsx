@@ -12,7 +12,7 @@ import {
 } from '@core/operation';
 import { myApparatusKeys } from '@core/org';
 import { newId } from '@core/id';
-import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, Sheet, SideDrawer, useIsDesktop } from '@ui/primitives';
+import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
 import {
   useApparatus,
   useBriefing,
@@ -42,13 +42,13 @@ import { ReturnEquipmentModal } from './ReturnEquipmentModal';
 import { CuttingStation } from './CuttingStation';
 import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
-import { FilterPicker } from './FilterPicker';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { DivisionView } from './DivisionView';
+import { OpsFilterSheet } from './OpsFilterSheet';
 import { OperationsRail } from './OperationsRail';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
-import { buildRailTree, isLeafScope, type ScopePath } from './railTree';
+import { buildRailTree, type ScopePath } from './railTree';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -81,11 +81,11 @@ function Chevron() {
 }
 
 // ---- Sort glyph — marks the Sort chip apart from the filter chips (#356) -----
-function SortGlyph() {
+// ---- Filters trigger glyph — three shrinking bars ---------------------------
+function FilterGlyph() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M4 3v10M4 13l-2-2.5M4 13l2-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 13V3M12 3l-2 2.5M12 3l2 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -115,21 +115,6 @@ function PencilIcon() {
   );
 }
 
-// ---- Location pin glyph — the phone Scope chip's leading icon ----------------
-function LocationGlyph() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M8 1.5a4 4 0 0 0-4 4c0 2.8 4 8 4 8s4-5.2 4-8a4 4 0 0 0-4-4Z"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinejoin="round"
-      />
-      <circle cx="8" cy="5.5" r="1.4" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
 // ---- Phone lane grouping (Item 2) -------------------------------------------
 // On phone the seven lanes group into the three workflow phases the laptop board
 // shows (operations.css 3-1-3): strut placement → the cutting pivot → wood &
@@ -142,90 +127,6 @@ const PHASE_GROUPS = [
   { label: 'Cutting', statuses: ['cutting'] },
   { label: 'Wood & return', statuses: ['runner', 'secured', 'returned'] },
 ] as const satisfies ReadonlyArray<{ label: string; statuses: readonly ShorePointStatus[] }>;
-
-// ---- Scope breadcrumb (Item 1) ----------------------------------------------
-// Phone-only, shown above the lanes once a location scope is active: the active
-// path as tappable back-segments (All › Div 2 › Area 3). Tapping a segment
-// applies that truncated path (it FILTERS in place — no router, no sheet), so a
-// firefighter can step out a level without reopening the scope sheet. Writes the
-// same filter state the rail + chips do (applyRailFilter — one source of truth).
-function ScopeBreadcrumb({
-  building,
-  division,
-  area,
-  onSelect,
-}: {
-  building: string | null;
-  division: string | null;
-  area: string | null;
-  onSelect: (path: ScopePath) => void;
-}) {
-  const segs: { label: string; path: ScopePath }[] = [
-    { label: 'All', path: { building: null, division: null, area: null } },
-  ];
-  if (building) segs.push({ label: building, path: { building, division: null, area: null } });
-  if (division) segs.push({ label: divisionLabel(division), path: { building, division, area: null } });
-  if (area) segs.push({ label: area, path: { building, division, area } });
-  return (
-    <nav className="fs-ops-breadcrumb" aria-label="Active scope">
-      {segs.map((s, i) => {
-        const last = i === segs.length - 1;
-        return (
-          <span key={`${s.label}-${i}`} className="fs-ops-bc-seg">
-            {i > 0 && (
-              <span className="fs-ops-bc-sep" aria-hidden="true">
-                ›
-              </span>
-            )}
-            {last ? (
-              <span className="fs-ops-bc-current" aria-current="true">
-                {s.label}
-              </span>
-            ) : (
-              <button type="button" className="fs-ops-bc-link" onClick={() => onSelect(s.path)}>
-                {s.label}
-              </button>
-            )}
-          </span>
-        );
-      })}
-    </nav>
-  );
-}
-
-// ---- Status summary bar (rec G-15) -------------------------------------------
-// Counts per lane, above the board. Tablet/laptop only — CSS hides it below
-// 768pt (G-15: "phone does not show"). aria-hidden: it is a visual glance aid;
-// the lane headers already carry the same counts for assistive tech.
-// This is the Operations Section Chief's cross-Division aggregate, shown on the
-// larger surface they coordinate from. It is deliberately NOT on phone: the
-// phone-floor user is a Division inputter served by the per-lane count badges +
-// the Division filter, and the IC's at-a-glance command picture is the separate
-// Command tab's job — not this board. (A SIM-V "lone IC on a phone" finding once
-// argued to put this on phone; that was a wrong-persona read — do not re-add it.)
-// Short chip labels so all seven counts fit on one line (Alex). The full
-// STATUS_LABELS stay everywhere else (lane headers, slide announcements).
-const SUMMARY_LABEL: Record<ShorePointStatus, string> = {
-  pending: 'Pending',
-  process: 'Assigned',
-  strutset: 'Strut Set',
-  cutting: 'Cutting',
-  runner: 'Runner',
-  secured: 'Secured',
-  returned: 'Returned',
-};
-function StatusSummaryBar({ byStatus }: { byStatus: Record<ShorePointStatus, ShorePoint[]> }) {
-  return (
-    <div className="fs-ops-summary" aria-hidden="true">
-      {STATUS_ORDER.map((status) => (
-        <span key={status} className={`fs-ops-summary-item is-${status}`}>
-          {SUMMARY_LABEL[status]}
-          <span className="fs-ops-summary-count">{byStatus[status].length}</span>
-        </span>
-      ))}
-    </div>
-  );
-}
 
 // ---- Lane render grouping (S12 §2) ------------------------------------------
 // Within a lane, collapse 2+ same-groupId points (one PHYSICAL multi-strut
@@ -468,10 +369,10 @@ export function OperationsBoard() {
   const [taskChecklistOpen, setTaskChecklistOpen] = useState(false);
   const [ormOpen, setOrmOpen] = useState(false);
   const briefing = useBriefing();
-  // Phone scope sheet (Item 1) — the building→division→area drilldown that the
-  // desktop rail is, surfaced on phone as a bottom Sheet (ADR-016: scope picking
-  // is non-destructive → sheet). Desktop keeps the always-visible rail instead.
-  const [scopeSheetOpen, setScopeSheetOpen] = useState(false);
+  // The Filters surface (2026-07-02 control-zone redesign) — one PickerSurface
+  // holding Sort + Location + Apparatus, replacing the overwhelming inline row.
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const filtersBtnRef = useRef<HTMLButtonElement>(null);
   const [announcement, setAnnouncement] = useState('');
   const [politeAnnouncement, setPoliteAnnouncement] = useState('');
   const [scrollToId, setScrollToId] = useState<string | null>(null);
@@ -981,15 +882,29 @@ export function OperationsBoard() {
     persistPrefs({ filterBuilding: p.building, filterDivision: p.division, filterArea: p.area });
   }
 
-  // Phone scope sheet select (Item 1): apply the path, then "pick and go" — close
-  // the sheet on a leaf (an area / area-less division), but keep it open on an
-  // expandable node so the user can keep drilling (the rail expands it inline).
-  function selectScope(p: ScopePath) {
-    applyRailFilter(p);
-    if (isLeafScope(p, railTree)) setScopeSheetOpen(false);
-  }
-  // Any location scope active → show the breadcrumb + light the Scope chip.
-  const scopeActive = !!(filterBuilding || filterDivision || filterArea);
+  // Active filters drive the Filters badge + the removable-chip row (2026-07-02
+  // redesign). Sort is NOT a filter (it never hides points), so it's excluded.
+  const activeFilters: { key: 'building' | 'division' | 'area' | 'apparatus'; label: string }[] = [
+    ...(filterBuilding ? [{ key: 'building' as const, label: filterBuilding }] : []),
+    ...(filterDivision ? [{ key: 'division' as const, label: divisionLabel(filterDivision) }] : []),
+    ...(filterArea ? [{ key: 'area' as const, label: filterArea }] : []),
+    ...(filterApparatus ? [{ key: 'apparatus' as const, label: filterApparatus }] : []),
+  ];
+  const hasActiveFilters = activeFilters.length > 0;
+  const clearAllFilters = () => {
+    setFilterBuilding(null);
+    setFilterDivision(null);
+    setFilterArea(null);
+    setFilterApparatus(null);
+    persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null, filterApparatus: null });
+  };
+  const removeFilter = (key: 'building' | 'division' | 'area' | 'apparatus') => {
+    if (key === 'building') { setFilterBuilding(null); persistPrefs({ filterBuilding: null }); }
+    // Clearing a division clears its area too (area is division-scoped).
+    else if (key === 'division') handleDivisionChange(null);
+    else if (key === 'area') { setFilterArea(null); persistPrefs({ filterArea: null }); }
+    else { setFilterApparatus(null); persistPrefs({ filterApparatus: null }); }
+  };
 
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
@@ -1309,187 +1224,82 @@ export function OperationsBoard() {
           </div>
         )}
         <div className="fs-ops-main">
-          <StatusSummaryBar byStatus={byStatus} />
 
       {shorePoints.length > 0 && (
-        <div className="fs-ops-filterbar">
-          {/* One tight row (#356): label-less sort + filter chips scroll sideways on
-              the left; the List/Status-tiles View toggle is pinned on the right.
-              Added direction lives inside the Sort menu (newest/oldest), no pill. */}
-          <div className="fs-ops-filter-chips">
-            {/* "Mine" lens (#370) — combines with the filters that follow (AND, never
-                clears them). Visible but inert with no My Role / apparatus set on it;
-                tapping Mine while unavailable opens the same declare-your-role sheet
-                instead of silently doing nothing. */}
-            <div className="fs-ops-mine-toggle">
-              <Segmented
-                size="standard"
-                aria-label="Mine or all shore points"
-                options={MINE_OPTIONS}
-                value={mineOn ? 'mine' : 'all'}
-                onChange={(v) => {
-                  if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
-                  setMineOn(v === 'mine');
-                  persistPrefs({ mine: v === 'mine' });
-                }}
-              />
-              {!mineAvailable && (
-                <button type="button" className="fs-ops-mine-hint" onClick={() => setMyRoleSheetOpen(true)}>
-                  Set My Role to use Mine
-                </button>
-              )}
-            </div>
-            {/* Division view is spatially ordered (floor → side → area) — no Sort. */}
-            {layout === 'lanes' && (
-              <FilterPicker
-                label="Sort"
-                hideLabel
-                leadingIcon={<SortGlyph />}
-                value={sortMode}
-                placeholder="Location"
-                nullable={false}
-                options={[
-                  { value: 'location', label: 'Location' },
-                  { value: 'added-newest', label: 'Added — newest first' },
-                  { value: 'added-oldest', label: 'Added — oldest first' },
-                ]}
-                onChange={(v) => { const m = (v ?? 'location') as SortMode; setSortMode(m); persistPrefs({ sortMode: m }); }}
-              />
-            )}
-            {layout === 'list' && (
-              <FilterPicker
-                label="Sort"
-                hideLabel
-                leadingIcon={<SortGlyph />}
-                value={listSort}
-                placeholder="Location"
-                nullable={false}
-                options={[
-                  { value: 'added-newest', label: 'Added — newest first' },
-                  { value: 'added-oldest', label: 'Added — oldest first' },
-                  { value: 'status', label: 'Status' },
-                  { value: 'location', label: 'Location' },
-                ]}
-                onChange={(v) => { const m = (v ?? 'location') as ListSort; setListSort(m); persistPrefs({ listSort: m }); }}
-              />
-            )}
-            {/* Location scope: desktop keeps the always-visible rail + the flat
-                Building/Division/Area chips; phone collapses those three into one
-                Scope chip that opens the rail as a drilldown Sheet (Item 1). */}
-            {isDesktop ? (
-              <>
-                {buildingsPresent.length > 0 && (
-                  <FilterPicker
-                    label="Building"
-                    hideLabel
-                    value={filterBuilding}
-                    placeholder="All buildings"
-                    options={buildingsPresent.map((b) => ({ value: b, label: b }))}
-                    onChange={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
-                  />
-                )}
-                {divisionsPresent.length > 0 && (
-                  <FilterPicker
-                    label="Division"
-                    hideLabel
-                    value={filterDivision}
-                    placeholder="All divisions"
-                    options={divisionsPresent.map((d) => ({ value: d, label: divisionLabel(d) }))}
-                    onChange={handleDivisionChange}
-                  />
-                )}
-                {areasPresent.length > 0 && (
-                  <FilterPicker
-                    label="Area"
-                    hideLabel
-                    value={filterArea}
-                    placeholder="All areas"
-                    options={areasPresent.map((a) => ({ value: a, label: a }))}
-                    onChange={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
-                  />
-                )}
-              </>
-            ) : (
-              (divisionsPresent.length > 0 || buildingsPresent.length > 0) && (
-                <button
-                  type="button"
-                  className={`fs-ops-scope-chip${scopeActive ? ' is-active' : ''}`}
-                  onClick={() => setScopeSheetOpen(true)}
-                >
-                  <LocationGlyph />
-                  Scope
-                </button>
-              )
-            )}
-            {apparatusPresent.length > 0 && (
-              <FilterPicker
-                label="Apparatus"
-                hideLabel
-                value={filterApparatus}
-                placeholder="All apparatus"
-                options={apparatusPresent.map((a) => ({ value: a, label: a }))}
-                onChange={(v) => { setFilterApparatus(v); persistPrefs({ filterApparatus: v }); }}
-              />
-            )}
-            {(filterBuilding || filterDivision || filterArea || filterApparatus) && (
+        <>
+          {/* Tier 1 — the primary control: which of the three views. Its own row. */}
+          <div className="fs-ops-viewswitch">
+            <ViewToggle
+              value={layout}
+              onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
+            />
+          </div>
+
+          {/* Tier 2 — a compact utility row: the Mine lens (kept one-tap) + the
+              single Filters trigger. Inventory rides here on desktop; phone keeps
+              its header icon. */}
+          <div className="fs-ops-utility">
+            {/* "Mine" lens (#370) — combines with the filters (AND). Inert with no
+                My Role set; tapping while unavailable opens the declare-role sheet. */}
+            <Segmented
+              size="standard"
+              aria-label="Mine or all shore points"
+              options={MINE_OPTIONS}
+              value={mineOn ? 'mine' : 'all'}
+              onChange={(v) => {
+                if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
+                setMineOn(v === 'mine');
+                persistPrefs({ mine: v === 'mine' });
+              }}
+            />
+            <button
+              type="button"
+              ref={filtersBtnRef}
+              className={`fs-ops-filters-btn${hasActiveFilters ? ' is-active' : ''}`}
+              aria-haspopup="dialog"
+              aria-expanded={filterSheetOpen}
+              onClick={() => setFilterSheetOpen(true)}
+            >
+              <FilterGlyph />
+              Filters
+              {hasActiveFilters && <span className="fs-ops-filters-count">{activeFilters.length}</span>}
+            </button>
+            <span className="fs-ops-utility-spacer" />
+            {isDesktop && (
               <button
                 type="button"
-                className="fs-ops-filter-clear"
-                onClick={() => {
-                  setFilterBuilding(null);
-                  setFilterDivision(null);
-                  setFilterArea(null);
-                  setFilterApparatus(null);
-                  persistPrefs({ filterBuilding: null, filterDivision: null, filterArea: null, filterApparatus: null });
-                }}
+                className={`fs-ops-inv-cta${inventoryOpen ? ' is-active' : ''}`}
+                aria-pressed={inventoryOpen}
+                onClick={() => setInventoryOpen((v) => !v)}
               >
-                Clear
+                <InventoryIcon />
+                Inventory
               </button>
             )}
           </div>
-          {/* Desktop: the labeled Inventory toggle sits just left of the view
-              toggle (Alex); phone uses the header icon instead. */}
-          {isDesktop && (
-            <button
-              type="button"
-              className={`fs-ops-inv-cta${inventoryOpen ? ' is-active' : ''}`}
-              aria-pressed={inventoryOpen}
-              onClick={() => setInventoryOpen((v) => !v)}
-            >
-              <InventoryIcon />
-              Inventory
-            </button>
+
+          {/* Active filters as removable chips — replaces the always-on pickers,
+              the phone breadcrumb, and the Mine summary. */}
+          {hasActiveFilters && (
+            <div className="fs-ops-activechips">
+              {activeFilters.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  className="fs-ops-chip"
+                  onClick={() => removeFilter(f.key)}
+                  aria-label={`Remove ${f.label} filter`}
+                >
+                  {f.label}
+                  <span className="fs-ops-chip-x" aria-hidden="true">✕</span>
+                </button>
+              ))}
+              <button type="button" className="fs-ops-chip-clear" onClick={clearAllFilters}>
+                Clear all
+              </button>
+            </div>
           )}
-          <ViewToggle
-            value={layout}
-            onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
-          />
-        </div>
-      )}
-
-      {/* "Mine" summary (#370) — "left" = everything before the shore is wood-secured
-          or fully returned; "done" = secured + returned. byStatus is already
-          Mine-filtered above, so this reads the same narrowed set the board shows. */}
-      {mineOn && mineAvailable && (
-        <div className="fs-ops-mine-summary">
-          {byStatus.pending.length +
-            byStatus.process.length +
-            byStatus.strutset.length +
-            byStatus.cutting.length +
-            byStatus.runner.length}{' '}
-          left · {byStatus.secured.length + byStatus.returned.length} done
-        </div>
-      )}
-
-      {/* Phone scope breadcrumb (Item 1) — the active path, tap a segment to step
-          out a level. Phone-only; desktop shows the active path in the rail. */}
-      {!isDesktop && scopeActive && (
-        <ScopeBreadcrumb
-          building={filterBuilding}
-          division={filterDivision}
-          area={filterArea}
-          onSelect={applyRailFilter}
-        />
+        </>
       )}
 
       {layout === 'division' ? (
@@ -1623,22 +1433,34 @@ export function OperationsBoard() {
             </SideDrawer>
           </>
         )}
-        {/* Phone scope drilldown (Item 1) — the desktop rail, surfaced as a bottom
-            Sheet. Reuses OperationsRail verbatim; selecting a leaf picks-and-goes
-            (selectScope), an expandable node keeps the sheet open to keep drilling.
-            Rendered phone-only; the Sheet's claimOverlay closes any open companion
-            drawer (ADR-016 one-overlay). */}
-        {!isDesktop && (
-          <Sheet open={scopeSheetOpen} onClose={() => setScopeSheetOpen(false)} title="Jump to location">
-            <OperationsRail
-              tree={railTree}
-              filterBuilding={filterBuilding}
-              filterDivision={filterDivision}
-              filterArea={filterArea}
-              onSelect={selectScope}
-            />
-          </Sheet>
-        )}
+        {/* The Filters surface (2026-07-02 redesign) — Sort + Location + Apparatus
+            on both surfaces (sheet on phone, popover anchored to the Filters button
+            on desktop). Desktop also keeps the always-visible OperationsRail as the
+            power drill-down path. */}
+        <OpsFilterSheet
+          open={filterSheetOpen}
+          onClose={() => setFilterSheetOpen(false)}
+          anchor={filtersBtnRef}
+          layout={layout}
+          sortMode={sortMode}
+          onSortMode={(m) => { setSortMode(m); persistPrefs({ sortMode: m }); }}
+          listSort={listSort}
+          onListSort={(m) => { setListSort(m); persistPrefs({ listSort: m }); }}
+          buildingsPresent={buildingsPresent}
+          filterBuilding={filterBuilding}
+          onBuilding={(v) => { setFilterBuilding(v); persistPrefs({ filterBuilding: v }); }}
+          divisionsPresent={divisionsPresent}
+          filterDivision={filterDivision}
+          onDivision={handleDivisionChange}
+          areasPresent={areasPresent}
+          filterArea={filterArea}
+          onArea={(v) => { setFilterArea(v); persistPrefs({ filterArea: v }); }}
+          apparatusPresent={apparatusPresent}
+          filterApparatus={filterApparatus}
+          onApparatus={(v) => { setFilterApparatus(v); persistPrefs({ filterApparatus: v }); }}
+          hasActiveFilters={hasActiveFilters}
+          onClearAll={clearAllFilters}
+        />
         </div>
         </>
       )}
