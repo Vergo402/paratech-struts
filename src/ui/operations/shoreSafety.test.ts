@@ -42,7 +42,7 @@ describe('shoreSafety — catalog-mode contract', () => {
     shoreSafety(makeSp({ estimatedLoad: 5000 }));
     expect(mockFind).toHaveBeenCalled();
     // Second arg (inventory) must be null — the physics-not-stock invariant.
-    expect(mockFind.mock.calls[0]?.[1]).toBeNull();
+    expect((mockFind.mock.calls as unknown[][])[0]?.[1]).toBeNull();
   });
 });
 
