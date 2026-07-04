@@ -40,6 +40,9 @@ vi.mock('@ui/picker', () => ({
 }));
 
 // Control the drop-a-plate re-fit deterministically; keep assembleBom et al. real.
+// NOTE (audit H1, 2026-07-04): this mock stubs the fit engine for the panel's flow only.
+// Verdict-MATH correctness (deployed-count load share) is pinned by the REAL-engine tests
+// in core/shorepoint/reducer.test.ts (H1/#415) — never assert a safety verdict off this mock.
 const mockFindForShorePoint = vi.fn((): StrutCombination[] => []);
 vi.mock('@core/shorepoint', async (importActual) => {
   const actual = await importActual<typeof import('@core/shorepoint')>();

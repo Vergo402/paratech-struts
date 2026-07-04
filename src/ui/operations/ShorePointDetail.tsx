@@ -27,6 +27,10 @@ import { shoreSafety } from './shoreSafety';
  */
 export interface ShorePointDetailProps {
   sp: ShorePoint;
+  /** Struts ACTUALLY STANDING in this point's group (H1/#415) — the board computes it
+   *  from the full shore-point list so the verdict divides the load by the deployed
+   *  count, not the planned groupTotal. Omit → planned fallback (shoreSafety's default). */
+  deployedCount?: number;
 }
 
 // ---- deduction ledger rows (mirror RecommendationCard's fs-rec-ledger) -------
@@ -99,7 +103,7 @@ function whenLabel(at: number): string {
 // visually distinct from SAFE by word AND the absence of the green border.
 const SAFETY_WORD = { ok: 'Safe', warn: 'Check', unknown: 'Unverified' } as const;
 
-export function ShorePointDetail({ sp }: ShorePointDetailProps) {
+export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
   const { events, deviceUid } = useShorePointHistory(sp.id);
 
   const bom = sp.deployedBom ?? [];
@@ -135,7 +139,7 @@ export function ShorePointDetail({ sp }: ShorePointDetailProps) {
   // passes no live inventory): a strut's rating is physics — system + length — not a
   // function of what's left in stock, so deploying the LAST unit must not turn a real
   // over-capacity / unrated warning into "not re-verifiable" (2026-07-02 audit; #408/#410).
-  const safety = useMemo(() => shoreSafety(sp), [sp]);
+  const safety = useMemo(() => shoreSafety(sp, deployedCount), [sp, deployedCount]);
 
   // Only an actual FLAG (over-capacity / unrated) earns a spot in the hero, loud
   // and assertive. A clean pass or an unverifiable read is reference, not an

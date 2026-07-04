@@ -10,7 +10,12 @@ import { shoreSafety } from './shoreSafety';
 // findForShorePoint must be called with `null`, never live inventory (#408/#410,
 // the 2026-07-02 false-SAFE audit — deploying the last unit must not drop a real
 // warning to "not re-verifiable").
-const mockFind = vi.fn((..._args: unknown[]): StrutCombination[] => []);
+// NOTE (audit H1/H3, 2026-07-04): this suite MOCKS findForShorePoint to test the
+// helper's rendering/branching in isolation. It deliberately does NOT run the fit
+// engine — the safety-MATH correctness (the deployed-count denominator, over-capacity
+// at real lengths) is pinned by the REAL-engine companion in core/shorepoint/reducer.test.ts
+// (H1/#415, H3/#417). Do not add verdict-correctness assertions here off the mock.
+const mockFind = vi.fn((): StrutCombination[] => []);
 vi.mock('@core/shorepoint', async (importActual) => {
   const actual = await importActual<typeof import('@core/shorepoint')>();
   return { ...actual, findForShorePoint: (...args: unknown[]) => mockFind(...args) };

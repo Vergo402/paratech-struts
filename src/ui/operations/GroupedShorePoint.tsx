@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { ShorePointCard, SHORE_TYPE_LABELS, statusClasses, type ShorePointCardProps } from './ShorePointCard';
+import type { CapacityFlagValue } from './CapacityFlag';
 
 const TAB_W = 30; // px of visible tab sticking out per fallen card (handoff §2)
 
@@ -39,6 +40,9 @@ export interface GroupedShorePointProps {
   onRemoveReturn?: ShorePointCardProps['onRemoveReturn'];
   /** Per-member group gate (#221 OQ2) — resolved against the member's own sp. */
   advanceDisabledReasonFor?: (sp: ShorePoint) => string | undefined;
+  /** Per-member over-capacity/unrated flag (H1/#415) — resolved against the member's
+   *  own sp using the FULL group, so a short-of-plan group flags on every leg card. */
+  capacityFlagOf?: (sp: ShorePoint) => CapacityFlagValue;
   /** Highest open-hazard severity in the group's Division (#394) — one location
    *  per group, so the same badge rides every member card. */
   hazard?: ShorePointCardProps['hazard'];
@@ -72,6 +76,7 @@ export function GroupedShorePoint({
   onStepBack,
   onRemoveReturn,
   advanceDisabledReasonFor,
+  capacityFlagOf,
   hazard,
 }: GroupedShorePointProps) {
   const n = members.length;
@@ -149,6 +154,7 @@ export function GroupedShorePoint({
         onStepBack={onStepBack}
         onRemoveReturn={onRemoveReturn}
         advanceDisabledReason={advanceDisabledReasonFor?.(member)}
+        capacityFlag={capacityFlagOf?.(member)}
         hazard={hazard}
         // The member's own group badge ("2 / 3") rides the card header already.
         key={`spc-${member.id}-${fallbackIndex}`}

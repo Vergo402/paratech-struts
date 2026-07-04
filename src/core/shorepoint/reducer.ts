@@ -108,6 +108,30 @@ export function strutLoadShare(sp: ShorePoint): number {
 }
 
 /**
+ * Struts ACTUALLY STANDING in this point's group — members (incl. self) that share
+ * its groupId, aren't soft-deleted, carry a deployedBom, and haven't been returned.
+ * Ungrouped → 1 if standing, else 0. The denominator for the deployed-load share (H1).
+ */
+export function deployedStrutCount(sp: ShorePoint, all: ShorePoint[]): number {
+  const standing = (p: ShorePoint) => p.deployedBom != null && p.status !== 'returned';
+  if (!sp.groupId) return standing(sp) ? 1 : 0;
+  return all.filter((p) => p.groupId === sp.groupId && p.deletedAt == null && standing(p)).length;
+}
+
+/**
+ * The load THIS strut carries split across the struts ACTUALLY STANDING — not the
+ * planned groupTotal. A group deployed short of plan (1 of a planned 2) puts the whole
+ * load on the standing strut, so the READ surfaces (Quick View verdict, the persistent
+ * board flag) must divide by the deployed count, or a partial deploy reads as a false
+ * SAFE (2026-07-04 audit H1/#415). The DEPLOY-TIME gate keeps strutLoadShare (planned
+ * groupTotal): it commits one strut at a time and must honor the operator's N-strut
+ * intent. deployedCount is floored at 1 (a deployed point is at least its own strut).
+ */
+export function strutLoadShareDeployed(sp: ShorePoint, deployedCount: number): number {
+  return (sp.estimatedLoad ?? 0) / Math.max(1, deployedCount);
+}
+
+/**
  * Struts a load needs at a given per-strut capacity — the same ceil(load/capacity)
  * the engine uses for recommendedQty, exposed so the card/store can compare it to
  * the struts a shore actually HAS. 1 when either number is absent (no basis to
@@ -145,7 +169,7 @@ function sameExtLengths(a: number[], b: number[]): boolean {
  * recorded load: the ABSENCE of data is never a flag. Matches the deployed assembly
  * by strut model + extension multiset, exactly like the drawer.
  */
-export function deployedCapacityFlag(sp: ShorePoint): 'unrated' | 'over-capacity' | null {
+export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): 'unrated' | 'over-capacity' | null {
   const strut = deployedStrutOf(sp);
   if (!strut?.model) return null;
   const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
@@ -155,7 +179,11 @@ export function deployedCapacityFlag(sp: ShorePoint): 'unrated' | 'over-capacity
   if (!match) return null;
   if (match.unrated) return 'unrated';
   if (match.exceedsCapacity) return 'over-capacity';
-  if (sp.estimatedLoad != null && strutLoadShare(sp) > match.capacity) return 'over-capacity';
+  // Divide by the struts actually standing when the caller knows the count (H1/#415);
+  // fall back to planned groupTotal only when it doesn't (last resort — a partial
+  // deploy would then still read SAFE, the bug this closes).
+  const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
+  if (sp.estimatedLoad != null && share > match.capacity) return 'over-capacity';
   return null;
 }
 
@@ -213,7 +241,8 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   const next: ShorePoint = { ...sp };
   // building/area/label: `null` clears the field (the OperationEdited.location
   // convention), `undefined` = no change.
-  // #220 field-lock: only label is editable once a point advances past Pending.
+  // label / crew / cut-done apply in EVERY status (below); sizing fields are
+  // #220-locked past Pending except for grouped shores — see the guard further down.
   if (patch.label !== undefined) {
     if (patch.label === null) delete next.label;
     else next.label = patch.label;
@@ -230,7 +259,15 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     if (patch.cuttingDone) next.cuttingDone = true;
     else delete next.cuttingDone;
   }
-  if (sp.status !== 'pending') return next;
+  // #220 field-lock: once a point advances past Pending its sizing fields lock —
+  // EXCEPT for a grouped shore, where a re-measure must fan to every leg so one
+  // physical shore keeps one length (2026-07-04 audit H3/#417; Alex D2). The sole
+  // editor (AddShorePointModal.handleSaveEdit) always fans the identical patch to
+  // ALL live group members, so a grouped member accepting sizing here can't diverge;
+  // the UI confirms first when a set leg is present. Ungrouped points keep the hard lock.
+  // ponytail: grouped-bypass rides the fan-to-all-members invariant — if a single-leg
+  // grouped edit path is ever added, gate this on an explicit patch flag instead.
+  if (sp.status !== 'pending' && sp.groupId == null) return next;
   if (patch.division !== undefined) next.division = patch.division;
   if (patch.building !== undefined) {
     if (patch.building === null) delete next.building;

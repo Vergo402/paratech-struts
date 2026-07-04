@@ -1,5 +1,5 @@
 import type { ShorePoint } from '@core/schema';
-import { deployedStrutOf, findForShorePoint, strutLoadShare } from '@core/shorepoint';
+import { deployedStrutOf, findForShorePoint, strutLoadShare, strutLoadShareDeployed } from '@core/shorepoint';
 import { sameExtensions } from './pieceIdentity';
 
 /**
@@ -22,7 +22,7 @@ import { sameExtensions } from './pieceIdentity';
  */
 export type ShoreSafety = { kind: 'ok' | 'warn' | 'unknown'; msg: string };
 
-export function shoreSafety(sp: ShorePoint): ShoreSafety {
+export function shoreSafety(sp: ShorePoint, deployedCount?: number): ShoreSafety {
   const strut = deployedStrutOf(sp);
   if (!strut?.model) return { kind: 'unknown', msg: 'No strut on record for this shore.' };
   const exts = (sp.deployedBom ?? [])
@@ -40,7 +40,9 @@ export function shoreSafety(sp: ShorePoint): ShoreSafety {
   // this strut's SHARE of the load to its rated capacity, or a multi-strut load reads
   // as a false SAFE (#408). Only checkable when a load was recorded.
   if (sp.estimatedLoad != null) {
-    const share = strutLoadShare(sp);
+    // Split across the struts actually standing when the caller knows the count
+    // (H1/#415); planned groupTotal is the last-resort fallback only.
+    const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
     if (share > match.capacity) {
       const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
       const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;

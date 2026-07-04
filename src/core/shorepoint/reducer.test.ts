@@ -7,6 +7,8 @@ import {
   deductionTotalInches,
   cutLengthInches,
   deployedCapacityFlag,
+  strutLoadShareDeployed,
+  deployedStrutCount,
 } from './reducer';
 import { deployedStrutOf } from './bom';
 import { canTransition } from './status';
@@ -431,5 +433,93 @@ describe('deployedCapacityFlag — persistent board-card safety flag (#410 audit
 
   it('no flag for a pending shore with no strut on record', () => {
     expect(deployedCapacityFlag(sp())).toBeNull();
+  });
+});
+
+// H1 / #415 — the false-SAFE the pre-Phase-J audit reopened. These run the REAL fit
+// engine (no findForShorePoint mock — that mock is exactly why H1 slipped the suite),
+// so they prove the deployed-count denominator, not a stubbed verdict.
+describe('H1 (#415) — load share divides by the struts actually STANDING, not planned', () => {
+  const strutBom = (model: string): DeployedBom => [{ role: 'strut', model, system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' }];
+
+  it('strutLoadShareDeployed splits the load by the deployed count (floored at 1)', () => {
+    const point = sp({ estimatedLoad: 34000 });
+    expect(strutLoadShareDeployed(point, 1)).toBe(34000);
+    expect(strutLoadShareDeployed(point, 2)).toBe(17000);
+    expect(strutLoadShareDeployed(point, 0)).toBe(34000); // never divide by zero
+  });
+
+  it('deployedStrutCount counts only STANDING members (deployed, not returned, not deleted)', () => {
+    const bom = strutBom('LS 406');
+    const members = [
+      sp({ id: 'm1', groupId: 'g1', status: 'process', deployedBom: bom }),
+      sp({ id: 'm2', groupId: 'g1', status: 'pending' }), // not deployed
+      sp({ id: 'm3', groupId: 'g1', status: 'returned', deployedBom: bom }), // removed — not standing
+      sp({ id: 'm4', groupId: 'g1', status: 'secured', deployedBom: bom, deletedAt: 2 }), // soft-deleted
+    ];
+    expect(deployedStrutCount(members[0]!, members)).toBe(1); // only m1 stands
+    expect(deployedStrutCount(sp({ status: 'process', deployedBom: bom }), [])).toBe(1); // ungrouped deployed
+    expect(deployedStrutCount(sp({ status: 'pending' }), [])).toBe(0); // ungrouped pending
+  });
+
+  it('THE BUG: a Double-T deployed 1-of-2 reads OVER-CAPACITY (was a false SAFE)', () => {
+    // 58.5″, 34,000 lb, ONE LS 406 (rated 22,000 @4:1). Planned groupTotal 2, but only
+    // one strut is standing → it carries the whole 34,000 → over capacity.
+    const point = sp({ measurementEighths: 468, estimatedLoad: 34000, groupTotal: 2, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point, 1)).toBe('over-capacity'); // deployed 1-of-2
+    expect(deployedCapacityFlag(point, 2)).toBeNull(); // both standing → 17,000 each, safe
+  });
+
+  it('the planned-count FALLBACK (no deployedCount) trusts groupTotal — so the surfaces MUST pass the count', () => {
+    // Documents WHY the board threads deployedCount: without it, the same 1-of-2 shore
+    // reads SAFE off the planned groupTotal — the exact hole the tri-views kept open (H2).
+    const point = sp({ measurementEighths: 468, estimatedLoad: 34000, groupTotal: 2, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBeNull();
+  });
+});
+
+// H3 / #417 (D2) — a grouped re-measure fans the sizing change to EVERY leg, deployed
+// included, so one physical shore keeps one length. Ungrouped points keep the #220 lock.
+describe('H3 (#417 / D2) — grouped re-measure propagates sizing to deployed legs', () => {
+  it('a GROUPED point accepts a measurement + deductions change past Pending', () => {
+    const next = shorePointReducer(sp({ id: 'g1a', status: 'process', groupId: 'g1', measurementEighths: 48 * 8 }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'g1a',
+      patch: { measurementEighths: 46 * 8, deductions: { headerWood: '4x4', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' } },
+    } satisfies FieldShoreEvent);
+    expect(next.measurementEighths).toBe(46 * 8); // propagated to the set leg (D2)
+    expect(next.deductions.headerWood).toBe('4x4');
+  });
+
+  it('an UNGROUPED point still LOCKS sizing past Pending (#220 unchanged)', () => {
+    const next = shorePointReducer(sp({ status: 'process', measurementEighths: 48 * 8 }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { measurementEighths: 46 * 8 },
+    } satisfies FieldShoreEvent);
+    expect(next.measurementEighths).toBe(48 * 8); // locked — single deployed shore
+  });
+
+  it('real-engine: no divergence — a pending leg and a set leg both land at the new length + verify identically', () => {
+    const bom: DeployedBom = [{ role: 'strut', model: 'LS 406', system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' }];
+    const patch = { measurementEighths: 468 } as const; // re-measure to 58.5″
+    // Leg A already SET (strutset), Leg B still pending — the mixed-status group.
+    const legA = shorePointReducer(
+      sp({ id: 'a', status: 'strutset', groupId: 'g', estimatedLoad: 34000, groupTotal: 2, measurementEighths: 384, deployedBom: bom }),
+      { type: 'ShorePointEdited', ...meta, spId: 'a', patch } satisfies FieldShoreEvent,
+    );
+    const legB = shorePointReducer(
+      sp({ id: 'b', status: 'strutset', groupId: 'g', estimatedLoad: 34000, groupTotal: 2, measurementEighths: 384, deployedBom: bom }),
+      { type: 'ShorePointEdited', ...meta, spId: 'b', patch } satisfies FieldShoreEvent,
+    );
+    expect(legA.measurementEighths).toBe(468);
+    expect(legB.measurementEighths).toBe(468); // the bug was: a set leg stayed at 384
+    // Both at the same length → the REAL engine gives them the same verdict (2 standing).
+    const count = deployedStrutCount(legA, [legA, legB]);
+    expect(count).toBe(2);
+    expect(deployedCapacityFlag(legA, count)).toBe(deployedCapacityFlag(legB, count));
+    expect(deployedCapacityFlag(legA, count)).toBeNull(); // 34,000 / 2 = 17,000 ≤ 22,000
   });
 });

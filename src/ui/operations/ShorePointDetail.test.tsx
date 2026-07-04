@@ -15,6 +15,9 @@ vi.mock('@ui/hooks', () => ({
   useShorePointHistory: () => mockHistory(),
 }));
 
+// NOTE (audit H1, 2026-07-04): mocks the fit engine to test the drawer's rendering only.
+// Verdict-MATH correctness (the deployed-count load share) is pinned by the REAL-engine
+// tests in core/shorepoint/reducer.test.ts (H1/#415) — never assert a safety verdict here.
 const mockFind = vi.fn((): StrutCombination[] => []);
 vi.mock('@core/shorepoint', async (importActual) => {
   const actual = await importActual<typeof import('@core/shorepoint')>();

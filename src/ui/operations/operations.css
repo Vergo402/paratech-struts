@@ -864,6 +864,7 @@ button.fs-spc-head {
    pill on its OWN line below the header (Alex), left-aligned, never sharing the
    status-badge row. Same danger pair as the deploy warning gate. */
 .fs-spc-flag-row {
+  display: flex;
   margin-top: var(--space-2);
 }
 .fs-spc-flag {

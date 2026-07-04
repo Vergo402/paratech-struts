@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs } from '@core/shorepoint';
+import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
 import {
   compareAreaValues,
   compareBuildingValues,
@@ -45,6 +45,7 @@ import { PastOperationView } from './PastOperationView';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
 import { DivisionView } from './DivisionView';
 import { ShorePointListRow } from './ShorePointListRow';
+import type { CapacityFlagValue } from './CapacityFlag';
 import { HeaderPill, OpsMetaLine } from './OpsHeaderMeta';
 import { OpsFilterSheet } from './OpsFilterSheet';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
@@ -178,6 +179,9 @@ interface ItemCallbacks {
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
   activeStackId: string | null;
+  /** Over-capacity/unrated flag per point (H1/#415, H2/#416) — computed by the board
+   *  from the full group, so a short-of-plan group flags on every surface. */
+  capacityFlagOf: (sp: ShorePoint) => CapacityFlagValue;
 }
 
 // Short status labels for the List-view dividers AND Board lane headers — these
@@ -227,6 +231,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onStepBack={cb.onStepBack}
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
+                capacityFlagOf={cb.capacityFlagOf}
               />
             </CardBoundary>
           </div>
@@ -245,6 +250,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onStepBack={cb.onStepBack}
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
+                capacityFlag={cb.capacityFlagOf(item.sp)}
               />
             </CardBoundary>
           </div>
@@ -1089,6 +1095,20 @@ export function OperationsBoard() {
     });
   }, []);
 
+  // One over-capacity/unrated verdict per point, computed HERE where the full group
+  // is visible — the share divides by the struts ACTUALLY STANDING (H1/#415), so a
+  // short-of-plan group reads over-capacity, and the Board card, List row, and Division
+  // tile all read the SAME flag (H2/#416). Memoized on shorePoints; the lookup returns
+  // null for pending/undeployed/clean points (deployedCapacityFlag's own null cases).
+  const capacityFlagOf = useMemo(() => {
+    const flags = new Map<string, CapacityFlagValue>();
+    for (const sp of shorePoints) {
+      if (sp.deletedAt != null || sp.deployedBom == null) continue;
+      flags.set(sp.id, deployedCapacityFlag(sp, deployedStrutCount(sp, shorePoints)));
+    }
+    return (sp: ShorePoint): CapacityFlagValue => flags.get(sp.id) ?? null;
+  }, [shorePoints]);
+
   // One <Lane> with its full prop set — rendered flat (desktop, STATUS_ORDER) or
   // wrapped in phase groups (phone, PHASE_GROUPS). DRYs the two lane layouts.
   const renderLane = (status: ShorePointStatus) => (
@@ -1111,6 +1131,7 @@ export function OperationsBoard() {
       onRemoveReturn={openRemoveReturn}
       advanceDisabledReasonFor={advanceDisabledReasonFor}
       activeStackId={scrollToId}
+      capacityFlagOf={capacityFlagOf}
     />
   );
 
@@ -1391,7 +1412,7 @@ export function OperationsBoard() {
         divisionBands.length === 0 ? (
           <p className="fs-lane-empty">No shore points</p>
         ) : (
-          <DivisionView bands={divisionBands} onOpenDetail={openDetail} />
+          <DivisionView bands={divisionBands} onOpenDetail={openDetail} flagOf={capacityFlagOf} />
         )
       ) : layout === 'lanes' ? (
         <div className="fs-ops-lanes">
@@ -1427,14 +1448,14 @@ export function OperationsBoard() {
                 </div>,
                 ...inStatus.map((it) => {
                   const rep = laneItemRep(it);
-                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} onOpen={openDetail} />;
+                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} onOpen={openDetail} />;
                 }),
               ];
             })
           ) : (
             listItems.map((it) => {
               const rep = laneItemRep(it);
-              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} onOpen={openDetail} />;
+              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} onOpen={openDetail} />;
             })
           )}
         </div>
@@ -1484,7 +1505,7 @@ export function OperationsBoard() {
               cascadeIndex={0}
               boundsSelector=".fs-shell-main"
             >
-              {detailSp && <ShorePointDetail sp={detailSp} />}
+              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} />}
             </FloatingPanel>
             <FloatingPanel
               open={inventoryOpen}
@@ -1512,7 +1533,7 @@ export function OperationsBoard() {
               onClose={() => setDetailSpId(null)}
               title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
             >
-              {detailSp && <ShorePointDetail sp={detailSp} />}
+              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} />}
             </SideDrawer>
             <SideDrawer
               open={inventoryOpen}

@@ -1,7 +1,8 @@
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths } from './cardParts';
+import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 
 /**
  * DivisionView (tri-view) — the incident read by BUILDING LEVEL: floors stacked
@@ -37,6 +38,9 @@ export interface DivisionBand {
 export interface DivisionViewProps {
   bands: DivisionBand[];
   onOpenDetail: (sp: ShorePoint) => void;
+  /** The over-capacity/unrated flag for a point, computed by the board against the
+   *  struts actually standing (H1/#415) so the tile flags like the Board card (H2/#416). */
+  flagOf: (sp: ShorePoint) => CapacityFlagValue;
 }
 
 // Compact status abbreviations for the tile (the full labels are too long for a
@@ -59,7 +63,7 @@ function tilesOf(items: LaneItem[]): BandTile[] {
   );
 }
 
-function DivisionTile({ sp, count, onOpen }: BandTile & { onOpen: (sp: ShorePoint) => void }) {
+function DivisionTile({ sp, count, flag, onOpen }: BandTile & { flag: CapacityFlagValue; onOpen: (sp: ShorePoint) => void }) {
   const model = bomModelLabel(sp);
   return (
     <button
@@ -80,12 +84,13 @@ function DivisionTile({ sp, count, onOpen }: BandTile & { onOpen: (sp: ShorePoin
       <span className="fs-divtile-val">
         <span className="fs-divtile-ml">
           {model ? <span className="fs-divtile-model">{model} · </span> : null}
-          <MeasurementValue eighths={sp.measurementEighths} className="fs-divtile-num" />
+          <MeasurementValue eighths={cardValueEighths(sp)} className="fs-divtile-num" />
         </span>
         {/* Status stays a TEXT abbrev here (not color-only): tiles group by floor,
             so the left-edge hue is the only other status cue (Principle 9). */}
         <span className="fs-divtile-st">{STATUS_ABBR[sp.status]}</span>
       </span>
+      <CapacityFlag flag={flag} />
     </button>
   );
 }
@@ -97,7 +102,7 @@ function bandGutter(band: DivisionBand): { big: string; small: string } {
   return { big: `S${-band.n}`, small: `SUB ${-band.n}` };
 }
 
-export function DivisionView({ bands, onOpenDetail }: DivisionViewProps) {
+export function DivisionView({ bands, onOpenDetail, flagOf }: DivisionViewProps) {
   return (
     <div className="fs-div" role="list" aria-label="Shore points by division">
       {bands.map((band, i) => {
@@ -123,7 +128,7 @@ export function DivisionView({ bands, onOpenDetail }: DivisionViewProps) {
               </div>
               <div className="fs-div-bay">
                 {tilesOf(band.items).map((t) => (
-                  <DivisionTile key={t.sp.id} {...t} onOpen={onOpenDetail} />
+                  <DivisionTile key={t.sp.id} {...t} flag={flagOf(t.sp)} onOpen={onOpenDetail} />
                 ))}
               </div>
             </div>

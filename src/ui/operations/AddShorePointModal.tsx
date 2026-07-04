@@ -96,6 +96,21 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const [deploying, setDeploying] = useState(false);
   const [deployError, setDeployError] = useState<string | null>(null);
 
+  // Group membership for the edit path — the physical shore's live legs (Double-T /
+  // 3-Post) or just this point. Drives the D2 re-measure confirmation (H3/#417): a
+  // sizing edit fans to every leg, so if a leg is already SET we confirm first.
+  const editMembers = useMemo(
+    () =>
+      shorePoint?.groupId
+        ? shorePoints.filter((p) => p.groupId === shorePoint.groupId && p.deletedAt == null)
+        : shorePoint
+          ? [shorePoint]
+          : [],
+    [shorePoint, shorePoints],
+  );
+  const setLegCount = editMembers.filter((m) => m.status !== 'pending').length;
+  const [remeasureConfirm, setRemeasureConfirm] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     if (shorePoint) {
@@ -364,7 +379,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
 
   // Edit an existing Pending point (#220 3-R). assignedResource is reassignable
   // throughout the op; measurement/shore type lock once past Pending (reducer).
-  async function handleSaveEdit() {
+  async function handleSaveEdit(confirmed = false) {
     if (!canSubmit || !operation || !shorePoint) return;
     const uid = await getUid();
     const sp = shorePoint;
@@ -376,9 +391,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     // (seq) and applying the edited location/measurement. Grow adds struts; shrink
     // drops the extras (Alex's call). A mate already deployed (mixed-status group)
     // falls through to the plain patch below — never tear down a deployed strut.
-    const members = sp.groupId
-      ? shorePoints.filter((p) => p.groupId === sp.groupId && p.deletedAt == null)
-      : [sp];
+    const members = editMembers;
     if (members.every((m) => m.status === 'pending') && strutsPerShore !== members.length) {
       const at = Date.now();
       const rebuilt = buildShoreStruts(sp.seq);
@@ -447,6 +460,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     // group-mate (`members`, computed above); an ungrouped shore is just [sp], so a
     // single-strut edit keeps the existing one-event path. A shore-type change never
     // reaches here (it always changes the strut count → the rebuild branch above).
+    // D2 (2026-07-04 audit H3/#417): the fan-out above now reaches DEPLOYED legs too,
+    // so one physical shore keeps one length. Don't re-spec a set strut silently — when
+    // a fit-affecting field changed and a leg is already set, confirm first (the set
+    // strut then flags for re-check via the honest re-verify verdict).
+    const sizingChanged =
+      patch.measurementEighths !== undefined || patch.deductions !== undefined || patch.shoreType !== undefined;
+    if (sizingChanged && setLegCount > 0 && !confirmed) {
+      setRemeasureConfirm(true);
+      return;
+    }
+
     const at = Date.now();
     const edits = members.map((m) => ({
       type: 'ShorePointEdited' as const,
@@ -475,7 +499,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       fullWidth
       disabled={!canSubmit}
       disabledReason={disabledReason ?? undefined}
-      onPress={handleSaveEdit}
+      onPress={() => handleSaveEdit()}
     >
       Save
     </Button>
@@ -504,6 +528,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   );
 
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
@@ -639,5 +664,39 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
         {submitAction}
       </div>
     </Modal>
+
+    {/* D2 re-measure confirmation (H3/#417): a sizing edit on a group with an already-
+        set leg fans to every leg (so one shore keeps one length) — confirm first, since
+        the set strut's recorded length changes and it must be physically re-checked. */}
+    <Modal
+      open={remeasureConfirm}
+      onClose={() => setRemeasureConfirm(false)}
+      title="Re-measure this shore?"
+      variant="destructive"
+      footer={
+        <>
+          <Button variant="secondary" onPress={() => setRemeasureConfirm(false)}>
+            <span data-modal-cancel>Cancel</span>
+          </Button>
+          <Button
+            variant="primary"
+            destructive
+            onPress={() => {
+              setRemeasureConfirm(false);
+              void handleSaveEdit(true);
+            }}
+          >
+            Update all legs
+          </Button>
+        </>
+      }
+    >
+      <p>
+        This shore has <strong>{setLegCount}</strong> of <strong>{editMembers.length}</strong> struts already set.
+        Updating the measurement changes every leg so the shore stays one length — the set strut
+        {setLegCount > 1 ? 's' : ''} will be flagged for re-check.
+      </p>
+    </Modal>
+    </>
   );
 }

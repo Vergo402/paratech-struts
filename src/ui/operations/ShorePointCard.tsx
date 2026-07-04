@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react';
-import type { ShorePoint, ShorePointStatus } from '@core/schema';
+import type { ShorePoint } from '@core/schema';
 import { strutSysKey } from '@core/load';
 import {
   bomModelLabel,
-  cutLengthInches,
   deployedCapacityFlag,
   deployedStrutOf,
-  effectiveLengthFrom,
   pendingNeedModels,
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
-import { SHORE_TYPE_LABELS, cardLocation, cardLabelType } from './cardParts';
+import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths } from './cardParts';
+import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 
 // Short display labels live in cardParts (shared by all three views); re-exported
 // here for the existing callers that import them from ShorePointCard.
@@ -43,14 +42,6 @@ function needLine(models: string[]): string {
   if (models.length <= 2) return `Needs ${models.join(' or ')} — none on scene`;
   return `Needs ${models[0]} or ${models[1]} (+${models.length - 2} more) — none on scene`;
 }
-
-// Once a point goes to the saw, the value is the wood CUT length, not the strut
-// effective length (#361): every phase from cutting onward reads the cut length,
-// pre-cut reads the required strut length. The strut·length is a quiet tertiary
-// line now (Alex 2026-07-03 unified card anatomy) — no per-phase label, no
-// promoted number; the LOCATION is the card's focus, not the length. The full
-// "Required strut length" ledger vocabulary still lives in Quick View / Details.
-const CUT_PHASES = new Set<ShorePointStatus>(['cutting', 'runner', 'secured', 'returned']);
 
 /**
  * Status-hook classes for a point — appends the WAITING presentation when a
@@ -124,6 +115,13 @@ export interface ShorePointCardProps {
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
   advanceDisabledReason?: string;
   /**
+   * The over-capacity / unrated flag, computed by the board where the full group is
+   * known (deployedCapacityFlag + deployedStrutCount, H1/#415), so the card, List row,
+   * and Division tile show the SAME flag (H2/#416). Omit → the card computes a
+   * planned-denominator fallback (Cutting Station / archive don't thread it).
+   */
+  capacityFlag?: CapacityFlagValue;
+  /**
    * Presentational only — no slice schema state yet. The gallery and the future
    * cut-list workflow (#222) drive these; struck through with a corner-to-corner
    * slash + "Removed from cut list" chip; slides + the pending action area drop.
@@ -162,6 +160,7 @@ export function ShorePointCard({
   onClearCutDone,
   onRemoveReturn,
   advanceDisabledReason,
+  capacityFlag: capacityFlagProp,
   removed = false,
   hazard = false,
   active = false,
@@ -186,10 +185,14 @@ export function ShorePointCard({
   const deployedStrut = deployedStrutOf(sp);
 
   // Persistent at-a-glance safety flag on a DEPLOYED card (2026-07-02 audit #7, v3
-  // parity): 'unrated' / 'over-capacity', re-derived catalog-mode so it agrees with
-  // Quick View and a relief IC sees a beyond-rating shore without opening anything.
-  // Null for pending (no strut on record) / clean shores.
-  const capacityFlag = useMemo(() => deployedCapacityFlag(sp), [sp]);
+  // parity): 'unrated' / 'over-capacity'. The board passes the VALUE (computed against
+  // the struts actually standing — H1/#415 — so a short-of-plan group flags), and the
+  // List/Division tiles get the SAME one (H2/#416). Fallback compute for surfaces that
+  // don't thread it (Cutting Station, archive) — never worse than the prior behavior.
+  const capacityFlag = useMemo(
+    () => (capacityFlagProp !== undefined ? capacityFlagProp : deployedCapacityFlag(sp)),
+    [capacityFlagProp, sp],
+  );
 
   // Created-order number tab (top-left): a ghost outline while no strut is
   // assigned, then FILLS with the deployed strut's SYSTEM color (gold/grey/
@@ -213,13 +216,9 @@ export function ShorePointCard({
   const location = cardLocation(sp);
   const labelType = cardLabelType(sp);
 
-  // Pre-cut, the shelf is the required STRUT length; from the cutting phase on it
-  // is the wood CUT length — a different number (shore-type lumber + wedge, no
-  // plates; #361). Both helpers return INCHES already floored to ⅛″ (ADR-012) — × 8
-  // lands on an exact eighth; round() only defends float noise. No double-floor.
-  const valueEighths = Math.round(
-    (CUT_PHASES.has(sp.status) ? cutLengthInches(sp) : effectiveLengthFrom(sp.measurementEighths, sp.deductions)) * 8,
-  );
+  // Cut length once cutting, else effective strut length — shared with List/Division
+  // via cardValueEighths so all three print the same number (#361, audit #416 D3).
+  const valueEighths = cardValueEighths(sp);
 
   // The strut model rides the tertiary length line once deployed (bomModelLabel)
   // — except at the Cutting Station, where the value is the cut length alone
@@ -289,15 +288,8 @@ export function ShorePointCard({
       )}
 
       {/* Persistent unrated / over-capacity flag on its OWN line below the header
-          (Alex's call), never sharing the status-badge row. Danger red, non-
-          dismissable; the card still opens Quick View for the full verdict. */}
-      {capacityFlag && (
-        <div className="fs-spc-flag-row">
-          <span className={`fs-spc-flag fs-spc-flag--${capacityFlag}`} role="status">
-            ⚠ {capacityFlag === 'unrated' ? 'Unrated' : 'Over capacity'}
-          </span>
-        </div>
-      )}
+          (Alex's call) — the SAME badge the List row + Division tile render. */}
+      <CapacityFlag flag={capacityFlag} />
 
       {valueShelf}
 
