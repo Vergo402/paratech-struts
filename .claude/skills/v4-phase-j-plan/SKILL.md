@@ -128,6 +128,21 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 
    ---
 
+   ## Bleeding Edge Opportunity
+
+   **Before finalizing the Phase J plan, ask:** If you could add one unrequested thing to v4 that would be truly outstanding and unique — something that makes FieldShore industry-leading or bleeding edge — what would that thing be?
+
+   This is not scope creep; it's a gate-step opportunity. Phase J is the moment to identify one transformational feature that sets FieldShore apart from every other incident-management app in the space. Examples:
+   - **Real-time peer physics** — when one rig's load live-updates, every other shore's share recalculates and flags in real time across all devices (no polling, true sync)
+   - **AI cut-length optimization** — given a wood inventory and a cut list, suggest the exact sequence + saw station assignment to minimize waste (cuts to exhaustion, then return)
+   - **Automatic resilience simulation** — when a strut fails mid-operation, show the live re-deployment options from inventory (what do you deploy NOW with what you have left?)
+   - **Multi-agency mutual-aid dark mode** — departments in the same incident see each other's shore points and can claim/assist without a defined command structure (consensus-driven, bottom-up)
+   - **Incident reconstruction video** — after the operation, auto-generate a 30-second visual timeline of every shore point's lifecycle (pending → cutting → secured → returned) as a training artifact
+
+   If one of these resonates, flag it here. If not, ask what would make Alex reach for FieldShore first over a spreadsheet or a radio call. **Do NOT build it now** — Phase J is still cutover-focused — but capture it as a v4.1 / v5 vision item so it doesn't get lost in the close.
+
+   ---
+
 7. **Do NOT commit.** This is a planning output, not a permanent file. Show Alex the consolidated list in the response. If Alex approves, he'll decide whether to sequence the work or adjust the plan.
 
 ## Never
