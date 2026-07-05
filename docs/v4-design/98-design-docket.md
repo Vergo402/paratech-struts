@@ -61,6 +61,7 @@
 | Item | Canonical home | Added |
 |---|---|---|
 | ~~`--motion-loop` — continuous-loop timing (spinner/shimmer)~~ **Resolved 2026-07-02: a behavior value, not a 7th duration token; value set when the first spinner/shimmer ships (none in v4 yet).** | [`99-open-questions.md`](99-open-questions.md) #19 ([#355](https://github.com/Vergo402/paratech-struts/issues/355)) | 2026-06-11 (seed) |
+| **v4 Visual Elevation Program** — whole-app craft pass (language-first exemplar Inventory+Settings → Ops → QF → Command); mess-map + external-docs disposition in [`.claude/audits/v4-visual-elevation-2026-07/`](../../.claude/audits/v4-visual-elevation-2026-07/inconsistencies.md); rejected external items (retire-gold, dark-only) need a new ADR to re-litigate | [#430](https://github.com/Vergo402/paratech-struts/issues/430) (subs #431–#435) | 2026-07-05 |
 
 ## Resolved (struck rows land here)
 
