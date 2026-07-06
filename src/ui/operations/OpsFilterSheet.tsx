@@ -23,6 +23,13 @@ export interface OpsFilterSheetProps {
   anchor: RefObject<HTMLElement>;
   layout: BoardLayout;
 
+  /** The Mine lens (#370) — relocated INTO the sheet (Alex, Stage 2a review).
+   *  Selecting Mine with no declared role is the board's cue to open the
+   *  declare-role sheet (it closes this surface first). */
+  mineOn: boolean;
+  mineAvailable: boolean;
+  onMine: (on: boolean) => void;
+
   sortMode: SortMode;
   onSortMode: (v: SortMode) => void;
   listSort: ListSort;
@@ -86,6 +93,7 @@ export function OpsFilterSheet(props: OpsFilterSheetProps) {
     areasPresent, filterArea, onArea,
     apparatusPresent, filterApparatus, onApparatus,
     hasActiveFilters, onClearAll,
+    mineOn, mineAvailable, onMine,
   } = props;
 
   const sortOptions =
@@ -105,6 +113,17 @@ export function OpsFilterSheet(props: OpsFilterSheetProps) {
   return (
     <PickerSurface open={open} onClose={onClose} title="Filters & sort" anchor={anchor}>
       <div className="fs-filtsheet">
+        {/* Show — the Mine lens (#370), first because it changes WHAT the board
+            is, not just its order. */}
+        <Section label="Show">
+          <Row label="All shore points" selected={!mineOn} onSelect={() => onMine(false)} />
+          <Row
+            label={mineAvailable ? 'Mine — my role\u2019s points' : 'Mine — set your role first'}
+            selected={mineOn}
+            onSelect={() => onMine(true)}
+          />
+        </Section>
+
         {/* Sort — spatial views (Division) order themselves, so no Sort there. */}
         {layout !== 'division' && (
           <Section label="Sort">

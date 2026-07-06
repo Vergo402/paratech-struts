@@ -41,12 +41,11 @@ const VIEW_OPTIONS = [
   {
     value: 'lanes',
     ariaLabel: 'Board view',
-    // kanban columns
+    // a BOARD: frame + lane columns (the bare bars read as nothing — Alex)
     label: (
       <Glyph>
-        <rect x="4" y="4" width="4.5" height="16" rx="1" />
-        <rect x="10" y="4" width="4.5" height="11" rx="1" />
-        <rect x="16" y="4" width="4.5" height="14" rx="1" />
+        <rect x="3.5" y="4" width="17" height="16" rx="2" />
+        <path d="M9.2 4v16M14.8 4v16" />
       </Glyph>
     ),
   },

@@ -353,7 +353,10 @@ p.fs-gate--disclaimer {
   display: flex;
   width: 100%;
   padding: var(--space-1);
-  background: var(--surface-bg); /* the recessed well */
+  /* A VISIBLE recessed well (Alex, Stage 2a review): --surface-bg matched the
+     page and the track vanished — segments floated as loose words. */
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-button);
 }
 .fs-segmented--op { min-height: 56px; }

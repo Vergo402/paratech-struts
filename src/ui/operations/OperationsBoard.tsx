@@ -12,7 +12,7 @@ import {
 } from '@core/operation';
 import { myApparatusKeys, currentIC } from '@core/org';
 import { newId } from '@core/id';
-import { Badge, Button, ChecklistTab, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
+import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
 import {
   useApparatus,
   useBriefing,
@@ -33,6 +33,7 @@ import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
 import { ShorePointCard, SHORE_TYPE_LABELS, shorePointDrawerTitle } from './ShorePointCard';
 import { STATUS_SHORT_LABEL } from './cardParts';
+import { FloatingStack } from './FloatingStack';
 import { ShorePointDetail } from './ShorePointDetail';
 import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
@@ -69,11 +70,6 @@ type ListSort = 'added-newest' | 'added-oldest' | 'status' | 'location';
 type SpModalState = null | { mode: 'create' } | { mode: 'edit'; shorePoint: ShorePoint };
 
 // "Mine" lens (#370) — All ↔ Mine, the first chip in the filter row.
-const MINE_OPTIONS = [
-  { value: 'all', label: 'All' },
-  { value: 'mine', label: 'Mine' },
-] as const;
-
 // ---- Chevron SVG (matches BottomNav inline-glyph pattern) -------------------
 function Chevron() {
   return (
@@ -94,15 +90,6 @@ function FilterGlyph() {
 }
 
 // ---- Inventory summary icon -------------------------------------------------
-function InventoryIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <rect x="3" y="4" width="14" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ---- Pencil edit icon -------------------------------------------------------
 function PencilIcon() {
   return (
@@ -1251,19 +1238,6 @@ export function OperationsBoard() {
               + Shore Point
             </Button>
           )}
-          {/* Phone keeps the inventory glance as a header icon (desktop gets the
-              labeled Inventory button in the filter row). */}
-          {!isDesktop && (
-            <button
-              className={`fs-ops-inv-btn${inventoryOpen ? ' is-active' : ''}`}
-              type="button"
-              aria-label={inventoryOpen ? 'Close inventory summary' : 'Open inventory summary'}
-              aria-pressed={inventoryOpen}
-              onClick={() => setInventoryOpen((v) => !v)}
-            >
-              <InventoryIcon />
-            </button>
-          )}
         </div>
         {/* The stat strip — dominant numerals + micro-labels (craft.md §2, #432) —
             with the persona chip at its right edge: the title row's no-shrink op
@@ -1329,31 +1303,13 @@ export function OperationsBoard() {
         />
       ) : (
         <>
-        {/* Phone: Add is THE gold primary at its own width (#432 — no more
-            full-width gold bar); the Mine lens keeps its one-tap seat beside it. */}
+        {/* Phone: Add floats as the FAB pill, bottom-right above the nav
+            (Alex, Stage 2a review) — the controls row is gone; the Mine lens
+            lives in the Filters sheet now. */}
         {!isDesktop && (
-          <div className="fs-ops-controls">
-            <Button variant="primary" onPress={() => setSpModal({ mode: 'create' })}>
-              + Add Shore Point
-            </Button>
-            <span className="fs-ops-utility-spacer" />
-            {shorePoints.length > 0 && (
-              <Segmented
-                size="standard"
-                aria-label="Mine or all shore points"
-                options={MINE_OPTIONS}
-                value={mineOn ? 'mine' : 'all'}
-                onChange={(v) => {
-                  if (v === 'mine' && !mineAvailable) {
-                    setMyRoleSheetOpen(true);
-                    return;
-                  }
-                  setMineOn(v === 'mine');
-                  persistPrefs({ mine: v === 'mine' });
-                }}
-              />
-            )}
-          </div>
+          <button type="button" className="fs-ops-fab" onClick={() => setSpModal({ mode: 'create' })}>
+            + Add Shore Point
+          </button>
         )}
         <div className="fs-ops-stage">
         <div className="fs-ops-main">
@@ -1413,28 +1369,7 @@ export function OperationsBoard() {
                   persistPrefs({ layout: v });
                 }}
               />
-              <Segmented
-                size="standard"
-                aria-label="Mine or all shore points"
-                options={MINE_OPTIONS}
-                value={mineOn ? 'mine' : 'all'}
-                onChange={(v) => {
-                  if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
-                  setMineOn(v === 'mine');
-                  persistPrefs({ mine: v === 'mine' });
-                }}
-              />
               {filtersBtn}
-              <span className="fs-ops-utility-spacer" />
-              <button
-                type="button"
-                className={`fs-ops-inv-cta${inventoryOpen ? ' is-active' : ''}`}
-                aria-pressed={inventoryOpen}
-                onClick={() => setInventoryOpen((v) => !v)}
-              >
-                <InventoryIcon />
-                Inventory
-              </button>
             </div>
           )}
 
@@ -1549,9 +1484,12 @@ export function OperationsBoard() {
             container-agnostic, dropped into either. */}
         {/* Task Level Checklist (#204) summon tab — the shared ADR-019 edge tab,
             hidden while its companion is open (Begin/Open Briefing is separate). */}
-        {!taskChecklistOpen && (
-          <ChecklistTab onOpen={() => setTaskChecklistOpen(true)} label="Task Level Checklist" />
-        )}
+        <FloatingStack
+          inventoryOpen={inventoryOpen}
+          onInventory={() => setInventoryOpen((v) => !v)}
+          checklistOpen={taskChecklistOpen}
+          onChecklist={() => setTaskChecklistOpen((v) => !v)}
+        />
         {isDesktop ? (
           <>
             <FloatingPanel
@@ -1634,6 +1572,18 @@ export function OperationsBoard() {
           onApparatus={(v) => { setFilterApparatus(v); persistPrefs({ filterApparatus: v }); }}
           hasActiveFilters={hasActiveFilters}
           onClearAll={clearAllFilters}
+          mineOn={mineOn && mineAvailable}
+          mineAvailable={mineAvailable}
+          onMine={(on) => {
+            if (on && !mineAvailable) {
+              // No declared role yet — close this surface and open declare-role.
+              setFilterSheetOpen(false);
+              setMyRoleSheetOpen(true);
+              return;
+            }
+            setMineOn(on);
+            persistPrefs({ mine: on });
+          }}
         />
         </div>
         </>
