@@ -18,7 +18,8 @@ import { PowerSelect } from './PowerSelect';
  *  - open marks the selection and scrolls it into view after ~50ms
  *  - Esc, scrim tap, and outside click all close; selection commits + closes
  *  - ops-mode (`availableIds`) splits Available / Not in inventory with
- *    section labels and disables out-of-stock rows (v3 #121); 'none' is
+ *    section labels and dims out-of-stock rows — still selectable, since the
+ *    off-book deploy path (ADR-033) resolves stock at deploy; 'none' is
  *    always available
  * Deliberately NO focus trap — verbatim v3 interaction (flagged in the
  * session log; the AT path is PowerSelect).
@@ -35,7 +36,7 @@ export interface VisualGridPickerProps {
   options: readonly VisualGridOption[];
   value: string;
   onSelect: (id: string) => void;
-  /** Ops mode: stocked option ids. Out-of-stock rows sink + lock (v3 #121). */
+  /** Ops mode: stocked option ids. Out-of-stock rows dim but stay selectable. */
   availableIds?: ReadonlySet<string>;
   /** Thumbnail renderer — defaults to the placeholder swatch. */
   renderThumb?: (option: VisualGridOption) => ReactNode;
@@ -121,7 +122,8 @@ export function VisualGridPicker({
   };
 
   // Native-controls fallback (accessibility.md §The Power Select fallback): an
-  // OS-native <select>, out-of-stock rows disabled just like the grid (v3 #121).
+  // OS-native <select>; out-of-stock rows stay selectable just like the grid
+  // (off-book deploy path, 81f79c0).
   // The visual grid (photos/swatches) is a gloved-thumb affordance; a screen
   // reader gets real platform semantics instead. Placed after all hooks so the
   // effect order never changes (rules-of-hooks).

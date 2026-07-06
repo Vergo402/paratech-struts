@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { setNativeControls } from '@ui/primitives';
 import { InlineSegmented } from './InlineSegmented';
@@ -37,24 +37,29 @@ describe('Native-controls picker fallback (Power Select)', () => {
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Level I', 'Level II']);
   });
 
-  it('VisualGridPicker fallback disables out-of-stock rows (v3 #121 honored)', () => {
+  it('VisualGridPicker fallback keeps out-of-stock rows selectable (off-book deploy path)', () => {
+    // 81f79c0 lifted the v3 #121 hard-disable: not-in-stock plates resolve at
+    // deploy (ADR-033 quick-add / off-book / drop-plate), so the fallback must
+    // not lock them out either.
     const PLATES = [
       { id: 'a', name: 'Acme Base' },
       { id: 'b', name: 'Steel Base' },
     ];
+    const onSelect = vi.fn();
     setNativeControls(true);
     render(
       <VisualGridPicker
         label="Base plate"
         options={PLATES}
         value="a"
-        onSelect={() => {}}
+        onSelect={onSelect}
         availableIds={new Set(['a'])}
       />,
     );
     const opts = screen.getAllByRole('option') as HTMLOptionElement[];
-    expect(opts.find((o) => o.textContent === 'Acme Base')!.disabled).toBe(false);
-    expect(opts.find((o) => o.textContent === 'Steel Base')!.disabled).toBe(true);
+    expect(opts.every((o) => !o.disabled)).toBe(true);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'b' } });
+    expect(onSelect).toHaveBeenCalledWith('b');
   });
 
   it('is reactive: flipping the toggle swaps the surface live', () => {
