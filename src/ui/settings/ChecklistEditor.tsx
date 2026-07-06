@@ -229,12 +229,12 @@ export function ChecklistEditor() {
   const [resetTarget, setResetTarget] = useState<ChecklistTemplate | null>(null);
 
   return (
-    <section className="flex flex-col gap-3">
-      <h2 style={{ font: 'var(--type-headline-2)' }}>Checklists</h2>
-      <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-        Tailor the IC Command, Task Level, and risk-briefing checklists for your department. Drag any step into any
-        section to reorganize. Editing one forks it from the FieldShore baseline — crews see &ldquo;Customized by{' '}
-        {deptName}&rdquo; so a tailored step never reads as FieldShore doctrine.
+    <section className="fs-set-section" aria-label="Checklists">
+      <h2 className="fs-set-section-label">Checklists</h2>
+      <p className="fs-set-group-desc">
+        Tailor the IC Command, Task Level, and risk-briefing checklists for your department. Editing
+        one forks it from the FieldShore baseline — crews see &ldquo;Customized by {deptName}&rdquo;
+        so a tailored step never reads as FieldShore doctrine.
       </p>
 
       {templates.map((t) => {

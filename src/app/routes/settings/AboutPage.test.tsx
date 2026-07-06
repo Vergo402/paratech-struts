@@ -34,7 +34,7 @@ describe('AboutPage (50-settings §6)', () => {
     getRegistration.mockResolvedValue({ update, installing: null, waiting: null });
     const user = userEvent.setup();
     render(<AboutPage />);
-    await user.click(screen.getByRole('button', { name: 'Check for updates' }));
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
     expect(getRegistration).toHaveBeenCalled();
     expect(await screen.findByText("You're up to date")).toBeInTheDocument();
     expect(update).toHaveBeenCalled();

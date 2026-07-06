@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button, Modal, TextField } from '@ui/primitives';
 import { useDepartment, useMyMember, useRoles, useSession } from '@ui/hooks';
 import { reloadIntoActiveBucket } from '@ui/dept';
+import { SettingsGroup, SettingsRow } from './SettingsRows';
 
 /** Up to two initials from a display name, for the avatar. */
 function initialsOf(name: string): string {
@@ -159,17 +160,19 @@ export function AccountPage() {
             </div>
           </div>
 
-          <div
-            className="flex flex-col gap-3"
-            style={{ borderTop: '1px solid var(--color-surface-stroke)', paddingTop: 'var(--space-4)' }}
-          >
-            <Button variant="secondary" destructive onPress={() => setConfirmOut(true)}>
-              Log Out
-            </Button>
-            <Button variant="secondary" destructive onPress={() => setConfirmDelete(true)}>
-              Delete account
-            </Button>
-          </div>
+          <SettingsGroup label="Account actions">
+            <SettingsRow
+              label="Log out"
+              description="Your work on this device stays put"
+              onPress={() => setConfirmOut(true)}
+            />
+            <SettingsRow
+              destructive
+              label="Delete account"
+              description="Asks for your password — can't be undone"
+              onPress={() => setConfirmDelete(true)}
+            />
+          </SettingsGroup>
         </section>
       ) : (
         <section className="flex flex-col gap-3">

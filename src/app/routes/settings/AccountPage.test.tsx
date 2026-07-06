@@ -62,7 +62,7 @@ describe('AccountPage (workflow 06)', () => {
     asMember();
     render(<AccountPage />);
     expect(screen.getAllByText('Capt. Marchetti').length).toBeGreaterThan(0);
-    await user.click(screen.getByRole('button', { name: 'Log Out' }));
+    await user.click(screen.getByRole('button', { name: /Log out/ }));
     const dialog = screen.getByRole('dialog', { name: 'Log out?' });
     await user.click(within(dialog).getByRole('button', { name: 'Log Out' }));
     expect(mockSignOut).toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('AccountPage delete account', () => {
     asMember();
     mockDeleteAccount.mockResolvedValue({ ok: false, reason: 'Wrong password' });
     render(<AccountPage />);
-    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    await user.click(screen.getByRole('button', { name: /Delete account.*password/ }));
     const dialog = screen.getByRole('dialog', { name: 'Delete account?' });
     await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'nope');
     await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));
@@ -122,7 +122,7 @@ describe('AccountPage delete account', () => {
     asMember();
     mockDeleteAccount.mockResolvedValue({ ok: true });
     render(<AccountPage />);
-    await user.click(screen.getByRole('button', { name: 'Delete account' }));
+    await user.click(screen.getByRole('button', { name: /Delete account.*password/ }));
     const dialog = screen.getByRole('dialog', { name: 'Delete account?' });
     await user.type(within(dialog).getByLabelText('Enter your password to confirm'), 'correct-horse');
     await user.click(within(dialog).getByRole('button', { name: 'Delete account' }));

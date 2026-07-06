@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@ui/primitives';
 import { APP_VERSION } from '@core/version';
+import { SettingsGroup, SettingsRow, SettingsNote } from './SettingsRows';
 
 // About (#321 inc4d, 50-settings.md §6) — app identity + a real "check for updates"
 // that drives the service worker directly via the standard navigator.serviceWorker
@@ -78,26 +78,21 @@ export function AboutPage() {
         </div>
       </div>
 
-      <div
-        className="flex flex-col gap-2"
-        style={{ borderTop: '1px solid var(--color-surface-stroke)', paddingTop: 'var(--space-4)' }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <span style={{ font: 'var(--type-body-lg)' }}>App updates</span>
-          <Button variant="secondary" onPress={() => void check()} disabled={state === 'checking'}>
-            {state === 'checking' ? 'Checking…' : 'Check for updates'}
-          </Button>
-        </div>
+      <SettingsGroup label="App updates">
+        <SettingsRow
+          label={state === 'checking' ? 'Checking…' : 'Check for updates'}
+          description="FieldShore updates itself in the background — this checks right now"
+          disabled={state === 'checking'}
+          onPress={() => void check()}
+        />
         {s && (
-          <span role="status" style={{ font: 'var(--type-caption)', color: s.tone }}>
-            {s.text}
-          </span>
+          <SettingsNote>
+            <span role="status" style={{ color: s.tone }}>
+              {s.text}
+            </span>
+          </SettingsNote>
         )}
-        <span className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
-          FieldShore updates itself in the background. Use this to check now — if a new version is ready,
-          it&rsquo;ll reload.
-        </span>
-      </div>
+      </SettingsGroup>
     </div>
   );
 }

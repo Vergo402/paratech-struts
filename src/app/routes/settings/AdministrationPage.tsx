@@ -5,13 +5,14 @@ import { useDepartment, usePermissions, useAuditAccess, useCustomTitles, useDept
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
 import { kindLabel } from '@core/org';
+import { SettingsGroup, SettingsRow, SettingsNote } from './SettingsRows';
 
 /**
  * Administration — the department's back-office editors (50-settings.md §Administration
- * + §Department config). Each block keeps its own gate (the page itself is only in
- * the nav when the viewer holds one of these entitlements): Users & roles + Audit
- * log are gateways to their screens; Custom ICS titles + Checklists are the
- * manageSettings editors. The after-action policy toggle joins here in Inc 4.
+ * + §Department config), composed per craft.md Stage 1b: gateways and actions are
+ * quiet card rows; the page's one gold element is the Add-custom-title row. Each
+ * block keeps its own gate (the page is only in the nav when the viewer holds one
+ * of these entitlements). The after-action policy toggle keeps its control state.
  */
 export function AdministrationPage() {
   const { department } = useDepartment();
@@ -24,94 +25,86 @@ export function AdministrationPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Administration</h1>
+      <div className="flex flex-col gap-2">
+        <h1 style={{ font: 'var(--type-headline-1)' }}>Administration</h1>
+        <p className="fs-set-pagesub">Manage your department and review the incident record.</p>
+      </div>
 
       {(perms.manageUsers || !!department) && (
-        <section className="flex flex-col gap-3">
-          <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-            Manage your department and review the incident record.
-          </p>
+        <SettingsGroup label="Department">
           {perms.manageUsers && (
-            <Button variant="secondary" onPress={() => navigate({ to: '/users' })}>
-              Users &amp; roles
-            </Button>
+            <SettingsRow
+              label="Users & roles"
+              description="Invite members, set what each role can do"
+              onPress={() => navigate({ to: '/users' })}
+            />
           )}
           {/* ponytail: Audit Log visible to all connected members, ICS-position-checked at entry (50-settings.md §Administration) */}
-          <Button
-            variant="secondary"
+          <SettingsRow
+            label="Audit log"
+            description={
+              audit.canIncident
+                ? 'Incident and governance record'
+                : 'Requires Incident Commander or Operations assignment in an active operation'
+            }
             disabled={!audit.canIncident}
             onPress={() => navigate({ to: '/audit-log' })}
-          >
-            Audit log
-          </Button>
-          {!audit.canIncident && (
-            <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
-              Access requires Incident Commander or Operations Section Chief assignment in an active
-              operation.
-            </p>
-          )}
-        </section>
+          />
+        </SettingsGroup>
       )}
 
       {perms.manageSettings && (
-        <section className="flex flex-col gap-3">
-          <h2 style={{ font: 'var(--type-headline-2)' }}>Custom ICS titles</h2>
-          <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-            Roles your department adds to the built-in ICS catalog. Placement follows the role&rsquo;s class. Strike
-            Teams and Task Forces carry a member composition that auto-fills when placed.
-          </p>
+        <SettingsGroup
+          label="Custom ICS titles"
+          description="Roles your department adds to the built-in ICS catalog. Strike Teams and Task Forces carry a member composition that auto-fills when placed."
+        >
           {customTitles.length === 0 ? (
-            <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>None yet.</p>
+            <SettingsNote>None yet — your department&rsquo;s roles use the built-in ICS catalog.</SettingsNote>
           ) : (
-            <ul className="flex flex-col" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-              {customTitles.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex items-center justify-between gap-3"
-                  style={{ padding: 'var(--space-2) 0', borderBottom: 'var(--stroke-width) solid var(--surface-stroke)' }}
-                >
-                  <span className="flex flex-col">
-                    <span style={{ font: 'var(--type-body-medium)' }}>{t.title}</span>
-                    <span className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
-                      {kindLabel(t.kind)}
-                      {t.members && t.members.length ? ` · ${t.members.map((m) => `${m.count} ${m.type}`).join(', ')}` : ''}
-                    </span>
-                  </span>
+            customTitles.map((t) => (
+              <SettingsRow
+                key={t.id}
+                label={t.title}
+                description={
+                  kindLabel(t.kind) +
+                  (t.members && t.members.length ? ` · ${t.members.map((m) => `${m.count} ${m.type}`).join(', ')}` : '')
+                }
+                trailing={
                   <Button variant="tertiary" size="standard" destructive onPress={() => void removeCustomTitle(t.id)}>
                     Remove
                   </Button>
-                </li>
-              ))}
-            </ul>
+                }
+              />
+            ))
           )}
-          <Button variant="secondary" onPress={() => setAddTitleOpen(true)}>
-            Add custom title
-          </Button>
-        </section>
+          <SettingsRow accent label="Add custom title" trailing={null} onPress={() => setAddTitleOpen(true)} />
+        </SettingsGroup>
       )}
 
       {department && perms.manageSettings && <ChecklistEditor />}
 
       {perms.manageSettings && (
-        <section className="flex flex-col gap-3">
-          <h2 style={{ font: 'var(--type-headline-2)' }}>Department policies</h2>
-          <Toggle
-            size="standard"
-            label="Send after-action record by email"
-            helper={
-              <>
-                When an incident closes, email the assembled after-action record to the Incident
-                Commander and Operations Section Chief. On by default; your department can switch it
-                off.
-                <br />
-                <span className="text-ink-tertiary">
-                  Email delivery turns on in a later release &mdash; this saves your preference now.
-                </span>
-              </>
-            }
-            checked={afterActionEmail}
-            onChange={(next) => void setAfterActionEmail(next)}
-          />
+        <section className="fs-set-section" aria-label="Department policies">
+          <h2 className="fs-set-section-label">Department policies</h2>
+          <div className="fs-set-card fs-set-card--pad">
+            <Toggle
+              size="standard"
+              label="Send after-action record by email"
+              helper={
+                <>
+                  When an incident closes, email the assembled after-action record to the Incident
+                  Commander and Operations Section Chief. On by default; your department can switch it
+                  off.
+                  <br />
+                  <span className="text-ink-tertiary">
+                    Email delivery turns on in a later release &mdash; this saves your preference now.
+                  </span>
+                </>
+              }
+              checked={afterActionEmail}
+              onChange={(next) => void setAfterActionEmail(next)}
+            />
+          </div>
         </section>
       )}
 

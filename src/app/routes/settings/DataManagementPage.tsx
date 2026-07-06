@@ -17,11 +17,13 @@ export function DataManagementPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Data management</h1>
-      <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-        Move your whole department&rsquo;s inventory in and out as a spreadsheet (CSV) &mdash; back
-        it up, edit it on a computer, or set up a new device.
-      </p>
+      <div className="flex flex-col gap-2">
+        <h1 style={{ font: 'var(--type-headline-1)' }}>Data management</h1>
+        <p className="fs-set-pagesub">
+          Move your whole department&rsquo;s inventory in and out as a spreadsheet (CSV) &mdash; back
+          it up, edit it on a computer, or set up a new device.
+        </p>
+      </div>
 
       {op != null && (
         <p
