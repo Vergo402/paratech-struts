@@ -15,7 +15,10 @@ import { shoreSafety } from './shoreSafety';
 // engine — the safety-MATH correctness (the deployed-count denominator, over-capacity
 // at real lengths) is pinned by the REAL-engine companion in core/shorepoint/reducer.test.ts
 // (H1/#415, H3/#417). Do not add verdict-correctness assertions here off the mock.
-const mockFind = vi.fn((..._args: unknown[]): StrutCombination[] => []);
+const mockFind = vi.fn((...args: unknown[]): StrutCombination[] => {
+  void args; // signature-only: the catalog-mode assertions read mock.calls
+  return [];
+});
 vi.mock('@core/shorepoint', async (importActual) => {
   const actual = await importActual<typeof import('@core/shorepoint')>();
   return { ...actual, findForShorePoint: (...args: unknown[]) => mockFind(...args) };
