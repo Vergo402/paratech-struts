@@ -44,6 +44,26 @@ export function Popover({ open, onClose, title, anchor, children }: PopoverProps
     return () => releaseOverlay(claim);
   }, [open, anchor]);
 
+  // Wheel rescue: opened from inside a MODAL Dialog, this panel is portaled to
+  // <body>, OUTSIDE the dialog's scroll-lock allowlist — the lock preventDefaults
+  // wheel over it at DOCUMENT BUBBLE, so the list can't be wheel-scrolled (Alex,
+  // punch list A5: the Class picker in Add custom title). Listen on document too,
+  // registered at open (the lock's listener predates the modal's child popover, so
+  // ours runs after it): an event over this panel arriving defaultPrevented gets
+  // scrolled by hand; on unlocked pages it arrives unprevented and native scrolling
+  // has already happened — never both.
+  useEffect(() => {
+    if (!open) return;
+    const onWheel = (e: WheelEvent) => {
+      const el = contentRef.current;
+      if (!el || !e.defaultPrevented || !el.contains(e.target as Node)) return;
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? el.clientHeight : 1;
+      el.scrollTop += e.deltaY * unit;
+    };
+    document.addEventListener('wheel', onWheel, { passive: true });
+    return () => document.removeEventListener('wheel', onWheel);
+  }, [open]);
+
   return (
     <RadixPopover.Root open={open} onOpenChange={(next) => !next && onClose()}>
       <RadixPopover.Anchor virtualRef={anchor} />

@@ -140,7 +140,10 @@ body {
   align-items: center;
   gap: var(--space-3);
   padding: 0 var(--space-4);
-  background: var(--accent-subtle);
+  /* Guest nudge is QUIET (gold budget, craft.md §5): neutral chrome surface, ink
+     text. It stacks on every guest screen, so any accent here spends the budget
+     before the content gets a turn. Member status variants below stay hued. */
+  background: var(--surface-card);
   border-bottom: var(--stroke-width) solid var(--surface-stroke);
 }
 .fs-sync-banner-cta {
@@ -150,7 +153,7 @@ body {
   background: none;
   border: none;
   font: var(--type-body-medium);
-  color: var(--accent);
+  color: var(--text-primary);
   cursor: pointer;
 }
 .fs-sync-banner-dismiss {
@@ -201,6 +204,13 @@ body {
   padding: var(--space-4) var(--space-2);
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+/* Below the rail breakpoint the bottom nav's pull-tab handle (#391) protrudes
+   20px into this pane — clear it so the last content row can always scroll
+   fully above the tab (it was sitting on row text: Settings "Data management",
+   Inventory's last card). */
+@media (max-width: 1023px) {
+  .fs-shell-main { padding-bottom: calc(var(--space-4) + 20px + var(--space-2)); }
 }
 @media (min-width: 768px) {
   .fs-shell-main {
@@ -409,15 +419,22 @@ body {
   gap: var(--space-3);
 }
 .fs-set-pagehead h1 { margin: 0; }
+/* Phone: the title lives in chrome, so a pagehead may hold only the page's primary
+   action — keep it right-aligned (where it sits beside the title on desktop). */
+.fs-set-pagehead > :only-child { margin-left: auto; }
+/* Sub-page h1 — renders on the desktop rail only; phone chrome owns the title
+   (craft.md §6), so SettingsPageTitle returns null there. */
+.fs-set-pagetitle { font: var(--type-headline-1); margin: 0 0 var(--space-4); }
 .fs-set-pagesub { font: var(--type-caption); color: var(--text-tertiary); margin: 0; }
-/* Phone back-to-list link (desktop uses the rail instead). */
+/* Phone back-to-list link (desktop uses the rail instead). Quiet ink — navigation
+   reads through weight, not accent (gold budget, craft.md §5). */
 .fs-settings-back {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   margin-bottom: var(--space-4);
   min-height: 44px;
-  color: var(--accent);
+  color: var(--text-secondary);
   text-decoration: none;
   font: var(--type-body-medium);
 }

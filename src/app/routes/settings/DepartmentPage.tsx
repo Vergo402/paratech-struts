@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Badge, Button } from '@ui/primitives';
 import { useSession, useDepartment } from '@ui/hooks';
 import { QrImage } from '@ui/dept';
+import { SettingsPageTitle } from './SettingsRows';
 
 /** Department — connection, the device's back-office role, and the crew invite
  *  (50-settings.md §Department). A guest gets the forward "sign in to join" path. */
@@ -24,7 +25,7 @@ export function DepartmentPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Department</h1>
+      <SettingsPageTitle>Department</SettingsPageTitle>
       {identity.kind !== 'member' ? (
         <section className="flex flex-col gap-3">
           <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>

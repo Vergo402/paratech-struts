@@ -1,5 +1,6 @@
 import { useInventoryActions, useOperation, usePermissions } from '@ui/hooks';
 import { ImportExport } from '@ui/inventory/ImportExport';
+import { SettingsPageTitle } from './SettingsRows';
 
 /**
  * Data management — the ONE Excel/CSV implementation, shared with Inventory and
@@ -18,7 +19,7 @@ export function DataManagementPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 style={{ font: 'var(--type-headline-1)' }}>Data management</h1>
+        <SettingsPageTitle>Data management</SettingsPageTitle>
         <p className="fs-set-pagesub">
           Move your whole department&rsquo;s inventory in and out as a spreadsheet (CSV) &mdash; back
           it up, edit it on a computer, or set up a new device.

@@ -1,10 +1,20 @@
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useHasRailNav } from '@ui/primitives';
 
 // The Settings sub-page row language (craft.md, Stage 1b #431): places to go and
 // actions render as quiet card rows — name, one-line description, chevron (or an
 // outward arrow for links that leave the app) — grouped under an uppercase label.
 // One gold element per page; a row is accent ONLY when it's that page's primary.
+
+/** The sub-page title. Phone chrome owns the title (craft.md §6 — AppHeader shows
+ *  the page name), so this renders ONLY on the desktop rail layout, where there is
+ *  no AppHeader and the detail pane needs its own h1. */
+export function SettingsPageTitle({ children }: { children: ReactNode }) {
+  const rail = useHasRailNav();
+  if (!rail) return null;
+  return <h1 className="fs-set-pagetitle">{children}</h1>;
+}
 
 export function SettingsGroup({
   label,

@@ -1,4 +1,5 @@
 import { useRouterState } from '@tanstack/react-router';
+import { SETTINGS_PAGES } from './settingsPages';
 
 /** Build identity — lives in @core/version; re-exported here for existing importers
  *  (SideNav's rail footer). The header itself no longer wears the version tag: it was
@@ -15,6 +16,17 @@ const TITLES: Record<string, string> = {
   '/gallery': 'Gallery',
 };
 
+/** Chrome owns the title on phone (craft.md §6) — including nested pages. Settings
+ *  sub-pages resolve their name from SETTINGS_PAGES (single source with the nav);
+ *  only a genuinely unknown path falls back to the brand lockup. */
+function titleFor(pathname: string): string {
+  const exact = TITLES[pathname];
+  if (exact) return exact;
+  const trimmed = pathname.replace(/\/+$/, '');
+  const sub = SETTINGS_PAGES.find((p) => p.to === trimmed);
+  return sub?.label ?? TITLES[trimmed] ?? 'FieldShore';
+}
+
 /**
  * AppHeader — the command header framing every screen (design-system
  * AppHeader): the screen title at headline-1 with a small mono version tag,
@@ -28,7 +40,7 @@ const TITLES: Record<string, string> = {
  */
 export function AppHeader() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const title = TITLES[pathname] ?? 'FieldShore';
+  const title = titleFor(pathname);
   return (
     <header className="fs-header">
       {title === 'FieldShore' ? (

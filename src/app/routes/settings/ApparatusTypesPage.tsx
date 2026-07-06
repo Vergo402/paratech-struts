@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button, Modal, TextField, EmptyState } from '@ui/primitives';
 import { useApparatus, useApparatusTypes, usePermissions } from '@ui/hooks';
 import { APPARATUS_TYPES } from '@core/load';
+import { SettingsPageTitle } from './SettingsRows';
 
 /**
  * Apparatus types (#321 P5 inc4b, 50-settings.md §5) — the manageSettings editor for the
@@ -52,7 +53,7 @@ export function ApparatusTypesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Apparatus types</h1>
+      <SettingsPageTitle>Apparatus types</SettingsPageTitle>
       <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
         The rig types your department can choose when adding apparatus. The six built-in types are
         always available; add your own for anything else (Water Tender, Crane, Drone&hellip;).

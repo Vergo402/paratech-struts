@@ -4,7 +4,7 @@ import { Button } from '@ui/primitives';
 import { useOnboarding } from '@ui/hooks';
 import { LESSON_QUICK_FIND } from '@ui/onboarding';
 import { FeedbackSheet } from '@ui/settings/FeedbackSheet';
-import { SettingsGroup, SettingsRow } from './SettingsRows';
+import { SettingsGroup, SettingsRow, SettingsPageTitle } from './SettingsRows';
 
 /** Help & reference — the guided tour, lessons, and the user guide (50-settings.md
  *  §Help/§Reference), composed per craft.md Stage 1b: one gold primary (Replay the
@@ -19,7 +19,7 @@ export function HelpReferencePage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
         <div className="fs-set-pagehead">
-          <h1 style={{ font: 'var(--type-headline-1)' }}>Help &amp; reference</h1>
+          <SettingsPageTitle>Help &amp; reference</SettingsPageTitle>
           <Button variant="primary" onPress={() => void replayTour()}>
             Replay the tour
           </Button>

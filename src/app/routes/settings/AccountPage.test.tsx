@@ -21,6 +21,11 @@ vi.mock('@ui/dept', () => ({ reloadIntoActiveBucket: vi.fn() }));
 vi.mock('@tanstack/react-router', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   useNavigate: () => mockNavigate,
+  Link: ({ to, children, className }: { to: string; children: React.ReactNode; className?: string }) => (
+    <a href={to} className={className}>
+      {children}
+    </a>
+  ),
 }));
 
 import { AccountPage } from './AccountPage';
@@ -50,11 +55,11 @@ beforeEach(() => {
 });
 
 describe('AccountPage (workflow 06)', () => {
-  it('a guest sees Sign In, which routes to /auth', async () => {
-    const user = userEvent.setup();
+  it('a guest sees the sign-in identity card, which routes to /auth', () => {
     render(<AccountPage />);
-    await user.click(screen.getByRole('button', { name: 'Sign In' }));
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/auth' });
+    const card = screen.getByRole('link', { name: /guest on this device/i });
+    expect(card).toHaveAttribute('href', '/auth');
+    expect(within(card).getByText('Sign in')).toBeInTheDocument();
   });
 
   it('a member sees their name and logs out through the destructive confirm', async () => {

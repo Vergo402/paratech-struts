@@ -1,6 +1,7 @@
 import { InlineSegmented } from '@ui/picker';
 import { Toggle, useNativeControls, setNativeControls } from '@ui/primitives';
 import { useTheme, type ThemePreference } from '../../theme';
+import { SettingsPageTitle } from './SettingsRows';
 
 const THEME_OPTIONS = [
   { value: 'system', label: 'System' },
@@ -22,7 +23,7 @@ export function AppearancePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Appearance</h1>
+      <SettingsPageTitle>Appearance</SettingsPageTitle>
       <InlineSegmented label="Theme" options={THEME_OPTIONS} value={pickerValue} onChange={setPreference} />
       <Toggle
         label="Native controls"

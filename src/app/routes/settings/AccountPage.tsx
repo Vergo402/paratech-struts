@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { Button, Modal, TextField } from '@ui/primitives';
 import { useDepartment, useMyMember, useRoles, useSession } from '@ui/hooks';
 import { reloadIntoActiveBucket } from '@ui/dept';
-import { SettingsGroup, SettingsRow } from './SettingsRows';
+import { SettingsGroup, SettingsRow, SettingsPageTitle } from './SettingsRows';
 
 /** Up to two initials from a display name, for the avatar. */
 function initialsOf(name: string): string {
@@ -25,7 +25,6 @@ export function AccountPage() {
   const { role } = useDepartment();
   const roles = useRoles();
   const { member, setRank, refresh: refreshMember } = useMyMember();
-  const navigate = useNavigate();
   const [confirmOut, setConfirmOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -71,7 +70,7 @@ export function AccountPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>Account</h1>
+      <SettingsPageTitle>Account</SettingsPageTitle>
       {identity.kind === 'member' ? (
         <section className="flex flex-col gap-6">
           <div className="flex items-center gap-3">
@@ -81,8 +80,8 @@ export function AccountPage() {
               style={{
                 width: 52,
                 height: 52,
-                background: 'var(--color-accent-subtle)',
-                color: 'var(--color-accent)',
+                background: 'var(--accent-subtle)',
+                color: 'var(--accent)',
                 font: 'var(--type-headline-2)',
               }}
             >
@@ -97,8 +96,8 @@ export function AccountPage() {
                     alignSelf: 'flex-start',
                     padding: '2px 10px',
                     borderRadius: 'var(--radius-pill)',
-                    background: 'var(--color-accent-subtle)',
-                    color: 'var(--color-accent)',
+                    background: 'var(--accent-subtle)',
+                    color: 'var(--accent)',
                   }}
                 >
                   {roleName}
@@ -176,12 +175,23 @@ export function AccountPage() {
         </section>
       ) : (
         <section className="flex flex-col gap-3">
-          <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
-            You&rsquo;re using FieldShore as a guest. Sign in to sync with your department.
+          {/* Same identity-card language as the Settings index — the card IS the
+              sign-in affordance (one gold "Sign in" pill, no full-width slab). */}
+          <Link to="/auth" className="fs-set-identity">
+            <span className="fs-set-avatar" aria-hidden="true">
+              ?
+            </span>
+            <span className="fs-set-identity-text">
+              <span className="fs-set-identity-name">Guest on this device</span>
+              <span className="fs-set-identity-sub">
+                Not syncing &mdash; work stays on this device
+              </span>
+            </span>
+            <span className="fs-set-signin">Sign in</span>
+          </Link>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
+            Signing in connects this device to your department. Your local work stays.
           </p>
-          <Button variant="primary" onPress={() => navigate({ to: '/auth' })}>
-            Sign In
-          </Button>
         </section>
       )}
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { APP_VERSION } from '@core/version';
-import { SettingsGroup, SettingsRow, SettingsNote } from './SettingsRows';
+import { SettingsGroup, SettingsRow, SettingsNote, SettingsPageTitle } from './SettingsRows';
 
 // About (#321 inc4d, 50-settings.md §6) — app identity + a real "check for updates"
 // that drives the service worker directly via the standard navigator.serviceWorker
@@ -53,7 +53,7 @@ export function AboutPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 style={{ font: 'var(--type-headline-1)' }}>About</h1>
+      <SettingsPageTitle>About</SettingsPageTitle>
 
       <div className="flex items-center gap-3">
         <div
@@ -63,8 +63,8 @@ export function AboutPage() {
             width: 52,
             height: 52,
             borderRadius: 14,
-            background: 'var(--color-accent-subtle)',
-            color: 'var(--color-accent)',
+            background: 'var(--accent-subtle)',
+            color: 'var(--accent)',
             font: 'var(--type-headline-2)',
           }}
         >

@@ -5,7 +5,7 @@ import { useDepartment, usePermissions, useAuditAccess, useCustomTitles, useDept
 import { AddCustomTitleModal } from '@ui/command/AddCustomTitleModal';
 import { ChecklistEditor } from '@ui/settings/ChecklistEditor';
 import { kindLabel } from '@core/org';
-import { SettingsGroup, SettingsRow, SettingsNote } from './SettingsRows';
+import { SettingsGroup, SettingsRow, SettingsNote, SettingsPageTitle } from './SettingsRows';
 
 /**
  * Administration — the department's back-office editors (50-settings.md §Administration
@@ -26,7 +26,7 @@ export function AdministrationPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 style={{ font: 'var(--type-headline-1)' }}>Administration</h1>
+        <SettingsPageTitle>Administration</SettingsPageTitle>
         <p className="fs-set-pagesub">Manage your department and review the incident record.</p>
       </div>
 
