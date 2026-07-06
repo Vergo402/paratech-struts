@@ -1187,13 +1187,45 @@ export function OperationsBoard() {
       options={[
         { value: 'board', label: 'Operations' },
         {
+          // Fixed label + count Badge (#432) — the count as a chip, not label text,
+          // so the segment width doesn't jump as the queue moves.
           value: 'cutting',
-          label: cuttingQueue.length ? `Cutting Station (${cuttingQueue.length})` : 'Cutting Station',
+          label: cuttingQueue.length ? (
+            <>
+              Cutting Station{' '}
+              <Badge
+                variant="count"
+                value={cuttingQueue.length}
+                srLabel={`${cuttingQueue.length} cuts in queue`}
+              />
+            </>
+          ) : (
+            'Cutting Station'
+          ),
         },
       ]}
       value={view}
       onChange={setView}
     />
+  );
+
+  // The single Filters trigger — icon-only on the phone control row, icon + word
+  // on desktop (#432 control collapse). One JSX, one ref (only one instance mounts
+  // per surface); the ref anchors the desktop Popover filter surface.
+  const filtersBtn = (
+    <button
+      type="button"
+      ref={filtersBtnRef}
+      className={`fs-ops-filters-btn${isDesktop ? '' : ' fs-ops-filters-btn--icon'}${hasActiveFilters ? ' is-active' : ''}`}
+      aria-label={hasActiveFilters ? `Filters, ${activeFilters.length} active` : 'Filters'}
+      aria-haspopup="dialog"
+      aria-expanded={filterSheetOpen}
+      onClick={() => setFilterSheetOpen(true)}
+    >
+      <FilterGlyph />
+      {isDesktop && 'Filters'}
+      {hasActiveFilters && <span className="fs-ops-filters-count">{activeFilters.length}</span>}
+    </button>
   );
 
   return (
@@ -1221,13 +1253,6 @@ export function OperationsBoard() {
               + Shore Point
             </Button>
           )}
-          {/* Persona pill — YOUR role on phone, the IC on desktop (2026-07-02). */}
-          <HeaderPill
-            isDesktop={isDesktop}
-            icLabel={icLabel}
-            myRoleTitle={myRoleTitle}
-            onSetRole={() => setMyRoleSheetOpen(true)}
-          />
           {/* Phone keeps the inventory glance as a header icon (desktop gets the
               labeled Inventory button in the filter row). */}
           {!isDesktop && (
@@ -1242,19 +1267,47 @@ export function OperationsBoard() {
             </button>
           )}
         </div>
-        {/* The mono instrument line — elapsed · OP · IC · counts. */}
-        <OpsMetaLine
-          since={opSince}
-          opNum={operation.currentPeriod}
-          opTotal={operation.periods?.length ?? 0}
-          icLabel={icLabel}
-          points={activePointCount}
-          crews={crewCount}
-          isDesktop={isDesktop}
-        />
+        {/* The stat strip — dominant numerals + micro-labels (craft.md §2, #432) —
+            with the persona chip at its right edge: the title row's no-shrink op
+            name was collapsing the chip's value to nothing on phone. */}
+        <div className="fs-ops-metarow">
+          <OpsMetaLine
+            since={opSince}
+            opNum={operation.currentPeriod}
+            opTotal={operation.periods?.length ?? 0}
+            points={activePointCount}
+            crews={crewCount}
+            isDesktop={isDesktop}
+          />
+          <HeaderPill
+            isDesktop={isDesktop}
+            icLabel={icLabel}
+            myRoleTitle={myRoleTitle}
+            onSetRole={() => setMyRoleSheetOpen(true)}
+          />
+        </div>
       </header>
 
-      {!isDesktop && <div className="fs-ops-subnav">{viewToggle}</div>}
+      {/* Phone control row (#432 — was three stacked full-width rows): the
+          Board|Cutting scope, the compact layout icons, and the Filters trigger
+          share one line. Layout + Filters only mean anything on the board. */}
+      {!isDesktop && (
+        <div className="fs-ops-controlrow">
+          {viewToggle}
+          {view === 'board' && shorePoints.length > 0 && (
+            <>
+              <ViewToggle
+                value={layout}
+                onChange={(v) => {
+                  setLayout(v);
+                  persistPrefs({ layout: v });
+                }}
+              />
+              {filtersBtn}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="fs-sr-only" role="status" aria-live="assertive">
         {announcement}
@@ -1278,13 +1331,30 @@ export function OperationsBoard() {
         />
       ) : (
         <>
-        {/* Phone: Add runs full-width above the board (desktop Add lives at the
-            top of the left rail column instead). */}
+        {/* Phone: Add is THE gold primary at its own width (#432 — no more
+            full-width gold bar); the Mine lens keeps its one-tap seat beside it. */}
         {!isDesktop && (
           <div className="fs-ops-controls">
-            <Button variant="primary" fullWidth onPress={() => setSpModal({ mode: 'create' })}>
+            <Button variant="primary" onPress={() => setSpModal({ mode: 'create' })}>
               + Add Shore Point
             </Button>
+            <span className="fs-ops-utility-spacer" />
+            {shorePoints.length > 0 && (
+              <Segmented
+                size="standard"
+                aria-label="Mine or all shore points"
+                options={MINE_OPTIONS}
+                value={mineOn ? 'mine' : 'all'}
+                onChange={(v) => {
+                  if (v === 'mine' && !mineAvailable) {
+                    setMyRoleSheetOpen(true);
+                    return;
+                  }
+                  setMineOn(v === 'mine');
+                  persistPrefs({ mine: v === 'mine' });
+                }}
+              />
+            )}
           </div>
         )}
         <div className="fs-ops-stage">
@@ -1333,45 +1403,31 @@ export function OperationsBoard() {
 
       {shorePoints.length > 0 && (
         <>
-          {/* Tier 1 — the primary control: which of the three views. Its own row. */}
-          <div className="fs-ops-viewswitch">
-            <ViewToggle
-              value={layout}
-              onChange={(v) => { setLayout(v); persistPrefs({ layout: v }); }}
-            />
-          </div>
-
-          {/* Tier 2 — a compact utility row: the Mine lens (kept one-tap) + the
-              single Filters trigger. Inventory rides here on desktop; phone keeps
-              its header icon. */}
-          <div className="fs-ops-utility">
-            {/* "Mine" lens (#370) — combines with the filters (AND). Inert with no
-                My Role set; tapping while unavailable opens the declare-role sheet. */}
-            <Segmented
-              size="standard"
-              aria-label="Mine or all shore points"
-              options={MINE_OPTIONS}
-              value={mineOn ? 'mine' : 'all'}
-              onChange={(v) => {
-                if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
-                setMineOn(v === 'mine');
-                persistPrefs({ mine: v === 'mine' });
-              }}
-            />
-            <button
-              type="button"
-              ref={filtersBtnRef}
-              className={`fs-ops-filters-btn${hasActiveFilters ? ' is-active' : ''}`}
-              aria-haspopup="dialog"
-              aria-expanded={filterSheetOpen}
-              onClick={() => setFilterSheetOpen(true)}
-            >
-              <FilterGlyph />
-              Filters
-              {hasActiveFilters && <span className="fs-ops-filters-count">{activeFilters.length}</span>}
-            </button>
-            <span className="fs-ops-utility-spacer" />
-            {isDesktop && (
+          {/* Desktop utility row (#432 — was two rows): layout icons, the Mine
+              lens (#370, kept one-tap), the Filters trigger, then Inventory at the
+              far edge. Phone gets layout + Filters in the control row instead. */}
+          {isDesktop && (
+            <div className="fs-ops-utility">
+              <ViewToggle
+                value={layout}
+                onChange={(v) => {
+                  setLayout(v);
+                  persistPrefs({ layout: v });
+                }}
+              />
+              <Segmented
+                size="standard"
+                aria-label="Mine or all shore points"
+                options={MINE_OPTIONS}
+                value={mineOn ? 'mine' : 'all'}
+                onChange={(v) => {
+                  if (v === 'mine' && !mineAvailable) { setMyRoleSheetOpen(true); return; }
+                  setMineOn(v === 'mine');
+                  persistPrefs({ mine: v === 'mine' });
+                }}
+              />
+              {filtersBtn}
+              <span className="fs-ops-utility-spacer" />
               <button
                 type="button"
                 className={`fs-ops-inv-cta${inventoryOpen ? ' is-active' : ''}`}
@@ -1381,8 +1437,8 @@ export function OperationsBoard() {
                 <InventoryIcon />
                 Inventory
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Active filters as removable chips — replaces the always-on pickers,
               the phone breadcrumb, and the Mine summary. */}

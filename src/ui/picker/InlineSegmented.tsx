@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Segmented, type SegmentedOption, useNativeControls } from '@ui/primitives';
+import { Segmented, useNativeControls } from '@ui/primitives';
 import { PowerSelect } from './PowerSelect';
 
 /**
@@ -7,10 +7,19 @@ import { PowerSelect } from './PowerSelect';
  * always visible, parent never leaves the screen. A labeled field wrapper
  * around the Segmented primitive; the current value is exposed by
  * construction (it's always on screen).
+ *
+ * Options here are TEXT-labeled (narrower than Segmented's ReactNode labels) —
+ * the native-controls fallback renders them into an OS <select>, which can only
+ * carry strings.
  */
+export interface InlineSegmentedOption<T extends string> {
+  value: T;
+  label: string;
+}
+
 export interface InlineSegmentedProps<T extends string> {
   label: string;
-  options: readonly SegmentedOption<T>[];
+  options: readonly InlineSegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
   size?: 'operational' | 'standard';

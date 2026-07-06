@@ -14,23 +14,34 @@ export interface OpsMetaLineProps {
   since: number | undefined;
   opNum: number;
   opTotal: number;
-  /** Incident commander display label, or null when the IC node is unstaffed. */
-  icLabel: string | null;
   points: number;
   crews: number;
   isDesktop: boolean;
 }
 
-/** The mono, muted instrument line under the op name. Segments with no data drop out. */
-export function OpsMetaLine({ since, opNum, opTotal, icLabel, points, crews, isDesktop }: OpsMetaLineProps) {
+/** One stat-strip figure: dominant numeral over a micro-label (craft.md §1–2). */
+function Stat({ v, k }: { v: string; k: string }) {
+  return (
+    <span className="fs-ops-stat">
+      <span className="fs-ops-stat-v">{v}</span>
+      <span className="fs-ops-stat-k">{k}</span>
+    </span>
+  );
+}
+
+/** The stat strip under the op name (craft.md §2 — was a 7-datum mono line, #432):
+ *  each figure a quiet dominant numeral with its own micro-label. The IC label is
+ *  NOT a figure — it stays in the header pill. Segments with no data drop out. */
+export function OpsMetaLine({ since, opNum, opTotal, points, crews, isDesktop }: OpsMetaLineProps) {
   const elapsed = useElapsed(since);
-  const segs: string[] = [];
-  if (since != null) segs.push(elapsed);
-  if (opTotal > 0) segs.push(`OP ${opNum}/${opTotal}`);
-  if (icLabel) segs.push(icLabel);
-  segs.push(`${points} ${points === 1 ? 'point' : 'points'}`);
-  if (isDesktop && crews > 0) segs.push(`${crews} ${crews === 1 ? 'crew' : 'crews'}`);
-  return <p className="fs-ops-meta">{segs.join(' · ')}</p>;
+  return (
+    <div className="fs-ops-stats">
+      {since != null && <Stat v={elapsed} k="elapsed" />}
+      {opTotal > 0 && <Stat v={opTotal > 1 ? `${opNum}/${opTotal}` : String(opNum)} k="period" />}
+      <Stat v={String(points)} k={points === 1 ? 'point' : 'points'} />
+      {isDesktop && crews > 0 && <Stat v={String(crews)} k={crews === 1 ? 'crew' : 'crews'} />}
+    </div>
+  );
 }
 
 export interface HeaderPillProps {
@@ -43,7 +54,8 @@ export interface HeaderPillProps {
   onSetRole: () => void;
 }
 
-/** The gold header pill — IC on desktop, YOUR role on phone. */
+/** The header chip — IC on desktop, YOUR role on phone. Quiet ink on the chrome
+ *  surface (#432): a permanent readout never spends the gold budget (craft.md §5). */
 export function HeaderPill({ isDesktop, icLabel, myRoleTitle, onSetRole }: HeaderPillProps) {
   if (isDesktop) {
     if (!icLabel) return null;

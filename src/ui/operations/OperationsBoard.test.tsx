@@ -581,7 +581,7 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
     // The sub-nav shows the live queue count.
-    expect(screen.getByRole('radio', { name: 'Cutting Station (2)' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /cutting station.*2/i })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
     const ids = Array.from(document.querySelectorAll('.fs-cutstation-split [data-sp-id]')).map((el) =>
       el.getAttribute('data-sp-id'),
@@ -976,7 +976,7 @@ describe('OperationsBoard', () => {
   // The view switcher is a 3-option Segmented (Division · Board · List) — pick the
   // option by its radio name.
   async function switchToList(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole('radio', { name: 'List' }));
+    await user.click(screen.getByRole('radio', { name: 'List view' }));
   }
 
   async function setListSort(user: ReturnType<typeof userEvent.setup>, optionName: string) {
@@ -1111,12 +1111,12 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     // Default = Board (lanes).
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
-    await user.click(screen.getByRole('radio', { name: 'List' }));
+    await user.click(screen.getByRole('radio', { name: 'List view' }));
     expect(document.querySelector('.fs-ops-list')).not.toBeNull();
-    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    await user.click(screen.getByRole('radio', { name: 'Division view' }));
     expect(document.querySelector('.fs-div')).not.toBeNull();
     expect(document.querySelector('.fs-ops-list')).toBeNull();
-    await user.click(screen.getByRole('radio', { name: 'Board' }));
+    await user.click(screen.getByRole('radio', { name: 'Board view' }));
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
     expect(document.querySelector('.fs-div')).toBeNull();
   });
@@ -1125,9 +1125,9 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'pending')]);
     render(<OperationsBoard />);
-    expect(screen.getByRole('radio', { name: 'Division' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Board' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'List' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Division view' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Board view' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'List view' })).toBeInTheDocument();
   });
 
   it('Division view stacks floors top→bottom with the Grade line between Div 1 and Sub 1', async () => {
@@ -1139,7 +1139,7 @@ describe('OperationsBoard', () => {
       makeSP('sp-up', 'secured', '2'),
     ]);
     render(<OperationsBoard />);
-    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    await user.click(screen.getByRole('radio', { name: 'Division view' }));
 
     // Bands read top floor → ground → basement.
     const gutters = [...document.querySelectorAll('.fs-div-gutter b')].map((e) => e.textContent);
@@ -1160,7 +1160,7 @@ describe('OperationsBoard', () => {
       makeSP('sp-roof', 'pending', 'Roof'),
     ]);
     render(<OperationsBoard />);
-    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    await user.click(screen.getByRole('radio', { name: 'Division view' }));
 
     const unplaced = document.querySelector('.fs-div-lvl.is-unplaced');
     expect(unplaced).not.toBeNull();
@@ -1174,7 +1174,7 @@ describe('OperationsBoard', () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([makeSP('sp-1', 'cutting', '2')]);
     render(<OperationsBoard />);
-    await user.click(screen.getByRole('radio', { name: 'Division' }));
+    await user.click(screen.getByRole('radio', { name: 'Division view' }));
     await user.click(document.querySelector('.fs-divtile')! as HTMLElement);
     // The detail surface (drawer/sheet) opens for the tapped point.
     expect(document.querySelector('[data-sp-id="sp-1"]')).not.toBeNull();

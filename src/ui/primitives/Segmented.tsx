@@ -1,4 +1,5 @@
 import * as RadioGroup from '@radix-ui/react-radio-group';
+import type { ReactNode } from 'react';
 import { tapHaptic } from './haptics';
 
 /**
@@ -14,7 +15,10 @@ import { tapHaptic } from './haptics';
  */
 export interface SegmentedOption<T extends string> {
   value: T;
-  label: string;
+  /** Text, or a node (icon segment / label + count Badge — #432). */
+  label: ReactNode;
+  /** Accessible name — REQUIRED when label isn't plain text. */
+  ariaLabel?: string;
 }
 
 export interface SegmentedProps<T extends string> {
@@ -51,7 +55,7 @@ export function Segmented<T extends string>({
       }}
     >
       {options.map((opt) => (
-        <RadioGroup.Item key={opt.value} className="fs-segment" value={opt.value}>
+        <RadioGroup.Item key={opt.value} className="fs-segment" value={opt.value} aria-label={opt.ariaLabel}>
           {opt.label}
         </RadioGroup.Item>
       ))}

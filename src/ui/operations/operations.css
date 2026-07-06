@@ -26,20 +26,43 @@
    ellipsizes before the incident name does. */
 .fs-ops-titlebar-spacer { flex: 0 1 auto; }
 
-/* Instrument line — mono, muted: elapsed · OP · IC · counts. */
-.fs-ops-meta {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  letter-spacing: 0.01em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Stat strip row: figures left, the persona chip on the right edge (it left the
+   titlebar — the no-shrink op name collapsed it on phone). */
+.fs-ops-metarow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  justify-content: space-between;
 }
 
-/* The gold persona pill — IC (desktop) / YOU + role (phone). Shrinks 4× faster
-   than the op name, so a long role ellipsizes before the incident name does. */
+/* Stat strip (craft.md §2, #432) — dominant numerals over micro-labels; replaced
+   the 7-datum 12.5px mono instrument line. */
+.fs-ops-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-5);
+  padding-top: var(--space-1);
+}
+.fs-ops-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.fs-ops-stat-v {
+  font: var(--type-mono-stat);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.fs-ops-stat-k {
+  font: var(--type-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* The persona chip — IC (desktop) / YOU + role (phone). QUIET ink on the card
+   surface (#432): a permanent readout never spends the gold budget (craft.md §5).
+   Shrinks 4× faster than the op name, so a long role ellipsizes first. */
 .fs-ops-pill {
   flex: 0 4 auto;
   min-width: 0;
@@ -48,9 +71,9 @@
   gap: var(--space-2);
   min-height: 32px;
   padding: 0 var(--space-3);
-  border-radius: 9px;
-  background: var(--accent-subtle);
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
   white-space: nowrap;
   max-width: 46vw;
 }
@@ -59,7 +82,7 @@
   height: 7px;
   border-radius: 50%;
   flex: none;
-  background: var(--accent);
+  background: var(--text-tertiary);
 }
 .fs-ops-pill-dot.is-empty { background: var(--text-tertiary); }
 .fs-ops-pill-k {
@@ -72,10 +95,10 @@
 .fs-ops-pill-v {
   min-width: 0;
   font: var(--type-body-medium);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -167,26 +190,32 @@
   color: var(--text-primary);
 }
 
-/* ---- control zone (2026-07-02 redesign) ---------------------------------- */
-/* Three tiers replace the old overwhelming single filter row: the view switch on
-   its own row, a compact utility row (Mine + one Filters trigger + Inventory on
-   desktop), and a removable active-filter chip row. */
+/* ---- control zone (#432 collapse — was three stacked rows) ---------------- */
+/* Phone: ONE control row (scope segmented + layout icons + Filters trigger),
+   then the Add row (gold primary + Mine). Desktop: one utility row (layout +
+   Mine + Filters + Inventory). Active-filter chips stay their own wrap row. */
 
-/* Tier 1 — the view switcher on its own prominent row. The Segmented primitive
-   is width:100% by design, so it fills the row. */
-.fs-ops-viewswitch { padding: var(--space-2) 0; }
+.fs-ops-controlrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+/* Segmenteds in the row size to content, scope first and biggest. */
+.fs-ops-controlrow > .fs-segmented { flex: 0 1 auto; width: auto; }
+.fs-viewtoggle-glyph { width: 18px; height: 18px; display: block; }
 
-/* Tier 2 — compact utility row. */
+/* Desktop utility row. */
 .fs-ops-utility {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding-bottom: var(--space-2);
 }
-/* Mine (Segmented) is width:100% by design — fix its width so it reads as one
-   control, not a stretched bar. */
-.fs-ops-utility > .fs-segmented { flex: none; width: 132px; }
+/* Segmenteds here (layout icons + Mine) size to content, not width:100%. */
+.fs-ops-utility > .fs-segmented { flex: none; width: auto; }
 .fs-ops-utility-spacer { flex: 1 1 auto; }
+/* The Add-row Mine lens on phone sizes to content too. */
+.fs-ops-controls > .fs-segmented { flex: none; width: auto; }
 
 .fs-ops-filters-btn {
   flex: none;
@@ -210,7 +239,18 @@
   background: var(--accent-subtle);
   color: var(--text-primary);
 }
-.fs-ops-filters-btn svg { flex: none; color: var(--accent); }
+/* The funnel glyph reads in the button's own ink — gold only while filters are
+   ACTIVE (the app-wide selection treatment), never at rest (craft.md §5). */
+.fs-ops-filters-btn svg { flex: none; color: currentColor; }
+.fs-ops-filters-btn.is-active svg { color: var(--accent); }
+/* Icon-only variant (the phone control row): a square trigger, count chip rides
+   the corner gap. */
+.fs-ops-filters-btn--icon {
+  width: 44px;
+  justify-content: center;
+  padding: 0;
+  gap: var(--space-1);
+}
 .fs-ops-filters-count {
   display: inline-flex;
   align-items: center;
@@ -224,10 +264,10 @@
   font: var(--type-caption);
   font-weight: 600;
 }
-/* Phone: no Inventory here (it's a header icon), so Filters grows beside Mine. */
+/* Phone: the scope segmented claims the control row's slack; layout icons +
+   Filters hug the right edge. */
 @media (max-width: 767px) {
-  .fs-ops-filters-btn { flex: 1 1 auto; justify-content: center; }
-  .fs-ops-utility-spacer { display: none; }
+  .fs-ops-controlrow > .fs-segmented:first-child { flex: 1 1 auto; }
 }
 
 /* Tier 3 — active-filter chips (removable) + Clear all. Replaces the always-on
@@ -1911,12 +1951,9 @@ button.fs-spc-head {
 }
 
 /* ---- Operations ↔ Cutting Station scope toggle (#222) -------------------- */
-/* Phone: a full-width row below the header. Desktop: a compact switch inline in
-   the header (top-right), so it reads as a small toggle — not a full-width
+/* Phone: leads the single control row (#432). Desktop: a compact switch inline
+   in the header (top-right), so it reads as a small toggle — not a full-width
    section header that made the companion panels look nested under it. */
-.fs-ops-subnav {
-  padding: var(--space-1) 0 var(--space-2);
-}
 .fs-ops-header-toggle {
   flex: none;
 }
@@ -1927,9 +1964,11 @@ button.fs-spc-head {
 /* The scope toggle sizes to its labels, so the primitive's tight 8px segment
    padding leaves the raised pill hugging the text. Give it room (Alex). */
 .fs-ops-header-toggle .fs-segment,
-.fs-ops-subnav .fs-segment {
-  padding: 0 var(--space-4);
+.fs-ops-controlrow .fs-segment {
+  padding: 0 var(--space-3);
 }
+/* The count Badge inside the Cutting segment (#432) sits in the label line. */
+.fs-segment .fs-badge { margin-left: var(--space-1); }
 
 /* ---- "✓ Cut done" flag marker on a cutting card (#222) ------------------- */
 .fs-spc-cutdone {
