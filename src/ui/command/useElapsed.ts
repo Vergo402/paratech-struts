@@ -1,13 +1,28 @@
 import { useEffect, useState } from 'react';
 
-/** Format an elapsed span (ms) as HH:MM:SS, tabular. Pure — testable without time. */
+/**
+ * Any start time before this is a degenerate/legacy `startedAt` (e.g. epoch 0
+ * from an old OperationCreated event) — render '—' instead of a 56-year clock.
+ */
+export const MIN_PLAUSIBLE_START_MS = Date.UTC(2020, 0, 1);
+
+/**
+ * Format an elapsed span (ms), tabular. Pure — testable without time.
+ * Under 24h: HH:MM:SS. Past 24h: rolls to days, seconds drop — "2d 03:12".
+ */
 export function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
-  const hh = Math.floor(total / 3600);
+  const days = Math.floor(total / 86400);
+  const hh = Math.floor((total % 86400) / 3600);
   const mm = Math.floor((total % 3600) / 60);
   const ss = total % 60;
   const p = (n: number) => String(n).padStart(2, '0');
-  return `${p(hh)}:${p(mm)}:${p(ss)}`;
+  return days > 0 ? `${days}d ${p(hh)}:${p(mm)}` : `${p(hh)}:${p(mm)}:${p(ss)}`;
+}
+
+/** The label for a clock started at `since`, seen at `now`. '—' when absent or implausible. */
+export function elapsedLabel(since: number | undefined, now: number): string {
+  return since == null || since < MIN_PLAUSIBLE_START_MS ? '—' : formatElapsed(now - since);
 }
 
 /**
@@ -19,9 +34,9 @@ export function formatElapsed(ms: number): string {
 export function useElapsed(since: number | undefined): string {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (since == null) return;
+    if (since == null || since < MIN_PLAUSIBLE_START_MS) return;
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [since]);
-  return since == null ? '—' : formatElapsed(now - since);
+  return elapsedLabel(since, now);
 }
