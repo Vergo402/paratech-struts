@@ -219,7 +219,7 @@ export function effectiveLengthInches(sp: ShorePoint): number {
 // Cut lumber is fixed by SHORE TYPE, not the operator's strut deduction (confirmed
 // Alex 2026-06-21, #361): a T-Shore or Double-T always sits on 4×4 header+footer, a
 // 3-Post on 6×6. Header and footer are the same size.
-const CUT_LUMBER: Record<ShoreTypeId, WoodSizeId> = {
+export const CUT_LUMBER: Record<ShoreTypeId, WoodSizeId> = {
   't-shore': '4x4',
   'double-t': '4x4',
   '3-post': '6x6',

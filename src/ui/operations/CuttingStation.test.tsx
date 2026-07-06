@@ -188,7 +188,7 @@ describe('CuttingStation', () => {
     // Saw B's cut is one muted sentence — not a selectable row.
     await user.click(sawACard);
     expect(screen.getByRole('heading', { name: 'Saw A' })).toBeInTheDocument();
-    expect(screen.getByText('Pending · shared queue')).toBeInTheDocument();
+    expect(screen.getByText(/Up next/)).toBeInTheDocument();
     expect(screen.getByText(/Saw B is on its own cut \(SP-23\) — not in your queue/)).toBeInTheDocument();
 
     // Back returns to the station select.

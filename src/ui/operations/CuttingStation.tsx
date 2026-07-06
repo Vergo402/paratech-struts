@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
-import { cutLengthInches } from '@core/shorepoint';
-import { Button, EmptyState, MeasurementValue } from '@ui/primitives';
+import { CUT_LUMBER, cutLengthInches } from '@core/shorepoint';
+import { Badge, Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
 import { usePeerCuts } from '@ui/hooks';
 import { ShorePointCard, SHORE_TYPE_LABELS, CuttingControls } from './ShorePointCard';
@@ -72,20 +72,6 @@ function cutSubtitle(sp: ShorePoint): string {
  *  floors to ⅛″); round only defends float noise. No double-floor. */
 function cutEighths(sp: ShorePoint): number {
   return Math.round(cutLengthInches(sp) * 8);
-}
-
-/** The drag-handle grip glyph (six dots). VISUAL ONLY in v4.0 — see the TODO. */
-function GripIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="9" cy="6" r="1.6" />
-      <circle cx="15" cy="6" r="1.6" />
-      <circle cx="9" cy="12" r="1.6" />
-      <circle cx="15" cy="12" r="1.6" />
-      <circle cx="9" cy="18" r="1.6" />
-      <circle cx="15" cy="18" r="1.6" />
-    </svg>
-  );
 }
 
 export function CuttingStation({
@@ -184,6 +170,13 @@ export function CuttingStation({
         <MeasurementValue eighths={cutEighths(sp)} />
       </p>
       <p className="fs-cutstation-hero-label">Cut length</p>
+      {/* The math, spelled out (accepted mockup): opening − shore-type lumber −
+          wedge. The lumber is CUT_LUMBER doctrine (#361), never the operator's
+          strut deductions. */}
+      <p className="fs-cutstation-hero-math">
+        Opening <MeasurementValue eighths={sp.measurementEighths} /> −{' '}
+        {CUT_LUMBER[sp.shoreType].replace('x', '×')} header + footer − 1½″ wedge
+      </p>
       <p className="fs-cutstation-hero-where">{cutSubtitle(sp)}</p>
       {sp.cuttingDone && <p className="fs-cutstation-hero-cutdone">✓ Cut done</p>}
       <div className="fs-cutstation-hero-slide">
@@ -209,10 +202,12 @@ export function CuttingStation({
 
   /** A read-only up-next row — an unclaimed cut in the shared queue. (Other saws'
    *  claimed cuts are never rows: #390 reduces each to one muted sentence.) */
-  const upNextRow = (sp: ShorePoint) => (
+  const upNextRow = (sp: ShorePoint, i: number) => (
     <div key={sp.id} role="listitem" data-sp-id={sp.id} className="fs-cutstation-row">
-      <span className="fs-cutstation-grip" aria-hidden="true">
-        <GripIcon />
+      {/* Queue position (#20) — an honest numeral until reorder actually lands;
+          the six-dot grip shipped as a dead affordance. */}
+      <span className="fs-cutstation-pos" aria-label={`Position ${i + 1}`}>
+        {i + 1}
       </span>
       <span className="fs-cutstation-row-body">
         <span className="fs-cutstation-row-num">
@@ -287,12 +282,12 @@ export function CuttingStation({
         })}
       </div>
     );
-    upNextRows = unclaimed.map((sp) => upNextRow(sp));
+    upNextRows = unclaimed.map((sp, i) => upNextRow(sp, i));
   } else if (isDesktop) {
     // Tablet/desktop, exactly 1 saw: the existing single hero + up-next, unchanged.
     const sp = heroBySaw[activeSaw] ?? queue[0]!;
     heroes = hero(sp, null);
-    upNextRows = unclaimed.map((s) => upNextRow(s));
+    upNextRows = unclaimed.map((s, i) => upNextRow(s, i));
   } else {
     // Phone (#390): the view is locked to ONE saw — its hero (or a calm per-saw
     // all-clear) + the shared pending list. Other saws' active cuts are each one
@@ -309,7 +304,7 @@ export function CuttingStation({
     ) : (
       idleHero(activeSaw)
     );
-    upNextRows = unclaimed.map((s) => upNextRow(s));
+    upNextRows = unclaimed.map((s, i) => upNextRow(s, i));
     if (phoneScoped) {
       const otherBusy = roster
         .filter((s) => s !== activeSaw)
@@ -334,7 +329,7 @@ export function CuttingStation({
       <section className="fs-cutstation" aria-label="Cutting Station">
         <div className="fs-cutstation-head">
           <div className="fs-cutstation-titlerow">
-            <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
+            <h2 className="fs-cutstation-title">Cutting Station</h2>
             {peerBadge}
           </div>
         </div>
@@ -397,10 +392,10 @@ export function CuttingStation({
               >
                 ‹ Stations
               </button>
-              <h1 className="fs-cutstation-title">Saw {activeSaw}</h1>
+              <h2 className="fs-cutstation-title">Saw {activeSaw}</h2>
             </>
           ) : (
-            <h1 className="fs-cutstation-title">✂ Cutting Station</h1>
+            <h2 className="fs-cutstation-title">Cutting Station</h2>
           )}
           {peerBadge}
         </div>
@@ -438,7 +433,7 @@ export function CuttingStation({
               <div className="fs-cutstation-heroside">{heroes}</div>
               <div className="fs-cutstation-upnext">
                 <p className="fs-cutstation-upnext-head">
-                  {phoneScoped ? 'Pending · shared queue' : 'The queue · up next'}
+                  Up next <Badge variant="count" value={unclaimed.length} />
                 </p>
                 <div role="list">
                   {/* An empty up-next reads honestly — nothing left to work. With one

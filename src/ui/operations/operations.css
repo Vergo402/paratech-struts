@@ -2156,13 +2156,16 @@ button.fs-spc-head {
 /* The one number the cutter acts on, at table-glance size. Diagonal ⅛″ fraction
    (.fs-meas composes it via the OpenType frac feature — scales with font-size). */
 .fs-cutstation-hero-num {
-  font-family: var(--font-mono);
-  font-size: 64px;
-  font-weight: 700;
-  line-height: 1.05;
+  font: var(--type-mono-display);
   color: var(--status-cutting-text);
   font-variant-numeric: diagonal-fractions tabular-nums;
-  margin: calc(-1 * var(--space-2)) 0 0;
+  margin: 0;
+}
+/* The spelled-out cut math under the hero (accepted mockup). */
+.fs-cutstation-hero-math {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  margin: 0;
 }
 .fs-cutstation-hero-where {
   font: var(--type-body-medium);
@@ -2186,11 +2189,22 @@ button.fs-spc-head {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  max-height: 70vh;
-  overflow-y: auto;
+}
+/* Desktop keeps the column capped beside the hero; the PHONE list flows in the
+   page scroll — a nested scroller inside the page was a wet-glove trap (#26). */
+@media (min-width: 768px) {
+  .fs-cutstation-upnext {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
 }
 .fs-cutstation-upnext-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
   font: var(--type-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-secondary);
   margin: 0 0 var(--space-1);
 }
@@ -2265,22 +2279,17 @@ button.fs-spc-head {
   border: 1px solid var(--surface-stroke);
   border-radius: var(--radius-card);
 }
-/* The drag handle — VISUAL ONLY in v4.0 (no reorder mechanism wired yet; see the
-   component's ponytail TODO). Glove-sized hit area, grab cursor as the affordance. */
-.fs-cutstation-grip {
+/* Queue position numeral (#20) — replaced the six-dot grip that shipped as a
+   dead affordance (no reorder wired). Returns as a handle when reorder lands. */
+.fs-cutstation-pos {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   align-self: stretch;
+  font: var(--type-mono-stat);
   color: var(--text-tertiary);
-  cursor: grab;
-  touch-action: none;
-}
-.fs-cutstation-grip svg {
-  width: 20px;
-  height: 20px;
 }
 .fs-cutstation-row-body {
   flex: 1 1 auto;

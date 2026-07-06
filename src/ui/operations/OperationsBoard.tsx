@@ -1535,7 +1535,9 @@ export function OperationsBoard() {
               {briefing.active ? 'Open Briefing' : 'Begin Briefing'}
             </Button>
             {canManageOps && (
-              <Button variant="secondary" destructive onPress={() => setEndOpOpen(true)}>
+              /* Bare red text, not the briefing's outline twin (#22) — ending the
+                 incident is the screen-foot outlier, never a routine button. */
+              <Button variant="tertiary" destructive onPress={() => setEndOpOpen(true)}>
                 End Operation
               </Button>
             )}
