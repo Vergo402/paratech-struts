@@ -22,6 +22,12 @@ export interface SettingsPage {
   label: string;
   icon: ReactNode;
   show: (ctx: SettingsNavContext) => boolean;
+  /** One line of what the user gets — shown on the phone index rows (craft.md §8). */
+  description?: string;
+  /** Phone-index placement (craft.md): 'identity' renders as the identity card,
+   *  'appearance' as the inline theme card, 'department'/'data' as grouped card rows,
+   *  'footer' as the quiet footer links. The desktop rail ignores this. */
+  group?: 'identity' | 'appearance' | 'department' | 'data' | 'footer';
 }
 
 function SIcon({ children }: { children: ReactNode }) {
@@ -44,6 +50,7 @@ function SIcon({ children }: { children: ReactNode }) {
 export const SETTINGS_PAGES: SettingsPage[] = [
   {
     to: '/settings/account',
+    group: 'identity',
     label: 'Account',
     // user
     icon: (
@@ -56,6 +63,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/appearance',
+    group: 'appearance',
+    description: 'Theme and native controls',
     label: 'Appearance',
     // sun / theme
     icon: (
@@ -68,6 +77,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/department',
+    group: 'department',
+    description: 'Profile, join code, and roster',
     label: 'Department',
     // building
     icon: (
@@ -79,6 +90,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/data',
+    group: 'data',
+    description: 'Export, import, and the CSV template',
     label: 'Data management',
     // database
     icon: (
@@ -91,6 +104,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/apparatus-types',
+    group: 'department',
+    description: 'The rig types your department runs',
     label: 'Apparatus types',
     // truck
     icon: (
@@ -102,6 +117,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/administration',
+    group: 'department',
+    description: 'Users, roles, audit log, checklists',
     label: 'Administration',
     // shield
     icon: (
@@ -113,6 +130,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/help',
+    group: 'footer',
+    description: 'Guided tours and reference',
     label: 'Help & reference',
     // life ring / help
     icon: (
@@ -126,6 +145,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   },
   {
     to: '/settings/about',
+    group: 'footer',
+    description: 'Version and updates',
     label: 'About',
     // info
     icon: (

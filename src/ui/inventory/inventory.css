@@ -1,4 +1,5 @@
-/* Inventory screen — phone-first. Tap targets ≥ 56pt (spacing-grid), tokens only. */
+/* Inventory screen — phone-first, composed per craft.md (Stage 1 exemplar, #431).
+   Tap targets ≥ 56pt (spacing-grid), tokens only. */
 
 .fs-inv {
   display: flex;
@@ -7,34 +8,120 @@
   padding: var(--space-3);
 }
 
+/* desk: cards at full rail width read sparse — cap and center the column
+   (same treatment as Quick Find's 568px form cap; equipment rows carry more
+   data so they earn a wider column) */
+@media (min-width: 1024px) {
+  .fs-inv {
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+/* ---- context header: dept + rig count left, data trigger + primary right.
+   The chrome (AppHeader) owns the "Inventory" title — no second h1 (craft.md §6). */
 .fs-inv-header {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
-.fs-inv-title {
-  font: var(--type-headline-2);
+.fs-inv-context {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.fs-inv-dept {
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
   color: var(--text-primary);
-  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fs-inv-sub {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
 .fs-inv-io {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+.fs-inv-data-btn {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.fs-inv-data-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---- stat strip (craft.md §2) — the department rollup, before any scrolling */
+.fs-inv-stats {
+  display: flex;
+  gap: var(--space-5);
+  padding: 0 var(--space-1);
+}
+
+.fs-inv-stat {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.fs-inv-stat b {
+  font: var(--type-mono-stat);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+
+.fs-inv-stat--accent b {
+  color: var(--accent);
+}
+
+/* ---- apparatus scope (tablist) + trailing add-apparatus chip ---- */
+.fs-inv-scope-row {
+  display: flex;
+  align-items: stretch;
   gap: var(--space-2);
 }
 
-/* ---- apparatus scope (tablist) ---- */
 .fs-inv-scope {
   display: flex;
   gap: var(--space-2);
+  flex: 1 1 auto;
+  min-width: 0;
   overflow-x: auto;
-  scrollbar-width: thin;
+  /* swipe surface — the visible scrollbar read as a stray gray strip (sunlight
+     especially); arrow-key nav + touch scroll remain */
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: var(--space-1);
+}
+
+.fs-inv-scope::-webkit-scrollbar {
+  display: none;
 }
 
 .fs-inv-scope-tab {
@@ -61,20 +148,36 @@
 
 .fs-inv-scope-name {
   font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
 }
 
 .fs-inv-scope-count {
   font: var(--type-caption);
   color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---- primary actions ---- */
-.fs-inv-actions {
+.fs-inv-scope-tab--selected .fs-inv-scope-count {
+  color: var(--accent);
+}
+
+.fs-inv-scope-add {
+  flex: 0 0 auto;
+  width: 56px;
+  min-height: 56px;
   display: flex;
-  gap: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
 }
 
-/* ---- equipment list ---- */
+/* ---- equipment list: kind groups on CARDS (craft.md §3) ---- */
 .fs-inv-list {
   display: flex;
   flex-direction: column;
@@ -84,12 +187,43 @@
 .fs-inv-group {
   display: flex;
   flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fs-inv-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 var(--space-1);
 }
 
 .fs-inv-group-label {
   font: var(--type-label);
+  font-weight: calc(500 + var(--type-weight-bump));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-secondary);
-  margin: 0 0 var(--space-1);
+  margin: 0;
+}
+
+.fs-inv-group-count {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fs-inv-card {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  /* NEVER comma-compose the two card tokens — either being `none` invalidates the
+     whole declaration. Same split as .fs-card (primitives.css). */
+  box-shadow: var(--card-top-highlight);
+  overflow: hidden;
+}
+
+[data-theme='sunlight'] .fs-inv-card {
+  box-shadow: var(--card-shadow);
 }
 
 .fs-inv-row {
@@ -97,27 +231,72 @@
   align-items: center;
   gap: var(--space-2);
   min-height: 56px;
-  padding: var(--space-2) 0;
-  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+  padding: var(--space-3);
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+}
+
+.fs-inv-row:first-child {
+  border-top: none;
 }
 
 .fs-inv-row-id {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   flex: 1 1 auto;
   min-width: 0;
 }
 
 .fs-inv-row-label {
   font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
   color: var(--text-primary);
 }
 
 .fs-inv-row-sub {
-  font: var(--type-caption);
+  font: var(--type-mono);
   color: var(--text-tertiary);
 }
 
+/* 3px depletion bar (craft.md §4): available/quantity, pre-attentive */
+.fs-inv-bar {
+  display: block;
+  width: 132px;
+  max-width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-stroke);
+  margin-top: var(--space-2);
+}
+
+.fs-inv-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--text-tertiary);
+}
+
+.fs-inv-bar-fill--low {
+  background: var(--accent);
+}
+
+.fs-inv-row-id > .fs-badge {
+  margin-top: var(--space-2);
+}
+
+.fs-inv-chip-out {
+  display: inline-flex;
+  align-items: center;
+  margin-top: var(--space-2);
+  padding: 3px 10px;
+  border-radius: var(--radius-badge);
+  background: var(--status-cutting-bg);
+  color: var(--status-cutting-text);
+  font: var(--type-label);
+  font-weight: calc(500 + var(--type-weight-bump));
+}
+
+/* hero-numeral count (craft.md §1): available dominant, "/ total" the quiet denominator */
 .fs-inv-stepper {
   display: flex;
   align-items: center;
@@ -131,11 +310,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 20px;
   line-height: 1;
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-button);
-  background: var(--surface-card);
+  background: var(--surface-elevated);
   color: var(--text-primary);
   cursor: pointer;
 }
@@ -146,17 +325,71 @@
 }
 
 .fs-inv-count {
-  min-width: 56px;
+  min-width: 64px;
   text-align: center;
-  font: var(--type-mono);
-  color: var(--text-primary);
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
   font-variant-numeric: tabular-nums;
+}
+
+.fs-inv-count b {
+  font: var(--type-mono-hero);
+  font-weight: calc(600 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+
+.fs-inv-count-of {
+  font: var(--type-mono);
+  color: var(--text-tertiary);
+}
+
+.fs-inv-count--out b {
+  color: var(--status-cutting-text);
 }
 
 .fs-inv-remove {
   display: flex;
   justify-content: center;
   margin-top: var(--space-3);
+}
+
+/* ---- data sheet rows (ImportExport trigger) ---- */
+.fs-inv-data-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fs-inv-data-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  min-height: 56px;
+  padding: var(--space-3);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fs-inv-data-row:active {
+  background: var(--surface-card-hover);
+}
+
+.fs-inv-data-row-label {
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+
+.fs-inv-data-row-sub {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
 }
 
 /* ---- quick-add sheet ---- */
@@ -249,11 +482,12 @@
 /* ---- import flow (ImportFlow / ADR-038) -------------------------------------
    Built on the .fs-fullscreen container (picker.css). One-accent doctrine: gold
    accent = affirmative/attention, danger = a row to fix, neutral = done/skipped
-   (no green/amber tokens exist in the theme). */
+   (no green/amber tokens exist in the theme). Strokes ride var(--stroke-width)
+   so the sunlight theme's 2px thickening applies (mess-map inventory #16). */
 .fs-import-progress {
   flex: none;
   padding: var(--space-2) var(--space-4) var(--space-3);
-  border-bottom: 1px solid var(--surface-stroke);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
 }
 .fs-import-stepnum {
   display: block;
@@ -287,12 +521,12 @@
 }
 .fs-import-filebtn > span {
   display: flex; align-items: center; justify-content: center; gap: var(--space-2);
-  min-height: 56px; border: 1px dashed var(--surface-stroke); border-radius: var(--radius-button);
+  min-height: 56px; border: var(--stroke-width) dashed var(--surface-stroke); border-radius: var(--radius-button);
   font: var(--type-body-medium); color: var(--accent);
 }
 .fs-import-filerow {
   display: flex; align-items: center; gap: var(--space-3);
-  padding: var(--space-3); border: 1px solid var(--surface-stroke);
+  padding: var(--space-3); border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-input); background: var(--surface-card); margin-bottom: var(--space-2);
 }
 .fs-import-filemeta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -303,9 +537,9 @@
   font: var(--type-body-medium); color: var(--accent);
 }
 .fs-import-previewlabel { font: var(--type-caption); color: var(--text-secondary); margin: var(--space-2) 0 var(--space-1); }
-.fs-import-tablewrap { overflow-x: auto; border: 1px solid var(--surface-stroke); border-radius: var(--radius-input); }
+.fs-import-tablewrap { overflow-x: auto; border: var(--stroke-width) solid var(--surface-stroke); border-radius: var(--radius-input); }
 .fs-import-table { border-collapse: collapse; font: var(--type-caption); white-space: nowrap; width: 100%; }
-.fs-import-table th, .fs-import-table td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--surface-stroke); }
+.fs-import-table th, .fs-import-table td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: var(--stroke-width) solid var(--surface-stroke); }
 .fs-import-table th { color: var(--text-tertiary); font-weight: 500; }
 .fs-import-table td { color: var(--text-secondary); }
 .fs-import-table tr:last-child td { border-bottom: none; }
@@ -314,7 +548,7 @@
 .fs-import-maplist { display: flex; flex-direction: column; gap: var(--space-2); }
 .fs-import-maprow {
   display: flex; align-items: center; gap: var(--space-3);
-  padding: var(--space-3); border: 1px solid var(--surface-stroke);
+  padding: var(--space-3); border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-input); background: var(--surface-card);
 }
 .fs-import-maprow--warn { border-color: var(--accent); background: var(--accent-subtle); }
@@ -348,7 +582,7 @@
 
 .fs-import-readyrow {
   display: flex; align-items: center; gap: var(--space-2); width: 100%;
-  padding: var(--space-3); border: 1px solid var(--surface-stroke); border-radius: var(--radius-input);
+  padding: var(--space-3); border: var(--stroke-width) solid var(--surface-stroke); border-radius: var(--radius-input);
   background: var(--surface-card); margin-bottom: var(--space-2); cursor: pointer; min-height: 56px;
 }
 .fs-import-readyrow > span:first-of-type { flex: 1; text-align: left; font: var(--type-body); color: var(--text-primary); }
@@ -358,7 +592,7 @@
 .fs-import-readylist li { font: var(--type-caption); color: var(--text-secondary); padding: var(--space-1) 0; }
 
 .fs-import-fixcard {
-  border: 1px solid var(--danger-text); border-radius: var(--radius-input);
+  border: var(--stroke-width) solid var(--danger-text); border-radius: var(--radius-input);
   background: var(--danger-bg); padding: var(--space-3); margin-bottom: var(--space-2);
 }
 .fs-import-fixhead { font: var(--type-body-medium); color: var(--danger-text); margin-bottom: var(--space-1); }
@@ -373,7 +607,7 @@
 
 .fs-import-skipped {
   display: flex; align-items: center; gap: var(--space-2);
-  padding: var(--space-2) var(--space-3); border: 1px dashed var(--surface-stroke);
+  padding: var(--space-2) var(--space-3); border: var(--stroke-width) dashed var(--surface-stroke);
   border-radius: var(--radius-input); margin-bottom: var(--space-2); color: var(--text-tertiary);
 }
 .fs-import-skipped i { font-style: normal; }
@@ -382,7 +616,7 @@
 
 .fs-import-foot {
   flex: none; display: flex; gap: var(--space-3);
-  padding: var(--space-3) var(--space-4); border-top: 1px solid var(--surface-stroke);
+  padding: var(--space-3) var(--space-4); border-top: var(--stroke-width) solid var(--surface-stroke);
 }
 .fs-import-foot > * { flex: 1; }
 .fs-import-foot > *:first-child:not(:only-child) { flex: 0 0 auto; }

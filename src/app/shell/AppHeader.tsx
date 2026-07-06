@@ -1,9 +1,10 @@
 import { useRouterState } from '@tanstack/react-router';
 
-/** Build identity shown as the header's mono version tag (and the SideNav footer).
- *  The constant lives in @core/version; re-exported here for existing importers. */
+/** Build identity — lives in @core/version; re-exported here for existing importers
+ *  (SideNav's rail footer). The header itself no longer wears the version tag: it was
+ *  dev chrome on every screen (craft.md §6); build identity now lives in Settings'
+ *  footer + About. */
 export { APP_VERSION } from '@core/version';
-import { APP_VERSION } from '@core/version';
 
 const TITLES: Record<string, string> = {
   '/quickfind': 'FieldShore',
@@ -37,7 +38,6 @@ export function AppHeader() {
       ) : (
         <span className="fs-header-title">{title}</span>
       )}
-      <span className="fs-header-ver">{APP_VERSION}</span>
     </header>
   );
 }

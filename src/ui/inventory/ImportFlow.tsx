@@ -43,9 +43,11 @@ const FIELD_OPTIONS: SheetPickerOption<string>[] = [
 ];
 const MODEL_OPTIONS: SheetPickerOption<string>[] = STRUTS.map((s) => ({ value: s.model, label: s.model, sub: s.system }));
 const PLATE_OPTIONS: SheetPickerOption<string>[] = BASE_PLATES.map((p) => ({ value: p.id, label: p.name }));
+// CSV tokens stay 'Gold'/'Grey' for round-trip compatibility; the picker LABEL speaks
+// the system's human name (craft.md §8, shared with systemLabels.ts).
 const SYSTEM_OPTIONS: SheetPickerOption<string>[] = [
-  { value: 'Gold', label: 'Gold' },
-  { value: 'Grey', label: 'Grey' },
+  { value: 'Gold', label: 'LongShore' },
+  { value: 'Grey', label: 'Acme thread' },
   { value: 'LockStroke', label: 'LockStroke' },
 ];
 const TYPE_OPTIONS: SheetPickerOption<string>[] = [

@@ -2,11 +2,11 @@ import { STRUTS, BASE_PLATES } from '@core/load';
 import { Badge } from '@ui/primitives';
 import type { InventoryItem } from '@core/schema';
 
-// One stock row: identity, a deployed-count badge (whenever quantity − available > 0
-// — durable state, not op-gated, so the badge and the ± clamp read the SAME number),
-// and the ± stepper. The stepper is plain buttons (the Button primitive has no
-// aria-label hook) carrying explicit labels + the current count in an aria-live region
-// (40-inventory.md §Accessibility, Principle 9). − is disabled when every unit is out.
+// One stock row (craft.md): identity + 3px depletion bar + one status chip, and the
+// hero-numeral count (available dominant, "/ total" as the quiet denominator). The
+// stepper is plain buttons (the Button primitive has no aria-label hook) carrying
+// explicit labels + the current count in an aria-live region (40-inventory.md
+// §Accessibility, Principle 9). − is disabled when every unit is out.
 
 export interface EquipmentRowProps {
   item: InventoryItem;
@@ -29,13 +29,28 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
   const { label, sub } = itemLabel(item);
   const deployed = item.quantity - item.available;
   const canDecrement = item.available > 0;
+  const out = item.quantity > 0 && item.available === 0;
+  const low = !out && item.available > 0 && item.available * 3 <= item.quantity;
+  const pct = item.quantity > 0 ? Math.round((item.available / item.quantity) * 100) : 0;
   return (
     <div className="fs-inv-row">
       <div className="fs-inv-row-id">
         <span className="fs-inv-row-label">{label}</span>
         {sub && <span className="fs-inv-row-sub">{sub}</span>}
+        <span className="fs-inv-bar" aria-hidden="true">
+          <i
+            className={low ? 'fs-inv-bar-fill fs-inv-bar-fill--low' : 'fs-inv-bar-fill'}
+            style={{ width: `${pct}%` }}
+          />
+        </span>
+        {out ? (
+          <span className="fs-inv-chip-out">all {item.quantity} deployed</span>
+        ) : low ? (
+          <Badge variant="dot" tone="accent" text="running low" />
+        ) : (
+          deployed > 0 && <Badge variant="dot" tone="accent" text={`${deployed} deployed`} />
+        )}
       </div>
-      {deployed > 0 && <Badge variant="dot" tone="accent" text={`${deployed} deployed`} />}
       <div className="fs-inv-stepper">
         {!readOnly && (
           <button
@@ -51,8 +66,15 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
             −
           </button>
         )}
-        <span className="fs-inv-count" aria-live="polite" aria-label={`${item.available} of ${item.quantity} available`}>
-          {item.available} / {item.quantity}
+        <span
+          className={out ? 'fs-inv-count fs-inv-count--out' : 'fs-inv-count'}
+          aria-live="polite"
+          aria-label={`${item.available} of ${item.quantity} available`}
+        >
+          <b>{item.available}</b>
+          <span className="fs-inv-count-of" aria-hidden="true">
+            /{item.quantity}
+          </span>
         </span>
         {!readOnly && (
           <button

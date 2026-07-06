@@ -18,8 +18,19 @@ const strut = (over: Partial<InventoryItem> = {}): InventoryItem => ({
 
 describe('EquipmentRow', () => {
   it('shows the deployed badge whenever quantity > available (no op gate)', () => {
+    render(<EquipmentRow item={strut({ quantity: 4, available: 2 })} onIncrement={() => {}} onDecrement={() => {}} />);
+    expect(screen.getByText('2 deployed')).toBeInTheDocument();
+  });
+
+  it('escalates the chip to "running low" at ≤ a third available (craft.md §4)', () => {
     render(<EquipmentRow item={strut({ quantity: 4, available: 1 })} onIncrement={() => {}} onDecrement={() => {}} />);
-    expect(screen.getByText('3 deployed')).toBeInTheDocument();
+    expect(screen.getByText('running low')).toBeInTheDocument();
+    expect(screen.queryByText(/[0-9] deployed/)).toBeNull();
+  });
+
+  it('escalates to the out chip at zero available', () => {
+    render(<EquipmentRow item={strut({ quantity: 4, available: 0 })} onIncrement={() => {}} onDecrement={() => {}} />);
+    expect(screen.getByText('all 4 deployed')).toBeInTheDocument();
   });
 
   it('hides the badge when nothing is deployed', () => {

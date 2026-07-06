@@ -38,15 +38,15 @@ describe('DataManagementPage (50-settings §4)', () => {
   it('a manageData member sees Export + Template, no Import', () => {
     mockUsePermissions.mockReturnValue(PERMS({ manageData: true }));
     render(<DataManagementPage />);
-    expect(screen.getByRole('button', { name: 'Export CSV' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Template' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Import CSV' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Export inventory/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download template/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Import inventory/ })).not.toBeInTheDocument();
   });
 
   it('a manageInventory member gets the Import button', () => {
     mockUsePermissions.mockReturnValue(PERMS({ manageInventory: true }));
     render(<DataManagementPage />);
-    expect(screen.getByRole('button', { name: 'Import CSV' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Import inventory/ })).toBeInTheDocument();
   });
 
   it('shows the op-active import notice only when an operation is running (informs, never blocks)', () => {

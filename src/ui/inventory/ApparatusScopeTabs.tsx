@@ -49,7 +49,9 @@ export function ApparatusScopeTabs({ rigs, value, onChange }: ApparatusScopeTabs
             onKeyDown={(e) => onKeyDown(e, idx)}
           >
             <span className="fs-inv-scope-name">{rig.name}</span>
-            <span className="fs-inv-scope-count">{rig.count}</span>
+            <span className="fs-inv-scope-count">
+              {rig.count} {rig.count === 1 ? 'item' : 'items'}
+            </span>
           </button>
         );
       })}

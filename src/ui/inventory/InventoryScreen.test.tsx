@@ -32,6 +32,7 @@ vi.mock('@ui/hooks', async () => ({
   useOperation: () => mockOperation(),
   usePermissions: () => mockPermissions(),
   useApparatusTypes: () => ({ types: [], allNames: ['Engine', 'Ladder'], add: vi.fn(), remove: vi.fn() }),
+  useDepartment: () => ({ department: null, role: null }),
 }));
 
 const rig = (id: string, name: string): Apparatus => ({ id, name, type: 'Engine' });
@@ -82,17 +83,18 @@ describe('InventoryScreen', () => {
     // but every back-office control is hidden (hide treatment)
     expect(screen.queryByRole('button', { name: 'Add equipment' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Add apparatus' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Import CSV' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Import and export inventory' })).toBeNull();
     // no ± steppers — the row is read-only
     expect(screen.queryByRole('button', { name: /Increase/ })).toBeNull();
   });
 
-  it('allows CSV import while an operation is active (the store guards deployed gear; warned in-flow)', () => {
+  it('allows CSV import while an operation is active (the store guards deployed gear; warned in-flow)', async () => {
+    const user = userEvent.setup();
     mockApparatus.mockReturnValue({ roster: [rig('e1', 'Engine 1')], add: vi.fn(), remove: vi.fn() });
     mockOperation.mockReturnValue({ id: 'op-1', name: 'Surfside', multiBuilding: false, inlineDeploy: false, divisions: [1], saws: ['A'], status: 'active', createdAt: 1, currentPeriod: 1, periods: [{ number: 1, startedAt: 1 }] });
     render(<InventoryScreen />);
-    expect(screen.getByRole('button', { name: 'Import CSV' })).toBeEnabled();
+    await user.click(screen.getByRole('button', { name: 'Import and export inventory' }));
+    expect(await screen.findByRole('button', { name: /Import inventory/ })).toBeEnabled();
   });
 });
 
@@ -103,7 +105,8 @@ describe('ImportExport', () => {
     render(
       <ImportExport opActive={false} canManage canExport exportCsv={() => ''} templateCsv={() => ''} importRows={importRows} />,
     );
-    await user.click(screen.getByRole('button', { name: 'Import CSV' }));
+    // rows variant (the Data management page shape) — Import opens the 4-step flow
+    await user.click(screen.getByRole('button', { name: /Import inventory/ }));
     expect(await screen.findByRole('dialog')).toHaveTextContent(/Pick your file/);
   });
 });

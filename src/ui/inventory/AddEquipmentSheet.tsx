@@ -3,6 +3,7 @@ import { STRUTS, EXTENSIONS, BASE_PLATES } from '@core/load';
 import { Sheet } from '@ui/primitives';
 import { PlateThumb } from '@ui/picker';
 import type { InventoryItem, System } from '@core/schema';
+import { SYSTEM_LABELS } from './systemLabels';
 
 // Quick-add for the selected rig. Full-width tap rows for struts + extensions and a
 // plate grid that reuses PlateSwatch's look (NOT the single-select VisualGridPicker —
@@ -23,11 +24,9 @@ export interface AddEquipmentSheetProps {
   onAdd: (spec: NewEquipment) => void;
 }
 
-const SYS_GROUPS: { system: System; label: string }[] = [
-  { system: 'LongShore', label: 'Gold (LongShore)' },
-  { system: 'AcmeThread', label: 'Grey (AcmeThread)' },
-  { system: 'LockStroke', label: 'LockStroke' },
-];
+const SYS_GROUPS: { system: System; label: string }[] = (
+  ['LongShore', 'AcmeThread', 'LockStroke'] as System[]
+).map((system) => ({ system, label: SYSTEM_LABELS[system] }));
 
 interface CellProps {
   label: string;

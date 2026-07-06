@@ -37,6 +37,10 @@
   --type-caption: 400 12px/1.35 var(--font-sans);
   --type-label: 500 11px/1.30 var(--font-sans);
   --type-mono: 400 13px/1.40 var(--font-mono);
+  /* craft.md (Stage 1, #431): the numeral hierarchy — a screen's primary datum is a
+     HERO numeral; supporting figures use the STAT size. Both tabular (Inter). */
+  --type-mono-hero: 600 22px/1.15 var(--font-mono);
+  --type-mono-stat: 600 17px/1.20 var(--font-mono);
 
   /* spacing — 4pt base (spacing-grid.md, E2, formalizes these) */
   --space-1: 4px;
