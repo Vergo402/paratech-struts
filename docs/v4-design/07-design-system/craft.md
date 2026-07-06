@@ -86,10 +86,29 @@ System enums, v3 color-code jargon, and internal terminology never surface in us
 `Gold (LongShore)` → **LongShore** (single shared label map, `src/ui/inventory/systemLabels.ts`).
 Row descriptions in settings lists say what the user gets, not what the module is called.
 
+## 9. Workstation heroes (Stage 2a addendum, #432)
+
+The numeral ramp has three steps, one per altitude:
+
+- `--type-mono-stat` (17px) — stat-strip figures, queue-row numerals.
+- `--type-mono-hero` (22px) — a **card's** dominant value (the measurement shelf).
+- `--type-mono-display` (64px) — a **workstation's** one action number (the Cutting
+  Station cut length). At most one display numeral on screen; it may carry the
+  workstation's status hue (cutting amber) — that is the status accent, not gold.
+
+Every hero numeral carries a micro-label naming WHICH number it is (`OPENING` /
+`EFFECTIVE` / `CUT` / `ELAPSED`), and a workstation hero spells its math out in a quiet
+caption line ("Opening 54″ − 6×6 header + footer − 1½″ wedge") — the number is
+checkable on scene, never an oracle.
+
+Queue rows show **position numerals** (1, 2, 3…), never a decorative affordance: a grip
+that doesn't drag is a broken promise; the numeral states a fact.
+
 ## Rollout state
 
 | Screen | Status |
 |---|---|
-| Inventory + Settings (#431) | built with this doc (exemplar) |
-| Operations (#432), Quick Find (#433), Command (#434) | pending delta-mockups |
+| Inventory + Settings (#431) | built with this doc (exemplar) — punch-list pass applied |
+| Operations + Cutting Station (#432) | built with this doc (Stage 2a) |
+| Quick Find (#433), Command (#434) | pending delta-mockups |
 | Motion finesse + empty states (#435) | pending |
