@@ -134,3 +134,4 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 ## Deliberately NOT renamed
 - `~/.claude/plans/i-want-to-go-sorted-eagle.md` (File-Migration project) and `ok-after-the-taxonomy-curious-milner.md` (Cowork recovery) — not FieldShore.
 - All other random-named files in `~/.claude/plans/` belong to other projects (promotion quizzes, Paperless, brew upgrades, etc.).
+- `v4-stage2a-ops-elevation-plus-punchlist.md` (was plan-stage-1-stage-virtual-pudding) — 2026-07-06: #431 punch list (5 fixes) + Stage 2a Operations/Cutting Station elevation (#432)
