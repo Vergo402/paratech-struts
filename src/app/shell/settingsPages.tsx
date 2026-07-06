@@ -129,6 +129,20 @@ export const SETTINGS_PAGES: SettingsPage[] = [
     show: ({ perms, canIncident }) => perms.manageUsers || perms.manageSettings || canIncident,
   },
   {
+    to: '/settings/about',
+    group: 'footer',
+    description: 'Version and updates',
+    label: 'About',
+    // info
+    icon: (
+      <SIcon>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 16v-5M12 8h.01" />
+      </SIcon>
+    ),
+    show: () => true,
+  },
+  {
     to: '/settings/help',
     group: 'footer',
     description: 'Guided tours and reference',
@@ -139,20 +153,6 @@ export const SETTINGS_PAGES: SettingsPage[] = [
         <circle cx="12" cy="12" r="9" />
         <circle cx="12" cy="12" r="3.5" />
         <path d="M5.5 5.5l4 4M14.5 14.5l4 4M18.5 5.5l-4 4M9.5 14.5l-4 4" />
-      </SIcon>
-    ),
-    show: () => true,
-  },
-  {
-    to: '/settings/about',
-    group: 'footer',
-    description: 'Version and updates',
-    label: 'About',
-    // info
-    icon: (
-      <SIcon>
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 16v-5M12 8h.01" />
       </SIcon>
     ),
     show: () => true,

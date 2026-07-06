@@ -75,8 +75,7 @@ export function SettingsIndex() {
   const deptPages = pages.filter((p) => p.group === 'department');
   const dataPages = pages.filter((p) => p.group === 'data');
   const appearancePage = pages.find((p) => p.group === 'appearance');
-  const helpPage = pages.find((p) => p.to === '/settings/help');
-  const aboutPage = pages.find((p) => p.to === '/settings/about');
+  const footerPages = pages.filter((p) => p.group === 'footer');
 
   const isMember = identity.kind === 'member';
   const displayName = isMember ? identity.displayName : null;
@@ -148,23 +147,21 @@ export function SettingsIndex() {
         </section>
       )}
 
-      <footer className="fs-set-footer">
-        {aboutPage ? (
-          <Link to="/settings/about" className="fs-set-footer-link">
-            <span className="fs-set-footer-brand">
-              Field<b>Shore</b>
-            </span>{' '}
-            <span className="fs-set-footer-ver">{APP_VERSION}</span>
-          </Link>
-        ) : (
-          <span />
-        )}
-        {helpPage && (
-          <Link to="/settings/help" className="fs-set-footer-link">
-            Help &amp; reference
-          </Link>
-        )}
-      </footer>
+      {footerPages.length > 0 && (
+        <section className="fs-set-section" aria-label="About">
+          <h2 className="fs-set-section-label">About</h2>
+          <div className="fs-set-card">
+            <ul className="fs-set-rows">
+              {footerPages.map((p) => (
+                <PageRow
+                  key={p.to}
+                  page={p.to === '/settings/about' ? { ...p, description: `${APP_VERSION} · Updates` } : p}
+                />
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
