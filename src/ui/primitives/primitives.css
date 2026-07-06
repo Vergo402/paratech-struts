@@ -129,13 +129,17 @@
   color: var(--on-accent);
 }
 .fs-button--primary:active { background: color-mix(in srgb, var(--accent) 86%, black); }
+/* Secondary/tertiary read in QUIET INK (#432, craft.md §5): the accent belongs
+   to the view's ONE primary — a screen of gold-outlined utility buttons was the
+   root of the blown gold budget (baseline audit: 5–8 golds/screen). Hierarchy
+   still reads: fill (primary) > outline (secondary) > bare text (tertiary). */
 .fs-button--secondary {
-  border: var(--stroke-width) solid color-mix(in srgb, var(--accent) 55%, transparent);
-  color: var(--accent);
+  border: var(--stroke-width) solid color-mix(in srgb, var(--text-tertiary) 55%, transparent);
+  color: var(--text-secondary);
 }
-.fs-button--secondary:active { background: var(--accent-subtle); }
-.fs-button--tertiary { color: var(--accent); }
-.fs-button--tertiary:active { background: var(--accent-subtle); }
+.fs-button--secondary:active { background: var(--surface-card-hover); color: var(--text-primary); }
+.fs-button--tertiary { color: var(--text-secondary); }
+.fs-button--tertiary:active { background: var(--surface-card-hover); color: var(--text-primary); }
 /* destructive overlay — the danger pair replaces the accent at the SAME
    emphasis level; a calm feedback treatment, never a full-red alarm */
 .fs-button--destructive.fs-button--primary {

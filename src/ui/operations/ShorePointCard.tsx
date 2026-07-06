@@ -21,10 +21,12 @@ export function shorePointDrawerTitle(sp: Pick<ShorePoint, 'seq' | 'label' | 'sh
   return `${sp.seq != null ? `#${sp.seq} · ` : ''}${sp.label ? `${sp.label} · ` : ''}${SHORE_TYPE_LABELS[sp.shoreType]}`;
 }
 
+// Descriptions carry the consequence / next step ONLY — the title above the
+// callout states the condition once (#432, mess-map #15: no title echo).
 const PENDING_REASON_COPY = {
-  'no-match': 'No matching strut — nothing fits this opening at this load',
-  'no-inventory': 'Waiting for inventory — no apparatus stock to pull from',
-  'over-capacity': 'Over capacity — estimated load exceeds the 4-strut limit; escalate to engineering',
+  'no-match': 'Nothing fits this opening at this load',
+  'no-inventory': 'No apparatus stock to pull from',
+  'over-capacity': 'Estimated load exceeds the 4-strut limit — escalate to engineering',
 } as const;
 
 // Waiting-callout headline per reason (handoff §1.1). The description below it
@@ -225,35 +227,51 @@ export function ShorePointCard({
   // ("cutting only needs the cut length", Alex). Pending has no strut.
   const showStrutModel = !!deployedStrut && sp.status !== 'cutting';
 
+  // Anatomy v2 (#432, mess-map #13): ONE composed header — the #N tab rides
+  // inline with the location line, the meta pills drop BELOW it and render only
+  // when present (an empty row otherwise reserved ~22px of dead card space).
+  const hasMeta = !!sp.assignedResource || !!(sp.groupIndex && sp.groupTotal) || waiting || hazard;
   const headContent = (
     <>
-      {/* Top row: the assigned-apparatus pill (top-right) aligned with the corner
-          #N tab (top-left) — the unified anatomy's SP-# + pill row (Alex 2026-07-03).
-          Absent-apparatus → no pill. Status is the left stripe now, not a chip. */}
-      <span className="fs-spc-meta">
-        {sp.assignedResource ? (
-          <span className="fs-spc-appar">{sp.assignedResource}</span>
-        ) : null}
-        {sp.groupIndex && sp.groupTotal ? (
-          <Badge variant="label">{`${sp.groupIndex} / ${sp.groupTotal}`}</Badge>
-        ) : null}
-        {/* Waiting stays an explicit amber badge — it's a pending SUB-state
-            (equipment now available), not the plain status the stripe carries. */}
-        {waiting ? <span className="fs-badge fs-badge--status is-waiting">Waiting</span> : null}
-        {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
-      </span>
-      {/* Location leads (the focus); label · type on the secondary line, full width. */}
+      {/* Location leads (the focus); label · type on the secondary line. */}
       <span className="fs-spc-identity">
-        <span className="fs-spc-title">{location || '—'}</span>
-        {labelType && <span className="fs-spc-where">{labelType}</span>}
+        {numberTab}
+        <span className="fs-spc-identity-text">
+          <span className="fs-spc-title">{location || '—'}</span>
+          {labelType && <span className="fs-spc-where">{labelType}</span>}
+        </span>
       </span>
+      {hasMeta && (
+        <span className="fs-spc-meta">
+          {sp.assignedResource ? (
+            <span className="fs-spc-appar">{sp.assignedResource}</span>
+          ) : null}
+          {sp.groupIndex && sp.groupTotal ? (
+            // Labeled dominant/denominator (#6): "POST 2/3", never a bare "2 / 3".
+            <Badge variant="label">{`POST ${sp.groupIndex}/${sp.groupTotal}`}</Badge>
+          ) : null}
+          {/* Waiting stays an explicit amber badge — it's a pending SUB-state
+              (equipment now available), not the plain status the stripe carries. */}
+          {waiting ? <span className="fs-badge fs-badge--status is-waiting">Waiting</span> : null}
+          {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
+        </span>
+      )}
     </>
   );
 
+  // The measurement is the card's HERO (#5): dominant numeral + micro-label
+  // naming which number this is, the strut model as the quiet suffix.
+  const valueLabel =
+    sp.status === 'pending'
+      ? 'opening'
+      : sp.status === 'process' || sp.status === 'strutset'
+        ? 'effective'
+        : 'cut';
   const valueShelf = (
     <p className="fs-spc-value">
-      {showStrutModel && <span className="fs-spc-value-model">{bomModelLabel(sp)} · </span>}
       <MeasurementValue eighths={valueEighths} className="fs-spc-value-num" />
+      <span className="fs-spc-value-k">{valueLabel}</span>
+      {showStrutModel && <span className="fs-spc-value-model">{bomModelLabel(sp)}</span>}
     </p>
   );
 
@@ -273,7 +291,6 @@ export function ShorePointCard({
         )
       }
     >
-      {numberTab}
       {interactive && pending && !removed ? (
         <button
           type="button"
@@ -282,6 +299,20 @@ export function ShorePointCard({
           onClick={() => setExpanded((e) => !e)}
         >
           {headContent}
+        </button>
+      ) : deployedStrut && !removed && onOpenDetail ? (
+        /* Deployed: the head IS the Quick View entry (#14 — tap-anywhere with a
+           quiet chevron cue; the lone gold "Details" text link is gone). Read-only,
+           so it renders under readOnly (archive) too. */
+        <button
+          type="button"
+          className="fs-spc-head fs-spc-head--detail"
+          onClick={() => onOpenDetail(sp)}
+        >
+          {headContent}
+          <span className="fs-spc-chev" aria-hidden="true">
+            ›
+          </span>
         </button>
       ) : (
         <div className="fs-spc-head">{headContent}</div>
@@ -292,15 +323,6 @@ export function ShorePointCard({
       <CapacityFlag flag={capacityFlag} />
 
       {valueShelf}
-
-      {/* Quick View entry (ADR-019) — a quiet read-only affordance on every
-          deployed card, away from the status stripe + slides. Read-only, so it
-          shows under readOnly (archive) too; absent when no handler is wired. */}
-      {deployedStrut && !removed && onOpenDetail && (
-        <button type="button" className="fs-spc-details" onClick={() => onOpenDetail(sp)}>
-          Details
-        </button>
-      )}
 
       {sp.status === 'cutting' && sp.cuttingDone && (
         <p className="fs-spc-cutdone">✓ Cut done</p>
@@ -327,7 +349,10 @@ export function ShorePointCard({
               </div>
             </div>
           )}
-          <Button variant="primary" fullWidth onPress={() => onAssignEquipment?.(sp)}>
+          {/* Quiet outline (#4 gold budget): the board's one gold is Add Shore
+              Point; per-card commits read through the slide knob, not a stack of
+              gold bars. */}
+          <Button variant="secondary" fullWidth onPress={() => onAssignEquipment?.(sp)}>
             Assign Equipment
           </Button>
           {expanded && (
@@ -426,7 +451,7 @@ export function ShorePointCard({
           reversible move (ADR-010). Board only (!cuttingStation). */}
       {interactive && !removed && !cuttingStation && sp.status === 'secured' && (
         <div className="fs-spc-slides">
-          <Button variant="primary" fullWidth onPress={() => onRemoveReturn?.(sp)}>
+          <Button variant="secondary" fullWidth onPress={() => onRemoveReturn?.(sp)}>
             Remove &amp; Return Equipment
           </Button>
           <Slider

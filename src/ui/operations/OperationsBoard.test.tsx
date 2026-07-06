@@ -186,7 +186,7 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     const pending = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(pending).toHaveClass('is-toggled-off');
-    expect(within(pending).getByText('(toggled off)')).toBeInTheDocument();
+    expect(within(pending).getByText('skipped — one-step deploy')).toBeInTheDocument();
   });
 
   it('a card forced into Pending (out of stock) keeps the lane live — no "(toggled off)"', () => {
@@ -195,7 +195,7 @@ describe('OperationsBoard', () => {
     render(<OperationsBoard />);
     const pending = screen.getByRole('region', { name: 'Pending Equipment' });
     expect(pending).not.toHaveClass('is-toggled-off');
-    expect(within(pending).queryByText('(toggled off)')).toBeNull();
+    expect(within(pending).queryByText('skipped — one-step deploy')).toBeNull();
   });
 
   it('two-step mode (default) never marks the Pending lane toggled off', () => {
@@ -318,7 +318,7 @@ describe('OperationsBoard', () => {
     sp.measurementEighths = 16 * 8; // the 12-15 / 19-25 catalog gap
     mockShorePoints.mockReturnValue([sp]);
     render(<OperationsBoard />);
-    expect(screen.getByText('No matching strut — nothing fits this opening at this load')).toBeInTheDocument();
+    expect(screen.getByText('Nothing fits this opening at this load')).toBeInTheDocument();
   });
 
   it('Assign Equipment opens the sheet with the SP context and the off-book offer', async () => {
@@ -581,7 +581,7 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
     // The sub-nav shows the live queue count.
-    expect(screen.getByRole('radio', { name: /cutting station.*2/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /cutting station.*2 in queue/i })).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
     const ids = Array.from(document.querySelectorAll('.fs-cutstation-split [data-sp-id]')).map((el) =>
       el.getAttribute('data-sp-id'),
@@ -651,7 +651,7 @@ describe('OperationsBoard', () => {
     // no advance/step-back/remove. A returned card keeps its BOM as history.
     const buttons = within(card).queryAllByRole('button');
     expect(buttons).toHaveLength(1);
-    expect(buttons[0]).toHaveTextContent('Details');
+    expect(buttons[0]).toHaveClass('fs-spc-head--detail');
   });
 
   it('Quick View: a deployed card opens the detail drawer; a pending card has no Details', async () => {
@@ -665,10 +665,13 @@ describe('OperationsBoard', () => {
 
     const deployed = document.querySelector('[data-sp-id="sp-1"]') as HTMLElement;
     const pending = document.querySelector('[data-sp-id="sp-2"]') as HTMLElement;
-    expect(within(deployed).getByRole('button', { name: 'Details' })).toBeInTheDocument();
-    expect(within(pending).queryByRole('button', { name: 'Details' })).not.toBeInTheDocument();
+    // #432 anatomy v2: the deployed card's HEAD is the Quick View entry (the
+    // gold Details link is gone); a pending head expands actions instead.
+    const detailHead = deployed.querySelector('.fs-spc-head--detail') as HTMLElement;
+    expect(detailHead).not.toBeNull();
+    expect(pending.querySelector('.fs-spc-head--detail')).toBeNull();
 
-    await user.click(within(deployed).getByRole('button', { name: 'Details' }));
+    await user.click(detailHead);
     const drawer = screen.getByRole('dialog');
     expect(within(drawer).getByText('Bill of materials')).toBeInTheDocument();
     expect(within(drawer).getByText('Measurement & load')).toBeInTheDocument();

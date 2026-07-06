@@ -273,13 +273,17 @@ interface LaneProps extends ItemCallbacks {
 
 function Lane({ status, points, collapsed, onToggle, toggledOff = false, ...cb }: LaneProps) {
   const items = groupLanePoints(points);
+  const empty = points.length === 0;
   return (
-    <section className={`fs-lane is-${status}${toggledOff ? ' is-toggled-off' : ''}`} aria-label={STATUS_LABELS[status]}>
+    <section
+      className={`fs-lane is-${status}${toggledOff ? ' is-toggled-off' : ''}${empty ? ' is-quiet' : ''}`}
+      aria-label={STATUS_LABELS[status]}
+    >
       {/* Heading lives OUTSIDE the toggle button: a heading nested inside a button
           isn't exposed for heading navigation by several screen readers (audit W7).
           sr-only keeps the visual row unchanged; the button stays fully tappable.
-          The "(toggled off)" note rides the VISIBLE title only — the sr-only
-          heading + the region aria-label stay the plain status name. */}
+          The behavior note rides the VISIBLE title only — the sr-only heading +
+          the region aria-label stay the plain status name. */}
       <h2 className="fs-sr-only">{STATUS_LABELS[status]}</h2>
       <button
         className="fs-lane-header"
@@ -289,18 +293,18 @@ function Lane({ status, points, collapsed, onToggle, toggledOff = false, ...cb }
       >
         <span className="fs-lane-title">
           {LIST_STATUS_LABEL[status]}
-          {toggledOff && <span className="fs-lane-off">(toggled off)</span>}
+          {/* Plain behavior phrase (#16), not settings-jargon "(toggled off)". */}
+          {toggledOff && <span className="fs-lane-off">skipped — one-step deploy</span>}
         </span>
         <Badge variant="count" value={points.length} srLabel={`${points.length} shore points`} />
         <Chevron />
       </button>
-      {!collapsed && (
+      {/* An empty lane goes QUIET (#17): the zero badge in the header is the
+          message — no per-lane "No shore points" string repeating across a
+          sparse board (it read up to 7×). */}
+      {!collapsed && !empty && (
         <div className="fs-lane-cards" role="list">
-          {points.length === 0 ? (
-            <p className="fs-lane-empty">No shore points</p>
-          ) : (
-            <LaneItems items={items} {...cb} />
-          )}
+          <LaneItems items={items} {...cb} />
         </div>
       )}
     </section>
@@ -1185,22 +1189,23 @@ export function OperationsBoard() {
       aria-label="Operations view"
       size="operational"
       options={[
-        { value: 'board', label: 'Operations' },
+        // Short scope words (accepted mockup) — "Operations | Cutting Station"
+        // overflowed the phone control row beside the layout icons + Filters.
+        { value: 'board', label: 'Board' },
         {
           // Fixed label + count Badge (#432) — the count as a chip, not label text,
-          // so the segment width doesn't jump as the queue moves.
+          // so the segment width doesn't jump as the queue moves. The full
+          // "Cutting Station" name stays on the station's own heading.
           value: 'cutting',
+          ariaLabel: cuttingQueue.length
+            ? `Cutting Station, ${cuttingQueue.length} in queue`
+            : 'Cutting Station',
           label: cuttingQueue.length ? (
             <>
-              Cutting Station{' '}
-              <Badge
-                variant="count"
-                value={cuttingQueue.length}
-                srLabel={`${cuttingQueue.length} cuts in queue`}
-              />
+              Cutting <Badge variant="count" value={cuttingQueue.length} />
             </>
           ) : (
-            'Cutting Station'
+            'Cutting'
           ),
         },
       ]}

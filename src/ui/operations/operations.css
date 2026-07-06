@@ -543,28 +543,22 @@
 }
 
 /* Pending lane bypassed (one-step deploy mode, "Utilize Pending Card" OFF, and
-   nothing forced here): the section reads dimmed with a red "(toggled off)" note.
-   The note uses the danger PAIR (not bare --danger-text, which flips to white in
-   the sunlight theme) so it stays red across all four themes — like the hazard
-   pill. A card forced here (out of stock) drops is-toggled-off and the lane is
-   live again. */
-.fs-lane.is-toggled-off .fs-lane-title,
-.fs-lane.is-toggled-off .fs-lane-empty {
+   nothing forced here): the section reads dimmed with a quiet behavior note
+   ("skipped — one-step deploy", #16 — a state of the workflow, not a danger).
+   A card forced here (out of stock) drops is-toggled-off and the lane is live. */
+.fs-lane.is-toggled-off .fs-lane-title {
   color: var(--text-tertiary);
 }
 .fs-lane-off {
   margin-left: var(--space-2);
   font: var(--type-caption);
-  /* Quiet red TEXT, no chip — it shouldn't shout. --danger-text is the red in
-     light/dark/broadcast; in sunlight it resolves to white, so there the red
-     comes from --danger-bg instead (override below). */
-  color: var(--danger-text);
-  opacity: 0.75;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
-[data-theme='sunlight'] .fs-lane-off {
-  color: var(--danger-bg);
-}
+
+/* An EMPTY lane goes quiet (#17): dimmed header, no body, the zero count badge
+   is the whole message — a sparse board no longer repeats "No shore points". */
+.fs-lane.is-quiet .fs-lane-header { opacity: 0.5; }
 
 .fs-lane-chevron {
   flex-shrink: 0;
@@ -735,18 +729,18 @@
    Ghost outline while no strut is assigned; FILLS with the deployed strut's
    system color once equipped (gold/grey/lockstroke). Outline-vs-fill keeps a
    Grey-system point distinct from a pending one. card.md + ADR-029. */
+/* #432 anatomy v2: the #N tab rides INLINE in the composed header (one line with
+   the location) — no longer an absolute corner flap the content had to clear. */
 .fs-spc-tab {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 2;
-  padding: 2px 11px;
-  border-radius: var(--radius-card) 0 9px 0;
+  flex: none;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 7px;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.4;
   letter-spacing: 0.01em;
 }
 /* no strut yet — hollow, neutral; never reads as a Grey-system fill. */
@@ -807,10 +801,11 @@ button.fs-spc-stripe {
    + label·type, full width below. Was a single [location | pill] row that squeezed
    the pill in the narrow board lanes. */
 .fs-spc-head {
+  position: relative; /* anchors the Quick View chevron cue */
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 2px;
+  gap: var(--space-1);
   width: 100%;
   padding: 0;
   border: none;
@@ -824,6 +819,12 @@ button.fs-spc-head {
 }
 
 .fs-spc-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.fs-spc-identity-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -843,16 +844,13 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 
-/* Top meta row — the apparatus pill (+ group / waiting / hazard badges), pushed
-   right so it aligns with the corner #N tab on the left; min-height clears the
-   absolute tab so the location below never collides with it. Wraps if crowded. */
+/* Meta pills row — BELOW the identity line (anatomy v2), left-aligned, rendered
+   only when it has a pill (#13: an empty row reserved dead card space). */
 .fs-spc-meta {
   display: flex;
   flex-flow: row wrap;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--space-1) var(--space-2);
-  min-height: 22px;
 }
 
 /* Focus/selected — accent border, never a scale change (styleguide States). */
@@ -920,45 +918,49 @@ button.fs-spc-head {
   white-space: nowrap;
 }
 
-/* Strut·length — ONE quiet tertiary line (Alex 2026-07-03 unified card anatomy).
-   De-emphasized on purpose: the LOCATION is the card's focus, this is a
-   reference figure. Was a tinted full-bleed shelf with a promoted number. */
+/* The measurement is the card's HERO (#432, mess-map #5): dominant numeral +
+   micro-label naming WHICH number this is (opening / effective / cut), the
+   strut model as the quiet suffix. Was an unlabeled 15px tertiary caption whose
+   meaning silently changed with the phase. */
 .fs-spc-value {
   margin: var(--space-2) 0 0;
-  font: var(--type-caption);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  line-height: 1.2;
+}
+.fs-spc-value-num {
+  font: var(--type-mono-hero);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.fs-spc-value-k {
+  font: var(--type-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-tertiary);
-  line-height: 1.4;
 }
 .fs-spc-value-model {
+  font: var(--type-caption);
   font-family: var(--font-mono);
-}
-/* The measurement reads a hair stronger than the model so the number is
-   scannable, but the whole line stays quiet. Mono/tabular via .fs-meas. The
-   Board is the full view, so its number is bumped a touch (skeleton). */
-.fs-spc-value-num {
-  font-size: 15px;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Quick View entry — a quiet, self-contained text button, away from the status
-   stripe + slides so it never competes with the commit gesture (ADR-019). */
-.fs-spc-details {
-  align-self: flex-start;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px; /* O-7 touch floor (was 32) — text stays small, hit area grows */
-  padding: var(--space-1) 0;
-  background: none;
-  border: none;
-  font: var(--type-body-medium);
-  color: var(--accent);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-spc-details:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-button);
+/* Quick View entry is the deployed card's HEAD itself (#14) — tap-anywhere with
+   a quiet chevron cue; the lone gold "Details" text link is gone. */
+.fs-spc-head--detail { cursor: pointer; }
+.fs-spc-head--detail:hover .fs-spc-title { color: var(--text-primary); }
+.fs-spc-chev {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  font: var(--type-body-lg);
+  line-height: 1.2;
+  color: var(--text-tertiary);
 }
 
 /* Pending block — the waiting callout (if any) + the Assign primary action. */
@@ -2635,10 +2637,15 @@ button.fs-spc-head {
 .fs-ops-divchip:hover {
   background: var(--surface-card-hover);
 }
+/* Selected = the app-wide accent ring + tint (#18 — was a grey elevated fill
+   that matched no other selection in the app). */
 .fs-ops-divchip.is-active {
   color: var(--text-primary);
-  background: var(--surface-elevated);
-  border-color: var(--text-tertiary);
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+}
+.fs-ops-divchip.is-active .fs-ops-divchip-ct {
+  color: var(--text-secondary);
 }
 .fs-ops-divchip-ct {
   font-family: var(--font-mono);

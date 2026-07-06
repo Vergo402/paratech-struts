@@ -72,9 +72,9 @@ describe('PastOperationView (#238)', () => {
 
   it('Quick View: an archived deployed card opens the read-only detail drawer', async () => {
     render(<PastOperationView opId="op1" onClose={vi.fn()} />);
-    // Only the deployed card ('a', with a BOM) carries Details; the returned card
-    // ('b', no BOM) does not — so this is unambiguous.
-    await userEvent.click(screen.getByRole('button', { name: 'Details' }));
+    // Only the deployed card ('a', with a BOM) carries the Quick View head
+    // (#432 anatomy v2); the returned card ('b', no BOM) does not — unambiguous.
+    await userEvent.click(document.querySelector('.fs-spc-head--detail') as HTMLElement);
     const drawer = screen.getByRole('dialog');
     expect(within(drawer).getByText('Bill of materials')).toBeInTheDocument();
     expect(within(drawer).getAllByText('LS 203').length).toBeGreaterThanOrEqual(1);

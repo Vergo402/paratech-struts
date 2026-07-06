@@ -47,9 +47,9 @@ describe('ShorePointCard', () => {
     const { rerender } = render(
       <ShorePointCard shorePoint={makeSP({ shoreType: '3-post', groupId: 'g', groupIndex: 2, groupTotal: 3 })} />,
     );
-    expect(screen.getByText('2 / 3')).toBeInTheDocument();
+    expect(screen.getByText('POST 2/3')).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP()} />);
-    expect(screen.queryByText(/\d \/ \d/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/POST \d+\/\d+/)).not.toBeInTheDocument();
   });
 
   it('pending: shows the Assign Equipment action; no reason line when unset', () => {
@@ -58,7 +58,7 @@ describe('ShorePointCard', () => {
     expect(screen.queryByText(/No matching strut/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Waiting for inventory/)).not.toBeInTheDocument();
     // Pending carries no strut model on the value line — just the required length.
-    expect(valueLineText()).toBe('48 1/2″');
+    expect(valueLineText()).toBe('48 1/2″opening');
     expect(document.querySelector('.fs-spc-value-model')).toBeNull();
   });
 
@@ -86,7 +86,7 @@ describe('ShorePointCard', () => {
     // full unique string to disambiguate (the title split is covered below).
     const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
     expect(
-      screen.getByText('No matching strut — nothing fits this opening at this load'),
+      screen.getByText('Nothing fits this opening at this load'),
     ).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
     // A no-inventory wait now NAMES the strut(s) that fit (issue: "doesn't tell you
@@ -158,7 +158,7 @@ describe('ShorePointCard', () => {
     );
     // The strut identity rides the quiet value line (model · length); the source
     // rig moved entirely to Details (not on the card face).
-    expect(valueLineText()).toBe('LS 203 · 48 1/2″');
+    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
     expect(screen.queryByText('Rescue 2')).not.toBeInTheDocument();
     // No pending-only actions — the slide stack owns the card now (#221).
     expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
@@ -172,7 +172,7 @@ describe('ShorePointCard', () => {
   it('value line: quiet model·length, no per-phase label (unified anatomy)', () => {
     const { rerender } = render(<ShorePointCard shorePoint={makeSP()} />);
     // Pending: no strut yet — just the required strut length (48½″), no label.
-    expect(valueLineText()).toBe('48 1/2″');
+    expect(valueLineText()).toBe('48 1/2″opening');
     expect(screen.queryByText('Strut system')).not.toBeInTheDocument();
     rerender(
       <ShorePointCard
@@ -182,8 +182,8 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    // Deployed: "model · length", still no label.
-    expect(valueLineText()).toBe('LS 203 · 48 1/2″');
+    // Deployed: hero number + phase label + quiet model suffix (#432 anatomy v2).
+    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
   });
 
   it('value line: the deducted (effective) length + the deployed strut', () => {
@@ -199,7 +199,7 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(valueLineText()).toBe('LS 203 · 41 1/2″');
+    expect(valueLineText()).toBe('41 1/2″effectiveLS 203');
   });
 
   it('value line: cutting reads the WOOD cut length alone (no strut model)', () => {
@@ -217,7 +217,7 @@ describe('ShorePointCard', () => {
       />,
     );
     // The Cutting Station needs the cut length alone — no strut model on the line.
-    expect(valueLineText()).toBe('40″');
+    expect(valueLineText()).toBe('40″cut');
     expect(document.querySelector('.fs-spc-value-model')).toBeNull();
   });
 
@@ -234,7 +234,7 @@ describe('ShorePointCard', () => {
     // The wood was SET at its cut length — shore-type lumber + 1.5″ wedge, no
     // plates (#361): 40″, not the 41½″ strut effective length. Secured still carries
     // the strut model (only cutting drops it).
-    expect(valueLineText()).toBe('LS 203 · 40″');
+    expect(valueLineText()).toBe('40″cutLS 203');
   });
 
   it('waiting callout: title + reason copy for both pending reasons', () => {
@@ -245,7 +245,7 @@ describe('ShorePointCard', () => {
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
     expect(screen.getByText('No matching strut')).toBeInTheDocument();
     expect(
-      screen.getByText('No matching strut — nothing fits this opening at this load'),
+      screen.getByText('Nothing fits this opening at this load'),
     ).toBeInTheDocument();
     // The Assign action survives the callout (the "No equipment assigned" line was
     // dropped in the card compaction).
@@ -330,7 +330,7 @@ describe('ShorePointCard', () => {
     expect(screen.queryByRole('button', { name: 'Assign equipment' })).toBeNull();
     // Presentational content stays — label · type subline + the quiet model · length line.
     expect(screen.getByText('B-2 · T-Shore')).toBeInTheDocument();
-    expect(valueLineText()).toBe('LS 203 · 48 1/2″');
+    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
 
     // Pending readOnly: no Assign button / Edit / Delete.
     rerender(<ShorePointCard shorePoint={makeSP({ status: 'pending' })} readOnly />);
