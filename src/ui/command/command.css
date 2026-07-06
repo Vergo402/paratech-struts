@@ -1695,10 +1695,8 @@
   font-size: 13px;
 }
 .fs-rollup-allrow .fs-rollup-divname {
-  font: var(--type-body-medium);
+  font: var(--type-body);
   font-family: var(--font-sans);
-  font-size: var(--font-size-body);
-  font-weight: 400;
   color: var(--text-secondary);
 }
 /* Color the totals row by status column so the IC reads the per-status pattern

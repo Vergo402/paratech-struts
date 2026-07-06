@@ -32,6 +32,7 @@ import { StartOperationModal } from './StartOperationModal';
 import { AddShorePointModal } from './AddShorePointModal';
 import { DeleteShorePointModal } from './DeleteShorePointModal';
 import { ShorePointCard, SHORE_TYPE_LABELS, shorePointDrawerTitle } from './ShorePointCard';
+import { STATUS_SHORT_LABEL } from './cardParts';
 import { ShorePointDetail } from './ShorePointDetail';
 import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
@@ -184,17 +185,9 @@ interface ItemCallbacks {
   capacityFlagOf: (sp: ShorePoint) => CapacityFlagValue;
 }
 
-// Short status labels for the List-view dividers AND Board lane headers — these
-// fit on one line at the 160px column minimum, keeping all headers equal height.
-const LIST_STATUS_LABEL: Record<ShorePointStatus, string> = {
-  pending: 'Pending',
-  process: 'Assigned',
-  strutset: 'Strut Set',
-  cutting: 'Cutting',
-  runner: 'Runner',
-  secured: 'Secured',
-  returned: 'Returned',
-};
+// Short status labels for the List dividers, Board lane headers, and Division
+// tiles — the ONE shared short tier (cardParts, #432 mess-map #11).
+const LIST_STATUS_LABEL = STATUS_SHORT_LABEL;
 
 // A LaneItem's representative point + count + status for the compact List row. A
 // group sits at its LEAST-ADVANCED leg (same rule as the status sort) so a shore

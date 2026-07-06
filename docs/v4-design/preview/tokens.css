@@ -56,6 +56,7 @@
   --radius-card: 12px;
   --radius-sheet: 16px;
   --radius-badge: 6px;
+  --radius-pill: 999px;   /* full pill — chips, role badges (#432 B5: was referenced, never defined) */
   --radius-button: 12px;
   --radius-input: 8px;
 

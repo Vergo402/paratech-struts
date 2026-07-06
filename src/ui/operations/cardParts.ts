@@ -21,6 +21,19 @@ export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
 };
 
 /** PRIMARY line — the strut's location (the focus): Building · Division · Side · Unit. */
+/** The SHORT status tier (#432, mess-map #11) — ONE map shared by the Board lane
+ *  headers, the List dividers, and the Division tiles (which used opaque PEND /
+ *  PROC / STRUT abbreviations). Full labels stay STATUS_LABELS (@core). */
+export const STATUS_SHORT_LABEL: Record<ShorePointStatus, string> = {
+  pending: 'Pending',
+  process: 'Assigned',
+  strutset: 'Strut Set',
+  cutting: 'Cutting',
+  runner: 'Runner',
+  secured: 'Secured',
+  returned: 'Returned',
+};
+
 export function cardLocation(sp: ShorePoint): string {
   return [
     ...(sp.building ? [sp.building] : []),

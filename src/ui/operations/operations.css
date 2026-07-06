@@ -398,8 +398,7 @@
 }
 .fs-ops-list-count {
   margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font: var(--type-mono);
   color: var(--text-tertiary);
 }
 /* List row — the unified card anatomy at medium density (Alex 2026-07-03): a top
@@ -428,8 +427,7 @@
   gap: var(--space-2);
 }
 .fs-splist-seq {
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font: var(--type-mono);
   color: var(--text-tertiary);
 }
 .fs-splist-loc {
@@ -688,7 +686,7 @@
 }
 /* Slightly smaller value text in the tight row so apparatus names fit. */
 .fs-ops-row3 .fs-picker-trigger-value {
-  font-size: 14px;
+  font: var(--type-body);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -736,11 +734,10 @@
   align-self: flex-start;
   padding: 2px 8px;
   border-radius: 7px;
+  font: var(--type-caption);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 12px;
   font-weight: 600;
-  line-height: 1.4;
   letter-spacing: 0.01em;
 }
 /* no strut yet — hollow, neutral; never reads as a Grey-system fill. */
@@ -869,8 +866,8 @@ button.fs-spc-head {
 /* Group counter pill (handoff §1.5) — scoped to the meta row so the generic
    label badge elsewhere is untouched. Mono tabular figures, no fill change. */
 .fs-spc-meta .fs-badge--label {
+  font: var(--type-caption);
   font-family: var(--font-mono);
-  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
@@ -1375,7 +1372,7 @@ button.fs-spc-head {
   align-items: baseline;
   gap: 2px;
   font: var(--type-mono);
-  font-size: 1rem;
+  font-size: 1rem; /* ramp gap: body-lg-scale mono numerals — #435 finesse decides a step */
   color: var(--text-primary);
 }
 
@@ -1405,9 +1402,7 @@ button.fs-spc-head {
   border-top: 1px solid var(--surface-stroke);
 }
 .fs-rec-effective {
-  font: var(--type-mono);
-  font-size: 1.25rem;
-  font-weight: 600;
+  font: var(--type-mono-stat);
   color: var(--rec-color);
 }
 
@@ -1780,8 +1775,8 @@ button.fs-spc-head {
   justify-content: center;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
+  font: var(--type-label);
   font-family: var(--font-mono);
-  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1802,10 +1797,10 @@ button.fs-spc-head {
 /* Roll-in on rotate — direction set by .fs-gs-roll-r / -l, re-triggered via the
    React key bump. Reduced-motion drops the animation (the card still swaps). */
 .fs-gs-roll-r {
-  animation: fsGsRollR 220ms cubic-bezier(0.2, 0, 0.2, 1) both;
+  animation: fsGsRollR var(--motion-transition) var(--ease-standard) both;
 }
 .fs-gs-roll-l {
-  animation: fsGsRollL 220ms cubic-bezier(0.2, 0, 0.2, 1) both;
+  animation: fsGsRollL var(--motion-transition) var(--ease-standard) both;
 }
 @keyframes fsGsRollR {
   from { transform: translateX(26px); opacity: 0.25; }
@@ -1906,7 +1901,7 @@ button.fs-spc-head {
 
 /* Staggered member entrance — 45ms/card, reduced-motion safe. */
 .fs-gs-member {
-  animation: fsGsIn 240ms cubic-bezier(0.2, 0, 0.2, 1) both;
+  animation: fsGsIn var(--motion-status) var(--ease-standard) both;
   animation-delay: calc(var(--i, 0) * 45ms);
 }
 .fs-gs-member + .fs-gs-member {
@@ -2293,9 +2288,7 @@ button.fs-spc-head {
 }
 .fs-cutstation-row-num {
   display: block;
-  font-family: var(--font-mono);
-  font-size: 19px;
-  font-weight: 600;
+  font: var(--type-mono-stat);
   color: var(--status-cutting-text);
   font-variant-numeric: diagonal-fractions tabular-nums;
 }
@@ -2648,8 +2641,7 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 .fs-ops-divchip-ct {
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font: var(--type-mono);
   color: var(--text-tertiary);
 }
 
@@ -2869,7 +2861,7 @@ button.fs-spc-head {
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) 0;
-  border-bottom: var(--stroke-width) solid var(--stroke);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
 }
 .fs-inv-summary-row:last-child { border-bottom: none; }
 
@@ -2973,14 +2965,12 @@ button.fs-spc-head {
   background: var(--surface-card);
 }
 .fs-div-gutter b {
-  font-family: var(--font-mono);
-  font-size: 22px;
-  font-weight: 600;
+  font: var(--type-mono-hero);
   line-height: 1;
   color: var(--text-primary);
 }
 .fs-div-gutter span {
-  font-size: 8px;
+  font: var(--type-label);
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
   text-align: center;
@@ -3005,8 +2995,8 @@ button.fs-spc-head {
   border-bottom: var(--stroke-width) solid var(--accent);
 }
 .fs-div-grade > span:first-child {
+  font: var(--type-label);
   font-family: var(--font-mono);
-  font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
@@ -3048,12 +3038,12 @@ button.fs-spc-head {
   gap: var(--space-1);
 }
 .fs-divtile-seq {
+  font: var(--type-label);
   font-family: var(--font-mono);
-  font-size: 11px;
   color: var(--text-tertiary);
 }
 .fs-divtile-loc {
-  font-size: 15px;
+  font: var(--type-body-medium);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -3091,7 +3081,7 @@ button.fs-spc-head {
 }
 .fs-divtile-st {
   flex: none;
-  font-size: 8px;
+  font: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;

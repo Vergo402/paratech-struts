@@ -1,7 +1,7 @@
-import type { ShorePoint, ShorePointStatus } from '@core/schema';
+import type { ShorePoint } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType, cardValueEighths } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths, STATUS_SHORT_LABEL } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 
 /**
@@ -43,17 +43,6 @@ export interface DivisionViewProps {
   flagOf: (sp: ShorePoint) => CapacityFlagValue;
 }
 
-// Compact status abbreviations for the tile (the full labels are too long for a
-// 96px chip). Keyed by the status id — 'strutset' → STRUT, etc.
-const STATUS_ABBR: Record<ShorePointStatus, string> = {
-  pending: 'PEND',
-  process: 'PROC',
-  strutset: 'STRUT',
-  cutting: 'CUT',
-  runner: 'RUN',
-  secured: 'SEC',
-  returned: 'RET',
-};
 
 function tilesOf(items: LaneItem[]): BandTile[] {
   return items.map((it) =>
@@ -88,7 +77,7 @@ function DivisionTile({ sp, count, flag, onOpen }: BandTile & { flag: CapacityFl
         </span>
         {/* Status stays a TEXT abbrev here (not color-only): tiles group by floor,
             so the left-edge hue is the only other status cue (Principle 9). */}
-        <span className="fs-divtile-st">{STATUS_ABBR[sp.status]}</span>
+        <span className="fs-divtile-st">{STATUS_SHORT_LABEL[sp.status]}</span>
       </span>
       <CapacityFlag flag={flag} />
     </button>
