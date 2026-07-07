@@ -7,6 +7,7 @@ import {
   myApparatusKeys,
   positionForResource,
   positionForShorePoint,
+  shorePointCountsByPosition,
   shorePointsForResource,
 } from './resource';
 
@@ -78,5 +79,72 @@ describe('Operations ↔ Command resource link', () => {
     expect(myApparatusKeys(tree, 'not-a-real-position')).toEqual([]);
     tree[id('rescue')]!.assignedResources = [{ ref: 'individual', value: 'FF Lopez', label: 'FF Lopez' }];
     expect(myApparatusKeys(tree, id('rescue'))).toEqual([]);
+  });
+});
+
+describe('shorePointCountsByPosition — assignment numerals (#434)', () => {
+  const engine3: OrgResourceRef = { ref: 'apparatus', value: 'app-e3', label: 'Engine 3' };
+
+  it('tallies a unit’s points onto its position by label OR value key', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('shoring')]!.assignedResources = [engine3];
+    const pts = [
+      sp({ id: 'a', assignedResource: 'Engine 3' }), //  label key
+      sp({ id: 'b', assignedResource: 'app-e3' }), //    value key
+      sp({ id: 'c', assignedResource: 'Engine 9' }), //  unassigned unit → nowhere
+    ];
+    expect(shorePointCountsByPosition(tree, pts)).toEqual({ [id('shoring')]: 2 });
+  });
+
+  it('excludes deleted points but INCLUDES returned ones (the figure is a total)', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('shoring')]!.assignedResources = [engine3];
+    const pts = [
+      sp({ id: 'a', assignedResource: 'Engine 3', status: 'returned' }),
+      sp({ id: 'b', assignedResource: 'Engine 3', deletedAt: 5 }),
+    ];
+    expect(shorePointCountsByPosition(tree, pts)).toEqual({ [id('shoring')]: 1 });
+  });
+
+  it('never double-counts when a ref’s label equals its value', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('shoring')]!.assignedResources = [{ ref: 'apparatus', value: 'Engine 3', label: 'Engine 3' }];
+    expect(shorePointCountsByPosition(tree, [sp({ id: 'a', assignedResource: 'Engine 3' })])).toEqual({
+      [id('shoring')]: 1,
+    });
+  });
+
+  it('sums across several apparatus on one position; individuals don’t count', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('staging')]!.assignedResources = [
+      engine3,
+      rescue2,
+      { ref: 'individual', value: 'FF Lopez', label: 'FF Lopez' },
+    ];
+    const pts = [
+      sp({ id: 'a', assignedResource: 'Engine 3' }),
+      sp({ id: 'b', assignedResource: 'Rescue 2' }),
+      sp({ id: 'c', assignedResource: 'FF Lopez' }), // individual, not apparatus → not tallied
+    ];
+    expect(shorePointCountsByPosition(tree, pts)).toEqual({ [id('staging')]: 2 });
+  });
+
+  it('omits zero-count positions entirely (the node hides the line at 0)', () => {
+    const tree = buildDefaultTree('op1');
+    tree[id('shoring')]!.assignedResources = [engine3];
+    expect(shorePointCountsByPosition(tree, [])).toEqual({});
+    expect(shorePointCountsByPosition(tree, [sp({ id: 'a' })])).toEqual({});
+  });
+
+  it('credits a dual-homed rig to its FIRST position only (cross-foot contract)', () => {
+    // Anomalous under unity of command, but the numerals must never sum above the
+    // incident total: one point → exactly one node, not both.
+    const tree = buildDefaultTree('op1');
+    tree[id('shoring')]!.assignedResources = [engine3]; // first in Object.values order
+    tree[id('staging')]!.assignedResources = [engine3];
+    const counts = shorePointCountsByPosition(tree, [sp({ id: 'a', assignedResource: 'Engine 3' })]);
+    expect(counts).toEqual({ [id('shoring')]: 1 });
+    const summed = Object.values(counts).reduce((a, n) => a + n, 0);
+    expect(summed).toBe(1); // never 2
   });
 });

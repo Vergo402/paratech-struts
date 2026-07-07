@@ -7,6 +7,7 @@ import { commitHaptic } from '@ui/primitives/haptics';
 import { BottomSheetPicker, InlineSegmented } from '@ui/picker';
 import { useCommit, useDeviceUid, useDeviceUidValue, useHazards, useOperation, usePermissions, useUserManager } from '@ui/hooks';
 import { download } from '@ui/util/download';
+import { clock } from '@ui/util/time';
 
 // The ICS-208 hazard register (#394, 09-workflows/21-hazard-log.md). Make hazards
 // VISIBLE to everyone, BLOCKING to no one (Principle 10): any role adds via a
@@ -32,20 +33,6 @@ const SEVERITY_OPTIONS = [
   { value: 'medium' as const, label: 'Medium' },
   { value: 'high' as const, label: 'High' },
 ];
-
-/** "1:22 PM" — short, local; the load-bearing attribution alongside who. */
-function clock(at: number): string {
-  return new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-}
-
-const SR_ONLY: React.CSSProperties = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-};
 
 /** RFC-4180 cell: quote only when it must (comma, quote, newline). */
 function csvCell(v: string | number): string {
@@ -98,19 +85,10 @@ export function HazardLog() {
 
   return (
     <div className="fs-haz">
-      <p aria-live="polite" style={SR_ONLY}>{announce}</p>
+      <p aria-live="polite" className="fs-sr-only">{announce}</p>
 
-      <div className="fs-haz-top">
-        <Button
-          variant="secondary"
-          onPress={exportIcs208}
-          disabled={total === 0}
-          disabledReason="No hazards to export"
-        >
-          Export ICS-208
-        </Button>
-      </div>
-
+      {/* Add Hazard leads — the view's one gold. Export ICS-208 (an admin/records
+          action) sits at the END as a quiet button, not above the primary (#434). */}
       <Button variant="primary" size="operational" fullWidth onPress={() => setAddOpen(true)}>
         Add Hazard
       </Button>
@@ -143,6 +121,12 @@ export function HazardLog() {
         </>
       )}
 
+      <div className="fs-haz-foot">
+        <Button variant="tertiary" onPress={exportIcs208} disabled={total === 0} disabledReason="No hazards to export">
+          Export ICS-208
+        </Button>
+      </div>
+
       <AddHazardSheet
         open={addOpen}
         opId={operation?.id ?? null}
@@ -174,9 +158,9 @@ function HazardRow({
     <Card onPress={onOpen} className={`fs-haz-row${mitigated ? ' is-mitigated' : ''}`}>
       <span className="fs-haz-row-head">
         {mitigated ? (
-          <Badge variant="label">{`✓ ${severityWord(h.severity)}`}</Badge>
+          <span className="fs-haz-cleared">CLEARED</span>
         ) : (
-          <Badge variant="severity">{`⚠ ${severityWord(h.severity)}`}</Badge>
+          <Badge variant="severity">{severityWord(h.severity)}</Badge>
         )}
         <span className="fs-haz-row-type">{TYPE_LABEL[h.type]}</span>
       </span>
@@ -329,18 +313,18 @@ function HazardDetailSheet({
       {h && (
         <div className="fs-haz-detail">
           {mitigated ? (
-            <Badge variant="label">{`✓ ${severityWord(h.severity)} · mitigated`}</Badge>
+            <span className="fs-haz-cleared">CLEARED · {severityWord(h.severity)}</span>
           ) : (
-            <Badge variant="severity">{`⚠ ${severityWord(h.severity)}`}</Badge>
+            <Badge variant="severity">{severityWord(h.severity)}</Badge>
           )}
           <p className="fs-haz-detail-loc">{h.location}</p>
           {h.notes ? <p className="fs-haz-detail-notes">{h.notes}</p> : null}
           <p className="fs-haz-detail-meta">
-            Reported {new Date(h.reportedAt).toLocaleString()} · {who(h.reportedBy)}
+            Reported {clock(h.reportedAt)} · {who(h.reportedBy)}
           </p>
           {mitigated && (
             <p className="fs-haz-detail-meta">
-              Mitigated {new Date(h.mitigatedAt!).toLocaleString()} · {who(h.mitigatedBy)}
+              Mitigated {clock(h.mitigatedAt!)} · {who(h.mitigatedBy)}
             </p>
           )}
           <Button

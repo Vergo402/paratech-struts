@@ -9,12 +9,82 @@
   padding: 0;
 }
 
-.fs-cmd-eyebrow {
+/* One eyebrow spec (#434 Stage 2c) — Command previously carried four competing
+   trackings/weights (0.03em/0.04em/0.06em/700); every eyebrow now reads identically
+   (craft.md §3 group-label voice). Layout margins stay on the individual classes. */
+.fs-cmd-eyebrow,
+.fs-org-node-eyebrow,
+.fs-node-section,
+.fs-201-eyebrow,
+.fs-classsel-label {
   display: block;
-  font: var(--type-caption);
+  font: var(--type-label);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
   color: var(--text-tertiary);
+}
+
+/* Card-anatomy v2 (craft.md §3) — the Command card lookalikes carry the full recipe
+   (top edge highlight + the sunlight shadow) instead of hand-rolled bg/border only.
+   Two rules, not one comma list: one of the two tokens is `none` in every theme and
+   `X, none` is an invalid <shadow> list that drops the whole declaration — the same
+   split the .fs-card primitive uses. */
+.fs-cmd-op,
+.fs-cmd-rollover,
+.fs-org-node,
+.fs-node-group,
+.fs-assign-row,
+.fs-201 {
+  box-shadow: var(--card-top-highlight);
+}
+[data-theme='sunlight'] .fs-cmd-op,
+[data-theme='sunlight'] .fs-cmd-rollover,
+[data-theme='sunlight'] .fs-org-node,
+[data-theme='sunlight'] .fs-node-group,
+[data-theme='sunlight'] .fs-assign-row,
+[data-theme='sunlight'] .fs-201,
+[data-theme='sunlight'] .fs-cmd-board {
+  box-shadow: var(--card-shadow);
+}
+
+/* One chip recipe (#434) — Command had five chip one-offs with four paddings and
+   three selected treatments. Shared DNA: quiet ink on the card surface; selection =
+   accent border-color + primary ink (never a gold fill). Geometry stays per context. */
+.fs-cmd-chip,
+.fs-classsel-chip,
+.fs-newkind-chip,
+.fs-org-roster-chip,
+.fs-org-myrole {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.fs-cmd-chip.is-on,
+.fs-classsel-chip.is-active,
+.fs-newkind-chip.is-active {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* One focus ring for every hand-rolled pressable (only 4 of ~14 had one before). */
+.fs-cmd-op:focus-visible,
+.fs-cmd-chip:focus-visible,
+.fs-org-node--press:focus-visible,
+.fs-org-myrole:focus-visible,
+.fs-org-roster-chip:focus-visible,
+.fs-org-fullscreen:focus-visible,
+.fs-org-full-close:focus-visible,
+.fs-classsel-chip:focus-visible,
+.fs-newkind-chip:focus-visible,
+.fs-node-grow:focus-visible,
+.fs-node-clear:focus-visible,
+.fs-node-back:focus-visible,
+.fs-rollup-divbtn:focus-visible,
+.fs-assign-row:focus-visible,
+.fs-xfer-cancel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ---- top row (incident name + OP/elapsed) ------------------------------ */
@@ -24,8 +94,17 @@
   justify-content: space-between;
   gap: var(--space-2);
 }
+/* ---- OP period indicator (#395) ---------------------------------------- */
+/* The header OP clock. The eyebrow + thin progress carry the period; the amber
+   state (last 30 min + overdue) is the quiet IAP-cycle nudge. Demoted to neutral
+   ink at Stage 2c (Alex 2026-07-06) — gold on Command belongs to IC identity
+   alone; amber remains the only colored state. */
 .fs-cmd-op {
   flex: none;
+  min-width: 6.5rem;
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
   text-align: center;
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
@@ -39,27 +118,11 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
-
-/* ---- OP period indicator (#395) ---------------------------------------- */
-/* The header OP clock. The eyebrow + thin progress carry the period; the
-   amber state (last 30 min + overdue) is the quiet IAP-cycle nudge. NOTE: the
-   gold here is a second use of --accent in the chrome — accepted at the mockup;
-   flag for the Phase J one-accent doctrine audit (ADR-011). */
-.fs-cmd-op {
-  min-width: 6.5rem;
-  appearance: none;
-  font: inherit;
-  cursor: pointer;
-  text-align: center;
-}
 .fs-cmd-op:hover {
-  border-color: var(--accent);
-}
-.fs-cmd-op-eyebrow {
-  color: var(--accent);
+  border-color: color-mix(in srgb, var(--text-secondary) 55%, transparent);
 }
 .fs-cmd-op-track {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   height: 3px;
   border-radius: 2px;
   background: var(--surface-stroke);
@@ -67,7 +130,7 @@
 }
 .fs-cmd-op-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--text-tertiary);
   transition: width 1s linear;
 }
 .fs-cmd-op.is-amber {
@@ -81,9 +144,11 @@
 }
 
 /* ---- OP rollover card (#395) ------------------------------------------- */
+/* Neutral card (Stage 2c): the interrupt emphasis belongs to the incoming-transfer
+   card alone — a gold border here stacked a third gold onto the rail. */
 .fs-cmd-rollover {
   background: var(--surface-card);
-  border: var(--stroke-width) solid var(--accent);
+  border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
   padding: var(--space-3) var(--space-3) var(--space-3);
   display: flex;
@@ -99,15 +164,10 @@
   font: var(--type-caption);
   color: var(--text-secondary);
 }
-.fs-cmd-rollover-opt {
-  color: var(--text-tertiary);
-  text-transform: none;
-  letter-spacing: 0;
-}
 .fs-cmd-rollover-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
 }
 .fs-cmd-rollover-chips {
   display: flex;
@@ -116,33 +176,12 @@
   align-items: center;
 }
 .fs-cmd-chip {
-  padding: 7px 14px;
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-button);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  background: transparent;
-  color: var(--text-secondary);
   font: var(--type-body);
-  cursor: pointer;
-}
-.fs-cmd-chip.is-on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-}
-.fs-cmd-rollover-hours {
-  width: 5rem;
-}
-.fs-cmd-rollover-iap,
-.fs-cmd-rollover-hours {
-  background: var(--surface-card-hover);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-input);
-  padding: 9px 12px;
-  font: var(--type-body);
-  color: var(--text-primary);
 }
 .fs-cmd-rollover-actions {
-  margin-top: 4px;
+  margin-top: var(--space-1);
   display: flex;
   gap: var(--space-2);
 }
@@ -166,8 +205,52 @@
   color: var(--text-secondary);
 }
 
-/* ---- IC datum (the one gold accent) ------------------------------------ */
-.fs-cmd-ic {
+/* ---- stat strip (craft.md §2) ------------------------------------------ */
+/* The rail's top-level numbers in one quiet line — figures at --type-mono-stat over
+   caption words, no card, no border. Zero figures read as tertiary ink; the
+   pending-sync figure is the strip's one accent (Alex 2026-07-02 / 2026-07-06). */
+.fs-cmd-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-5);
+  row-gap: var(--space-1);
+}
+.fs-cmd-statfig {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+.fs-cmd-stat-v {
+  font: var(--type-mono-stat);
+  font-variant-numeric: tabular-nums; /* the font shorthand resets it — restate */
+  color: var(--text-primary);
+}
+.fs-cmd-statfig[data-zero] .fs-cmd-stat-v {
+  color: var(--text-tertiary);
+}
+.fs-cmd-stat-v--accent {
+  color: var(--accent);
+}
+.fs-cmd-stat-k {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
+/* ---- command staff card ------------------------------------------------- */
+/* One card, three hairline rows (IC · Operations Section Chief · Safety Officer) —
+   was three same-weight cards. The IC row keeps the gold underline: the rail's gold. */
+.fs-cmd-staff {
+  padding: 0;
+}
+.fs-cmd-staff-row {
+  padding: var(--space-3);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-cmd-staff-row:last-child {
+  border-bottom: 0;
+}
+.fs-cmd-staff-row--ic {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -176,26 +259,15 @@
 .fs-cmd-ic-main {
   min-width: 0;
 }
-.fs-cmd-ic .fs-cmd-ic-name {
+.fs-cmd-ic-name {
   display: inline-block;
   margin-top: 3px;
   font: var(--type-headline-1);
-  font-weight: 700;
   color: var(--text-primary);
   border-bottom: 3px solid var(--accent);
   padding-bottom: 3px;
 }
-
-/* ---- Operations Section Chief | Safety Officer two-up row --------------- */
-.fs-cmd-pair {
-  display: flex;
-  gap: var(--space-2);
-}
-.fs-cmd-pair-cell {
-  flex: 1;
-  min-width: 0;
-}
-.fs-cmd-pair-name {
+.fs-cmd-staff-name {
   display: block;
   margin-top: 2px;
   font: var(--type-body-medium);
@@ -204,88 +276,83 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* ---- resource metrics -------------------------------------------------- */
-.fs-cmd-metrics {
-  display: flex;
-  gap: var(--space-2);
-}
-.fs-cmd-metric {
-  flex: 1;
-}
-.fs-cmd-metric-num {
-  display: block;
-  margin-top: 1px;
-  font: var(--type-display-2);
-  color: var(--text-primary);
-}
-/* Pending-sync indicator (#352) — gold, by Alex's explicit call, so it catches the
-   eye faster than the two neutral counts beside it. Scoped to this one card. */
-.fs-cmd-metric-num--accent {
-  color: var(--accent);
+.fs-cmd-staff-name.is-unassigned {
+  font-style: italic;
+  color: var(--text-secondary);
 }
 
 /* ---- status board ------------------------------------------------------ */
+/* Group-label row: the eyebrow and the scope Segmented share one line; the toggle
+   shrinks to content instead of the full-width band. */
 .fs-cmd-board-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-.fs-cmd-board-total {
-  font: var(--type-caption);
-  color: var(--text-secondary);
-}
-.fs-cmd-board {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-}
-.fs-cmd-stat {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  border-radius: var(--radius-badge);
+}
+.fs-cmd-board-head .fs-segmented {
+  flex: 0 1 auto;
+  width: auto;
+}
+/* One card, seven full-width hairline rows — replaces the 2-col tinted-tile grid
+   whose odd seventh tile spanned a full row and whose zeros faded to 0.35 opacity. */
+.fs-cmd-board {
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-top-highlight); /* sunlight swaps to --card-shadow above */
+}
+.fs-cmd-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-left: 3px solid transparent;
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-cmd-stat:last-child {
+  border-bottom: 0;
+}
+.fs-cmd-stat-key {
+  flex: none;
+  width: 3px;
+  height: 16px;
+  border-radius: 1px;
 }
 .fs-cmd-stat-label {
-  font: var(--type-caption);
+  flex: 1;
+  min-width: 0;
+  font: var(--type-body);
+  color: var(--text-primary);
 }
 .fs-cmd-stat-count {
-  font-family: var(--font-mono);
-  font-size: 16px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+  font: var(--type-mono-stat);
+  font-variant-numeric: tabular-nums; /* the font shorthand resets it — restate */
 }
-/* Zero counts fade back so non-zero counts jump. */
+/* Zeros read as quiet INK (never opacity over contrast-audited tokens). */
 .fs-cmd-stat[data-zero] .fs-cmd-stat-label,
 .fs-cmd-stat[data-zero] .fs-cmd-stat-count {
-  opacity: 0.35;
+  color: var(--text-tertiary);
 }
-.fs-cmd-stat.is-returned {
-  grid-column: 1 / -1;
+/* Non-zero rows: medium label + the count in the status hue (pre-attentive). */
+.fs-cmd-stat:not([data-zero]) .fs-cmd-stat-label {
+  font: var(--type-body-medium);
 }
-.fs-cmd-stat.is-pending  { color: var(--status-pending-text);  background: var(--status-pending-bg);  border-left-color: var(--status-pending-text); }
-.fs-cmd-stat.is-process  { color: var(--status-process-text);  background: var(--status-process-bg);  border-left-color: var(--status-process-text); }
-.fs-cmd-stat.is-strutset { color: var(--status-strutset-text); background: var(--status-strutset-bg); border-left-color: var(--status-strutset-text); }
-.fs-cmd-stat.is-cutting  { color: var(--status-cutting-text);  background: var(--status-cutting-bg);  border-left-color: var(--status-cutting-text); }
-.fs-cmd-stat.is-runner   { color: var(--status-runner-text);   background: var(--status-runner-bg);   border-left-color: var(--status-runner-text); }
-.fs-cmd-stat.is-secured  { color: var(--status-secured-text);  background: var(--status-secured-bg);  border-left-color: var(--status-secured-text); }
-.fs-cmd-stat.is-returned { color: var(--status-returned-text); background: var(--status-returned-bg); border-left-color: var(--status-returned-text); }
+.fs-cmd-stat.is-pending  .fs-cmd-stat-key { background: var(--status-pending-text); }
+.fs-cmd-stat.is-process  .fs-cmd-stat-key { background: var(--status-process-text); }
+.fs-cmd-stat.is-strutset .fs-cmd-stat-key { background: var(--status-strutset-text); }
+.fs-cmd-stat.is-cutting  .fs-cmd-stat-key { background: var(--status-cutting-text); }
+.fs-cmd-stat.is-runner   .fs-cmd-stat-key { background: var(--status-runner-text); }
+.fs-cmd-stat.is-secured  .fs-cmd-stat-key { background: var(--status-secured-text); }
+.fs-cmd-stat.is-returned .fs-cmd-stat-key { background: var(--status-returned-text); }
+.fs-cmd-stat.is-pending:not([data-zero])  .fs-cmd-stat-count { color: var(--status-pending-text); }
+.fs-cmd-stat.is-process:not([data-zero])  .fs-cmd-stat-count { color: var(--status-process-text); }
+.fs-cmd-stat.is-strutset:not([data-zero]) .fs-cmd-stat-count { color: var(--status-strutset-text); }
+.fs-cmd-stat.is-cutting:not([data-zero])  .fs-cmd-stat-count { color: var(--status-cutting-text); }
+.fs-cmd-stat.is-runner:not([data-zero])   .fs-cmd-stat-count { color: var(--status-runner-text); }
+.fs-cmd-stat.is-secured:not([data-zero])  .fs-cmd-stat-count { color: var(--status-secured-text); }
+.fs-cmd-stat.is-returned:not([data-zero]) .fs-cmd-stat-count { color: var(--status-returned-text); }
 
-/* ---- divider / entries / roster --------------------------------------- */
-.fs-cmd-divider {
-  height: 1px;
-  background: var(--surface-stroke);
-}
-.fs-cmd-entries {
-  display: flex;
-  gap: var(--space-2);
-}
-.fs-cmd-entries > * {
-  flex: 1;
-}
+/* ---- roster ------------------------------------------------------------ */
 .fs-cmd-roster-head {
   padding-bottom: var(--space-2);
   border-bottom: var(--stroke-width) solid var(--surface-stroke);
@@ -306,32 +373,73 @@
   color: var(--text-secondary);
 }
 
-/* ---- hazard summary line ----------------------------------------------- */
-.fs-cmd-haz {
+/* ---- entry rows (Hazards · Org Chart) ----------------------------------- */
+/* One card of real tap-target rows with live counts + a chevron — replaces the
+   phone's two bare secondary buttons and the inert hazard line that looked
+   pressable. Severity reads in its own warning tones, never gold. */
+.fs-cmd-entrycard {
+  padding: 0;
+}
+.fs-cmd-entry {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
+  min-height: 56px;
   text-align: left;
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-card);
-  padding: var(--space-2) var(--space-3);
-  color: var(--text-secondary);
-  font: var(--type-caption);
-}
-.fs-cmd-haz--press {
+  background: none;
+  border: none;
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
+  padding: var(--space-3);
   cursor: pointer;
 }
-.fs-cmd-haz-count {
-  font-weight: 700;
-  color: var(--status-runner-text);
+.fs-cmd-entry:last-child {
+  border-bottom: 0;
 }
-.fs-cmd-haz-go {
+.fs-cmd-entry:active {
+  background: var(--surface-card-hover);
+}
+.fs-cmd-entry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.fs-cmd-entry-icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--text-secondary);
+}
+.fs-cmd-entry-icon.is-high { color: var(--danger-text); }
+.fs-cmd-entry-icon.is-medium { color: var(--status-waiting-text); }
+.fs-cmd-entry-label {
+  flex: none;
+  font: var(--type-body-medium);
+  color: var(--text-primary);
+}
+.fs-cmd-entry-chip {
+  flex: none;
+  font: var(--type-label);
+  letter-spacing: 0.02em;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+}
+.fs-cmd-entry-chip.is-high { color: var(--danger-text); background: var(--danger-bg); }
+.fs-cmd-entry-chip.is-medium { color: var(--status-waiting-text); background: var(--status-waiting-bg); }
+.fs-cmd-entry-chip.is-low { color: var(--status-returned-text); background: var(--status-returned-bg); }
+.fs-cmd-entry-meta {
+  flex: 1;
+  min-width: 0;
+  font: var(--type-caption);
   color: var(--text-tertiary);
-  font-size: 1.2em;
-  line-height: 1;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-cmd-entry-go {
+  flex: none;
+  display: inline-flex;
+  color: var(--text-tertiary);
 }
 
 /* ===== Command Deck (desktop ≥1024px, JS-gated render) ==================== */
@@ -373,9 +481,7 @@
 }
 .fs-cmd-deck-ws .fs-cmd-ws-body {
   display: flex;
-  flex-direction: column; /* column so the lone child fills the width: the org chart stretches,
-                             and the centered hazard-log placeholder isn't left-pinned */
-  justify-content: center;
+  flex-direction: column; /* column so the lone child fills the width and the org chart stretches */
   overflow: hidden; /* the card just frames the scroller; .fs-org-scroll does the scrolling */
 }
 .fs-cmd-deck-ws .fs-org-scroll {
@@ -396,23 +502,17 @@
   justify-content: space-between;
   gap: var(--space-2);
 }
+/* One header row (#434): the view Segmented hugs its content so the org actions
+   (My role · full-screen) share the line instead of wrapping under a full-width band. */
+.fs-cmd-ws-head .fs-segmented {
+  flex: 0 1 auto;
+  width: auto;
+}
 .fs-cmd-ws-body {
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
   padding: var(--space-6) var(--space-4);
-  min-height: 430px;
-}
-.fs-cmd-ws-soon {
-  text-align: center;
-  color: var(--text-secondary);
-  font: var(--type-body);
-  padding: var(--space-8) var(--space-4);
-}
-.fs-cmd-ws-soon-sub {
-  margin-top: var(--space-2);
-  font: var(--type-caption);
-  color: var(--text-tertiary);
 }
 
 /* ===== hazard log (ICS-208 register, #394) ============================== */
@@ -421,7 +521,7 @@
   flex-direction: column;
   gap: var(--space-4);
 }
-.fs-haz-top {
+.fs-haz-foot {
   display: flex;
   justify-content: flex-end;
 }
@@ -449,9 +549,6 @@
   gap: 2px;
   text-align: left;
 }
-.fs-haz-row.is-mitigated {
-  opacity: 0.72;
-}
 .fs-haz-row-head {
   display: flex;
   align-items: center;
@@ -461,9 +558,25 @@
   font: var(--type-body-medium);
   color: var(--text-primary);
 }
+/* Mitigated rows read as quiet INK + strikethrough (never an opacity fade over
+   contrast-audited tokens) with a green CLEARED chip. */
 .fs-haz-row.is-mitigated .fs-haz-row-type {
   text-decoration: line-through;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+}
+.fs-haz-row.is-mitigated .fs-haz-row-loc {
+  color: var(--text-tertiary);
+}
+.fs-haz-cleared {
+  display: inline-flex;
+  align-items: center;
+  font: var(--type-label);
+  letter-spacing: 0.02em;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-badge);
+  color: var(--status-secured-text);
+  background: var(--status-secured-bg);
+  white-space: nowrap;
 }
 .fs-haz-row-loc {
   font: var(--type-body);
@@ -504,29 +617,15 @@
      connector segment height, declared here ONCE (deduped 2026-07-02). */
   --org-line: color-mix(in srgb, var(--text-secondary) 55%, transparent); /* @kind color */
   --org-gap: 22px; /* @kind size */
+  /* Node card widths — fixed so every box in a tier is an even grid; named knobs so
+     a retune happens once (were three raw literals). */
+  --org-node-w: 218px; /* @kind size */
+  --org-node-w-staff: 196px; /* @kind size */
+  --org-node-w-resource: 188px; /* @kind size */
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   align-items: center;
-}
-.fs-org-crumbs {
-  align-self: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font: var(--type-caption);
-}
-.fs-org-crumb {
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  font: var(--type-caption);
-}
-.fs-org-crumb.is-current {
-  color: var(--text-secondary);
-  cursor: default;
 }
 .fs-org-scroll {
   align-self: stretch;
@@ -550,7 +649,7 @@
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
   padding: var(--space-2) var(--space-3);
-  width: 218px;
+  width: var(--org-node-w);
   min-height: 64px;
   box-sizing: border-box;
 }
@@ -575,12 +674,6 @@
 .fs-org-node.is-unassigned .fs-org-node-dot {
   background: var(--text-tertiary);
   box-shadow: none;
-}
-.fs-org-node-eyebrow {
-  font: var(--type-label);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
 }
 .fs-org-node-title {
   font: var(--type-body-medium);
@@ -613,10 +706,30 @@
 }
 /* single resource — quieter + tighter; the title carries the rig (no leader line) */
 .fs-org-node.is-resource {
-  width: 188px;
+  width: var(--org-node-w-resource);
   min-height: 52px;
   background: color-mix(in srgb, var(--surface-card) 70%, var(--surface-bg));
 }
+/* Assignment numerals (#434, craft.md §10) — a unit's live shore-point tally as the
+   node's quiet bottom line: bright tabular numeral + caption words, hidden at 0.
+   The workstation variant carries the cutting hue (its own status, never gold). */
+.fs-org-node-sps {
+  margin-top: 3px;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.fs-org-node-sps-n {
+  font: var(--type-body-medium);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.fs-org-node-sps.is-queue,
+.fs-org-node-sps.is-queue .fs-org-node-sps-n {
+  color: var(--status-cutting-text);
+}
+
 /* meta badges */
 .fs-org-node-meta {
   margin-top: var(--space-1);
@@ -654,10 +767,7 @@
    its reports), but the lines are now an SVG layer (OrgConnectors) drawn from live node
    geometry, NOT CSS ::before/::after borders (which drew broken/uneven segments). This
    block keeps only the LAYOUT + the vertical connector-band SPACING; the SVG paints the
-   lines into that band. --org-gap is the band height; tuned in one place. */
-.fs-org {
-  --org-gap: 22px;
-}
+   lines into that band. --org-gap is the band height; declared once on .fs-org above. */
 /* connector canvas — wraps the SVG link layer + the tree; sized to content but at least
    the viewport width. Padding reserves the connector band + room for the out-of-flow
    command-staff column so it is never clipped (the #373 clipping fix). */
@@ -751,36 +861,31 @@
   gap: var(--space-2);
 }
 .fs-org-staff .fs-org-node {
-  width: 196px;
+  width: var(--org-node-w-staff);
   border-style: dashed; /* command staff — set apart from the line organization */
 }
 .fs-org-node.is-workstation {
   background: var(--surface-elevated); /* Cutting Station = a workstation, not a command box */
 }
 
-/* org chart header (breadcrumbs + My role) */
-.fs-org-head {
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
+/* org workspace actions (My role · full-screen) — live in the workspace header row
+   on the Deck (#434 one-header-row) and above the chart inside the phone org Sheet. */
 .fs-org-head-actions {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
+.fs-org-sheethead {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-2);
+}
 .fs-org-myrole {
   flex: none;
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-radius: var(--radius-button);
-  color: var(--text-primary);
+  border-radius: var(--radius-pill);
   font: var(--type-caption);
   padding: var(--space-2) var(--space-3);
-  cursor: pointer;
 }
 /* Full-screen affordance — icon button matched to the My-role chip height. */
 .fs-org-fullscreen {
@@ -799,15 +904,6 @@
 .fs-org-fullscreen:hover {
   color: var(--text-primary);
 }
-.fs-org-fullscreen:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.fs-org-node-reports {
-  margin-top: 2px;
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
 
 /* ===== drag-and-drop (#323) ============================================= */
 /* Positioning anchors: the drag layer (ghost + gap hitboxes) is absolute within
@@ -817,7 +913,11 @@
 }
 .fs-org-node {
   position: relative;
-  transition: opacity 120ms ease, box-shadow 120ms ease, background 120ms ease, border-color 120ms ease;
+  transition:
+    opacity var(--motion-micro) var(--ease-micro),
+    box-shadow var(--motion-micro) var(--ease-micro),
+    background var(--motion-micro) var(--ease-micro),
+    border-color var(--motion-micro) var(--ease-micro);
   /* Press-and-hold to drag must NOT trigger the iOS text-selection / callout menu. */
   user-select: none;
   -webkit-user-select: none;
@@ -908,7 +1008,7 @@
   height: 74%;
   border-radius: 2px;
   background: transparent;
-  transition: background 100ms ease;
+  transition: background var(--motion-micro) var(--ease-micro);
 }
 .fs-org-gap.is-horiz .fs-org-gap-bar {
   width: 80%;
@@ -970,9 +1070,6 @@
   align-items: center;
   gap: var(--space-1);
   font: var(--type-caption);
-  color: var(--text-primary);
-  background: var(--surface-card);
-  border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-pill);
   padding: var(--space-1) var(--space-3);
   cursor: grab;
@@ -991,12 +1088,6 @@
   flex-direction: column;
   gap: var(--space-2);
 }
-.fs-classsel-label {
-  font: var(--type-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-tertiary);
-}
 .fs-classsel-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1008,20 +1099,8 @@
   align-items: center;
   justify-content: center;
   padding: 0 var(--space-3);
-  border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-button);
-  background: var(--surface-card);
-  color: var(--text-secondary);
   font: var(--type-body-medium);
-  cursor: pointer;
-}
-.fs-classsel-chip.is-active {
-  border: 2px solid var(--accent);
-  color: var(--text-primary);
-}
-.fs-classsel-chip:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 /* a custom-title row's "custom" tag + a multi-kind group's per-row kind tag */
 .fs-assign-name-wrap {
@@ -1037,6 +1116,34 @@
   background: var(--surface-elevated);
   color: var(--text-secondary);
 }
+/* Add-custom-title composition editor (#434 — primitives, not raw select/input). */
+.fs-newtitle-team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.fs-newtitle-caption {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-newtitle-member {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+.fs-newtitle-member-type {
+  flex: 1;
+  min-width: 0;
+}
+.fs-newtitle-member-count {
+  flex: 0 0 5.5rem;
+}
+.fs-newtitle-summary {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+
 /* the inline "+ new title" sub-kind chips (Resources only) */
 .fs-newkind-chips {
   display: flex;
@@ -1047,15 +1154,7 @@
 .fs-newkind-chip {
   font: var(--type-caption);
   padding: var(--space-1) var(--space-2);
-  border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-button);
-  background: var(--surface-card);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-.fs-newkind-chip.is-active {
-  border-color: var(--accent);
-  color: var(--text-primary);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1120,10 +1219,6 @@
 .fs-org-full-close:hover {
   color: var(--text-primary);
 }
-.fs-org-full-close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
 .fs-org-full-title {
   position: absolute;
   width: 1px;
@@ -1134,11 +1229,6 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
-}
-
-.fs-cmd-ws-hint {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
 }
 
 /* ---- Command transfer handshake (#393, ADR-021) ------------------------- */
@@ -1154,12 +1244,23 @@
   border-color: var(--status-cutting-text);
 }
 .fs-cmd-xfer-pending-text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font: var(--type-body-medium);
   color: var(--status-cutting-text);
 }
 .fs-cmd-xfer-quiet {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font: var(--type-caption);
   color: var(--text-secondary);
+}
+.fs-cmd-xfer-quiet svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
 }
 
 /* Incoming — "you are being given command". Gold = command (the one accent). */
@@ -1168,8 +1269,10 @@
   border-width: 2px;
 }
 .fs-cmd-xfer-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font: var(--type-body-medium);
-  font-weight: 600;
   color: var(--accent);
 }
 .fs-cmd-xfer-sub {
@@ -1197,7 +1300,6 @@
 }
 .fs-cmd-xfer-handover-head {
   font: var(--type-body-medium);
-  font-weight: 500;
   color: var(--text-primary);
 }
 .fs-cmd-xfer-footnote {
@@ -1216,19 +1318,7 @@
   color: var(--status-cutting-text);
 }
 
-/* Visually-hidden live region (same rule as operations.css .fs-sr-only — promote to
-   primitives.css when a third surface needs it). */
-.fs-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* .fs-sr-only lives in primitives.css (promoted #434 Stage 2c). */
 
 /* Full-screen Transfer Command takeover (mirrors .fs-org-full chrome). */
 .fs-xfer {
@@ -1256,11 +1346,13 @@
 .fs-xfer-title {
   flex: 1;
   text-align: center;
-  font: var(--type-body-lg);
-  font-weight: 600;
+  font: var(--type-headline-2); /* the ramp's own 600 — no per-selector weight hybrid */
   color: var(--text-primary);
 }
 .fs-xfer-cancel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   background: none;
   border: none;
   padding: var(--space-1) var(--space-2);
@@ -1268,12 +1360,12 @@
   color: var(--text-secondary);
   cursor: pointer;
 }
+.fs-xfer-cancel svg {
+  width: 16px;
+  height: 16px;
+}
 .fs-xfer-cancel:hover {
   color: var(--text-primary);
-}
-.fs-xfer-cancel:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 .fs-xfer-head-spacer {
   width: 56px;
@@ -1292,8 +1384,7 @@
 }
 .fs-xfer-current-name {
   margin-top: 3px;
-  font: var(--type-body-lg);
-  font-weight: 600;
+  font: var(--type-headline-2); /* the ramp's own 600 — no per-selector weight hybrid */
   color: var(--text-primary);
 }
 .fs-xfer-newname {
@@ -1319,13 +1410,8 @@
   font: var(--type-caption);
   color: var(--text-secondary);
 }
-/* section header — small caps, sets the three groups apart */
+/* section header — the shared eyebrow spec; only the group spacing lives here */
 .fs-node-section {
-  font: var(--type-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 700;
-  color: var(--text-tertiary);
   margin: var(--space-5) 0 var(--space-2);
 }
 .fs-node-empty {
@@ -1333,6 +1419,12 @@
   font: var(--type-body);
   color: var(--text-tertiary);
   font-style: italic;
+}
+.fs-node-empty--plain {
+  font-style: normal;
+}
+.fs-assign-list--spaced {
+  margin-top: var(--space-3);
 }
 /* assigned resources — dividered rows, not boxes */
 .fs-node-resources {
@@ -1346,7 +1438,7 @@
   justify-content: space-between;
   gap: var(--space-2);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--surface-stroke);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
 }
 .fs-node-resource:last-child {
   border-bottom: 0;
@@ -1355,19 +1447,26 @@
   font: var(--type-caption);
   color: var(--text-tertiary);
 }
+/* 44px hit floor (craft.md §7) — the glyph stays light, the target does not. */
 .fs-node-clear {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  margin: -10px calc(-1 * var(--space-2)) -10px 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 20px;
-  line-height: 1;
   cursor: pointer;
+}
+/* Assigned apparatus row meta — the unit's live shore-point total (#434). */
+.fs-node-sp-total {
+  flex: none;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
 /* a grouped action card — one container, hairline-divided rows */
 .fs-node-group {
@@ -1385,7 +1484,7 @@
   text-align: left;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--surface-stroke);
+  border-bottom: var(--stroke-width) solid var(--surface-stroke);
   padding: var(--space-3) var(--space-3);
   color: var(--text-primary);
   font: var(--type-body);
@@ -1424,12 +1523,20 @@
   text-align: center;
 }
 .fs-node-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   background: none;
   border: none;
   padding: 0;
+  min-height: 44px;
   color: var(--accent);
   font: var(--type-caption);
   cursor: pointer;
+}
+.fs-node-back svg {
+  width: 14px;
+  height: 14px;
 }
 .fs-node-history {
   list-style: none;
@@ -1444,11 +1551,19 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
+}
+.fs-node-hist-line {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font: var(--type-caption);
   color: var(--text-primary);
 }
 .fs-node-hist-time {
   flex: none;
+  font: var(--type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--text-tertiary);
 }
 
@@ -1485,10 +1600,28 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fs-assign-meta {
-  flex: none;
+/* Parent-position context line on My-role rows ("under Operations Section Chief"). */
+.fs-assign-sub {
+  display: block;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+.fs-myrole-note {
+  margin: 0 0 var(--space-2);
   font: var(--type-caption);
   color: var(--text-secondary);
+}
+.fs-assign-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-assign-meta svg {
+  width: 14px;
+  height: 14px;
 }
 .fs-assign-row.is-on .fs-assign-meta {
   color: var(--accent);
@@ -1548,12 +1681,6 @@
   padding: var(--space-3);
 }
 .fs-201-head { margin-bottom: var(--space-2); }
-.fs-201-eyebrow {
-  font: var(--type-caption);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
 .fs-201-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1612,14 +1739,21 @@
 .fs-rollup-corner {
   text-align: left;
 }
-/* Color each column header by its status — matches the status board accent colors. */
-.fs-rollup-colhead.col-pending  { color: var(--status-pending-text); }
-.fs-rollup-colhead.col-process  { color: var(--status-process-text); }
-.fs-rollup-colhead.col-strutset { color: var(--status-strutset-text); }
-.fs-rollup-colhead.col-cutting  { color: var(--status-cutting-text); }
-.fs-rollup-colhead.col-runner   { color: var(--status-runner-text); }
-.fs-rollup-colhead.col-secured  { color: var(--status-secured-text); }
-.fs-rollup-colhead.col-returned { color: var(--status-returned-text); }
+/* Column heads are status color DOTS (#434) — the abbreviation set + its legend
+   wall are gone; title + sr-only text carry the full name. */
+.fs-rollup-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.fs-rollup-dot.is-pending  { background: var(--status-pending-text); }
+.fs-rollup-dot.is-process  { background: var(--status-process-text); }
+.fs-rollup-dot.is-strutset { background: var(--status-strutset-text); }
+.fs-rollup-dot.is-cutting  { background: var(--status-cutting-text); }
+.fs-rollup-dot.is-runner   { background: var(--status-runner-text); }
+.fs-rollup-dot.is-secured  { background: var(--status-secured-text); }
+.fs-rollup-dot.is-returned { background: var(--status-returned-text); }
 .fs-rollup-row .fs-rollup-div,
 .fs-rollup-subrow .fs-rollup-grouplabel {
   text-align: left;
@@ -1663,9 +1797,13 @@
   font: inherit;
 }
 .fs-rollup-caret {
+  flex: none;
   color: var(--text-tertiary);
-  font-size: 0.8em;
-  width: 1em;
+}
+.fs-rollup-alert svg {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
 }
 /* The lagging-Division flag: left red border instead of a full row tint —
    more tactical, less alarming; the ⚠ still carries the message. */
@@ -1675,7 +1813,6 @@
 }
 .fs-rollup-alert {
   color: var(--danger-text);
-  font-weight: 700;
 }
 .fs-rollup-subrow .fs-rollup-grouplabel {
   padding-left: var(--space-4);
@@ -1690,9 +1827,8 @@
 .fs-rollup-allrow .fs-rollup-cell {
   border-top: 2px solid var(--surface-stroke);
   border-bottom: none;
-  font-weight: 700;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  font: var(--type-mono-stat);
+  font-variant-numeric: tabular-nums; /* the font shorthand resets it — restate */
 }
 .fs-rollup-allrow .fs-rollup-divname {
   font: var(--type-body);
@@ -1708,11 +1844,6 @@
 .fs-rollup-allrow .fs-rollup-cell.col-runner   { color: var(--status-runner-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-secured  { color: var(--status-secured-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-returned { color: var(--status-returned-text); }
-.fs-rollup-legend {
-  margin: 0;
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
 .fs-rollup-empty {
   margin: 0;
   font: var(--type-caption);

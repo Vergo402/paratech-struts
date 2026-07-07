@@ -24,15 +24,18 @@ export function MyRoleSheet({ open, onClose }: { open: boolean; onClose: () => v
 
   return (
     <Sheet open={open} onClose={onClose} title="My role">
-      <p className="fs-cmd-roster-empty" style={{ marginTop: 0 }}>
-        Declare the ICS position you are filling on this device.
-      </p>
+      <p className="fs-myrole-note">Declare the ICS position you are filling on this device.</p>
       <ul className="fs-assign-list">
         {ordered.map((p) => (
           <li key={p.id}>
             <button type="button" className={`fs-assign-row${p.id === myRoleId ? ' is-on' : ''}`} onClick={() => set(p.id)}>
-              <span className="fs-assign-name">{p.title}</span>
-              <span className="fs-assign-meta">{p.id === myRoleId ? '✓ my role' : ''}</span>
+              <span className="fs-assign-name">
+                {p.title}
+                {p.parentId != null && positions[p.parentId] != null && (
+                  <span className="fs-assign-sub">under {positions[p.parentId]?.title}</span>
+                )}
+              </span>
+              <span className="fs-assign-meta">{p.id === myRoleId ? 'My role' : ''}</span>
             </button>
           </li>
         ))}

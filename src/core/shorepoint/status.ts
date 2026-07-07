@@ -37,3 +37,11 @@ export function canTransition(from: ShorePointStatus, to: ShorePointStatus): boo
 export function isAfter(a: ShorePointStatus, b: ShorePointStatus): boolean {
   return statusIndex(a) > statusIndex(b);
 }
+
+/** Live cutting-station queue depth — the org chart workstation numeral ("N in
+ *  queue", #434) and the same live filter the board's Cutting tab counts. */
+export function cuttingQueueCount(
+  shorePoints: { status: ShorePointStatus; deletedAt?: number | null }[],
+): number {
+  return shorePoints.filter((sp) => sp.deletedAt == null && sp.status === 'cutting').length;
+}

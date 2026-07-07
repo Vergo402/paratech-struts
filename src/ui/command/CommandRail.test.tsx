@@ -73,17 +73,71 @@ describe('CommandRail — hand-the-tablet accept (#401)', () => {
 });
 
 describe('CommandRail — PAR/pending-sync indicator (#352)', () => {
-  it('shows no third metric card when nothing is pending sync', () => {
+  it('shows no pending-sync figure when nothing is pending sync', () => {
     pendingResourceCount = 0;
     render(<CommandRail />);
-    expect(screen.queryByText('Pending sync')).not.toBeInTheDocument();
+    expect(screen.queryByText('pending sync')).not.toBeInTheDocument();
   });
 
-  it('shows the gold-accented count as a third metric card when resources are pending sync', () => {
+  it('shows the gold-accented count as a stat-strip figure when resources are pending sync', () => {
     pendingResourceCount = 2;
     render(<CommandRail />);
-    expect(screen.getByText('Pending sync')).toBeInTheDocument();
+    expect(screen.getByText('pending sync')).toBeInTheDocument();
     const num = screen.getByText('2');
-    expect(num.className).toContain('fs-cmd-metric-num--accent');
+    expect(num.className).toContain('fs-cmd-stat-v--accent');
+  });
+});
+
+describe('CommandRail — stat strip + status board (#434 Stage 2c)', () => {
+  it('renders the three strip figures with plural labels', () => {
+    render(<CommandRail />);
+    expect(screen.getByText('shore points')).toBeInTheDocument();
+    expect(screen.getByText('apparatus')).toBeInTheDocument();
+    expect(screen.getByText('individuals')).toBeInTheDocument();
+  });
+
+  it('renders the 7-status board as full-width rows with zero counts in quiet ink (data-zero)', () => {
+    render(<CommandRail />);
+    const rows = screen.getAllByRole('listitem');
+    expect(rows).toHaveLength(7);
+    for (const row of rows) {
+      expect(row).toHaveAttribute('data-zero');
+      expect(row.querySelector('.fs-cmd-stat-key')).not.toBeNull();
+    }
+    expect(screen.getByText('Cutting Station')).toBeInTheDocument();
+  });
+
+  it('renders the command staff as one card with IC, Ops Chief, and Safety rows', () => {
+    render(<CommandRail />);
+    expect(screen.getByText('Incident Commander')).toBeInTheDocument();
+    expect(screen.getByText('Operations Section Chief')).toBeInTheDocument();
+    expect(screen.getByText('Safety Officer')).toBeInTheDocument();
+  });
+});
+
+describe('CommandRail — entry rows (#434 Stage 2c)', () => {
+  it('renders the Hazards row when onOpenHazards is given and fires it on press', async () => {
+    const onOpenHazards = vi.fn();
+    const user = userEvent.setup();
+    render(<CommandRail onOpenHazards={onOpenHazards} />);
+    expect(screen.getByText('No open hazards')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Hazards/ }));
+    expect(onOpenHazards).toHaveBeenCalled();
+  });
+
+  it('renders the Org Chart row with position counts and fires onOpenOrg on press', async () => {
+    const onOpenOrg = vi.fn();
+    const user = userEvent.setup();
+    render(<CommandRail onOpenOrg={onOpenOrg} />);
+    const row = screen.getByRole('button', { name: /Org Chart/ });
+    expect(row.textContent).toMatch(/positions · \d+ assigned/);
+    await user.click(row);
+    expect(onOpenOrg).toHaveBeenCalled();
+  });
+
+  it('renders no entry rows when neither callback is given (desktop rail default)', () => {
+    render(<CommandRail />);
+    expect(screen.queryByRole('button', { name: /Org Chart/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Hazards/ })).not.toBeInTheDocument();
   });
 });

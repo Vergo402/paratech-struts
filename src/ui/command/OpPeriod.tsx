@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FieldShoreEvent, Operation } from '@core/schema';
 import { periodStatus } from '@core/operation';
 import { newId } from '@core/id';
-import { Button } from '@ui/primitives';
+import { Button, TextField } from '@ui/primitives';
 import { useCommit, useDeviceUid } from '@ui/hooks';
 
 // Operational-period UI (#395) — the persistent-header OP clock + the boundary
@@ -179,33 +179,27 @@ export function OpRolloverCard({
           >
             Custom
           </button>
-          {lengthMs === 'custom' && (
-            <input
-              className="fs-cmd-rollover-hours"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.5"
-              value={customHours}
-              onChange={(e) => setCustomHours(e.target.value)}
-              placeholder="hrs"
-              aria-label="Custom planned length in hours"
-            />
-          )}
         </div>
+        {lengthMs === 'custom' && (
+          <TextField
+            label="Custom planned length (hours)"
+            value={customHours}
+            onChange={setCustomHours}
+            inputMode="decimal"
+            placeholder="hrs"
+            size="standard"
+          />
+        )}
       </div>
 
       <div className="fs-cmd-rollover-field">
-        <label className="fs-cmd-eyebrow" htmlFor="fs-op-iap">
-          IAP / ICS-202 reference <span className="fs-cmd-rollover-opt">(optional)</span>
-        </label>
-        <input
-          id="fs-op-iap"
-          className="fs-cmd-rollover-iap"
-          type="text"
+        <TextField
+          label="IAP / ICS-202 reference"
           value={iapRef}
-          onChange={(e) => setIapRef(e.target.value)}
+          onChange={setIapRef}
           placeholder="e.g. IAP-3"
+          helper="Optional."
+          size="standard"
         />
       </div>
 

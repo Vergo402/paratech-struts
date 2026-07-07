@@ -4,21 +4,7 @@ import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { rollupByDivision, type RollupRow } from '@core/command/sitstat-rollup';
 import { useShorePoints } from '@ui/hooks';
 import { SHORE_TYPE_LABELS } from '@ui/operations/ShorePointCard';
-
-// Abbreviated column headers — the full STATUS_LABELS words are too wide for a
-// 7-column table at phone width, so the header row uses these and a one-line
-// legend maps each abbreviation back to its full label (below the table).
-const STATUS_ABBR: Record<ShorePointStatus, string> = {
-  pending: 'Pend',
-  process: 'Assign',
-  strutset: 'Set',
-  cutting: 'Cut',
-  runner: 'Run',
-  secured: 'Secured',
-  returned: "Ret'd",
-};
-
-const LEGEND = STATUS_ORDER.map((s) => `${STATUS_ABBR[s]} = ${STATUS_LABELS[s]}`).join(' · ');
+import { AlertIcon, CaretIcon } from './icons';
 
 function CountCells({ counts, colored }: { counts: Record<ShorePointStatus, number>; colored?: boolean }) {
   return (
@@ -41,19 +27,14 @@ function DivisionRow({ row, lagging }: { row: RollupRow; lagging: boolean }) {
   const expandable = row.groups.length > 0;
   return (
     <>
-      <tr
-        className={`fs-rollup-row${lagging ? ' is-lagging' : ''}${expandable ? ' is-expandable' : ''}`}
-        aria-expanded={expandable ? open : undefined}
-      >
+      <tr className={`fs-rollup-row${lagging ? ' is-lagging' : ''}${expandable ? ' is-expandable' : ''}`}>
         <th scope="row" className="fs-rollup-div">
           {expandable ? (
-            <button type="button" className="fs-rollup-divbtn" onClick={() => setOpen((v) => !v)}>
-              <span className="fs-rollup-caret" aria-hidden="true">
-                {open ? '▾' : '▸'}
-              </span>
+            <button type="button" className="fs-rollup-divbtn" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+              <CaretIcon open={open} />
               {lagging && (
                 <span className="fs-rollup-alert" aria-label="Most points awaiting equipment" title="Most points awaiting equipment">
-                  ⚠
+                  <AlertIcon />
                 </span>
               )}
               <span className="fs-rollup-divname">{row.label}</span>
@@ -62,7 +43,7 @@ function DivisionRow({ row, lagging }: { row: RollupRow; lagging: boolean }) {
             <span className="fs-rollup-divname">
               {lagging && (
                 <span className="fs-rollup-alert" aria-label="Most points awaiting equipment" title="Most points awaiting equipment">
-                  ⚠
+                  <AlertIcon />
                 </span>
               )}
               {row.label}
@@ -114,9 +95,13 @@ export function SitStatRollup() {
               <th scope="col" className="fs-rollup-corner">
                 Division
               </th>
+              {/* Status color dots (#434) — the 150-char abbreviation legend is gone;
+                  the dot carries the column identity (title + sr-only name keep it
+                  accessible), matching the status board's color keys beside it. */}
               {STATUS_ORDER.map((s) => (
                 <th key={s} scope="col" className={`fs-rollup-colhead col-${s}`} title={STATUS_LABELS[s]}>
-                  {STATUS_ABBR[s]}
+                  <span className={`fs-rollup-dot is-${s}`} aria-hidden="true" />
+                  <span className="fs-sr-only">{STATUS_LABELS[s]}</span>
                 </th>
               ))}
               <th scope="col" className="fs-rollup-colhead">
@@ -140,7 +125,6 @@ export function SitStatRollup() {
           </tfoot>
         </table>
       </div>
-      <p className="fs-rollup-legend">{LEGEND}</p>
     </div>
   );
 }

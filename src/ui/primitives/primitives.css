@@ -1064,3 +1064,18 @@ p.fs-gate--disclaimer {
 }
 .fs-checklist-tab:hover { background: var(--surface-card-hover); }
 .fs-checklist-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---- visually hidden (live regions, SR-only announcements) ---------------- */
+/* Promoted from operations.css + command.css copies (#434 Stage 2c) — the shared
+   rule every surface uses for aria-live text and table captions. */
+.fs-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

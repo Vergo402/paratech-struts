@@ -47,6 +47,8 @@ function OrgNode({
   onOpen,
   dnd,
   interactive = true,
+  spCount,
+  queueCount,
 }: {
   pos: OrgPosition;
   isRoot?: boolean;
@@ -57,6 +59,10 @@ function OrgNode({
   dnd: OrgDragApi;
   /** False in the full-screen view: a static card — no tap, no drag, no grip. */
   interactive?: boolean;
+  /** Live shore-point tally for this position's unit (assignment numeral, #434). */
+  spCount?: number;
+  /** Cutting Station queue depth — workstation nodes only. */
+  queueCount?: number;
 }) {
   const leader = leaderOf(pos);
   const isResource = pos.kind === 'single-resource';
@@ -105,6 +111,22 @@ function OrgNode({
   );
   const hasBadges = extra > 0 || (pos.kind === 'division' && pos.floor != null) || level !== 'ok';
 
+  // Assignment numerals (#434, craft.md §10): a unit's live shore-point tally as a
+  // quiet bottom line, hidden at 0; the workstation shows its queue in cutting amber.
+  const isWorkstation = pos.kind === 'workstation';
+  const countLine = isWorkstation
+    ? (queueCount ?? 0) > 0 && (
+        <span className="fs-org-node-sps is-queue">
+          <span className="fs-org-node-sps-n">{queueCount}</span> in queue
+        </span>
+      )
+    : (spCount ?? 0) > 0 && (
+        <span className="fs-org-node-sps">
+          <span className="fs-org-node-sps-n">{spCount}</span>{' '}
+          {spCount === 1 ? 'total shore point' : 'total shore points'}
+        </span>
+      );
+
   const body = (
     <>
       <span className="fs-org-node-dot" aria-hidden="true" />
@@ -115,6 +137,7 @@ function OrgNode({
           <span className={`fs-org-node-leader${leader ? '' : ' is-unassigned'}`}>{leader ? leader.label : 'Unassigned'}</span>
         )}
         {hasBadges && <span className="fs-org-node-meta">{badges}</span>}
+        {countLine}
       </span>
     </>
   );
@@ -171,6 +194,8 @@ export function SubTree({
   dnd,
   editable,
   interactive = true,
+  counts,
+  cuttingQueue,
 }: {
   positions: OrgPositions;
   id: string;
@@ -180,6 +205,10 @@ export function SubTree({
   dnd: OrgDragApi;
   editable: boolean;
   interactive?: boolean;
+  /** positionId → live shore-point tally (assignment numerals, #434). */
+  counts?: Record<string, number>;
+  /** Cutting Station queue depth (workstation numeral). */
+  cuttingQueue?: number;
 }) {
   const pos = positions[id];
   if (!pos) return null;
@@ -197,11 +226,29 @@ export function SubTree({
   return (
     <li className={stacked ? 'fs-org-li--stackparent' : undefined}>
       <div className="fs-org-top">
-        <OrgNode pos={pos} isRoot={id === rootId} editable={editable} span={span} onOpen={() => onOpen(id)} dnd={dnd} interactive={interactive} />
+        <OrgNode
+          pos={pos}
+          isRoot={id === rootId}
+          editable={editable}
+          span={span}
+          onOpen={() => onOpen(id)}
+          dnd={dnd}
+          interactive={interactive}
+          spCount={counts?.[id]}
+          queueCount={cuttingQueue}
+        />
         {staff.length > 0 && (
           <div className="fs-org-staff" aria-label="Command staff">
             {staff.map((s) => (
-              <OrgNode key={s.id} pos={s} editable={editable} onOpen={() => onOpen(s.id)} dnd={dnd} interactive={interactive} />
+              <OrgNode
+                key={s.id}
+                pos={s}
+                editable={editable}
+                onOpen={() => onOpen(s.id)}
+                dnd={dnd}
+                interactive={interactive}
+                spCount={counts?.[s.id]}
+              />
             ))}
           </div>
         )}
@@ -209,7 +256,19 @@ export function SubTree({
       {reports.length > 0 && (
         <ul className={`fs-org-reports${stacked ? ' fs-org-reports--stack' : ''}`}>
           {reports.map((r) => (
-            <SubTree key={r.id} positions={positions} id={r.id} rootId={rootId} depth={depth + 1} onOpen={onOpen} dnd={dnd} editable={editable} interactive={interactive} />
+            <SubTree
+              key={r.id}
+              positions={positions}
+              id={r.id}
+              rootId={rootId}
+              depth={depth + 1}
+              onOpen={onOpen}
+              dnd={dnd}
+              editable={editable}
+              interactive={interactive}
+              counts={counts}
+              cuttingQueue={cuttingQueue}
+            />
           ))}
         </ul>
       )}

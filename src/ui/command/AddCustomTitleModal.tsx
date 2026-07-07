@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 import { Modal, Button, TextField } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
 import { useApparatusTypes } from '@ui/hooks';
@@ -65,17 +65,6 @@ export function AddCustomTitleModal({ open, onClose, onAdd }: AddCustomTitleModa
     close();
   };
 
-  const rowStyle: CSSProperties = { display: 'flex', gap: 'var(--space-2)', alignItems: 'center' };
-  const selStyle: CSSProperties = {
-    flex: 1,
-    minHeight: 40,
-    padding: '0 var(--space-2)',
-    border: 'var(--stroke-width) solid var(--surface-stroke)',
-    borderRadius: 'var(--radius-input)',
-    background: 'var(--surface-card)',
-    color: 'var(--text-primary)',
-  };
-
   return (
     <Modal
       open={open}
@@ -105,32 +94,29 @@ export function AddCustomTitleModal({ open, onClose, onAdd }: AddCustomTitleModa
       )}
 
       {team && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
-          <span style={{ font: 'var(--type-caption)', color: 'var(--text-tertiary)' }}>
+        <div className="fs-newtitle-team">
+          <span className="fs-newtitle-caption">
             {singleType ? 'Members (one unit type — same kind and type)' : 'Members (unit type × count)'}
           </span>
           {shownMembers.map((m, i) => (
-            <div key={i} style={rowStyle}>
-              <select
-                aria-label="Unit type"
-                value={m.type}
-                onChange={(e) => setMember(i, { type: e.target.value })}
-                style={selStyle}
-              >
-                {allNames.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={1}
-                aria-label="Count"
-                value={m.count}
-                onChange={(e) => setMember(i, { count: Math.max(1, Number(e.target.value) || 1) })}
-                style={{ width: 64, textAlign: 'center' }}
-              />
+            <div key={i} className="fs-newtitle-member">
+              <div className="fs-newtitle-member-type">
+                <BottomSheetPicker
+                  label="Unit type"
+                  options={allNames.map((t) => ({ value: t, label: t }))}
+                  value={m.type}
+                  onSelect={(v) => setMember(i, { type: v })}
+                />
+              </div>
+              <div className="fs-newtitle-member-count">
+                <TextField
+                  label="Count"
+                  value={String(m.count)}
+                  onChange={(v) => setMember(i, { count: Math.max(1, Number(v) || 1) })}
+                  inputMode="numeric"
+                  size="standard"
+                />
+              </div>
               {!singleType && members.length > 1 && (
                 <Button variant="tertiary" size="standard" onPress={() => removeMember(i)}>
                   Remove
@@ -143,7 +129,7 @@ export function AddCustomTitleModal({ open, onClose, onAdd }: AddCustomTitleModa
               Add unit type
             </Button>
           )}
-          <span style={{ font: 'var(--type-caption)', color: 'var(--text-secondary)' }}>
+          <span className="fs-newtitle-summary">
             Adds 1 {kindLabel(kind)} Leader + {totalUnits} units ({shownMembers.map((m) => `${m.count} ${m.type}`).join(', ')})
           </span>
         </div>

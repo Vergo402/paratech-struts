@@ -104,11 +104,29 @@ checkable on scene, never an oracle.
 Queue rows show **position numerals** (1, 2, 3…), never a decorative affordance: a grip
 that doesn't drag is a broken promise; the numeral states a fact.
 
+## 10. Assignment numerals (Stage 2c addendum, #434)
+
+A fourth, quietest step below the §9 ramp: a **per-entity workload figure on a
+structural card** — the org chart's "4 total shore points" on a node whose unit is
+working shore points.
+
+- Anatomy: a bright tabular numeral (`--type-body-medium` size on `--font-mono`)
+  followed by caption words in `--text-tertiary`. Never the 17px stat step — the card's
+  title outranks its workload; never gold.
+- **Hidden at zero** (the pending-sync precedent: absence is the calm state; no
+  "0 shore points" chrome).
+- The one colored variant is a **workstation queue** in its own status hue (the Cutting
+  Station's "3 in queue" in cutting amber) — that is the status accent, not gold.
+- The figure must **cross-foot** with the screen's other tallies (the rail strip total,
+  the rollup grand total): one filter, one arithmetic, or the IC reconciles
+  disagreeing numbers instead of reading them.
+
 ## Rollout state
 
 | Screen | Status |
 |---|---|
 | Inventory + Settings (#431) | built with this doc (exemplar) — punch-list pass applied |
 | Operations + Cutting Station (#432) | built with this doc (Stage 2a) |
-| Quick Find (#433), Command (#434) | pending delta-mockups |
+| Quick Find (#433) | built with this doc (Stage 2b) |
+| Command (#434) | built with this doc (Stage 2c — mints §10) |
 | Motion finesse + empty states (#435) | pending |

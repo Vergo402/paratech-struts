@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { currentIC } from '@core/org';
-import { Button, ChecklistTab, EmptyState, Sheet, SideDrawer, useMediaQuery } from '@ui/primitives';
+import { ChecklistTab, EmptyState, Sheet, SideDrawer, useMediaQuery } from '@ui/primitives';
+import { OrgGlyphIcon } from './icons';
 import { useOperation, useOrg, useDeviceUidValue } from '@ui/hooks';
 import { CommandRail } from './CommandRail';
 import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
 import { EndOperationButton } from './EndOperationButton';
-import { OrgChart } from './OrgChart';
+import { OrgChart, OrgWorkspaceActions } from './OrgChart';
 import { NodeSheet } from './NodeSheet';
 import { HazardLog } from './HazardLog';
 import { ICCommandChecklist } from './ICCommandChecklist';
@@ -28,6 +30,7 @@ export function SitStat() {
   const operation = useOperation();
   const positions = useOrg();
   const uid = useDeviceUidValue();
+  const navigate = useNavigate();
   const isDeck = useMediaQuery('(min-width: 1024px)');
   const [view, setView] = useState<WorkspaceView>('org');
   const [sheet, setSheet] = useState<WorkspaceView | null>(null);
@@ -39,8 +42,10 @@ export function SitStat() {
       <div className="fs-cmd">
         <EmptyState
           variant="first-run"
+          icon={<OrgGlyphIcon />}
           headline="No active operation"
           reason="Start an operation from the Operations tab to see the command picture."
+          action={{ label: 'Go to Operations', onPress: () => void navigate({ to: '/operations' }) }}
         />
       </div>
     );
@@ -88,23 +93,24 @@ export function SitStat() {
   }
 
   // Phone / small tablet (<1024px): the rail as a stacked column; Org Chart /
-  // Hazard Log open as a Sheet (the phone-floor contract).
+  // Hazard Log open as a Sheet (the phone-floor contract) via the rail's entry rows.
   return (
     <div className="fs-cmd-shell">
       <div className="fs-cmd">
-        <CommandRail />
-        <div className="fs-cmd-entries">
-          <Button variant="secondary" onPress={() => setSheet('org')}>
-            Org Chart
-          </Button>
-          <Button variant="secondary" onPress={() => setSheet('hazard')}>
-            Hazard Log
-          </Button>
-        </div>
+        <CommandRail onOpenHazards={() => setSheet('hazard')} onOpenOrg={() => setSheet('org')} />
         <EndOperationButton />
 
         <Sheet open={sheet !== null} onClose={() => setSheet(null)} title={sheet === 'hazard' ? 'Hazard Log' : 'Org Chart'}>
-          {sheet === 'hazard' ? <HazardLog /> : <OrgChart allowFullScreen onOpenNode={setOpenNodeId} />}
+          {sheet === 'hazard' ? (
+            <HazardLog />
+          ) : (
+            <>
+              <div className="fs-org-sheethead">
+                <OrgWorkspaceActions />
+              </div>
+              <OrgChart onOpenNode={setOpenNodeId} />
+            </>
+          )}
         </Sheet>
       </div>
       {checklist}

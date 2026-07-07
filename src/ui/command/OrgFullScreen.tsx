@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
 import { rootPosition } from '@core/org';
 import { claimOverlay, releaseOverlay, isTopOverlay } from '@ui/primitives';
+import { useOrgShorePointCounts } from '@ui/hooks';
 import { SubTree, READ_ONLY_DND } from './OrgTree';
 import { OrgConnectors } from './OrgConnectors';
 import { zoomAt, panBy, fitTransform, IDENTITY, type Transform } from './pinchZoom';
@@ -19,6 +20,7 @@ const NOOP = () => {};
  */
 export function OrgFullScreen({ positions, open, onClose }: { positions: OrgPositions; open: boolean; onClose: () => void }) {
   const root = rootPosition(positions);
+  const spCounts = useOrgShorePointCounts();
   const contentRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -169,6 +171,8 @@ export function OrgFullScreen({ positions, open, onClose }: { positions: OrgPosi
                           dnd={READ_ONLY_DND}
                           editable={false}
                           interactive={false}
+                          counts={spCounts.byPosition}
+                          cuttingQueue={spCounts.cuttingQueue}
                         />
                       )}
                     </ul>

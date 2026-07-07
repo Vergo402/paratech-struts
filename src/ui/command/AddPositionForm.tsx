@@ -107,7 +107,7 @@ export function AddPositionForm({
 
   if (groups.length === 0 || !group) {
     return (
-      <p className="fs-node-empty" style={{ fontStyle: 'normal' }}>
+      <p className="fs-node-empty fs-node-empty--plain">
         Nothing reports under a {kindLabel(parentKind)}.
       </p>
     );
@@ -124,7 +124,7 @@ export function AddPositionForm({
         }}
       />
 
-      <ul className="fs-assign-list" style={{ marginTop: 'var(--space-3)' }}>
+      <ul className="fs-assign-list fs-assign-list--spaced">
         {builtIns.map((i) => (
           <li key={i.key}>
             <button type="button" className="fs-assign-row" onClick={() => place(i.title, i.kind)}>
@@ -132,7 +132,7 @@ export function AddPositionForm({
                 <span className="fs-assign-name">{i.title}</span>
                 {multi && <span className="fs-assign-tag">{kindLabel(i.kind)}</span>}
               </span>
-              <span className="fs-assign-meta">add ›</span>
+              <span className="fs-assign-meta">add</span>
             </button>
           </li>
         ))}
@@ -144,7 +144,7 @@ export function AddPositionForm({
                 {multi && <span className="fs-assign-tag">{kindLabel(c.kind)}</span>}
                 <span className="fs-assign-tag">custom</span>
               </span>
-              <span className="fs-assign-meta">{c.members && c.members.length ? `${memberSummary(c.members)} · add ›` : 'add ›'}</span>
+              <span className="fs-assign-meta">{c.members && c.members.length ? `${memberSummary(c.members)} · add` : 'add'}</span>
             </button>
           </li>
         ))}

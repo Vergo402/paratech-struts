@@ -1735,18 +1735,7 @@ button.fs-spc-head {
   font: var(--type-body-medium);
 }
 
-/* ---- visually hidden (live regions, SR-only announcements) ---------------- */
-.fs-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* .fs-sr-only lives in primitives.css (promoted #434 Stage 2c). */
 
 /* ---- surface breakpoints (spacing-grid.md §Surface breakpoints) ------------ */
 /* 768pt = tablet (command post), 1200pt = laptop (Toughbook). The page margin

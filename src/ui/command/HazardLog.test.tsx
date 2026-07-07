@@ -62,13 +62,13 @@ describe('HazardLog', () => {
     render(<HazardLog />);
     expect(screen.getByText('Open (2)')).toBeInTheDocument();
     expect(screen.getByText('Mitigated (1)')).toBeInTheDocument();
-    expect(screen.getByText('⚠ HIGH')).toBeInTheDocument();
-    expect(screen.getByText('⚠ MED')).toBeInTheDocument();
-    expect(screen.getByText('✓ LOW')).toBeInTheDocument(); // mitigated reads ✓, not ⚠
+    expect(screen.getByText('HIGH')).toBeInTheDocument();
+    expect(screen.getByText('MED')).toBeInTheDocument();
+    expect(screen.getByText('CLEARED')).toBeInTheDocument(); // mitigated reads CLEARED, not a severity badge
 
     // High sorts above Medium in the open section.
-    const heads = screen.getAllByText(/^[⚠✓]/).map((n) => n.textContent);
-    expect(heads.indexOf('⚠ HIGH')).toBeLessThan(heads.indexOf('⚠ MED'));
+    const heads = screen.getAllByText(/^(HIGH|MED|LOW|CLEARED)$/).map((n) => n.textContent);
+    expect(heads.indexOf('HIGH')).toBeLessThan(heads.indexOf('MED'));
   });
 
   it('attribution: shows the reporter name when members resolve (admin viewer)', () => {

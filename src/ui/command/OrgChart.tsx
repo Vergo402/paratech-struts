@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
 import { rootPosition, currentIC } from '@core/org';
-import { useOrg, useDeviceUidValue } from '@ui/hooks';
+import { useOrg, useDeviceUidValue, useOrgShorePointCounts } from '@ui/hooks';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
 import { OrgDragLayer } from './OrgDragLayer';
@@ -11,19 +11,44 @@ import { OrgFullScreen } from './OrgFullScreen';
 import { SubTree } from './OrgTree';
 
 /**
+ * The org workspace's action cluster — the My-role chip + the full-screen button,
+ * hosting their surfaces (MyRoleSheet, the pinch-zoom OrgFullScreen). Lives in the
+ * WORKSPACE header row on the Deck (one header row, #434 — OrgChart's own head row
+ * with its ghost left span is gone) and above the chart inside the phone org Sheet.
+ * Desktop gains full-screen with this move (the accepted mockup's call).
+ */
+export function OrgWorkspaceActions() {
+  const positions = useOrg();
+  const [myRoleOpen, setMyRoleOpen] = useState(false);
+  const [fullOpen, setFullOpen] = useState(false);
+  return (
+    <div className="fs-org-head-actions">
+      <button type="button" className="fs-org-myrole" onClick={() => setMyRoleOpen(true)}>
+        My role
+      </button>
+      <button type="button" className="fs-org-fullscreen" aria-label="Full screen" onClick={() => setFullOpen(true)}>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M4 8V4H8M16 8V4H12M4 12V16H8M16 12V16H12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <OrgFullScreen positions={positions} open={fullOpen} onClose={() => setFullOpen(false)} />
+      <MyRoleSheet open={myRoleOpen} onClose={() => setMyRoleOpen(false)} />
+    </div>
+  );
+}
+
+/**
  * Org chart (#295/#323) — the Command Deck workspace. Renders the WHOLE structure at
  * once (pan/scroll if wide); the IC reads the entire command picture without
  * descending levels. For the IC it is fully interactive: drag a card to re-assign who
  * it reports to (re-parent / reorder), drag a roster rig onto a card to assign it.
  * Drag is an additive enhancement — the node sheet's Move… buttons stay the keyboard /
- * screen-reader path. Tap any node → the node sheet. My Role lets any device declare
- * its own position.
+ * screen-reader path. Tap any node → the node sheet. The My-role / full-screen
+ * actions live in OrgWorkspaceActions (the workspace header row / the phone Sheet).
  */
 export function OrgChart({
-  allowFullScreen = false,
   onOpenNode,
 }: {
-  allowFullScreen?: boolean;
   /** Tap a node → the node panel (owned by SitStat so the desktop dock sits beside the board). */
   onOpenNode: (id: string) => void;
 }) {
@@ -31,12 +56,12 @@ export function OrgChart({
   const root = rootPosition(positions);
   const uid = useDeviceUidValue();
   const ic = currentIC(positions);
+  // Live assignment numerals (#434) — per-position shore-point tallies + the queue.
+  const spCounts = useOrgShorePointCounts();
   // Pre-auth IC-gate (pragmatic, ADR-021): this device may restructure if it holds
   // the IC device-ref, or no device owns the IC. Real auth verifies later.
   const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
 
-  const [myRoleOpen, setMyRoleOpen] = useState(false);
-  const [fullOpen, setFullOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -63,22 +88,6 @@ export function OrgChart({
 
   return (
     <div className="fs-org" ref={containerRef}>
-      <div className="fs-org-head">
-        <span />
-        <div className="fs-org-head-actions">
-          {allowFullScreen && (
-            <button type="button" className="fs-org-fullscreen" aria-label="Full screen" onClick={() => setFullOpen(true)}>
-              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M4 8V4H8M16 8V4H12M4 12V16H8M16 12V16H12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
-          <button type="button" className="fs-org-myrole" onClick={() => setMyRoleOpen(true)}>
-            My role
-          </button>
-        </div>
-      </div>
-
       {isIC && <RosterStrip dnd={dnd} />}
 
       <div className={`fs-org-scroll${dnd.drag ? ' is-dragging' : ''}`} ref={scrollRef}>
@@ -86,17 +95,23 @@ export function OrgChart({
           <OrgConnectors canvasRef={canvasRef} deps={positions} />
           <div className="fs-org-tree">
             <ul>
-              <SubTree positions={positions} id={root.id} rootId={root.id} depth={0} onOpen={onOpenNode} dnd={dnd} editable={isIC} />
+              <SubTree
+                positions={positions}
+                id={root.id}
+                rootId={root.id}
+                depth={0}
+                onOpen={onOpenNode}
+                dnd={dnd}
+                editable={isIC}
+                counts={spCounts.byPosition}
+                cuttingQueue={spCounts.cuttingQueue}
+              />
             </ul>
           </div>
         </div>
       </div>
 
       <OrgDragLayer drag={dnd.drag} gapHot={dnd.gapHot} />
-
-      {allowFullScreen && <OrgFullScreen positions={positions} open={fullOpen} onClose={() => setFullOpen(false)} />}
-
-      <MyRoleSheet open={myRoleOpen} onClose={() => setMyRoleOpen(false)} />
     </div>
   );
 }

@@ -43,6 +43,7 @@ export { useEventLog, type EventLog } from './useEventLog';
 export { useAuditTrail, type AuditTrailApi } from './useAuditTrail';
 export { useAuditAccess, type AuditAccess } from './useAuditAccess';
 export { useOrg } from './useOrg';
+export { useOrgShorePointCounts, type OrgShorePointCounts } from './useOrgShorePointCounts';
 export { useMyRole, useMyRoles } from './useMyRoles';
 export { useCommandTransfer } from './useCommandTransfer';
 export { useHazards } from './useHazards';

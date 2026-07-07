@@ -7,25 +7,31 @@ import {
   validParentsFor,
   sameResource,
   positionForResource,
+  shorePointsForResource,
   spanOfControl,
   spanLevel,
   kindLabel,
   leaderOf,
 } from '@core/org';
 import { Sheet, SideDrawer, Modal, Button, TextField, useMediaQuery } from '@ui/primitives';
-import { useOrg, useOperation, useRoleHistory, useApparatus } from '@ui/hooks';
+import { useOrg, useOperation, useRoleHistory, useApparatus, useShorePoints } from '@ui/hooks';
+import { clock } from '@ui/util/time';
 import { useOrgCommit } from './useOrgCommit';
 import { AddPositionForm } from './AddPositionForm';
+import { BackChevronIcon, ChevronRightIcon, ClearIcon } from './icons';
 
-// One-line role-history description (events naming this node, append order).
-function describe(e: FieldShoreEvent): string {
+// One-line role-history description (events naming this node, append order). A
+// reparent surfaces in BOTH the moved node's history AND its new parent's, so the
+// copy branches on which node this history belongs to (forId) — the destination
+// sees an arrival, not its own move.
+function describe(e: FieldShoreEvent, forId: string): string {
   switch (e.type) {
     case 'PositionAdded':
       return `Added — ${e.position.title}`;
     case 'PositionRenamed':
       return `Renamed to ${e.title}`;
     case 'PositionReparented':
-      return 'Moved to a new position';
+      return e.positionId === forId ? 'Moved to a new position' : 'A position moved in beneath this';
     case 'PositionReordered':
       return 'Reordered';
     case 'ResourceAssigned':
@@ -43,14 +49,12 @@ function describe(e: FieldShoreEvent): string {
     case 'CommandTransferCancelled':
       return 'Command transfer cancelled';
     default:
-      return e.type;
+      // Human copy, never a raw event type in IC-facing history (#434).
+      return 'Updated';
   }
 }
 
-const fmtTime = (ms: number) =>
-  new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-type Mode = 'menu' | 'move' | 'add';
+type Mode = 'menu' | 'move' | 'add' | 'assign';
 
 /**
  * The org-node panel (#295 / #374). Tap a node → one SINGLE scrolling flow: the ICS-class
@@ -82,6 +86,7 @@ export function NodeSheet({
   const emit = useOrgCommit();
   const history = useRoleHistory(op?.id ?? null, positionId);
   const { roster } = useApparatus();
+  const shorePoints = useShorePoints();
   const isDeck = useMediaQuery('(min-width: 1024px)');
   const [mode, setMode] = useState<Mode>('menu');
   const [removeOpen, setRemoveOpen] = useState(false);
@@ -128,62 +133,47 @@ export function NodeSheet({
 
       {mode === 'menu' && (
         <>
-          {/* ASSIGNED + inline assign (no separate modal — the #374 flow fix) */}
+          {/* ASSIGNED — the position's own resources, each apparatus with its live
+              shore-point total. The full roster no longer inlines here (#434: a 20-rig
+              department pushed Manage/history ~1000px down); it lives behind the
+              "Change or add apparatus" row as an inline sub-view. */}
           <div className="fs-node-section">Assigned{assigned.length ? ` · ${assigned.length}` : ''}</div>
           {assigned.length === 0 ? (
             <p className="fs-node-empty">Unassigned</p>
           ) : (
             <ul className="fs-node-resources">
-              {assigned.map((r, i) => (
-                <li key={`${r.ref}:${r.value}`} className="fs-node-resource">
-                  <span className="fs-assign-name">
-                    {r.label}
-                    {i === 0 && <span className="fs-node-leader-tag"> · leader</span>}
-                  </span>
-                  {isIC && (
-                    <button type="button" className="fs-node-clear" aria-label={`Clear ${r.label}`} onClick={() => clear(r)}>
-                      ×
-                    </button>
-                  )}
-                </li>
-              ))}
+              {assigned.map((r, i) => {
+                const spTotal = r.ref === 'apparatus' ? shorePointsForResource(shorePoints, r).length : 0;
+                return (
+                  <li key={`${r.ref}:${r.value}`} className="fs-node-resource">
+                    <span className="fs-assign-name">
+                      {r.label}
+                      {i === 0 && <span className="fs-node-leader-tag"> · leader</span>}
+                    </span>
+                    {spTotal > 0 && (
+                      <span className="fs-node-sp-total">
+                        {spTotal} total shore {spTotal === 1 ? 'point' : 'points'}
+                      </span>
+                    )}
+                    {isIC && (
+                      <button type="button" className="fs-node-clear" aria-label={`Clear ${r.label}`} onClick={() => clear(r)}>
+                        <ClearIcon />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
           {isIC && (
-            <>
-              {roster.length > 0 && (
-                <>
-                  <div className="fs-node-section">Apparatus on roster</div>
-                  <ul className="fs-assign-list">
-                    {roster.map((app) => {
-                      const r: OrgResourceRef = { ref: 'apparatus', value: app.id, label: app.name };
-                      const home = positionForResource(positions, r);
-                      const onHere = has(r);
-                      return (
-                        <li key={app.id}>
-                          <button type="button" className={`fs-assign-row${onHere ? ' is-on' : ''}`} onClick={() => toggle(r)}>
-                            <span className="fs-assign-name">{app.name}</span>
-                            <span className="fs-assign-meta">{onHere ? '✓ assigned here' : home ? `at ${home.title}` : 'unassigned'}</span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </>
-              )}
-              {/* #401 — steer the IC away from the clear/assign toggle for command
-                  handoff: ResourceCleared/ResourceAssigned leaves no transfer record.
-                  Only on the command root (no parent), where command actually transfers. */}
-              {pos.parentId === null && (
-                <p className="fs-node-note">To hand off command with a record, use Transfer Command.</p>
-              )}
-              <div className="fs-assign-individual">
-                <TextField label="Add individual" value={individual} onChange={setIndividual} placeholder="e.g. FF Lopez" size="standard" />
-                <Button variant="secondary" size="standard" disabled={!individual.trim()} onPress={addIndividual}>
-                  Add
-                </Button>
-              </div>
-            </>
+            <div className="fs-node-group">
+              <button type="button" className="fs-node-grow" onClick={() => setMode('assign')}>
+                <span>Change or add apparatus</span>
+                <span aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              </button>
+            </div>
           )}
 
           {/* DIRECT REPORTS */}
@@ -226,11 +216,15 @@ export function NodeSheet({
                   </button>
                   <button type="button" className="fs-node-grow" onClick={() => setMode('add')}>
                     <span>Add position under this</span>
-                    <span aria-hidden="true">›</span>
+                    <span aria-hidden="true">
+                      <ChevronRightIcon />
+                    </span>
                   </button>
                   <button type="button" className="fs-node-grow" onClick={() => setMode('move')}>
                     <span>Move…</span>
-                    <span aria-hidden="true">›</span>
+                    <span aria-hidden="true">
+                      <ChevronRightIcon />
+                    </span>
                   </button>
                 </div>
               )}
@@ -252,8 +246,8 @@ export function NodeSheet({
             <ul className="fs-node-history">
               {history.events.map((e) => (
                 <li key={e.id}>
-                  <span className="fs-node-hist-line">{describe(e)}</span>
-                  <span className="fs-node-hist-time">{fmtTime(e.at)}</span>
+                  <span className="fs-node-hist-line">{describe(e, positionId)}</span>
+                  <span className="fs-node-hist-time">{clock(e.at)}</span>
                 </li>
               ))}
             </ul>
@@ -261,10 +255,50 @@ export function NodeSheet({
         </>
       )}
 
+      {mode === 'assign' && (
+        <>
+          <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
+            <BackChevronIcon /> Back
+          </button>
+          {roster.length > 0 && (
+            <>
+              <div className="fs-node-section">Apparatus on roster</div>
+              <ul className="fs-assign-list">
+                {roster.map((app) => {
+                  const r: OrgResourceRef = { ref: 'apparatus', value: app.id, label: app.name };
+                  const home = positionForResource(positions, r);
+                  const onHere = has(r);
+                  return (
+                    <li key={app.id}>
+                      <button type="button" className={`fs-assign-row${onHere ? ' is-on' : ''}`} onClick={() => toggle(r)}>
+                        <span className="fs-assign-name">{app.name}</span>
+                        <span className="fs-assign-meta">{onHere ? 'assigned here' : home ? `at ${home.title}` : 'unassigned'}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          {/* #401 — steer the IC away from the clear/assign toggle for command
+              handoff: ResourceCleared/ResourceAssigned leaves no transfer record.
+              Only on the command root (no parent), where command actually transfers. */}
+          {pos.parentId === null && (
+            <p className="fs-node-note">To hand off command with a record, use Transfer Command.</p>
+          )}
+          <div className="fs-assign-individual">
+            <TextField label="Add individual" value={individual} onChange={setIndividual} placeholder="e.g. FF Lopez" size="standard" />
+            <Button variant="secondary" size="standard" disabled={!individual.trim()} onPress={addIndividual}>
+              Add
+            </Button>
+          </div>
+        </>
+      )}
+
       {mode === 'move' && (
         <>
           <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
-            ‹ Back
+            <BackChevronIcon /> Back
           </button>
           <div className="fs-node-section">Reorder among siblings</div>
           <div className="fs-node-reorder">
@@ -295,7 +329,9 @@ export function NodeSheet({
               <li key={p.id}>
                 <button type="button" className="fs-assign-row" onClick={() => reparent(p.id)}>
                   <span className="fs-assign-name">{p.title}</span>
-                  <span className="fs-assign-meta">move ›</span>
+                  <span className="fs-assign-meta">
+                    move <ChevronRightIcon />
+                  </span>
                 </button>
               </li>
             ))}
@@ -306,7 +342,7 @@ export function NodeSheet({
       {mode === 'add' && (
         <>
           <button type="button" className="fs-node-back" onClick={() => setMode('menu')}>
-            ‹ Back
+            <BackChevronIcon /> Back
           </button>
           <div className="fs-node-section">Add position under {pos.title}</div>
           <AddPositionForm parentId={positionId} parentKind={pos.kind} onDone={() => setMode('menu')} />

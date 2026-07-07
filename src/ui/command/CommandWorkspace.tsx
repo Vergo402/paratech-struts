@@ -1,5 +1,5 @@
 import { Segmented } from '@ui/primitives';
-import { OrgChart } from './OrgChart';
+import { OrgChart, OrgWorkspaceActions } from './OrgChart';
 import { HazardLog } from './HazardLog';
 
 export type WorkspaceView = 'org' | 'hazard';
@@ -11,10 +11,11 @@ const VIEW_OPTIONS = [
 
 /**
  * The Command Deck workspace (desktop ≥1024px) — the right pane beside the
- * situation rail. A Segmented header swaps between the org chart (default) and the
- * hazard log, rendering the FULL composition in place (no route change), so the
- * six datums in the rail stay pinned while the IC works. Org chart = read view
- * (P6); Hazard Log register = P9 (placeholder here); Edit structure = P7.
+ * situation rail. ONE header row (#434): the Segmented view swap left, the org
+ * actions (My role · full-screen) right — the standing "Tap a position…" hint is
+ * gone (the node cards carry their own press affordance). The FULL composition
+ * renders in place (no route change), so the rail's datums stay pinned while the
+ * IC works.
  */
 export function CommandWorkspace({
   view,
@@ -29,7 +30,7 @@ export function CommandWorkspace({
     <div className="fs-cmd-ws">
       <div className="fs-cmd-ws-head">
         <Segmented options={VIEW_OPTIONS} value={view} onChange={onView} aria-label="Command workspace view" />
-        {view === 'org' && <span className="fs-cmd-ws-hint">Tap a position to assign or edit</span>}
+        {view === 'org' && <OrgWorkspaceActions />}
       </div>
       <div className="fs-cmd-ws-body">
         {view === 'org' ? <OrgChart onOpenNode={onOpenNode} /> : <HazardLog />}

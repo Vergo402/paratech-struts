@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import type { ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
-import { openHazardsBySeverity } from '@core/hazard';
+import { openHazardsBySeverity, severityWord } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
+import { AlertIcon, ChevronRightIcon, FlagIcon, OrgGlyphIcon, PendingClockIcon } from './icons';
 import {
   useOperation,
   useShorePoints,
@@ -28,14 +29,19 @@ const SCOPE_OPTIONS = [
 
 /**
  * The Command situation rail — the six canonical datums in the user-mandated order:
- * persistent Safety Officer + OP/elapsed chrome, incident name, the Incident
- * Commander full-width with the one gold accent, then a [Operations Section Chief |
- * Safety Officer] two-up row, resources, the 7-status board, the hazard summary, the
- * roster, and End Operation. It IS the phone column verbatim and the desktop Deck's
- * left rail (one component, no second render path). `onOpenHazards`, when given
- * (desktop Deck), makes the hazard summary flip the workspace to the Hazard Log.
+ * incident name + OP/elapsed chrome, a stat strip (shore points · apparatus ·
+ * individuals · conditional pending-sync), the command-staff card (IC with the one
+ * gold accent + Operations Section Chief + Safety Officer as hairline rows), the
+ * 7-status board card, the Hazards / Org Chart entry rows, the roster, and End
+ * Operation. It IS the phone column verbatim and the desktop Deck's left rail (one
+ * component, no second render path). `onOpenHazards` (both surfaces) opens the
+ * Hazard Log — the Deck flips the workspace, the phone raises the Sheet;
+ * `onOpenOrg` (phone only — the Deck already shows the chart) opens the org Sheet.
  */
-export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = {}) {
+export function CommandRail({
+  onOpenHazards,
+  onOpenOrg,
+}: { onOpenHazards?: () => void; onOpenOrg?: () => void } = {}) {
   const operation = useOperation();
   const shorePoints = useShorePoints();
   const positions = useOrg();
@@ -80,6 +86,12 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
     return { apparatusCount: apparatus.size, individualCount: individuals.size, roster };
   }, [positions]);
 
+  // Org entry-row meta: how many positions exist and how many are staffed.
+  const orgMeta = useMemo(() => {
+    const all = Object.values(positions);
+    return { total: all.length, assigned: all.filter((p) => p.assignedResources.length > 0).length };
+  }, [positions]);
+
   const openHazards = useMemo(() => openHazardsBySeverity(hazards).filter((h) => h.mitigatedAt == null), [hazards]);
 
   if (!operation) return null;
@@ -94,19 +106,6 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
   const safetyName = (safety && leaderOf(safety)?.label) ?? 'Unassigned';
   const ROSTER_PREVIEW = 3;
   const topHazard = openHazards[0];
-
-  const hazardSummary = (
-    <span className="fs-cmd-haz-text">
-      {openHazards.length > 0 ? (
-        <>
-          <span className="fs-cmd-haz-count">{openHazards.length} open</span>
-          {topHazard && ` · ${topHazard.severity} ${topHazard.type} · ${topHazard.location}`}
-        </>
-      ) : (
-        'No open hazards'
-      )}
-    </span>
-  );
 
   // Accept the pending handshake (either end — the incoming device's card or the
   // #401 hand-the-tablet section on the initiator's card). The announcement lives in
@@ -131,19 +130,57 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         <OpPeriodIndicator operation={operation} onOpen={() => setRolloverOpen(true)} />
       </div>
 
-      {/* Incident Commander — full width, the one gold accent + the command-transfer
-          handshake (#393, ADR-021). The gold accent follows currentIC automatically;
-          while a transfer is Pending command has NOT moved (outgoing stays IC of record). */}
-      <Card className="fs-cmd-ic">
-        <div className="fs-cmd-ic-main">
-          <span className="fs-cmd-eyebrow">Incident Commander</span>
-          <span className="fs-cmd-ic-name">{ic?.label ?? 'Unassigned'}</span>
-        </div>
-        {!pending && isIC && (
-          <Button variant="tertiary" size="standard" onPress={() => setTransferOpen(true)}>
-            Transfer
-          </Button>
+      {/* Stat strip (craft.md §2) — the rail's top-level numbers in one quiet line.
+          Replaces the Apparatus / Individuals metric cards whose display-2 zeros
+          competed with the incident name. The pending-sync figure (#352) keeps its
+          gold — Alex's explicit call (2026-07-02, reaffirmed 2026-07-06): the strip's
+          one accent figure, hidden entirely at 0 (calm chrome). */}
+      <div className="fs-cmd-stats">
+        <span className="fs-cmd-statfig" data-zero={counts.total === 0 || undefined}>
+          <span className="fs-cmd-stat-v">{counts.total}</span>
+          <span className="fs-cmd-stat-k">{counts.total === 1 ? 'shore point' : 'shore points'}</span>
+        </span>
+        <span className="fs-cmd-statfig" data-zero={resources.apparatusCount === 0 || undefined}>
+          <span className="fs-cmd-stat-v">{resources.apparatusCount}</span>
+          <span className="fs-cmd-stat-k">apparatus</span>
+        </span>
+        <span className="fs-cmd-statfig" data-zero={resources.individualCount === 0 || undefined}>
+          <span className="fs-cmd-stat-v">{resources.individualCount}</span>
+          <span className="fs-cmd-stat-k">{resources.individualCount === 1 ? 'individual' : 'individuals'}</span>
+        </span>
+        {pendingResourceCount > 0 && (
+          <span className="fs-cmd-statfig">
+            <span className="fs-cmd-stat-v fs-cmd-stat-v--accent">{pendingResourceCount}</span>
+            <span className="fs-cmd-stat-k">pending sync</span>
+          </span>
         )}
+      </div>
+
+      {/* Command staff — one card, three hairline rows (was three separate cards of
+          identical weight). The IC row keeps the gold underline — the rail's one gold —
+          plus the command-transfer handshake trigger (#393, ADR-021). The gold accent
+          follows currentIC automatically; while a transfer is Pending command has NOT
+          moved (outgoing stays IC of record). */}
+      <Card className="fs-cmd-staff">
+        <div className="fs-cmd-staff-row fs-cmd-staff-row--ic">
+          <div className="fs-cmd-ic-main">
+            <span className="fs-cmd-eyebrow">Incident Commander</span>
+            <span className="fs-cmd-ic-name">{ic?.label ?? 'Unassigned'}</span>
+          </div>
+          {!pending && isIC && (
+            <Button variant="tertiary" size="standard" onPress={() => setTransferOpen(true)}>
+              Transfer
+            </Button>
+          )}
+        </div>
+        <div className="fs-cmd-staff-row">
+          <span className="fs-cmd-eyebrow">Operations Section Chief</span>
+          <span className={`fs-cmd-staff-name${ops && leaderOf(ops) ? '' : ' is-unassigned'}`}>{opsName}</span>
+        </div>
+        <div className="fs-cmd-staff-row">
+          <span className="fs-cmd-eyebrow">Safety Officer</span>
+          <span className={`fs-cmd-staff-name${safety && leaderOf(safety) ? '' : ' is-unassigned'}`}>{safetyName}</span>
+        </div>
       </Card>
 
       {/* Pending handshake states (mutually exclusive). The INITIATOR always sees the
@@ -151,7 +188,9 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
           any device when the recipient is an individual (soft claim, transfer.ts). */}
       {pending && pending.initiatedBy === uid ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--pending">
-          <span className="fs-cmd-xfer-pending-text">⏳ Transfer pending → {pending.toResource.label}</span>
+          <span className="fs-cmd-xfer-pending-text">
+            <PendingClockIcon /> Transfer pending → {pending.toResource.label}
+          </span>
           <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled' })}>
             Cancel transfer
           </Button>
@@ -174,7 +213,9 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         </Card>
       ) : pending && canAccept(pending, uid ?? '') ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
-          <span className="fs-cmd-xfer-head">⚑ You are being given command</span>
+          <span className="fs-cmd-xfer-head">
+            <FlagIcon /> You are being given command
+          </span>
           <span className="fs-cmd-xfer-sub">
             from {ic?.label ?? 'the current IC'}
             {operation.name ? ` · ${operation.name}` : ''}
@@ -189,7 +230,9 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
           </div>
         </Card>
       ) : pending ? (
-        <div className="fs-cmd-xfer-quiet">⏳ Transfer pending → {pending.toResource.label}</div>
+        <div className="fs-cmd-xfer-quiet">
+          <PendingClockIcon /> Transfer pending → {pending.toResource.label}
+        </div>
       ) : null}
 
       <TransferCommand open={transferOpen} onClose={() => setTransferOpen(false)} />
@@ -201,59 +244,24 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         <OpRolloverCard operation={operation} open={rolloverOpen} onClose={() => setRolloverOpen(false)} />
       )}
 
-      {/* Operations Section Chief | Safety Officer — the two-up datum row */}
-      <div className="fs-cmd-pair">
-        <Card className="fs-cmd-pair-cell">
-          <span className="fs-cmd-eyebrow">Operations Section Chief</span>
-          <span className="fs-cmd-pair-name">{opsName}</span>
-        </Card>
-        <Card className="fs-cmd-pair-cell">
-          <span className="fs-cmd-eyebrow">Safety Officer</span>
-          <span className="fs-cmd-pair-name">{safetyName}</span>
-        </Card>
-      </div>
-
-      {/* Resources assigned */}
-      <div className="fs-cmd-metrics">
-        <Card className="fs-cmd-metric">
-          <span className="fs-cmd-eyebrow">Apparatus</span>
-          <span className="fs-cmd-metric-num">{resources.apparatusCount}</span>
-        </Card>
-        <Card className="fs-cmd-metric">
-          <span className="fs-cmd-eyebrow">Individuals</span>
-          <span className="fs-cmd-metric-num">{resources.individualCount}</span>
-        </Card>
-        {/* PAR/pending-sync indicator (#352) — how many apparatus/individual rows
-            have a queued (not-yet-synced) assignment change, so the IC never has to
-            tab-switch to Accountability mid-PAR. Hidden entirely at 0 — no "All
-            synced" text, no lingering gap (Principle 10, calm chrome). Gold-accented
-            by Alex's explicit call (2026-07-02) to stand out faster than the other
-            two counts — an intentional exception to the one-accent-per-screen rule,
-            not an oversight to "fix" later. */}
-        {pendingResourceCount > 0 && (
-          <Card className="fs-cmd-metric">
-            <span className="fs-cmd-eyebrow">Pending sync</span>
-            <span className="fs-cmd-metric-num fs-cmd-metric-num--accent">{pendingResourceCount}</span>
-          </Card>
-        )}
-      </div>
-
-      {/* Shore-point status board */}
+      {/* Shore-point status board — the group label and the scope toggle (#353)
+          share one quiet header row (the head + toggle + board previously spent
+          three chrome rows before any data). */}
       <div className="fs-cmd-board-head">
         <span className="fs-cmd-eyebrow">Shore points</span>
-        <span className="fs-cmd-board-total">{counts.total} total</span>
+        <Segmented
+          size="standard"
+          aria-label="Shore-point tally scope"
+          options={SCOPE_OPTIONS}
+          value={scope}
+          onChange={(v) => setScope(v)}
+        />
       </div>
-      {/* Scope toggle (#353): All incident (the board below, unchanged) vs By Division. */}
-      <Segmented
-        size="standard"
-        aria-label="Shore-point tally scope"
-        options={SCOPE_OPTIONS}
-        value={scope}
-        onChange={(v) => setScope(v)}
-      />
       {/* The whole-incident 7-status board stays the default and the desktop-inline
           fallback; the By-Division roll-up replaces it inline on desktop and rises
-          as a Sheet on phone (the phone floor). */}
+          as a Sheet on phone (the phone floor). One card, seven hairline rows: a 3px
+          color key + label + tabular count. Zeros read as tertiary INK, not an
+          opacity fade over contrast-audited tokens. */}
       {scope === 'division' && isDesktop ? (
         <SitStatRollup />
       ) : (
@@ -265,6 +273,7 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
               role="listitem"
               data-zero={counts.m[status] === 0 || undefined}
             >
+              <span className="fs-cmd-stat-key" aria-hidden="true" />
               <span className="fs-cmd-stat-label">{STATUS_LABELS[status]}</span>
               <span className="fs-cmd-stat-count">{counts.m[status]}</span>
             </div>
@@ -282,14 +291,49 @@ export function CommandRail({ onOpenHazards }: { onOpenHazards?: () => void } = 
         </Sheet>
       )}
 
-      {/* Hazard summary — taps to the Hazard Log workspace on the Deck */}
-      {onOpenHazards ? (
-        <button type="button" className="fs-cmd-haz fs-cmd-haz--press" onClick={onOpenHazards}>
-          {hazardSummary}
-          <span className="fs-cmd-haz-go" aria-hidden="true">›</span>
-        </button>
-      ) : (
-        <div className="fs-cmd-haz">{hazardSummary}</div>
+      {/* Entry rows — Hazards (both surfaces: Deck flips the workspace, phone raises
+          the Sheet) and Org Chart (phone only; the Deck already shows the chart).
+          Real tap targets with live counts and a chevron — the phone previously
+          offered two bare buttons plus an inert hazard line styled like this
+          pressable one. Severity reads in its own warning tones, never gold. */}
+      {(onOpenHazards || onOpenOrg) && (
+      <Card className="fs-cmd-entrycard">
+        {onOpenHazards && (
+          <button type="button" className="fs-cmd-entry" onClick={onOpenHazards}>
+            <span className={`fs-cmd-entry-icon${topHazard ? ` is-${topHazard.severity}` : ''}`}>
+              <AlertIcon />
+            </span>
+            <span className="fs-cmd-entry-label">Hazards</span>
+            {openHazards.length > 0 && topHazard ? (
+              <>
+                <span className={`fs-cmd-entry-chip is-${topHazard.severity}`}>
+                  {openHazards.length} {severityWord(topHazard.severity).toUpperCase()}
+                </span>
+                <span className="fs-cmd-entry-meta">{topHazard.location}</span>
+              </>
+            ) : (
+              <span className="fs-cmd-entry-meta">No open hazards</span>
+            )}
+            <span className="fs-cmd-entry-go">
+              <ChevronRightIcon />
+            </span>
+          </button>
+        )}
+        {onOpenOrg && (
+          <button type="button" className="fs-cmd-entry" onClick={onOpenOrg}>
+            <span className="fs-cmd-entry-icon">
+              <OrgGlyphIcon />
+            </span>
+            <span className="fs-cmd-entry-label">Org Chart</span>
+            <span className="fs-cmd-entry-meta">
+              {orgMeta.total} {orgMeta.total === 1 ? 'position' : 'positions'} · {orgMeta.assigned} assigned
+            </span>
+            <span className="fs-cmd-entry-go">
+              <ChevronRightIcon />
+            </span>
+          </button>
+        )}
+      </Card>
       )}
 
       {/* Resource roster */}

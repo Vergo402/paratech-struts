@@ -6,6 +6,7 @@ import { Button, TextField, claimOverlay, releaseOverlay, isTopOverlay } from '@
 import { useOrg } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { ICS201Brief } from './ICS201Brief';
+import { BackChevronIcon, CheckIcon } from './icons';
 
 /**
  * Transfer Command — the full-screen takeover (ADR-016: consequential enough to own the
@@ -102,7 +103,7 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
           <div className="fs-xfer-head">
             <Dialog.Close asChild>
               <button type="button" className="fs-xfer-cancel" onPointerDown={(e) => e.stopPropagation()}>
-                ‹ Cancel
+                <BackChevronIcon /> Cancel
               </button>
             </Dialog.Close>
             <Dialog.Title className="fs-xfer-title">Transfer Command</Dialog.Title>
@@ -134,7 +135,13 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
                         }}
                       >
                         <span className="fs-assign-name">{r.label}</span>
-                        <span className="fs-assign-meta">{on ? '✓ selected' : ''}</span>
+                        <span className="fs-assign-meta">
+                          {on && (
+                            <>
+                              <CheckIcon /> selected
+                            </>
+                          )}
+                        </span>
                       </button>
                     </li>
                   );
@@ -160,7 +167,7 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
 
           <div className="fs-xfer-foot">
             <Button variant="primary" size="standard" disabled={!toResource} onPress={transfer}>
-              Transfer Command
+              Hand over command
             </Button>
             {toResource && (
               <p className="fs-xfer-note">You keep command until {toResource.label} accepts.</p>
