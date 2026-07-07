@@ -45,8 +45,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 500 17px/1 var(--font-mono);
-  font-variant-numeric: diagonal-fractions tabular-nums; /* "1/2" → ½ (ADR-028) */
+  font: var(--type-mono-stat); /* the 17px stat step (#433 token sweep) */
+  font-weight: 500; /* rest state is quieter than the token's 600 */
+  font-variant-numeric: diagonal-fractions tabular-nums; /* "1/2" → ½ (ADR-028) — restated AFTER font (shorthand resets it) */
   color: var(--text-secondary);
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
@@ -59,6 +60,12 @@
   color: var(--text-primary);
   font-weight: calc(600 + var(--type-weight-bump));
   background: var(--accent-subtle);
+}
+/* "0" checked is the REST state, not a choice (#433 gold budget): raised neutral
+   fill + stronger neutral stroke — gold marks only a genuinely picked fraction. */
+.fs-eighth--zero[data-state='checked'] {
+  border-color: color-mix(in srgb, var(--text-tertiary) 60%, transparent);
+  background: var(--surface-card-hover);
 }
 .fs-eighth:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
@@ -74,7 +81,7 @@
    (#248 re-drive): bold, boxed in a thin border. */
 .fs-ledger-raw {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--surface-stroke);
+  border: var(--stroke-width) solid var(--surface-stroke); /* token — sunlight's 2pt strokes hold (#433) */
   border-radius: var(--radius-input);
 }
 .fs-ledger-raw .fs-ledger-label,
@@ -85,8 +92,8 @@
   color: var(--text-primary);
 }
 .fs-ledger-value {
-  font-size: 16px;
-  font-weight: 600;
+  font: var(--type-mono-stat); /* the 17px stat step (#433 token sweep — was a magic 16px) */
+  font-variant-numeric: diagonal-fractions tabular-nums; /* restated AFTER font (shorthand resets it) */
   color: var(--text-primary);
 }
 /* Nearest-⅛″ marker on non-eighths-exact catalog heights (the rec-card ≈ precedent). */
@@ -96,10 +103,15 @@
   margin-right: 2px;
 }
 .fs-ledger-effective {
-  border-top: 1px solid var(--surface-stroke);
+  border-top: var(--stroke-width) solid var(--surface-stroke); /* token — sunlight holds (#433) */
   padding-top: var(--space-3);
 }
-.fs-ledger-value--big { font-size: 26px; font-weight: 700; line-height: 1.05; }
+/* The answer numeral — the 22px hero step (#433 token sweep — was a magic 26px);
+   one voice for "Required strut" in the form ledger AND the sheet stat strip. */
+.fs-ledger-value--big {
+  font: var(--type-mono-hero);
+  font-variant-numeric: diagonal-fractions tabular-nums; /* restated AFTER font (shorthand resets it) */
+}
 .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-text); }
 
 /* Collapsible disclosure (#349, Add Shore Point only) — tucks the editable pickers
@@ -208,5 +220,29 @@
 }
 .fs-sysfilter-text {
   font: var(--type-body-medium);
-  font-weight: 600;
+  font-weight: calc(600 + var(--type-weight-bump)); /* sunlight thickens like siblings (#433) */
+}
+
+/* ---- result sheet header (#433, accepted mockup) ----------------------------- */
+/* The sheet's title IS the result count — hero numeral + quiet label. */
+.fs-qf-count { display: inline-flex; align-items: baseline; gap: var(--space-2); }
+.fs-qf-count-num {
+  font: var(--type-mono-hero);
+  font-variant-numeric: tabular-nums;
+}
+.fs-qf-count-word { font: var(--type-body); color: var(--text-secondary); }
+
+/* The stat strip: the shared calculation shown ONCE, boxed like the form's raw-
+   opening row — reuses the .fs-ledger row anatomy wholesale. */
+.fs-qf-strip {
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+}
+/* Deduction labels can carry long catalog plate names — clip, never wrap. */
+.fs-qf-strip-ded {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

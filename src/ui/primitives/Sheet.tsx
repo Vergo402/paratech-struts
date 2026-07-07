@@ -17,7 +17,9 @@ const DISMISS_THRESHOLD_PX = 80;
 export interface SheetProps {
   open: boolean;
   onClose: () => void;
-  title: string;
+  /** Plain string, or a styled node (e.g. Quick Find's hero result count) — still
+   *  the sheet's Dialog.Title either way, so the accessible name is preserved. */
+  title: ReactNode;
   children: ReactNode;
 }
 

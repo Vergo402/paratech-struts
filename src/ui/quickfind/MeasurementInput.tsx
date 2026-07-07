@@ -184,7 +184,10 @@ export function MeasurementInput({
             return (
               <RadioGroup.Item
                 key={n}
-                className="fs-eighth"
+                /* "0" is the REST state, not a choice — checked, it stays neutral
+                   so the strip's gold only marks a genuinely picked fraction
+                   (#433 gold budget; quickfind.css .fs-eighth--zero). */
+                className={n === 0 ? 'fs-eighth fs-eighth--zero' : 'fs-eighth'}
                 value={String(n)}
                 aria-label={n === 0 ? 'zero eighths' : `${p.n}/${p.d} inch`}
               >

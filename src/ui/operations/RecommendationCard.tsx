@@ -47,6 +47,12 @@ export interface RecommendationCardProps {
    *  count and deploy every member (the "Add N more struts" primary). Absent →
    *  the card offers only the acknowledged short deploy. */
   onAddStruts?: (combo: StrutCombination, targetType: ShoreTypeId, targetTotal: number) => void;
+  /** 'calculator' (#433, Quick Find): the COMPACT card — stripe + model-with-
+   *  extension headline + connectors + quiet capacity; NO deduction ledger (the
+   *  shared math lives once in the sheet's stat strip). Safety tells (unrated /
+   *  over-capacity / ×N struts-needed / disclaimer) render unchanged. Default
+   *  'deploy' keeps the full Operations card. */
+  variant?: 'deploy' | 'calculator';
 }
 
 /** Face identity word — keyed off the strut SYSTEM, not its color: a LockStroke
@@ -120,6 +126,7 @@ export function RecommendationCard({
   estimatedLoad,
   currentStruts,
   onAddStruts,
+  variant = 'deploy',
 }: RecommendationCardProps) {
   const [acknowledged, setAcknowledged] = useState(false);
 
@@ -173,6 +180,86 @@ export function RecommendationCard({
 
   const deployBlocked = !!combo.exceedsCapacity;
   const needsAck = !!combo.unrated && !acknowledged;
+
+  // Safety tells shared by both variants verbatim — the calculator card compacts
+  // the identity, never the warnings (#433).
+  const needTell = shortDeploy && (
+    /* ×N struts-needed tell (accepted mockup) — the extension-tile anatomy in
+       the danger pair: how many struts this load needs, and the shore type
+       that carries them. */
+    <div className="fs-rec-ext fs-rec-need">
+      <span className="fs-rec-ext-tile fs-rec-need-tile" aria-hidden="true">
+        ×{needed}
+      </span>
+      <div className="fs-rec-ext-amt">
+        <span className="fs-rec-need-word">struts needed for this load</span>
+      </div>
+      <p className="fs-rec-ext-note">
+        One strut is rated {capLb.toLocaleString('en-US')} lb at <MeasurementValue eighths={effectiveEighths} />.{' '}
+        {targetType ? (
+          <>
+            {needed} struts as a <b>{SHORE_TYPE_LABELS[targetType]}</b> carry {perStrutAfter.toLocaleString('en-US')} lbs
+            each — within rating.
+          </>
+        ) : (
+          <>This load needs {needed} struts — plan additional shore sets, or consult rescue engineering.</>
+        )}
+      </p>
+    </div>
+  );
+  const boundaryCaution = combo.boundaryWarning === 'fully-extended' && (
+    <p className="fs-rec-caution">
+      <strong>Fully extended — zero margin.</strong> Strut is at its maximum reach ({combo.adjExtended}″). No room
+      to compensate if the opening grows.
+    </p>
+  );
+  const unratedGate = combo.unrated && (
+    <>
+      <WarningGate use="unrated" acknowledged={acknowledged} onAcknowledge={() => setAcknowledged((a) => !a)} />
+      {combo.unratedReason && <p className="fs-rec-gate-detail">{combo.unratedReason}</p>}
+    </>
+  );
+  const overCapacityGate = combo.exceedsCapacity && (
+    <>
+      <WarningGate use="over-capacity" />
+      {combo.exceedsCapacityReason && <p className="fs-rec-gate-detail">{combo.exceedsCapacityReason}</p>}
+    </>
+  );
+
+  if (variant === 'calculator') {
+    // #433 (accepted mockup qf_result_card_final): stripe · "LS 203 + 24″
+    // extension" headline with the system word right-aligned (a gated card swaps
+    // the tag for the danger badge) · connectors · quiet capacity · safety tail.
+    return (
+      <Card
+        className={`fs-rec fs-rec--calc fs-rec--${sys}${gated ? ' is-gated' : ''}`}
+        edge={<span className="fs-rec-bar" aria-hidden="true" />}
+      >
+        <div className="fs-rec-calc-head">
+          <p className="fs-rec-calc-model">
+            {model}
+            {combo.extensions.length > 0 && ` extension${combo.extensions.length > 1 ? 's' : ''}`}
+          </p>
+          {gated ? (
+            <span className="fs-rec-fit fs-rec-fit--no fs-rec-calc-fit">
+              {combo.unrated ? 'Unrated' : 'Over capacity'}
+            </span>
+          ) : (
+            <span className="fs-rec-calc-sys">
+              {word} · {combo.strut.system}
+            </span>
+          )}
+        </div>
+        {specs.length > 0 && <p className="fs-rec-calc-conn">{specs.join(' · ')}</p>}
+        {showCapacity && <p className="fs-rec-calc-cap">Rated {capLb.toLocaleString('en-US')} lb at this length</p>}
+        {boundaryCaution}
+        {needTell}
+        {unratedGate}
+        {overCapacityGate}
+        <WarningGate use="disclaimer" />
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -256,50 +343,12 @@ export function RecommendationCard({
         )}
       </div>
 
-      {shortDeploy && (
-        /* ×N struts-needed tell (accepted mockup) — the extension-tile anatomy in
-           the danger pair: how many struts this load needs, and the shore type
-           that carries them. */
-        <div className="fs-rec-ext fs-rec-need">
-          <span className="fs-rec-ext-tile fs-rec-need-tile" aria-hidden="true">
-            ×{needed}
-          </span>
-          <div className="fs-rec-ext-amt">
-            <span className="fs-rec-need-word">struts needed for this load</span>
-          </div>
-          <p className="fs-rec-ext-note">
-            One strut is rated {capLb.toLocaleString('en-US')} lb at <MeasurementValue eighths={effectiveEighths} />.{' '}
-            {targetType ? (
-              <>
-                {needed} struts as a <b>{SHORE_TYPE_LABELS[targetType]}</b> carry {perStrutAfter.toLocaleString('en-US')} lbs
-                each — within rating.
-              </>
-            ) : (
-              <>This load needs {needed} struts — plan additional shore sets, or consult rescue engineering.</>
-            )}
-          </p>
-        </div>
-      )}
+      {needTell}
 
-      {combo.boundaryWarning === 'fully-extended' && (
-        <p className="fs-rec-caution">
-          <strong>Fully extended — zero margin.</strong> Strut is at its maximum reach ({combo.adjExtended}″). No room
-          to compensate if the opening grows.
-        </p>
-      )}
+      {boundaryCaution}
 
-      {combo.unrated && (
-        <>
-          <WarningGate use="unrated" acknowledged={acknowledged} onAcknowledge={() => setAcknowledged((a) => !a)} />
-          {combo.unratedReason && <p className="fs-rec-gate-detail">{combo.unratedReason}</p>}
-        </>
-      )}
-      {combo.exceedsCapacity && (
-        <>
-          <WarningGate use="over-capacity" />
-          {combo.exceedsCapacityReason && <p className="fs-rec-gate-detail">{combo.exceedsCapacityReason}</p>}
-        </>
-      )}
+      {unratedGate}
+      {overCapacityGate}
 
       {shortDeploy && onDeploy && (
         /* Short-deploy block (accepted mockup A): the FIX is the primary action —

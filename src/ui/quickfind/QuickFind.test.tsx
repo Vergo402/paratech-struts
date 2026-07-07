@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
 import { QuickFind } from './QuickFind';
 
-// "Required strut length" is the RecommendationCard ledger's last row — one per
-// result card, and (with deductions collapsed) it appears nowhere else on screen.
-const cardCount = () => screen.queryAllByText('Required strut length').length;
+// Calculator cards (#433) carry no deduction ledger — the shared math lives once
+// in the sheet's stat strip — so count cards by their root class instead.
+const cardCount = () => document.querySelectorAll('.fs-rec').length;
 const feetField = () => screen.getByRole('textbox', { name: 'Feet' });
 const inchesField = () => screen.getByRole('textbox', { name: 'Inches' });
 

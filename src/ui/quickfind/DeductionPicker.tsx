@@ -64,8 +64,9 @@ const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
 
 // Disclosure chevron for the collapsible toggle — points down when open, rotates
 // to point right when collapsed (CSS, on the button's aria-expanded). Mirrors the
-// board's `.fs-lane-chevron` idiom (operations.css).
-function LedgerChevron() {
+// board's `.fs-lane-chevron` idiom (operations.css). Exported for Quick Find's
+// own Deductions toggle (#433) — one disclosure anatomy app-wide.
+export function LedgerChevron() {
   return (
     <svg className="fs-ledger-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <path d="M6 8L10 12L14 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -76,8 +77,9 @@ function LedgerChevron() {
 // Option-B collapsed summary (#349): the non-default deductions in build order
 // (Header → plates → Footer), or "No deductions" when every slot is empty. Names
 // the wood size and plate so an auto-applied 6×6 (3-Post) or a non-standard plate
-// announces itself without opening the section.
-function appliedSummary(value: Deductions): string {
+// announces itself without opening the section. Exported for Quick Find's own
+// Deductions toggle (#433) — the two toggles speak identically.
+export function appliedSummary(value: Deductions): string {
   const parts: string[] = [];
   if (value.headerWood !== 'none') parts.push(`Header ${value.headerWood.replace('x', '×')}`);
   if (value.topPlate !== 'none') parts.push(BASE_PLATES.find((p) => p.id === value.topPlate)?.name ?? 'Top plate');

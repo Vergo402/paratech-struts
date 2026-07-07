@@ -1521,6 +1521,46 @@ button.fs-spc-head {
   background: transparent;
 }
 
+/* ---- calculator variant (#433, accepted mockup qf_result_card_final) --------
+   Quick Find's COMPACT result card: identity + connectors + quiet capacity —
+   the shared deduction math lives ONCE in the sheet's stat strip, never here.
+   Left-aligned (the centered header is deploy-mode anatomy); the system word
+   rides the right edge in the stripe's color; a gated card swaps it for the
+   danger badge, rendered in-flow so it can't collide with the headline. */
+.fs-rec-calc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.fs-rec-calc-model {
+  margin: 0;
+  min-width: 0;
+  font: var(--type-body-medium);
+  font-weight: calc(500 + var(--type-weight-bump));
+  color: var(--text-primary);
+}
+.fs-rec-calc-sys {
+  flex-shrink: 0;
+  font: var(--type-caption);
+  color: var(--rec-color);
+  white-space: nowrap;
+}
+.fs-rec-calc-fit {
+  position: static; /* in-flow — takes the sys tag's slot instead of floating */
+  flex-shrink: 0;
+}
+.fs-rec-calc-conn {
+  margin: 0;
+  font: var(--type-body);
+  color: var(--text-secondary);
+}
+.fs-rec-calc-cap {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
 /* ---- assign equipment sheet (#221) ----------------------------------------- */
 .fs-assign-context {
   margin: 0 0 var(--space-2);
