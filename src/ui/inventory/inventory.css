@@ -276,22 +276,31 @@
   background: var(--text-tertiary);
 }
 
+/* running low (≤ ⅓ stock) = orange (runner hue), a warning — NOT gold. Gold on
+   Inventory is the "N deployed" accent alone (craft.md §4/§5). --status-runner-text
+   is the orange ink in dark/light/broadcast; in sunlight that token flips to white
+   (on-banner foreground), so the solid --status-runner-bg carries the orange there. */
 .fs-inv-bar-fill--low {
-  background: var(--accent);
+  background: var(--status-runner-text);
+}
+[data-theme='sunlight'] .fs-inv-bar-fill--low {
+  background: var(--status-runner-bg);
 }
 
 .fs-inv-row-id > .fs-badge {
   margin-top: var(--space-2);
 }
 
+/* out (0 available) = red (danger), the critical state — NOT the amber that read
+   as gold. */
 .fs-inv-chip-out {
   display: inline-flex;
   align-items: center;
   margin-top: var(--space-2);
   padding: 3px 10px;
   border-radius: var(--radius-badge);
-  background: var(--status-cutting-bg);
-  color: var(--status-cutting-text);
+  background: var(--danger-bg);
+  color: var(--danger-text);
   font: var(--type-label);
   font-weight: calc(500 + var(--type-weight-bump));
 }
@@ -346,7 +355,12 @@
 }
 
 .fs-inv-count--out b {
-  color: var(--status-cutting-text);
+  color: var(--danger-text);
+}
+/* Sunlight: --danger-text is white (on-banner); the standalone numeral takes the
+   solid --danger-bg red instead so a "0" never reads as white-on-white. */
+[data-theme='sunlight'] .fs-inv-count--out b {
+  color: var(--danger-bg);
 }
 
 .fs-inv-remove {

@@ -20,7 +20,7 @@ export type BadgeProps =
   | { variant: 'count'; value: number; srLabel?: string }
   | { variant: 'label'; children: ReactNode }
   | { variant: 'severity'; children: ReactNode }
-  | { variant: 'dot'; tone?: 'accent' | 'danger'; text: string };
+  | { variant: 'dot'; tone?: 'accent' | 'danger' | 'warning'; text: string };
 
 function StatusBadge({ status }: { status: ShorePointStatus }) {
   const prev = useRef(status);

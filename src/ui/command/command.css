@@ -352,6 +352,38 @@
 .fs-cmd-stat.is-secured:not([data-zero])  .fs-cmd-stat-count { color: var(--status-secured-text); }
 .fs-cmd-stat.is-returned:not([data-zero]) .fs-cmd-stat-count { color: var(--status-returned-text); }
 
+/* Sunlight fallback (#434 hotfix) — --status-X-text / --danger-text are WHITE
+   (on-banner) in sunlight, so status colors used as STANDALONE ink (the board's
+   3px color keys + colored counts, the org queue numeral, the rollup dots, the
+   danger entry icon) would render white-on-white. They take the solid -bg there
+   instead. Chips that already pair -bg + -text (entry chips, CLEARED, the out
+   chip) stay correct. --status-waiting keeps a dark -text in sunlight, so the
+   'medium' entry icon needs no override. */
+[data-theme='sunlight'] .fs-cmd-stat.is-pending .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-pending { background: var(--status-pending-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-pending:not([data-zero]) .fs-cmd-stat-count { color: var(--status-pending-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-process .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-process { background: var(--status-process-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-process:not([data-zero]) .fs-cmd-stat-count { color: var(--status-process-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-strutset .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-strutset { background: var(--status-strutset-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-strutset:not([data-zero]) .fs-cmd-stat-count { color: var(--status-strutset-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-cutting .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-cutting { background: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-cutting:not([data-zero]) .fs-cmd-stat-count { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-runner .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-runner { background: var(--status-runner-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-runner:not([data-zero]) .fs-cmd-stat-count { color: var(--status-runner-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-secured .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-secured { background: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-secured:not([data-zero]) .fs-cmd-stat-count { color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-returned .fs-cmd-stat-key,
+[data-theme='sunlight'] .fs-rollup-dot.is-returned { background: var(--status-returned-bg); }
+[data-theme='sunlight'] .fs-cmd-stat.is-returned:not([data-zero]) .fs-cmd-stat-count { color: var(--status-returned-bg); }
+[data-theme='sunlight'] .fs-org-node-sps.is-queue,
+[data-theme='sunlight'] .fs-org-node-sps.is-queue .fs-org-node-sps-n { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cmd-entry-icon.is-high { color: var(--danger-bg); }
+
 /* ---- roster ------------------------------------------------------------ */
 .fs-cmd-roster-head {
   padding-bottom: var(--space-2);

@@ -88,6 +88,14 @@
 }
 .fs-badge--dot-accent .fs-badge-dot { background: var(--accent); }
 .fs-badge--dot-danger .fs-badge-dot { background: var(--danger-text); }
+/* warning = a low/approaching-limit signal (orange, the runner status hue). Unlike
+   the info tones it colors the TEXT too — a warning outranks a neutral readout. In
+   sunlight --status-runner-text is white (on-banner), so the standalone dot + text
+   take the solid --status-runner-bg orange there instead. */
+.fs-badge--dot-warning { color: var(--status-runner-text); }
+.fs-badge--dot-warning .fs-badge-dot { background: var(--status-runner-text); }
+[data-theme='sunlight'] .fs-badge--dot-warning { color: var(--status-runner-bg); }
+[data-theme='sunlight'] .fs-badge--dot-warning .fs-badge-dot { background: var(--status-runner-bg); }
 
 /* ---- measurement value (input.md; typography.md §Fractions; ADR-028) ----------
    Eighths render as DIAGONAL fractions: MeasurementValue emits plain "48 1/2″"

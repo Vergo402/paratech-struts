@@ -46,7 +46,7 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
         {out ? (
           <span className="fs-inv-chip-out">all {item.quantity} deployed</span>
         ) : low ? (
-          <Badge variant="dot" tone="accent" text="running low" />
+          <Badge variant="dot" tone="warning" text="running low" />
         ) : (
           deployed > 0 && <Badge variant="dot" tone="accent" text={`${deployed} deployed`} />
         )}

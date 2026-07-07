@@ -43,14 +43,16 @@ buttons had surfaces while equipment rows were bare hairlines.)
 
 ## 4. Depletion bar
 
-A 3px bar under a stock row's identity encodes `available / quantity` pre-attentively:
+A 3px bar under a stock row's identity encodes `available / quantity` pre-attentively.
+Depletion is a **warning ramp, not an accent** — gold on Inventory is the "N deployed"
+chip alone (§5); a low/out row must never read as gold (Alex, 2026-07-07):
 
 - Track `--surface-stroke`; fill `--text-tertiary` (healthy).
-- **Running low** (`available ≤ ⅓ quantity`, still > 0): fill switches to `--accent` and the
-  row may carry a "running low" chip.
-- **Out** (`available = 0`): bare track; the hero numeral and an `all N deployed` chip take
-  `--status-cutting-*` (the attention pair already AA-verified per theme — solid-fill in
-  sunlight by that theme's own rules).
+- **Running low** (`available ≤ ⅓ quantity`, still > 0): fill and the "running low" dot
+  chip switch to **orange** (`--status-runner-*`, the warning tone — the `dot` badge's
+  `warning` tone colors its text too). The hero numeral stays neutral ink until 0.
+- **Out** (`available = 0`): bare track; the hero numeral and the `all N deployed` chip
+  take **red** (`--danger-*`, the critical state).
 - Static this stage; animating the fill is a Stage 3 (#435) candidate under `--motion-status`.
 
 ## 5. Gold budget
