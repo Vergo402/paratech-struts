@@ -3192,3 +3192,32 @@ button.fs-spc-head {
   text-transform: uppercase;
   color: var(--sp-text);
 }
+
+/* Sunlight fallback (standalone-ink sweep) — in [data-theme='sunlight'] every
+   --status-X-text and --danger-text is WHITE (on-banner), so a status/danger
+   token used as STANDALONE ink (colored counts, markers, accent borders) renders
+   white-on-white and vanishes. Each takes the saturated solid -bg there instead.
+   Chips that pair -bg + -text on one element are already correct and are NOT
+   overridden. Two specials: .fs-assign-notice is an INVERSE case (black text on a
+   solid dark pending banner) fixed by making the text white; .fs-divtile-st is the
+   --sp-* family fixed via --sp-solid. Mirrors command.css sunlight cluster. */
+[data-theme='sunlight'] .fs-rec.is-gated { --rec-color: var(--danger-bg); }
+[data-theme='sunlight'] .fs-rec-noext { color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-rec-ns,
+[data-theme='sunlight'] .fs-rec-slot.is-ns .fs-rec-slot-name { color: var(--danger-bg); }
+[data-theme='sunlight'] .fs-rec-caution { border-left-color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-assign-notice { color: var(--status-pending-text); }
+[data-theme='sunlight'] .fs-resolve-piece-offbook { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-chooser-head { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-spc-cutdone { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-spc-returned { color: var(--status-returned-bg); }
+[data-theme='sunlight'] .fs-cutstation-hero { border-color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cutstation-hero-num { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cutstation-hero-cutdone { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cutstation-station-letter { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cutstation-back { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-cutstation-row-num { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-spd-safety--ok { border-left-color: var(--status-secured-bg); }
+[data-theme='sunlight'] .is-depleted .fs-inv-summary-count { color: var(--danger-bg); }
+[data-theme='sunlight'] .is-low .fs-inv-summary-count { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-divtile-st { color: var(--sp-solid); }

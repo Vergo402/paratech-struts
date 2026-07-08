@@ -1,0 +1,690 @@
+{
+  "craftPunchList": [
+    {
+      "screen": "Settings",
+      "severity": "high",
+      "principle": "5 — gold budget (≤2 per view)",
+      "file": "src/ui/settings/settings.css",
+      "line": 116,
+      "issue": ".fs-cke-add ('+ Add step/section' utility links) render in color:var(--accent); they stack with the open-card accent border (.fs-cke-card.is-open :10), the accent 'Customized by…' badge (:29-32) and the gold Save button — an open, customized card shows 4+ simultaneous gold marks, far over the ≤2 budget. §5 requires utility actions to be neutral.",
+      "fix": "Render the '+ Add' links as neutral/tertiary ink; reserve gold for the single primary action plus at most one selection accent per view."
+    },
+    {
+      "screen": "Quick Find",
+      "severity": "high",
+      "principle": "8 — copy carries no plumbing",
+      "file": "src/ui/quickfind/SystemFilter.tsx",
+      "line": 5,
+      "issue": "System-filter chips hardcode v3 color-code jargon as user-facing labels: {key:'gold',label:'Gold'} / {key:'grey',label:'Grey'}. This is §8's canonical example ('Gold (LongShore)'→'LongShore') and the shared SYSTEM_LABELS map already exists; the chip text prints the internal color enum in the results sheet.",
+      "fix": "Route the chip label through SYSTEM_LABELS (Gold→LongShore, Grey→Acme thread) via a sysKey→System lookup; the StrutSysKey stays the dot's color identity but the visible text must be the system name."
+    },
+    {
+      "screen": "Inventory",
+      "severity": "med",
+      "principle": "5 — gold budget (≤2 beyond nav)",
+      "file": "src/ui/inventory/inventory.css",
+      "line": 99,
+      "issue": "'Deployed' is painted gold at two altitudes at once: the stat-strip deployed figure (.fs-inv-stat--accent b→--accent) AND every partially-deployed row's 'N deployed' dot badge (EquipmentRow.tsx:51 tone='accent'). Stacked with the primary 'Add equipment' button and the selected scope tab, a heavily-deployed rig shows 7+ gold moments. Not a hard violation (Inventory is the accepted exemplar) — a consolidation candidate.",
+      "fix": "Confirm with Alex: demote the stat-strip 'deployed' figure to neutral ink (--text-primary) since the per-row chips already carry the status accent — leaving primary + selection + one status-accent family."
+    },
+    {
+      "screen": "Inventory",
+      "severity": "med",
+      "principle": "3 — card anatomy / primitive consistency",
+      "file": "src/ui/inventory/EquipmentRow.tsx",
+      "line": 47,
+      "issue": "The three sibling stock-state chips are built two ways: 'running low' and 'N deployed' use <Badge variant=\"dot\"> but 'all N deployed' (out) is a hand-rolled <span class=\"fs-inv-chip-out\"> with bespoke CSS (off-grid padding 3px 10px). Filled-pill-vs-dot may be a deliberate severity escalation but the divergent implementation is an inconsistency.",
+      "fix": "Confirm the filled-pill escalation is intended; if so, add a solid/danger Badge tone so all three states flow through <Badge> and inherit tokenized padding."
+    },
+    {
+      "screen": "Settings",
+      "severity": "med",
+      "principle": "3 — card anatomy v2 (content out-elevates chrome)",
+      "file": "src/ui/settings/settings.css",
+      "line": 4,
+      "issue": ".fs-cke-card composes only border + border-radius + overflow:hidden — a bare chrome outline. It omits background:var(--surface-card) and the box-shadow lift, so the checklist container is an outlined box rather than an elevated card.",
+      "fix": "Apply the §3 card recipe: surface-card background + a single-token box-shadow with a [data-theme='sunlight'] override (single-token, to avoid the comma-list 'none' drop trap)."
+    },
+    {
+      "screen": "Settings",
+      "severity": "med",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/settings/settings.css",
+      "line": 60,
+      "issue": ".fs-cke-handle drag grip is 28×40px — both dimensions under the 56px hit floor, and it is the sole drag surface for reordering.",
+      "fix": "Keep the 16px grip glyph but extend the touch/hit box to ≥56px via padding / expanded hit box, not by enlarging the visible grip."
+    },
+    {
+      "screen": "Settings",
+      "severity": "med",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/settings/settings.css",
+      "line": 98,
+      "issue": ".fs-cke-text (Edit / Remove / Reset buttons) is --type-caption with only --space-1 vertical padding (~24-28px tall); parent .fs-cke-row min-height is only 44px.",
+      "fix": "Expand these buttons' hit areas to ≥56px via padding / expanded hit box while keeping the light caption weight."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "med",
+      "principle": "8 — copy carries no plumbing",
+      "file": "src/ui/operations/InventorySummary.tsx",
+      "line": 14,
+      "issue": "systemLabel() returns the v3 color-code words 'Gold'/'Grey' and renders them as the system sublabel (.fs-inv-summary-system). systemLabels.ts (SYSTEM_LABELS) exists specifically to kill these.",
+      "fix": "Route the sublabel through SYSTEM_LABELS from @ui/inventory/systemLabels ('LongShore' / 'Acme thread' / 'LockStroke'); never the raw color word."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "med",
+      "principle": "8 — copy carries no plumbing",
+      "file": "src/ui/operations/RecommendationCard.tsx",
+      "line": 60,
+      "issue": "SYS_WORD maps kind→'Gold'/'Grey'/'LockStroke' and renders 'Gold · LongShore' at :248 (the exact 'Gold (LongShore)' pattern §8 rewrites to 'LongShore') and leads the identity headline at :271.",
+      "fix": "Use SYSTEM_LABELS for the leading word (or drop it, since the system name already follows); don't surface the color code."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "med",
+      "principle": "5 — gold budget (≤2 per view)",
+      "file": "src/ui/operations/operations.css",
+      "line": 2948,
+      "issue": "The inventory companion panel floods with accent: .fs-inv-summary-rig-name is accent text + a 2px accent bottom-border PER RIG, and .fs-inv-summary-system is accent text PER ROW. Open alongside the gold FAB and any active filter/division chip, the view carries far more than 2 gold elements.",
+      "fix": "Make the rig name neutral ink with a --surface-stroke divider; demote the per-row system sublabel to --text-secondary."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "med",
+      "principle": "1 & 9 — numerals are the heroes / workstation ramp",
+      "file": "src/ui/operations/operations.css",
+      "line": 1442,
+      "issue": "Data numerals use raw font-size overrides that bypass the mono type-token ramp (stat 17 / hero 22 / display 64): .fs-rec-slot-value + .fs-rec-opening at 1rem (code self-flags 'ramp gap … #435 finesse decides a step'), .fs-spd-hero-num at 2rem (:2585), .fs-spd .fs-rec-effective at 1.0625rem (:2601). The exact off-ramp sizes #435 is meant to resolve.",
+      "fix": "Mint the missing ramp step(s) as type tokens (a body-lg-scale mono for the ledger, a ~32px sub-display for the detail hero) and reference them instead of raw rem."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "med",
+      "principle": "4 — depletion (numeral neutral until 0)",
+      "file": "src/ui/operations/operations.css",
+      "line": 3003,
+      "issue": ".is-low .fs-inv-summary-count colors the low-stock count amber (--status-cutting-text). §4 is explicit: the hero numeral stays neutral ink until 0 — the bar/dot carries the low-warning hue, only 0 goes red. (.is-depleted→--danger-text at :3002 is correct.) Note: the §4 fix (neutral) also removes the standalone-amber sunlight bug flagged at this same line.",
+      "fix": "Keep the low count in neutral ink (put the warning on a bar/dot if wanted); red only at 0. Do NOT swap to runner-orange — §4 wants the numeral neutral, not recolored."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "med",
+      "principle": "3 — card anatomy v2 (content out-elevates chrome)",
+      "file": "src/ui/operations/operations.css",
+      "line": 2225,
+      "issue": ".fs-cutstation-hero (:2225), .fs-cutstation-row (:2369) and .fs-cutstation-stationcard (:2319) all set surface-card + border + radius but carry NO box-shadow — the card-top-highlight/card-shadow lift is absent, so data groups read flat.",
+      "fix": "Add a single-token box-shadow (box-shadow:var(--card-shadow)) plus a [data-theme='sunlight'] override — NOT the comma-list var(--card-top-highlight),var(--card-shadow) form (the whole declaration drops when either token is 'none')."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "med",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/operations/operations.css",
+      "line": 2351,
+      "issue": ".fs-cutstation-back ('‹ Stations', the phone multi-saw back control) has no min-height and only padding:var(--space-1) vertical on 14px text — ~28px hit area. A gloved miss drops the cutter to the wrong screen.",
+      "fix": "Extend the hit box to ≥56px via padding/min-height while keeping the light visual weight."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "med",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/operations/operations.css",
+      "line": 2136,
+      "issue": ".fs-cutstation-saw-chip / .fs-cutstation-saw-add set min-height:44px — the '+ Add saw' button is a real interactive control below the 56px floor (the inline comment even calls them 'Glove-sized hit targets' at 44px).",
+      "fix": "Raise the interactive hit target to ≥56px (padding/expanded hit box) even if the visual pill height stays smaller."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "med",
+      "principle": "6 — one title per screen",
+      "file": "src/ui/operations/operations.css",
+      "line": 2102,
+      "issue": ".fs-cutstation-title renders 'Cutting Station' (and 'Saw A' when scoped) at --type-headline-1 (24px) — the exact scale AppHeader uses for the chrome's screen title. Cutting Station mounts inside OperationsBoard under the Operations route, so the chrome already shows an 'Operations' headline-1; this stacks a second headline-1 beneath it.",
+      "fix": "Demote the in-screen workstation header to headline-2 or a labeled context row so it doesn't read as a second screen title (verify against AppHeader's rendered title in this route)."
+    },
+    {
+      "screen": "Quick Find",
+      "severity": "med",
+      "principle": "1 — numerals are the heroes",
+      "file": "src/ui/quickfind/quickfind.css",
+      "line": 30,
+      "issue": ".fs-meas-field-input (the screen's primary entry numeral) uses a magic 'font:400 34px/1.1 var(--font-mono)' — off the type scale and off the §9 numeral ramp (17/22/64). The #433 token sweep tokenized the ledger's 16px/26px but left the biggest numeral on the screen at raw 34px.",
+      "fix": "Adopt a type token (or mint a documented measurement-input step) instead of raw 34px so the hero numeral rides the same scale."
+    },
+    {
+      "screen": "Command",
+      "severity": "med",
+      "principle": "10 — assignment numerals / §1 numerals are heroes",
+      "file": "src/ui/command/command.css",
+      "line": 1505,
+      "issue": "The NodeSheet's per-apparatus workload figure (.fs-node-sp-total, '{n} total shore points') is styled entirely as --type-caption in --text-tertiary — no bright tabular mono numeral. The same figure on the org node (.fs-org-node-sps-n) correctly wraps the count in --type-body-medium mono/tabular per the §10 anatomy. The same cross-footing number reads two different ways by surface.",
+      "fix": "Give .fs-node-sp-total the §10 anatomy: split the numeral into a bright --type-body-medium --font-mono tabular span (mirror .fs-org-node-sps-n) with the caption words in --text-tertiary."
+    },
+    {
+      "screen": "Command",
+      "severity": "med",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/command/command.css",
+      "line": 1633,
+      "issue": ".fs-assign-row min-height:48px (assign, move-under, My-role, Transfer-recipient picking) and .fs-node-grow min-height:48px (Rename / Add position / Move / Change apparatus) sit below the 56px hit floor with no expanded hit box.",
+      "fix": "Raise these rows' hit area to 56px (min-height or expanded padding/hit box); keep visual density via internal padding rather than a shorter target."
+    },
+    {
+      "screen": "Inventory",
+      "severity": "low",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/inventory/inventory.css",
+      "line": 564,
+      "issue": "Three interactive controls in the ImportFlow sub-flow sit at min-height:44px with no expanded hit box: .fs-import-change > span (:564), .fs-import-skiplink (:632), .fs-import-skipped button undo (:643). All primary Inventory controls are correctly 56px — these misses are confined to the import wizard.",
+      "fix": "Raise the three ImportFlow controls to a 56px hit area (padding/min-height), keeping visual weight lighter if desired."
+    },
+    {
+      "screen": "Inventory",
+      "severity": "low",
+      "principle": "1 / spacing tokens — off-grid raw px",
+      "file": "src/ui/inventory/inventory.css",
+      "line": 322,
+      "issue": "Assorted raw px off the 4px grid: stepper & add-apparatus glyph font-size:20px (:175,322), gap:2px (:134,342,394), bar border-radius:2px (:267-268), chip-out padding 3px 10px (:300). Cosmetic drift — the 3px bar height itself is spec-mandated (§4).",
+      "fix": "Snap gaps to var(--space-*), route the ± glyph through a type/icon token, use a radius token; leave the 3px bar as-is."
+    },
+    {
+      "screen": "Settings",
+      "severity": "low",
+      "principle": "3 — grid / spacing scale",
+      "file": "src/ui/settings/settings.css",
+      "line": 26,
+      "issue": ".fs-cke-badge padding uses a raw 2px off the --space scale (padding:2px var(--space-2)); .fs-cke-drop (:82-87) similarly uses raw 2px/1px.",
+      "fix": "Use --space-1 (or nearest scale step) instead of raw 2px/1px."
+    },
+    {
+      "screen": "Settings",
+      "severity": "low",
+      "principle": "3 — consistency (class-based styling)",
+      "file": "src/ui/settings/FeedbackSheet.tsx",
+      "line": 59,
+      "issue": "The success <p> is styled with an inline style={{ font:'var(--type-body-lg)', padding:'var(--space-3) 0' }} rather than a settings.css class, inconsistent with the rest of the screen.",
+      "fix": "Move the success-message styling into a settings.css rule."
+    },
+    {
+      "screen": "Operations board",
+      "severity": "low",
+      "principle": "3 — card anatomy / theming",
+      "file": "src/ui/operations/operations.css",
+      "line": 211,
+      "issue": ".fs-ops-fab hardcodes box-shadow:0 6px 18px rgba(0,0,0,0.4) instead of a --shadow-* token, so it won't adapt per theme (broadcast renders no fills; sunlight is a light theme where a heavy black drop shadow reads wrong).",
+      "fix": "Use a shadow token (e.g. --shadow-modal / a FAB-appropriate token) with a sunlight/broadcast-aware value."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "low",
+      "principle": "1 — numerals are the heroes",
+      "file": "src/ui/operations/operations.css",
+      "line": 2118,
+      "issue": ".fs-cutstation-count ('3 cuts in queue') renders the workload as a --type-body-medium sentence; the '3' is not promoted to a --type-mono-stat figure the way §1/§2 treat top-of-screen tallies.",
+      "fix": "Promote the queue count to a tabular mono-stat figure with a caption label (or fold it into a small stat line)."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "low",
+      "principle": "9 — workstation heroes (one display numeral)",
+      "file": "src/ui/operations/operations.css",
+      "line": 2255,
+      "issue": "In the multi-saw desktop layout each saw hero renders its own 64px --type-mono-display numeral, so 2-3 display numerals appear at once — §9 states 'At most one display numeral on screen.' Defensible as one-per-workstation but a literal deviation worth a conscious decision.",
+      "fix": "Confirm the multi-saw exception is intended, or step non-active saw heroes down a size so only the focused cut is the display numeral."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "low",
+      "principle": "3 — off-grid spacing",
+      "file": "src/ui/operations/operations.css",
+      "line": 2111,
+      "issue": ".fs-cutstation-newbadge uses raw '2px' vertical padding (padding:2px var(--space-2)) — off the --space scale.",
+      "fix": "Use a --space token (or center via line-height) instead of raw 2px."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "low",
+      "principle": "1 — tidiness / redundant declarations",
+      "file": "src/ui/operations/operations.css",
+      "line": 2257,
+      "issue": "font-variant-numeric:diagonal-fractions tabular-nums is redundantly declared on the numeral wrappers .fs-cutstation-hero-num (:2257), .fs-cutstation-station-now (:2342) and .fs-cutstation-row-num (:2398); .fs-meas already applies it (primitives.css:111). Harmless but duplicated.",
+      "fix": "Drop the redundant declarations and rely on .fs-meas."
+    },
+    {
+      "screen": "Cutting Station",
+      "severity": "low",
+      "principle": "3 — tidiness / semantic class reuse",
+      "file": "src/ui/operations/CuttingStation.tsx",
+      "line": 442,
+      "issue": "The empty up-next line reuses .fs-cutstation-row-where (a row-subtitle class) and pins spacing with an inline style={{ padding:'var(--space-2)' }} rather than a dedicated empty-line class.",
+      "fix": "Give the empty-state line its own class and move the padding into CSS."
+    },
+    {
+      "screen": "Quick Find",
+      "severity": "low",
+      "principle": "6 — one title per screen",
+      "file": "src/ui/quickfind/QuickFind.tsx",
+      "line": 152,
+      "issue": "The desktop-rail title <h1 className=\"fs-qf-title\"> is styled with an inline style={{ font:'var(--type-headline-1)' }} — there is NO .fs-qf-title rule in quickfind.css. Every other element is class-styled; the lone inline font is an inconsistency.",
+      "fix": "Add a .fs-qf-title rule in quickfind.css and drop the inline style attribute."
+    },
+    {
+      "screen": "Quick Find",
+      "severity": "low",
+      "principle": "2 — stat strip (labeling drift)",
+      "file": "src/ui/quickfind/quickfind.css",
+      "line": 237,
+      "issue": "The .fs-qf-strip block is documented as 'the stat strip (#433)' but renders as a bordered box of vertical label/value rows — a calculation ledger, not a §2 stat strip ('no card, no border, whitespace-separated'). Also not §3 card anatomy v2. The construct is fine; the 'stat strip' label is a misnomer.",
+      "fix": "Relabel the comments to 'calculation ledger'; the boxing itself is intentional and correct as a ledger echo of the raw-opening row."
+    },
+    {
+      "screen": "Quick Find",
+      "severity": "low",
+      "principle": "token discipline — off-grid spacing",
+      "file": "src/ui/quickfind/quickfind.css",
+      "line": 138,
+      "issue": "Raw-px spacing off the --space scale: .fs-ledger-toggle-text { gap:1px } (:138) and .fs-ledger-approx { margin-right:2px } (:103). Hairline-scale tidiness only.",
+      "fix": "Either accept as documented sub-token nudges or replace with the nearest --space token."
+    },
+    {
+      "screen": "Command",
+      "severity": "low",
+      "principle": "7 — tap targets ≥56px",
+      "file": "src/ui/command/command.css",
+      "line": 1491,
+      "issue": "A cluster of hand-rolled controls are 44px physical with no expanded hit box: .fs-node-clear 44×44 (:1491), .fs-node-back min-height:44px (:1572), .fs-org-full-close 44×44 (:1247), .fs-classsel-chip min-height:44px (:1137), plus .fs-org-myrole/.fs-org-fullscreen (~34px). The .fs-node-clear comment literally reads '44px hit floor (craft.md §7)' — §7 sets the floor at 56px, not 44px.",
+      "fix": "Extend each to a ≥56px hit target via padding/negative-margin hit box (the glyph can stay small), and correct the misleading '44px hit floor' comment."
+    },
+    {
+      "screen": "Command",
+      "severity": "low",
+      "principle": "5 — gold budget (≤2 per view beyond nav)",
+      "file": "src/ui/command/command.css",
+      "line": 267,
+      "issue": "On the desktop Command Deck the single IC-identity accent renders as TWO gold marks: the rail's .fs-cmd-ic-name gold underline (:267) and the org chart's .fs-org-node.is-ic gold border+title+dot (:737-746) both on screen; add the pending-sync accent figure and it reaches three, with the primary-action slot empty. Defensible as one concept shown twice but at/over the ≤2 budget for the Deck.",
+      "fix": "Decide whether the rail underline or the org node carries IC gold on the Deck (demote the other to neutral), or explicitly bless the duplication in craft.md §5 as an IC-identity exception."
+    },
+    {
+      "screen": "Command",
+      "severity": "low",
+      "principle": "1 — numerals are heroes (tabular)",
+      "file": "src/ui/command/command.css",
+      "line": 1739,
+      "issue": "ICS-201 brief datum values (.fs-201-value) render numeric datums — 'Elapsed', 'Open hazards', 'Shore points: 3 set · 12 total' — in --type-body (sans, non-tabular) with no mono/tabular treatment. A compact snapshot so the miss is minor, but inconsistent with §1 for the live count figures.",
+      "fix": "Optionally give the numeric datum values --font-mono/tabular-nums (or promote the count to a mono figure) so the 201 numerals match the screen's numeral voice."
+    }
+  ],
+  "emptyStateKeepInline": [
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/ShorePointDetail.tsx",
+      "copy": "No equipment on record.",
+      "reason": "Micro-copy inside a populated shore-point detail panel (the BOM section), not a standalone region — inline is correct."
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/ShorePointDetail.tsx",
+      "copy": "No history yet.",
+      "reason": "Micro-copy inside the detail panel's timeline section; a one-liner in an otherwise-full card, keep inline."
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/OpsHeaderMeta.tsx",
+      "copy": "Set role",
+      "reason": "Slot placeholder in the header persona pill, not a region — belongs inline."
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/CuttingStation.tsx",
+      "copy": "Nothing waiting — this is the last cut. / Nothing waiting — every cut is claimed.",
+      "reason": "Micro-copy for the up-next row subtitle; a per-row one-liner, not a full region."
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/CuttingStation.tsx",
+      "copy": "No cut claimed — this saw is free.",
+      "reason": "Slot text in the hero 'where' line; fills a single slot, keep inline."
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/CuttingStation.tsx",
+      "copy": "Idle — no cut claimed",
+      "reason": "Slot text in the station-now line; a placeholder in one field, not a region."
+    },
+    {
+      "screen": "Quick Find",
+      "file": "src/ui/quickfind/DeductionPicker.tsx",
+      "copy": "No deductions",
+      "reason": "Micro-copy in the ledger toggle-state; a one-liner echo, keep inline."
+    },
+    {
+      "screen": "Quick Find",
+      "file": "src/ui/quickfind/QuickFind.tsx",
+      "copy": "None — tap to add",
+      "reason": "Slot placeholder for the deductions field, not a full empty region — inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/CommandRail.tsx",
+      "copy": "No resources assigned yet.",
+      "reason": "Micro-copy in the rail roster list; a short list-empty line, keep inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/NodeSheet.tsx",
+      "copy": "Unassigned",
+      "reason": "Slot placeholder for an empty node assignment; a single-word field state, inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/NodeSheet.tsx",
+      "copy": "No history yet.",
+      "reason": "Micro-copy in the node-sheet timeline section; a one-liner in a populated sheet."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/HazardLog.tsx",
+      "copy": "None open — all hazards mitigated.",
+      "reason": "Micro-copy in the hazard list (a positive all-clear state), not a full region — inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/TransferCommand.tsx",
+      "copy": "No one else is assigned yet — type a name below.",
+      "reason": "Micro-copy guiding an inline input; belongs adjacent to the field, keep inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/AddPositionForm.tsx",
+      "copy": "Nothing reports under a {kind}.",
+      "reason": "Micro-copy in the form's subordinate list; a contextual one-liner, inline."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/AddPositionForm.tsx",
+      "copy": "No roles in this class yet — add one below.",
+      "reason": "Micro-copy guiding an inline add action; belongs beside the control, keep inline."
+    }
+  ],
+  "emptyStatePromotions": [
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/OperationsBoard.tsx",
+      "line": 1402,
+      "copy": "No shore points"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/OperationsBoard.tsx",
+      "line": 1423,
+      "copy": "No shore points"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/InventorySummary.tsx",
+      "line": 91,
+      "copy": "No inventory on file"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/PastOperationView.tsx",
+      "line": 94,
+      "copy": "No shore points were added to this incident."
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/SitStatRollup.tsx",
+      "line": 85,
+      "copy": "No shore points yet."
+    }
+  ],
+  "motionFixes": [
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 134,
+      "value": "transition: width 1s linear",
+      "recommendation": "#435 decision — DELETE the transition and snap the width to its computed value each tick. This also fixes the reduced-motion escape: the literal 1s bypasses the :1200-1205 reduce guard (only .fs-org-node/.fs-org-gap-bar are covered) so the OP bar keeps animating for reduced-motion users."
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1935,
+      "value": "transition: all 160ms var(--ease-micro)",
+      "recommendation": "Snap 160ms to var(--motion-transition) (180ms, nearest on-scale step) and name the animated props (width, border-radius, opacity) instead of `all`."
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 2001,
+      "value": "animation-delay: calc(var(--i,0) * 45ms)",
+      "recommendation": "Draw the per-card stagger increment from a documented motion token (mint --motion-stagger) rather than raw 45ms; leave the animation duration on var(--motion-status). Do not snap to 100ms — too large for a per-card stagger."
+    }
+  ],
+  "statStripVerdict": {
+    "drifted": true,
+    "evidence": "Only the value-figure font is shared; orientation, label token, casing, and states all diverge. Container: ops .fs-ops-stats = display:flex; gap:var(--space-5); padding-top:var(--space-1); no wrap. command .fs-cmd-stats = display:flex; flex-wrap:wrap; column-gap:var(--space-5); row-gap:var(--space-1). Figure orientation (biggest divergence): ops .fs-ops-stat = flex-direction:column; gap:1px (value stacked ABOVE label); command .fs-cmd-statfig = inline-flex; align-items:baseline; gap:var(--space-1) (value BESIDE label). Value: both var(--type-mono-stat)+tabular-nums+--text-primary — identical; but command adds [data-zero]→--text-tertiary dim and a --accent variant that ops lacks. Label: ops .fs-ops-stat-k = var(--type-label)+letter-spacing:0.06em+text-transform:uppercase; command .fs-cmd-stat-k = var(--type-caption), no tracking, no uppercase. A shared StatStrip primitive would need to reconcile figure orientation (column-stack vs inline-baseline), label token (label-uppercase-tracked vs caption-plain), and command's zero-dim + accent states — so the StatStrip build is ON, not skipped."
+  },
+  "sunlightBugs": [
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2256,
+      "selector": ".fs-cutstation-hero-num",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2231,
+      "selector": ".fs-cutstation-hero",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2278,
+      "selector": ".fs-cutstation-hero-cutdone",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2337,
+      "selector": ".fs-cutstation-station-letter",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2357,
+      "selector": ".fs-cutstation-back",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Cutting Station",
+      "file": "src/ui/operations/operations.css",
+      "line": 2397,
+      "selector": ".fs-cutstation-row-num",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1180,
+      "selector": ".fs-rec.is-gated { --rec-color }",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1458,
+      "selector": ".fs-rec-ns, .fs-rec-slot.is-ns .fs-rec-slot-name",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1482,
+      "selector": ".fs-rec-caution",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1320,
+      "selector": ".fs-rec-noext",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1671,
+      "selector": ".fs-resolve-piece-offbook",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1694,
+      "selector": ".fs-chooser-head",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 2069,
+      "selector": ".fs-spc-cutdone",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 2076,
+      "selector": ".fs-spc-returned",
+      "token": "--status-returned-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 2625,
+      "selector": ".fs-spd-safety--ok",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 3002,
+      "selector": ".is-depleted .fs-inv-summary-count",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 3003,
+      "selector": ".is-low .fs-inv-summary-count",
+      "token": "--status-cutting-text"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 3193,
+      "selector": ".fs-divtile-st",
+      "token": "--sp-text (not remapped in sunlight; only --sp-solid is)"
+    },
+    {
+      "screen": "Operations board",
+      "file": "src/ui/operations/operations.css",
+      "line": 1595,
+      "selector": ".fs-assign-notice",
+      "token": "--status-pending-bg (+ --text-primary) — inverse dark-on-dark"
+    },
+    {
+      "screen": "Quick Find",
+      "file": "src/ui/quickfind/quickfind.css",
+      "line": 115,
+      "selector": ".fs-ledger-effective--danger .fs-ledger-value",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 711,
+      "selector": ".fs-org-node-dot",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1851,
+      "selector": ".fs-rollup-row.is-lagging .fs-rollup-div",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1855,
+      "selector": ".fs-rollup-alert",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1009,
+      "selector": ".fs-org-node.is-valid",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1028,
+      "selector": ".fs-org-node.is-splitting::after",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1058,
+      "selector": ".fs-org-gap.is-hot .fs-org-gap-bar",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1088,
+      "selector": ".fs-org-ghost-action.is-lead",
+      "token": "--status-secured-text"
+    },
+    {
+      "screen": "Command",
+      "file": "src/ui/command/command.css",
+      "line": 1091,
+      "selector": ".fs-org-ghost-action.is-child",
+      "token": "--status-runner-text"
+    },
+    {
+      "screen": "Inventory",
+      "file": "src/ui/inventory/inventory.css",
+      "line": 538,
+      "selector": ".fs-import-need",
+      "token": "--danger-text"
+    },
+    {
+      "screen": "Settings",
+      "file": "src/ui/settings/settings.css",
+      "line": 108,
+      "selector": ".fs-cke-text.is-danger",
+      "token": "--danger-text"
+    }
+  ],
+  "topRecommendations": [
+    "Land the sunlight white-on-white ink fixes first (30 bugs across all 6 screens) — fold them into the in-flight sunlight-fix commit. These are field-safety tells that vanish under glare: the Cutting Station 64px cut-length numeral + hero border, the over-capacity/gated recommendation bars, the lagging-Division ⚠ + border (whose own comment relies on the ⚠ still carrying the message), and the assigned org-node dot (which also inverts salience vs the still-visible staged dot). Pattern: pair every standalone --*-text ink with a [data-theme='sunlight'] override to the matching --*-bg, mirroring the command.css :362-393 exemplar cluster; the .fs-assign-notice one is the inverse (dark-on-dark) and should switch to --sp-text on --sp-bg.",
+    "Mint the missing mono type-ramp step(s) and route every off-ramp data numeral through them — Quick Find's 34px measurement input, the Ops rec-ledger 1rem + detail-hero 2rem figures, and the Cutting queue count. This is the exact numeral-ramp gap #435 was named to close, and the code already self-flags the 1rem ledger for it.",
+    "Kill the v3 color-code copy leak (§8) at all three sites — SystemFilter chips (high, user-visible in the results sheet), InventorySummary sublabel, and RecommendationCard identity — by routing through the existing SYSTEM_LABELS map (Gold→LongShore, Grey→Acme thread); never surface the internal color enum.",
+    "Rein in the blown gold budget (§5): promote the Settings '+ Add' utility links to neutral (high), demote the Ops inventory-companion per-rig/per-row accent to neutral+divider, and get Alex's call on the Inventory deployed-at-two-altitudes and Command IC-gold-twice consolidations.",
+    "Apply the Card Anatomy v2 elevation recipe (single-token box-shadow + sunlight override — never the comma-list form that drops when a token is 'none') to the flat border-only containers: the Settings checklist card and all three Cutting Station cards, so content out-elevates chrome.",
+    "Bundle the housekeeping: raise every sub-56px tap target to the floor (Settings drag grip + Edit/Remove, Cutting back + saw chips, Command assign/grow rows + 44px cluster, Inventory ImportFlow), promote the 5 full-region empty states to the EmptyState primitive, delete the .fs-cmd-op-fill 1s-linear transition (snap width; also fixes the reduced-motion escape) and snap the two off-scale Ops motion values, and — since the two stat-strip recipes have genuinely drifted (column-stack + uppercase label vs inline-baseline + caption label) — reconcile them into the shared StatStrip primitive."
+  ]
+}

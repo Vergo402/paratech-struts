@@ -383,6 +383,24 @@
 [data-theme='sunlight'] .fs-org-node-sps.is-queue,
 [data-theme='sunlight'] .fs-org-node-sps.is-queue .fs-org-node-sps-n { color: var(--status-cutting-bg); }
 [data-theme='sunlight'] .fs-cmd-entry-icon.is-high { color: var(--danger-bg); }
+/* rollup totals-row per-status counts are standalone colored ink too (no chip) */
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-pending  { color: var(--status-pending-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-process  { color: var(--status-process-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-strutset { color: var(--status-strutset-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-cutting  { color: var(--status-cutting-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-runner   { color: var(--status-runner-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-secured  { color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-rollup-allrow .fs-rollup-cell.col-returned { color: var(--status-returned-bg); }
+/* Sunlight fallback (cont.) — org status dot, drag-state inks, and the rollup
+   danger flags are standalone -text ink too (WHITE in sunlight) → take the -bg. */
+[data-theme='sunlight'] .fs-org-node-dot { background: var(--status-secured-bg); box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-secured-bg) 18%, transparent); }
+[data-theme='sunlight'] .fs-org-node.is-valid { border-color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-org-node.is-splitting::after { border-top-color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-org-gap.is-hot .fs-org-gap-bar { background: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-org-ghost-action.is-lead { color: var(--status-secured-bg); }
+[data-theme='sunlight'] .fs-org-ghost-action.is-child { color: var(--status-runner-bg); }
+[data-theme='sunlight'] .fs-rollup-row.is-lagging .fs-rollup-div { border-left-color: var(--danger-bg); }
+[data-theme='sunlight'] .fs-rollup-alert { color: var(--danger-bg); }
 
 /* ---- roster ------------------------------------------------------------ */
 .fs-cmd-roster-head {

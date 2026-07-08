@@ -113,6 +113,8 @@
   font-variant-numeric: diagonal-fractions tabular-nums; /* restated AFTER font (shorthand resets it) */
 }
 .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-text); }
+/* Sunlight: --danger-text is white; the standalone over-cut value takes --danger-bg. */
+[data-theme='sunlight'] .fs-ledger-effective--danger .fs-ledger-value { color: var(--danger-bg); }
 
 /* Collapsible disclosure (#349, Add Shore Point only) — tucks the editable pickers
    behind a toggle; the Required strut length + summary + danger warning stay put. */

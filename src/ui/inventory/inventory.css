@@ -536,6 +536,9 @@
 }
 .fs-import-sub { font: var(--type-body); color: var(--text-secondary); margin: 0 0 var(--space-3); line-height: 1.45; }
 .fs-import-need { font: var(--type-caption); color: var(--danger-text); margin: 0 0 var(--space-3); }
+/* Sunlight: --danger-text is white (on-banner); the standalone caption takes the
+   solid --danger-bg red instead so the "needs" note never reads white-on-white. */
+[data-theme='sunlight'] .fs-import-need { color: var(--danger-bg); }
 
 /* step 1 — file pick + preview */
 .fs-import-filebtn, .fs-import-change { position: relative; display: inline-block; border-radius: var(--radius-button); }

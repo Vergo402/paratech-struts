@@ -151,3 +151,7 @@
   padding: 0 var(--space-3) var(--space-3);
   text-align: right;
 }
+
+/* Sunlight: --danger-text is white (on-banner); the standalone danger action
+   text takes the solid --danger-bg red so it never reads white-on-white. */
+[data-theme='sunlight'] .fs-cke-text.is-danger { color: var(--danger-bg); }
