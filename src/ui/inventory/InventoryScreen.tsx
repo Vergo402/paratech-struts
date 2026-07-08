@@ -151,7 +151,7 @@ export function InventoryScreen() {
         <span className="fs-inv-stat">
           <b>{stats.onHand}</b> on hand
         </span>
-        <span className="fs-inv-stat fs-inv-stat--accent">
+        <span className="fs-inv-stat">
           <b>{stats.deployed}</b> deployed
         </span>
         <span className="fs-inv-stat">

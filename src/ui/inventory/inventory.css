@@ -96,9 +96,9 @@
   color: var(--text-primary);
 }
 
-.fs-inv-stat--accent b {
-  color: var(--accent);
-}
+/* #435: 'deployed' is neutral in the stat strip — the per-row 'N deployed' chips
+   already carry that status accent, so a second gold here blew the §5 budget (Alex
+   2026-07-08). The stat figure inherits the base neutral .fs-inv-stat b. */
 
 /* ---- apparatus scope (tablist) + trailing add-apparatus chip ---- */
 .fs-inv-scope-row {

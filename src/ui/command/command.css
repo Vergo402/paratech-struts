@@ -263,12 +263,13 @@
   min-width: 0;
 }
 .fs-cmd-ic-name {
+  /* #435: the IC's gold lives ONCE on Command now — the org-chart IC node (Alex
+     2026-07-08). The rail IC row is marked by its 'Incident Commander' eyebrow + the
+     larger headline name, not a second gold underline. */
   display: inline-block;
   margin-top: 3px;
   font: var(--type-headline-1);
   color: var(--text-primary);
-  border-bottom: 3px solid var(--accent);
-  padding-bottom: 3px;
 }
 .fs-cmd-staff-name {
   display: block;
