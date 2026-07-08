@@ -4,6 +4,7 @@ import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
 import { SHORE_TYPE_FOR_STRUTS, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
 import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
+import { SYSTEM_LABELS } from '../inventory/systemLabels';
 
 /**
  * RecommendationCard — the result card (card.md §RecommendationCard; restyled
@@ -55,9 +56,6 @@ export interface RecommendationCardProps {
   variant?: 'deploy' | 'calculator';
 }
 
-/** Face identity word — keyed off the strut SYSTEM, not its color: a LockStroke
- *  strut is physically grey but earns its own cyan word (S12 §3.1). */
-const SYS_WORD = { gold: 'Gold', grey: 'Grey', lockstroke: 'LockStroke' } as const;
 
 /** "LS 203" or "LS 203 + 12″" — the deployed-strut identity string (card.md cradle-to-grave). */
 export function comboModel(combo: StrutCombination): string {
@@ -147,7 +145,7 @@ export function RecommendationCard({
   // Identity keys off the SYSTEM: LockStroke struts are grey-colored but carry
   // their own cyan word + stripe (sysKeyOf in struts.ts — every lk-* is color:'grey').
   const sys = sysKeyOf(combo.strut.system, color);
-  const word = SYS_WORD[sys];
+  const word = SYSTEM_LABELS[combo.strut.system]; // the system NAME, never the v3 color code (§8)
   const model = comboModel(combo);
   const specs = connectorSpecs(deductions);
 
@@ -245,9 +243,7 @@ export function RecommendationCard({
               {combo.unrated ? 'Unrated' : 'Over capacity'}
             </span>
           ) : (
-            <span className="fs-rec-calc-sys">
-              {word} · {combo.strut.system}
-            </span>
+            <span className="fs-rec-calc-sys">{word}</span>
           )}
         </div>
         {specs.length > 0 && <p className="fs-rec-calc-conn">{specs.join(' · ')}</p>}

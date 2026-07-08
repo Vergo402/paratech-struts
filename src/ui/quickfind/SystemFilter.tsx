@@ -1,10 +1,13 @@
 import { useId } from 'react';
 import type { StrutSysKey } from '@core/load';
+import { SYSTEM_LABELS } from '../inventory/systemLabels';
 
+// The dot color keys off the StrutSysKey (field identity); the LABEL is the system
+// name, never the v3 color code (craft.md §8 — "Gold"→"LongShore", "Grey"→"Acme thread").
 const SYSTEMS: readonly { key: StrutSysKey; label: string }[] = [
-  { key: 'gold', label: 'Gold' },
-  { key: 'grey', label: 'Grey' },
-  { key: 'lockstroke', label: 'LockStroke' },
+  { key: 'gold', label: SYSTEM_LABELS.LongShore },
+  { key: 'grey', label: SYSTEM_LABELS.AcmeThread },
+  { key: 'lockstroke', label: SYSTEM_LABELS.LockStroke },
 ];
 
 export interface SystemFilterProps {

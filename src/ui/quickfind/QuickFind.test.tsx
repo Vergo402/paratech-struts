@@ -34,8 +34,8 @@ describe('QuickFind', () => {
     await user.click(screen.getByRole('button', { name: 'Find Struts' }));
     const all = cardCount();
     expect(all).toBeGreaterThan(0);
-    // Keep only Grey (AcmeThread) — gold + LockStroke cards drop out.
-    await user.click(screen.getByRole('button', { name: 'Grey' }));
+    // Keep only Acme thread (AcmeThread) — LongShore + LockStroke cards drop out.
+    await user.click(screen.getByRole('button', { name: 'Acme thread' }));
     const greyOnly = cardCount();
     expect(greyOnly).toBeGreaterThan(0);
     expect(greyOnly).toBeLessThan(all);

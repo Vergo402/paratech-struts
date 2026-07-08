@@ -60,11 +60,11 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     const { container } = render(
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
     );
-    // Identity = system WORD (gold→"Gold") + model; the product/type name is gone.
+    // Identity = system NAME (LongShore, never the "Gold" color code — §8) + model.
     const identity = container.querySelector('.fs-rec-identity')!;
-    expect(identity.textContent).toContain('Gold');
+    expect(identity.textContent).toContain('LongShore');
     expect(identity.textContent).toContain('LS 304');
-    expect(identity.querySelector('b')!.textContent).toBe('Gold');
+    expect(identity.querySelector('b')!.textContent).toBe('LongShore');
     expect(screen.queryByText('GOLD — LONGSHORE')).not.toBeInTheDocument();
     // The adjusted-range header value is gone from the face (survives in ext-alone).
     expect(screen.queryByText('36″ – 50″')).not.toBeInTheDocument();

@@ -3,6 +3,7 @@ import { STRUTS } from '@core/load';
 import type { InventoryItem } from '@core/schema';
 import type { Apparatus } from '@core/schema';
 import { itemLabel } from '../inventory/EquipmentRow';
+import { SYSTEM_LABELS } from '../inventory/systemLabels';
 import { EmptyState } from '@ui/primitives';
 
 type Tone = 'depleted' | 'low' | 'ok';
@@ -12,7 +13,9 @@ type Tone = 'depleted' | 'low' | 'ok';
 // LongShore = Gold). Extensions carry a system too; plates are always "Plate".
 function systemLabel(item: InventoryItem): string {
   if (item.type === 'plate') return 'Plate';
-  return item.system === 'LongShore' ? 'Gold' : 'Grey';
+  // The system name, never the v3 color code (§8). Extensions carry no system — the
+  // old code mislabeled them "Grey"; a blank sublabel is honest (data has no system).
+  return item.system ? SYSTEM_LABELS[item.system] : '';
 }
 
 interface ItemRow {

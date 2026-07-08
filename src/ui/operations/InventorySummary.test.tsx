@@ -30,10 +30,10 @@ describe('InventorySummary', () => {
     expect(count.closest('.fs-inv-summary-row')?.classList.contains('is-depleted')).toBe(true);
   });
 
-  it('shows the system sub-label (Grey / Gold / Plate)', () => {
+  it('shows the system sub-label (Acme thread / LongShore / Plate)', () => {
     render(<InventorySummary items={items} roster={roster} />);
-    expect(screen.getByText('Grey')).toBeDefined(); // AcmeThread strut
-    expect(screen.getByText('Gold')).toBeDefined(); // LongShore strut
+    expect(screen.getByText('Acme thread')).toBeDefined(); // AcmeThread strut
+    expect(screen.getByText('LongShore')).toBeDefined(); // LongShore strut
     expect(screen.getByText('Plate')).toBeDefined(); // base plate
   });
 
