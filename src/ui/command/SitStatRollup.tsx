@@ -3,6 +3,7 @@ import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { rollupByDivision, type RollupRow } from '@core/command/sitstat-rollup';
 import { useShorePoints } from '@ui/hooks';
+import { EmptyState } from '@ui/primitives';
 import { SHORE_TYPE_LABELS } from '@ui/operations/ShorePointCard';
 import { AlertIcon, CaretIcon } from './icons';
 
@@ -82,7 +83,13 @@ export function SitStatRollup() {
   );
 
   if (rollup.rows.length === 0) {
-    return <p className="fs-rollup-empty">No shore points yet.</p>;
+    return (
+      <EmptyState
+        variant="first-run"
+        headline="No shore points yet"
+        reason="The division rollup fills in as shore points are added in Operations."
+      />
+    );
   }
 
   return (

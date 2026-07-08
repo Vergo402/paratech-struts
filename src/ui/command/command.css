@@ -1897,8 +1897,3 @@
 .fs-rollup-allrow .fs-rollup-cell.col-runner   { color: var(--status-runner-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-secured  { color: var(--status-secured-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-returned { color: var(--status-returned-text); }
-.fs-rollup-empty {
-  margin: 0;
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}

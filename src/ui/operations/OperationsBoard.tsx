@@ -1181,6 +1181,25 @@ export function OperationsBoard() {
   const activePointCount = shorePoints.filter((sp) => sp.deletedAt == null).length;
   const crewCount = apparatusPresent.length;
 
+  // #435: the board's empty-region promotion (empty-state.md — one geometry, system-
+  // wide). Filtered vs first-run carry different next steps: clear the filters, or add
+  // the first point. Icon-less, matching the app's other empty states.
+  const boardEmpty = hasActiveFilters ? (
+    <EmptyState
+      variant="filtered"
+      headline="No shore points match"
+      reason="Clear the filters to see the rest of the board."
+      action={{ label: 'Clear filters', onPress: clearAllFilters }}
+    />
+  ) : (
+    <EmptyState
+      variant="first-run"
+      headline="No shore points yet"
+      reason="Add the first shore point to start tracking this operation."
+      action={canManageOps ? { label: 'Add shore point', onPress: () => setSpModal({ mode: 'create' }) } : undefined}
+    />
+  );
+
   // The Operations ↔ Cutting Station scope toggle (#222 / 21-cutting-station.md) —
   // a workstation under Operations, not a sixth tab (ADR-008 / ADR-014). Rendered
   // ONCE: inline in the header on desktop (a compact top-right switch), or as a
@@ -1420,7 +1439,7 @@ export function OperationsBoard() {
 
       {layout === 'division' ? (
         divisionBands.length === 0 ? (
-          <p className="fs-lane-empty">No shore points</p>
+          boardEmpty
         ) : (
           <DivisionView bands={divisionBands} onOpenDetail={openDetail} flagOf={capacityFlagOf} />
         )
@@ -1441,7 +1460,7 @@ export function OperationsBoard() {
       ) : (
         <div className="fs-ops-list" role="list">
           {listItems.length === 0 ? (
-            <p className="fs-lane-empty">No shore points</p>
+            boardEmpty
           ) : listSort === 'status' ? (
             // Status sort → status-divided sections (the prototype look): a thin
             // divider (colored square + short label + count) then the compact rows.

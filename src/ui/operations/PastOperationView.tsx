@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { newId } from '@core/id';
-import { Badge, Button, Modal, SideDrawer } from '@ui/primitives';
+import { Badge, Button, EmptyState, Modal, SideDrawer } from '@ui/primitives';
 import { useArchivedOperation, useCommit, useDeviceUid } from '@ui/hooks';
 import { ShorePointCard, shorePointDrawerTitle } from './ShorePointCard';
 import { ShorePointDetail } from './ShorePointDetail';
@@ -91,7 +91,13 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         );
       })}
 
-      {points.length === 0 && <p className="fs-archive-empty">No shore points were added to this incident.</p>}
+      {points.length === 0 && (
+        <EmptyState
+          variant="first-run"
+          headline="No shore points recorded"
+          reason="This incident was archived without any shore points."
+        />
+      )}
 
       <div className="fs-archive-actions">
         <Button variant="secondary" onPress={() => setConfirmOpen(true)}>

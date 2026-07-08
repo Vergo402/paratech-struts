@@ -3,6 +3,7 @@ import { STRUTS } from '@core/load';
 import type { InventoryItem } from '@core/schema';
 import type { Apparatus } from '@core/schema';
 import { itemLabel } from '../inventory/EquipmentRow';
+import { EmptyState } from '@ui/primitives';
 
 type Tone = 'depleted' | 'low' | 'ok';
 
@@ -88,7 +89,13 @@ export function InventorySummary({ items, roster }: Props) {
   }, [items, rosterIds, rosterById]);
 
   if (groups.length === 0) {
-    return <p className="fs-inv-summary-empty">No inventory on file</p>;
+    return (
+      <EmptyState
+        variant="first-run"
+        headline="No inventory on file"
+        reason="Add equipment in the Inventory tab to source deployments here."
+      />
+    );
   }
 
   return (

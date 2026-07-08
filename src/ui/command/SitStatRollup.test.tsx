@@ -33,7 +33,9 @@ describe('SitStatRollup', () => {
   it('empty set → the no-points message, no table', () => {
     mockShorePoints.mockReturnValue([]);
     render(<SitStatRollup />);
-    expect(screen.getByText('No shore points yet.')).toBeInTheDocument();
+    // #435: promoted to the crafted EmptyState (headline is a no-period fragment).
+    expect(screen.getByText('No shore points yet')).toBeInTheDocument();
+    expect(screen.getByText(/division rollup fills in/)).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
