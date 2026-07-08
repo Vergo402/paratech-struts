@@ -20,6 +20,9 @@
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-input);
+  /* #435: the focus border eases in (was a snap) — the bespoke measurement input
+     gets the same crafted focus motion as every other control (micro state change). */
+  transition: border-color var(--motion-micro) var(--ease-micro);
 }
 .fs-meas-field:focus-within { border-color: var(--accent); }
 .fs-meas-field-input {

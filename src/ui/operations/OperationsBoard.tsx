@@ -38,6 +38,7 @@ import { ShorePointDetail } from './ShorePointDetail';
 import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
 import { CardBoundary } from './CardBoundary';
+import { useDeleteGhosts, isLeaving } from './useDeleteGhosts';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import { StepBackConfirmModal } from './StepBackConfirmModal';
 import { ReturnEquipmentModal } from './ReturnEquipmentModal';
@@ -195,7 +196,11 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
     <>
       {items.map((item) =>
         item.kind === 'group' ? (
-          <div key={item.groupId} role="listitem">
+          <div
+            key={item.groupId}
+            role="listitem"
+            className={item.members.every(isLeaving) ? 'is-leaving' : undefined}
+          >
             <CardBoundary>
               <GroupedShorePoint
                 members={item.members}
@@ -218,7 +223,13 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
         ) : (
           // tabIndex=-1: not in the tab order, but a programmatic focus target so
           // a deploy can land focus here (#350). Groups carry their own on the front.
-          <div key={item.sp.id} role="listitem" data-sp-id={item.sp.id} tabIndex={-1}>
+          <div
+            key={item.sp.id}
+            role="listitem"
+            data-sp-id={item.sp.id}
+            tabIndex={-1}
+            className={isLeaving(item.sp) ? 'is-leaving' : undefined}
+          >
             <CardBoundary>
               <ShorePointCard
                 shorePoint={item.sp}
@@ -923,13 +934,23 @@ export function OperationsBoard() {
     else { setFilterApparatus(null); persistPrefs({ filterApparatus: null }); }
   };
 
+  // #435 delete fade-out: keep a fading "ghost" of a just-deleted Pending point so
+  // its card fades out before dropping to the Deleted bin. displayPoints feeds the
+  // three view memos below (each excludes deletedAt != null; the ghost has it
+  // nulled), so one merge covers board + list + division.
+  const ghosts = useDeleteGhosts(shorePoints);
+  const displayPoints = useMemo(
+    () => (ghosts.length ? [...shorePoints, ...ghosts] : shorePoints),
+    [shorePoints, ghosts],
+  );
+
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
       pending: [], process: [], strutset: [], cutting: [],
       runner: [], secured: [], returned: [],
     };
-    for (let i = shorePoints.length - 1; i >= 0; i--) {
-      const sp = shorePoints[i]!;
+    for (let i = displayPoints.length - 1; i >= 0; i--) {
+      const sp = displayPoints[i]!;
       // Soft-deleted (#319): out of the lanes entirely, so counts/summary exclude it.
       if (sp.deletedAt != null) continue;
       // Board filter (#248): hide points outside the chosen building/division/area.
@@ -953,14 +974,14 @@ export function OperationsBoard() {
       for (const lane of Object.values(map)) lane.reverse();
     }
     return map;
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, sortMode]);
+  }, [displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, sortMode]);
 
   // List view (#356): every visible point in one column, grouped shores kept as
   // one stack (Alex's call), sorted by the list's own key. A group sits at its
   // front leg (groupIndex 0) — ponytail: least-advanced leg if the field wants it.
   const listItems = useMemo(() => {
     const order = new Map(shorePoints.map((sp, i) => [sp.id, i] as const)); // 'added' = array order
-    const visible = shorePoints
+    const visible = displayPoints
       .filter(
         (sp) =>
           sp.deletedAt == null &&
@@ -992,7 +1013,7 @@ export function OperationsBoard() {
       }
       return compareShorePointsByLocation(ra, rb);
     });
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
+  }, [shorePoints, displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
 
   // Division view (tri-view): the same visible set, grouped into floor bands top
   // (highest Div) → ground → basement (lowest Sub), matching the building cross-
@@ -1001,7 +1022,7 @@ export function OperationsBoard() {
   // free-text divisions ("Roof"), which collect in a trailing "Unplaced" band so
   // they're never silently dropped (Principle 7). Grouped shores stay one stack.
   const divisionBands = useMemo(() => {
-    const visible = shorePoints
+    const visible = displayPoints
       .filter(
         (sp) =>
           sp.deletedAt == null &&
@@ -1035,7 +1056,7 @@ export function OperationsBoard() {
         ),
       }))
       .sort((a, b) => compareDivisionValues(a.division, b.division));
-  }, [shorePoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys]);
+  }, [displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys]);
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(

@@ -131,7 +131,10 @@
 .fs-cmd-op-fill {
   height: 100%;
   background: var(--text-tertiary);
-  transition: width 1s linear;
+  /* The OP-period fill SNAPS to its value each tick — a continuously-crawling
+     progress bar has no motion.md "job" (like a count-up, it renders immediately),
+     and the old `transition: width 1s linear` also escaped the reduced-motion guard
+     (a raw literal the zeroed --motion-* tokens don't cover). Removed in #435. */
 }
 .fs-cmd-op.is-amber {
   border-color: var(--status-waiting-text);

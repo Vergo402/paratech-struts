@@ -769,6 +769,21 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  /* #435: the lifecycle card fades IN on mount — a new point, and a point arriving
+     in its next status lane (orientation). Opacity only (doctrine forbids a card
+     sliding/scaling); --motion-transition zeroes under reduced-motion/broadcast.
+     LEAVING a lane is deliberately NOT animated — a card fading away as it advances
+     status reads as data loss under stress (motion.md); the badge cross-fade + the
+     arrival fade carry the commit. */
+  animation: fs-fade-in var(--motion-transition) var(--ease-standard);
+}
+/* #435 delete fade-out — a soft-deleted Pending card's list-item wrapper fades
+   before it drops to the Deleted bin (useDeleteGhosts marks the ghost). Opacity
+   only; the hook makes no ghost under reduced-motion, and --motion-exit zeroes
+   there too. Never fires on a status advance (that changes status, not deletedAt). */
+[role='listitem'].is-leaving {
+  animation: fs-fade-out var(--motion-exit) var(--ease-exit) forwards;
+  pointer-events: none;
 }
 /* Per-card crash fallback (F-SETUP-1 / CardBoundary): a compact tile that holds the
    card's slot when one shore point can't render, so the rest of the board stays live. */

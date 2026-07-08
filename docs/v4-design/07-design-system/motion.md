@@ -65,6 +65,10 @@ Each entry names its one-sentence job.
 - **Toasts** slide in from the bottom, 16pt above the safe area, over `--motion-transition`, and never overlap the primary action — *confirmation.* They dismiss with `--motion-exit`. Maximum one toast at a time; a second action dismisses the first immediately. *(Per ADR-010 the toast is now a confirmation/notification surface only — it is **not** an undo affordance.)*
 - **Status badge** cross-fades from the old status color to the new over `--motion-status` — *confirmation that the transition committed.* It is a color fill cross-fade only: **no size change, no rotation, no scale.** On a card's *first* appearance in a status, the badge does **not** animate (it would read as load-state noise when a list first renders).
 - **Navigation** fades the outgoing content pane (`--motion-micro` opacity) then shows the new content immediately — *orientation.* The tab bar itself does not move.
+- **Cards entering a list** fade in — `--motion-transition`, opacity only (`fs-fade-in`) — *orientation: a shore point appears, or arrives in its next status lane after an advance.* No translate, no scale (a card must not move — see below). This is a whole-card opacity wash, distinct from the badge, which still does **not** color-animate on first appearance (bullet above); on a list's first paint the set fades in as one gentle wash, not a per-card cascade. The general-staff org reveal (`fsGsIn`, a deliberate rolodex roll-in) is the single pre-existing exception to opacity-only. *(Stage 3, #435.)*
+- **A deleted card** fades out — `--motion-exit`, opacity only (`fs-fade-out`) — *confirmation: a deliberate remove registered.* Scoped to a genuine delete (a Pending point removed to the recoverable Deleted bin); a brief ghost of the departing card keeps it rendered so the fade plays before the point drops. It **never** fires on a status advance (see below). *(Stage 3, #435.)*
+- **The depletion bar** glides to its new length and hue on deploy/restock — `--motion-status` — *confirmation: stock changed.* Width + fill-color transition; it never animates on first paint (a transition fires on value change only). *(Stage 3, #435 — the [`craft.md`](craft.md) §4 depletion candidate.)*
+- **Bespoke inputs** (the measurement field and its kin) ease their focus border in — `--motion-micro` — matching every primitive control's focus. *(Stage 3, #435.)*
 
 ---
 
@@ -75,6 +79,8 @@ Each entry names its one-sentence job.
 - **The sync status dot.** It changes state without transition and **never pulses.** It is information, not an alert — a pulsing dot reads as an alarm the operator must service.
 - **Load-capacity numbers.** They render immediately. **Never a count-up.** *(Capacity is demoted in the card hierarchy anyway — animating it would re-promote it by motion.)*
 - **Cards on state change.** No scale, no zoom, no shake. Scale/zoom on a card while the operator is watching a live list is *nauseating* — the focus signal is border + fill, never motion (per [`03-primitives/card.md`](../03-primitives/card.md)).
+- **A card leaving a status lane on advance.** When a point advances (Cutting → Runner, …) it moves to the next lane; it does **not** fade away from the old one. A card that animated away under stress reads as data loss (Principle 10) — the status-badge cross-fade plus the arrival fade carry the commit. Only a deliberate *delete* fades out (What moves, above). *(Stage 3, #435.)*
+- **Progress fills.** The OP-period clock fill — and any elapsed/progress fill — **snaps** to its value. A continuously-crawling bar has no one-sentence job (it is a count-up by another name; numbers render immediately). *(Removed in #435: the old `width 1s linear` OP-fill crawl, which also escaped the reduced-motion guard.)*
 
 ---
 
