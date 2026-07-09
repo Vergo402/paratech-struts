@@ -263,13 +263,14 @@
   min-width: 0;
 }
 .fs-cmd-ic-name {
-  /* #435: the IC's gold lives ONCE on Command now — the org-chart IC node (Alex
-     2026-07-08). The rail IC row is marked by its 'Incident Commander' eyebrow + the
-     larger headline name, not a second gold underline. */
+  /* #435: the IC's gold lives ONCE on Command — the rail underline (Alex 2026-07-08,
+     after previewing the full page); the org-chart IC node is a neutral root. */
   display: inline-block;
   margin-top: 3px;
   font: var(--type-headline-1);
   color: var(--text-primary);
+  border-bottom: 3px solid var(--accent);
+  padding-bottom: 3px;
 }
 .fs-cmd-staff-name {
   display: block;
@@ -747,16 +748,11 @@
   color: var(--text-tertiary);
   font-style: italic;
 }
-/* IC — the single gold accent (border + title + dot) */
+/* IC — the command root. The single Command gold IC mark lives on the RAIL staff-card
+   underline (Alex 2026-07-08, after previewing the full page); here the root reads via a
+   neutral border emphasis, not gold (the dot + title follow regular-node styling). */
 .fs-org-node.is-ic {
-  border-color: var(--accent);
-}
-.fs-org-node.is-ic .fs-org-node-title {
-  color: var(--accent);
-}
-.fs-org-node.is-ic .fs-org-node-dot {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--text-secondary);
 }
 /* single resource — quieter + tighter; the title carries the rig (no leader line) */
 .fs-org-node.is-resource {

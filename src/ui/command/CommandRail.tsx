@@ -157,11 +157,11 @@ export function CommandRail({
       </div>
 
       {/* Command staff — one card, three hairline rows (was three separate cards of
-          identical weight). The IC row is marked by its eyebrow + larger name plus the
-          command-transfer handshake trigger (#393, ADR-021); the IC gold lives ONCE on
-          Command now — the org-chart IC node, not a second rail underline (Alex 2026-07-08).
-          currentIC drives the row automatically; while a transfer is Pending command has
-          NOT moved (outgoing stays IC of record). */}
+          identical weight). The IC row keeps the gold underline — the single Command IC gold
+          mark (Alex 2026-07-08, after previewing the full page; the org-chart IC node is a
+          neutral root) — plus the command-transfer handshake trigger (#393, ADR-021). currentIC
+          drives the row automatically; while a transfer is Pending command has NOT moved
+          (outgoing stays IC of record). */}
       <Card className="fs-cmd-staff">
         <div className="fs-cmd-staff-row fs-cmd-staff-row--ic">
           <div className="fs-cmd-ic-main">
