@@ -55,6 +55,8 @@ Anchored at **14pt body**, minor-third-informed (≈1.2×), rounded to the 4pt-f
 
 Line-height is unitless (multiplier). In tight tabular cells (load tables, the deduction ledger) `--type-mono` may drop to line-height `1.0` for row density — specified per primitive, not globally.
 
+**Numeral ramp (the value font, scaled up).** `--type-mono` (13) is the base; elevated screens read a hero numeral **up** through four larger steps of the same Inter value font — `--type-mono-stat` (17) · `--type-mono-hero` (22) · `--type-mono-subdisplay` (32) · `--type-mono-display` (64). Which altitude a given figure takes (stat strip → card hero → sub-display → the one workstation display numeral) and the "numerals are the heroes" rule behind it are owned in [craft.md §9–§10](craft.md); this table owns only the base value-font token. All steps carry `tabular-nums` — restate it after any `font:` shorthand, which resets `font-variant-numeric`.
+
 ---
 
 ## Tabular numerals — the hard rule

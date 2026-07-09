@@ -2,9 +2,12 @@
 // session on the dev server, builds a 3-Post op via the real UI, and captures
 // the board + Cutting Station into the audit folder. Mouse pointer → the
 // slides render as tap-once buttons (ADR-034), so the flow is clickable.
-import { chromium } from 'playwright';
+// Playwright resolves from the npx cache (not a repo dep): override with PW_PATH
+// if the cache moves. BASE defaults to the v4 dev server (:5199); override via env.
+const PW = process.env.PW_PATH ?? '/Users/alex/.npm/_npx/88950a7d37a5e205/node_modules/playwright/index.mjs';
+const { chromium } = await import(PW);
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.BASE ?? 'http://localhost:5199';
 const OUT = '/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/v4-visual-elevation-2026-07/after';
 
 const seedSession = async (page) => {

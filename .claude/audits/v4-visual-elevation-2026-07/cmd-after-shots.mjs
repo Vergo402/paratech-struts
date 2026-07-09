@@ -6,7 +6,7 @@
 const PW = process.env.PW_PATH ?? '/Users/alex/.npm/_npx/88950a7d37a5e205/node_modules/playwright/index.mjs';
 const { chromium } = await import(PW);
 
-const BASE = 'http://localhost:3000';
+const BASE = process.env.BASE ?? 'http://localhost:5199';
 const OUT = '/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/v4-visual-elevation-2026-07/after';
 
 const seedSession = async (page) => {

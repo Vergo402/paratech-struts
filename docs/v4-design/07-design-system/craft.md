@@ -53,7 +53,7 @@ chip alone (§5); a low/out row must never read as gold (Alex, 2026-07-07):
   `warning` tone colors its text too). The hero numeral stays neutral ink until 0.
 - **Out** (`available = 0`): bare track; the hero numeral and the `all N deployed` chip
   take **red** (`--danger-*`, the critical state).
-- Static this stage; animating the fill is a Stage 3 (#435) candidate under `--motion-status`.
+- The fill glides on `--motion-status` when stock changes (Stage 3, #435; collapses to instant under reduced-motion + broadcast via the token media queries).
 
 ## 5. Gold budget
 
@@ -135,4 +135,4 @@ working shore points.
 | Operations + Cutting Station (#432) | built with this doc (Stage 2a) |
 | Quick Find (#433) | built with this doc (Stage 2b) |
 | Command (#434) | built with this doc (Stage 2c — mints §10) |
-| Motion finesse + empty states (#435) | pending |
+| Motion finesse + empty states (#435) | built with this doc (Stage 3 — sunlight sweep, card enter/exit + bar + focus motion, empty-state promotions, §8 copy, gold budget, StatStrip unification, numeral-ramp + card elevation, 56px glove floor); awaiting Alex's beta gate |
