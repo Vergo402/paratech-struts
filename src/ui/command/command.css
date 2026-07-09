@@ -1511,7 +1511,7 @@
   color: var(--text-primary);
   font: var(--type-body);
   cursor: pointer;
-  min-height: 48px;
+  min-height: 56px; /* §7 gloved-hands floor — on-scene node row */
 }
 .fs-node-grow:last-child {
   border-bottom: 0;
@@ -1612,7 +1612,7 @@
   color: var(--text-primary);
   font: var(--type-body);
   cursor: pointer;
-  min-height: 48px;
+  min-height: 56px; /* §7 gloved-hands floor — on-scene assign row */
 }
 .fs-assign-row.is-on {
   border-color: var(--accent);

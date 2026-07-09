@@ -1922,17 +1922,17 @@ button.fs-spc-head {
   background: var(--sp-solid); /* per-member status hue via is-${status} */
   opacity: 0.45;
   flex-shrink: 0;
-  transition: all 160ms var(--ease-micro);
+  /* on the motion scale (--motion-micro) — token self-zeroes under reduced-motion
+     + broadcast, so no separate override is needed. */
+  transition:
+    width var(--motion-micro) var(--ease-micro),
+    border-radius var(--motion-micro) var(--ease-micro),
+    opacity var(--motion-micro) var(--ease-micro);
 }
 .fs-gs-dot.is-on {
   width: 22px;
   border-radius: 4px;
   opacity: 1;
-}
-@media (prefers-reduced-motion: reduce) {
-  .fs-gs-dot {
-    transition: none; /* the 160ms literal bypasses the zeroed motion tokens (R2 S-7) */
-  }
 }
 
 /* Quiet chevron-down expand button — the a11y-canonical control beside the dots
@@ -2128,7 +2128,7 @@ button.fs-spc-head {
 }
 .fs-cutstation-saw-chip,
 .fs-cutstation-saw-add {
-  min-height: 44px;
+  min-height: 56px; /* §7 gloved-hands floor — pill face is the target, so it grows */
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
