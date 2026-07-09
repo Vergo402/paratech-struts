@@ -1985,10 +1985,10 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 
-/* Staggered member entrance — 45ms/card, reduced-motion safe. */
+/* Staggered member entrance — --motion-stagger per card, reduced-motion safe. */
 .fs-gs-member {
   animation: fsGsIn var(--motion-status) var(--ease-standard) both;
-  animation-delay: calc(var(--i, 0) * 45ms);
+  animation-delay: calc(var(--i, 0) * var(--motion-stagger));
 }
 .fs-gs-member + .fs-gs-member {
   margin-top: var(--space-3);
@@ -2349,9 +2349,15 @@ button.fs-spc-head {
   color: var(--text-tertiary);
 }
 .fs-cutstation-back {
+  display: inline-flex;
+  align-items: center;
+  /* §7 gloved-hands floor: 56px hit area without growing the ~30px title row —
+     same min-height + negative-margin trick as .fs-gs-expand. */
+  min-height: 56px;
+  margin: -13px 0;
   border: none;
   background: none;
-  padding: var(--space-1) var(--space-2) var(--space-1) 0;
+  padding: 0 var(--space-2) 0 0;
   font: var(--type-body-medium);
   font-weight: 600;
   color: var(--status-cutting-text);

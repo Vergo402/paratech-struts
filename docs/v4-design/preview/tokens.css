@@ -82,6 +82,7 @@
   --motion-status: 250ms;    /* status badge color cross-fade */
   --motion-nav: 300ms;       /* full-screen list push, tab-switch content */
   --motion-exit: 180ms;      /* toast slide-out + fade */
+  --motion-stagger: 45ms;    /* per-item entrance delay (group-stack member list) */
 
   --ease-micro: ease-out;
   --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);  /* sheet/modal/toast in */
