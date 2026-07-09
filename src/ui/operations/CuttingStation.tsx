@@ -425,7 +425,7 @@ export function CuttingStation({
       ) : (
         <>
           <p className="fs-cutstation-count" role="status">
-            {queue.length} {queue.length === 1 ? 'cut' : 'cuts'} in queue
+            <span className="fs-cutstation-count-n">{queue.length}</span> {queue.length === 1 ? 'cut' : 'cuts'} in queue
           </p>
 
           {queue.length > 0 ? (

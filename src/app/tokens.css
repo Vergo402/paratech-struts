@@ -42,6 +42,7 @@
   --type-mono-hero: 600 22px/1.15 var(--font-mono);
   --type-mono-stat: 600 17px/1.20 var(--font-mono);
   --type-mono-display: 700 64px/1.05 var(--font-mono); /* workstation hero — the cut a saw acts on (#432 B6, mess-map #25) */
+  --type-mono-subdisplay: 400 32px/1.1 var(--font-mono); /* #435 — fills the 22→64 gap: Quick Find measurement input + the shore-point detail hero (weight added locally where a display look is wanted) */
 
   /* spacing — 4pt base (spacing-grid.md, E2, formalizes these) */
   --space-1: 4px;

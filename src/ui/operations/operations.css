@@ -2110,6 +2110,11 @@ button.fs-spc-head {
   color: var(--text-secondary);
   margin: 0;
 }
+.fs-cutstation-count-n {
+  font: var(--type-mono-stat); /* #435 — the queue count numeral promoted to a stat figure */
+  font-variant-numeric: tabular-nums; /* restated — the font shorthand resets it */
+  color: var(--text-primary);
+}
 
 /* The saw roster (#354) — chips per saw + an "+ Add saw" control. On phone the
    chips SELECT which saw the view acts as (aria-pressed); on tablet they're static
@@ -2220,6 +2225,10 @@ button.fs-spc-head {
   background: var(--surface-card);
   border: 2px solid var(--status-cutting-text);
   border-radius: var(--radius-card);
+  box-shadow: var(--card-top-highlight); /* #435 — the craft card lift */
+}
+[data-theme='sunlight'] .fs-cutstation-hero {
+  box-shadow: var(--card-shadow); /* sunlight drop shadow — coexists with the border override below */
 }
 /* The "cut this now" pill — names the hero as the active cut at a glance
    (mockup-approved framing). Cutting hue, sits at the top-left of the hero. */
@@ -2315,6 +2324,7 @@ button.fs-spc-head {
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
   border-radius: var(--radius-card);
+  box-shadow: var(--card-top-highlight); /* #435 — the craft card lift */
   text-align: left;
   cursor: pointer;
 }
@@ -2364,6 +2374,11 @@ button.fs-spc-head {
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
   border-radius: var(--radius-card);
+  box-shadow: var(--card-top-highlight); /* #435 — the craft card lift */
+}
+[data-theme='sunlight'] .fs-cutstation-stationcard,
+[data-theme='sunlight'] .fs-cutstation-row {
+  box-shadow: var(--card-shadow); /* sunlight: the soft drop shadow — single-token, not the comma-list */
 }
 /* Queue position numeral (#20) — replaced the six-dot grip that shipped as a
    dead affordance (no reorder wired). Returns as a handle when reorder lands. */
@@ -2567,10 +2582,8 @@ button.fs-spc-head {
   color: var(--text-secondary);
 }
 .fs-spd-hero-num {
-  font: var(--type-mono);
-  font-size: 2rem;
-  font-weight: 600;
-  line-height: 1.05;
+  font: var(--type-mono-subdisplay); /* the 32px sub-display step (#435, was raw 2rem) */
+  font-weight: 600; /* heavier than the token's 400 — a display look for the detail hero */
   color: var(--accent);
 }
 .fs-spd-safety-word {

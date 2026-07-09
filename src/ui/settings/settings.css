@@ -2,9 +2,14 @@
    surface. One tree-wide drag (grip handle); the runtime checklist is the 56pt
    attestation one. */
 .fs-cke-card {
+  background: var(--surface-card); /* #435 — was a bare outline (missing surface fill) */
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
   overflow: hidden;
+  box-shadow: var(--card-top-highlight); /* #435 — the craft card lift (matches .fs-card) */
+}
+[data-theme='sunlight'] .fs-cke-card {
+  box-shadow: var(--card-shadow); /* sunlight: the soft drop shadow — single-token, never the comma-list */
 }
 .fs-cke-card.is-open {
   border-color: var(--accent);

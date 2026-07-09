@@ -85,7 +85,8 @@ describe('CuttingStation', () => {
         onStepBack={noop}
       />,
     );
-    expect(screen.getByText('2 cuts in queue')).toBeInTheDocument();
+    // #435: the count numeral is its own mono-stat span, so the text spans elements.
+    expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('2 cuts in queue');
     // The hero+list shows the location subtitle, not the card title; assert the
     // queue order via the data-sp-id the hero (queue head) + up-next rows carry.
     const ids = Array.from(document.querySelectorAll('.fs-cutstation [data-sp-id]')).map((el) =>
@@ -105,7 +106,7 @@ describe('CuttingStation', () => {
         onStepBack={noop}
       />,
     );
-    expect(screen.getByText('1 cut in queue')).toBeInTheDocument();
+    expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('1 cut in queue');
   });
 
   it('Mark Cut Done fires onMarkCutDone for that card', async () => {

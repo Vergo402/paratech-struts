@@ -90,10 +90,14 @@ Row descriptions in settings lists say what the user gets, not what the module i
 
 ## 9. Workstation heroes (Stage 2a addendum, #432)
 
-The numeral ramp has three steps, one per altitude:
+The numeral ramp has four steps, one per altitude:
 
 - `--type-mono-stat` (17px) — stat-strip figures, queue-row numerals.
 - `--type-mono-hero` (22px) — a **card's** dominant value (the measurement shelf).
+- `--type-mono-subdisplay` (32px) — a **sub-display** for a large-but-not-workstation
+  numeral: the Quick Find measurement **input** and the shore-point **detail hero**. Fills
+  the 22→64 gap so those two never sit on raw px (Stage 3 addendum, #435). Weight 400 by
+  default (a light entry numeral); a display-style site adds weight locally.
 - `--type-mono-display` (64px) — a **workstation's** one action number (the Cutting
   Station cut length). At most one display numeral on screen; it may carry the
   workstation's status hue (cutting amber) — that is the status accent, not gold.

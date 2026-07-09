@@ -550,7 +550,7 @@ describe('OperationsBoard', () => {
     ]);
     render(<OperationsBoard />);
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
-    expect(screen.getByText('1 cut in queue')).toBeInTheDocument();
+    expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('1 cut in queue'); // #435: count numeral is its own span
     await slideToCommit('Slide to mark Cut Done');
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'ShorePointEdited', spId: 'sp-1', patch: { cuttingDone: true } }),

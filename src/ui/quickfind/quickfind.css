@@ -30,8 +30,8 @@
   min-width: 0;
   border: none;
   background: none;
-  font: 400 34px/1.1 var(--font-mono); /* styleguide's big-measurement size */
-  font-variant-numeric: tabular-nums;
+  font: var(--type-mono-subdisplay); /* the 32px sub-display step (#435, was raw 34px) */
+  font-variant-numeric: tabular-nums; /* restated — the font shorthand resets it */
   color: var(--text-primary);
   text-align: center;
 }
