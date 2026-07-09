@@ -21,6 +21,7 @@ export { PickerSurface, type PickerSurfaceProps } from './PickerSurface';
 export { useMediaQuery, useIsDesktop, useIsWide, useHasRailNav } from './useMediaQuery';
 export { useNativeControls, setNativeControls } from './nativeControls';
 export { Slider, type SliderProps } from './Slider';
+export { StatStrip, type Stat, type StatStripProps } from './StatStrip';
 export { TextField, type TextFieldProps } from './Input';
 export { Toggle, type ToggleProps } from './Toggle';
 export { WarningGate, GATE_COPY, type WarningGateProps } from './WarningGate';

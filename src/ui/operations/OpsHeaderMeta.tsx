@@ -1,4 +1,5 @@
 import { useElapsed } from '@ui/command';
+import { StatStrip, type Stat } from '@ui/primitives';
 
 /**
  * The Operations header instrument line + role pill (tri-view prototype look,
@@ -19,29 +20,18 @@ export interface OpsMetaLineProps {
   isDesktop: boolean;
 }
 
-/** One stat-strip figure: dominant numeral over a micro-label (craft.md §1–2). */
-function Stat({ v, k }: { v: string; k: string }) {
-  return (
-    <span className="fs-ops-stat">
-      <span className="fs-ops-stat-v">{v}</span>
-      <span className="fs-ops-stat-k">{k}</span>
-    </span>
-  );
-}
-
 /** The stat strip under the op name (craft.md §2 — was a 7-datum mono line, #432):
- *  each figure a quiet dominant numeral with its own micro-label. The IC label is
- *  NOT a figure — it stays in the header pill. Segments with no data drop out. */
+ *  each figure a quiet dominant numeral with its own caption. The IC label is NOT a
+ *  figure — it stays in the header pill. Segments with no data drop out. Renders
+ *  through the shared StatStrip primitive (unified with Command 2026-07-08). */
 export function OpsMetaLine({ since, opNum, opTotal, points, crews, isDesktop }: OpsMetaLineProps) {
   const elapsed = useElapsed(since);
-  return (
-    <div className="fs-ops-stats">
-      {since != null && <Stat v={elapsed} k="elapsed" />}
-      {opTotal > 0 && <Stat v={opTotal > 1 ? `${opNum}/${opTotal}` : String(opNum)} k="period" />}
-      <Stat v={String(points)} k={points === 1 ? 'point' : 'points'} />
-      {isDesktop && crews > 0 && <Stat v={String(crews)} k={crews === 1 ? 'crew' : 'crews'} />}
-    </div>
-  );
+  const stats: Stat[] = [];
+  if (since != null) stats.push({ value: elapsed, label: 'elapsed' });
+  if (opTotal > 0) stats.push({ value: opTotal > 1 ? `${opNum}/${opTotal}` : String(opNum), label: 'period' });
+  stats.push({ value: String(points), label: points === 1 ? 'point' : 'points' });
+  if (isDesktop && crews > 0) stats.push({ value: String(crews), label: crews === 1 ? 'crew' : 'crews' });
+  return <StatStrip stats={stats} className="fs-ops-metastrip" />;
 }
 
 export interface HeaderPillProps {

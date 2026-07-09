@@ -208,37 +208,9 @@
   color: var(--text-secondary);
 }
 
-/* ---- stat strip (craft.md §2) ------------------------------------------ */
-/* The rail's top-level numbers in one quiet line — figures at --type-mono-stat over
-   caption words, no card, no border. Zero figures read as tertiary ink; the
-   pending-sync figure is the strip's one accent (Alex 2026-07-02 / 2026-07-06). */
-.fs-cmd-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--space-5);
-  row-gap: var(--space-1);
-}
-.fs-cmd-statfig {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
-}
-.fs-cmd-stat-v {
-  font: var(--type-mono-stat);
-  font-variant-numeric: tabular-nums; /* the font shorthand resets it — restate */
-  color: var(--text-primary);
-}
-.fs-cmd-statfig[data-zero] .fs-cmd-stat-v {
-  color: var(--text-tertiary);
-}
-.fs-cmd-stat-v--accent {
-  color: var(--accent);
-}
-.fs-cmd-stat-k {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-}
+/* ---- stat strip — now the shared StatStrip primitive (primitives.css .fs-statstrip),
+   unified with Operations 2026-07-08 (Alex chose this inline recipe). The pending-sync
+   figure is still the strip's one accent, hidden at 0 (Alex 2026-07-02 / 2026-07-06). */
 
 /* ---- command staff card ------------------------------------------------- */
 /* One card, three hairline rows (IC · Operations Section Chief · Safety Officer) —

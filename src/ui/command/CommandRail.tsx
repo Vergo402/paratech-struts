@@ -3,7 +3,7 @@ import type { ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity, severityWord } from '@core/hazard';
-import { Badge, Button, Card, Segmented, Sheet, useIsDesktop } from '@ui/primitives';
+import { Badge, Button, Card, Segmented, Sheet, StatStrip, useIsDesktop } from '@ui/primitives';
 import { AlertIcon, ChevronRightIcon, FlagIcon, OrgGlyphIcon, PendingClockIcon } from './icons';
 import {
   useOperation,
@@ -135,26 +135,20 @@ export function CommandRail({
           competed with the incident name. The pending-sync figure (#352) keeps its
           gold — Alex's explicit call (2026-07-02, reaffirmed 2026-07-06): the strip's
           one accent figure, hidden entirely at 0 (calm chrome). */}
-      <div className="fs-cmd-stats">
-        <span className="fs-cmd-statfig" data-zero={counts.total === 0 || undefined}>
-          <span className="fs-cmd-stat-v">{counts.total}</span>
-          <span className="fs-cmd-stat-k">{counts.total === 1 ? 'shore point' : 'shore points'}</span>
-        </span>
-        <span className="fs-cmd-statfig" data-zero={resources.apparatusCount === 0 || undefined}>
-          <span className="fs-cmd-stat-v">{resources.apparatusCount}</span>
-          <span className="fs-cmd-stat-k">apparatus</span>
-        </span>
-        <span className="fs-cmd-statfig" data-zero={resources.individualCount === 0 || undefined}>
-          <span className="fs-cmd-stat-v">{resources.individualCount}</span>
-          <span className="fs-cmd-stat-k">{resources.individualCount === 1 ? 'individual' : 'individuals'}</span>
-        </span>
-        {pendingResourceCount > 0 && (
-          <span className="fs-cmd-statfig">
-            <span className="fs-cmd-stat-v fs-cmd-stat-v--accent">{pendingResourceCount}</span>
-            <span className="fs-cmd-stat-k">pending sync</span>
-          </span>
-        )}
-      </div>
+      <StatStrip
+        stats={[
+          { value: counts.total, label: counts.total === 1 ? 'shore point' : 'shore points', zero: counts.total === 0 },
+          { value: resources.apparatusCount, label: 'apparatus', zero: resources.apparatusCount === 0 },
+          {
+            value: resources.individualCount,
+            label: resources.individualCount === 1 ? 'individual' : 'individuals',
+            zero: resources.individualCount === 0,
+          },
+          ...(pendingResourceCount > 0
+            ? [{ value: pendingResourceCount, label: 'pending sync', accent: true as const }]
+            : []),
+        ]}
+      />
 
       {/* Command staff — one card, three hairline rows (was three separate cards of
           identical weight). The IC row keeps the gold underline — the single Command IC gold

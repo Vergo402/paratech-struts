@@ -35,29 +35,11 @@
   justify-content: space-between;
 }
 
-/* Stat strip (craft.md §2, #432) — dominant numerals over micro-labels; replaced
-   the 7-datum 12.5px mono instrument line. */
-.fs-ops-stats {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-5);
+/* Stat strip (craft.md §2, #432) — the recipe is now the shared StatStrip primitive
+   (primitives.css, unified with Command 2026-07-08); Operations only adds its top
+   spacing under the op name. */
+.fs-ops-metastrip {
   padding-top: var(--space-1);
-}
-.fs-ops-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.fs-ops-stat-v {
-  font: var(--type-mono-stat);
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-.fs-ops-stat-k {
-  font: var(--type-label);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
 }
 
 /* The persona chip — IC (desktop) / YOU + role (phone). QUIET ink on the card

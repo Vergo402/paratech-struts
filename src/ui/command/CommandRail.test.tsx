@@ -84,7 +84,7 @@ describe('CommandRail — PAR/pending-sync indicator (#352)', () => {
     render(<CommandRail />);
     expect(screen.getByText('pending sync')).toBeInTheDocument();
     const num = screen.getByText('2');
-    expect(num.className).toContain('fs-cmd-stat-v--accent');
+    expect(num.className).toContain('fs-statfig-v--accent'); // shared StatStrip primitive
   });
 });
 

@@ -244,6 +244,38 @@
 }
 .fs-empty > .fs-button { margin-top: var(--space-2); }
 
+/* ---- stat strip (craft.md §2) — the shared inline recipe (Operations + Command
+   unified 2026-07-08; they had drifted to column-stack vs inline — Alex chose inline).
+   A dominant mono numeral beside a quiet caption, whitespace-separated on one wrapping
+   line; ≤1 gold accent figure; zeros dim to tertiary (calm chrome). ---------------- */
+.fs-statstrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-5);
+  row-gap: var(--space-1);
+}
+.fs-statfig {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+.fs-statfig-v {
+  font: var(--type-mono-stat);
+  font-variant-numeric: tabular-nums; /* the font shorthand resets it — restate */
+  color: var(--text-primary);
+}
+.fs-statfig[data-zero] .fs-statfig-v {
+  color: var(--text-tertiary);
+}
+.fs-statfig-v--accent {
+  color: var(--accent);
+}
+.fs-statfig-k {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
+
 /* ---- warning gate (warning-gate.md) — danger is an accent and a word ------- */
 .fs-gate {
   display: flex;
