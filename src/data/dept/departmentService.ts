@@ -107,6 +107,10 @@ export interface DepartmentServiceApi {
   editRole(roleId: string, patch: { name?: string; permissions?: Permissions }): Promise<AdminMutationResult>;
   /** Delete a custom role, reassigning any holders to Default first (built-ins can't be deleted). */
   deleteRole(roleId: string): Promise<AdminMutationResult>;
+  /** Kill the current invite code (#423 — a leaked code must be revocable on scene). */
+  revokeInviteCode(): Promise<AdminMutationResult>;
+  /** Rotate the invite code: publish a new one, kill the old, update the session. */
+  regenerateInviteCode(): Promise<AdminMutationResult & { code?: string }>;
 }
 
 export interface AdminMutationResult {
@@ -569,6 +573,71 @@ export function createDepartmentService(deps: {
     return { ok: true };
   }
 
+  // ---- Invite-code lifecycle (#423) — a leaked code must be killable on scene ----
+
+  // Flip the current code inactive. The rules' REVOKE branch allows exactly this
+  // transition (active → false, every other field frozen); resolve-on-join already
+  // rejects inactive codes ("That code has expired"). The dead code stays in the
+  // session row until a regenerate replaces it — the UI's primary affordance is
+  // Regenerate, which rotates rather than leaving the dept code-less.
+  async function revokeInviteCode(): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const code = deps.session().store.getState().inviteCode;
+    if (!code) return { ok: false, reason: 'No invite code on record for this department.' };
+    try {
+      await update(ref(rtdb, `orgs/inviteCodes/${code}`), { active: false });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    void appendAudit(c, 'inviteCodeRevoked', { code });
+    return { ok: true };
+  }
+
+  // Rotate: publish a NEW code first (a failure here leaves the old code fully
+  // working — never a code-less dept), then kill the old one (a failure there
+  // leaves two active codes briefly — benign, logged), then move the session/
+  // memberships/userDepts rows onto the new code via setDepartment.
+  async function regenerateInviteCode(): Promise<AdminMutationResult & { code?: string }> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const s = deps.session().store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId || !s.departmentName || !s.role) {
+      return { ok: false, reason: 'Not connected to a department.' };
+    }
+    const oldCode = s.inviteCode;
+    const newCode = mintInviteCode();
+    try {
+      await set(ref(rtdb, `orgs/inviteCodes/${newCode}`), {
+        deptId: s.departmentId,
+        deptName: s.departmentName,
+        createdBy: s.identity.accountId, // the rule self-stamp: createdBy === auth.uid
+        createdAt: Date.now(),
+        active: true,
+      });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    if (oldCode) {
+      try {
+        await update(ref(rtdb, `orgs/inviteCodes/${oldCode}`), { active: false });
+      } catch (err) {
+        await logSyncEvent('invite_code_revoke_failed', {
+          deptId: c.deptId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+    await deps.session().setDepartment({
+      id: s.departmentId,
+      name: s.departmentName,
+      role: s.role,
+      inviteCode: newCode,
+    });
+    void appendAudit(c, 'inviteCodeRegenerated', { revokedCode: oldCode ?? null });
+    return { ok: true, code: newCode };
+  }
+
   return {
     createDepartment,
     joinByCode,
@@ -584,6 +653,8 @@ export function createDepartmentService(deps: {
     createRole,
     editRole,
     deleteRole,
+    revokeInviteCode,
+    regenerateInviteCode,
   };
 }
 

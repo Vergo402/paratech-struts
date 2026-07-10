@@ -80,17 +80,37 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     );
   });
 
-  it('an invite code is create-only by the dept founder and readable by any signed-in holder', () => {
+  it('an invite code is created only by the dept founder or a manageUsers admin, readable by any signed-in holder', () => {
     const code = committed.rules.orgs.inviteCodes.$code;
     expect(code['.read']).toBe('auth != null'); // know-the-code is the authorization; no enumeration
-    expect(code['.write']).toContain('!data.exists()'); // create-only
+    expect(code['.write']).toContain('!data.exists()'); // the create branch is create-only
     expect(code['.write']).toContain("newData.child('createdBy').val() === auth.uid"); // self-stamped
-    // only for a dept the writer actually founded — no publishing codes into others' depts
+    // for a dept the writer founded — or administers (#423: a non-founder admin can regenerate)
     expect(code['.write']).toContain(
       "root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid",
     );
+    expect(code['.write']).toContain("child('permissions').child('manageUsers').val() === true");
     expect(code['.validate']).toContain('deptName'); // carries the name a not-yet-member can't read
     expect(committed.rules.orgs.inviteCodes.$other).toBeUndefined(); // no stray parent rule => no enumeration
+  });
+
+  it('an invite code can be revoked (active→false only, fields frozen) but never deleted or reactivated (#423)', () => {
+    const w = committed.rules.orgs.inviteCodes.$code['.write'];
+    // the revoke branch: an update on an existing code...
+    expect(w).toContain('data.exists() && newData.exists()');
+    // ...whose ONLY allowed transition is active → false (no reactivation branch exists)
+    expect(w).toContain("newData.child('active').val() === false");
+    expect(w).not.toContain("newData.child('active').val() === true &&"); // no re-arm path
+    // every identity field is frozen to its prior value — a revoke can't re-point a code
+    expect(w).toContain("newData.child('deptId').val() === data.child('deptId').val()");
+    expect(w).toContain("newData.child('deptName').val() === data.child('deptName').val()");
+    expect(w).toContain("newData.child('createdBy').val() === data.child('createdBy').val()");
+    expect(w).toContain("newData.child('createdAt').val() === data.child('createdAt').val()");
+    // deletes are impossible: BOTH branches require newData (create: hasChildren via
+    // .validate + !data.exists(); revoke: newData.exists()) — a remove() matches neither
+    expect(w).toContain(
+      "root.child('orgs').child(data.child('deptId').val()).child('createdBy').val() === auth.uid",
+    );
   });
 
   it('the event log is membership-gated, append-only, and validates the coarse envelope', () => {

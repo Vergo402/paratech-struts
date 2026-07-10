@@ -2,9 +2,10 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Hoist mocks before any module that reaches the Firebase seam runs.
-const { setMock, getMock, logMock } = vi.hoisted(() => ({
+const { setMock, getMock, updateMock, logMock } = vi.hoisted(() => ({
   setMock: vi.fn(),
   getMock: vi.fn(),
+  updateMock: vi.fn(),
   logMock: vi.fn(),
 }));
 vi.mock('../sync/firebase', () => ({
@@ -12,6 +13,8 @@ vi.mock('../sync/firebase', () => ({
   ref: (_db: unknown, path: string) => ({ path }),
   get: getMock,
   set: setMock,
+  update: updateMock,
+  remove: vi.fn(),
 }));
 vi.mock('../sync/diagnostics', () => ({ logSyncEvent: logMock }));
 
@@ -347,5 +350,89 @@ describe('departmentService — offline join queue (Increment 4)', () => {
     await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
     await svc.restorePendingJoin();
     expect(syncStatusStore.store.getState().pendingJoin).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
+  });
+});
+
+describe('departmentService — invite-code lifecycle (#423)', () => {
+  let db: FieldShoreDB;
+  let session: SessionStoreApi;
+  let svc: DepartmentServiceApi;
+  let oldCode: string;
+
+  // set() calls that hit the invite-code resolver (regenerate also fires
+  // userDepts + audit writes — filter by path, never by call index).
+  const codePublishes = () =>
+    setMock.mock.calls.filter(([r]) => (r as { path: string }).path.startsWith('orgs/inviteCodes/'));
+
+  beforeEach(async () => {
+    setMock.mockReset().mockResolvedValue(undefined);
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
+    updateMock.mockReset().mockResolvedValue(undefined);
+    logMock.mockReset().mockResolvedValue(undefined);
+    db = createDB(`test-dept-${newId()}`);
+    session = createSessionStore(db);
+    await session.boot(UID);
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    svc = createDepartmentService({ session: () => session });
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    if (!r.ok) throw new Error('setup: create failed');
+    oldCode = r.department.inviteCode;
+    setMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('regenerate publishes the NEW code first, kills the old, and moves the session onto it', async () => {
+    const r = await svc.regenerateInviteCode();
+    expect(r.ok).toBe(true);
+    expect(r.code).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(r.code).not.toBe(oldCode);
+
+    const publishes = codePublishes();
+    expect(publishes).toHaveLength(1);
+    expect(publishes[0]![0]).toEqual({ path: `orgs/inviteCodes/${r.code}` });
+    expect(publishes[0]![1]).toMatchObject({ deptName: 'Hamden Fire Rescue', createdBy: FB_UID, active: true });
+
+    expect(updateMock).toHaveBeenCalledWith({ path: `orgs/inviteCodes/${oldCode}` }, { active: false });
+    expect(session.store.getState().inviteCode).toBe(r.code);
+  });
+
+  it('a failed NEW-code publish leaves the old code fully working (nothing revoked, session unchanged)', async () => {
+    setMock.mockRejectedValueOnce(new Error('network down'));
+    const r = await svc.regenerateInviteCode();
+    expect(r.ok).toBe(false);
+    expect(updateMock).not.toHaveBeenCalled(); // old code NOT revoked
+    expect(session.store.getState().inviteCode).toBe(oldCode);
+  });
+
+  it('a failed OLD-code revoke does not abort the rotation (two live codes is benign, logged)', async () => {
+    updateMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    const r = await svc.regenerateInviteCode();
+    expect(r.ok).toBe(true);
+    expect(session.store.getState().inviteCode).toBe(r.code);
+    expect(logMock).toHaveBeenCalledWith('invite_code_revoke_failed', expect.anything());
+  });
+
+  it('revoke flips the current code inactive', async () => {
+    const r = await svc.revokeInviteCode();
+    expect(r.ok).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith({ path: `orgs/inviteCodes/${oldCode}` }, { active: false });
+  });
+
+  it('a denied revoke surfaces the permission reason, not a generic failure', async () => {
+    updateMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED: rules'));
+    const r = await svc.revokeInviteCode();
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/permission/i);
+  });
+
+  it('both actions require a connected department', async () => {
+    const bare = createSessionStore(createDB(`test-dept-${newId()}`));
+    await bare.boot(UID);
+    const bareSvc = createDepartmentService({ session: () => bare });
+    expect((await bareSvc.revokeInviteCode()).ok).toBe(false);
+    expect((await bareSvc.regenerateInviteCode()).ok).toBe(false);
   });
 });

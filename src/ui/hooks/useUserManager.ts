@@ -20,6 +20,8 @@ export interface UserManagerApi {
   createRole: typeof departmentService.createRole;
   editRole: typeof departmentService.editRole;
   deleteRole: typeof departmentService.deleteRole;
+  revokeInviteCode: typeof departmentService.revokeInviteCode;
+  regenerateInviteCode: typeof departmentService.regenerateInviteCode;
 }
 
 export function useUserManager(enabled = true): UserManagerApi {
@@ -59,5 +61,7 @@ export function useUserManager(enabled = true): UserManagerApi {
     createRole: departmentService.createRole,
     editRole: departmentService.editRole,
     deleteRole: departmentService.deleteRole,
+    revokeInviteCode: departmentService.revokeInviteCode,
+    regenerateInviteCode: departmentService.regenerateInviteCode,
   };
 }

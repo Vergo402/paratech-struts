@@ -118,15 +118,44 @@ const JOIN_SELF_WRITE = [
   "root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true",
 ].join(' && ');
 
-// INVITE CODE (workflow #232) — the founder publishes one resolver entry per code
-// (orgs/inviteCodes/{code} → {deptId, deptName, ...}). Create-only, self-stamped,
-// and ONLY for a dept the writer actually founded (root createdBy === auth.uid) —
-// so no one can publish a code that injects members into someone else's dept.
+// INVITE CODE (workflow #232, revocation #423) — the resolver entries at
+// orgs/inviteCodes/{code} → {deptId, deptName, ...}. Two branches:
+//   CREATE — publish a new code, self-stamped, only for a dept the writer founded
+//     OR administers (an active manageUsers-holder; pre-#423 this was founder-only,
+//     which would have blocked a non-founder admin's regenerate).
+//   REVOKE — the ONLY allowed update is flipping active → false (kill a leaked or
+//     rotated code); every other field is frozen to its prior value, and no branch
+//     permits delete or reactivation — a dead code stays dead, auditably. Without
+//     this branch codes were create-only: a leaked code granted irrevocable join
+//     access (pre-Phase-J audit #423).
+// The code nodes live under the $code wildcard (no $deptId in scope), so the
+// member/permission lookups are parameterized on the deptId read from the code
+// entry itself. CAUTION: NO literal { }.
+const codeMember = (deptExpr: string): string =>
+  `root.child('orgs').child(${deptExpr}).child('members').child(auth.uid)`;
+const codeDeptAdmin = (deptExpr: string): string =>
+  [
+    `root.child('orgs').child(${deptExpr}).child('createdBy').val() === auth.uid`,
+    `( ${codeMember(deptExpr)}.exists() && ${codeMember(deptExpr)}.child('active').val() != false && ` +
+      `root.child('orgs').child(${deptExpr}).child('roles').child(${codeMember(deptExpr)}.child('role').val())` +
+      `.child('permissions').child('manageUsers').val() === true )`,
+  ].join(' || ');
 const INVITE_CODE_CREATE = [
   'auth != null',
   '!data.exists()',
   'newData.child(\'createdBy\').val() === auth.uid',
-  "root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid",
+  `( ${codeDeptAdmin("newData.child('deptId').val()")} )`,
+].join(' && ');
+const INVITE_CODE_REVOKE = [
+  'auth != null',
+  'data.exists()',
+  'newData.exists()',
+  "newData.child('active').val() === false",
+  "newData.child('deptId').val() === data.child('deptId').val()",
+  "newData.child('deptName').val() === data.child('deptName').val()",
+  "newData.child('createdBy').val() === data.child('createdBy').val()",
+  "newData.child('createdAt').val() === data.child('createdAt').val()",
+  `( ${codeDeptAdmin("data.child('deptId').val()")} )`,
 ].join(' && ');
 // A specific code is readable by any signed-in user — knowing the code IS the
 // authorization (resolve code → dept). The inviteCodes PARENT has no read, so
@@ -332,7 +361,7 @@ export function buildV4OrgsRules(): RuleTree {
   // extra-field rejection; the read/write authz is layered on top.
   const codeNode = objectRules(InviteCode);
   codeNode['.read'] = INVITE_CODE_READ;
-  codeNode['.write'] = INVITE_CODE_CREATE;
+  codeNode['.write'] = `(${INVITE_CODE_CREATE}) || (${INVITE_CODE_REVOKE})`;
 
   return { $deptId: deptNode, inviteCodes: { $code: codeNode } };
 }
