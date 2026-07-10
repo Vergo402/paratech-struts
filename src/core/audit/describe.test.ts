@@ -153,4 +153,19 @@ describe('auditRowsToCsv', () => {
     const csv = auditRowsToCsv(rows);
     expect(csv).toContain('"A, B"');
   });
+
+  it('neutralizes spreadsheet formulas in peer-controlled cells (CWE-1236, #257 fold)', () => {
+    // A malicious peer sets their display name / a role name to a formula — the
+    // export must render it as text, never something Excel executes.
+    const rows = describeAuditLog([
+      { id: 'a', type: 'roleCreated', at: 1, by: 'dev', actor: '=HYPERLINK("http://evil","x")', roleName: '+CMD|calc' },
+    ]);
+    const csv = auditRowsToCsv(rows);
+    expect(csv).toContain(`'=HYPERLINK`); // apostrophe-prefixed → inert text
+    expect(csv).not.toMatch(/(^|,)"?=HYPERLINK/m); // never a bare leading =
+    // ordinary cells are untouched
+    const clean = auditRowsToCsv(describeAuditLog([{ id: 'b', type: 'roleCreated', at: 1, by: 'dev', actor: 'Alex', roleName: 'Ops' }]));
+    expect(clean).toContain('Alex');
+    expect(clean).not.toContain(`'Alex`);
+  });
 });

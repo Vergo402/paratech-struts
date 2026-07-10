@@ -152,6 +152,19 @@ describe('join + membership (#420 root cause, anti-lockout)', () => {
     await seedDept(env);
     await assertFails(db('founder').ref(`orgs/${DEPT}/members/founder/role`).set('default'));
   });
+
+  it('promotion TO Admin requires an ADMIN actor — a manageUsers custom role cannot escalate (#257 fold)', async () => {
+    // 'manager' holds manageUsers via the custom role but is NOT an admin:
+    // promoting anyone — including themselves — to Admin is denied.
+    await assertFails(db('manager').ref(`orgs/${DEPT}/members/member1/role`).set('admin'));
+    await assertFails(db('manager').ref(`orgs/${DEPT}/members/manager/role`).set('admin'));
+    // A real admin still promotes members to Admin.
+    await assertSucceeds(db('admin2').ref(`orgs/${DEPT}/members/member1/role`).set('admin'));
+    // The manager's ordinary member management is untouched (non-admin role changes).
+    await env.clearDatabase();
+    await seedDept(env);
+    await assertSucceeds(db('manager').ref(`orgs/${DEPT}/members/member1/role`).set('custom-mgr'));
+  });
 });
 
 describe('legacy-tree lockdown (#424)', () => {

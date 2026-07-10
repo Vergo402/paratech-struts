@@ -245,11 +245,20 @@ const actorIsAdmin = `${memberRole} === '${ADMIN_ROLE_ID}'`;
 const adminLosingAdmin =
   `data.child('role').val() === '${ADMIN_ROLE_ID}' && ` +
   `(!newData.exists() || newData.child('role').val() !== '${ADMIN_ROLE_ID}' || newData.child('active').val() === false)`;
+// GAINING admin requires an ADMIN actor (pre-Phase-J audit Low, folded into #257):
+// without this, any manageUsers-holder — including a custom role — could promote
+// themselves (or anyone) to full Admin, escalating across the whole 8-permission
+// taxonomy. Losing-admin already required a different admin; gaining now requires
+// an admin too (self-promotion by a non-admin manageUsers holder is the exact
+// escalation; an existing admin re-writing an admin row is not a "gain").
+const adminGainingAdmin =
+  `newData.child('role').val() === '${ADMIN_ROLE_ID}' && data.child('role').val() !== '${ADMIN_ROLE_ID}'`;
 const ADMIN_MANAGE = [
   'auth != null',
   actorIsMember,
   permissionGate('manageUsers'),
   `( !(${adminLosingAdmin}) || ( ${actorIsAdmin} && $uid !== auth.uid ) )`,
+  `( !(${adminGainingAdmin}) || ${actorIsAdmin} )`,
 ].join(' && ');
 
 // ROLE MANAGEMENT (#418, pre-Phase-J audit H4) — custom-role create/edit/delete at

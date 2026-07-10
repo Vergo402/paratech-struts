@@ -171,6 +171,12 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(dept.apparatus['.read']).toBeUndefined();
   });
 
+  it('promotion TO Admin requires an admin actor — no manageUsers escalation (#257 fold)', () => {
+    const w = committed.rules.orgs.$deptId.members.$uid['.write'];
+    // the gaining-admin guard: newData admin + data non-admin → actor must be admin
+    expect(w).toContain("newData.child('role').val() === 'admin' && data.child('role').val() !== 'admin'");
+  });
+
   it('member management is manageUsers-gated with a count-free >=1-Admin anti-lockout (#380)', () => {
     const w = committed.rules.orgs.$deptId.members.$uid['.write'];
     // the self-join path survives (a joiner still creates their own Default row)
