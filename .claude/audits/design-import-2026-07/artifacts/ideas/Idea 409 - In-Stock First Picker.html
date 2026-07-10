@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const Y=new URLSearchParams(location.search).get("theme");if(Y==="light"||Y==="dark"){document.documentElement.dataset.theme=Y}}{const Y=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const k=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(k&&k!=="normal")return;const w=(X)=>{if(!X)return null;const F=getComputedStyle(X).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const K=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(K<0.99)return null;return[+F[1],+F[2],+F[3]]};const U=w(document.body)||w(document.documentElement);if(!U)return;const x=(X)=>{const F=X/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const D=0.2126*x(U[0])+0.7152*x(U[1])+0.0722*x(U[2]);document.documentElement.style.setProperty("color-scheme",D<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")Y();else window.addEventListener("load",Y)}var _=[];var v=false;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const Y=window.Babel;const k="om-src-id";if(Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[k])){Y.registerPlugin(k,({types:D})=>({visitor:{JSXOpeningElement(X,F){const K=X.node;if(K.name&&K.name.type==="JSXMemberExpression")return;for(let z=0;z<K.attributes.length;z++){const V=K.attributes[z];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const A=K.loc&&K.loc.start;const J=`jsx:${B}:${K.start??0}:${A?A.line:0}:${A?A.column+1:0}`;K.attributes.push(D.jsxAttribute(D.jsxIdentifier("data-om-id"),D.stringLiteral(J)))}}}))}const w="om-text-extract";let U=false;if(v&&Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[w])){const D=window.React;if(D&&D.useSyncExternalStore&&D.createElement){U=true;const X={};const F=new Set;let K=0;window.__omTextO=X;window.__omTextSet=(J)=>{for(const z in J){const V=J[z];if(V==null)delete X[z];else X[z]=V}K++;F.forEach((z)=>z())};const B=(J)=>{F.add(J);return()=>F.delete(J)};const A=()=>K;window.__OmT=function J(z){D.useSyncExternalStore(B,A,A);return D.createElement("span",{"data-om-text":z.i,className:"__om-t"},z.i in X?X[z.i]:z.children)};Y.registerPlugin(w,({types:J})=>{const z={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,H)=>J.logicalExpression("??",J.memberExpression(J.logicalExpression("||",J.memberExpression(J.identifier("window"),J.identifier("__omTextO")),J.objectExpression([])),J.stringLiteral(Z),true),H);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const j=(Z)=>Z.file&&Z.file.code||"";const G=(Z,H)=>{const N=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const L=N(H);if(L)return L;if(H&&H.type==="Identifier"){const $=Z.scope.getBinding(H.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return N($.path.node.init)}}return null};const R=(Z,H,N)=>{const L=Z.node;let $=false;const M=(q,E)=>{$=true;return J.jsxElement(J.jsxOpeningElement(J.jsxIdentifier("__OmT"),[J.jsxAttribute(J.jsxIdentifier("i"),J.stringLiteral(q))],false),J.jsxClosingElement(J.jsxIdentifier("__OmT")),[E],false)};const C=L.children.map((q)=>{if(q.type==="JSXText"){if(q.start==null||q.end==null)return q;const E=N.slice(q.start,q.end);const f=E.length-E.trimStart().length;const I=E.length-E.trimEnd().length;if(f+I>=E.length)return q;return M(`txt:${H}:${q.start+f}:${q.end-I}`,q)}if(q.type==="JSXExpressionContainer"){const E=G(Z,q.expression);if(E)return M(`str:${H}:${E[0]}:${E[1]}`,q)}return q});if($)L.children=C};return{visitor:{JSXOpeningElement(Z,H){const N=Z.node;const L=Q(H);const $={};for(let M=0;M<N.attributes.length;M++){const C=N.attributes[M];if(C.type!=="JSXAttribute"||!C.name)continue;const q=C.name.name;if(!V[q])continue;if(!C.value||C.value.type!=="StringLiteral")continue;if(C.value.start==null||C.value.end==null)continue;const E=`txt:${L}:${C.value.start}:${C.value.end}`;$[q]=E;C.value=J.jsxExpressionContainer(W(E,J.stringLiteral(C.value.value)))}if(Object.keys($).length){N.attributes.push(J.jsxAttribute(J.jsxIdentifier("data-om-text-attrs"),J.stringLiteral(JSON.stringify($))))}},JSXElement(Z,H){const N=Z.node.openingElement;const L=N&&N.name&&N.name.name;if(L==="__OmT")return;if(typeof L==="string"&&z[L])return;R(Z,Q(H),j(H))},JSXFragment(Z,H){R(Z,Q(H),j(H))}}}})}}const x=U?["transform-react-jsx-source",k,w]:["transform-react-jsx-source",k];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((D,X)=>{const F=D.getAttribute("data-plugins")||"";const K=x.filter((B)=>F.indexOf(B)<0);if(K.length){D.setAttribute("data-plugins",F?`${F},${K.join(",")}`:K.join(","))}if(!D.hasAttribute("data-filename")){D.setAttribute("data-filename",D.getAttribute("src")||`inline-${X}`)}})});var S=window.parent;if(S&&S!==window){const Y=(J,z)=>{try{S.postMessage({__omelette_log:true,type:J,data:z},"*")}catch{}};["log","warn","error"].forEach((J)=>{const z=console[J];console[J]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");Y(J,W);z.apply(console,V)}});window.addEventListener("error",(J)=>{const z=J.target;if(z&&z!==window&&z.tagName){const V=z.src||z.href||"";Y("resource_error",`${z.tagName} failed to load: ${V}`)}else{Y("error",`${J.message||"Unknown error"} at ${J.filename||"?"}:${J.lineno||0}:${J.colno||0}`)}},true);window.addEventListener("unhandledrejection",(J)=>{const z=J.reason;const V=z instanceof Error?`${z.message} ${z.stack}`:String(z);Y("error",`Unhandled rejection: ${V}`)});const k=()=>{try{S.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(k).observe(document.documentElement);const w=()=>{k();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const J=()=>document.getElementById("root")||document.querySelector("body > div[id]");const z=J()?.firstElementChild??null;let V=0;const W=()=>{const Q=J();if(Q&&Q.firstElementChild!==z||++V>30){k();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")w();else window.addEventListener("load",w);const U={};let x=0;const D=(J)=>new Promise((z,V)=>{if(!_.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete U[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const j=Q();U[W]={resolve:z,reject:V,text:"",t:j,arm:Q};try{for(const G of _){S.postMessage({__om_api:true,id:W,body:J},G)}}catch(G){clearTimeout(j);delete U[W];V(G)}});const X=8;const F=async(J,z)=>{if(!Array.isArray(J.messages)){throw new Error("claude.complete: tools require a messages array")}const V=J.messages.slice();const W={...J,tools:J.tools.map((G)=>{if(G===null||typeof G!=="object")return G;const R={};for(const Z of Object.keys(G)){if(typeof G[Z]!=="function")R[Z]=G[Z]}return R})};const Q=W.tool_choice;const j=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let G=0;G<X;G++){const R=await D({...G===0?W:j,messages:V});const Z=R.message;const H=Z&&Array.isArray(Z.content)?Z.content:null;const N=H?H.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||N.length===0){return R.text}const L=[];for(const $ of N){const M=z.get($.name);if(!M){L.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const C=await M($.input);const q=typeof C==="string"?C:A(C)??"";L.push({type:"tool_result",tool_use_id:$.id,content:q})}catch(C){L.push({type:"tool_result",tool_use_id:$.id,content:String(C?.message??C??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:H},{role:"user",content:L})}throw new Error(`claude.complete: exceeded ${X} tool turns`)};window.claude={complete(J){const z=J;if(z!==null&&typeof z==="object"&&Array.isArray(z.tools)&&z.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of z.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(z,V)}return D(J).then((V)=>V.text)}};const K={};let B=0;window.omelette={writeFile:(J,z)=>new Promise((V,W)=>{if(!_.length){V();return}const Q=`f${++B}`;const j=setTimeout(()=>{delete K[Q];V()},h);K[Q]={resolve:V,reject:W,t:j};try{for(const G of _){S.postMessage({__om_file:true,id:Q,op:"write",path:J,content:z},G)}}catch{clearTimeout(j);delete K[Q];V()}})};const A=(J)=>{try{return JSON.stringify(J)}catch{return JSON.stringify(String(J))}};window.addEventListener("message",(J)=>{if(_.indexOf(J.origin)<0)return;if(J.source!==S)return;const z=J.data;if(!z)return;if(z.type==="omelette-preview-refresh"){if(typeof z.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(z.token))return;const Q=Math.max(1,Math.floor((z.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+z.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(z.__om_file_r){const Q=K[z.id];if(!Q)return;clearTimeout(Q.t);delete K[z.id];if(z.ok)Q.resolve();else Q.reject(new Error(z.error||"write failed"));return}if(z.__om_api_r){const Q=U[z.id];if(!Q)return;if(z.error!=null){clearTimeout(Q.t);delete U[z.id];Q.reject(new Error(z.error));return}if(z.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=z.chunk;return}if(z.done){clearTimeout(Q.t);delete U[z.id];Q.resolve({text:z.text!=null?z.text:Q.text,message:z.message});return}return}if(!z.__om_eval)return;const V=z;const W=(Q)=>{J.source.postMessage({...Q,__om_eval_r:1,id:V.id},J.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((j)=>W({ok:1,v:A(j)}),(j)=>W({ok:0,e:String(j)}))}else{W({ok:1,v:A(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#409 — Sort in-stock connectors to top of deduction picker</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="exploration-chrome.css">
+<script src="_vendor/react.js"></script>
+<script src="exploration-quiet.js"></script>
+<script src="_vendor/react-dom.js"></script>
+<script src="_ds_bundle.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { VisualGridPicker, PlateSwatch, InlineSegmented, MeasurementValue, Segmented } = window.FieldShore;
+const { useState, useEffect } = React;
+
+// Mirrors BASE_PLATES in fieldshore-v4 core (subset used by this crew).
+const PARTS = [
+  { id: 'multi',        name: 'Multi-Base',                    height: 4.2 },
+  { id: 'swivel6',      name: '6" Swivel Base',                height: 1.8 },
+  { id: 'swivel12',     name: '12" Swivel Base',               height: 2.3 },
+  { id: 'rigid6',       name: '6" Rigid Base',                 height: 1.0 },
+  { id: 'rigid12',      name: '12" Rigid Base',                height: 1.2 },
+  { id: 'hinged6',      name: '6" Hinged Base',                height: 3.2 },
+  { id: 'hinged12',     name: '12" Hinged Base',               height: 3.4 },
+  { id: 'base45',       name: '45° Base',                      height: 5.4 },
+  { id: 'vbase',        name: 'V-Base',                        height: 1.9 },
+  { id: 'contour',      name: 'Contour Base',                  height: 1.7 },
+  { id: 'threadedconn', name: 'Adjustable Threaded Connector', height: 3.5 },
+  { id: 'springloaded', name: 'Spring Loaded Connector',       height: 3.9 },
+];
+const WOOD = [
+  { id: 'none', h: 0 }, { id: '4x4', h: 3.5 }, { id: '6x6', h: 5.5 },
+];
+const WOOD_OPTIONS = WOOD.map((w) => ({ value: w.id, label: w.id === 'none' ? 'None' : w.id.replace('x', '×') }));
+
+const OPTIONS = [
+  { id: 'none', name: 'None' },
+  ...PARTS.map((p) => ({ id: p.id, name: p.name, sub: <MeasurementValue eighths={-Math.round(p.height * 8)} /> })),
+];
+
+// What each rig actually carries (drives availableIds).
+const RIGS = {
+  rescue1: { label: 'Rescue 1', stock: ['multi', 'swivel6', 'rigid6', 'vbase'] },
+  engine7: { label: 'Engine 7', stock: ['multi', 'hinged6', 'hinged12', 'base45', 'contour', 'threadedconn'] },
+  all:     { label: 'No filter (today)', stock: null },
+};
+
+const plateH = (id) => (PARTS.find((p) => p.id === id) || { height: 0 }).height;
+const woodH = (id) => (WOOD.find((w) => w.id === id) || { h: 0 }).h;
+
+// Photos are the Paratech manual figures in plates/<id>.png (same set v3
+// shipped). Same fallback pattern as the shipped PlateThumb.
+function PhotoThumb({ opt }) {
+  const [err, setErr] = useState(false);
+  if (opt.id === 'none' || err) return <PlateSwatch name={opt.name} />;
+  return (
+    <img
+      className="fs-swatch fs-swatch--photo"
+      src={'plates/' + opt.id + '.png'}
+      alt=""
+      aria-hidden="true"
+      onError={() => setErr(true)}
+    />
+  );
+}
+
+function Page() {
+  const [rig, setRig] = useState('rescue1');
+  const [value, setValue] = useState({ headerWood: '4x4', footerWood: 'none', topPlate: 'multi', bottomPlate: 'swivel6' });
+  const raw = 749; // 93 5/8" opening
+  const set = (k, v) => setValue((prev) => ({ ...prev, [k]: v }));
+
+  const stock = RIGS[rig].stock;
+  const availableIds = stock ? new Set(stock) : undefined;
+  const deductions = woodH(value.headerWood) + woodH(value.footerWood) + plateH(value.topPlate) + plateH(value.bottomPlate);
+  const effectiveEighths = raw - Math.round(deductions * 8);
+  const offTruck = ['topPlate', 'bottomPlate'].filter((k) => stock && value[k] !== 'none' && !stock.includes(value[k]));
+
+  const platePicker = (label, key) => (
+    <VisualGridPicker
+      label={label}
+      options={OPTIONS}
+      value={value[key]}
+      onSelect={(id) => set(key, id)}
+      availableIds={availableIds}
+      renderThumb={(opt) => <PhotoThumb opt={opt} />}
+      trailing={<span className="fs-ledger-value"><MeasurementValue eighths={-Math.round(plateH(value[key]) * 8)} /></span>}
+    />
+  );
+
+  return (
+    <div className="xp-page">
+      <header className="xp-head">
+        <span className="xp-eyebrow">FieldShore v4 · design exploration</span>
+        <h1 className="xp-title">#409 — Deduction picker: in-stock parts first</h1>
+        <p className="xp-sub">
+          In the field, the connector on the truck is the one that matters. The picker sorts
+          parts in inventory to the top under an “Available” header; everything else drops below,
+          greyed but still selectable — mutual aid happens.
+        </p>
+        <nav className="xp-links">
+          <a href="Design Exploration Queue.html">← All explorations</a>
+          <a href="https://github.com/Vergo402/paratech-struts/issues/409" target="_blank" rel="noopener">Issue #409 ↗</a>
+        </nav>
+      </header>
+
+      <div className="xp-toolbar">
+        <span className="xp-toolbar-label">Assigned apparatus</span>
+        <Segmented
+          size="standard"
+          options={Object.entries(RIGS).map(([v, r]) => ({ value: v, label: r.label }))}
+          value={rig}
+          onChange={setRig}
+          aria-label="Assigned apparatus"
+        />
+      </div>
+
+      <div className="xp-row">
+        <section className="xp-panel" style={{ width: 400 }}>
+          <span className="xp-tag">Proposed · tap a plate picker</span>
+          <div className="xp-panel-head">
+            <h2 className="xp-panel-title">Strut deduction ledger</h2>
+            <p className="xp-panel-note">
+              {stock
+                ? RIGS[rig].label + ' carries ' + stock.length + ' of ' + PARTS.length + ' connector types.'
+                : 'Unfiltered — every part in one flat alphabetical list, like today.'}
+            </p>
+          </div>
+          <div className="fs-ledger">
+            <div className="fs-ledger-row fs-ledger-raw">
+              <span className="fs-ledger-label">Raw opening</span>
+              <MeasurementValue eighths={raw} className="fs-ledger-value" />
+            </div>
+            <InlineSegmented
+              label="Header wood"
+              options={WOOD_OPTIONS}
+              value={value.headerWood}
+              onChange={(v) => set('headerWood', v)}
+              trailing={<span className="fs-ledger-value"><MeasurementValue eighths={-Math.round(woodH(value.headerWood) * 8)} /></span>}
+            />
+            {platePicker('Top plate', 'topPlate')}
+            {platePicker('Bottom plate', 'bottomPlate')}
+            <InlineSegmented
+              label="Footer wood"
+              options={WOOD_OPTIONS}
+              value={value.footerWood}
+              onChange={(v) => set('footerWood', v)}
+              trailing={<span className="fs-ledger-value"><MeasurementValue eighths={-Math.round(woodH(value.footerWood) * 8)} /></span>}
+            />
+            <div className="fs-ledger-row fs-ledger-effective">
+              <span className="fs-ledger-label">Required strut length</span>
+              <span className="fs-ledger-value fs-ledger-value--big"><MeasurementValue eighths={effectiveEighths} /></span>
+            </div>
+          </div>
+          {offTruck.length > 0 && (
+            <p className="xp-panel-note" style={{ color: 'var(--danger-text)' }}>
+              ⚠ Selected {offTruck.length === 1 ? 'plate is' : 'plates are'} not on {RIGS[rig].label} — confirm before deploying.
+            </p>
+          )}
+        </section>
+
+        <section className="xp-panel" style={{ flex: 1, minWidth: 380 }}>
+          <div className="xp-panel-head">
+            <h2 className="xp-panel-title">The rules</h2>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: '1.2em', font: 'var(--type-body)', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <li><strong style={{ color: 'var(--text-primary)' }}>“Available” section first</strong> — parts on the assigned apparatus, in the usual catalog order. “None” is always available.</li>
+            <li><strong style={{ color: 'var(--text-primary)' }}>“Not in inventory” below, at 45% opacity</strong> — visibly demoted, still tappable. Blocking selection would be wrong: crews borrow parts.</li>
+            <li><strong style={{ color: 'var(--text-primary)' }}>Selecting an off-truck part warns, never blocks</strong> — the ledger flags it so the deploy step can double-check.</li>
+            <li><strong style={{ color: 'var(--text-primary)' }}>Switch apparatus, watch the sort change</strong> — the section split is driven by the same inventory data the Operations board already has.</li>
+          </ul>
+          <p className="xp-panel-note" style={{ maxWidth: '62ch' }}>
+            The grouping, headers, and dimming already exist in <code>VisualGridPicker</code>
+            (<code>availableIds</code>) — today only Ops deploy flows pass it. This exploration
+            wires it into the deduction ledger (Quick Find + Operations), plus the off-truck
+            warning. Photo thumbnails are the Paratech manual figures (see <a href="Idea 384 — Photo Plate Thumbnails.html">#384</a>).
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Page />);
+</script>
+</body>
+</html>

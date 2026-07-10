@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const Y=new URLSearchParams(location.search).get("theme");if(Y==="light"||Y==="dark"){document.documentElement.dataset.theme=Y}}{const Y=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const k=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(k&&k!=="normal")return;const w=(X)=>{if(!X)return null;const F=getComputedStyle(X).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const K=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(K<0.99)return null;return[+F[1],+F[2],+F[3]]};const U=w(document.body)||w(document.documentElement);if(!U)return;const x=(X)=>{const F=X/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const D=0.2126*x(U[0])+0.7152*x(U[1])+0.0722*x(U[2]);document.documentElement.style.setProperty("color-scheme",D<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")Y();else window.addEventListener("load",Y)}var _=[];var v=false;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const Y=window.Babel;const k="om-src-id";if(Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[k])){Y.registerPlugin(k,({types:D})=>({visitor:{JSXOpeningElement(X,F){const K=X.node;if(K.name&&K.name.type==="JSXMemberExpression")return;for(let z=0;z<K.attributes.length;z++){const V=K.attributes[z];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const A=K.loc&&K.loc.start;const J=`jsx:${B}:${K.start??0}:${A?A.line:0}:${A?A.column+1:0}`;K.attributes.push(D.jsxAttribute(D.jsxIdentifier("data-om-id"),D.stringLiteral(J)))}}}))}const w="om-text-extract";let U=false;if(v&&Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[w])){const D=window.React;if(D&&D.useSyncExternalStore&&D.createElement){U=true;const X={};const F=new Set;let K=0;window.__omTextO=X;window.__omTextSet=(J)=>{for(const z in J){const V=J[z];if(V==null)delete X[z];else X[z]=V}K++;F.forEach((z)=>z())};const B=(J)=>{F.add(J);return()=>F.delete(J)};const A=()=>K;window.__OmT=function J(z){D.useSyncExternalStore(B,A,A);return D.createElement("span",{"data-om-text":z.i,className:"__om-t"},z.i in X?X[z.i]:z.children)};Y.registerPlugin(w,({types:J})=>{const z={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,H)=>J.logicalExpression("??",J.memberExpression(J.logicalExpression("||",J.memberExpression(J.identifier("window"),J.identifier("__omTextO")),J.objectExpression([])),J.stringLiteral(Z),true),H);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const j=(Z)=>Z.file&&Z.file.code||"";const G=(Z,H)=>{const N=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const L=N(H);if(L)return L;if(H&&H.type==="Identifier"){const $=Z.scope.getBinding(H.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return N($.path.node.init)}}return null};const R=(Z,H,N)=>{const L=Z.node;let $=false;const M=(q,E)=>{$=true;return J.jsxElement(J.jsxOpeningElement(J.jsxIdentifier("__OmT"),[J.jsxAttribute(J.jsxIdentifier("i"),J.stringLiteral(q))],false),J.jsxClosingElement(J.jsxIdentifier("__OmT")),[E],false)};const C=L.children.map((q)=>{if(q.type==="JSXText"){if(q.start==null||q.end==null)return q;const E=N.slice(q.start,q.end);const f=E.length-E.trimStart().length;const I=E.length-E.trimEnd().length;if(f+I>=E.length)return q;return M(`txt:${H}:${q.start+f}:${q.end-I}`,q)}if(q.type==="JSXExpressionContainer"){const E=G(Z,q.expression);if(E)return M(`str:${H}:${E[0]}:${E[1]}`,q)}return q});if($)L.children=C};return{visitor:{JSXOpeningElement(Z,H){const N=Z.node;const L=Q(H);const $={};for(let M=0;M<N.attributes.length;M++){const C=N.attributes[M];if(C.type!=="JSXAttribute"||!C.name)continue;const q=C.name.name;if(!V[q])continue;if(!C.value||C.value.type!=="StringLiteral")continue;if(C.value.start==null||C.value.end==null)continue;const E=`txt:${L}:${C.value.start}:${C.value.end}`;$[q]=E;C.value=J.jsxExpressionContainer(W(E,J.stringLiteral(C.value.value)))}if(Object.keys($).length){N.attributes.push(J.jsxAttribute(J.jsxIdentifier("data-om-text-attrs"),J.stringLiteral(JSON.stringify($))))}},JSXElement(Z,H){const N=Z.node.openingElement;const L=N&&N.name&&N.name.name;if(L==="__OmT")return;if(typeof L==="string"&&z[L])return;R(Z,Q(H),j(H))},JSXFragment(Z,H){R(Z,Q(H),j(H))}}}})}}const x=U?["transform-react-jsx-source",k,w]:["transform-react-jsx-source",k];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((D,X)=>{const F=D.getAttribute("data-plugins")||"";const K=x.filter((B)=>F.indexOf(B)<0);if(K.length){D.setAttribute("data-plugins",F?`${F},${K.join(",")}`:K.join(","))}if(!D.hasAttribute("data-filename")){D.setAttribute("data-filename",D.getAttribute("src")||`inline-${X}`)}})});var S=window.parent;if(S&&S!==window){const Y=(J,z)=>{try{S.postMessage({__omelette_log:true,type:J,data:z},"*")}catch{}};["log","warn","error"].forEach((J)=>{const z=console[J];console[J]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");Y(J,W);z.apply(console,V)}});window.addEventListener("error",(J)=>{const z=J.target;if(z&&z!==window&&z.tagName){const V=z.src||z.href||"";Y("resource_error",`${z.tagName} failed to load: ${V}`)}else{Y("error",`${J.message||"Unknown error"} at ${J.filename||"?"}:${J.lineno||0}:${J.colno||0}`)}},true);window.addEventListener("unhandledrejection",(J)=>{const z=J.reason;const V=z instanceof Error?`${z.message} ${z.stack}`:String(z);Y("error",`Unhandled rejection: ${V}`)});const k=()=>{try{S.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(k).observe(document.documentElement);const w=()=>{k();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const J=()=>document.getElementById("root")||document.querySelector("body > div[id]");const z=J()?.firstElementChild??null;let V=0;const W=()=>{const Q=J();if(Q&&Q.firstElementChild!==z||++V>30){k();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")w();else window.addEventListener("load",w);const U={};let x=0;const D=(J)=>new Promise((z,V)=>{if(!_.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete U[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const j=Q();U[W]={resolve:z,reject:V,text:"",t:j,arm:Q};try{for(const G of _){S.postMessage({__om_api:true,id:W,body:J},G)}}catch(G){clearTimeout(j);delete U[W];V(G)}});const X=8;const F=async(J,z)=>{if(!Array.isArray(J.messages)){throw new Error("claude.complete: tools require a messages array")}const V=J.messages.slice();const W={...J,tools:J.tools.map((G)=>{if(G===null||typeof G!=="object")return G;const R={};for(const Z of Object.keys(G)){if(typeof G[Z]!=="function")R[Z]=G[Z]}return R})};const Q=W.tool_choice;const j=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let G=0;G<X;G++){const R=await D({...G===0?W:j,messages:V});const Z=R.message;const H=Z&&Array.isArray(Z.content)?Z.content:null;const N=H?H.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||N.length===0){return R.text}const L=[];for(const $ of N){const M=z.get($.name);if(!M){L.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const C=await M($.input);const q=typeof C==="string"?C:A(C)??"";L.push({type:"tool_result",tool_use_id:$.id,content:q})}catch(C){L.push({type:"tool_result",tool_use_id:$.id,content:String(C?.message??C??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:H},{role:"user",content:L})}throw new Error(`claude.complete: exceeded ${X} tool turns`)};window.claude={complete(J){const z=J;if(z!==null&&typeof z==="object"&&Array.isArray(z.tools)&&z.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of z.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(z,V)}return D(J).then((V)=>V.text)}};const K={};let B=0;window.omelette={writeFile:(J,z)=>new Promise((V,W)=>{if(!_.length){V();return}const Q=`f${++B}`;const j=setTimeout(()=>{delete K[Q];V()},h);K[Q]={resolve:V,reject:W,t:j};try{for(const G of _){S.postMessage({__om_file:true,id:Q,op:"write",path:J,content:z},G)}}catch{clearTimeout(j);delete K[Q];V()}})};const A=(J)=>{try{return JSON.stringify(J)}catch{return JSON.stringify(String(J))}};window.addEventListener("message",(J)=>{if(_.indexOf(J.origin)<0)return;if(J.source!==S)return;const z=J.data;if(!z)return;if(z.type==="omelette-preview-refresh"){if(typeof z.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(z.token))return;const Q=Math.max(1,Math.floor((z.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+z.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(z.__om_file_r){const Q=K[z.id];if(!Q)return;clearTimeout(Q.t);delete K[z.id];if(z.ok)Q.resolve();else Q.reject(new Error(z.error||"write failed"));return}if(z.__om_api_r){const Q=U[z.id];if(!Q)return;if(z.error!=null){clearTimeout(Q.t);delete U[z.id];Q.reject(new Error(z.error));return}if(z.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=z.chunk;return}if(z.done){clearTimeout(Q.t);delete U[z.id];Q.resolve({text:z.text!=null?z.text:Q.text,message:z.message});return}return}if(!z.__om_eval)return;const V=z;const W=(Q)=>{J.source.postMessage({...Q,__om_eval_r:1,id:V.id},J.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((j)=>W({ok:1,v:A(j)}),(j)=>W({ok:0,e:String(j)}))}else{W({ok:1,v:A(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>FieldShore · Operations — 3 Views × 2 Devices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .sizer { position: absolute; left: 0; top: 0; width: 3980px; height: 2240px; pointer-events: none; }
+
+  /* ---- canvas labels ---- */
+  .flabel { font-family: 'Archivo', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .02em;
+            color: #2b2b2b; margin: 0 0 12px 2px; cursor: grab; display: flex; align-items: baseline; gap: 8px; }
+  .flabel b { font-size: 15px; font-weight: 800; color: #111; }
+  .flabel .pin { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #fff; background: #B07D17;
+                 padding: 2px 6px; border-radius: 5px; letter-spacing: 0; }
+  .flabel .pin.g { background: #2b2b2b; }
+
+  /* ---- brief ---- */
+  .brief { position: absolute; background: #14171B; border: 1px solid rgba(255,255,255,.10); border-radius: 16px;
+           padding: 24px 28px; color: #ECEBE8; box-shadow: 0 16px 50px rgba(0,0,0,.22); }
+  .brief h1 { font-family: 'Archivo', sans-serif; font-size: 24px; font-weight: 800; margin: 0 0 4px; letter-spacing: -.01em; }
+  .brief h1 .v { color: #E2A93B; }
+  .brief .sub { font-size: 13.5px; line-height: 1.5; color: #A6AAA6; margin: 0 0 20px; max-width: 1180px; }
+  .brief .grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1.05fr; gap: 30px; }
+  .brief h2 { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .14em;
+              text-transform: uppercase; color: #71756F; margin: 0 0 11px; }
+  .brief p { font-size: 12.5px; line-height: 1.5; color: #C9CCC8; margin: 0; }
+  .brief p b { color: #ECEBE8; font-weight: 600; }
+  .brief .vw { color: #E2A93B; font-weight: 600; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .legend .row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #C9CCC8; }
+  .legend .sw { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+  .legend .mono { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #71756F; margin-left: auto; }
+
+  /* ---- calm palette (shared) ---- */
+  .calm { --bg:#181B20; --card:#20242B; --card-hi:#262C34; --stroke:rgba(255,255,255,.07); --stroke-2:rgba(255,255,255,.12);
+          --t1:#E9EAEC; --t2:#A0A6AE; --t3:#6C727A; --accent:#E2A93B; --accent-sub:rgba(226,169,59,.14);
+          --mono:'IBM Plex Mono', monospace; font-family:'IBM Plex Sans', sans-serif; }
+
+  /* ---- frames ---- */
+  .col { position: absolute; }
+  .phone { width: 390px; height: 812px; border-radius: 40px; background: #05070a; padding: 6px;
+           box-shadow: 0 24px 70px rgba(0,0,0,.45); border: 1px solid #2a2f37; position: relative; }
+  .phone .notch { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 116px; height: 26px;
+                  background: #05070a; border-radius: 0 0 16px 16px; z-index: 9; }
+  .screen { position: absolute; inset: 6px; border-radius: 34px; overflow: hidden; display: flex; flex-direction: column;
+            background: var(--bg); color: var(--t1); }
+  .tablet { width: 1194px; height: 834px; border-radius: 32px; background: #05070a; padding: 14px;
+            box-shadow: 0 30px 90px rgba(0,0,0,.5); border: 1px solid #2a2f37; position: relative; }
+  .tablet .cam { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: #20262e; }
+  .ipad { position: absolute; inset: 14px; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;
+          background: var(--bg); color: var(--t1); }
+
+  /* ===================== PHONE shared chrome ===================== */
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 13px 24px 4px; font-size: 13px; font-weight: 600; }
+  .sb .bars { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px; color: var(--t2); }
+  .sb .batt { width: 22px; height: 11px; border: 1.5px solid var(--t2); border-radius: 3px; position: relative; }
+  .sb .batt::after { content: ""; position: absolute; inset: 1.5px; right: 6px; background: var(--t1); border-radius: 1px; }
+  .m-hdr { padding: 9px 20px 10px; }
+  .m-h1 { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .m-h1 .nm { font-size: 19px; font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+  .role { display: inline-flex; align-items: center; gap: 6px; flex: none; background: var(--accent-sub);
+          border: 1px solid rgba(226,169,59,.45); border-radius: 9px; padding: 4px 9px 4px 7px; }
+  .role .rd { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .role small { font-size: 9px; font-weight: 600; color: var(--t3); letter-spacing: .08em; }
+  .role b { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .03em; }
+  .m-hdr .mt { margin-top: 6px; font-size: 12.5px; color: var(--t2); display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .m-hdr .mt .el { font-family: var(--mono); color: var(--t1); font-weight: 500; }
+  .m-hdr .mt .sep { color: var(--t3); }
+  .m-seg { display: flex; margin: 2px 18px; background: var(--card); border: 1px solid var(--stroke); border-radius: 11px; padding: 3px; gap: 2px; }
+  .m-seg a { flex: 1; text-align: center; font-size: 12px; font-weight: 600; color: var(--t2); padding: 7px 0; border-radius: 8px; }
+  .m-seg a.on { background: var(--accent-sub); color: var(--accent); }
+  .m-alert { margin: 6px 18px 4px; display: flex; align-items: center; gap: 11px; padding: 9px 13px;
+             background: rgba(248,113,113,.07); border: 1px solid rgba(248,113,113,.28); border-radius: 12px; }
+  .m-alert .ai { width: 22px; height: 22px; flex: none; border-radius: 7px; background: rgba(248,113,113,.18); color: #F87171;
+                 display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+  .m-alert .at { flex: 1; min-width: 0; }
+  .m-alert .at b { display: block; font-size: 12px; font-weight: 600; color: #F0A8A8; letter-spacing: .02em; }
+  .m-alert .at span { font-size: 10.5px; color: var(--t2); }
+  .m-alert .aack { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .06em; color: #F0A8A8;
+                   border: 1px solid rgba(248,113,113,.4); padding: 6px 10px; border-radius: 7px; flex: none; }
+  .fab { position: absolute; right: 16px; bottom: 78px; height: 48px; border-radius: 24px; padding: 0 18px 0 16px;
+         display: flex; align-items: center; gap: 8px; background: var(--accent); color: #1A1305; font-weight: 700; font-size: 14px;
+         box-shadow: 0 8px 22px rgba(0,0,0,.4); z-index: 8; }
+  .fab svg { width: 18px; height: 18px; stroke: #1A1305; stroke-width: 2.4; fill: none; }
+  .nav { margin-top: auto; display: grid; grid-template-columns: repeat(5,1fr); align-items: center; height: 64px;
+         border-top: 1px solid var(--stroke); padding-bottom: 6px; background: var(--bg); }
+  .nav a { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; letter-spacing: .03em; color: var(--t3); font-weight: 500; }
+  .nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .nav .on { color: var(--accent); }
+
+  /* ---- PHONE · Board (status lanes) ---- */
+  .pb-lanes { flex: 1; overflow: hidden; padding: 4px 0 0; display: flex; flex-direction: column; }
+  .pb-lane { display: flex; align-items: stretch; border-bottom: 1px solid var(--stroke); flex: 1; }
+  .pb-lane:last-child { border-bottom: none; }
+  .pb-lh { width: 44px; flex: none; border-right: 1px solid var(--stroke); display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 3px; }
+  .pb-lh .lct { font-family: var(--mono); font-size: 19px; font-weight: 600; line-height: 1; color: var(--c); }
+  .pb-lh .ll { font-size: 7px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--t2); text-align: center; line-height: 1.1; }
+  .pb-cards { display: flex; gap: 8px; overflow: hidden; flex: 1; padding: 8px 14px 8px 12px; }
+  .pb-chip { flex: none; width: 116px; background: var(--card-hi); border: 1px solid var(--stroke); border-left: 3px solid var(--c);
+             border-radius: 11px; padding: 9px 11px; display: flex; flex-direction: column; justify-content: center; }
+  .pb-chip .cid { font-family: var(--mono); font-size: 10.5px; font-weight: 500; color: var(--t2); display: flex; justify-content: space-between; align-items: center; }
+  .pb-chip .cloc { font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -.01em; margin: 5px 0 3px; line-height: 1.1; }
+  .pb-chip .cms { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--t2); white-space: nowrap; }
+  .pb-chip .ctype { font-size: 10px; color: var(--t3); margin-top: 2px; white-space: nowrap; }
+  .pb-chip.flag { border-color: rgba(248,113,113,.5); border-left-color: #F87171; }
+  .fdot { width: 6px; height: 6px; border-radius: 50%; background: #F87171; flex: none; }
+
+  /* ---- PHONE · Division (stacked floors) ---- */
+  .pe { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .pe .lvl { flex: 1; display: flex; min-height: 0; border-bottom: 1px solid var(--stroke); }
+  .pe .lvl.sub { background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(150,170,190,.04) 9px 10px); }
+  .pe .g { width: 44px; flex: none; border-right: 1px solid var(--stroke); display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 3px; }
+  .pe .g b { font-family: var(--mono); font-size: 21px; font-weight: 600; line-height: 1; color: var(--t1); }
+  .pe .g span { font-size: 7.5px; letter-spacing: .05em; color: var(--t3); text-align: center; line-height: 1.2; }
+  .pe .bay { flex: 1; padding: 9px 10px; display: flex; flex-wrap: wrap; gap: 7px; align-content: flex-start; }
+  .pe .gr { display: flex; align-items: center; gap: 8px; padding: 3px 12px; background: rgba(226,169,59,.10);
+            border-top: 1px solid rgba(226,169,59,.35); border-bottom: 1px solid rgba(226,169,59,.35); }
+  .pe .gr span { font-family: var(--mono); font-size: 8px; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; }
+  .pe .gr .ln { flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 11px); opacity: .6; }
+  .pe .pt { width: 105px; background: var(--card-hi); border: 1px solid var(--stroke); border-left: 3px solid var(--c); border-radius: 9px; padding: 7px 9px; }
+  .pe .pt.flag { border-color: rgba(248,113,113,.5); border-left-color: #F87171; }
+  .pe .pt .ms { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--t1); letter-spacing: -.01em; }
+  .pe .pt .b { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .pe .pt .id { font-family: var(--mono); font-size: 9.5px; color: var(--t2); display: flex; align-items: center; gap: 4px; }
+  .pe .pt .pl { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; color: var(--c); }
+
+  /* ---- PHONE · List (grouped by status) ---- */
+  .pl { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .pl .sort { display: flex; gap: 7px; padding: 8px 16px; border-bottom: 1px solid var(--stroke); }
+  .pl .sort a { font-size: 11px; font-weight: 600; color: var(--t2); padding: 5px 11px; border-radius: 8px; border: 1px solid var(--stroke); }
+  .pl .sort a.on { background: var(--accent-sub); color: var(--accent); border-color: rgba(226,169,59,.4); }
+  .pl .scroll { flex: 1; overflow: hidden; padding: 2px 12px 0; }
+  .pl .gh { display: flex; align-items: center; gap: 8px; padding: 11px 4px 7px; }
+  .pl .gh i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+  .pl .gh b { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--t2); }
+  .pl .gh .ct { font-family: var(--mono); font-size: 10px; color: var(--t3); margin-left: auto; }
+  .pl .plcard { display: flex; align-items: center; gap: 10px; background: var(--card-hi); border: 1px solid var(--stroke); border-left: 3px solid var(--c); border-radius: 11px; padding: 10px 13px; margin-bottom: 7px; }
+  .pl .plcard.flag { border-color: rgba(248,113,113,.45); border-left-color: #F87171; }
+  .pl .plcard .main { flex: 1; min-width: 0; }
+  .pl .plcard .loc { font-size: 14px; font-weight: 700; color: var(--t1); letter-spacing: -.01em; display: flex; align-items: center; gap: 7px; }
+  .pl .plcard .sub { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+  .pl .plcard .ms { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--t1); white-space: nowrap; }
+
+  /* ===================== iPad shared top bar ===================== */
+  .ipad .top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 15px 24px; border-bottom: 1px solid var(--stroke); }
+  .ipad .top .nm { font-size: 21px; font-weight: 600; letter-spacing: -.01em; }
+  .ipad .top .meta { font-size: 13px; color: var(--t2); display: flex; gap: 9px; align-items: center; margin-top: 4px; }
+  .ipad .top .meta .el { font-family: var(--mono); color: var(--t1); }
+  .ipad .top .meta .sep { color: var(--t3); }
+  .ipad .top .right { display: flex; align-items: center; gap: 14px; }
+  .ipad .seg { display: flex; background: var(--card); border: 1px solid var(--stroke); border-radius: 11px; padding: 3px; gap: 2px; }
+  .ipad .seg a { font-size: 12.5px; font-weight: 600; color: var(--t2); padding: 7px 15px; border-radius: 8px; }
+  .ipad .seg a.on { background: var(--accent-sub); color: var(--accent); }
+  .ipad .topadd { display: flex; align-items: center; gap: 7px; background: var(--accent); color: #1A1305; font-weight: 700; font-size: 13px; border: none; border-radius: 10px; padding: 9px 14px 9px 11px; white-space: nowrap; cursor: pointer; }
+  .ipad .topadd svg { width: 16px; height: 16px; stroke: #1A1305; stroke-width: 2.6; fill: none; }
+  .ipbanner { display: flex; align-items: center; gap: 11px; padding: 10px 22px; background: rgba(248,113,113,.07); border-bottom: 1px solid rgba(248,113,113,.25); }
+  .ipbanner .ai { width: 22px; height: 22px; flex: none; border-radius: 7px; background: rgba(248,113,113,.18); color: #F87171;
+                  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+  .ipbanner b { font-size: 12.5px; font-weight: 600; color: #F0A8A8; }
+  .ipbanner span { font-size: 12px; color: var(--t2); }
+  .ipbanner .ack { margin-left: auto; font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; color: #F0A8A8;
+                   border: 1px solid rgba(248,113,113,.4); padding: 6px 12px; border-radius: 8px; }
+
+  /* ---- iPad · Division ---- */
+  .ipad .body { flex: 1; display: flex; min-height: 0; }
+  .ipad .elev { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .ipad .level { flex: 1; display: flex; min-height: 0; border-bottom: 1px solid var(--stroke); }
+  .ipad .level.sub { background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(150,170,190,.035) 9px 10px); }
+  .ipad .gutter { width: 96px; flex: none; border-right: 1px solid var(--stroke); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+  .ipad .gutter .lv { font-family: var(--mono); font-size: 30px; font-weight: 600; color: var(--t1); line-height: 1; }
+  .ipad .gutter .lvs { font-size: 9.5px; letter-spacing: .07em; color: var(--t3); text-transform: uppercase; text-align: center; line-height: 1.3; }
+  .ipad .bay { flex: 1; padding: 16px 18px; display: flex; flex-wrap: wrap; gap: 12px; align-content: flex-start; }
+  .ipad .ground { display: flex; align-items: center; gap: 11px; padding: 5px 18px; background: rgba(226,169,59,.10);
+                  border-top: 1px solid rgba(226,169,59,.4); border-bottom: 1px solid rgba(226,169,59,.4); }
+  .ipad .ground span { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--accent); text-transform: uppercase; }
+  .ipad .ground .ln { flex: 1; height: 1px; background: repeating-linear-gradient(90deg, var(--accent) 0 7px, transparent 7px 13px); opacity: .6; }
+  .ipad .echip { background: var(--card); border: 1px solid var(--stroke); border-left: 4px solid var(--c); border-radius: 12px; padding: 12px 14px; width: 174px; }
+  .ipad .echip.flag { border-color: rgba(248,113,113,.5); border-left-color: #F87171; }
+  .ipad .echip .eid { font-family: var(--mono); font-size: 12px; color: var(--t2); display: flex; align-items: center; justify-content: space-between; }
+  .ipad .echip .ems { font-family: var(--mono); font-size: 26px; font-weight: 600; color: var(--t1); margin: 5px 0 7px; letter-spacing: -.02em; }
+  .ipad .echip .erow { display: flex; align-items: center; gap: 8px; }
+  .ipad .echip .pill { font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--c);
+                       background: color-mix(in srgb, var(--c) 15%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); padding: 2px 7px; border-radius: 6px; }
+  .ipad .echip .etype { font-size: 11px; color: var(--t3); }
+  .ipad .echip .ecrew { font-size: 11px; color: var(--t2); margin-top: 7px; }
+  .ipad .rail { width: 344px; flex: none; border-left: 1px solid var(--stroke); background: #15181C; display: flex; flex-direction: column; overflow: hidden; }
+  .ipad .rsec { padding: 4px 18px 18px; border-bottom: 1px solid var(--stroke); }
+  .ipad .rsec h4 { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--t3); margin: 16px 0 13px; }
+  .ipad .opbig { display: flex; align-items: baseline; gap: 9px; }
+  .ipad .opbig b { font-family: var(--mono); font-size: 30px; font-weight: 600; color: var(--t1); }
+  .ipad .opbig small { font-size: 13px; color: var(--t2); }
+  .ipad .segbar { display: flex; gap: 3px; height: 10px; margin: 13px 0 15px; }
+  .ipad .segbar i { flex: 1; border-radius: 2px; }
+  .ipad .rcounts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+  .ipad .rcounts span { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 7px; }
+  .ipad .rcounts i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+  .ipad .rcounts b { color: var(--t1); font-family: var(--mono); font-weight: 600; margin-left: auto; }
+  .ipad .dcard { background: var(--card); border: 1px solid var(--stroke); border-left: 4px solid var(--c); border-radius: 13px; padding: 15px 16px; }
+  .ipad .dcard .drow { display: flex; align-items: center; justify-content: space-between; }
+  .ipad .dcard .did { font-size: 18px; font-weight: 700; }
+  .ipad .dcard .pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--c);
+                       background: color-mix(in srgb, var(--c) 15%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); padding: 3px 8px; border-radius: 6px; }
+  .ipad .dcard .dms { font-family: var(--mono); font-size: 34px; font-weight: 600; color: var(--t1); margin: 11px 0 2px; letter-spacing: -.02em; }
+  .ipad .dcard .dlab { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--t3); }
+  .ipad .dcard .dmeta { font-size: 13px; color: var(--t2); margin-top: 9px; }
+  .ipad .dcard .dact { display: flex; gap: 9px; margin-top: 15px; }
+  .ipad .act { flex: none; font-size: 13px; font-weight: 700; border-radius: 10px; padding: 10px 15px; white-space: nowrap;
+               background: var(--accent); color: #1A1305; border: none; display: flex; align-items: center; justify-content: center; }
+  .ipad .act.flex1 { flex: 1; }
+  .ipad .act.danger { background: rgba(248,113,113,.16); color: #F0A8A8; border: 1px solid rgba(248,113,113,.5); }
+  .ipad .act.ghost { background: transparent; color: var(--t2); border: 1px solid var(--stroke-2); }
+
+  /* ---- iPad · Board (six columns) ---- */
+  .ib { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .ib .cols { flex: 1; display: flex; gap: 1px; min-height: 0; background: var(--stroke); }
+  .ib .ibcol { flex: 1; background: var(--bg); display: flex; flex-direction: column; min-width: 0; }
+  .ib .ch { display: flex; align-items: center; gap: 8px; padding: 14px 14px 12px; border-bottom: 1px solid var(--stroke); }
+  .ib .ch i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .ib .ch b { font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--t1); }
+  .ib .ch .ct { font-family: var(--mono); font-size: 14px; color: var(--t3); margin-left: auto; }
+  .ib .cards { flex: 1; padding: 11px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
+  .ib .card { background: var(--card); border: 1px solid var(--stroke); border-left: 4px solid var(--c); border-radius: 11px; padding: 11px 12px; }
+  .ib .card.flag { border-color: rgba(248,113,113,.5); border-left-color: #F87171; }
+  .ib .card .r1 { display: flex; align-items: center; justify-content: space-between; }
+  .ib .card .id { font-family: var(--mono); font-size: 11px; color: var(--t2); }
+  .ib .card .loc { font-size: 16px; font-weight: 700; color: var(--t1); letter-spacing: -.01em; margin: 6px 0 4px; }
+  .ib .card .ms { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--t1); }
+  .ib .card .meta { font-size: 10.5px; color: var(--t3); margin-top: 7px; }
+
+  /* ---- iPad · List (table) ---- */
+  .il { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .il .sort { display: flex; align-items: center; gap: 9px; padding: 12px 22px; border-bottom: 1px solid var(--stroke); }
+  .il .sort .lab { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--t3); margin-right: 4px; }
+  .il .sort a { font-size: 12px; font-weight: 600; color: var(--t2); padding: 6px 13px; border-radius: 8px; border: 1px solid var(--stroke); }
+  .il .sort a.on { background: var(--accent-sub); color: var(--accent); border-color: rgba(226,169,59,.4); }
+  .il .scroll { flex: 1; overflow: hidden; padding: 6px 22px 0; }
+  .il .ilgh { display: flex; align-items: center; gap: 10px; padding: 13px 2px 9px; }
+  .il .ilgh i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .il .ilgh b { font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--t2); }
+  .il .ilgh .ct { font-family: var(--mono); font-size: 11px; color: var(--t3); }
+  .il .ilgh .ln { flex: 1; height: 1px; background: var(--stroke); }
+  .il .ilcard { display: grid; grid-template-columns: 74px 1.6fr 1fr 132px 44px; align-items: center; gap: 16px;
+                background: var(--card); border: 1px solid var(--stroke); border-left: 4px solid var(--c); border-radius: 12px; padding: 11px 18px; margin-bottom: 8px; }
+  .il .ilcard.flag { border-color: rgba(248,113,113,.4); border-left-color: #F87171; background: rgba(248,113,113,.045); }
+  .il .ilcard .sp { font-family: var(--mono); font-size: 13px; color: var(--t2); }
+  .il .ilcard .loc { font-size: 16px; font-weight: 700; color: var(--t1); letter-spacing: -.01em; }
+  .il .ilcard .meta { font-size: 12.5px; color: var(--t2); }
+  .il .ilcard .ms { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--t1); letter-spacing: -.01em; text-align: right; }
+  .il .ilcard .fl { display: flex; align-items: center; justify-content: center; }
+  .il .ilcard .fl .fdot { width: 8px; height: 8px; }
+  .il .ilcard .fl .dash { color: var(--t3); }
+
+  /* ---- spec notes ---- */
+  .notes { position: absolute; width: 720px; background: #fff; border-radius: 14px; padding: 18px 20px; box-shadow: 0 8px 30px rgba(0,0,0,.12); }
+  .notes .bet { font-family: 'Archivo', sans-serif; font-size: 14px; font-weight: 700; color: #111; line-height: 1.4; margin: 0 0 13px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+  .notes .bet em { font-style: normal; color: #b07c00; }
+  .notes dl { margin: 0; display: grid; grid-template-columns: 58px 1fr; row-gap: 9px; column-gap: 12px; }
+  .notes dt { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #999; padding-top: 2px; }
+  .notes dd { margin: 0; font-size: 12.5px; line-height: 1.45; color: #333; }
+  .notes dd b { color: #111; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="sizer"></div>
+
+<!-- ===================== BRIEF ===================== -->
+<div class="brief" style="left:60px; top:40px; width:3860px;">
+  <h1>FieldShore · Operations — <span class="v">three views, two devices</span></h1>
+  <p class="sub">The incident, read three ways — <b>Division</b> (by floor), <b>Board</b> (by status), <b>List</b> (flat &amp; sortable) — each built for <b>phone</b> (on the floor) and <b>iPad</b> (the command post). A view switcher sits on every screen, so anyone can read the operation whichever way the moment calls for. Same data throughout: one operation, nine shore points, standing verify on SP-3.</p>
+  <div class="grid">
+    <div>
+      <h2>Division — by floor</h2>
+      <p>The building section. <span class="vw">Phone</span> stacks floors top-to-bottom for the thumb; <span class="vw">iPad</span> spreads the same section wide with a command rail — verify alert, op rollup, flagged point.</p>
+    </div>
+    <div>
+      <h2>Board — by status</h2>
+      <p>Every point in its status lane. <span class="vw">Phone</span> runs lanes as rows behind a narrow pinned count gutter; <span class="vw">iPad</span> opens them into six full Kanban columns. The floor's daily driver.</p>
+    </div>
+    <div>
+      <h2>List — flat &amp; sortable</h2>
+      <p>The fastest scan. <span class="vw">Phone</span> groups rows by status under thin headers; <span class="vw">iPad</span> breaks the same groups into individual cards — point, location, type, measure, crew. Sort by any axis.</p>
+    </div>
+    <div>
+      <h2>Status legend</h2>
+      <div class="legend">
+        <div class="row"><span class="sw" style="background:#9CA3AF"></span>Pending <span class="mono">1 pt</span></div>
+        <div class="row"><span class="sw" style="background:#FBBF24"></span>Cutting <span class="mono">2 pts</span></div>
+        <div class="row"><span class="sw" style="background:#FB923C"></span>Runner <span class="mono">1 pt</span></div>
+        <div class="row"><span class="sw" style="background:#60A5FA"></span>In&nbsp;process <span class="mono">2 pts</span></div>
+        <div class="row"><span class="sw" style="background:#A78BFA"></span>Strut&nbsp;set <span class="mono">1 pt</span></div>
+        <div class="row"><span class="sw" style="background:#34D399"></span>Secured <span class="mono">2 pts</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== COLUMN 1 · ELEVATION ===================== -->
+<div class="col" style="left:60px; top:330px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin g">PHONE</span> <b>Division</b> — floors stacked, narrow pinned gutter</div>
+  <div class="phone"><div class="notch"></div><div class="screen calm" id="scrnPE" data-screen-label="Phone — Division"></div></div>
+</div>
+<div class="notes" style="left:520px; top:374px;">
+  <p class="bet">Bet: <em>read the incident the way you stand in front of it.</em></p>
+  <dl>
+    <dt>Floors</dt><dd>Div 2 over the <b>ground line</b> over Div 1 over Sub 1 (shaded sub-grade). Each point sits on the floor it's actually on.</dd>
+    <dt>Gutter</dt><dd>Level numbers ride a <b>narrow column pinned left</b> behind one continuous vertical rule — same anchor as the iPad.</dd>
+    <dt>Chips</dt><dd>Measure leads, status side-bar matches the floor's points; flagged SP-3 carries a red edge.</dd>
+  </dl>
+</div>
+<div class="col" style="left:60px; top:1230px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin">iPad</span> <b>Division</b> — section at command scale, with rail</div>
+  <div class="tablet"><div class="cam"></div><div class="ipad calm" id="scrnIE" data-screen-label="iPad — Division"></div></div>
+</div>
+
+<!-- ===================== COLUMN 2 · BOARD ===================== -->
+<div class="col" style="left:1330px; top:330px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin g">PHONE</span> <b>Board</b> — six status lanes (D1, calm)</div>
+  <div class="phone"><div class="notch"></div><div class="screen calm" id="scrnPB" data-screen-label="Phone — Board"></div></div>
+</div>
+<div class="notes" style="left:1790px; top:374px;">
+  <p class="bet">Bet: <em>see the whole operation by status,</em> advance work down the pipeline.</p>
+  <dl>
+    <dt>Lanes</dt><dd>Six real statuses top-to-bottom — <b>not</b> collapsed phases. The count column is <b>narrow and pinned left</b> behind one continuous rule.</dd>
+    <dt>Chips</dt><dd><b>Location leads</b> over the strut measure; a status side-bar colours each chip and the flagged SP-3 reads red.</dd>
+    <dt>Switch</dt><dd>Division / Board / List up top — the floor reads the incident whichever way it needs.</dd>
+  </dl>
+</div>
+<div class="col" style="left:1330px; top:1230px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin">iPad</span> <b>Board</b> — six full Kanban columns</div>
+  <div class="tablet"><div class="cam"></div><div class="ipad calm" id="scrnIB" data-screen-label="iPad — Board"></div></div>
+</div>
+
+<!-- ===================== COLUMN 3 · LIST ===================== -->
+<div class="col" style="left:2600px; top:330px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin g">PHONE</span> <b>List</b> — grouped by status, sortable</div>
+  <div class="phone"><div class="notch"></div><div class="screen calm" id="scrnPL" data-screen-label="Phone — List"></div></div>
+</div>
+<div class="notes" style="left:3060px; top:374px;">
+  <p class="bet">Bet: <em>the fastest possible scan and sort</em> of every point.</p>
+  <dl>
+    <dt>Cards</dt><dd>Each point is its <b>own card</b> — location leads, point id · type · crew beneath, measure pinned right, a status side-bar on the left edge.</dd>
+    <dt>Groups</dt><dd>Cards collect under thin <b>status headers</b> with live counts — the board's content, read as a column.</dd>
+    <dt>Sort</dt><dd>By Status / Level / Crew — same sort the iPad list offers.</dd>
+  </dl>
+</div>
+<div class="col" style="left:2600px; top:1230px;">
+  <div class="flabel" data-drags-parent="1"><span class="pin">iPad</span> <b>List</b> — grouped status cards, sortable</div>
+  <div class="tablet"><div class="cam"></div><div class="ipad calm" id="scrnIL" data-screen-label="iPad — List"></div></div>
+</div>
+
+<script>
+const SP = {
+  1:{id:'SP-1',loc:'Div 1 · A',type:'3-Post', ms:'48-1/2"',st:'secured',grp:'Engine 30',lvl:1},
+  2:{id:'SP-2',loc:'Div 1 · A',type:'Dbl-T',  ms:'52-3/4"',st:'cutting',grp:'Engine 30',lvl:1},
+  3:{id:'SP-3',loc:'Div 2 · C',type:'T-Shore',ms:'41-1/4"',st:'strut',  grp:'Ladder 5', lvl:2,flag:1},
+  4:{id:'SP-4',loc:'Sub 1 · B',type:'3-Post', ms:'60"',    st:'process',grp:'Rescue 56',lvl:0},
+  5:{id:'SP-5',loc:'Div 2 · C',type:'T-Shore',ms:'38-7/8"',st:'pending',grp:'—',        lvl:2},
+  6:{id:'SP-6',loc:'Div 1 · D',type:'Dbl-T',  ms:'55-1/2"',st:'runner', grp:'Squad 6',  lvl:1},
+  7:{id:'SP-7',loc:'Div 1 · B',type:'3-Post', ms:'50-1/4"',st:'secured',grp:'Engine 30',lvl:1},
+  8:{id:'SP-8',loc:'Div 2 · A',type:'T-Shore',ms:'44"',    st:'cutting',grp:'Ladder 5', lvl:2},
+  9:{id:'SP-9',loc:'Sub 1 · C',type:'Dbl-T',  ms:'58-1/2"',st:'process',grp:'Rescue 56',lvl:0},
+};
+const STM = {
+  pending:{l:'Pending',    ab:'PEND', c:'#9CA3AF'},
+  cutting:{l:'Cutting',    ab:'CUT',  c:'#FBBF24'},
+  runner: {l:'Runner',     ab:'RUN',  c:'#FB923C'},
+  process:{l:'In process', ab:'PROC', c:'#60A5FA'},
+  strut:  {l:'Strut set',  ab:'STRUT',c:'#A78BFA'},
+  secured:{l:'Secured',    ab:'SEC',  c:'#34D399'},
+};
+const PIPE = ['pending','cutting','runner','process','strut','secured'];
+const byStatus = s => Object.values(SP).filter(p => p.st === s);
+const byLevel  = l => Object.values(SP).filter(p => p.lvl === l);
+
+const IC = {
+  find:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><line x1="20" y1="20" x2="15.5" y2="15.5"/></svg>',
+  board:'<svg viewBox="0 0 24 24"><rect x="4" y="5" width="4.4" height="14" rx="1"/><rect x="9.8" y="5" width="4.4" height="9" rx="1"/><rect x="15.6" y="5" width="4.4" height="11" rx="1"/></svg>',
+  cmd:'<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.1"/><circle cx="6" cy="18.5" r="2.1"/><circle cx="18" cy="18.5" r="2.1"/><path d="M12 7.1 V12 M6 16.4 V13 H18 V16.4"/></svg>',
+  inv:'<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="1.5"/><line x1="4" y1="11" x2="20" y2="11"/><line x1="12" y1="6" x2="12" y2="11"/></svg>',
+  set:'<svg viewBox="0 0 24 24"><line x1="4" y1="8.5" x2="20" y2="8.5"/><line x1="4" y1="15.5" x2="20" y2="15.5"/><circle cx="9" cy="8.5" r="2.5" fill="var(--bg)"/><circle cx="15" cy="15.5" r="2.5" fill="var(--bg)"/></svg>',
+};
+const plus = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+/* ===== PHONE shell ===== */
+function phoneShell(active, mid){
+  const seg = ['Division','Board','List'].map(v => `<a class="${v===active?'on':''}">${v}</a>`).join('');
+  return `
+    <div class="sb"><span>14:43</span><span class="bars">LTE&nbsp;<span class="batt"></span>80</span></div>
+    <div class="m-hdr">
+      <div class="m-h1"><div class="nm">Meadowville Collapse</div>
+        <div class="role"><span class="rd"></span><span><small>YOU&nbsp;</small><b>RUNNER</b></span></div></div>
+      <div class="mt"><span class="el">01:24:07</span><span class="sep">·</span>OP 2/3<span class="sep">·</span>BC Reyes<span class="sep">·</span>${Object.keys(SP).length} points</div>
+    </div>
+    <div class="m-seg">${seg}</div>
+    <div class="m-alert"><span class="ai">!</span>
+      <div class="at"><b>Verify physical strut</b><span>SP-3 · Div 2 Side C — confirm a real strut is in place</span></div>
+      <span class="aack">ACK</span></div>
+    ${mid}
+    <div class="fab">${plus}Shore Point</div>
+    <div class="nav">
+      <a>${IC.find}<span>Quick Find</span></a>
+      <a class="on">${IC.board}<span>Operations</span></a>
+      <a>${IC.cmd}<span>Command</span></a>
+      <a>${IC.inv}<span>Inventory</span></a>
+      <a>${IC.set}<span>Settings</span></a></div>`;
+}
+
+/* PHONE · Board */
+function phoneBoardMid(){
+  const chip = p => `<div class="pb-chip ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <div class="cid"><span>${p.id}</span>${p.flag?'<span class="fdot"></span>':''}</div>
+      <div class="cloc">${p.loc}</div><div class="cms">${p.ms}</div><div class="ctype">${p.type}</div></div>`;
+  const lane = s => { const items = byStatus(s); return `<div class="pb-lane">
+      <div class="pb-lh" style="--c:${STM[s].c}"><div class="lct">${items.length}</div><div class="ll">${STM[s].ab}</div></div>
+      <div class="pb-cards">${items.map(chip).join('')}</div></div>`; };
+  return `<div class="pb-lanes">${PIPE.map(lane).join('')}</div>`;
+}
+
+/* PHONE · Division */
+function phoneElevMid(){
+  const pt = p => `<div class="pt ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <div class="ms">${p.ms}</div>
+      <div class="b"><span class="id">${p.id}${p.flag?' <span class="fdot"></span>':''}</span><span class="pl">${STM[p.st].ab}</span></div></div>`;
+  const bay = l => byLevel(l).map(pt).join('');
+  return `<div class="pe">
+    <div class="lvl"><div class="g"><b>2</b><span>DIV 2<br>SIDE C</span></div><div class="bay">${bay(2)}</div></div>
+    <div class="gr"><span>Grade · Ground</span><div class="ln"></div></div>
+    <div class="lvl"><div class="g"><b>1</b><span>DIV 1<br>GROUND</span></div><div class="bay">${bay(1)}</div></div>
+    <div class="lvl sub"><div class="g"><b>S1</b><span>SUB 1<br>BSMT</span></div><div class="bay">${bay(0)}</div></div>
+  </div>`;
+}
+
+/* PHONE · List */
+function phoneListMid(){
+  const row = p => `<div class="plcard ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <div class="main">
+        <div class="loc">${p.loc}${p.flag?' <span class="fdot"></span>':''}</div>
+        <div class="sub">${p.id} · ${p.type} · ${p.grp==='—'?'Unassigned':p.grp}</div>
+      </div><div class="ms">${p.ms}</div></div>`;
+  const group = s => { const items = byStatus(s); if(!items.length) return '';
+    return `<div class="gh"><i style="background:${STM[s].c}"></i><b>${STM[s].l}</b><span class="ct">${items.length}</span></div>${items.map(row).join('')}`; };
+  return `<div class="pl">
+    <div class="sort"><a class="on">Status</a><a>Level</a><a>Crew</a></div>
+    <div class="scroll">${PIPE.map(group).join('')}</div>
+  </div>`;
+}
+
+/* ===== iPad shell ===== */
+function padTop(active){
+  const seg = ['Division','Board','List'].map(v => `<a class="${v===active?'on':''}">${v}</a>`).join('');
+  return `<div class="top">
+      <div><div class="nm">Meadowville Collapse</div>
+        <div class="meta"><span class="el">01:24:07</span><span class="sep">·</span>OP 2 of 3<span class="sep">·</span>${Object.keys(SP).length} shore points<span class="sep">·</span>4 crews</div></div>
+      <div class="right"><div class="seg">${seg}</div>
+        <button class="topadd">${plus}Shore Point</button>
+        <div class="role"><span class="rd"></span><span><small>IC&nbsp;</small><b>BC REYES</b></span></div></div>
+    </div>`;
+}
+const ipBanner = `<div class="ipbanner"><span class="ai">!</span>
+    <b>Verify physical strut</b><span>— SP-3 · Div 2 · Side C — confirm a real strut is in place before secured.</span>
+    <span class="ack">ACK</span></div>`;
+
+/* iPad · Division */
+function padElev(){
+  const echip = p => `<div class="echip ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <div class="eid"><span>${p.id}</span>${p.flag?'<span class="fdot"></span>':''}</div>
+      <div class="ems">${p.ms}</div>
+      <div class="erow"><span class="pill">${STM[p.st].l}</span><span class="etype">${p.type}</span></div>
+      <div class="ecrew">${p.grp==='—'?'Unassigned':p.grp}</div></div>`;
+  const bay = l => byLevel(l).map(echip).join('');
+  const seg = PIPE.map(s => `<i style="background:${STM[s].c}"></i>`).join('');
+  const counts = PIPE.map(s => `<span><i style="background:${STM[s].c}"></i>${STM[s].l}<b>${byStatus(s).length}</b></span>`).join('');
+  const f = SP[3], fc = STM[f.st].c;
+  return padTop('Division') + `
+    <div class="body">
+      <div class="elev">
+        <div class="level"><div class="gutter"><div class="lv">2</div><div class="lvs">Div 2<br>Side C</div></div><div class="bay">${bay(2)}</div></div>
+        <div class="ground"><span>Grade · Ground</span><div class="ln"></div></div>
+        <div class="level"><div class="gutter"><div class="lv">1</div><div class="lvs">Div 1<br>Ground</div></div><div class="bay">${bay(1)}</div></div>
+        <div class="level sub"><div class="gutter"><div class="lv">S1</div><div class="lvs">Sub 1<br>Basement</div></div><div class="bay">${bay(0)}</div></div>
+      </div>
+      <div class="rail">
+        <div class="rsec"><h4>Verify alert</h4>
+          <div class="dcard" style="--c:#F87171"><div class="drow"><span class="did">SP-3</span><span class="pill">Strut set</span></div>
+            <div class="dmeta" style="margin-top:11px">Confirm a real strut is in place before this point can move to secured.</div></div></div>
+        <div class="rsec"><h4>Operation rollup</h4>
+          <div class="opbig"><b>${byStatus('secured').length}</b><small>of ${Object.keys(SP).length} shore points secured</small></div>
+          <div class="segbar">${seg}</div><div class="rcounts">${counts}</div></div>
+        <div class="rsec"><h4>Flagged point</h4>
+          <div class="dcard" style="--c:${fc}"><div class="drow"><span class="did">${f.id}</span><span class="pill">${STM[f.st].l}</span></div>
+            <div class="dms">${f.ms}</div><div class="dlab">Opening · ${f.type}</div>
+            <div class="dmeta">${f.loc} · ${f.grp}</div>
+            <div class="dact"><button class="act danger flex1">Verify strut</button><button class="act ghost">Open</button></div></div></div>
+      </div>
+    </div>`;
+}
+
+/* iPad · Board */
+function padBoard(){
+  const card = p => `<div class="card ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <div class="r1"><span class="id">${p.id}</span>${p.flag?'<span class="fdot"></span>':''}</div>
+      <div class="loc">${p.loc}</div><div class="ms">${p.ms}</div>
+      <div class="meta">${p.type} · ${p.grp==='—'?'Unassigned':p.grp}</div></div>`;
+  const col = s => { const items = byStatus(s); return `<div class="ibcol">
+      <div class="ch"><i style="background:${STM[s].c}"></i><b>${STM[s].l}</b><span class="ct">${items.length}</span></div>
+      <div class="cards">${items.map(card).join('')}</div></div>`; };
+  return padTop('Board') + ipBanner + `<div class="ib"><div class="cols">${PIPE.map(col).join('')}</div></div>`;
+}
+
+/* iPad · List — grouped status sections of individual cards */
+function padList(){
+  const card = p => `<div class="ilcard ${p.flag?'flag':''}" style="--c:${STM[p.st].c}">
+      <span class="sp">${p.id}</span>
+      <span class="loc">${p.loc}</span>
+      <span class="meta">${p.type} · ${p.grp==='—'?'Unassigned':p.grp}</span>
+      <span class="ms">${p.ms}</span>
+      <span class="fl">${p.flag?'<span class="fdot"></span>':'<span class="dash">—</span>'}</span></div>`;
+  const group = s => { const items = byStatus(s); if(!items.length) return '';
+    return `<div class="ilg"><div class="ilgh"><i style="background:${STM[s].c}"></i><b>${STM[s].l}</b><span class="ct">${items.length}</span><span class="ln"></span></div>${items.map(card).join('')}</div>`; };
+  return padTop('List') + ipBanner + `<div class="il">
+    <div class="sort"><span class="lab">Sort</span><a class="on">Status</a><a>Level</a><a>Crew</a><a>Measure</a></div>
+    <div class="scroll">${PIPE.map(group).join('')}</div>
+  </div>`;
+}
+
+/* ===== mount ===== */
+document.getElementById('scrnPE').innerHTML = phoneShell('Division', phoneElevMid());
+document.getElementById('scrnPB').innerHTML = phoneShell('Board',     phoneBoardMid());
+document.getElementById('scrnPL').innerHTML = phoneShell('List',      phoneListMid());
+document.getElementById('scrnIE').innerHTML = padElev();
+document.getElementById('scrnIB').innerHTML = padBoard();
+document.getElementById('scrnIL').innerHTML = padList();
+</script>
+</body>
+</html>

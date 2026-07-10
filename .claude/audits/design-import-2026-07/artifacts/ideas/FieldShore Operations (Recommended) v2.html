@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const Y=new URLSearchParams(location.search).get("theme");if(Y==="light"||Y==="dark"){document.documentElement.dataset.theme=Y}}{const Y=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const k=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(k&&k!=="normal")return;const w=(X)=>{if(!X)return null;const F=getComputedStyle(X).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const K=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(K<0.99)return null;return[+F[1],+F[2],+F[3]]};const U=w(document.body)||w(document.documentElement);if(!U)return;const x=(X)=>{const F=X/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const D=0.2126*x(U[0])+0.7152*x(U[1])+0.0722*x(U[2]);document.documentElement.style.setProperty("color-scheme",D<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")Y();else window.addEventListener("load",Y)}var _=[];var v=false;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const Y=window.Babel;const k="om-src-id";if(Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[k])){Y.registerPlugin(k,({types:D})=>({visitor:{JSXOpeningElement(X,F){const K=X.node;if(K.name&&K.name.type==="JSXMemberExpression")return;for(let z=0;z<K.attributes.length;z++){const V=K.attributes[z];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const A=K.loc&&K.loc.start;const J=`jsx:${B}:${K.start??0}:${A?A.line:0}:${A?A.column+1:0}`;K.attributes.push(D.jsxAttribute(D.jsxIdentifier("data-om-id"),D.stringLiteral(J)))}}}))}const w="om-text-extract";let U=false;if(v&&Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[w])){const D=window.React;if(D&&D.useSyncExternalStore&&D.createElement){U=true;const X={};const F=new Set;let K=0;window.__omTextO=X;window.__omTextSet=(J)=>{for(const z in J){const V=J[z];if(V==null)delete X[z];else X[z]=V}K++;F.forEach((z)=>z())};const B=(J)=>{F.add(J);return()=>F.delete(J)};const A=()=>K;window.__OmT=function J(z){D.useSyncExternalStore(B,A,A);return D.createElement("span",{"data-om-text":z.i,className:"__om-t"},z.i in X?X[z.i]:z.children)};Y.registerPlugin(w,({types:J})=>{const z={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,H)=>J.logicalExpression("??",J.memberExpression(J.logicalExpression("||",J.memberExpression(J.identifier("window"),J.identifier("__omTextO")),J.objectExpression([])),J.stringLiteral(Z),true),H);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const j=(Z)=>Z.file&&Z.file.code||"";const G=(Z,H)=>{const N=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const L=N(H);if(L)return L;if(H&&H.type==="Identifier"){const $=Z.scope.getBinding(H.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return N($.path.node.init)}}return null};const R=(Z,H,N)=>{const L=Z.node;let $=false;const M=(q,E)=>{$=true;return J.jsxElement(J.jsxOpeningElement(J.jsxIdentifier("__OmT"),[J.jsxAttribute(J.jsxIdentifier("i"),J.stringLiteral(q))],false),J.jsxClosingElement(J.jsxIdentifier("__OmT")),[E],false)};const C=L.children.map((q)=>{if(q.type==="JSXText"){if(q.start==null||q.end==null)return q;const E=N.slice(q.start,q.end);const f=E.length-E.trimStart().length;const I=E.length-E.trimEnd().length;if(f+I>=E.length)return q;return M(`txt:${H}:${q.start+f}:${q.end-I}`,q)}if(q.type==="JSXExpressionContainer"){const E=G(Z,q.expression);if(E)return M(`str:${H}:${E[0]}:${E[1]}`,q)}return q});if($)L.children=C};return{visitor:{JSXOpeningElement(Z,H){const N=Z.node;const L=Q(H);const $={};for(let M=0;M<N.attributes.length;M++){const C=N.attributes[M];if(C.type!=="JSXAttribute"||!C.name)continue;const q=C.name.name;if(!V[q])continue;if(!C.value||C.value.type!=="StringLiteral")continue;if(C.value.start==null||C.value.end==null)continue;const E=`txt:${L}:${C.value.start}:${C.value.end}`;$[q]=E;C.value=J.jsxExpressionContainer(W(E,J.stringLiteral(C.value.value)))}if(Object.keys($).length){N.attributes.push(J.jsxAttribute(J.jsxIdentifier("data-om-text-attrs"),J.stringLiteral(JSON.stringify($))))}},JSXElement(Z,H){const N=Z.node.openingElement;const L=N&&N.name&&N.name.name;if(L==="__OmT")return;if(typeof L==="string"&&z[L])return;R(Z,Q(H),j(H))},JSXFragment(Z,H){R(Z,Q(H),j(H))}}}})}}const x=U?["transform-react-jsx-source",k,w]:["transform-react-jsx-source",k];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((D,X)=>{const F=D.getAttribute("data-plugins")||"";const K=x.filter((B)=>F.indexOf(B)<0);if(K.length){D.setAttribute("data-plugins",F?`${F},${K.join(",")}`:K.join(","))}if(!D.hasAttribute("data-filename")){D.setAttribute("data-filename",D.getAttribute("src")||`inline-${X}`)}})});var S=window.parent;if(S&&S!==window){const Y=(J,z)=>{try{S.postMessage({__omelette_log:true,type:J,data:z},"*")}catch{}};["log","warn","error"].forEach((J)=>{const z=console[J];console[J]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");Y(J,W);z.apply(console,V)}});window.addEventListener("error",(J)=>{const z=J.target;if(z&&z!==window&&z.tagName){const V=z.src||z.href||"";Y("resource_error",`${z.tagName} failed to load: ${V}`)}else{Y("error",`${J.message||"Unknown error"} at ${J.filename||"?"}:${J.lineno||0}:${J.colno||0}`)}},true);window.addEventListener("unhandledrejection",(J)=>{const z=J.reason;const V=z instanceof Error?`${z.message} ${z.stack}`:String(z);Y("error",`Unhandled rejection: ${V}`)});const k=()=>{try{S.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(k).observe(document.documentElement);const w=()=>{k();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const J=()=>document.getElementById("root")||document.querySelector("body > div[id]");const z=J()?.firstElementChild??null;let V=0;const W=()=>{const Q=J();if(Q&&Q.firstElementChild!==z||++V>30){k();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")w();else window.addEventListener("load",w);const U={};let x=0;const D=(J)=>new Promise((z,V)=>{if(!_.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete U[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const j=Q();U[W]={resolve:z,reject:V,text:"",t:j,arm:Q};try{for(const G of _){S.postMessage({__om_api:true,id:W,body:J},G)}}catch(G){clearTimeout(j);delete U[W];V(G)}});const X=8;const F=async(J,z)=>{if(!Array.isArray(J.messages)){throw new Error("claude.complete: tools require a messages array")}const V=J.messages.slice();const W={...J,tools:J.tools.map((G)=>{if(G===null||typeof G!=="object")return G;const R={};for(const Z of Object.keys(G)){if(typeof G[Z]!=="function")R[Z]=G[Z]}return R})};const Q=W.tool_choice;const j=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let G=0;G<X;G++){const R=await D({...G===0?W:j,messages:V});const Z=R.message;const H=Z&&Array.isArray(Z.content)?Z.content:null;const N=H?H.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||N.length===0){return R.text}const L=[];for(const $ of N){const M=z.get($.name);if(!M){L.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const C=await M($.input);const q=typeof C==="string"?C:A(C)??"";L.push({type:"tool_result",tool_use_id:$.id,content:q})}catch(C){L.push({type:"tool_result",tool_use_id:$.id,content:String(C?.message??C??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:H},{role:"user",content:L})}throw new Error(`claude.complete: exceeded ${X} tool turns`)};window.claude={complete(J){const z=J;if(z!==null&&typeof z==="object"&&Array.isArray(z.tools)&&z.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of z.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(z,V)}return D(J).then((V)=>V.text)}};const K={};let B=0;window.omelette={writeFile:(J,z)=>new Promise((V,W)=>{if(!_.length){V();return}const Q=`f${++B}`;const j=setTimeout(()=>{delete K[Q];V()},h);K[Q]={resolve:V,reject:W,t:j};try{for(const G of _){S.postMessage({__om_file:true,id:Q,op:"write",path:J,content:z},G)}}catch{clearTimeout(j);delete K[Q];V()}})};const A=(J)=>{try{return JSON.stringify(J)}catch{return JSON.stringify(String(J))}};window.addEventListener("message",(J)=>{if(_.indexOf(J.origin)<0)return;if(J.source!==S)return;const z=J.data;if(!z)return;if(z.type==="omelette-preview-refresh"){if(typeof z.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(z.token))return;const Q=Math.max(1,Math.floor((z.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+z.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(z.__om_file_r){const Q=K[z.id];if(!Q)return;clearTimeout(Q.t);delete K[z.id];if(z.ok)Q.resolve();else Q.reject(new Error(z.error||"write failed"));return}if(z.__om_api_r){const Q=U[z.id];if(!Q)return;if(z.error!=null){clearTimeout(Q.t);delete U[z.id];Q.reject(new Error(z.error));return}if(z.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=z.chunk;return}if(z.done){clearTimeout(Q.t);delete U[z.id];Q.resolve({text:z.text!=null?z.text:Q.text,message:z.message});return}return}if(!z.__om_eval)return;const V=z;const W=(Q)=>{J.source.postMessage({...Q,__om_eval_r:1,id:V.id},J.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((j)=>W({ok:1,v:A(j)}),(j)=>W({ok:0,e:String(j)}))}else{W({ok:1,v:A(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FieldShore · Operations — Recommended</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg:#13161A; --card:#1C2027; --card-hi:#222831; --stroke:rgba(255,255,255,.07); --stroke-2:rgba(255,255,255,.12);
+    --t1:#E9EAEC; --t2:#A0A6AE; --t3:#6C727A; --accent:#E2A93B; --accent-sub:rgba(226,169,59,.14);
+    --pending:#9CA3AF; --process:#60A5FA; --strut:#A78BFA; --cutting:#FBBF24; --runner:#FB923C; --secured:#34D399; --danger:#F87171;
+    --mono:'IBM Plex Mono', monospace;
+  }
+  body { margin: 0; background: #0B0D10; color: var(--t1); font-family: 'IBM Plex Sans', system-ui, sans-serif;
+         -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+  .page-cap { width: 100%; max-width: 880px; padding: 30px 20px 14px; }
+  .page-cap h1 { font-family: 'Archivo', sans-serif; font-size: 20px; font-weight: 800; margin: 0 0 3px; letter-spacing: -.01em; }
+  .page-cap h1 .v { color: var(--accent); }
+  .page-cap p { margin: 0; font-size: 13px; color: var(--t2); }
+  .wrap { display: flex; gap: 34px; align-items: flex-start; padding: 6px 20px 60px; }
+
+  /* ---------- phone ---------- */
+  .phone { width: 390px; height: 844px; flex: none; border-radius: 42px; background: #05070a; padding: 6px;
+           box-shadow: 0 30px 80px rgba(0,0,0,.55); border: 1px solid #2a2f37; position: relative; }
+  .notch { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 118px; height: 26px; background: #05070a; border-radius: 0 0 16px 16px; z-index: 9; }
+  .screen { position: absolute; inset: 6px; border-radius: 36px; overflow: hidden; display: flex; flex-direction: column; background: var(--bg); }
+
+  .sb { display: flex; justify-content: space-between; align-items: center; padding: 14px 26px 4px; font-size: 13px; font-weight: 600; }
+  .sb .bars { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 11px; color: var(--t2); }
+  .sb .batt { width: 22px; height: 11px; border: 1.5px solid var(--t2); border-radius: 3px; position: relative; }
+  .sb .batt::after { content: ""; position: absolute; inset: 1.5px; right: 6px; background: var(--t1); border-radius: 1px; }
+
+  /* header */
+  .ophdr { padding: 8px 20px 14px; }
+  .ophdr .row1 { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .ophdr .nm { font-size: 20px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
+  .role { display: inline-flex; align-items: center; gap: 6px; flex: none; background: var(--accent-sub); border: 1px solid rgba(226,169,59,.45);
+          border-radius: 9px; padding: 5px 10px 5px 8px; }
+  .role .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .role b { font-size: 12.5px; font-weight: 700; color: var(--accent); letter-spacing: .03em; }
+  .role small { font-size: 9px; font-weight: 600; color: var(--t3); letter-spacing: .08em; }
+  .ophdr .mt { font-size: 12.5px; color: var(--t2); margin-top: 6px; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .ophdr .mt .el { font-family: var(--mono); color: var(--t1); font-weight: 500; }
+  .ophdr .mt .sep { color: var(--t3); }
+
+  /* standard alert (D3) */
+  .alert { margin: 0 18px 4px; display: flex; align-items: center; gap: 11px; padding: 11px 13px; background: rgba(248,113,113,.08);
+           border: 1px solid rgba(248,113,113,.30); border-radius: 13px; }
+  .alert .ic { width: 24px; height: 24px; flex: none; border-radius: 7px; background: rgba(248,113,113,.18); color: var(--danger);
+               display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+  .alert .tx { flex: 1; min-width: 0; }
+  .alert .tx b { display: block; font-size: 12.5px; font-weight: 700; color: #F2ADAD; letter-spacing: .02em; }
+  .alert .tx span { font-size: 11px; color: var(--t2); }
+  .alert .ack { font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: .06em; color: #F2ADAD;
+                border: 1px solid rgba(248,113,113,.45); padding: 6px 11px; border-radius: 8px; flex: none; }
+
+  /* body / sections */
+  .scroll { flex: 1; overflow-y: auto; padding: 10px 18px 96px; display: flex; flex-direction: column; gap: 18px; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  .sec > h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 9px 2px; font-size: 11px; font-weight: 700;
+              letter-spacing: .11em; text-transform: uppercase; color: var(--t3); }
+  .sec > h3 .ct { font-family: var(--mono); font-weight: 600; color: var(--t2); background: var(--card); border: 1px solid var(--stroke);
+                  border-radius: 20px; padding: 1px 8px; font-size: 11px; }
+  .sec > h3 .line { flex: 1; height: 1px; background: var(--stroke); }
+  .grp { background: var(--card); border: 1px solid var(--stroke); border-radius: 16px; overflow: hidden; }
+
+  .lrow { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--stroke); position: relative; min-height: 60px; }
+  .lrow:last-child { border-bottom: none; }
+  .lrow .edge { position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--c); }
+  .lrow .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; margin-left: 4px;
+               box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 16%, transparent); }
+  .lrow .main { flex: 1; min-width: 0; }
+  .lrow .l1 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 5px; }
+  .lrow .l1 > * { white-space: nowrap; flex: none; }
+  .lrow .id { font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+  .pill { font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--c);
+          background: color-mix(in srgb, var(--c) 15%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+          padding: 2px 7px; border-radius: 6px; }
+  .flag { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+          color: #F2ADAD; background: rgba(248,113,113,.14); border: 1px solid rgba(248,113,113,.4); padding: 2px 7px; border-radius: 6px; }
+  .lrow .l2 { font-size: 12px; color: var(--t2); margin-top: 3px; }
+  .lrow .ms { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--t1); flex: none; font-feature-settings: "tnum" 1; white-space: nowrap; }
+  .lrow .chev { color: var(--t3); font-size: 17px; flex: none; width: 8px; text-align: center; }
+  .assign { flex: none; font-size: 12px; font-weight: 600; color: var(--accent); background: transparent; border: 1px solid rgba(226,169,59,.5);
+            border-radius: 9px; padding: 8px 12px; white-space: nowrap; }
+  .ready { font-size: 10px; font-weight: 600; color: var(--secured); margin-top: 3px; }
+
+  /* action rows — things that want YOUR hands */
+  .act-row.danger { background: rgba(248,113,113,.06); }
+  .act { flex: none; font-size: 13px; font-weight: 700; border-radius: 10px; padding: 9px 15px; white-space: nowrap; background: var(--accent); color: #1A1305; border: none; }
+  .act.danger { background: rgba(248,113,113,.16); color: #F2ADAD; border: 1px solid rgba(248,113,113,.5); }
+
+  /* FAB + nav */
+  .fab { position: absolute; right: 16px; bottom: 80px; height: 50px; border-radius: 25px; padding: 0 19px 0 16px; display: flex;
+         align-items: center; gap: 8px; background: var(--accent); color: #1A1305; font-weight: 700; font-size: 14.5px;
+         box-shadow: 0 10px 26px rgba(0,0,0,.45); z-index: 8; }
+  .fab svg { width: 18px; height: 18px; stroke: #1A1305; stroke-width: 2.5; fill: none; }
+  .nav { display: grid; grid-template-columns: repeat(5,1fr); align-items: center; height: 66px; border-top: 1px solid var(--stroke);
+         padding-bottom: 8px; background: var(--bg); }
+  .nav a { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 9.5px; letter-spacing: .03em; color: var(--t3); font-weight: 500; }
+  .nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .nav .on { color: var(--accent); }
+
+  /* ---------- notes rail ---------- */
+  .notes { width: 380px; flex: none; display: flex; flex-direction: column; gap: 16px; }
+  .ncard { background: #14171B; border: 1px solid rgba(255,255,255,.09); border-radius: 16px; padding: 18px 20px; }
+  .ncard h2 { font-family: 'Archivo', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+              color: var(--t3); margin: 0 0 13px; }
+  .plan { display: flex; flex-direction: column; gap: 11px; }
+  .plan .pr { display: flex; gap: 11px; align-items: flex-start; }
+  .plan .tag { font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #fff;
+               padding: 3px 7px; border-radius: 6px; flex: none; margin-top: 1px; min-width: 64px; text-align: center; }
+  .plan .d { font-size: 13px; color: #C9CCC8; line-height: 1.4; }
+  .plan .d b { color: #ECEBE8; font-weight: 600; }
+  .plan .d .st { font-size: 11px; color: var(--t3); }
+  .ncard p { margin: 0 0 10px; font-size: 13px; line-height: 1.5; color: #C9CCC8; }
+  .ncard p:last-child { margin-bottom: 0; }
+  .ncard p b { color: #ECEBE8; font-weight: 600; }
+  .ncard ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .ncard li { font-size: 12.5px; line-height: 1.4; color: #C9CCC8; padding-left: 17px; position: relative; }
+  .ncard li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--secured); font-size: 11px; font-weight: 700; }
+  .ncard.next li::before { content: "→"; color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="page-cap">
+    <h1>FieldShore · Operations — <span class="v">recommended direction, realized</span></h1>
+    <p>The daily-driver phone screen, built out. Two zones — what needs you, then what's underway · instrument numbers · pronounced role.</p>
+  </div>
+
+  <div class="wrap">
+    <!-- ===================== PHONE ===================== -->
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="sb"><span>14:43</span><span class="bars">LTE&nbsp;<span class="batt"></span>80</span></div>
+
+        <div class="ophdr" data-screen-label="Operations">
+          <div class="row1">
+            <div class="nm">Meadowville Collapse</div>
+            <div class="role"><span class="dot"></span><span><small>YOU&nbsp;</small><b>RUNNER</b></span></div>
+          </div>
+          <div class="mt"><span class="el">01:24:07</span><span class="sep">·</span>OP 2/3<span class="sep">·</span>BC Reyes<span class="sep">·</span>6 shore points</div>
+        </div>
+
+        <div class="scroll">
+          <!-- NEEDS YOU -->
+          <div class="sec">
+            <h3>Needs you <span class="ct">2</span><span class="line"></span></h3>
+            <div class="grp">
+              <div class="lrow act-row danger" style="--c:var(--strut)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-3</span><span class="pill">Strut set</span></div>
+                  <div class="l2">Div 2 · Side C — confirm a real strut is in place</div>
+                </div>
+                <button class="act danger">Verify</button>
+              </div>
+              <div class="lrow act-row" style="--c:var(--pending)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-5</span><span class="pill">Pending</span></div>
+                  <div class="l2">Div 2 · Side C · T-Shore · opening 38-7/8"</div>
+                  <div class="ready">● Equipment now available</div>
+                </div>
+                <button class="act">Assign</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ON THE FLOOR -->
+          <div class="sec">
+            <h3>On the floor <span class="ct">4</span><span class="line"></span></h3>
+            <div class="grp">
+              <div class="lrow" style="--c:var(--cutting)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-2</span><span class="pill">Cutting</span></div>
+                  <div class="l2">Div 1 · Side A · Dbl-T · Engine 30</div>
+                </div>
+                <div class="ms">52-3/4"</div><div class="chev">›</div>
+              </div>
+              <div class="lrow" style="--c:var(--runner)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-6</span><span class="pill">Runner</span></div>
+                  <div class="l2">Div 1 · Side D · Dbl-T · Squad 6</div>
+                </div>
+                <div class="ms">55-1/2"</div><div class="chev">›</div>
+              </div>
+              <div class="lrow" style="--c:var(--process)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-4</span><span class="pill">In process</span></div>
+                  <div class="l2">Sub 1 · Side B · 3-Post · Rescue 56</div>
+                </div>
+                <div class="ms">60"</div><div class="chev">›</div>
+              </div>
+              <div class="lrow" style="--c:var(--secured)">
+                <div class="edge"></div><div class="dot"></div>
+                <div class="main">
+                  <div class="l1"><span class="id">SP-1</span><span class="pill">Secured</span></div>
+                  <div class="l2">Div 1 · Side A · 3-Post · Engine 30</div>
+                </div>
+                <div class="ms">48-1/2"</div><div class="chev">›</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fab"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Shore Point</div>
+
+        <div class="nav">
+          <a><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><line x1="20" y1="20" x2="15.5" y2="15.5"/></svg><span>Quick Find</span></a>
+          <a class="on"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="4.4" height="14" rx="1"/><rect x="9.8" y="5" width="4.4" height="9" rx="1"/><rect x="15.6" y="5" width="4.4" height="11" rx="1"/></svg><span>Operations</span></a>
+          <a><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.1"/><circle cx="6" cy="18.5" r="2.1"/><circle cx="18" cy="18.5" r="2.1"/><path d="M12 7.1 V12 M6 16.4 V13 H18 V16.4"/></svg><span>Command</span></a>
+          <a><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="1.5"/><line x1="4" y1="11" x2="20" y2="11"/><line x1="12" y1="6" x2="12" y2="11"/></svg><span>Inventory</span></a>
+          <a><svg viewBox="0 0 24 24"><line x1="4" y1="8.5" x2="20" y2="8.5"/><line x1="4" y1="15.5" x2="20" y2="15.5"/><circle cx="9" cy="8.5" r="2.5" fill="var(--bg)"/><circle cx="15" cy="15.5" r="2.5" fill="var(--bg)"/></svg><span>Settings</span></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== NOTES ===================== -->
+    <div class="notes">
+      <div class="ncard">
+        <h2>The system — who plays what</h2>
+        <div class="plan">
+          <div class="pr"><span class="tag" style="background:#3B7DD8">PHONE</span><div class="d"><b>Operations · Calm Ledger</b> — this screen. The floor's daily driver.</div></div>
+          <div class="pr"><span class="tag" style="background:#7857C8">DESKTOP</span><div class="d"><b>Operations · Board</b> — the command-post situational picture. <span class="st">next</span></div></div>
+          <div class="pr"><span class="tag" style="background:#C98A1E">CUTTER</span><div class="d"><b>Cutting Station · Focus card</b> — locked from the team's note. <span class="st">next</span></div></div>
+          <div class="pr"><span class="tag" style="background:#C0494B">VERIFY</span><div class="d"><b>Critical verify</b> — folded into the top action card, no separate banner to clear.</div></div>
+        </div>
+      </div>
+
+      <div class="ncard">
+        <h2>Why this leads on the phone</h2>
+        <p><b>Two zones, not three.</b> "Needs you" — the 1–2 points wanting your hands, each with a button — sits above "On the floor," everything underway. The groups <b>look different</b>, so the split needs no explaining; the guess-what-the-bucket-means confusion is gone.</p>
+        <p><b>It looks built, not "simplest."</b> Considered type, real spacing, status edges, and tabular instrument numbers — the craft is what separates this from a vibe-coded list.</p>
+        <p><b>Nobody bounces.</b> A rookie firefighter and a battalion chief both already know how to read a grouped list under stress. Lowest training, highest trust.</p>
+      </div>
+
+      <div class="ncard">
+        <h2>Folded-in team wins</h2>
+        <ul>
+          <li>Pronounced <b>YOU · RUNNER</b> role chip in the header</li>
+          <li>Critical <b>verify</b> is the first action card — not a banner you dismiss</li>
+          <li><b>Instrument numbers</b> — tabular mono, the measurement is unmistakable</li>
+          <li>Pending card surfaces <b>"Equipment now available" + Assign</b> inline</li>
+          <li><b>Needs you vs. On the floor</b> — action and monitor never blur</li>
+        </ul>
+      </div>
+
+      <div class="ncard next">
+        <h2>Next, on your nod</h2>
+        <ul>
+          <li>Same screen flexed to the <b>command-post desktop</b> (the board)</li>
+          <li>The <b>Cutting Station</b> built out from D2</li>
+          <li>Then your other pains: <b>Command + org chart</b>, then <b>Inventory</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

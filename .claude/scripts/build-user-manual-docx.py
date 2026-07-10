@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate FieldStruts-User-Manual.docx from the canonical docs/USER-MANUAL.md.
+"""Regenerate FieldShore-User-Manual.docx from the canonical docs/USER-MANUAL.md.
 
 Faithful markdown -> docx renderer covering the features actually used in the
 manual: title block, section/subsection headings, paragraphs with inline
@@ -32,7 +32,7 @@ from docx.oxml import OxmlElement
 # absolute repo path here.
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(ROOT, "docs", "USER-MANUAL.md")
-OUT = os.path.join(ROOT, "docs", "FieldStruts-User-Manual.docx")
+OUT = os.path.join(ROOT, "docs", "FieldShore-User-Manual.docx")
 ASSETS = os.path.join(ROOT, "docs", "manual-assets")
 
 NAVY = RGBColor(0x1F, 0x3A, 0x5F)
@@ -154,7 +154,7 @@ def main():
     for _ in range(4):
         doc.add_paragraph()
     t = doc.add_paragraph(); t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = t.add_run('FieldStruts'); r.font.size = Pt(40); r.bold = True; r.font.color.rgb = NAVY
+    r = t.add_run('FieldShore'); r.font.size = Pt(40); r.bold = True; r.font.color.rgb = NAVY
     s = doc.add_paragraph(); s.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = s.add_run('User Manual'); r.font.size = Pt(26); r.font.color.rgb = ACCENT
     sub = doc.add_paragraph(); sub.alignment = WD_ALIGN_PARAGRAPH.CENTER

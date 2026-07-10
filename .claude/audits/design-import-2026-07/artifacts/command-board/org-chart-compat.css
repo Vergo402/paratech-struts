@@ -1,0 +1,139 @@
+/* ============================================================
+   FieldShore Command Board — DESIGN-SYSTEM COMPATIBILITY LAYER
+   ------------------------------------------------------------
+   The board was authored against an earlier FieldShore token
+   vocabulary + the full four-theme palette. This synced DS slice
+   (styles.css) ships ONLY the light theme on :root and only the
+   color/shadow token families — the spacing/type/radius/font
+   tokens and the dark / sunlight / broadcast palettes were not
+   part of the /design-sync export.
+
+   This file bridges that gap so the board renders correctly here:
+     1. Aliases the board's legacy token names → this DS's real
+        tokens (these track whatever theme is active).
+     2. Reconstructs the dark / sunlight / broadcast palettes the
+        DS documents but didn't sync, so the theme switcher works.
+
+   ⚠️  TEMPORARY. When the DS is re-synced with the full token set
+   (src/app/tokens.css → all themes), the theme blocks below can be
+   deleted; keep only the legacy aliases (or rename in source).
+   ============================================================ */
+
+/* ── 1 · legacy name → real DS token (theme-agnostic) ─────────── */
+:where(:root),
+:where([data-theme]) {
+  /* fonts — DS provides Geist (UI) + Inter (mono/numerals) */
+  --font-sans: 'Geist Variable', system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-mono: 'Inter Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-ui: var(--font-sans);
+
+  /* surfaces / strokes */
+  --surface-elev: var(--surface-elevated);
+  --border: var(--surface-stroke);
+
+  /* accent ink */
+  --accent-ink: var(--on-accent);
+
+  /* status "line" colors → status text tokens */
+  --st-secured-line:   var(--status-secured-text);
+  --st-cutting-line:   var(--status-cutting-text);
+  --st-inprocess-line: var(--status-process-text);
+  --st-danger-line:    var(--danger-text);
+
+  /* large elevation → DS modal shadow */
+  --shadow-lg: var(--shadow-modal);
+}
+
+/* ── light (default :root) — supply the two tokens the DS lacks ── */
+:where(:root) {
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* ── 2 · DARK — "incident ops" (the board's default look) ─────── */
+[data-theme="dark"] {
+  --surface-bg: #14171B;
+  --surface-card: #1B1F25;
+  --surface-card-hover: #21262D;
+  --surface-elevated: #262C34;
+  --surface-stroke: rgba(255, 255, 255, 0.10);
+
+  --accent: #E2A93B;                         /* gold, brightened for dark */
+  --accent-subtle: rgba(226, 169, 59, 0.16);
+  --on-accent: #1A1305;
+
+  --text-primary: #ECEBE8;
+  --text-secondary: #A6AAA6;
+  --text-tertiary: #71756F;
+
+  --status-process-text:  #60A5FA;  --status-process-bg:  rgba(96, 165, 250, 0.16);
+  --status-cutting-text:  #FBBF24;  --status-cutting-bg:  rgba(251, 191, 36, 0.16);
+  --status-secured-text:  #34D399;  --status-secured-bg:  rgba(52, 211, 153, 0.16);
+  --status-runner-text:   #FB923C;  --status-runner-bg:   rgba(251, 146, 60, 0.16);
+  --status-pending-text:  #9CA3AF;  --status-pending-bg:  rgba(156, 163, 175, 0.16);
+  --danger-text:          #F87171;  --danger-bg:          rgba(248, 113, 113, 0.16);
+
+  --scrim: rgba(0, 0, 0, 0.55);
+  --shadow-sheet: 0 -2px 18px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.50);
+  --shadow-drawer: -2px 0 18px rgba(0, 0, 0, 0.45);
+
+  --border-strong: rgba(255, 255, 255, 0.20);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.40);
+}
+
+/* ── 3 · SUNLIGHT — high-glare, maximum contrast ──────────────── */
+[data-theme="sunlight"] {
+  --surface-bg: #FFFFFF;
+  --surface-card: #FFFFFF;
+  --surface-card-hover: #F1F1EF;
+  --surface-elevated: #FFFFFF;
+  --surface-stroke: rgba(0, 0, 0, 0.32);
+
+  --accent: #6B4E00;
+  --accent-subtle: #FFF1C9;
+  --on-accent: #FFFFFF;
+
+  --text-primary: #000000;
+  --text-secondary: #1E1E1E;
+  --text-tertiary: #424242;
+
+  --status-process-text:  #0B3FA8;  --status-process-bg:  #E3ECFB;
+  --status-cutting-text:  #6B3A00;  --status-cutting-bg:  #FBEBC4;
+  --status-secured-text:  #04503A;  --status-secured-bg:  #DCF6EC;
+  --status-runner-text:   #7A2700;  --status-runner-bg:   #FBE3D2;
+  --status-pending-text:  #303843;  --status-pending-bg:  #ECEEF1;
+  --danger-text:          #9A0F0F;  --danger-bg:          #FBE3E3;
+
+  --border-strong: rgba(0, 0, 0, 0.55);
+  --shadow: none;
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+/* ── 4 · BROADCAST — text-only, projector / wall display ──────── */
+[data-theme="broadcast"] {
+  --surface-bg: #000000;
+  --surface-card: #000000;
+  --surface-card-hover: #0E0E0E;
+  --surface-elevated: #0E0E0E;
+  --surface-stroke: rgba(255, 255, 255, 0.30);
+
+  --accent: #FFC83D;
+  --accent-subtle: rgba(255, 200, 61, 0.18);
+  --on-accent: #000000;
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #C8C8C8;
+  --text-tertiary: #8A8A8A;
+
+  --status-process-text:  #7CB8FF;  --status-process-bg:  rgba(124, 184, 255, 0.18);
+  --status-cutting-text:  #FFD24D;  --status-cutting-bg:  rgba(255, 210, 77, 0.18);
+  --status-secured-text:  #4FE3A6;  --status-secured-bg:  rgba(79, 227, 166, 0.18);
+  --status-runner-text:   #FFA561;  --status-runner-bg:   rgba(255, 165, 97, 0.18);
+  --status-pending-text:  #B7BBC2;  --status-pending-bg:  rgba(183, 187, 194, 0.18);
+  --danger-text:          #FF8A8A;  --danger-bg:          rgba(255, 138, 138, 0.18);
+
+  --border-strong: rgba(255, 255, 255, 0.50);
+  --shadow: none;
+  --shadow-modal: 0 12px 40px rgba(0, 0, 0, 0.6);
+}

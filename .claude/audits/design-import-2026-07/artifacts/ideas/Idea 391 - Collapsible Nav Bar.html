@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const Y=new URLSearchParams(location.search).get("theme");if(Y==="light"||Y==="dark"){document.documentElement.dataset.theme=Y}}{const Y=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const k=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(k&&k!=="normal")return;const w=(X)=>{if(!X)return null;const F=getComputedStyle(X).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const K=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(K<0.99)return null;return[+F[1],+F[2],+F[3]]};const U=w(document.body)||w(document.documentElement);if(!U)return;const x=(X)=>{const F=X/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const D=0.2126*x(U[0])+0.7152*x(U[1])+0.0722*x(U[2]);document.documentElement.style.setProperty("color-scheme",D<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")Y();else window.addEventListener("load",Y)}var _=[];var v=false;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const Y=window.Babel;const k="om-src-id";if(Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[k])){Y.registerPlugin(k,({types:D})=>({visitor:{JSXOpeningElement(X,F){const K=X.node;if(K.name&&K.name.type==="JSXMemberExpression")return;for(let z=0;z<K.attributes.length;z++){const V=K.attributes[z];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const A=K.loc&&K.loc.start;const J=`jsx:${B}:${K.start??0}:${A?A.line:0}:${A?A.column+1:0}`;K.attributes.push(D.jsxAttribute(D.jsxIdentifier("data-om-id"),D.stringLiteral(J)))}}}))}const w="om-text-extract";let U=false;if(v&&Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[w])){const D=window.React;if(D&&D.useSyncExternalStore&&D.createElement){U=true;const X={};const F=new Set;let K=0;window.__omTextO=X;window.__omTextSet=(J)=>{for(const z in J){const V=J[z];if(V==null)delete X[z];else X[z]=V}K++;F.forEach((z)=>z())};const B=(J)=>{F.add(J);return()=>F.delete(J)};const A=()=>K;window.__OmT=function J(z){D.useSyncExternalStore(B,A,A);return D.createElement("span",{"data-om-text":z.i,className:"__om-t"},z.i in X?X[z.i]:z.children)};Y.registerPlugin(w,({types:J})=>{const z={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,H)=>J.logicalExpression("??",J.memberExpression(J.logicalExpression("||",J.memberExpression(J.identifier("window"),J.identifier("__omTextO")),J.objectExpression([])),J.stringLiteral(Z),true),H);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const j=(Z)=>Z.file&&Z.file.code||"";const G=(Z,H)=>{const N=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const L=N(H);if(L)return L;if(H&&H.type==="Identifier"){const $=Z.scope.getBinding(H.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return N($.path.node.init)}}return null};const R=(Z,H,N)=>{const L=Z.node;let $=false;const M=(q,E)=>{$=true;return J.jsxElement(J.jsxOpeningElement(J.jsxIdentifier("__OmT"),[J.jsxAttribute(J.jsxIdentifier("i"),J.stringLiteral(q))],false),J.jsxClosingElement(J.jsxIdentifier("__OmT")),[E],false)};const C=L.children.map((q)=>{if(q.type==="JSXText"){if(q.start==null||q.end==null)return q;const E=N.slice(q.start,q.end);const f=E.length-E.trimStart().length;const I=E.length-E.trimEnd().length;if(f+I>=E.length)return q;return M(`txt:${H}:${q.start+f}:${q.end-I}`,q)}if(q.type==="JSXExpressionContainer"){const E=G(Z,q.expression);if(E)return M(`str:${H}:${E[0]}:${E[1]}`,q)}return q});if($)L.children=C};return{visitor:{JSXOpeningElement(Z,H){const N=Z.node;const L=Q(H);const $={};for(let M=0;M<N.attributes.length;M++){const C=N.attributes[M];if(C.type!=="JSXAttribute"||!C.name)continue;const q=C.name.name;if(!V[q])continue;if(!C.value||C.value.type!=="StringLiteral")continue;if(C.value.start==null||C.value.end==null)continue;const E=`txt:${L}:${C.value.start}:${C.value.end}`;$[q]=E;C.value=J.jsxExpressionContainer(W(E,J.stringLiteral(C.value.value)))}if(Object.keys($).length){N.attributes.push(J.jsxAttribute(J.jsxIdentifier("data-om-text-attrs"),J.stringLiteral(JSON.stringify($))))}},JSXElement(Z,H){const N=Z.node.openingElement;const L=N&&N.name&&N.name.name;if(L==="__OmT")return;if(typeof L==="string"&&z[L])return;R(Z,Q(H),j(H))},JSXFragment(Z,H){R(Z,Q(H),j(H))}}}})}}const x=U?["transform-react-jsx-source",k,w]:["transform-react-jsx-source",k];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((D,X)=>{const F=D.getAttribute("data-plugins")||"";const K=x.filter((B)=>F.indexOf(B)<0);if(K.length){D.setAttribute("data-plugins",F?`${F},${K.join(",")}`:K.join(","))}if(!D.hasAttribute("data-filename")){D.setAttribute("data-filename",D.getAttribute("src")||`inline-${X}`)}})});var S=window.parent;if(S&&S!==window){const Y=(J,z)=>{try{S.postMessage({__omelette_log:true,type:J,data:z},"*")}catch{}};["log","warn","error"].forEach((J)=>{const z=console[J];console[J]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");Y(J,W);z.apply(console,V)}});window.addEventListener("error",(J)=>{const z=J.target;if(z&&z!==window&&z.tagName){const V=z.src||z.href||"";Y("resource_error",`${z.tagName} failed to load: ${V}`)}else{Y("error",`${J.message||"Unknown error"} at ${J.filename||"?"}:${J.lineno||0}:${J.colno||0}`)}},true);window.addEventListener("unhandledrejection",(J)=>{const z=J.reason;const V=z instanceof Error?`${z.message} ${z.stack}`:String(z);Y("error",`Unhandled rejection: ${V}`)});const k=()=>{try{S.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(k).observe(document.documentElement);const w=()=>{k();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const J=()=>document.getElementById("root")||document.querySelector("body > div[id]");const z=J()?.firstElementChild??null;let V=0;const W=()=>{const Q=J();if(Q&&Q.firstElementChild!==z||++V>30){k();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")w();else window.addEventListener("load",w);const U={};let x=0;const D=(J)=>new Promise((z,V)=>{if(!_.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete U[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const j=Q();U[W]={resolve:z,reject:V,text:"",t:j,arm:Q};try{for(const G of _){S.postMessage({__om_api:true,id:W,body:J},G)}}catch(G){clearTimeout(j);delete U[W];V(G)}});const X=8;const F=async(J,z)=>{if(!Array.isArray(J.messages)){throw new Error("claude.complete: tools require a messages array")}const V=J.messages.slice();const W={...J,tools:J.tools.map((G)=>{if(G===null||typeof G!=="object")return G;const R={};for(const Z of Object.keys(G)){if(typeof G[Z]!=="function")R[Z]=G[Z]}return R})};const Q=W.tool_choice;const j=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let G=0;G<X;G++){const R=await D({...G===0?W:j,messages:V});const Z=R.message;const H=Z&&Array.isArray(Z.content)?Z.content:null;const N=H?H.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||N.length===0){return R.text}const L=[];for(const $ of N){const M=z.get($.name);if(!M){L.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const C=await M($.input);const q=typeof C==="string"?C:A(C)??"";L.push({type:"tool_result",tool_use_id:$.id,content:q})}catch(C){L.push({type:"tool_result",tool_use_id:$.id,content:String(C?.message??C??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:H},{role:"user",content:L})}throw new Error(`claude.complete: exceeded ${X} tool turns`)};window.claude={complete(J){const z=J;if(z!==null&&typeof z==="object"&&Array.isArray(z.tools)&&z.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of z.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(z,V)}return D(J).then((V)=>V.text)}};const K={};let B=0;window.omelette={writeFile:(J,z)=>new Promise((V,W)=>{if(!_.length){V();return}const Q=`f${++B}`;const j=setTimeout(()=>{delete K[Q];V()},h);K[Q]={resolve:V,reject:W,t:j};try{for(const G of _){S.postMessage({__om_file:true,id:Q,op:"write",path:J,content:z},G)}}catch{clearTimeout(j);delete K[Q];V()}})};const A=(J)=>{try{return JSON.stringify(J)}catch{return JSON.stringify(String(J))}};window.addEventListener("message",(J)=>{if(_.indexOf(J.origin)<0)return;if(J.source!==S)return;const z=J.data;if(!z)return;if(z.type==="omelette-preview-refresh"){if(typeof z.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(z.token))return;const Q=Math.max(1,Math.floor((z.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+z.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(z.__om_file_r){const Q=K[z.id];if(!Q)return;clearTimeout(Q.t);delete K[z.id];if(z.ok)Q.resolve();else Q.reject(new Error(z.error||"write failed"));return}if(z.__om_api_r){const Q=U[z.id];if(!Q)return;if(z.error!=null){clearTimeout(Q.t);delete U[z.id];Q.reject(new Error(z.error));return}if(z.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=z.chunk;return}if(z.done){clearTimeout(Q.t);delete U[z.id];Q.resolve({text:z.text!=null?z.text:Q.text,message:z.message});return}return}if(!z.__om_eval)return;const V=z;const W=(Q)=>{J.source.postMessage({...Q,__om_eval_r:1,id:V.id},J.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((j)=>W({ok:1,v:A(j)}),(j)=>W({ok:0,e:String(j)}))}else{W({ok:1,v:A(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>#391 — Collapsible nav bar</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="exploration-chrome.css">
+<script src="_vendor/react.js"></script>
+<script src="exploration-quiet.js"></script>
+<script src="_vendor/react-dom.js"></script>
+<script src="_ds_bundle.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* ── Phone shell ── */
+  .shell { height: 100vh; display: flex; flex-direction: column; background: var(--surface-bg); overflow: hidden; }
+  .shell-content { flex: 1; overflow-y: auto; padding: var(--space-4); min-height: 0; }
+
+  .tabbar-wrap { flex: none; position: relative; }
+  .tabbar {
+    display: grid; grid-template-columns: repeat(5, 1fr); align-items: center;
+    height: 64px; background: var(--surface-card);
+    border-top: var(--stroke-width) solid var(--surface-stroke);
+    transition: height 200ms ease, opacity 150ms ease;
+    overflow: hidden;
+  }
+  .tabbar a {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font: var(--type-label); color: var(--text-tertiary); text-decoration: none;
+    min-height: 44px; justify-content: center;
+  }
+  .tabbar a svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .tabbar a.on { color: var(--accent); }
+  .tabbar-wrap.is-collapsed .tabbar { height: 0; opacity: 0; border-top-width: 0; }
+  .tabbar-wrap.is-compact .tabbar { height: 44px; }
+  .tabbar-wrap.is-compact .tabbar a span { display: none; }
+
+  /* Pull tab on the nav's top edge */
+  .nav-handle {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    width: 56px; height: 18px; border: var(--stroke-width) solid var(--surface-stroke);
+    border-bottom: 0; border-radius: 10px 10px 0 0;
+    background: var(--surface-card); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary);
+  }
+  .nav-handle svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms ease; }
+  .tabbar-wrap.is-collapsed .nav-handle svg { transform: rotate(180deg); }
+
+  /* Floating restore pill when fully hidden (auto-hide mode) */
+  .nav-pill {
+    position: absolute; right: var(--space-4); bottom: var(--space-4);
+    height: 44px; padding: 0 var(--space-4);
+    display: flex; align-items: center; gap: var(--space-2);
+    border: var(--stroke-width) solid var(--surface-stroke); border-radius: 22px;
+    background: var(--surface-elevated); box-shadow: var(--shadow-sheet);
+    font: var(--type-body-medium); color: var(--text-secondary); cursor: pointer;
+  }
+
+  /* ── Desktop rail ── */
+  .rail-demo { display: flex; height: 560px; border: var(--stroke-width) solid var(--surface-stroke); border-radius: var(--radius-card); overflow: hidden; background: var(--surface-bg); }
+  .rail {
+    flex: none; width: 200px; display: flex; flex-direction: column; gap: var(--space-1);
+    padding: var(--space-3); background: var(--surface-card);
+    border-right: var(--stroke-width) solid var(--surface-stroke);
+    transition: width 200ms ease;
+  }
+  .rail.is-slim { width: 64px; }
+  .rail a {
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: 10px 12px; border-radius: var(--radius-button);
+    font: var(--type-body-medium); color: var(--text-secondary); text-decoration: none;
+    white-space: nowrap; overflow: hidden; min-height: 44px;
+  }
+  .rail a svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .rail a.on { color: var(--accent); background: var(--accent-subtle); }
+  .rail.is-slim a span { display: none; }
+  .rail-toggle {
+    margin-top: auto; appearance: none; cursor: pointer;
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: 10px 12px; border-radius: var(--radius-button); border: 0;
+    background: none; font: var(--type-body-medium); color: var(--text-tertiary);
+    white-space: nowrap; overflow: hidden; min-height: 44px;
+  }
+  .rail-toggle svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms ease; }
+  .rail.is-slim .rail-toggle svg { transform: rotate(180deg); }
+  .rail.is-slim .rail-toggle span { display: none; }
+  .rail-main { flex: 1; overflow-y: auto; padding: var(--space-5); min-width: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { CuttingStation, Segmented } = window.FieldShore;
+const { useState, useRef, useEffect } = React;
+const noop = () => {};
+
+const params = new URLSearchParams(location.search);
+const isPhone = params.get('screen') === 'phone';
+const phoneMode = params.get('mode') || 'handle';
+
+const ICONS = {
+  find: <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><line x1="20" y1="20" x2="15.5" y2="15.5"/></svg>,
+  ops:  <svg viewBox="0 0 24 24"><rect x="4" y="5" width="4.4" height="14" rx="1"/><rect x="9.8" y="5" width="4.4" height="9" rx="1"/><rect x="15.6" y="5" width="4.4" height="11" rx="1"/></svg>,
+  cmd:  <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.1"/><circle cx="6" cy="18.5" r="2.1"/><circle cx="18" cy="18.5" r="2.1"/><path d="M12 7.1 V12 M6 16.4 V13 H18 V16.4"/></svg>,
+  inv:  <svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="1.5"/><line x1="4" y1="11" x2="20" y2="11"/><line x1="12" y1="6" x2="12" y2="11"/></svg>,
+  set:  <svg viewBox="0 0 24 24"><line x1="4" y1="8.5" x2="20" y2="8.5"/><line x1="4" y1="15.5" x2="20" y2="15.5"/><circle cx="9" cy="8.5" r="2.5"/><circle cx="15" cy="15.5" r="2.5"/></svg>,
+};
+const TABS = [['find', 'Quick Find'], ['ops', 'Operations'], ['cmd', 'Command'], ['inv', 'Inventory'], ['set', 'Settings']];
+
+const spBase = { opId: 'op-1', division: '2', status: 'cutting', shoreType: '3-post', deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' }, cuttingDone: false };
+const QUEUE = [640, 564, 752, 588, 620, 700].map((m, i) => ({
+  ...spBase, id: 'sp-' + (22 + i), seq: 22 + i, measurementEighths: m,
+  area: ['West Wall', 'East Stairwell', 'Corridor C', 'Loading Dock', 'North Bay', 'Atrium'][i],
+  cuttingStartedAt: (i + 1) * 1000,
+}));
+
+function Station() {
+  return (
+    <CuttingStation
+      queue={QUEUE} sent={[]}
+      onMarkCutDone={noop} onClearCutDone={noop} onSendToRunner={noop} onStepBack={noop}
+    />
+  );
+}
+
+function TabBar({ active }) {
+  return (
+    <div className="tabbar" role="navigation" aria-label="Primary">
+      {TABS.map(([k, l]) => (
+        <a key={k} href="#" onClick={(e) => e.preventDefault()} className={k === active ? 'on' : ''}>
+          {ICONS[k]}<span>{l}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// ── Phone shell (in iframe) ──
+function PhoneShell() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const lastY = useRef(0);
+
+  const onScroll = (e) => {
+    if (phoneMode !== 'autohide') return;
+    const y = e.target.scrollTop;
+    const d = y - lastY.current;
+    if (d > 6 && y > 40) setHidden(true);
+    else if (d < -6) setHidden(false);
+    lastY.current = y;
+  };
+
+  const wrapCls = 'tabbar-wrap' +
+    ((phoneMode === 'handle' && collapsed) || (phoneMode === 'autohide' && hidden) ? ' is-collapsed' : '') +
+    (phoneMode === 'compact' && compact ? ' is-compact' : '');
+
+  return (
+    <div className="shell">
+      <div className="shell-content" onScroll={onScroll}>
+        <Station />
+      </div>
+      <div className={wrapCls}>
+        {(phoneMode === 'handle' || phoneMode === 'compact') && (
+          <button
+            type="button" className="nav-handle"
+            aria-label={phoneMode === 'handle' ? (collapsed ? 'Show navigation' : 'Hide navigation') : (compact ? 'Expand navigation' : 'Shrink navigation')}
+            onClick={() => phoneMode === 'handle' ? setCollapsed(!collapsed) : setCompact(!compact)}
+          >
+            <svg viewBox="0 0 24 24"><path d="M6 14l6-5 6 5"/></svg>
+          </button>
+        )}
+        <TabBar active="ops" />
+      </div>
+      {phoneMode === 'autohide' && hidden && (
+        <button type="button" className="nav-pill" onClick={() => setHidden(false)}>
+          <svg style={{ width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }} viewBox="0 0 24 24"><path d="M6 14l6-5 6 5"/></svg>
+          Nav
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Exploration page ──
+function Page() {
+  const [mode, setMode] = useState('handle');
+  const [slim, setSlim] = useState(true);
+  const NOTES = {
+    handle: 'A pull-tab on the nav’s top edge. One tap hides the whole bar (reclaims 64px); the tab stays reachable to bring it back. Explicit and predictable — nothing moves unless you move it.',
+    autohide: 'Scroll down and the nav gets out of the way; scroll up (or tap the pill) and it returns. Zero taps, but the bar moves on its own — riskier under gloves.',
+    compact: 'The tab shrinks the bar to icons-only (44px, still full hit-targets) instead of hiding it. Middle ground: reclaims 20px but navigation never disappears.',
+  };
+  return (
+    <div className="xp-page">
+      <header className="xp-head">
+        <span className="xp-eyebrow">FieldShore v4 · design exploration</span>
+        <h1 className="xp-title">#391 — Collapsible nav bar</h1>
+        <p className="xp-sub">
+          Dense field screens (Operations board, Command, Cutting Station) need maximum vertical
+          room. Three ways to let the primary nav get out of the way — shown on the real Cutting
+          Station, the densest screen we have.
+        </p>
+        <nav className="xp-links">
+          <a href="Design Exploration Queue.html">← All explorations</a>
+          <a href="https://github.com/Vergo402/paratech-struts/issues/391" target="_blank" rel="noopener">Issue #391 ↗</a>
+        </nav>
+      </header>
+
+      <div className="xp-toolbar">
+        <span className="xp-toolbar-label">Phone behavior</span>
+        <Segmented
+          size="standard"
+          options={[
+            { value: 'handle', label: 'A · Pull-tab' },
+            { value: 'autohide', label: 'B · Auto-hide on scroll' },
+            { value: 'compact', label: 'C · Icons-only compact' },
+          ]}
+          value={mode}
+          onChange={setMode}
+          aria-label="Phone nav behavior"
+        />
+      </div>
+
+      <div className="xp-row">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <span className="xp-tag">Phone · bottom nav</span>
+          <div className="xp-phone">
+            <iframe key={mode} src={'?screen=phone&mode=' + mode} title="Phone shell with collapsible nav"></iframe>
+          </div>
+        </div>
+        <section className="xp-panel" style={{ flex: 1, minWidth: 380 }}>
+          <div className="xp-panel-head">
+            <h2 className="xp-panel-title">{{ handle: 'A · Pull-tab', autohide: 'B · Auto-hide on scroll', compact: 'C · Icons-only compact' }[mode]}</h2>
+            <p className="xp-panel-note">{NOTES[mode]}</p>
+          </div>
+          <p className="xp-panel-note" style={{ maxWidth: '60ch' }}>
+            Recommendation: <strong>A (pull-tab)</strong> as the default — field doctrine favors
+            controls that only move when deliberately operated. B suits read-heavy screens like
+            Past Operations; C is a good desktop analogue (see rail below).
+          </p>
+        </section>
+      </div>
+
+      <section className="xp-panel">
+        <div className="xp-panel-head" style={{ flexDirection: 'row', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-4)' }}>
+          <h2 className="xp-panel-title">Desktop · side rail collapses to icons</h2>
+          <span className="xp-panel-note">Same principle, same toggle position (bottom of rail).</span>
+        </div>
+        <div className="rail-demo">
+          <nav className={'rail' + (slim ? ' is-slim' : '')} aria-label="Primary">
+            {TABS.map(([k, l]) => (
+              <a key={k} href="#" onClick={(e) => e.preventDefault()} className={k === 'ops' ? 'on' : ''}>
+                {ICONS[k]}<span>{l}</span>
+              </a>
+            ))}
+            <button type="button" className="rail-toggle" onClick={() => setSlim(!slim)}>
+              <svg viewBox="0 0 24 24"><path d="M14 6l-5 6 5 6"/></svg>
+              <span>Collapse</span>
+            </button>
+          </nav>
+          <div className="rail-main">
+            <Station />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(isPhone ? <PhoneShell /> : <Page />);
+</script>
+</body>
+</html>

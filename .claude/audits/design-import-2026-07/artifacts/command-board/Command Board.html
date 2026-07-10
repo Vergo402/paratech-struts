@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Command Board — Org Chart · FieldShore v4</title>
+<link rel="stylesheet" href="../styles.css" />
+<link rel="stylesheet" href="org-chart-compat.css?v=1" />
+<link rel="stylesheet" href="org-chart-redesign.css?v=5" />
+</head>
+<body style="font-family: &quot;Geist Variable&quot;; font-size: 14px">
+<div class="stage">
+
+  <!-- exploration toolbar -->
+  <div class="bar">
+    <div class="bar-brand">
+      <span class="bar-eyebrow">FieldShore v4 · Command</span>
+      <span class="bar-title">Org Chart — ICS structure, redesigned</span>
+    </div>
+    <div class="bar-group">
+      <span class="bar-label">Theme</span>
+      <div class="seg theme" id="themeSeg">
+        <button data-theme-val="dark" aria-pressed="true">Dark</button>
+        <button data-theme-val="light" aria-pressed="false">Light</button>
+        <button data-theme-val="sunlight" aria-pressed="false">Sunlight</button>
+        <button data-theme-val="broadcast" aria-pressed="false">Broadcast</button>
+      </div>
+    </div>
+    <div class="bar-group">
+      <span class="bar-label">Connectors</span>
+      <div class="seg" id="connSeg">
+        <button data-conn="elbow" aria-pressed="true">Elbow</button>
+        <button data-conn="bracket" aria-pressed="false">Bracket</button>
+        <button data-conn="taper" aria-pressed="false">Taper</button>
+      </div>
+    </div>
+    <div class="bar-group">
+      <span class="bar-label">Density</span>
+      <div class="seg" id="densSeg">
+        <button data-dens="comfortable" aria-pressed="true">Comfortable</button>
+        <button data-dens="compact" aria-pressed="false">Compact</button>
+      </div>
+    </div>
+    <button class="bar-reset" id="resetBtn">Reset incident</button>
+    <span class="bar-note">Live model — edits sync across both views</span>
+  </div>
+
+  <!-- device frames -->
+  <div class="frames">
+
+    <!-- DESKTOP — Command Post (Toughbook) -->
+    <div class="frame-col">
+      <div class="frame-cap"><b>Command Post — desktop</b><span>full chart · drag-to-reparent · zoom</span></div>
+      <div class="win" data-theme="dark" id="deskFrame">
+        <div class="win-bar">
+          <span class="win-dot r"></span><span class="win-dot y"></span><span class="win-dot g"></span>
+          <span class="win-title">FieldShore — Meadowville Collapse · OP 2</span>
+        </div>
+        <div class="deck">
+          <aside class="deck-rail">
+            <div class="rail-incident">
+              <span class="rail-eyebrow">Active operation</span>
+              <h2>Meadowville Collapse</h2>
+              <p>412 Meadow St · 3-story masonry · partial collapse</p>
+            </div>
+            <div class="rail-ic">
+              <span class="rail-eyebrow">Incident Commander</span><br />
+              <span class="ic-name">BC Reyes · Car 1</span>
+              <p class="rail-level" style="margin-top:8px">Level IV · 24 personnel · OP 2 of 3</p>
+            </div>
+            <div class="rail-grid">
+              <div class="rail-metric"><span class="m-label">Apparatus</span><span class="m-num">9</span><span class="m-sub">on scene</span></div>
+              <div class="rail-metric"><span class="m-label">Shore points</span><span class="m-num">6</span><span class="m-sub">2 cutting</span></div>
+              <div class="rail-metric"><span class="m-label">Positions</span><span class="m-num">8</span><span class="m-sub">filled</span></div>
+              <div class="rail-metric"><span class="m-label">Open hazards</span><span class="m-num">2</span><span class="m-sub">monitored</span></div>
+            </div>
+            <div>
+              <span class="rail-eyebrow">Span of control</span>
+              <p class="rail-level" style="margin-top:6px">Operations runs <b style="color:var(--st-cutting-line)">6 direct reports</b> — approaching the NIMS 1:7 limit. Consider a Branch.</p>
+            </div>
+          </aside>
+          <div class="deck-ws">
+            <div class="ws-head">
+              <div class="ws-seg">
+                <button aria-pressed="true">Org Chart</button>
+                <button aria-pressed="false">Hazard Log</button>
+              </div>
+              <span class="ws-hint">Drag a card by its grip to reparent · tap to assign &amp; edit</span>
+            </div>
+            <div class="org" id="deskOrg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHONE — the floor -->
+    <div class="frame-col">
+      <div class="frame-cap"><b>Phone — the floor</b><span>pinch/zoom · tap to assign · Move buttons</span></div>
+      <div class="phone">
+        <div class="phone-screen" data-theme="dark" id="phoneFrame">
+          <div class="phone-island"></div>
+          <div class="phone-statusbar">
+            <span>13:52</span>
+            <span class="sb-r">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1.5" width="3" height="10.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity="0.4"/></svg>
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true"><path d="M8 2.5c2 0 3.8.8 5.1 2.1l1.4-1.4A9 9 0 0 0 8 .5 9 9 0 0 0 1.5 3.2l1.4 1.4A7 7 0 0 1 8 2.5Zm0 4c1 0 1.9.4 2.5 1l1.4-1.4A6 6 0 0 0 8 4.5a6 6 0 0 0-3.9 1.6l1.4 1.4A4 4 0 0 1 8 6.5Zm0 4 2-2a3 3 0 0 0-4 0l2 2Z"/></svg>
+              <svg width="26" height="13" viewBox="0 0 26 13" fill="none" aria-hidden="true"><rect x="0.5" y="0.5" width="22" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="17" height="9" rx="1.5" fill="currentColor"/><rect x="24" y="4" width="2" height="5" rx="1" fill="currentColor" opacity="0.5"/></svg>
+            </span>
+          </div>
+          <div class="org" id="phoneOrg"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+  import { createStore } from './org-model.js';
+  import { OrgView } from './org-view.js';
+
+  const store = createStore();
+  const display = { connector: 'elbow', density: 'comfortable' };
+
+  const desk = new OrgView(document.getElementById('deskOrg'), store, {
+    surface: 'desktop', editable: true, frame: document.getElementById('deskFrame'), display, scale: 0.95,
+  });
+  const phone = new OrgView(document.getElementById('phoneOrg'), store, {
+    surface: 'phone', editable: true, frame: document.getElementById('phoneFrame'), display, scale: 0.7,
+  });
+  const views = [desk, phone];
+
+  // Connectors are measured from live node geometry — node metrics shift when
+  // the Geist/Inter web fonts swap in, so redraw once they're ready (and on load).
+  const redrawLinks = () => views.forEach((v) => v.drawLinks());
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(redrawLinks));
+  window.addEventListener('load', () => requestAnimationFrame(redrawLinks));
+
+  // ── toolbar wiring ──────────────────────────────────────
+  function setPressed(seg, attr, val) {
+    seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset[attr] === val)));
+  }
+
+  document.getElementById('themeSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-theme-val]'); if (!b) return;
+    const t = b.dataset.themeVal;
+    document.getElementById('deskFrame').setAttribute('data-theme', t);
+    document.getElementById('phoneFrame').setAttribute('data-theme', t);
+    setPressed(e.currentTarget, 'themeVal', t);
+    views.forEach((v) => v.drawLinks());
+  });
+
+  document.getElementById('connSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-conn]'); if (!b) return;
+    display.connector = b.dataset.conn;
+    setPressed(e.currentTarget, 'conn', display.connector);
+    views.forEach((v) => v.drawLinks());
+  });
+
+  document.getElementById('densSeg').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-dens]'); if (!b) return;
+    display.density = b.dataset.dens;
+    setPressed(e.currentTarget, 'dens', display.density);
+    views.forEach((v) => { v.render(); requestAnimationFrame(() => v.fit()); });
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => store.reset());
+</script>
+</body>
+</html>
+
+<style id="__om-edit-overrides">
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { flex-direction: row-reverse !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { flex-direction: column-reverse !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { flex-direction: row !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { align-items: flex-start !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { align-items: center !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { align-items: flex-end !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 4px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 40px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 45px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 450px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 4px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 5px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 0px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 5px 0px 0px 34px !important }
+#phoneOrg .org-tree >:is(h1,h2,h3,h4,h5,h6,p,li,dt,dd,blockquote,figcaption,label,span,a,em,strong,small,td,th,caption) .org-staff { margin: 5px 0px 0px 34px !important }
+</style>
