@@ -582,7 +582,6 @@ p.fs-gate--disclaimer {
   touch-action: pan-y;
   transform: translateZ(0);
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   font: var(--type-body);
   color: var(--text-primary);
 }
@@ -656,7 +655,6 @@ p.fs-gate--disclaimer {
   touch-action: pan-y;
   transform: translateZ(0);
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ---- side drawer (the companion panel — side-drawer.md / ADR-019) ----------
@@ -755,7 +753,6 @@ p.fs-gate--disclaimer {
   touch-action: pan-y;
   transform: translateZ(0);
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
   font: var(--type-body);
   color: var(--text-primary);
 }

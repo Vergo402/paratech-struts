@@ -203,7 +203,6 @@ body {
      breathing room. Tablet/laptop restore the 16px side margin just below. */
   padding: var(--space-4) var(--space-2);
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 /* Below the rail breakpoint the bottom nav's pull-tab handle (#391) protrudes
    20px into this pane — clear it so the last content row can always scroll

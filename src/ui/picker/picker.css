@@ -135,7 +135,6 @@
   z-index: 400;
   max-height: 60vh;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   /* L-9: explicit touch-action keeps upward swipes from becoming page
      gestures (pull-to-refresh) and forces vertical pan onto this element. */
@@ -264,7 +263,6 @@
   touch-action: pan-y;
   transform: translateZ(0);
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 .fs-fullscreen-nomatch {
   font: var(--type-body);

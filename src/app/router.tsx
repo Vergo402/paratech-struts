@@ -26,7 +26,14 @@ import {
   HelpReferencePage,
   AboutPage,
 } from './routes/settings';
-import { GalleryScreen } from './routes/gallery';
+import { lazy, Suspense } from 'react';
+
+// The /gallery dev surface is DEV-ONLY (cleanup plan, Alex 2026-07-09). The ternary
+// folds at build time (import.meta.env.DEV is a static constant), so prod builds
+// eliminate the dynamic import expression entirely — Rollup emits no gallery chunk.
+const GalleryScreen = import.meta.env.DEV
+  ? lazy(() => import('./routes/gallery').then((m) => ({ default: m.GalleryScreen })))
+  : () => null;
 import { AuthRoute } from './routes/auth';
 import { CreateDepartmentRoute } from './routes/create-department';
 import { JoinDepartmentRoute } from './routes/join-department';
@@ -137,7 +144,21 @@ const routeTree = rootRoute.addChildren([
     // position; Administrative = manageUsers) and shows the command-record state to neither.
     createRoute({ getParentRoute: () => shellRoute, path: '/audit-log', component: () => <RequireDepartment><AuditLogScreen /></RequireDepartment> }),
     createRoute({ getParentRoute: () => shellRoute, path: '/help', component: HelpRoute }),
-    createRoute({ getParentRoute: () => shellRoute, path: '/gallery', component: GalleryScreen }),
+    // Dev-only: registered exclusively in dev builds — prod's route tree simply
+    // lacks /gallery (→ the not-found state) and Rollup drops the lazy chunk.
+    ...(import.meta.env.DEV
+      ? [
+          createRoute({
+            getParentRoute: () => shellRoute,
+            path: '/gallery',
+            component: () => (
+              <Suspense fallback={null}>
+                <GalleryScreen />
+              </Suspense>
+            ),
+          }),
+        ]
+      : []),
   ]),
   // Pre-shell, chrome-free — direct children of root, not the shell. /auth is
   // workflow 06; /create-department is workflow 07 (reached forward from sign-in

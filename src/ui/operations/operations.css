@@ -53,7 +53,7 @@
   gap: var(--space-2);
   min-height: 32px;
   padding: 0 var(--space-3);
-  border-radius: var(--radius-pill, 999px);
+  border-radius: var(--radius-pill);
   background: var(--surface-card);
   border: var(--stroke-width) solid var(--surface-stroke);
   white-space: nowrap;
@@ -129,49 +129,6 @@
   background: var(--surface-elevated);
 }
 
-/* ---- controls row (Add) — PHONE ONLY ------------------------------------- */
-/* Phone: Add runs full-width (the Inventory glance is the header icon). On
-   desktop the Add button lives at the top of the left rail column instead, so
-   this row isn't rendered there. */
-.fs-ops-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-1) 0;
-}
-/* Desktop labeled Inventory toggle — an outlined secondary button in the filter
-   row, just left of the view toggle (mirrors the ViewToggle treatment; Principle
-   9: active state is ring + tint, not color alone). 40px to match the compact
-   filter-row controls (the documented #356 exception). */
-.fs-ops-inv-cta {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 40px;
-  padding: 0 var(--space-3);
-  background: var(--surface-card);
-  border: 1px solid var(--surface-stroke);
-  border-radius: var(--radius-input);
-  font: var(--type-body-medium);
-  color: var(--text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-ops-inv-cta:hover {
-  background: var(--surface-card-hover);
-  color: var(--text-primary);
-}
-.fs-ops-inv-cta:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-.fs-ops-inv-cta.is-active {
-  border-color: var(--accent);
-  background: var(--accent-soft, var(--surface-card-hover));
-  color: var(--text-primary);
-}
-
 /* ---- floating action pill + companion stack (Alex, Stage 2a review) ------- */
 /* The one gold primary floats bottom-right above the nav (pill, not a bar). */
 .fs-ops-fab {
@@ -206,7 +163,7 @@
   background: var(--surface-elevated);
   border: var(--stroke-width) solid var(--surface-stroke);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-drawer, 0 4px 14px rgba(0, 0, 0, 0.45));
+  box-shadow: var(--shadow-drawer);
   touch-action: none; /* the container drags; taps pass the 6px threshold test */
   user-select: none;
 }
@@ -258,9 +215,6 @@
 }
 /* Segmenteds here (layout icons + Mine) size to content, not width:100%. */
 .fs-ops-utility > .fs-segmented { flex: none; width: auto; }
-.fs-ops-utility-spacer { flex: 1 1 auto; }
-/* The Add-row Mine lens on phone sizes to content too. */
-.fs-ops-controls > .fs-segmented { flex: none; width: auto; }
 
 .fs-ops-filters-btn {
   flex: none;
@@ -804,7 +758,7 @@
 /* deployed — solid system fill; inks are theme-paired for AA (wcag-contrast.mjs). */
 .fs-spc-tab.is-gold {
   background: var(--accent);
-  color: var(--on-accent, #1c1f23); /* broadcast omits --on-accent; dark ink clears its bright gold */
+  color: var(--on-accent); /* broadcast omits --on-accent; dark ink clears its bright gold */
 }
 .fs-spc-tab.is-grey {
   background: var(--text-secondary);
@@ -1560,13 +1514,6 @@ button.fs-spc-head {
   align-items: baseline;
   flex-wrap: wrap;
   gap: var(--space-1);
-}
-
-.fs-assign-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
 }
 
 .fs-assign-error,
@@ -2755,82 +2702,6 @@ button.fs-spc-head {
   color: var(--text-tertiary);
 }
 
-/* ---- drilldown rail (20-operations.md §Drilldown) ------------------------- */
-.fs-rail-list,
-.fs-rail-children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.fs-rail-row {
-  display: flex;
-  align-items: center;
-}
-.fs-rail-select {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  min-height: 40px;
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-  background: none;
-  border: none;
-  border-left: 3px solid transparent; /* active marker — paired with weight + tint (Principle 9) */
-  border-radius: 0 var(--radius-button) var(--radius-button) 0;
-  font: var(--type-body);
-  color: var(--text-secondary);
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-rail-select:hover {
-  background: var(--surface-elevated);
-}
-.fs-rail-select:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.fs-rail-select.is-active {
-  border-left-color: var(--accent);
-  background: var(--accent-soft, var(--surface-card-hover));
-  color: var(--text-primary);
-  font: var(--type-body-medium);
-}
-.fs-rail-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.fs-rail-toggle {
-  flex: none;
-  width: 32px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-rail-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.fs-rail-chevron {
-  transition: transform var(--motion-micro) var(--ease-micro);
-}
-/* Inside the phone scope Sheet (Item 1) the rail is a PRIMARY operational
-   picker, so its rows meet the 56pt operational tap floor — the rail's own 40px
-   is the #356 filter-row exception and stays untouched on the desktop rail. */
-.fs-sheet .fs-rail-select,
-.fs-sheet .fs-rail-toggle { min-height: 56px; }
-.fs-sheet .fs-rail-toggle { height: auto; }
-
 /* ---- floating companion panel (floating-panel.md / ADR-037) --------------- */
 /* A true overlay that floats over the board — so it casts --shadow-modal (unlike
    the docked column, which sat in flow at column elevation with no shadow).
@@ -2900,27 +2771,6 @@ button.fs-spc-head {
 }
 .fs-fp-resize:hover {
   color: var(--text-secondary);
-}
-
-/* ---- inventory summary toggle button (ops header) ------------------------ */
-.fs-ops-inv-btn {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: var(--radius-button);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.fs-ops-inv-btn:hover { background: var(--surface-elevated); }
-.fs-ops-inv-btn.is-active {
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
 }
 
 /* ---- inventory summary drawer content ------------------------------------ */
