@@ -775,7 +775,7 @@
 /* deployed — solid system fill; inks are theme-paired for AA (wcag-contrast.mjs). */
 .fs-spc-tab.is-gold {
   background: var(--accent);
-  color: var(--on-accent); /* broadcast omits --on-accent; dark ink clears its bright gold */
+  color: var(--on-accent, #1c1f23); /* broadcast omits --on-accent; dark ink clears its bright gold */
 }
 .fs-spc-tab.is-grey {
   background: var(--text-secondary);

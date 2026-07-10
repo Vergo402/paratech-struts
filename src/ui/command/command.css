@@ -1589,14 +1589,14 @@
 /* assign / add / move lists — THE canonical .fs-assign-list: 6 consumers across
    command (MyRoleSheet, AddPositionForm, NodeSheet, TransferCommand) AND
    operations (AssignEquipmentSheet, AddShorePointModal). operations.css used to
-   define a competing copy; bundle order silently merged them (this block won
-   gap, the ops copy contributed only its padding-bottom). Cleanup stage 4
-   deleted the ops copy and folded that padding-bottom here — byte-identical
-   rendered output, collision gone. */
+   define a competing copy; this block came later in the bundle and won EVERY
+   declaration (the ops copy contributed nothing — including its padding-bottom).
+   Cleanup stage 4 deleted the ops copy; these are the baseline-rendered values,
+   collision gone. */
 .fs-assign-list {
   list-style: none;
   margin: 0;
-  padding: 0 0 var(--space-3);
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);

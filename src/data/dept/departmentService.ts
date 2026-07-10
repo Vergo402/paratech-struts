@@ -555,7 +555,9 @@ export function createDepartmentService(deps: {
 
   // The uniform admin-mutation skeleton (#435 dedup): ctx guard → one cloud
   // write → fire-and-forget audit entry. Pre-write validation stays at each
-  // site (it owns its reasons); the multi-step mutations (deleteRole,
+  // site (it owns its reasons) and sits BEHIND an inline ctx guard — a
+  // disconnected admin must get 'Not connected', never a validation reason
+  // for a write that couldn't succeed anyway; the multi-step mutations (deleteRole,
   // regenerateInviteCode) and the self-edit setRank deliberately keep their
   // own structure (re-audit 2026-07-10: 6 of 11 sites fit).
   async function adminWrite(
@@ -583,6 +585,7 @@ export function createDepartmentService(deps: {
 
   // Admin sets another member's rank (#321 inc3). manageUsers-gated by the rules; audited.
   async function setMemberRank(uid: string, rank: string): Promise<AdminMutationResult> {
+    if (!adminCtx()) return { ok: false, reason: 'Not connected to a department.' };
     const trimmed = rank.trim();
     if (trimmed.length > 80) return { ok: false, reason: 'Rank is too long (max 80 characters).' };
     return adminWrite(
@@ -698,6 +701,7 @@ export function createDepartmentService(deps: {
   // session row until a regenerate replaces it — the UI's primary affordance is
   // Regenerate, which rotates rather than leaving the dept code-less.
   async function revokeInviteCode(): Promise<AdminMutationResult> {
+    if (!adminCtx()) return { ok: false, reason: 'Not connected to a department.' };
     const code = deps.session().store.getState().inviteCode;
     if (!code) return { ok: false, reason: 'No invite code on record for this department.' };
     return adminWrite(

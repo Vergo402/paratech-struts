@@ -550,11 +550,16 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     expect(r.reason).toMatch(/verify who holds/i);
   });
 
-  it('both actions require a connected department', async () => {
+  it('disconnected admin mutations report the connection problem, never a validation reason', async () => {
     const bare = createSessionStore(createDB(`test-dept-${newId()}`));
     await bare.boot(UID);
     const bareSvc = createDepartmentService({ session: () => bare });
-    expect((await bareSvc.revokeInviteCode()).ok).toBe(false);
-    expect((await bareSvc.regenerateInviteCode()).ok).toBe(false);
+    const notConnected = { ok: false, reason: 'Not connected to a department.' };
+    expect(await bareSvc.revokeInviteCode()).toEqual(notConnected);
+    expect(await bareSvc.regenerateInviteCode()).toEqual(notConnected);
+    // assignRole has no inline guard — this pins adminWrite's shared ctx guard itself.
+    expect(await bareSvc.assignRole('uid-x', 'role-x')).toEqual(notConnected);
+    // Validation-failing input while disconnected: the ctx guard must answer first.
+    expect(await bareSvc.setMemberRank('uid-x', 'r'.repeat(100))).toEqual(notConnected);
   });
 });
