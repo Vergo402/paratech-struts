@@ -724,5 +724,51 @@ describe('operationStore.commit', () => {
       expect((await ops.commit(deleteEvt('sp-1', true))).ok).toBe(true); // no stranding → allowed
       expect(await durable('inv-1')).toBe(2); // unchanged
     });
+
+    // #421 — the grouped-delete path. DeleteShorePointModal batches ALL live group
+    // members with no status filter through commitMany, which had no guard: a
+    // mixed pending/deployed group stranded the deployed members' stock.
+    describe('via commitMany (grouped delete)', () => {
+      it('rejects the WHOLE batch when any member is deployed — zero events, stock untouched', async () => {
+        await ops.commit(deploy('sp-1', 'inv-1'));
+        expect(await durable('inv-1')).toBe(1);
+        const before = await db.events.count();
+        const res = await ops.commitMany([deleteEvt('sp-1'), deleteEvt('sp-2')]);
+        expect(res.ok).toBe(false);
+        expect(res).toMatchObject({ reason: expect.stringContaining('deployed equipment') });
+        expect(await db.events.count()).toBe(before); // all-or-nothing: nothing logged
+        expect(await durable('inv-1')).toBe(1); // NOT stranded, NOT restored
+        expect(getSp('sp-1')!.deletedAt).toBeFalsy();
+        expect(getSp('sp-2')!.deletedAt).toBeFalsy(); // the pending mate survives too
+      });
+
+      it('still rejects a peer (fromRemote) grouped delete of a deployed member', async () => {
+        await ops.commit(deploy('sp-1', 'inv-1'));
+        const res = await ops.commitMany([deleteEvt('sp-1'), deleteEvt('sp-2')], { fromRemote: true });
+        expect(res.ok).toBe(false);
+        expect(await durable('inv-1')).toBe(1);
+      });
+
+      it('an all-pending grouped delete still commits every member', async () => {
+        const before = await db.events.count();
+        const res = await ops.commitMany([deleteEvt('sp-1'), deleteEvt('sp-2')]);
+        expect(res.ok).toBe(true);
+        expect(await db.events.count()).toBe(before + 2);
+        expect(getSp('sp-1')!.deletedAt).toBeTruthy();
+        expect(getSp('sp-2')!.deletedAt).toBeTruthy();
+      });
+
+      it('allows a grouped delete once the deployed member is returned', async () => {
+        await ops.commit(deploy('sp-1', 'inv-1'));
+        for (const [from, to] of [
+          ['process', 'strutset'], ['strutset', 'cutting'], ['cutting', 'runner'], ['runner', 'secured'],
+        ] as [ShorePointStatus, ShorePointStatus][]) {
+          await ops.commit(statusChanged('sp-1', from, to));
+        }
+        expect((await ops.commit(reclaimed('sp-1'))).ok).toBe(true); // → returned
+        expect((await ops.commitMany([deleteEvt('sp-1'), deleteEvt('sp-2')])).ok).toBe(true);
+        expect(await durable('inv-1')).toBe(2); // restored stock unchanged
+      });
+    });
   });
 });

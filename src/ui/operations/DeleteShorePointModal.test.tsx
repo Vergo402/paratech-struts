@@ -90,4 +90,27 @@ describe('DeleteShorePointModal', () => {
     expect([...events].map((e) => e.spId).sort()).toEqual(['sp-1', 'sp-2', 'sp-3']);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('a rejected grouped delete (#421 deployed member) shows the error and keeps the modal open', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    mockCommitMany.mockResolvedValueOnce({
+      ok: false,
+      reason: 'cannot delete a shore point holding deployed equipment — return it first',
+    });
+    const m = (id: string, i: number): ShorePoint => ({
+      ...SP, id, shoreType: '3-post', groupId: 'g1', groupIndex: i, groupTotal: 3,
+    });
+    const members = [m('sp-1', 1), m('sp-2', 2), m('sp-3', 3)];
+    mockShorePoints.mockReturnValue(members);
+    render(<DeleteShorePointModal shorePoint={members[0]!} onClose={onClose} />);
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
+    expect(screen.getByRole('alert')).toHaveTextContent(/deployed equipment/);
+    expect(onClose).not.toHaveBeenCalled(); // modal stays open
+
+    // Cancel clears the error for the next open
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onClose).toHaveBeenCalled();
+  });
 });

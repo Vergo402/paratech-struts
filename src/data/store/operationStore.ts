@@ -40,7 +40,9 @@ export interface OperationStoreApi {
    * member events as ONE durable batch (all-or-nothing) and one re-render.
    * Plain-append events only; inventory-consequential events (Equipment*
    * deploy/return/reclaim + ComponentResourced) need per-event pre-flight guards
-   * and commit one at a time.
+   * and commit one at a time. Exception: ShorePointDeleted IS accepted here and
+   * gets the same deployed-stock pre-flight as doCommit — a grouped delete must
+   * not strand deployed inventory through the batch path (#421).
    */
   commitMany(events: FieldShoreEvent[], opts?: CommitOptions): Promise<CommitResult>;
   /** Rebuild in-memory state from the event log (boot path). */
@@ -313,6 +315,20 @@ export function createOperationStore(opts: {
         return { ok: false, reason: 'inventory-consequential events commit one at a time' };
       }
       events.push(parsed.data);
+    }
+
+    // Same deployed-stock pre-flight as doCommit's ShorePointDeleted guard (#421):
+    // a grouped delete (DeleteShorePointModal batches ALL live group members, no
+    // status filter) must not slip a deployed member past the guard via the batch
+    // path — that strands its decremented BOM with no return path. Reject the
+    // WHOLE batch (all-or-nothing, matching the transaction semantics below).
+    const state = store.getState();
+    for (const event of events) {
+      if (event.type !== 'ShorePointDeleted') continue;
+      const sp = state.shorePoints.find((s) => s.id === event.spId);
+      if (sp && sp.deployedBom && sp.status !== 'returned') {
+        return { ok: false, reason: 'cannot delete a shore point holding deployed equipment — return it first' };
+      }
     }
 
     try {
