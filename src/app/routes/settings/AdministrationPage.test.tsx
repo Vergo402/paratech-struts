@@ -6,11 +6,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockSetAfterActionEmail = vi.fn();
 const mockUsePermissions = vi.fn();
 const mockUseDeptPolicies = vi.fn();
+const mockUseAuditAccess = vi.fn();
 
 vi.mock('@ui/hooks', () => ({
   useDepartment: () => ({ department: { id: 'd1', name: 'Hamden' } }),
   usePermissions: () => mockUsePermissions(),
-  useAuditAccess: () => ({ canIncident: false }),
+  useAuditAccess: () => mockUseAuditAccess(),
   useCustomTitles: () => ({ titles: [], add: vi.fn(), remove: vi.fn() }),
   useDeptPolicies: () => mockUseDeptPolicies(),
 }));
@@ -39,6 +40,7 @@ const PERMS = (over: Record<string, boolean>) => ({
 beforeEach(() => {
   mockSetAfterActionEmail.mockReset();
   mockUsePermissions.mockReturnValue(PERMS({ manageSettings: true }));
+  mockUseAuditAccess.mockReturnValue({ canIncident: false, canAdministrative: false });
   mockUseDeptPolicies.mockReturnValue({ afterActionEmail: true, setAfterActionEmail: mockSetAfterActionEmail });
 });
 
@@ -56,5 +58,30 @@ describe('AdministrationPage — after-action policy toggle (#305)', () => {
     mockUsePermissions.mockReturnValue(PERMS({}));
     render(<AdministrationPage />);
     expect(screen.queryByText('Department policies')).not.toBeInTheDocument();
+  });
+});
+
+describe('AdministrationPage — Audit log gateway (#429)', () => {
+  it('enables the Audit log row for a canAdministrative-only admin (no ICS position)', () => {
+    mockUsePermissions.mockReturnValue(PERMS({ manageUsers: true }));
+    mockUseAuditAccess.mockReturnValue({ canIncident: false, canAdministrative: true });
+    render(<AdministrationPage />);
+    const row = screen.getByRole('button', { name: /audit log/i });
+    expect(row).not.toBeDisabled();
+    expect(screen.getByText('Incident and governance record')).toBeInTheDocument();
+  });
+
+  it('keeps the row disabled when the viewer holds neither entitlement', () => {
+    mockUsePermissions.mockReturnValue(PERMS({ manageUsers: true })); // page visible via Users & roles
+    mockUseAuditAccess.mockReturnValue({ canIncident: false, canAdministrative: false });
+    render(<AdministrationPage />);
+    expect(screen.getByRole('button', { name: /audit log/i })).toBeDisabled();
+  });
+
+  it('still enables for an IC without manageUsers (the incident axis)', () => {
+    mockUsePermissions.mockReturnValue(PERMS({}));
+    mockUseAuditAccess.mockReturnValue({ canIncident: true, canAdministrative: false });
+    render(<AdministrationPage />);
+    expect(screen.getByRole('button', { name: /audit log/i })).not.toBeDisabled();
   });
 });

@@ -39,15 +39,18 @@ export function AdministrationPage() {
               onPress={() => navigate({ to: '/users' })}
             />
           )}
-          {/* ponytail: Audit Log visible to all connected members, ICS-position-checked at entry (50-settings.md §Administration) */}
+          {/* #429 — the gateway honors BOTH entitlement axes: the Incident view
+              (IC/Operations, an ICS position) and the Administrative view
+              (manageUsers). Pre-#429 it gated on canIncident alone, locking
+              entitled admins out of the governance trail on phone. */}
           <SettingsRow
             label="Audit log"
             description={
-              audit.canIncident
+              audit.canIncident || audit.canAdministrative
                 ? 'Incident and governance record'
-                : 'Requires Incident Commander or Operations assignment in an active operation'
+                : 'Requires Incident Commander or Operations assignment in an active operation, or user-management permission'
             }
-            disabled={!audit.canIncident}
+            disabled={!(audit.canIncident || audit.canAdministrative)}
             onPress={() => navigate({ to: '/audit-log' })}
           />
         </SettingsGroup>
