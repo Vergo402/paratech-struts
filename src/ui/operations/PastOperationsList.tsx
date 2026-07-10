@@ -1,15 +1,6 @@
 import { Card } from '@ui/primitives';
 import { usePastOperations } from '@ui/hooks';
-
-/** "Ended Jun 17, 2:43 PM" — short, local. */
-function endedLabel(at: number): string {
-  return new Date(at).toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
+import { dateClock } from '../util/time';
 
 /**
  * Past-operations list (#238) — read-only finished-incident cards below the
@@ -27,7 +18,7 @@ export function PastOperationsList({ onOpen }: { onOpen: (opId: string) => void 
         <Card key={op.id} onPress={() => onOpen(op.id)} className="fs-archive-row">
           <span className="fs-archive-row-name">{op.name}</span>
           <span className="fs-archive-row-meta">
-            Ended {endedLabel(op.endedAt)} · {op.shorePointCount}{' '}
+            Ended {dateClock(op.endedAt)} · {op.shorePointCount}{' '}
             {op.shorePointCount === 1 ? 'shore point' : 'shore points'}
           </span>
         </Card>

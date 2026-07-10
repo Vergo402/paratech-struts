@@ -155,6 +155,19 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     hooks.onRow?.(result);
   }
 
+  // Shared removed/updated/noop dispatch tail of decrementItem + setQuantity
+  // (#435 dedup): mirror the txn's outcome to the hot state + the cloud hooks.
+  type MutateOutcome = { kind: 'noop' } | { kind: 'removed' } | { kind: 'updated'; item: InventoryItem };
+  function dispatchOutcome(id: string, outcome: MutateOutcome): void {
+    if (outcome.kind === 'removed') {
+      removeLocal(id);
+      hooks.onDelete?.(id, Date.now());
+    } else if (outcome.kind === 'updated') {
+      applyLocal(outcome.item);
+      hooks.onRow?.(outcome.item);
+    }
+  }
+
   async function decrementItem(id: string): Promise<void> {
     const outcome = await db.transaction('rw', db.inventory, async () => {
       const item = await db.inventory.get(id);
@@ -169,13 +182,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
       await db.inventory.put(updated);
       return { kind: 'updated' as const, item: updated };
     });
-    if (outcome.kind === 'removed') {
-      removeLocal(id);
-      hooks.onDelete?.(id, Date.now());
-    } else if (outcome.kind === 'updated') {
-      applyLocal(outcome.item);
-      hooks.onRow?.(outcome.item);
-    }
+    dispatchOutcome(id, outcome);
   }
 
   async function setQuantity(id: string, quantity: number): Promise<void> {
@@ -193,13 +200,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
       await db.inventory.put(updated);
       return { kind: 'updated' as const, item: updated };
     });
-    if (outcome.kind === 'removed') {
-      removeLocal(id);
-      hooks.onDelete?.(id, Date.now());
-    } else if (outcome.kind === 'updated') {
-      applyLocal(outcome.item);
-      hooks.onRow?.(outcome.item);
-    }
+    dispatchOutcome(id, outcome);
   }
 
   async function removeItem(id: string): Promise<void> {

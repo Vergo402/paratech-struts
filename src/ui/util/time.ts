@@ -19,3 +19,10 @@ export function clockTime(at: number): string {
   const d = new Date(at);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
+
+/** "Jun 17, 2:43 PM" — short local date+time, always with the date (unlike
+ *  clock(), which hides a same-day date). Shared by the Quick View timeline
+ *  and the past-operations list (#435 dedup — identical formatters). */
+export function dateClock(at: number): string {
+  return new Date(at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}

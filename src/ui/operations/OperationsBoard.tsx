@@ -348,6 +348,13 @@ function DeletedSection({ points, open, onToggle, onRestore }: DeletedSectionPro
 }
 
 // ---- OperationsBoard --------------------------------------------------------
+// The announcement location descriptor ("building, Div N, area") — the three
+// byte-identical sites only (#435 dedup); the header variant at the top of the
+// file keeps its ' · ' separator deliberately.
+function spWhere(sp: ShorePoint): string {
+  return [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
+}
+
 export function OperationsBoard() {
   const operation = useOperation();
   const shorePoints = useShorePoints();
@@ -557,7 +564,7 @@ export function OperationsBoard() {
       const first = added[0];
       if (!first) return;
       setScrollToId(first.id);
-      const where = [first.building, divisionLabel(first.division), first.area].filter(Boolean).join(', ');
+      const where = spWhere(first);
       setAnnouncement(
         added.length === 1
           ? `Shore point added — ${where}, Pending Equipment.`
@@ -584,7 +591,7 @@ export function OperationsBoard() {
       expandLane('process');
       focusAfterCommitRef.current = sp.id; // #350: focus the deployed card, not <body>
       setScrollToId(sp.id);
-      const where = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(', ');
+      const where = spWhere(sp);
       setPoliteAnnouncement(`${model} deployed — ${where}, Equipment Assigned.`);
     },
     [expandLane],
@@ -597,7 +604,7 @@ export function OperationsBoard() {
     (deployed: ShorePoint[], pending: ShorePoint[], model: string) => {
       const ref = deployed[0] ?? pending[0];
       if (!ref) return;
-      const where = [ref.building, divisionLabel(ref.division), ref.area].filter(Boolean).join(', ');
+      const where = spWhere(ref);
       if (deployed.length) {
         expandLane('process');
         focusAfterCommitRef.current = deployed[0]!.id; // #350

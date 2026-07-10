@@ -13,6 +13,7 @@ import {
 import { Badge, MeasurementValue, WarningGate } from '@ui/primitives';
 import { useShorePointHistory } from '@ui/hooks';
 import { pieceIdentity } from './pieceIdentity';
+import { dateClock } from '../util/time';
 import { cardLocation } from './cardParts';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { shoreSafety } from './shoreSafety';
@@ -92,10 +93,6 @@ function eventLine(e: FieldShoreEvent): string | null {
     default:
       return null;
   }
-}
-
-function whenLabel(at: number): string {
-  return new Date(at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 // The one-word safety verdict that leads the strip — carries the determination
@@ -243,7 +240,7 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
                 <li key={e.id} className="fs-spd-event">
                   <span className="fs-spd-event-label">{label}</span>
                   <span className="fs-spd-event-meta">
-                    {whenLabel(e.at)} · {who}
+                    {dateClock(e.at)} · {who}
                   </span>
                 </li>
               );
