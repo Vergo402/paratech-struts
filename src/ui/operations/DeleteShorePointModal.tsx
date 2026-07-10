@@ -70,10 +70,13 @@ export function DeleteShorePointModal({ shorePoint, onClose }: DeleteShorePointM
     if (result.ok) {
       commitHaptic();
       close();
-    } else {
+    } else if (/deployed equipment/.test(result.reason ?? '')) {
       // #421 — a member of this shore still holds deployed equipment; the store
       // rejected the whole batch. Keep the modal open and say so honestly.
       setError('One or more struts of this shore still hold deployed equipment — return it first.');
+    } else {
+      // Any other store rejection (e.g. a duplicate-event abort) — generic, honest.
+      setError('Could not delete. Try again.');
     }
   }
 

@@ -488,35 +488,44 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     await db.delete();
   });
 
-  it('regenerate publishes the NEW code first, kills the old, and moves the session onto it', async () => {
+  it('regenerate kills the OLD code first, then publishes the new one and moves the session onto it', async () => {
     const r = await svc.regenerateInviteCode();
     expect(r.ok).toBe(true);
     expect(r.code).toMatch(/^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
     expect(r.code).not.toBe(oldCode);
 
+    expect(updateMock).toHaveBeenCalledWith({ path: `orgs/inviteCodes/${oldCode}` }, { active: false });
     const publishes = codePublishes();
     expect(publishes).toHaveLength(1);
     expect(publishes[0]![0]).toEqual({ path: `orgs/inviteCodes/${r.code}` });
     expect(publishes[0]![1]).toMatchObject({ deptName: 'Hamden Fire Rescue', createdBy: FB_UID, active: true });
-
-    expect(updateMock).toHaveBeenCalledWith({ path: `orgs/inviteCodes/${oldCode}` }, { active: false });
     expect(session.store.getState().inviteCode).toBe(r.code);
   });
 
-  it('a failed NEW-code publish leaves the old code fully working (nothing revoked, session unchanged)', async () => {
+  it('a failed OLD-code revoke ABORTS the rotation with an honest error — never a false "it stops working"', async () => {
+    // Re-verify MED-1: regenerate is the only user-facing kill path; a leaked code
+    // must never be reported dead while still active.
+    updateMock.mockRejectedValueOnce(new Error('network down'));
+    const r = await svc.regenerateInviteCode();
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/still active/i);
+    expect(codePublishes()).toHaveLength(0); // no new code published
+    expect(session.store.getState().inviteCode).toBe(oldCode); // nothing moved
+    expect(logMock).toHaveBeenCalledWith('invite_code_revoke_failed', expect.anything());
+  });
+
+  it('a failed NEW-code publish after a successful revoke reports the code-less state honestly and self-heals on retry', async () => {
     setMock.mockRejectedValueOnce(new Error('network down'));
     const r = await svc.regenerateInviteCode();
     expect(r.ok).toBe(false);
-    expect(updateMock).not.toHaveBeenCalled(); // old code NOT revoked
-    expect(session.store.getState().inviteCode).toBe(oldCode);
-  });
+    expect(r.reason).toMatch(/retired.*new code/i);
+    expect(session.store.getState().inviteCode).toBe(oldCode); // dead code still displayed
 
-  it('a failed OLD-code revoke does not abort the rotation (two live codes is benign, logged)', async () => {
-    updateMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
-    const r = await svc.regenerateInviteCode();
-    expect(r.ok).toBe(true);
-    expect(session.store.getState().inviteCode).toBe(r.code);
-    expect(logMock).toHaveBeenCalledWith('invite_code_revoke_failed', expect.anything());
+    // Retry: the re-revoke of the already-dead code is idempotent; the mint succeeds.
+    setMock.mockResolvedValue(undefined);
+    const r2 = await svc.regenerateInviteCode();
+    expect(r2.ok).toBe(true);
+    expect(session.store.getState().inviteCode).toBe(r2.code);
   });
 
   it('revoke flips the current code inactive', async () => {
@@ -530,6 +539,15 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     const r = await svc.revokeInviteCode();
     expect(r.ok).toBe(false);
     expect(r.reason).toMatch(/permission/i);
+  });
+
+  it('deleteRole aborts when the members read fails — never strands holders on a missing role', async () => {
+    // Re-verify MED-2: pre-#418 the remove() was denied anyway; now it succeeds, so a
+    // null members read (offline) must abort instead of skipping the reassignment.
+    getMock.mockRejectedValueOnce(new Error('network'));
+    const r = await svc.deleteRole('custom-role-1');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/verify who holds/i);
   });
 
   it('both actions require a connected department', async () => {

@@ -79,4 +79,22 @@ describe('SyncBanner — member sync status (Increment 4)', () => {
     expect(screen.getByText(/will join “Hamden FD” when you reconnect/i)).toBeInTheDocument();
     expect(screen.queryByText(/offline/i)).not.toBeInTheDocument();
   });
+
+  it('shows the dept-outbox notice while a created dept is still owed to the cloud (#419)', () => {
+    mockUseSyncStatus.mockReturnValue({
+      online: false, pendingCount: 0, pendingJoin: null, syncError: false,
+      pendingDeptPush: { deptId: 'd1', deptName: 'Hamden Fire Rescue' },
+    });
+    render(<SyncBanner />);
+    expect(screen.getByText(/“Hamden Fire Rescue” is saved on this device — will sync when you reconnect/)).toBeInTheDocument();
+  });
+
+  it('the dept-outbox notice says syncing (and mentions the invite code) when online', () => {
+    mockUseSyncStatus.mockReturnValue({
+      online: true, pendingCount: 0, pendingJoin: null, syncError: false,
+      pendingDeptPush: { deptId: 'd1', deptName: 'Hamden Fire Rescue' },
+    });
+    render(<SyncBanner />);
+    expect(screen.getByText(/syncing to the cloud \(invite code works after that\)/)).toBeInTheDocument();
+  });
 });

@@ -26,6 +26,10 @@ export function createFeedbackService(deps: { session: () => SessionStoreApi }):
     async submit({ category, text }) {
       const trimmed = text.trim();
       if (!trimmed) return { ok: false, reason: 'Enter a message before sending.' };
+      // Mirror the #424 rule cap (5000) so an over-long message gets a length
+      // message, not the misleading permission fallback (the UI caps at 2000;
+      // this guards non-UI callers).
+      if (trimmed.length > 5000) return { ok: false, reason: 'Message is too long (max 5000 characters).' };
       const s = deps.session().store.getState();
       if (s.identity.kind !== 'member') {
         return { ok: false, reason: 'Sign in to send feedback.' };

@@ -236,20 +236,23 @@ export function createDepartmentService(deps: {
       const row = await readDeptPush();
       if (!row) return false;
 
+      // Ledger writes are fire-and-forget here: offline, logSyncEvent's own set()
+      // buffers without settling — awaiting it would hold the single-flight flag
+      // for the whole offline window (re-verify LOW-1).
       const dept = await racedSet(row.deptPath, row.deptPayload);
       if (dept === 'denied') {
-        await logSyncEvent('dept_push_denied', { deptId: row.deptId });
+        void logSyncEvent('dept_push_denied', { deptId: row.deptId });
       } else if (dept !== 'ok') {
-        await logSyncEvent('dept_create_failed', { deptId: row.deptId, error: dept.error });
+        void logSyncEvent('dept_create_failed', { deptId: row.deptId, error: dept.error });
         return false;
       }
 
       // MUST follow the dept write: the code rule checks the dept's createdBy at root.
       const code = await racedSet(row.codePath, row.codePayload);
       if (code === 'denied') {
-        await logSyncEvent('invite_code_publish_denied', { deptId: row.deptId });
+        void logSyncEvent('invite_code_publish_denied', { deptId: row.deptId });
       } else if (code !== 'ok') {
-        await logSyncEvent('invite_code_publish_failed', { deptId: row.deptId, error: code.error });
+        void logSyncEvent('invite_code_publish_failed', { deptId: row.deptId, error: code.error });
         return false;
       }
 
@@ -659,11 +662,18 @@ export function createDepartmentService(deps: {
     if (roleId === ADMIN_ROLE_ID || roleId === DEFAULT_ROLE_ID) {
       return { ok: false, reason: 'Built-in roles cannot be deleted.' };
     }
-    // Reassign any holders to Default FIRST so no member is left pointing at a missing role.
+    // Reassign any holders to Default FIRST so no member is left pointing at a missing
+    // role. A failed members read must ABORT (re-verify MED-2): pre-#418 the role
+    // remove() was denied anyway, but now it succeeds — proceeding on a null read
+    // would strand every holder on a nonexistent role (permissionGate fails on every
+    // gated write until an admin notices).
     const members = await readMembers();
-    const holders = members
-      ? Object.entries(members).filter(([, m]) => m.role === roleId).map(([uid]) => uid)
-      : [];
+    if (members === null) {
+      return { ok: false, reason: "Couldn't verify who holds this role — check your connection and try again." };
+    }
+    const holders = Object.entries(members)
+      .filter(([, m]) => m.role === roleId)
+      .map(([uid]) => uid);
     for (const uid of holders) {
       try {
         await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { role: DEFAULT_ROLE_ID });
@@ -701,10 +711,14 @@ export function createDepartmentService(deps: {
     return { ok: true };
   }
 
-  // Rotate: publish a NEW code first (a failure here leaves the old code fully
-  // working — never a code-less dept), then kill the old one (a failure there
-  // leaves two active codes briefly — benign, logged), then move the session/
-  // memberships/userDepts rows onto the new code via setDepartment.
+  // Rotate: kill the OLD code FIRST, then publish the new one. Regenerate is the
+  // only user-facing kill path, and its confirm promises "the current code stops
+  // working immediately" — so the kill is the primary operation and its failure
+  // ABORTS with an honest error (re-verify: a publish-first ordering reported
+  // ok while a leaked code could silently stay live). A revoke-then-publish
+  // failure leaves the dept briefly code-less with a dead code on display —
+  // honest and self-healing: the next Regenerate re-revokes the dead code (the
+  // rules' active:false→false update is idempotent) and mints a fresh one.
   async function regenerateInviteCode(): Promise<AdminMutationResult & { code?: string }> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
@@ -713,6 +727,20 @@ export function createDepartmentService(deps: {
       return { ok: false, reason: 'Not connected to a department.' };
     }
     const oldCode = s.inviteCode;
+    if (oldCode) {
+      try {
+        await update(ref(rtdb, `orgs/inviteCodes/${oldCode}`), { active: false });
+      } catch (err) {
+        void logSyncEvent('invite_code_revoke_failed', {
+          deptId: c.deptId,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return {
+          ok: false,
+          reason: "Couldn't retire the current code — it is still active. Check your connection and try again.",
+        };
+      }
+    }
     const newCode = mintInviteCode();
     try {
       await set(ref(rtdb, `orgs/inviteCodes/${newCode}`), {
@@ -723,17 +751,14 @@ export function createDepartmentService(deps: {
         active: true,
       });
     } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    if (oldCode) {
-      try {
-        await update(ref(rtdb, `orgs/inviteCodes/${oldCode}`), { active: false });
-      } catch (err) {
-        await logSyncEvent('invite_code_revoke_failed', {
-          deptId: c.deptId,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
+      void logSyncEvent('invite_code_publish_failed', {
+        deptId: c.deptId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return {
+        ok: false,
+        reason: 'The old code was retired, but a new code could not be issued — tap Regenerate again.',
+      };
     }
     await deps.session().setDepartment({
       id: s.departmentId,
