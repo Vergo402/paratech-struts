@@ -553,31 +553,42 @@ export function createDepartmentService(deps: {
     }
   }
 
-  async function assignRole(uid: string, roleId: string): Promise<AdminMutationResult> {
+  // The uniform admin-mutation skeleton (#435 dedup): ctx guard → one cloud
+  // write → fire-and-forget audit entry. Pre-write validation stays at each
+  // site (it owns its reasons); the multi-step mutations (deleteRole,
+  // regenerateInviteCode) and the self-edit setRank deliberately keep their
+  // own structure (re-audit 2026-07-10: 6 of 11 sites fit).
+  async function adminWrite(
+    write: (c: AdminCtx) => Promise<unknown>,
+    audit: () => [type: string, details: Record<string, unknown>],
+  ): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
     try {
-      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { role: roleId });
+      await write(c);
     } catch (err) {
       return { ok: false, reason: writeError(err) };
     }
-    void appendAudit(c, 'roleAssigned', { targetUid: uid, roleId });
+    const [type, details] = audit();
+    void appendAudit(c, type, details);
     return { ok: true };
+  }
+
+  async function assignRole(uid: string, roleId: string): Promise<AdminMutationResult> {
+    return adminWrite(
+      (c) => update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { role: roleId }),
+      () => ['roleAssigned', { targetUid: uid, roleId }],
+    );
   }
 
   // Admin sets another member's rank (#321 inc3). manageUsers-gated by the rules; audited.
   async function setMemberRank(uid: string, rank: string): Promise<AdminMutationResult> {
-    const c = adminCtx();
-    if (!c) return { ok: false, reason: 'Not connected to a department.' };
     const trimmed = rank.trim();
     if (trimmed.length > 80) return { ok: false, reason: 'Rank is too long (max 80 characters).' };
-    try {
-      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { rank: trimmed });
-    } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    void appendAudit(c, 'memberRankSet', { targetUid: uid });
-    return { ok: true };
+    return adminWrite(
+      (c) => update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { rank: trimmed }),
+      () => ['memberRankSet', { targetUid: uid }],
+    );
   }
 
   // A member sets their OWN rank (#321 inc3) — the SELF_EDIT_RANK rule branch. No audit
@@ -599,15 +610,10 @@ export function createDepartmentService(deps: {
   }
 
   async function setActive(uid: string, active: boolean, type: string): Promise<AdminMutationResult> {
-    const c = adminCtx();
-    if (!c) return { ok: false, reason: 'Not connected to a department.' };
-    try {
-      await update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { active });
-    } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    void appendAudit(c, type, { targetUid: uid });
-    return { ok: true };
+    return adminWrite(
+      (c) => update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), { active }),
+      () => [type, { targetUid: uid }],
+    );
   }
   const revokeMember = (uid: string) => setActive(uid, false, 'memberRevoked');
   const reactivateMember = (uid: string) => setActive(uid, true, 'memberReactivated');
@@ -624,13 +630,10 @@ export function createDepartmentService(deps: {
     } catch {
       return { ok: false, reason: 'Could not create the role. Check the name and try again.' };
     }
-    try {
-      await set(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), role);
-    } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    void appendAudit(c, 'roleCreated', { roleId, roleName: trimmed });
-    return { ok: true };
+    return adminWrite(
+      () => set(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), role),
+      () => ['roleCreated', { roleId, roleName: trimmed }],
+    );
   }
 
   async function editRole(
@@ -647,13 +650,10 @@ export function createDepartmentService(deps: {
       changes.name = trimmed;
     }
     if (patch.permissions !== undefined) changes.permissions = patch.permissions;
-    try {
-      await update(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), changes);
-    } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    void appendAudit(c, 'roleEdited', { roleId, ...(changes.name ? { roleName: changes.name } : {}) });
-    return { ok: true };
+    return adminWrite(
+      () => update(ref(rtdb, `orgs/${c.deptId}/roles/${roleId}`), changes),
+      () => ['roleEdited', { roleId, ...(changes.name ? { roleName: changes.name } : {}) }],
+    );
   }
 
   async function deleteRole(roleId: string): Promise<AdminMutationResult> {
@@ -698,17 +698,12 @@ export function createDepartmentService(deps: {
   // session row until a regenerate replaces it — the UI's primary affordance is
   // Regenerate, which rotates rather than leaving the dept code-less.
   async function revokeInviteCode(): Promise<AdminMutationResult> {
-    const c = adminCtx();
-    if (!c) return { ok: false, reason: 'Not connected to a department.' };
     const code = deps.session().store.getState().inviteCode;
     if (!code) return { ok: false, reason: 'No invite code on record for this department.' };
-    try {
-      await update(ref(rtdb, `orgs/inviteCodes/${code}`), { active: false });
-    } catch (err) {
-      return { ok: false, reason: writeError(err) };
-    }
-    void appendAudit(c, 'inviteCodeRevoked', { code });
-    return { ok: true };
+    return adminWrite(
+      () => update(ref(rtdb, `orgs/inviteCodes/${code}`), { active: false }),
+      () => ['inviteCodeRevoked', { code }],
+    );
   }
 
   // Rotate: kill the OLD code FIRST, then publish the new one. Regenerate is the
