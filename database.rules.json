@@ -137,6 +137,13 @@
         ".validate": "newData.isString() && newData.val().matches(/^[0-9]+\\.[0-9]+\\.[0-9]+$/)"
       }
     },
+    "userDepts": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['deptId', 'deptName'])"
+      }
+    },
     "orgs": {
       "$deptId": {
         ".read": "auth != null && data.child('members').child(auth.uid).exists() && data.child('members').child(auth.uid).child('active').val() != false",
@@ -218,7 +225,8 @@
             },
             "$other": {
               ".validate": false
-            }
+            },
+            ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && $roleId !== 'admin' && ( $roleId !== 'default' || newData.exists() )"
           }
         },
         "events": {
@@ -287,13 +295,6 @@
           ".read": "auth != null",
           ".write": "auth != null && !data.exists() && newData.child('createdBy').val() === auth.uid && root.child('orgs').child(newData.child('deptId').val()).child('createdBy').val() === auth.uid"
         }
-      }
-    },
-    "userDepts": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && auth.uid == $uid",
-        ".validate": "newData.hasChildren(['deptId', 'deptName'])"
       }
     },
     "$other": {

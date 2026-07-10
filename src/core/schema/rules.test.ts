@@ -184,6 +184,20 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(dept.members.$uid.$other['.validate']).toBe(false);
   });
 
+  it('custom-role management is manageUsers-gated with the built-ins structurally protected (#418)', () => {
+    const w = committed.rules.orgs.$deptId.roles.$roleId['.write'];
+    // the write rule EXISTS — the pre-Phase-J audit H4 defect was its total absence
+    // (default-deny killed the whole ADR-017 custom-role feature in production)
+    expect(w).toBeDefined();
+    // active membership + the manageUsers capability (data-driven, no role names)
+    expect(w).toContain(".child('active').val() != false");
+    expect(w).toContain("child('permissions').child('manageUsers').val() === true");
+    // the Admin role is fully immutable post-create (the anti-lockout floor)
+    expect(w).toContain("$roleId !== 'admin'");
+    // Default is editable but never deletable (every join lands on it)
+    expect(w).toContain("( $roleId !== 'default' || newData.exists() )");
+  });
+
   it('the governance audit log is manageUsers-gated, append-only, and read-gated on the parent (#380/#381)', () => {
     const audit = committed.rules.orgs.$deptId.audit.$auditId;
     expect(audit['.write']).toContain("child('permissions').child('manageUsers').val() === true");

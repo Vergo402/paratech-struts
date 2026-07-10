@@ -220,6 +220,31 @@ const ADMIN_MANAGE = [
   `( !(${adminLosingAdmin}) || ( ${actorIsAdmin} && $uid !== auth.uid ) )`,
 ].join(' && ');
 
+// ROLE MANAGEMENT (#418, pre-Phase-J audit H4) — custom-role create/edit/delete at
+// /orgs/{deptId}/roles/{roleId}. The generator emitted only .validate here, so the
+// whole ADR-017 custom-role feature was default-deny in production (createRole/
+// editRole/deleteRole all PERMISSION_DENIED; deleteRole half-applied — holders
+// reassigned, role survived). Gate = active membership + manageUsers (the same
+// axis as ADMIN_MANAGE; "Manage users & roles" is one permission key), with the
+// built-ins protected STRUCTURALLY by their stable id tokens:
+//   · the Admin role is fully immutable post-create (its fixed all-true
+//     permissions are the anti-lockout floor — an editable Admin could be
+//     hollowed out into a lockout),
+//   · the Default role is editable (ADR-017: departments tune what a fresh
+//     joiner can do) but never deletable (JOIN_SELF_WRITE hard-codes it as the
+//     landing role; deleting it would break every future join).
+// Delete-protection MUST live in .write — a remove() sets newData to null and
+// .validate is skipped entirely. Dept creation is unaffected: the create-only
+// dept grant cascades to this subtree at founding (a child .write only ADDS
+// grants). CAUTION: NO literal { }.
+const ROLE_MANAGE = [
+  'auth != null',
+  actorIsMember,
+  permissionGate('manageUsers'),
+  `$roleId !== '${ADMIN_ROLE_ID}'`,
+  `( $roleId !== '${DEFAULT_ROLE_ID}' || newData.exists() )`,
+].join(' && ');
+
 // SELF-EDIT RANK (#321 P5 inc3) — the ONE narrow exception to "member rows are write-once on
 // join, admin-only after": a member may edit ONLY their own `rank` (free-text title). NO
 // privilege escalation — every other field must equal its prior value, so role/displayName/
@@ -273,7 +298,10 @@ export function buildV4OrgsRules(): RuleTree {
   // count-free ≥1-Admin anti-lockout. Founder's own row writes via the dept create-cascade.
   memberNode['.write'] = `(${JOIN_SELF_WRITE}) || (${SELF_EDIT_RANK}) || (${ADMIN_MANAGE})`;
   deptNode['members'] = { $uid: memberNode };
-  deptNode['roles'] = { $roleId: objectRules(RoleNode) };
+  // manageUsers-holders manage custom roles; Admin immutable, Default undeletable (#418).
+  const roleNode = objectRules(RoleNode);
+  roleNode['.write'] = ROLE_MANAGE;
+  deptNode['roles'] = { $roleId: roleNode };
 
   // The operations event log — hand-authored (membership gate + coarse envelope, NOT
   // Zod-derived: objectRules can't express the FieldShoreEvent discriminated union).
