@@ -135,3 +135,5 @@ Renames were plain `mv` in a non-git directory. To revert, run the table below r
 - `~/.claude/plans/i-want-to-go-sorted-eagle.md` (File-Migration project) and `ok-after-the-taxonomy-curious-milner.md` (Cowork recovery) — not FieldShore.
 - All other random-named files in `~/.claude/plans/` belong to other projects (promotion quizzes, Paperless, brew upgrades, etc.).
 - `v4-stage2a-ops-elevation-plus-punchlist.md` (was plan-stage-1-stage-virtual-pudding) — 2026-07-06: #431 punch list (5 fixes) + Stage 2a Operations/Cutting Station elevation (#432)
+- `v4-cleanup-consolidation-parked.md` (was there-is-over-116-000-purring-puzzle) — 2026-07-09: full-scope v4 cleanup (6 tiers, ~900 lines + junk + gallery dev-gate), APPROVED but **PARKED until the 8 pre-Phase-J High findings close**; dual Opus+Fable audit findings baked in with file:line anchors
+- `v4-phase-j-stage1-blockers.md` (was plan-stage-1-rules-warm-wolf) — 2026-07-10: Phase J Stage 1 cutover-blocker fixes (#418–#429), all 12 SHIPPED + adversarially re-verified + issues closed; emulator rules rig (`test:rules`) added; rules deploy to fieldshore-database pending
