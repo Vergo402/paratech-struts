@@ -160,7 +160,9 @@ describe('UserManagerScreen', () => {
     expect(screen.getByText('QK7N-38PW')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Regenerate' }));
     await screen.findByText('Regenerate invite code?');
-    await user.click(screen.getByRole('button', { name: 'Regenerate' , exact: true }));
+    // with the confirm open there are two "Regenerate" buttons — the modal's is last
+    const confirms = screen.getAllByRole('button', { name: 'Regenerate' });
+    await user.click(confirms[confirms.length - 1]!);
     expect(actions.regenerateInviteCode).toHaveBeenCalledTimes(1);
   });
 
