@@ -33,7 +33,6 @@ export type WoodSizeId = z.infer<typeof WoodSizeId>;
 // reading (faces, then corners).
 export const BuildingSide = z.enum(['A', 'B', 'C', 'D', 'A/B', 'B/C', 'C/D', 'D/A']);
 export type BuildingSide = z.infer<typeof BuildingSide>;
-export const BUILDING_SIDES = BuildingSide.options;
 
 // What the operator SELECTED for each deduction slot. The exact catalog heights
 // are resolved at compute time by the reducer (L-2 — store the choice, deduct

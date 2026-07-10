@@ -13,8 +13,6 @@ export interface OrgState {
   commandTransfer: PendingTransfer | null;
 }
 
-export const EMPTY_ORG_STATE: OrgState = { positions: {}, myRoles: {}, commandTransfer: null };
-
 // Seeded on OperationCreated: the ADR-008 default tree, with the FOUNDING DEVICE
 // holding Incident Commander (its uid is the IC node's leader, so the gold accent
 // has a target from t=0 — workflow "founding device holds IC by default"). Pre-auth

@@ -5,5 +5,3 @@
 // decision 7). Names are spelled out — no acronyms (ADR-008). Array order is the
 // picker's listing order.
 export const APPARATUS_TYPES = ['Chief', 'Engine', 'Ladder', 'Rescue', 'Squad', 'Other'] as const;
-
-export type ApparatusType = (typeof APPARATUS_TYPES)[number];

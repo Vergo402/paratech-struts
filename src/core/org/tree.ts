@@ -2,10 +2,6 @@ import type { OrgPosition, OrgPositions } from '../schema/org';
 
 const GUARD = 1000; // cycle/runaway backstop (a real chart is O(tens) of nodes)
 
-export function positionById(positions: OrgPositions, id: string): OrgPosition | undefined {
-  return positions[id];
-}
-
 // The single root (Incident Commander), or undefined before seeding.
 export function rootPosition(positions: OrgPositions): OrgPosition | undefined {
   return Object.values(positions).find((p) => p.parentId === null);

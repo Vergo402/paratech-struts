@@ -43,18 +43,6 @@ export function useIsDesktop(): boolean {
 }
 
 /**
- * useIsWide — true at ≥1200px, the Laptop (Toughbook) surface where the grid
- * sanctions an OPTIONAL THIRD COLUMN (spacing-grid.md §Surface breakpoints).
- * Operations pins both companion panels (Quick View detail + Available
- * Inventory) open as standard fixtures here; the tablet range (768–1200) has
- * room for the board plus only ONE on-demand companion, so it keeps the toggle
- * drawers. Default = false so test/SSR keep the non-pinned (drawer) path.
- */
-export function useIsWide(): boolean {
-  return useMediaQuery('(min-width: 1200px)');
-}
-
-/**
  * useHasRailNav — true at ≥1024px, where the app's primary navigation becomes a
  * LEFT SIDE RAIL (the command-post surface) instead of the fixed bottom tab bar.
  * Phone AND tablet-portrait keep the bottom tabs (the rail wants real width to

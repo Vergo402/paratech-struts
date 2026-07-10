@@ -7,10 +7,6 @@ export function leaderOf(p: OrgPosition): OrgResourceRef | null {
   return p.assignedResources[0] ?? null;
 }
 
-export function resourceLabel(p: OrgPosition): string | null {
-  return leaderOf(p)?.label ?? null;
-}
-
 export function sameResource(a: OrgResourceRef, b: OrgResourceRef): boolean {
   return a.ref === b.ref && a.value === b.value;
 }
