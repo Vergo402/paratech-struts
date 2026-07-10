@@ -78,6 +78,23 @@ body {
   color: var(--text-primary);
   font: var(--type-body);
   -webkit-font-smoothing: antialiased;
+  /* No tap-flash anywhere (#435 consolidation): this property INHERITS, so one
+     declaration on body replaces ~38 identical per-component copies. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* One focus ring for the shell/nav/rail/settings pressables (#435 dedup) — the
+   outline is defined once here; each control keeps only its own offset at its own
+   rule. The sync-banner buttons share their own grouped focus rule below. */
+.fs-nav-handle:focus-visible,
+.fs-nav-link:focus-visible,
+.fs-rail-link:focus-visible,
+.fs-rail-toggle:focus-visible,
+.fs-rail-sublink:focus-visible,
+.fs-settings-back:focus-visible,
+.fs-set-identity:focus-visible,
+.fs-set-row:focus-visible {
+  outline: 2px solid var(--accent);
 }
 
 /* ---- app shell: scroll pane + the fixed 5-tab bottom nav (ADR-014) -------- */
@@ -248,7 +265,6 @@ body {
   border-bottom: none;
   border-radius: 10px 10px 0 0;
   color: var(--text-secondary);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-nav-handle svg {
   width: 16px;
@@ -261,7 +277,7 @@ body {
 }
 /* chevron points up (= "show") only when collapsed; expanded it points down. */
 .fs-nav-wrap:not(.fs-nav-wrap--collapsed) .fs-nav-handle svg { transform: rotate(180deg); }
-.fs-nav-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-nav-handle:focus-visible { outline-offset: -2px; }
 
 .fs-nav {
   flex: none;
@@ -283,11 +299,10 @@ body {
   font-weight: calc(500 + var(--type-weight-bump));
   color: var(--text-secondary);
   text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
   /* navigation never animates (00-ia-foundation.md) — no transition on purpose */
 }
 .fs-nav-link--active { color: var(--accent); }
-.fs-nav-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-nav-link:focus-visible { outline-offset: -2px; }
 .fs-nav-icon { width: 24px; height: 24px; } /* design-system 24×24 stroke-2 outline set */
 
 /* ---- desktop left rail (≥1024, useHasRailNav) — the primary nav as a side bar.
@@ -331,7 +346,7 @@ body {
 }
 .fs-rail-link:hover { background: var(--surface-card-hover); }
 .fs-rail-link--active { color: var(--accent); background: var(--accent-subtle); }
-.fs-rail-link:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-rail-link:focus-visible { outline-offset: -2px; }
 .fs-rail-ver {
   margin-top: auto;
   padding: var(--space-3);
@@ -357,7 +372,7 @@ body {
   cursor: pointer;
 }
 .fs-rail-toggle:hover { background: var(--surface-card-hover); color: var(--text-secondary); }
-.fs-rail-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-rail-toggle:focus-visible { outline-offset: -2px; }
 .fs-rail-toggle svg {
   width: 20px;
   height: 20px;
@@ -400,7 +415,7 @@ body {
 }
 .fs-rail-sublink:hover { background: var(--surface-card-hover); }
 .fs-rail-sublink--active { color: var(--accent); background: var(--accent-subtle); }
-.fs-rail-sublink:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-rail-sublink:focus-visible { outline-offset: -2px; }
 .fs-set-nav-icon { width: 20px; height: 20px; flex: none; }
 
 /* ---- Settings paged shell (B) -------------------------------------------- */
@@ -437,7 +452,7 @@ body {
   text-decoration: none;
   font: var(--type-body-medium);
 }
-.fs-settings-back:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-settings-back:focus-visible { outline-offset: 2px; }
 /* Phone Settings index — composed per craft.md (Stage 1 exemplar, #431): identity
    card, inline theme card, grouped card rows, quiet footer. Chrome owns the title. */
 .fs-set { display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3); }
@@ -457,7 +472,7 @@ body {
   color: var(--text-primary);
   text-decoration: none;
 }
-.fs-set-identity:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-set-identity:focus-visible { outline-offset: 2px; }
 .fs-set-avatar {
   flex: none;
   width: 44px;
@@ -563,5 +578,5 @@ button.fs-set-row:disabled .fs-set-row-desc { color: var(--text-tertiary); }
 .fs-set-row-label { font: var(--type-body-medium); font-weight: calc(500 + var(--type-weight-bump)); }
 .fs-set-row-desc { font: var(--type-caption); color: var(--text-tertiary); }
 .fs-set-row-chev { width: 20px; height: 20px; flex: none; color: var(--text-tertiary); }
-.fs-set-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-set-row:focus-visible { outline-offset: -2px; }
 

@@ -1,3 +1,18 @@
+/* One focus ring for the file's simple pressables (#435 dedup) — the outline is
+   defined once here; each control keeps only its own offset at its own rule. The
+   board list-item cards share their own grouped focus rule below. */
+.fs-ops-pill:focus-visible,
+.fs-ops-fab:focus-visible,
+.fs-stack-btn:focus-visible,
+.fs-ops-filters-btn:focus-visible,
+.fs-ops-chip:focus-visible,
+.fs-ops-chip-clear:focus-visible,
+.fs-filtsheet-row:focus-visible,
+.fs-splist-row:focus-visible,
+.fs-divtile:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
 /* ---- operations board ---------------------------------------------------- */
 .fs-ops-board {
   display: flex;
@@ -90,10 +105,9 @@
   color: var(--text-secondary);
   background: var(--surface-card);
   border-color: var(--surface-stroke);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-ops-pill--set:hover { background: var(--surface-card-hover); color: var(--text-primary); }
-.fs-ops-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-pill:focus-visible { outline-offset: 1px; }
 
 .fs-ops-name {
   /* Grows to claim the titlebar slack (pushing the pill + toggle/inventory right).
@@ -123,7 +137,6 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-ops-edit:hover {
   background: var(--surface-elevated);
@@ -149,10 +162,9 @@
   font-weight: calc(600 + var(--type-weight-bump));
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-ops-fab:active { background: color-mix(in srgb, var(--accent) 86%, black); }
-.fs-ops-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-ops-fab:focus-visible { outline-offset: 2px; }
 
 /* The draggable inventory + checklist stack — snaps to an edge, spot persists. */
 .fs-stack {
@@ -186,11 +198,10 @@
   background: none;
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-stack-btn:hover { color: var(--text-primary); }
 .fs-stack-btn.is-active { color: var(--accent); background: var(--accent-subtle); }
-.fs-stack-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-stack-btn:focus-visible { outline-offset: -2px; }
 
 /* ---- control zone (#432 collapse — was three stacked rows) ---------------- */
 /* Phone: ONE control row (scope segmented + layout icons + Filters trigger),
@@ -229,10 +240,9 @@
   font: var(--type-body-medium);
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-ops-filters-btn:hover { background: var(--surface-card-hover); color: var(--text-primary); }
-.fs-ops-filters-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-filters-btn:focus-visible { outline-offset: 1px; }
 .fs-ops-filters-btn.is-active {
   border-color: var(--accent);
   background: var(--accent-subtle);
@@ -286,14 +296,13 @@
   padding: 0 var(--space-2) 0 var(--space-3);
   background: var(--surface-card);
   border: 1px solid var(--surface-stroke);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font: var(--type-body);
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-ops-chip:hover { background: var(--surface-card-hover); color: var(--text-primary); }
-.fs-ops-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-chip:focus-visible { outline-offset: 1px; }
 .fs-ops-chip-x { color: var(--text-tertiary); font-size: 11px; }
 .fs-ops-chip:hover .fs-ops-chip-x { color: var(--text-primary); }
 .fs-ops-chip-clear {
@@ -306,7 +315,7 @@
   min-height: 32px;
   cursor: pointer;
 }
-.fs-ops-chip-clear:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.fs-ops-chip-clear:focus-visible { outline-offset: 1px; }
 
 /* ---- Filters surface (PickerSurface content) ----------------------------- */
 .fs-filtsheet {
@@ -337,10 +346,9 @@
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-filtsheet-row:hover { background: var(--surface-card-hover); }
-.fs-filtsheet-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-filtsheet-row:focus-visible { outline-offset: -2px; }
 .fs-filtsheet-row.is-selected { color: var(--accent); }
 .fs-filtsheet-row.is-selected svg { color: var(--accent); }
 .fs-filtsheet-clear {
@@ -403,28 +411,35 @@
 /* List row — the unified card anatomy at medium density (Alex 2026-07-03): a top
    row of SP-# + apparatus pill, the location bold as the focus, label·type
    secondary, a quiet mono model·length line. Status = the left edge. */
-.fs-splist-row {
+/* Shared shore-tile DNA (#435 dedup) — the List row (.fs-splist-row) and Division
+   tile (.fs-divtile) are one card in two geometries: same surface, stroke, left
+   accent, and flex column; they differ only in width, padding, and corner radius
+   (each keeps those in its own rule below). */
+.fs-splist-row,
+.fs-divtile {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 100%;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  text-align: left;
   background: var(--surface-elevated);
   border: var(--stroke-width) solid var(--surface-stroke);
   border-left: 3px solid var(--sp-solid);
-  border-radius: var(--radius-card);
-  text-align: left;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+}
+.fs-splist-row {
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
 }
 .fs-splist-row:hover { background: var(--surface-card-hover); }
-.fs-splist-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-.fs-splist-top {
+.fs-splist-row:focus-visible { outline-offset: 1px; }
+.fs-splist-top,
+.fs-divtile-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
 }
+.fs-splist-top { gap: var(--space-2); }
 .fs-splist-seq {
   font: var(--type-mono);
   color: var(--text-tertiary);
@@ -436,22 +451,25 @@
   color: var(--text-primary);
   letter-spacing: -0.01em;
 }
-.fs-splist-grp { color: var(--text-tertiary); font-weight: 500; }
-.fs-splist-sub {
-  display: block;
+.fs-splist-grp,
+.fs-divtile-grp { color: var(--text-tertiary); font-weight: 500; }
+.fs-splist-sub,
+.fs-divtile-sub {
   font: var(--type-caption);
   color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.fs-splist-sub { display: block; }
 .fs-splist-val {
   margin-top: 2px;
   font: var(--type-caption);
   font-family: var(--font-mono);
   color: var(--text-tertiary);
 }
-.fs-splist-num { color: var(--text-secondary); }
+.fs-splist-num,
+.fs-divtile-num { color: var(--text-secondary); }
 
 /* Assigned-apparatus pill (unified anatomy, top-right) — one muted bordered
    capsule shared by the Board card, List row, and Division tile. A TEXT label,
@@ -512,7 +530,6 @@
   border: none;
   border-bottom: 1px solid var(--surface-stroke);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   color: var(--text-primary);
 }
 
@@ -786,7 +803,6 @@
   border: none;
   background: transparent;
   border-radius: var(--radius-card) 0 0 var(--radius-card);
-  -webkit-tap-highlight-color: transparent;
 }
 button.fs-spc-stripe {
   cursor: pointer;
@@ -818,7 +834,6 @@ button.fs-spc-stripe {
   background: none;
   text-align: left;
   color: var(--text-primary);
-  -webkit-tap-highlight-color: transparent;
 }
 button.fs-spc-head {
   cursor: pointer;
@@ -1779,7 +1794,6 @@ button.fs-spc-head {
   border-radius: var(--radius-card) 0 0 var(--radius-card);
   overflow: hidden;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition: border-color var(--motion-micro) var(--ease-micro);
 }
 .fs-gs-tab::before {
@@ -1896,7 +1910,6 @@ button.fs-spc-head {
   background: none;
   color: var(--text-tertiary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition: color var(--motion-micro) var(--ease-micro);
 }
 .fs-gs-expand:hover {
@@ -1957,14 +1970,13 @@ button.fs-spc-head {
   height: 44px;
   padding: 0 14px;
   border: 1px solid var(--surface-stroke);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-card);
   color: var(--text-secondary);
   font: var(--type-caption);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  -webkit-tap-highlight-color: transparent;
   transition: color var(--motion-micro) var(--ease-micro),
     border-color var(--motion-micro) var(--ease-micro);
 }
@@ -2046,7 +2058,7 @@ button.fs-spc-head {
 .fs-cutstation-newbadge {
   flex: none;
   padding: 2px var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--accent);
   color: var(--on-accent);
   font: var(--type-label);
@@ -2079,7 +2091,7 @@ button.fs-spc-head {
   display: inline-flex;
   align-items: center;
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font: var(--type-label);
   font-weight: 600;
   border: 1px solid var(--surface-stroke);
@@ -2186,7 +2198,7 @@ button.fs-spc-head {
   color: var(--status-cutting-text);
   background: var(--status-cutting-bg);
   padding: var(--space-1) var(--space-3);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
 }
 .fs-cutstation-hero-label {
   font: var(--type-label);
@@ -2759,13 +2771,12 @@ button.fs-spc-head {
   border-top: 1px solid var(--surface-stroke);
   border-radius: 0 0 var(--radius-sheet) var(--radius-sheet);
   color: var(--text-tertiary);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-fp-resize::before {
   content: '';
   width: 32px;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: currentColor;
   opacity: 0.55;
 }
@@ -2966,30 +2977,14 @@ button.fs-spc-head {
    abbrev text (tiles group by floor, so the hue can't be the only status cue). */
 .fs-divtile {
   width: 176px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-  background: var(--surface-elevated);
-  border: var(--stroke-width) solid var(--surface-stroke);
-  border-left: 3px solid var(--sp-solid);
   border-radius: var(--radius-input);
   padding: var(--space-2) var(--space-3);
-  cursor: pointer;
 }
 .fs-divtile:hover {
   background: var(--surface-card-hover);
 }
-.fs-divtile:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-.fs-divtile-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
-}
+.fs-divtile:focus-visible { outline-offset: 2px; }
+.fs-divtile-top { gap: var(--space-1); }
 .fs-divtile-seq {
   font: var(--type-label);
   font-family: var(--font-mono);
@@ -3001,17 +2996,6 @@ button.fs-spc-head {
   letter-spacing: -0.01em;
   line-height: 1.2;
   color: var(--text-primary);
-}
-.fs-divtile-grp {
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-.fs-divtile-sub {
-  font: var(--type-caption);
-  color: var(--text-tertiary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .fs-divtile-val {
   display: flex;
@@ -3028,9 +3012,6 @@ button.fs-spc-head {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.fs-divtile-num {
-  color: var(--text-secondary);
 }
 .fs-divtile-st {
   flex: none;

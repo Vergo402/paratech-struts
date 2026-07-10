@@ -74,7 +74,6 @@
   color: var(--text-tertiary);
   cursor: grab;
   touch-action: none;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-cke-handle:hover { color: var(--text-secondary); }
 .fs-cke-handle:active { cursor: grabbing; }

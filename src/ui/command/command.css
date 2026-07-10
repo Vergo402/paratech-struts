@@ -921,7 +921,6 @@
   color: var(--text-secondary);
   padding: var(--space-2);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-org-fullscreen:hover {
   color: var(--text-primary);
@@ -1209,7 +1208,6 @@
   touch-action: none; /* we own pan + zoom; the browser must not scroll or page-zoom */
   overscroll-behavior: contain;
   cursor: grab;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-org-full-canvas {
   position: absolute;
@@ -1236,7 +1234,6 @@
   border-radius: 50%;
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-org-full-close:hover {
   color: var(--text-primary);

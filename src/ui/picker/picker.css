@@ -5,6 +5,15 @@
    without re-proving it on an iOS device.
    ============================================================================ */
 
+/* One focus ring for the file's pressables (#435 dedup) — the outline is defined
+   once here; each control keeps only its own offset at its own rule. */
+.fs-picker-trigger:focus-visible,
+.fs-picker-row:focus-visible,
+.fs-side-cell:focus-visible,
+.fs-plate-option:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
 /* ---- shared picker field chrome -------------------------------------------- */
 .fs-picker-field { display: flex; flex-direction: column; gap: var(--space-1); }
 /* Label line with a trailing value (the deduction ledger's −3½″ — KB-4). */
@@ -29,9 +38,8 @@
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
-  -webkit-tap-highlight-color: transparent;
 }
-.fs-picker-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.fs-picker-trigger:focus-visible { outline-offset: -1px; }
 .fs-picker-trigger-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-picker-trigger-chevron { flex: none; color: var(--text-secondary); }
 
@@ -51,11 +59,10 @@
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-picker-row:last-child { border-bottom: none; }
 .fs-picker-row:active { background: var(--surface-card-hover); }
-.fs-picker-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-picker-row:focus-visible { outline-offset: -2px; }
 .fs-picker-row--selected .fs-picker-row-label { font-weight: calc(600 + var(--type-weight-bump)); }
 .fs-picker-row-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .fs-picker-row-sub { font: var(--type-caption); color: var(--text-secondary); }
@@ -89,7 +96,6 @@
   font: var(--type-body-lg);
   color: var(--text-primary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-side-cell--corner { font: var(--type-body); color: var(--text-secondary); }
 .fs-side-cell--center { border-style: dashed; color: var(--text-secondary); }
@@ -99,7 +105,7 @@
   color: var(--on-accent);
   font-weight: calc(500 + var(--type-weight-bump));
 }
-.fs-side-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-side-cell:focus-visible { outline-offset: -2px; }
 .fs-side-street {
   max-width: 280px;
   margin: var(--space-1) auto 0;
@@ -171,12 +177,11 @@
   border-bottom: 1px solid var(--surface-stroke);
   text-align: left;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-plate-option:last-child { border-bottom: none; }
 .fs-plate-option:active,
 .fs-plate-option.selected { background: var(--accent-subtle); }
-.fs-plate-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-plate-option:focus-visible { outline-offset: -2px; }
 .fs-plate-option--unavailable {
   order: 3;
   opacity: 0.45;

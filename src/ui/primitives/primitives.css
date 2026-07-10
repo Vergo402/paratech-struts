@@ -7,6 +7,24 @@
    stripe, and the cut-table emphasis all consume.
    ============================================================================ */
 
+/* One focus ring for the primitive pressables (#435 dedup) — the outline is
+   defined once; each control keeps only its own offset at its own rule.
+   fs-field-pw-toggle and the ck-leaf/ck-section-head pair stay standalone
+   (they set more than the outline), and fs-field-input stays standalone because
+   its `:focus { outline: none }` reset appears later in the file — equal
+   specificity, so a top-of-file grouped outline would lose to it on keyboard
+   focus. Its site rule must keep the full outline. */
+.fs-button:focus-visible,
+.fs-card--press:focus-visible,
+.fs-gate-ack:focus-visible,
+.fs-toggle:focus-visible,
+.fs-segment:focus-visible,
+.fs-modal-close:focus-visible,
+.fs-drawer-close:focus-visible,
+.fs-checklist-tab:focus-visible {
+  outline: 2px solid var(--accent);
+}
+
 /* ---- status modifiers (drive badge + S5 stripe) ---------------------------
    --sp-solid is the saturated identifying hue in EVERY theme: the status text
    color in light/dark/broadcast, the solid fill in sunlight (where --sp-text
@@ -127,7 +145,6 @@
   background: none;
   color: var(--text-primary);
   transition: background-color var(--motion-micro) var(--ease-micro);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-button--op { min-height: 56px; }
 .fs-button--std { min-height: 48px; }
@@ -175,10 +192,7 @@
   box-shadow: inset 0 0 0 var(--stroke-width) var(--surface-stroke);
   cursor: default;
 }
-.fs-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+.fs-button:focus-visible { outline-offset: 2px; }
 .fs-button-icon {
   display: inline-flex;
   width: var(--icon-size-sm);
@@ -206,12 +220,9 @@
   color: var(--text-primary);
   font: var(--type-body);
 }
-.fs-card--press { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.fs-card--press { cursor: pointer; }
 .fs-card--press:active { background: var(--surface-card-hover); }
-.fs-card--press:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+.fs-card--press:focus-visible { outline-offset: 2px; }
 .fs-card--selected {
   border-color: color-mix(in srgb, var(--accent) 60%, transparent);
   background: var(--surface-card-hover);
@@ -325,12 +336,8 @@ p.fs-gate--disclaimer {
   font-weight: calc(500 + var(--type-weight-bump));
   color: var(--text-primary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
-.fs-gate-ack:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
+.fs-gate-ack:focus-visible { outline-offset: 2px; }
 .fs-gate-ack-box {
   display: inline-flex;
   align-items: center;
@@ -353,7 +360,6 @@ p.fs-gate--disclaimer {
   gap: var(--space-3);
   width: 100%;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-toggle-row--op { min-height: 56px; }
 .fs-toggle-row--std { min-height: 48px; }
@@ -370,16 +376,15 @@ p.fs-gate--disclaimer {
   width: 52px;
   height: 32px;
   padding: 0;
-  border-radius: 999px; /* capsule: radius = height ÷ 2, not a --radius-* member */
+  border-radius: var(--radius-pill);
   background: var(--text-tertiary);
   border: var(--stroke-width) solid var(--surface-stroke);
   cursor: pointer;
   transition: background-color var(--motion-micro) var(--ease-micro);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-toggle[data-state='checked'] { background: var(--accent); }
 .fs-toggle:disabled { opacity: 0.5; cursor: default; }
-.fs-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fs-toggle:focus-visible { outline-offset: 2px; }
 .fs-toggle-thumb {
   display: block;
   width: 24px;
@@ -425,7 +430,6 @@ p.fs-gate--disclaimer {
   white-space: nowrap;
   cursor: pointer;
   transition: background-color var(--motion-micro) var(--ease-micro);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-segment[data-state='checked'] {
   background: var(--surface-card);
@@ -433,7 +437,7 @@ p.fs-gate--disclaimer {
   color: var(--text-primary);
   font-weight: calc(600 + var(--type-weight-bump));
 }
-.fs-segment:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-segment:focus-visible { outline-offset: -2px; }
 /* sunlight: the raised pill is invisible on all-white — 2pt accent border instead */
 [data-theme='sunlight'] .fs-segment[data-state='checked'] { border: 2px solid var(--accent); }
 
@@ -564,15 +568,11 @@ p.fs-gate--disclaimer {
   border-radius: var(--radius-button);
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-modal-close:hover {
   color: var(--text-primary);
 }
-.fs-modal-close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
+.fs-modal-close:focus-visible { outline-offset: -2px; }
 .fs-modal-body {
   flex: 1;
   min-height: 0;
@@ -630,12 +630,11 @@ p.fs-gate--disclaimer {
   border: none;
   cursor: grab;
   touch-action: none; /* the handle itself is the drag surface */
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-sheet-handle-bar {
   width: 36px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--text-tertiary);
 }
 .fs-sheet-title {
@@ -739,10 +738,9 @@ p.fs-gate--disclaimer {
   border-radius: var(--radius-button);
   color: var(--text-secondary);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-drawer-close:hover { color: var(--text-primary); }
-.fs-drawer-close:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-drawer-close:focus-visible { outline-offset: -2px; }
 
 .fs-drawer-body {
   flex: 1;
@@ -801,7 +799,7 @@ p.fs-gate--disclaimer {
   align-items: center;
   width: 100%;
   padding: 4px; /* the knob inset from the track edge */
-  border-radius: 999px; /* pill: radius = height ÷ 2, not a --radius-* member */
+  border-radius: var(--radius-pill);
   overflow: hidden;
   /* pan-y, not none: the slide is a HORIZONTAL gesture, so let a vertical drag
      scroll the board through the track (the card was a dead zone otherwise). A
@@ -884,7 +882,6 @@ p.fs-gate--disclaimer {
   cursor: grab;
   touch-action: pan-y; /* horizontal drag = slide; vertical = scroll the board */
   transition: transform var(--motion-micro) var(--ease-micro); /* snap-back */
-  -webkit-tap-highlight-color: transparent;
 }
 /* advance knob — 44px accent circle */
 .fs-slide--advance .fs-slide-thumb {
@@ -1097,10 +1094,9 @@ p.fs-gate--disclaimer {
   border-radius: var(--radius-card) 0 0 var(--radius-card);
   cursor: pointer;
   box-shadow: var(--shadow-drawer);
-  -webkit-tap-highlight-color: transparent;
 }
 .fs-checklist-tab:hover { background: var(--surface-card-hover); }
-.fs-checklist-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.fs-checklist-tab:focus-visible { outline-offset: -2px; }
 
 /* ---- visually hidden (live regions, SR-only announcements) ---------------- */
 /* Promoted from operations.css + command.css copies (#434 Stage 2c) — the shared
