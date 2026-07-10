@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ChecklistTemplate, type ChecklistId, type ChecklistNode } from '@core/schema';
 import { BASELINE_TEMPLATES } from '@core/checklist';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's checklist library (#230, ADR-020). Departments fully author the
 // three checklists (IC Command / Task Level / ORM-TCRM); a checklist is the shipped
@@ -76,17 +76,10 @@ export function createChecklistTemplateStore(
     async boot() {
       let overrides: ChecklistOverrides = {};
       stampVal = 0;
-      const row = await db.meta.get(CHECKLIST_TEMPLATES_KEY);
-      if (row) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(row.value);
-        } catch {
-          parsed = undefined;
-        }
-        const { value, lastWriteAt } = unwrapBlob(parsed);
-        overrides = Overrides.parse(value) as ChecklistOverrides;
-        stampVal = lastWriteAt;
+      const blob = await readBlobRow(db, CHECKLIST_TEMPLATES_KEY);
+      if (blob) {
+        overrides = Overrides.parse(blob.value) as ChecklistOverrides;
+        stampVal = blob.lastWriteAt;
       }
       store.setState({ overrides }, true);
     },

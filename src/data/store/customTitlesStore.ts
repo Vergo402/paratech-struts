@@ -2,7 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { CustomTitle } from '@core/schema';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's custom ICS-title library (#323) — titles the department adds on top
 // of the built-in POSITION_LIBRARY catalog. Durable copy is ONE json row in `meta`
@@ -59,17 +59,10 @@ export function createCustomTitlesStore(db: FieldShoreDB, hooks: CustomTitlesClo
     async boot() {
       let titles: CustomTitle[] = [];
       stampVal = 0;
-      const row = await db.meta.get(CUSTOM_TITLES_KEY);
-      if (row) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(row.value);
-        } catch {
-          parsed = undefined;
-        }
-        const { value, lastWriteAt } = unwrapBlob(parsed);
-        titles = Titles.parse(value);
-        stampVal = lastWriteAt;
+      const blob = await readBlobRow(db, CUSTOM_TITLES_KEY);
+      if (blob) {
+        titles = Titles.parse(blob.value);
+        stampVal = blob.lastWriteAt;
       }
       store.setState({ titles }, true);
     },

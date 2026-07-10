@@ -2,7 +2,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { ApparatusTypeCustom } from '@core/schema';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's custom apparatus-type vocabulary (#321 P5 inc4b) — types the
 // department adds on top of the built-in APPARATUS_TYPES catalog (load/apparatus.ts).
@@ -63,17 +63,10 @@ export function createApparatusTypesStore(
     async boot() {
       let types: ApparatusTypeCustom[] = [];
       stampVal = 0;
-      const row = await db.meta.get(APPARATUS_TYPES_KEY);
-      if (row) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(row.value);
-        } catch {
-          parsed = undefined;
-        }
-        const { value, lastWriteAt } = unwrapBlob(parsed);
-        types = Types.parse(value);
-        stampVal = lastWriteAt;
+      const blob = await readBlobRow(db, APPARATUS_TYPES_KEY);
+      if (blob) {
+        types = Types.parse(blob.value);
+        stampVal = blob.lastWriteAt;
       }
       store.setState({ types }, true);
     },

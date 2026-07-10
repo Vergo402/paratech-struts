@@ -71,3 +71,24 @@ export function unwrapBlob(parsed: unknown): { value: unknown; lastWriteAt: numb
   }
   return { value: parsed, lastWriteAt: 0 };
 }
+
+/** The shared boot skeleton of the five whole-blob LWW stores (#435 dedup):
+ *  read one persisted meta row, JSON-parse defensively, unwrap the envelope.
+ *  null when the row is absent — each caller keeps its own default + its own
+ *  schema parse (the store owns its shape; a wrong-shape value still degrades
+ *  through the caller's .catch default, never dead-ends boot). Structurally
+ *  typed so this module needs no dependency on the Dexie class. */
+export async function readBlobRow(
+  db: { meta: { get(key: string): Promise<{ value: string } | undefined> } },
+  key: string,
+): Promise<{ value: unknown; lastWriteAt: number } | null> {
+  const row = await db.meta.get(key);
+  if (!row) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(row.value);
+  } catch {
+    parsed = undefined;
+  }
+  return unwrapBlob(parsed);
+}

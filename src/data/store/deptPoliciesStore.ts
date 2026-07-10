@@ -1,7 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { z } from 'zod';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
 
 // Department-wide behavioural policies (#305, ADR-018) — how the app acts for the WHOLE
 // department, not one device. Durable copy is ONE json row in `meta` (DEPT_POLICIES_KEY),
@@ -63,17 +63,10 @@ export function createDeptPoliciesStore(
     async boot() {
       let state: DeptPoliciesState = { afterActionEmail: true };
       stampVal = 0;
-      const row = await db.meta.get(DEPT_POLICIES_KEY);
-      if (row) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(row.value);
-        } catch {
-          parsed = undefined;
-        }
-        const { value, lastWriteAt } = unwrapBlob(parsed);
-        state = resolve(value);
-        stampVal = lastWriteAt;
+      const blob = await readBlobRow(db, DEPT_POLICIES_KEY);
+      if (blob) {
+        state = resolve(blob.value);
+        stampVal = blob.lastWriteAt;
       }
       store.setState(state, true);
     },

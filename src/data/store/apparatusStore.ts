@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Apparatus } from '@core/schema';
 import { type FieldShoreDB } from './db';
 import type { InventoryStoreApi } from './inventoryStore';
-import { wrapBlob, unwrapBlob, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
 
 // The department apparatus roster — which rigs exist, independent of the stock they
 // carry. Durable copy is ONE json row in `meta` (APPARATUS_ROSTER_KEY), mirroring
@@ -72,17 +72,10 @@ export function createApparatusStore(db: FieldShoreDB, hooks: ApparatusCloudHook
     async boot() {
       let roster: Apparatus[] = [];
       stampVal = 0;
-      const row = await db.meta.get(APPARATUS_ROSTER_KEY);
-      if (row) {
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(row.value);
-        } catch {
-          parsed = undefined;
-        }
-        const { value, lastWriteAt } = unwrapBlob(parsed);
-        roster = Roster.parse(value);
-        stampVal = lastWriteAt;
+      const blob = await readBlobRow(db, APPARATUS_ROSTER_KEY);
+      if (blob) {
+        roster = Roster.parse(blob.value);
+        stampVal = blob.lastWriteAt;
       }
       store.setState({ roster }, true);
     },
