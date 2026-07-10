@@ -3,6 +3,7 @@ import type { Deductions, DeployedComponent, ShorePoint, ShoreTypeId } from '@co
 import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
+import { restructureBatch } from './restructure';
 import { divisionLabel } from '@core/operation';
 import { bomSourceStatus, findForShorePoint, pendingReasonFor, strutLoadShare } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Modal } from '@ui/primitives';
@@ -206,25 +207,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       ...(sp.estimatedLoad != null ? { estimatedLoad: sp.estimatedLoad } : {}),
       status: 'pending',
     }));
-    const restructure = await commitMany([
-      ...members.map((m) => ({
-        type: 'ShorePointDeleted' as const,
-        id: newId(),
-        opId: sp.opId,
-        at,
-        by: uid,
-        spId: m.id,
-        hard: true,
-      })),
-      ...rebuilt.map((p) => ({
-        type: 'ShorePointAdded' as const,
-        id: newId(),
-        opId: sp.opId,
-        at,
-        by: uid,
-        shorePoint: p,
-      })),
-    ]);
+    const restructure = await commitMany(restructureBatch(members, rebuilt, sp.opId, uid, at));
     if (!restructure.ok) {
       setError(restructure.reason);
       inFlight.current = false;

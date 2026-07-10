@@ -4,6 +4,7 @@ import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES, parseLoad } from '@core/load';
 import { newId } from '@core/id';
+import { restructureBatch } from './restructure';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
@@ -388,25 +389,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     if (members.every((m) => m.status === 'pending') && strutsPerShore !== members.length) {
       const at = Date.now();
       const rebuilt = buildShoreStruts(sp.seq);
-      const result = await commitMany([
-        ...members.map((m) => ({
-          type: 'ShorePointDeleted' as const,
-          id: newId(),
-          opId: operation.id,
-          at,
-          by: uid,
-          spId: m.id,
-          hard: true,
-        })),
-        ...rebuilt.map((p) => ({
-          type: 'ShorePointAdded' as const,
-          id: newId(),
-          opId: operation.id,
-          at,
-          by: uid,
-          shorePoint: p,
-        })),
-      ]);
+      const result = await commitMany(restructureBatch(members, rebuilt, operation.id, uid, at));
       if (result.ok) {
         commitHaptic();
         onAdded?.(rebuilt);
