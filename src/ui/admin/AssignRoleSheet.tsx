@@ -11,6 +11,11 @@ export interface AssignRoleSheetProps {
   roleList: Role[];
   /** This member is the department's only ACTIVE admin → can't be demoted or revoked. */
   isLastAdmin: boolean;
+  /** The member IS the signed-in viewer. The ADMIN_MANAGE rule forbids an admin
+   *  demoting/revoking THEMSELVES (actor must differ from target) regardless of
+   *  admin count — mirror it so the sheet never offers a write the rules deny.
+   *  Defense-in-depth: the screen renders the own row non-clickable today. */
+  isSelf: boolean;
   onAssign: (roleId: string) => Promise<AdminMutationResult>;
   /** Set this member's rank/title (manageUsers-gated; #321 inc3). */
   onSetRank: (rank: string) => Promise<AdminMutationResult>;
@@ -26,6 +31,7 @@ function CheckIcon() {
 }
 
 const LAST_ADMIN_REASON = 'Promote another member to Admin first';
+const SELF_ADMIN_REASON = 'Another Admin must make this change';
 
 export function AssignRoleSheet({
   open,
@@ -33,6 +39,7 @@ export function AssignRoleSheet({
   member,
   roleList,
   isLastAdmin,
+  isSelf,
   onAssign,
   onSetRank,
   onRequestRevoke,
@@ -70,8 +77,11 @@ export function AssignRoleSheet({
       <div className="fs-um-list" style={{ borderBottom: 'none' }}>
         {roleList.map((r) => {
           const isCurrent = member?.role === r.id;
-          // The last active admin can't be moved off Admin (the rule enforces it too).
-          const blocked = isLastAdmin && r.id !== ADMIN_ROLE_ID;
+          // The last active admin can't be moved off Admin, and an admin can't
+          // demote THEMSELVES (both enforced by the ADMIN_MANAGE rule too).
+          const selfAdminBlocked = isSelf && member?.role === ADMIN_ROLE_ID && r.id !== ADMIN_ROLE_ID;
+          const blocked = (isLastAdmin && r.id !== ADMIN_ROLE_ID) || selfAdminBlocked;
+          const reason = selfAdminBlocked && !isLastAdmin ? SELF_ADMIN_REASON : LAST_ADMIN_REASON;
           return (
             <button
               key={r.id}
@@ -82,7 +92,7 @@ export function AssignRoleSheet({
             >
               <span className="fs-um-row-main">
                 <span className="fs-um-row-name">{r.name}</span>
-                {blocked && <span className="fs-um-pick-reason">{LAST_ADMIN_REASON}</span>}
+                {blocked && <span className="fs-um-pick-reason">{reason}</span>}
               </span>
               {isCurrent && <CheckIcon />}
             </button>
@@ -116,8 +126,10 @@ export function AssignRoleSheet({
           destructive
           size="standard"
           onPress={onRequestRevoke}
-          disabled={isLastAdmin}
-          disabledReason={isLastAdmin ? LAST_ADMIN_REASON : undefined}
+          disabled={isLastAdmin || (isSelf && member?.role === ADMIN_ROLE_ID)}
+          disabledReason={
+            isLastAdmin ? LAST_ADMIN_REASON : isSelf && member?.role === ADMIN_ROLE_ID ? SELF_ADMIN_REASON : undefined
+          }
         >
           Revoke access
         </Button>

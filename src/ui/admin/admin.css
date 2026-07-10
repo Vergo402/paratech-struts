@@ -264,3 +264,39 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .fs-al-badge--danger { color: var(--danger-text); background: color-mix(in srgb, var(--danger-text) 16%, transparent); }
 .fs-al-badge--accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .fs-al-badge--neutral { color: var(--text-secondary); border: var(--stroke-width) solid var(--surface-stroke); }
+
+/* #426 — inline failure line under a member row (reactivate); mirrors the
+   fs-modal-error idiom (also defined here so the admin chunk stands alone). */
+.fs-um-row-error,
+.fs-modal-error {
+  margin: var(--space-1) 0 var(--space-2);
+  font: var(--type-caption);
+  color: var(--danger-text);
+}
+
+/* #423 — the invite-code lifecycle section under the Members list */
+.fs-um-invite {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-um-invite-label {
+  font: var(--type-label);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-2);
+}
+.fs-um-invite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.fs-um-invite-code {
+  font: var(--type-mono-stat);
+  letter-spacing: 0.08em;
+}
+.fs-um-invite-sub {
+  margin: var(--space-2) 0 0;
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}

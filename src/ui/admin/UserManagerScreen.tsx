@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Button, EmptyState, Modal } from '@ui/primitives';
-import { usePermissions, useRoles, useSession, useUserManager } from '@ui/hooks';
+import { useDepartment, usePermissions, useRoles, useSession, useUserManager } from '@ui/hooks';
 import {
   ADMIN_ROLE_ID,
   DEFAULT_ROLE_ID,
@@ -58,11 +58,21 @@ export function UserManagerScreen() {
   const { identity } = useSession();
   const um = useUserManager();
 
+  const { inviteCode } = useDepartment();
+
   const [face, setFace] = useState<Face>('members');
   const [assignTo, setAssignTo] = useState<{ uid: string; name: string; role: string; rank: string } | null>(null);
   const [roleEditor, setRoleEditor] = useState<{ role: Role | null } | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{ uid: string; name: string } | null>(null);
   const [deleteRoleTarget, setDeleteRoleTarget] = useState<Role | null>(null);
+  // #426 — a failed governance action must say so, inline, in the surface that
+  // asked (no toast — Principle 9). Each error clears when its surface closes.
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [deleteRoleError, setDeleteRoleError] = useState<string | null>(null);
+  const [reactivateError, setReactivateError] = useState<{ uid: string; reason: string } | null>(null);
+  // #423 — the regenerate confirm.
+  const [regenOpen, setRegenOpen] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
 
   const ownUid = identity.kind === 'member' ? identity.accountId : null;
 
@@ -119,9 +129,13 @@ export function UserManagerScreen() {
     );
   }
 
-  const reassignThenRefresh = async (fn: () => Promise<unknown>) => {
-    await fn();
-    await um.refresh();
+  // #426 — capture the result (pre-#426 it was discarded: a denied revoke/
+  // reactivate/delete looked like success); refresh the list only when the
+  // write actually landed. Callers surface `reason` inline on failure.
+  const actThenRefresh = async (fn: () => Promise<{ ok: boolean; reason?: string }>) => {
+    const res = await fn();
+    if (res.ok) await um.refresh();
+    return res;
   };
 
   return (
@@ -159,20 +173,31 @@ export function UserManagerScreen() {
                   );
                   if (revoked) {
                     return (
-                      <div key={uid} className="fs-um-row is-revoked">
-                        <span className="fs-um-row-main">
-                          <span className="fs-um-row-name">{m.displayName}</span>
-                        </span>
-                        <span className="fs-um-row-right">
-                          <span className="fs-um-revoked-mark">Revoked</span>
-                          <button
-                            type="button"
-                            className="fs-um-reactivate"
-                            onClick={() => void reassignThenRefresh(() => um.reactivateMember(uid))}
-                          >
-                            Reactivate
-                          </button>
-                        </span>
+                      <div key={uid}>
+                        <div className="fs-um-row is-revoked">
+                          <span className="fs-um-row-main">
+                            <span className="fs-um-row-name">{m.displayName}</span>
+                          </span>
+                          <span className="fs-um-row-right">
+                            <span className="fs-um-revoked-mark">Revoked</span>
+                            <button
+                              type="button"
+                              className="fs-um-reactivate"
+                              onClick={async () => {
+                                setReactivateError(null);
+                                const res = await actThenRefresh(() => um.reactivateMember(uid));
+                                if (!res.ok) {
+                                  setReactivateError({ uid, reason: res.reason ?? 'That change could not be saved. Try again.' });
+                                }
+                              }}
+                            >
+                              Reactivate
+                            </button>
+                          </span>
+                        </div>
+                        {reactivateError?.uid === uid && (
+                          <p role="alert" className="fs-um-row-error">{reactivateError.reason}</p>
+                        )}
                       </div>
                     );
                   }
@@ -209,6 +234,22 @@ export function UserManagerScreen() {
               <p className="fs-um-foot">
                 <LockIcon /> The last Admin can&rsquo;t be revoked or demoted
               </p>
+              {/* #423 — invite-code lifecycle. Regenerate kills the old code (a
+                  leaked code is revocable on scene) and issues a new one. */}
+              {inviteCode && (
+                <div className="fs-um-invite">
+                  <h2 className="fs-um-invite-label">Invite code</h2>
+                  <div className="fs-um-invite-row">
+                    <span className="fs-um-invite-code">{inviteCode}</span>
+                    <Button variant="secondary" size="standard" onPress={() => setRegenOpen(true)}>
+                      Regenerate
+                    </Button>
+                  </div>
+                  <p className="fs-um-invite-sub">
+                    Regenerating kills this code immediately — anyone holding the old code can no longer join.
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -253,6 +294,7 @@ export function UserManagerScreen() {
         member={assignTo}
         roleList={roleList}
         isLastAdmin={assignTo ? isLastAdmin(assignTo.uid) : false}
+        isSelf={assignTo !== null && assignTo.uid === ownUid}
         onAssign={async (roleId) => {
           const res = await um.assignRole(assignTo!.uid, roleId);
           if (res.ok) await um.refresh();
@@ -288,20 +330,34 @@ export function UserManagerScreen() {
 
       <Modal
         open={revokeTarget !== null}
-        onClose={() => setRevokeTarget(null)}
+        onClose={() => {
+          setRevokeTarget(null);
+          setRevokeError(null);
+        }}
         title="Revoke access?"
         variant="destructive"
         footer={
           <>
-            <Button variant="secondary" onPress={() => setRevokeTarget(null)}>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setRevokeTarget(null);
+                setRevokeError(null);
+              }}
+            >
               <span data-modal-cancel>Cancel</span>
             </Button>
             <Button
               variant="primary"
               destructive
               onPress={async () => {
-                if (revokeTarget) await reassignThenRefresh(() => um.revokeMember(revokeTarget.uid));
-                setRevokeTarget(null);
+                if (!revokeTarget) return;
+                setRevokeError(null);
+                const res = await actThenRefresh(() => um.revokeMember(revokeTarget.uid));
+                // #426 — a failed revoke stays open and says so; closing on failure
+                // read as "revoked" while the member could still sign in.
+                if (res.ok) setRevokeTarget(null);
+                else setRevokeError(res.reason ?? 'That change could not be saved. Try again.');
               }}
             >
               Revoke access
@@ -313,24 +369,37 @@ export function UserManagerScreen() {
           <strong>{revokeTarget?.name}</strong> loses access immediately. Their record stays in the department
           (marked revoked) so the activity log stays readable — you can reactivate them later.
         </p>
+        {revokeError && <p role="alert" className="fs-modal-error">{revokeError}</p>}
       </Modal>
 
       <Modal
         open={deleteRoleTarget !== null}
-        onClose={() => setDeleteRoleTarget(null)}
+        onClose={() => {
+          setDeleteRoleTarget(null);
+          setDeleteRoleError(null);
+        }}
         title="Delete role?"
         variant="destructive"
         footer={
           <>
-            <Button variant="secondary" onPress={() => setDeleteRoleTarget(null)}>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setDeleteRoleTarget(null);
+                setDeleteRoleError(null);
+              }}
+            >
               <span data-modal-cancel>Cancel</span>
             </Button>
             <Button
               variant="primary"
               destructive
               onPress={async () => {
-                if (deleteRoleTarget) await reassignThenRefresh(() => um.deleteRole(deleteRoleTarget.id));
-                setDeleteRoleTarget(null);
+                if (!deleteRoleTarget) return;
+                setDeleteRoleError(null);
+                const res = await actThenRefresh(() => um.deleteRole(deleteRoleTarget.id));
+                if (res.ok) setDeleteRoleTarget(null);
+                else setDeleteRoleError(res.reason ?? 'That change could not be saved. Try again.');
               }}
             >
               Delete role
@@ -341,6 +410,49 @@ export function UserManagerScreen() {
         <p>
           Anyone holding <strong>{deleteRoleTarget?.name}</strong> moves to the Default role. This can&rsquo;t be undone.
         </p>
+        {deleteRoleError && <p role="alert" className="fs-modal-error">{deleteRoleError}</p>}
+      </Modal>
+
+      <Modal
+        open={regenOpen}
+        onClose={() => {
+          setRegenOpen(false);
+          setRegenError(null);
+        }}
+        title="Regenerate invite code?"
+        variant="destructive"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setRegenOpen(false);
+                setRegenError(null);
+              }}
+            >
+              <span data-modal-cancel>Cancel</span>
+            </Button>
+            <Button
+              variant="primary"
+              destructive
+              onPress={async () => {
+                setRegenError(null);
+                const res = await um.regenerateInviteCode();
+                // The new code shows in the section below (reactive via useDepartment).
+                if (res.ok) setRegenOpen(false);
+                else setRegenError(res.reason ?? 'That change could not be saved. Try again.');
+              }}
+            >
+              Regenerate
+            </Button>
+          </>
+        }
+      >
+        <p>
+          The current code <strong>{inviteCode}</strong> stops working immediately — anyone holding it can no
+          longer join. A new code is issued in its place.
+        </p>
+        {regenError && <p role="alert" className="fs-modal-error">{regenError}</p>}
       </Modal>
     </div>
   );
