@@ -37,10 +37,11 @@ describe('departmentService.createDepartment', () => {
     setMock.mockReset().mockResolvedValue(undefined);
     getMock.mockReset().mockResolvedValue({ exists: () => false });
     logMock.mockReset().mockResolvedValue(undefined);
+    syncStatusStore.setPendingDeptPush(null);
     db = createDB(`test-dept-${newId()}`);
     session = createSessionStore(db);
     await session.boot(UID);
-    svc = createDepartmentService({ session: () => session });
+    svc = createDepartmentService({ session: () => session, db });
   });
 
   afterEach(async () => {
@@ -115,10 +116,10 @@ describe('departmentService.createDepartment', () => {
     });
   });
 
-  it('survives a cloud-write failure (local dept stands; failure logged)', async () => {
+  it('survives a cloud-write failure — dept stands locally, outbox row kept for retry (#419)', async () => {
     await session.setMember({ accountId: FB_UID, displayName: memberName });
     // call[0] = backfill /userDepts (fire-and-forget from setDepartment); call[1] = org write fails.
-    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('network unreachable'));
 
     const r = await svc.createDepartment('Hamden Fire Rescue');
     expect(r.ok).toBe(true); // local-first — the dept is real locally regardless
@@ -127,12 +128,19 @@ describe('departmentService.createDepartment', () => {
       'dept_create_failed',
       expect.objectContaining({ deptId: expect.any(String) }),
     );
+    // the outbox row survives (retried on boot/reconnect) and the banner knows
+    const row = await db.meta.get('fieldshore_pending_dept_push');
+    expect(row).toBeDefined();
+    expect(syncStatusStore.store.getState().pendingDeptPush).toEqual({
+      deptId: session.store.getState().departmentId,
+      deptName: 'Hamden Fire Rescue',
+    });
   });
 
-  it('logs invite_code_publish_failed (not dept_create_failed) when only the code write fails', async () => {
+  it('logs invite_code_publish_failed (not dept_create_failed) when only the code write fails; outbox kept', async () => {
     await session.setMember({ accountId: FB_UID, displayName: memberName });
     // call[0] = backfill /userDepts; call[1] = dept write succeeds; call[2] = invite-code write fails.
-    setMock.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    setMock.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('network unreachable'));
 
     const r = await svc.createDepartment('Hamden Fire Rescue');
     expect(r.ok).toBe(true); // the dept stands locally
@@ -141,6 +149,74 @@ describe('departmentService.createDepartment', () => {
       expect.objectContaining({ deptId: expect.any(String) }),
     );
     expect(logMock).not.toHaveBeenCalledWith('dept_create_failed', expect.anything());
+    expect(await db.meta.get('fieldshore_pending_dept_push')).toBeDefined(); // still owed
+  });
+
+  it('a fully-successful create clears the outbox — no pending row, no banner', async () => {
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    expect(r.ok).toBe(true);
+    expect(await db.meta.get('fieldshore_pending_dept_push')).toBeUndefined();
+    expect(syncStatusStore.store.getState().pendingDeptPush).toBeNull();
+  });
+
+  it('PERMISSION_DENIED on the dept push means "already created" — outbox completes, distinct ledger label', async () => {
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    // CREATE_ONLY: a denied dept set = the node already exists (a prior buffered
+    // write landed). The push continues to the code write and clears the row.
+    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    expect(r.ok).toBe(true);
+    expect(logMock).toHaveBeenCalledWith('dept_push_denied', expect.objectContaining({ deptId: expect.any(String) }));
+    expect(logMock).not.toHaveBeenCalledWith('dept_create_failed', expect.anything());
+    expect(await db.meta.get('fieldshore_pending_dept_push')).toBeUndefined(); // done
+  });
+
+  it('a hung (offline-buffered) cloud set cannot wedge the create — returns promptly, outbox kept', async () => {
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    const fast = createDepartmentService({
+      session: () => session,
+      db,
+      timeouts: { outboxSet: 50, createWait: 25 },
+    });
+    // an offline RTDB set() never settles — simulate with a forever-pending promise
+    setMock.mockResolvedValueOnce(undefined).mockImplementation(() => new Promise(() => {}));
+    const r = await fast.createDepartment('Hamden Fire Rescue');
+    expect(r.ok).toBe(true); // returned despite the hang
+    expect(await db.meta.get('fieldshore_pending_dept_push')).toBeDefined();
+    expect(syncStatusStore.store.getState().pendingDeptPush).toMatchObject({ deptName: 'Hamden Fire Rescue' });
+  });
+
+  it('retryPendingDeptPush re-pushes BOTH payloads verbatim and clears the row', async () => {
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('network unreachable'));
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    if (!r.ok) throw new Error('expected ok');
+    setMock.mockClear();
+    setMock.mockResolvedValue(undefined);
+
+    expect(await svc.retryPendingDeptPush()).toBe(true);
+    const paths = setMock.mock.calls.map(([ref]) => (ref as { path: string }).path);
+    expect(paths).toEqual([`orgs/${r.department.id}`, `orgs/inviteCodes/${r.department.inviteCode}`]);
+    const [, deptPayload] = setMock.mock.calls[0]!;
+    expect(deptPayload.createdBy).toBe(FB_UID); // verbatim — createdBy/joinedAt preserved
+    expect(deptPayload.members[FB_UID].joinedAt).toEqual(expect.any(Number));
+    expect(await db.meta.get('fieldshore_pending_dept_push')).toBeUndefined();
+    expect(syncStatusStore.store.getState().pendingDeptPush).toBeNull();
+  });
+
+  it('retryPendingDeptPush with no pending row is a no-op', async () => {
+    expect(await svc.retryPendingDeptPush()).toBe(false);
+    expect(setMock).not.toHaveBeenCalled();
+  });
+
+  it('restorePendingDeptPush re-seeds the banner state across a reload', async () => {
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    setMock.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('network unreachable'));
+    await svc.createDepartment('Hamden Fire Rescue');
+    syncStatusStore.setPendingDeptPush(null); // simulate the reload wiping in-memory state
+    await svc.restorePendingDeptPush();
+    expect(syncStatusStore.store.getState().pendingDeptPush).toMatchObject({ deptName: 'Hamden Fire Rescue' });
   });
 });
 
@@ -259,13 +335,28 @@ describe('departmentService.joinByCode', () => {
     expect(setMock).not.toHaveBeenCalled(); // no member write attempted
   });
 
-  it('surfaces a member-write failure as offline and logs it', async () => {
+  it('surfaces a NETWORK member-write failure as offline and logs it', async () => {
     getMock.mockResolvedValue(okSnap(liveCode));
-    setMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    setMock.mockRejectedValueOnce(new Error('network unreachable'));
     const r = await svc.joinByCode(CODE);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toMatch(/offline/i);
     expect(logMock).toHaveBeenCalledWith('dept_join_failed', expect.objectContaining({ deptId: 'dept-1' }));
+  });
+
+  it('PERMISSION_DENIED at the member write is NOT "offline" — definitive, honest, never queued (#420)', async () => {
+    // The JOIN_SELF_WRITE rule denies any EXISTING member row: a revoked member
+    // re-joining, or a member joining from a new device. Pre-#420 this queued
+    // forever behind "You're offline" while fully online.
+    getMock.mockResolvedValue(okSnap(liveCode));
+    setMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED: rules'));
+    const r = await svc.joinByCode(CODE);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.queued).toBeUndefined(); // never queued
+      expect(r.reason).toMatch(/access|revoked/i);
+      expect(r.reason).not.toMatch(/offline/i);
+    }
   });
 });
 
@@ -308,10 +399,23 @@ describe('departmentService — offline join queue (Increment 4)', () => {
 
   it('offline at member-write → queues the intent WITH the resolved deptName', async () => {
     getMock.mockResolvedValue(okSnap(liveCode));
-    setMock.mockRejectedValueOnce(new Error('PERMISSION_DENIED'));
+    setMock.mockRejectedValueOnce(new Error('network unreachable'));
     const r = await svc.joinByCode(CODE);
     if (!r.ok) expect(r.queued).toBe(true);
     expect(JSON.parse((await intent())!.value)).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
+  });
+
+  it('PERMISSION_DENIED at member-write clears any pending intent — the retry loop cannot wedge (#420)', async () => {
+    // The infinite-loop shape: an intent is queued, reconnect retries, the write is
+    // DENIED (revoked member / existing row). Pre-#420 the deny re-queued forever.
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    getMock.mockResolvedValue(okSnap(liveCode));
+    setMock.mockRejectedValue(new Error('PERMISSION_DENIED: rules'));
+    const completed = await svc.retryPendingJoin();
+    expect(completed).toBe(false);
+    expect(await intent()).toBeUndefined(); // intent DROPPED — no infinite retry
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull(); // banner cleared
   });
 
   it('retryPendingJoin completes the join on reconnect → true, intent cleared', async () => {
@@ -373,7 +477,7 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     session = createSessionStore(db);
     await session.boot(UID);
     await session.setMember({ accountId: FB_UID, displayName: memberName });
-    svc = createDepartmentService({ session: () => session });
+    svc = createDepartmentService({ session: () => session, db });
     const r = await svc.createDepartment('Hamden Fire Rescue');
     if (!r.ok) throw new Error('setup: create failed');
     oldCode = r.department.inviteCode;

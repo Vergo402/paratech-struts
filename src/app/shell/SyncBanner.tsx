@@ -17,7 +17,7 @@ import { useSession, useSyncStatus } from '@ui/hooks';
 export function SyncBanner() {
   const navigate = useNavigate();
   const { identity } = useSession();
-  const { online, pendingCount, pendingJoin, syncError } = useSyncStatus();
+  const { online, pendingCount, pendingJoin, pendingDeptPush, syncError } = useSyncStatus();
   // ponytail: guest dismiss is session-only (in-memory) — it returns on reload.
   const [dismissed, setDismissed] = useState(false);
 
@@ -41,12 +41,27 @@ export function SyncBanner() {
     );
   }
 
-  // MEMBER — live sync status (priority: a queued join, then offline, then mid-sync).
+  // MEMBER — live sync status (priority: a queued join, a dept still owed to the
+  // cloud, then offline, then mid-sync).
   if (pendingJoin) {
     const name = pendingJoin.deptName ? `“${pendingJoin.deptName}”` : 'your department';
     return (
       <div className="fs-sync-banner fs-sync-banner--warning" role="status">
         <span className="fs-sync-banner-text">Will join {name} when you reconnect</span>
+      </div>
+    );
+  }
+
+  // #419 — the dept-create outbox hasn't confirmed yet: the department (and its
+  // invite code) exist on this device only. Honest about what teammates can't do
+  // yet; clears the moment the push lands.
+  if (pendingDeptPush) {
+    return (
+      <div className="fs-sync-banner fs-sync-banner--warning" role="status">
+        <span className="fs-sync-banner-text">
+          “{pendingDeptPush.deptName}” is saved on this device —{' '}
+          {online ? 'syncing to the cloud (invite code works after that)' : 'will sync when you reconnect'}
+        </span>
       </div>
     );
   }

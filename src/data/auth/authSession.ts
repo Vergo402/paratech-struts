@@ -63,6 +63,13 @@ export function createAuthSessionSync(deps: {
           // existed self-heals on its next ordinary app open (no sign-out ritual).
           // Idempotent fire-and-forget; no-ops when the member has no department.
           session.seedUserDeptIndex();
+          // Retry the dept-create outbox (#419) on every authenticated boot — a dept
+          // created through a connectivity hiccup re-pushes until its orgs node +
+          // invite code land. Lazy import keeps this module's graph firebase-db-free;
+          // fire-and-forget + single-flight inside the service.
+          void import('../dept/departmentService').then(({ departmentService }) =>
+            departmentService.retryPendingDeptPush(),
+          );
         } else if (identity.kind === 'member') {
           // No authenticated Firebase user → can't act as a member for cloud
           // work. Drop to guest; setGuest never touches local events/inventory.

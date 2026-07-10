@@ -21,11 +21,11 @@ import { globalDb, type FieldShoreDB } from '../store/db';
 // its first Admin → get an invite code. Department / membership / role are PLAIN
 // RTDB state under /orgs (ADR-009 / ADR-017), NOT events (the event log is
 // operations-only). Local-first (LESSONS §4): the session's dept projection is
-// written FIRST so the dept persists offline / before the rules are deployed; the
-// cloud set is best-effort and logged on failure (a created dept stands locally
-// regardless). The invite code is generated + shown now; its CLOUD registration
-// and the join that consumes it land with workflow #232. A pending-push retry
-// rides the broader sync hardening (Engine A), not this slice.
+// written FIRST so the dept persists offline; the cloud push goes through a
+// durable OUTBOX (#419) — the exact payloads are persisted to global meta BEFORE
+// the first set() and retried on every authenticated boot + reconnect until they
+// land, so a dept created through a connectivity hiccup can never end up
+// permanently local-only with a dead invite code.
 //
 // Invariant: RTDB is reached only through the data/sync seam (rtdb / set), never
 // firebase/database directly.
@@ -84,6 +84,11 @@ export interface DepartmentServiceApi {
   /** Restore a queued join into the sync-status store on boot, so the banner reflects it
    *  across a reload that happened while still offline. */
   restorePendingJoin(): Promise<void>;
+  /** Retry the dept-create outbox (#419) — re-push a created dept's orgs node + invite
+   *  code until they land. Called on authenticated boot + reconnect. True = fully landed. */
+  retryPendingDeptPush(): Promise<boolean>;
+  /** Restore a pending dept push into the sync-status store on boot (banner across reload). */
+  restorePendingDeptPush(): Promise<void>;
 
   // ---- User Manager (#381) — admin governance, manageUsers-gated by the rules ----
   /** Cold-read the department's members map (admin screen only — not a live store). */
@@ -126,12 +131,42 @@ interface PendingJoinIntent {
   deptName: string | null;
 }
 
+// The dept-create outbox (#419) — the EXACT cloud payloads a created dept still owes
+// RTDB, persisted to global meta BEFORE the first set() attempt. The payloads ride
+// verbatim because createdBy / createdAt / the founder's joinedAt are not recoverable
+// from the session row later. Cleared only on confirmed success; retried on every
+// authenticated boot + reconnect.
+const PENDING_DEPT_PUSH_KEY = 'fieldshore_pending_dept_push';
+interface PendingDeptPushRow {
+  deptId: string;
+  deptName: string;
+  deptPath: string;
+  deptPayload: Record<string, unknown>;
+  codePath: string;
+  codePayload: Record<string, unknown>;
+}
+
+// An offline RTDB set() never rejects — it buffers forever — so every outbox set is
+// raced against a timeout (the buffered write may still land later; the next retry's
+// permission_denied-as-already-created handles the overlap idempotently). The create
+// call itself waits only briefly so the UI is never wedged behind a dead await.
+const OUTBOX_SET_TIMEOUT_MS = 8000;
+const CREATE_WAIT_MS = 4000;
+
+function timeoutMs<T>(ms: number, value: T): Promise<T> {
+  return new Promise((resolve) => setTimeout(() => resolve(value), ms));
+}
+
 export function createDepartmentService(deps: {
   session: () => SessionStoreApi;
   /** Global meta DB for the pending-join intent (default: the global singleton). */
   db?: FieldShoreDB;
+  /** Outbox timing overrides (tests only — production uses the defaults). */
+  timeouts?: { outboxSet?: number; createWait?: number };
 }): DepartmentServiceApi {
   const db = deps.db ?? globalDb;
+  const outboxSetMs = deps.timeouts?.outboxSet ?? OUTBOX_SET_TIMEOUT_MS;
+  const createWaitMs = deps.timeouts?.createWait ?? CREATE_WAIT_MS;
   let retrying = false; // one retry at a time — a rapid double 'online' must not race two joins
 
   async function readIntent(): Promise<PendingJoinIntent | null> {
@@ -155,6 +190,79 @@ export function createDepartmentService(deps: {
   async function clearIntent(): Promise<void> {
     await db.meta.delete(PENDING_JOIN_KEY);
     syncStatusStore.setPendingJoin(null);
+  }
+
+  // ---- The dept-create outbox (#419) ----
+
+  let pushingDept = false; // single-flight — a rapid double 'online' must not race two pushes
+
+  async function readDeptPush(): Promise<PendingDeptPushRow | null> {
+    const row = await db.meta.get(PENDING_DEPT_PUSH_KEY);
+    if (!row) return null;
+    try {
+      const p = JSON.parse(row.value);
+      if (p && typeof p.deptId === 'string' && typeof p.deptPath === 'string') return p as PendingDeptPushRow;
+    } catch {
+      /* corrupt row → no pending push */
+    }
+    return null;
+  }
+
+  async function clearDeptPush(): Promise<void> {
+    await db.meta.delete(PENDING_DEPT_PUSH_KEY);
+    syncStatusStore.setPendingDeptPush(null);
+  }
+
+  // One outbox set, raced against the timeout. 'denied' is its own outcome: the
+  // dept node is CREATE_ONLY and the code node is create-only for its create
+  // branch, so PERMISSION_DENIED here means the node already exists in the cloud
+  // (the original write landed, or a prior retry's buffered write did) — done,
+  // not failed. Logged under its own ledger label so a genuine rules mismatch
+  // stays diagnosable.
+  async function racedSet(path: string, payload: unknown): Promise<'ok' | 'denied' | { error: string }> {
+    const settled = set(ref(rtdb, path), payload).then(
+      () => 'ok' as const,
+      (err: unknown) => ({ error: err instanceof Error ? err.message : String(err) }),
+    );
+    const result = await Promise.race([settled, timeoutMs(outboxSetMs, { error: 'timeout' })]);
+    if (result !== 'ok' && /permission_denied/i.test(result.error)) return 'denied';
+    return result;
+  }
+
+  async function retryPendingDeptPush(): Promise<boolean> {
+    if (pushingDept) return false;
+    pushingDept = true;
+    try {
+      const row = await readDeptPush();
+      if (!row) return false;
+
+      const dept = await racedSet(row.deptPath, row.deptPayload);
+      if (dept === 'denied') {
+        await logSyncEvent('dept_push_denied', { deptId: row.deptId });
+      } else if (dept !== 'ok') {
+        await logSyncEvent('dept_create_failed', { deptId: row.deptId, error: dept.error });
+        return false;
+      }
+
+      // MUST follow the dept write: the code rule checks the dept's createdBy at root.
+      const code = await racedSet(row.codePath, row.codePayload);
+      if (code === 'denied') {
+        await logSyncEvent('invite_code_publish_denied', { deptId: row.deptId });
+      } else if (code !== 'ok') {
+        await logSyncEvent('invite_code_publish_failed', { deptId: row.deptId, error: code.error });
+        return false;
+      }
+
+      await clearDeptPush();
+      return true;
+    } finally {
+      pushingDept = false;
+    }
+  }
+
+  async function restorePendingDeptPush(): Promise<void> {
+    const row = await readDeptPush();
+    if (row) syncStatusStore.setPendingDeptPush({ deptId: row.deptId, deptName: row.deptName });
   }
 
   async function createDepartment(rawName: string): Promise<CreateDepartmentResult> {
@@ -186,8 +294,8 @@ export function createDepartmentService(deps: {
       }
 
       // Local-first — the dept projection persists immediately (offline / before
-      // the rules deploy). The cloud push follows, best-effort. The invite code is
-      // persisted with it so Settings can show it again after the success sheet closes.
+      // the rules deploy). The cloud push follows via the durable outbox below. The
+      // invite code is persisted with it so Settings can show it after the sheet closes.
       await session.setDepartment({ id, name, role: ADMIN_ROLE_ID, inviteCode });
 
       // One atomic set at the dept node: the create-only .write grant cascades to
@@ -202,41 +310,28 @@ export function createDepartmentService(deps: {
           [DEFAULT_ROLE_ID]: { name: 'Default', builtIn: true, permissions: DEFAULT_PERMISSIONS },
         },
       };
-      // Two best-effort cloud writes with SEPARATE ledger labels, so a partial
-      // failure is diagnosable. If the dept write fails there is nothing to publish
-      // a code against (the code-write rule checks the dept's createdBy at root), so
-      // we stop. The local dept stands regardless (local-first); a pending-push
-      // retry rides the broader sync hardening (Engine A), not this slice.
-      try {
-        await set(ref(rtdb, `orgs/${id}`), payload);
-      } catch (err) {
-        await logSyncEvent('dept_create_failed', {
-          deptId: id,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        return { ok: true, department: { id, name, role: ADMIN_ROLE_ID, inviteCode } };
-      }
-
-      // Publish the invite-code resolver so a teammate can join by it (workflow
-      // #232). MUST follow the dept write: the rule checks createdBy at root, which
-      // only exists once the dept node is committed. The dept name rides along so a
-      // not-yet-member can resolve it from the code alone (the dept node is
-      // member-read-gated). A failure here is logged distinctly — the code is
-      // unpublished (no one can join yet) but the dept is real locally.
-      try {
-        await set(ref(rtdb, `orgs/inviteCodes/${inviteCode}`), {
+      // The outbox (#419): persist BOTH cloud payloads durably BEFORE the first
+      // attempt, then push. The dept write must precede the code write (the code
+      // rule checks the dept's createdBy at root). The create call waits only
+      // briefly — a truly-offline RTDB set() buffers forever instead of rejecting,
+      // and the UI must never wedge behind that await. If the push doesn't confirm
+      // in time, the row stays and the banner says so; boot + reconnect retry it.
+      await db.meta.put({
+        key: PENDING_DEPT_PUSH_KEY,
+        value: JSON.stringify({
           deptId: id,
           deptName: name,
-          createdBy: uid,
-          createdAt,
-          active: true,
-        });
-      } catch (err) {
-        await logSyncEvent('invite_code_publish_failed', {
-          deptId: id,
-          error: err instanceof Error ? err.message : String(err),
-        });
-      }
+          deptPath: `orgs/${id}`,
+          deptPayload: payload,
+          codePath: `orgs/inviteCodes/${inviteCode}`,
+          codePayload: { deptId: id, deptName: name, createdBy: uid, createdAt, active: true },
+        } satisfies PendingDeptPushRow),
+      });
+      const landed = await Promise.race([
+        retryPendingDeptPush().catch(() => false),
+        timeoutMs(createWaitMs, false),
+      ]);
+      if (!landed) syncStatusStore.setPendingDeptPush({ deptId: id, deptName: name });
 
       return { ok: true, department: { id, name, role: ADMIN_ROLE_ID, inviteCode } };
   }
@@ -317,11 +412,23 @@ export function createDepartmentService(deps: {
           viaCode: code,
         });
       } catch (err) {
-        await logSyncEvent('dept_join_failed', {
-          deptId,
-          error: err instanceof Error ? err.message : String(err),
-        });
-        // Offline at the member-write step — deptName IS known now. Hold + auto-complete.
+        const msg = err instanceof Error ? err.message : String(err);
+        await logSyncEvent('dept_join_failed', { deptId, error: msg });
+        // PERMISSION_DENIED is NOT offline (#420): the JOIN_SELF_WRITE rule denies any
+        // EXISTING member row — a revoked member re-joining, or a member joining from a
+        // new device whose row already exists. Pre-#420 this queued forever ("You're
+        // offline" while fully online, re-failing on every reconnect). Definitive → do
+        // not queue, drop any pending intent, say what actually happened.
+        if (/permission_denied/i.test(msg)) {
+          await clearIntent();
+          return {
+            ok: false,
+            reason:
+              "You don't have access to join this department — your access may have been revoked. Contact your department admin.",
+          };
+        }
+        // A genuine network failure at the member-write step — deptName IS known now.
+        // Hold + auto-complete on reconnect.
         await queueJoin(code, deptName);
         return {
           ok: false,
@@ -643,6 +750,8 @@ export function createDepartmentService(deps: {
     joinByCode,
     retryPendingJoin,
     restorePendingJoin,
+    retryPendingDeptPush,
+    restorePendingDeptPush,
     readMembers,
     readAudit,
     assignRole,

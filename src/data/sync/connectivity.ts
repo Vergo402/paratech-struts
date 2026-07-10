@@ -63,6 +63,9 @@ export const connectivity = createConnectivity({
   onOnline: () => {
     void syncService.flush();
     void import('../dept/departmentService').then(async ({ departmentService }) => {
+      // Re-push a created-offline dept's orgs node + invite code (#419). No reload
+      // needed — the dept is already the active local bucket; only the cloud lagged.
+      void departmentService.retryPendingDeptPush();
       const joined = await departmentService.retryPendingJoin();
       if (joined) window.location.assign('/operations');
     });

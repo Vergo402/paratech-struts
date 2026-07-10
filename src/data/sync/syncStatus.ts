@@ -18,10 +18,20 @@ export interface PendingJoin {
   deptName: string | null; // unknown when the resolve itself failed offline (code-only)
 }
 
+export interface PendingDeptPush {
+  deptId: string;
+  deptName: string;
+}
+
 export interface SyncStatusState {
   online: boolean;
   pendingCount: number;
   pendingJoin: PendingJoin | null;
+  // A department created while the cloud was unreachable, whose orgs node + invite
+  // code are still owed to RTDB (#419). The outbox in departmentService retries on
+  // boot/reconnect; this drives the banner's honest "will sync" line — without it a
+  // stranded dept showed a working-looking invite code that resolved to nothing.
+  pendingDeptPush: PendingDeptPush | null;
   // True when a flush left changes queued after a failure — i.e. uploads are STUCK, not
   // progressing. Lets the banner say "couldn't sync, retrying" instead of lying "Syncing…"
   // forever when writes fail for a non-network reason (a rule rejection, a wedge). Cleared
@@ -39,6 +49,7 @@ export interface SyncStatusStoreApi {
   setOnline(online: boolean): void;
   setPending(count: number): void;
   setPendingJoin(pendingJoin: PendingJoin | null): void;
+  setPendingDeptPush(pendingDeptPush: PendingDeptPush | null): void;
   setSyncError(syncError: boolean): void;
   setPendingResourceCount(count: number): void;
 }
@@ -48,6 +59,7 @@ export function createSyncStatusStore(): SyncStatusStoreApi {
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     pendingCount: 0,
     pendingJoin: null,
+    pendingDeptPush: null,
     syncError: false,
     pendingResourceCount: 0,
   }));
@@ -56,6 +68,7 @@ export function createSyncStatusStore(): SyncStatusStoreApi {
     setOnline: (online) => store.setState({ online }),
     setPending: (pendingCount) => store.setState({ pendingCount }),
     setPendingJoin: (pendingJoin) => store.setState({ pendingJoin }),
+    setPendingDeptPush: (pendingDeptPush) => store.setState({ pendingDeptPush }),
     setSyncError: (syncError) => store.setState({ syncError }),
     setPendingResourceCount: (pendingResourceCount) => store.setState({ pendingResourceCount }),
   };
