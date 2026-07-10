@@ -3,6 +3,7 @@ import { type EventRow } from '../store/db';
 import { currentDeptDb } from '../store/registry';
 import { sessionStore } from '../store/session';
 import { syncService } from './syncService';
+import { firebaseSubscribe } from './subscribe';
 
 // data/sync — the cloud→local event listener (cloud-sync Increment 2). Mirrors
 // authSession: a factory + a singleton with idempotent start()/stop(), started from
@@ -44,20 +45,6 @@ function flatten(snap: unknown): FieldShoreEvent[] {
     }
   }
   return out;
-}
-
-/** Default transport — only loaded (and only touches Firebase) once start() runs. */
-function firebaseSubscribe(path: string, cb: (snap: unknown) => void): () => void {
-  let realUnsub: (() => void) | null = null;
-  let cancelled = false;
-  void import('./firebase').then(({ rtdb, ref, onValue }) => {
-    if (cancelled) return;
-    realUnsub = onValue(ref(rtdb, path), (snap) => cb(snap.val()));
-  });
-  return () => {
-    cancelled = true;
-    realUnsub?.();
-  };
 }
 
 export function createEventListenerSync(deps: {

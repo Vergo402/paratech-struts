@@ -6,6 +6,7 @@ import { useAuditAccess, useAuditTrail, useEventLog, useRoles, useUserManager } 
 import { describeAuditLog, describeEventLog, auditRowsToCsv, type AuditRow } from '@core/audit';
 import { periodOf, projectOperationById } from '@core/operation';
 import { download } from '@ui/util/download';
+import { BackIcon, LockIcon } from './icons';
 import './admin.css';
 
 // Audit Log (#211) — the read-only, queryable view of the two append-only trails: the
@@ -26,21 +27,6 @@ const SCOPE_OPTIONS = [
 // view has operational periods, so it's appended for that face alone (#395).
 const PERIOD_OPTION = { value: 'period' as const, label: 'By period' };
 
-function BackIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M13 5l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function LockIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" style={{ flex: '0 0 auto' }}>
-      <rect x="2.5" y="5.5" width="8" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
 function DownloadIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
@@ -196,7 +182,7 @@ export function AuditLogScreen() {
         <p className="fs-al-lock">
           <span className="fs-al-lock-ctx">{lock.context}</span>
           <span className="fs-al-lock-who">
-            <LockIcon /> {lock.who}
+            <LockIcon style={{ flex: '0 0 auto' }} /> {lock.who}
           </span>
         </p>
       )}

@@ -20,6 +20,19 @@ export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
   '3-post': '3-Post',
 };
 
+// Shared recommendation-surface EmptyState copy — the Add Shore Point modal and the
+// Assign Equipment sheet show the SAME wording when nothing fits (#435 dedup). These
+// are deliberately distinct from the shorter ShorePointCard PENDING_REASON_COPY
+// framings, so they live here rather than folding into that map.
+export const NO_MATCH_EMPTY = {
+  headline: 'No matching struts',
+  reason: 'Nothing fits this opening at this load — adjust deductions or re-measure',
+} as const;
+export const OVER_CAPACITY_EMPTY = {
+  headline: 'Over capacity',
+  reason: 'A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering',
+} as const;
+
 /** PRIMARY line — the strut's location (the focus): Building · Division · Side · Unit. */
 /** The SHORT status tier (#432, mess-map #11) — ONE map shared by the Board lane
  *  headers, the List dividers, and the Division tiles (which used opaque PEND /

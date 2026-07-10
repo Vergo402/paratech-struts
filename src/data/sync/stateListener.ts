@@ -10,6 +10,7 @@ import {
 import { sessionStore } from '../store/session';
 import { syncService } from './syncService';
 import { eventListenerSync } from './eventListener';
+import { firebaseSubscribe } from './subscribe';
 import {
   type BlobEnvelope,
   type BlobPath,
@@ -67,20 +68,6 @@ export interface BlobConfig {
   localStamp: () => number;
   localValue: () => unknown;
   applyRemote: (value: unknown, stamp: number) => Promise<void>;
-}
-
-/** Default transport — only loaded (and only touches Firebase) once start() runs. */
-function firebaseSubscribe(path: string, cb: (snap: unknown) => void): () => void {
-  let realUnsub: (() => void) | null = null;
-  let cancelled = false;
-  void import('./firebase').then(({ rtdb, ref, onValue }) => {
-    if (cancelled) return;
-    realUnsub = onValue(ref(rtdb, path), (snap) => cb(snap.val()));
-  });
-  return () => {
-    cancelled = true;
-    realUnsub?.();
-  };
 }
 
 export function createStateListenerSync(deps: {

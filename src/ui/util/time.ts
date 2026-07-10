@@ -12,3 +12,10 @@ export function clock(at: number, now: number = Date.now()): string {
   if (sameDay) return time;
   return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${time}`;
 }
+
+/** 24-hour HH:MM (zero-padded) — the briefing / checklist attestation stamp. Distinct
+ *  from clock() above (12-hour, date-aware for multi-day op history). */
+export function clockTime(at: number): string {
+  const d = new Date(at);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}

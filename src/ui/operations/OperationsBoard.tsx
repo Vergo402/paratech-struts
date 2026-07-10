@@ -46,7 +46,7 @@ import { CuttingStation } from './CuttingStation';
 import { PastOperationsList } from './PastOperationsList';
 import { PastOperationView } from './PastOperationView';
 import { ViewToggle, type BoardLayout } from './ViewToggle';
-import { DivisionView } from './DivisionView';
+import { DivisionView, type LaneItem } from './DivisionView';
 import { ShorePointListRow } from './ShorePointListRow';
 import type { CapacityFlagValue } from './CapacityFlag';
 import { HeaderPill, OpsMetaLine } from './OpsHeaderMeta';
@@ -124,11 +124,8 @@ const PHASE_GROUPS = [
 // shore — a 3-Post = 3 points, KB-7) into a single rolodex stack; everything
 // else stays a plain card. A singleton (no groupId, OR the lone member of its
 // group present in THIS lane) renders as today. First-appearance order is
-// preserved: the group renders where its earliest member sits.
-type LaneItem =
-  | { kind: 'single'; sp: ShorePoint }
-  | { kind: 'group'; groupId: string; members: ShorePoint[] };
-
+// preserved: the group renders where its earliest member sits. LaneItem is shared
+// with the Division view (exported there; DivisionBand.items is LaneItem[]).
 function groupLanePoints(points: ShorePoint[]): LaneItem[] {
   const byGroup = new Map<string, ShorePoint[]>();
   for (const sp of points) {
@@ -944,27 +941,38 @@ export function OperationsBoard() {
     [shorePoints, ghosts],
   );
 
+  // One shared filtered + enriched set feeding all three views (#435 dedup — the
+  // board lanes, the List, and the Division bands ran the SAME predicate + pending-
+  // reason enrichment three times). Excludes soft-deleted (#319); applies the board
+  // filter (#248) then the "Mine" lens (#370, which ANDs on top). The pending-reason
+  // enrichment is display-only — it never re-serializes (ShorePointPatch has no such
+  // field; events are built from live SPs).
+  const visiblePoints = useMemo<ShorePoint[]>(
+    () =>
+      displayPoints
+        .filter(
+          (sp) =>
+            sp.deletedAt == null &&
+            (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
+            (!filterDivision || sp.division === filterDivision) &&
+            (!filterArea || (sp.area ?? '') === filterArea) &&
+            (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus) &&
+            (!mineOn || !mineAvailable || mineKeys.includes(sp.assignedResource ?? '')),
+        )
+        .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp)),
+    [displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys],
+  );
+
   const byStatus = useMemo(() => {
     const map: Record<ShorePointStatus, ShorePoint[]> = {
       pending: [], process: [], strutset: [], cutting: [],
       runner: [], secured: [], returned: [],
     };
-    for (let i = displayPoints.length - 1; i >= 0; i--) {
-      const sp = displayPoints[i]!;
-      // Soft-deleted (#319): out of the lanes entirely, so counts/summary exclude it.
-      if (sp.deletedAt != null) continue;
-      // Board filter (#248): hide points outside the chosen building/division/area.
-      if (filterBuilding && (sp.building ?? '') !== filterBuilding) continue;
-      if (filterDivision && sp.division !== filterDivision) continue;
-      if (filterArea && (sp.area ?? '') !== filterArea) continue;
-      if (filterApparatus && (sp.assignedResource ?? '') !== filterApparatus) continue;
-      // "Mine" lens (#370): narrows FURTHER on top of the filters above (AND, never
-      // replaces them). A no-op when unavailable (no My Role / no apparatus on it) —
-      // the toggle stays inert rather than silently hiding the whole board.
-      if (mineOn && mineAvailable && !mineKeys.includes(sp.assignedResource ?? '')) continue;
-      // Display-only enrichment — the computed reason never re-serializes
-      // (ShorePointPatch has no such field; events are built from live SPs).
-      map[sp.status].push(sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp);
+    // visiblePoints is display-order (oldest-first); iterate in reverse so each lane
+    // defaults to newest-first (added-newest) before sortMode is applied below.
+    for (let i = visiblePoints.length - 1; i >= 0; i--) {
+      const sp = visiblePoints[i]!;
+      map[sp.status].push(sp);
     }
     // Default sort (#248): division → area within each lane. The loop builds
     // newest-first, so 'added-newest' needs no sort; 'added-oldest' reverses (#356).
@@ -974,25 +982,14 @@ export function OperationsBoard() {
       for (const lane of Object.values(map)) lane.reverse();
     }
     return map;
-  }, [displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, sortMode]);
+  }, [visiblePoints, sortMode]);
 
   // List view (#356): every visible point in one column, grouped shores kept as
   // one stack (Alex's call), sorted by the list's own key. A group sits at its
   // front leg (groupIndex 0) — ponytail: least-advanced leg if the field wants it.
   const listItems = useMemo(() => {
     const order = new Map(shorePoints.map((sp, i) => [sp.id, i] as const)); // 'added' = array order
-    const visible = displayPoints
-      .filter(
-        (sp) =>
-          sp.deletedAt == null &&
-          (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
-          (!filterDivision || sp.division === filterDivision) &&
-          (!filterArea || (sp.area ?? '') === filterArea) &&
-          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus) &&
-          (!mineOn || !mineAvailable || mineKeys.includes(sp.assignedResource ?? '')),
-      )
-      .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
-    const items = groupLanePoints(visible);
+    const items = groupLanePoints(visiblePoints);
     // Front leg (lowest groupIndex) carries the group's location/added identity.
     const rep = (it: LaneItem) => (it.kind === 'group' ? it.members[0]! : it.sp);
     // For STATUS sort a split-status group sits at its LEAST-ADVANCED leg, so a
@@ -1013,7 +1010,7 @@ export function OperationsBoard() {
       }
       return compareShorePointsByLocation(ra, rb);
     });
-  }, [shorePoints, displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys, listSort]);
+  }, [shorePoints, visiblePoints, listSort]);
 
   // Division view (tri-view): the same visible set, grouped into floor bands top
   // (highest Div) → ground → basement (lowest Sub), matching the building cross-
@@ -1022,21 +1019,9 @@ export function OperationsBoard() {
   // free-text divisions ("Roof"), which collect in a trailing "Unplaced" band so
   // they're never silently dropped (Principle 7). Grouped shores stay one stack.
   const divisionBands = useMemo(() => {
-    const visible = displayPoints
-      .filter(
-        (sp) =>
-          sp.deletedAt == null &&
-          (!filterBuilding || (sp.building ?? '') === filterBuilding) &&
-          (!filterDivision || sp.division === filterDivision) &&
-          (!filterArea || (sp.area ?? '') === filterArea) &&
-          (!filterApparatus || (sp.assignedResource ?? '') === filterApparatus) &&
-          (!mineOn || !mineAvailable || mineKeys.includes(sp.assignedResource ?? '')),
-      )
-      .map((sp) => (sp.status === 'pending' ? { ...sp, pendingReason: pendingReasons.get(sp.id) } : sp));
-
     // Group by the raw division string, then order the bands by floor (descending).
     const byKey = new Map<string, ShorePoint[]>();
-    for (const sp of visible) {
+    for (const sp of visiblePoints) {
       const arr = byKey.get(sp.division);
       if (arr) arr.push(sp);
       else byKey.set(sp.division, [sp]);
@@ -1056,7 +1041,7 @@ export function OperationsBoard() {
         ),
       }))
       .sort((a, b) => compareDivisionValues(a.division, b.division));
-  }, [displayPoints, pendingReasons, filterBuilding, filterDivision, filterArea, filterApparatus, mineOn, mineAvailable, mineKeys]);
+  }, [visiblePoints]);
 
   // Soft-deleted points (#319), most-recently-deleted first.
   const deleted = useMemo(

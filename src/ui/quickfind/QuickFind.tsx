@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Deductions, ShorePoint, WoodSizeId } from '@core/schema';
 import { NO_DEDUCTIONS } from '@core/schema';
-import { BASE_PLATES, plateHeight, sysKeyOf, woodHeight, type StrutSysKey } from '@core/load';
+import { BASE_PLATES, parseLoad, plateHeight, sysKeyOf, woodHeight, type StrutSysKey } from '@core/load';
 import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
 import { Button, EmptyState, MeasurementValue, Sheet, TextField, useHasRailNav } from '@ui/primitives';
 import { useInventory } from '@ui/hooks';
@@ -11,9 +11,6 @@ import { RecommendationCard } from '@ui/operations/RecommendationCard';
 import { MeasurementInput } from './MeasurementInput';
 import { DeductionPicker, LedgerChevron, appliedSummary } from './DeductionPicker';
 import { SystemFilter } from './SystemFilter';
-
-/** v3 MAX_LOAD_LBS — estimated load upper bound (planning input only). */
-const MAX_LOAD_LBS = 500_000;
 
 /**
  * QuickFind — the standalone strut calculator and the app's guest cold-open
@@ -47,9 +44,7 @@ export function QuickFind() {
   }, [inventory]);
 
   const effective = effectiveLengthFrom(measurementEighths, deductions);
-  const loadTrim = estimatedLoad.trim();
-  const loadNum = loadTrim === '' ? 0 : Number(loadTrim);
-  const loadValid = loadTrim === '' || (Number.isFinite(loadNum) && loadNum >= 0 && loadNum <= MAX_LOAD_LBS);
+  const { loadNum, loadValid } = parseLoad(estimatedLoad);
 
   const disabledReason =
     measurementEighths <= 0

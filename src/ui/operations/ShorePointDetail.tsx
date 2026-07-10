@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { FieldShoreEvent, ShorePoint, WoodSizeId } from '@core/schema';
 import { BASE_PLATES, WOOD_SIZES } from '@core/load';
-import { divisionLabel, sideLabel } from '@core/operation';
 import {
   componentLabel,
   deductionTotalInches,
@@ -14,6 +13,7 @@ import {
 import { Badge, MeasurementValue, WarningGate } from '@ui/primitives';
 import { useShorePointHistory } from '@ui/hooks';
 import { pieceIdentity } from './pieceIdentity';
+import { cardLocation } from './cardParts';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { shoreSafety } from './shoreSafety';
 
@@ -109,12 +109,7 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
   const bom = sp.deployedBom ?? [];
   const rigs = deployedRigs(sp);
 
-  const where = [
-    ...(sp.building ? [sp.building] : []),
-    divisionLabel(sp.division),
-    ...(sp.side ? [sideLabel(sp.side)] : []),
-    ...(sp.area ? [sp.area] : []),
-  ].join(' · ');
+  const where = cardLocation(sp);
 
   const ledger = [
     woodRow('Header', sp.deductions.headerWood),

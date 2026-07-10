@@ -24,7 +24,7 @@ interface BandTile {
   count: number;
 }
 
-type LaneItem =
+export type LaneItem =
   | { kind: 'single'; sp: ShorePoint }
   | { kind: 'group'; groupId: string; members: ShorePoint[] };
 

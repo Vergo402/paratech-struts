@@ -5,6 +5,7 @@ import { InlineSegmented } from '@ui/picker';
 import { APP_VERSION } from '@core/version';
 import { useTheme, type ThemePreference } from '../../theme';
 import { SETTINGS_PAGES, type SettingsPage } from '../../shell/settingsPages';
+import { initialsOf } from './initials';
 
 /**
  * The /settings index. Desktop carries the nav in the rail, so the index just
@@ -23,13 +24,6 @@ const THEME_OPTIONS = [
   { value: 'dark', label: 'Dark' },
   { value: 'sunlight', label: 'Sunlight' },
 ] as const;
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
-}
 
 function PageRow({ page }: { page: SettingsPage }) {
   return (

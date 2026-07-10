@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { ChecklistNode, ChecklistTemplate } from '@core/schema';
 import type { ChecklistInstance } from '@core/checklist';
 import { isLeaf, sectionProgress, isComplete } from '@core/checklist';
+import { clockTime } from '@ui/util/time';
 
 /**
  * NestedChecklist — the doctrine-attestation tree (nested-checklist.md, #196). One
@@ -41,11 +42,6 @@ function Box({ state }: { state: 'checked' | 'unchecked' | 'partial' }) {
       {state === 'partial' && <span className="fs-ck-bar" />}
     </span>
   );
-}
-
-function clockTime(at: number): string {
-  const d = new Date(at);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
 function Leaf({ node, attestations, onCheck, onUncheck, readOnly, depth }: {

@@ -1,6 +1,7 @@
 import type { Briefing } from '@core/checklist';
 import { Button, Modal, NestedChecklist } from '@ui/primitives';
 import { useChecklists, useChecklistTemplate } from '@ui/hooks';
+import { clockTime } from '@ui/util/time';
 
 // The ORM/TCRM risk briefing (#205) as a full-screen form Modal (per the
 // modal-vs-sheet doctrine for forms — NOT a sheet). The 4-step briefing + 5 crew
@@ -9,11 +10,6 @@ import { useChecklists, useChecklistTemplate } from '@ui/hooks';
 // RECORDS that it happened — it NEVER gates crew entry, deployment, or any status
 // advance (Principle 10). The "Speak" step names the radio/face-to-face stop
 // authority; it does not implement an app block. (Flag for the Phase J audit.)
-
-function clockTime(at: number): string {
-  const d = new Date(at);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
 
 export function OrmBriefingModal({
   open,

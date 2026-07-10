@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { BuildingSide, Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
-import { SHORE_TYPES } from '@core/load';
+import { SHORE_TYPES, parseLoad } from '@core/load';
 import { newId } from '@core/id';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
@@ -23,14 +23,12 @@ import { DivisionPicker } from './DivisionPicker';
 import { BuildingPicker } from './BuildingPicker';
 import { SidePicker } from './SidePicker';
 import { RecommendationCard, comboModel } from './RecommendationCard';
+import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardParts';
 
-// Short labels for the form control; full names (`Vertical T-Shore`, …) stay in
-// the verbatim-ported SHORE_TYPES catalog (core/load/plates.ts) — display only.
-const SHORE_TYPE_OPTIONS = [
-  { value: 't-shore', label: 'T-Shore' },
-  { value: 'double-t', label: 'Double-T' },
-  { value: '3-post', label: '3-Post' },
-] as const;
+// Options for the shore-type form control, derived from the shared label map (one
+// source of truth; #435 dedup) in the canonical SHORE_TYPES catalog order. Full
+// names (`Vertical T-Shore`, …) stay in that catalog (core/load/plates.ts).
+const SHORE_TYPE_OPTIONS = SHORE_TYPES.map((t) => ({ value: t.id, label: SHORE_TYPE_LABELS[t.id] }));
 
 // v3.9.1 lesson: ONLY 3-Post auto-fills its wood (6×6 per USACE/FEMA spec).
 // T-Shore / Double-T can be built 4×4 or 6×6 by load and span — the operator
@@ -42,9 +40,6 @@ const THREE_POST_WOOD: Pick<Deductions, 'headerWood' | 'footerWood'> = {
 
 /** Total-cards sanity threshold (shores × struts/shore) — warn, never block (#220 OQ2). */
 const QTY_WARN_THRESHOLD = 10;
-
-/** v3 MAX_LOAD_LBS — estimated load upper bound (planning input only). */
-const MAX_LOAD_LBS = 500_000;
 
 const shoreTypeLabel = (id: ShoreTypeId) => SHORE_TYPE_OPTIONS.find((o) => o.value === id)!.label;
 const strutsPerShoreOf = (id: ShoreTypeId) => SHORE_TYPES.find((t) => t.id === id)!.strutsPerShore;
@@ -187,9 +182,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
 
   // Estimated load (lbs) — optional planning input feeding the engine's capacity
   // gating. Blank = 0 (no-load). Must be non-negative and within range.
-  const loadTrim = estimatedLoad.trim();
-  const loadNum = loadTrim === '' ? 0 : Number(loadTrim);
-  const loadValid = loadTrim === '' || (Number.isFinite(loadNum) && loadNum >= 0 && loadNum <= MAX_LOAD_LBS);
+  const { loadNum, loadValid } = parseLoad(estimatedLoad);
 
   const buildingRequired = !!operation?.multiBuilding;
   // Distinct buildings already placed in this op — the BuildingPicker's list. A
@@ -635,8 +628,8 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
             {found && recommendations.length === 0 && noResultsReason === 'no-match' && (
               <EmptyState
                 variant="filtered"
-                headline="No matching struts"
-                reason="Nothing fits this opening at this load — adjust deductions or re-measure"
+                headline={NO_MATCH_EMPTY.headline}
+                reason={NO_MATCH_EMPTY.reason}
               />
             )}
             {found && recommendations.length === 0 && noResultsReason === 'no-inventory' && (
@@ -649,8 +642,8 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
             {found && recommendations.length === 0 && noResultsReason === 'over-capacity' && (
               <EmptyState
                 variant="upstream-blocked"
-                headline="Over capacity"
-                reason="A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering"
+                headline={OVER_CAPACITY_EMPTY.headline}
+                reason={OVER_CAPACITY_EMPTY.reason}
               />
             )}
             {deployError && (

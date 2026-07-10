@@ -13,6 +13,7 @@ import {
 } from '@core/schema';
 import { permissionSummary } from './permissionSummary';
 import { AssignRoleSheet } from './AssignRoleSheet';
+import { BackIcon, LockIcon } from './icons';
 import { RoleEditorSheet } from './RoleEditorSheet';
 import './admin.css';
 
@@ -22,25 +23,10 @@ const FACE_OPTIONS = [
   { value: 'roles' as const, label: 'Roles' },
 ];
 
-function BackIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
-      <path d="M13 5l-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 function ChevronIcon() {
   return (
     <svg className="fs-um-chevron" width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path d="M7 4l5 5-5 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function LockIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-      <rect x="2.5" y="5.5" width="8" height="5.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M4 5.5V4a2.5 2.5 0 015 0v1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
     </svg>
   );
 }

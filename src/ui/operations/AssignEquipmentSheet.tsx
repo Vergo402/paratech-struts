@@ -11,6 +11,7 @@ import { useCommit, useCommitMany, useDeviceUid, useInventory, useRecommendation
 import { RecommendationCard, comboModel } from './RecommendationCard';
 import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
+import { NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardParts';
 
 /**
  * Assign Equipment — the Pending card's primary action (#221 step 2). A
@@ -338,8 +339,8 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       {sp && recommendations.length === 0 && reason === 'no-match' && (
         <EmptyState
           variant="filtered"
-          headline="No matching struts"
-          reason="Nothing fits this opening at this load — adjust deductions or re-measure"
+          headline={NO_MATCH_EMPTY.headline}
+          reason={NO_MATCH_EMPTY.reason}
         />
       )}
       {sp && !resolving && recommendations.length === 0 && reason === 'no-inventory' && (
@@ -367,8 +368,8 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed }: As
       {sp && recommendations.length === 0 && reason === 'over-capacity' && (
         <EmptyState
           variant="upstream-blocked"
-          headline="Over capacity"
-          reason="A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering"
+          headline={OVER_CAPACITY_EMPTY.headline}
+          reason={OVER_CAPACITY_EMPTY.reason}
         />
       )}
     </Modal>
