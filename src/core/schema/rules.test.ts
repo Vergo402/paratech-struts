@@ -232,10 +232,23 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(parentRead).toContain(".child('active').val() != false"); // active-aware (#381)
   });
 
-  it('leaves v3 rules byte-for-byte untouched (the namespace-safety guard)', () => {
-    expect(committed.rules.departments.$deptId.members.$uid['.validate']).toBe('newData.isBoolean()');
+  it('legacy trees are locked down — v4-dead /departments denied, live side-channels hardened (#424)', () => {
+    // /departments is v4-dead (v4 writes nothing there; v3 prod is paratech-c3ab4,
+    // NOT this project) — pre-#424 its permissive v3 rules let any signed-in user
+    // write unlimited junk. Now deny-all.
+    expect(committed.rules.departments).toEqual({ '.read': false, '.write': false });
+    // /feedback IS a live v4 write path (feedbackService) — write-once, typed,
+    // capped, and NOT client-readable (pre-#424 any signed-in user read ALL feedback).
+    expect(committed.rules.feedback['.read']).toBe(false);
+    expect(committed.rules.feedback.$feedbackId['.write']).toBe('auth != null && !data.exists()');
+    expect(committed.rules.feedback.$feedbackId['.validate']).toContain("matches(/^(bug|idea|other)$/)");
+    expect(committed.rules.feedback.$feedbackId['.validate']).toContain('length <= 5000');
+    // /diagnostics IS a live v4 write path (logSyncEvent) — write-once, no client read.
+    expect(committed.rules.diagnostics['.read']).toBe(false);
+    expect(committed.rules.diagnostics.sync.$logId['.write']).toBe('auth != null && !data.exists()');
+    // the catch-all denies everything else
     expect(committed.rules.$other).toEqual({ '.read': false, '.write': false });
-    // /orgs is a sibling of /departments, never nested inside it
+    // /orgs is a top-level sibling, never nested inside a legacy tree
     expect(committed.rules.departments.orgs).toBeUndefined();
   });
 });

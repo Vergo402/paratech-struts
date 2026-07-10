@@ -1,131 +1,21 @@
 {
   "rules": {
     "departments": {
-      "$deptId": {
-        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
-        ".write": "auth != null && (data.child('members').child(auth.uid).exists() || !data.child('members').exists())",
-        "name": {
-          ".validate": "newData.isString() && newData.val().length <= 100"
-        },
-        "members": {
-          "$uid": {
-            ".write": "auth != null && $uid === auth.uid",
-            ".validate": "newData.isBoolean()"
-          }
-        },
-        "inventory": {
-          "$itemId": {
-            ".validate": "newData.hasChildren(['model', 'quantity', 'available'])",
-            "_meta": {
-              "lastVerifiedAt": {
-                ".validate": "newData.isNumber()"
-              }
-            }
-          }
-        },
-        "apparatus": {
-          "$appId": {
-            ".validate": "newData.hasChildren(['name', 'type'])"
-          }
-        },
-        "operations": {
-          ".indexOn": ["status"],
-          "$opId": {
-            ".validate": "newData.hasChild('name') && newData.hasChild('status')",
-            "_meta": {
-              "roleHierarchyMigratedAt": {
-                ".validate": "newData.isNumber()"
-              }
-            },
-            "shorePoints": {
-              "$spId": {
-                "status": {
-                  ".validate": "newData.isString() && newData.val().matches(/^(pending|process|strutplaced|cutting|runner|secured|returned)$/)"
-                },
-                "requiredLength": {
-                  ".validate": "newData.isNumber() && newData.val() >= 12 && newData.val() <= 500"
-                },
-                "estimatedLoad": {
-                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500000"
-                },
-                "label": {
-                  ".validate": "newData.isString() && newData.val().length <= 200"
-                },
-                "group": {
-                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
-                },
-                "assignedResource": {
-                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
-                },
-                "division": {
-                  ".validate": "!newData.exists() || (newData.isNumber() && newData.val() >= -50 && newData.val() <= 200) || (newData.isString() && newData.val().length <= 100)"
-                },
-                "divisionLegacyLabel": {
-                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 100)"
-                },
-                "allocConflict": {
-                  ".validate": "!newData.exists() || newData.isBoolean()"
-                }
-              }
-            },
-            "roles": {
-              "$targetId": {
-                ".validate": "newData.isString() && newData.val().length <= 64"
-              }
-            },
-            "customRoles": {
-              "$idx": {
-                ".validate": "newData.hasChildren(['id','name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 30"
-              }
-            },
-            "customRolesById": {
-              "$roleId": {
-                ".validate": "newData.hasChildren(['name','abbr']) && newData.child('name').isString() && newData.child('name').val().length <= 100 && newData.child('abbr').isString() && newData.child('abbr').val().length <= 30",
-                "assignedApparatusById": {
-                  "$appId": {
-                    ".validate": "newData.isBoolean()"
-                  }
-                }
-              }
-            },
-            "externalEquipment": {
-              "$itemId": {
-                "available": {
-                  ".validate": "newData.isNumber() && newData.val() >= 0 && (!newData.parent().child('quantity').exists() || newData.val() <= newData.parent().child('quantity').val())"
-                },
-                "quantity": {
-                  ".validate": "newData.isNumber() && newData.val() >= 0"
-                },
-                "_meta": {
-                  "lastVerifiedAt": {
-                    ".validate": "newData.isNumber()"
-                  }
-                }
-              }
-            },
-            "hazards": {
-              "$hazardId": {
-                ".validate": "newData.hasChildren(['type','location','severity','reportedAt']) && newData.child('location').isString() && newData.child('location').val().length <= 200 && newData.child('type').isString() && newData.child('severity').isString() && newData.child('severity').val().matches(/^(low|medium|high)$/)",
-                "notes": {
-                  ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 500)"
-                }
-              }
-            }
-          }
-        }
-      }
+      ".read": false,
+      ".write": false
     },
     "feedback": {
-      ".read": "auth != null",
+      ".read": false,
       "$feedbackId": {
-        ".write": "auth != null",
-        ".validate": "newData.hasChildren(['category', 'text', 'timestamp'])"
+        ".write": "auth != null && !data.exists()",
+        ".validate": "newData.hasChildren(['category', 'text', 'timestamp']) && newData.child('category').isString() && newData.child('category').val().matches(/^(bug|idea|other)$/) && newData.child('text').isString() && newData.child('text').val().length <= 5000 && newData.child('timestamp').isNumber()"
       }
     },
     "diagnostics": {
+      ".read": false,
       "sync": {
         "$logId": {
-          ".write": "auth != null",
+          ".write": "auth != null && !data.exists()",
           ".validate": "newData.hasChild('ts') && newData.hasChild('event')"
         }
       }

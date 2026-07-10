@@ -3,11 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { buildV4OrgsRules } from '../src/core/schema/rules';
 
 // Splice the generated v4 `orgs` block into database.rules.json WITHOUT
-// re-serializing the file — every v3 byte (including the inline `.indexOn`
-// array) is preserved exactly, so `git diff` shows ONLY the orgs block. Run via
-// `npm run gen:rules` whenever the department schemas change (L-11). v3 and v4
-// share one Firebase project + one rules file; if the diff ever touches a v3
-// key, do not deploy.
+// re-serializing the file — the non-orgs trees are preserved exactly, so
+// `git diff` shows ONLY the orgs block. Run via `npm run gen:rules` whenever
+// the department schemas change (L-11). This file deploys to the v4-only
+// `fieldshore-database` project (v3 prod is `paratech-c3ab4`, deployed from
+// main); the v3-era legacy trees here were locked down / hardened in #424 —
+// /departments deny-all, /feedback + /diagnostics write-once with no read.
 //
 // Idempotent: an existing orgs block is brace-matched and removed first, then a
 // fresh one is inserted. (The rule expressions contain no { } characters, so the

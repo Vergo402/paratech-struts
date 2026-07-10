@@ -8,11 +8,14 @@ import { Department, Member, Role, InviteCode, ADMIN_ROLE_ID, DEFAULT_ROLE_ID } 
 // fails until the committed file matches. Pure: no Firebase, no fs (the fs-side
 // assembly + v3 freeze live in scripts/gen-rules.ts).
 //
-// NAMESPACE — all v4 data lives under /orgs, a purely additive sibling of v3's
-// live /departments tree. v3 stores members as booleans; v4 stores member
-// objects with a role. Same project, one rules file: v3 stays byte-for-byte
-// untouched (scripts/gen-rules.ts copies it verbatim) and the drift test asserts
-// it. See ADR-009 (shared project) + ADR-017 (the role model).
+// NAMESPACE — all v4 data lives under /orgs. This rules file deploys ONLY to
+// the v4 `fieldshore-database` project (v3 prod is `paratech-c3ab4`, with its
+// own rules on main) — earlier "shared project" comments were stale (#424).
+// The v3-era legacy trees that rode along in this file are locked down:
+// /departments is deny-all (v4 never touches it); /feedback + /diagnostics ARE
+// live v4 write paths (feedbackService / logSyncEvent) and are hardened to
+// write-once with no client read. scripts/gen-rules.ts splices only the /orgs
+// block; the drift test asserts the lockdown holds. See ADR-017 (role model).
 //
 // SCOPE (this session) — only the rules an exercising client uses NOW: create a
 // department + read it back (workflow 07). Deferred to their own features, each
