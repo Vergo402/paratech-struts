@@ -101,7 +101,15 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       // be uid-verified pre-auth (the UI gates the button). Replay-safe (projection only).
       const ic = currentIC(state.positions);
       if (ic && ic.ref === 'device' && ic.value !== event.by) return state;
-      return { ...state, commandTransfer: { initiatedBy: event.by, toResource: event.toResource, at: event.at } };
+      return {
+        ...state,
+        commandTransfer: {
+          initiatedBy: event.by,
+          toResource: event.toResource,
+          at: event.at,
+          ...(event.claimCode ? { claimCode: event.claimCode } : {}), // #425
+        },
+      };
     }
 
     case 'CommandTransferAccepted': {

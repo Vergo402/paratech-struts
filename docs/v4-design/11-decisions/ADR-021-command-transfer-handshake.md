@@ -173,3 +173,34 @@ out loud and the incoming commander takes the tablet and taps. The tap records i
 carry the same device uid in `by`. The from/to/time record is derived from `Initiated.toResource` plus the
 prior IC, so the audit trail (N-1: time, from, to) is complete even though the actor column repeats the
 device.
+
+---
+
+## Addendum 2 — the 4-digit accept code for named targets (2026-07-10, [#425](https://github.com/Vergo402/paratech-struts/issues/425))
+
+**Problem.** The pre-Phase-J audit flagged that an individually-targeted transfer showed the full
+"⚑ You are being given command — Accept / Decline" banner on **every device on scene** — a direct
+consequence of the Addendum-1 soft claim (`canAccept` returns true for any uid when the target carries
+no uid to verify). The accept-from-anywhere capability was deliberate; the loud banner everywhere was
+not: on a large incident, every member's Command tab shouted a decision that belonged to one person,
+and any of them could fat-finger command.
+
+**Resolution (Alex, mockup approved 2026-07-09).** Named-individual and apparatus targets now mint a
+**4-digit accept code** on `CommandTransferInitiated` (`claimCode`, optional on the event schema):
+
+- The **outgoing IC's device** displays the code ("Accept code — give to {name} with the briefing")
+  — the code travels with the face-to-face/radio handoff, exactly where the ADR's verbal handshake
+  already happens. The #401 hand-the-tablet accept stays codeless (same device already shows it).
+- **Every other device** sees only the quiet "Transfer pending → {name} · Tap if this is you" line
+  (56px tap floor). Tapping it asks for the code; the matching code reveals Accept / Decline.
+- **Device-ref targets are unchanged** (strict uid match, loud banner on that one device, no code).
+- **Legacy pendings** (pre-#425 events, no `claimCode`) keep the old loud-banner behavior.
+
+**Scope of the check.** The code is a **fat-finger gate, not authentication**: `canAccept`'s soft
+claim is untouched, the Accept event carries no code, and the event log is member-readable anyway
+(a malicious member could read the code — the threat model here is mis-taps, not adversaries; real
+per-person auth arrives with authenticated role claims post-v4.0). The check lives in the UI only
+(`CommandRail`), which keeps the fold deterministic and replay-safe.
+
+**Invariant unchanged.** Still a two-party handshake, exactly one IC of record, command moves only on
+Accept, no push — the code just makes "the second party" mean the person who actually got the briefing.

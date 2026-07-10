@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { ShorePointStatus } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
 import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity, severityWord } from '@core/hazard';
-import { Badge, Button, Card, Segmented, Sheet, StatStrip, useIsDesktop } from '@ui/primitives';
+import { Badge, Button, Card, Segmented, Sheet, StatStrip, TextField, useIsDesktop } from '@ui/primitives';
 import { AlertIcon, ChevronRightIcon, FlagIcon, OrgGlyphIcon, PendingClockIcon } from './icons';
 import {
   useOperation,
@@ -55,6 +55,18 @@ export function CommandRail({
   const [transferOpen, setTransferOpen] = useState(false);
   const [rolloverOpen, setRolloverOpen] = useState(false);
   const [announce, setAnnounce] = useState('');
+  // #425 — the coded-pending claim flow on non-initiator devices: the quiet line
+  // expands to a 4-digit entry; the right code reveals Accept/Decline. Keyed reset:
+  // a new pending (or its clear) discards any half-typed claim.
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [codeDraft, setCodeDraft] = useState('');
+  const pendingKey = pending ? `${pending.at}:${pending.initiatedBy}` : null;
+  const lastPendingKey = useRef(pendingKey);
+  if (lastPendingKey.current !== pendingKey) {
+    lastPendingKey.current = pendingKey;
+    if (claimOpen) setClaimOpen(false);
+    if (codeDraft) setCodeDraft('');
+  }
 
   const counts = useMemo(() => {
     const m = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<ShorePointStatus, number>;
@@ -180,19 +192,32 @@ export function CommandRail({
 
       {/* Pending handshake states (mutually exclusive). The INITIATOR always sees the
           pending/cancel view — it takes precedence over canAccept, which is true for
-          any device when the recipient is an individual (soft claim, transfer.ts). */}
+          any device when the recipient is an individual (soft claim, transfer.ts).
+          #425: coded pendings (individual/apparatus targets) show every OTHER device
+          only the quiet line; tapping it asks for the 4-digit accept code before
+          Accept/Decline appears. Device targets (uid-verified) and pre-#425 legacy
+          pendings (no claimCode) keep the loud banner. */}
       {pending && pending.initiatedBy === uid ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--pending">
           <span className="fs-cmd-xfer-pending-text">
             <PendingClockIcon /> Transfer pending → {pending.toResource.label}
           </span>
+          {pending.claimCode && (
+            <div className="fs-cmd-xfer-code">
+              <span className="fs-cmd-xfer-code-label">
+                Accept code — give to {pending.toResource.label} with the briefing:
+              </span>
+              <span className="fs-cmd-xfer-code-digits">{pending.claimCode}</span>
+            </div>
+          )}
           <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled' })}>
             Cancel transfer
           </Button>
           {/* Hand-the-tablet accept (#401) — the single-device completion of ADR-021.
               Named individual/apparatus targets only: canAccept (transfer.ts) already
               lets any uid accept on a named commander's behalf; a device-ref target
-              keeps the strict named-device Accept, so this section never renders for it. */}
+              keeps the strict named-device Accept, so this section never renders for it.
+              No code needed here — the initiator's device already shows it. */}
           {pending.toResource.ref !== 'device' && (
             <div className="fs-cmd-xfer-handover">
               <span className="fs-cmd-xfer-handover-head">Accepting on this device?</span>
@@ -206,7 +231,7 @@ export function CommandRail({
             </div>
           )}
         </Card>
-      ) : pending && canAccept(pending, uid ?? '') ? (
+      ) : pending && !pending.claimCode && canAccept(pending, uid ?? '') ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
           <span className="fs-cmd-xfer-head">
             <FlagIcon /> You are being given command
@@ -224,6 +249,49 @@ export function CommandRail({
             </Button>
           </div>
         </Card>
+      ) : pending && pending.claimCode ? (
+        !claimOpen ? (
+          <button type="button" className="fs-cmd-xfer-quiet fs-cmd-xfer-quiet--claim" onClick={() => setClaimOpen(true)}>
+            <PendingClockIcon /> Transfer pending → {pending.toResource.label}
+            <span className="fs-cmd-xfer-claimhint">Tap if this is you</span>
+          </button>
+        ) : (
+          <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
+            <span className="fs-cmd-xfer-head">
+              <FlagIcon /> Enter the accept code
+            </span>
+            <span className="fs-cmd-xfer-sub">
+              {pending.toResource.label} — the 4-digit code that came with the command briefing from{' '}
+              {ic?.label ?? 'the current IC'}.
+            </span>
+            <TextField
+              label="Accept code"
+              value={codeDraft}
+              onChange={(v) => setCodeDraft(v.replace(/\D/g, '').slice(0, 4))}
+              inputMode="numeric"
+              maxLength={4}
+              error={
+                codeDraft.length === 4 && codeDraft !== pending.claimCode
+                  ? 'That code doesn’t match — check it with the outgoing commander.'
+                  : undefined
+              }
+            />
+            {codeDraft === pending.claimCode ? (
+              <div className="fs-cmd-xfer-actions">
+                <Button variant="primary" size="standard" onPress={acceptTransfer}>
+                  Accept command
+                </Button>
+                <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined' })}>
+                  Decline
+                </Button>
+              </div>
+            ) : (
+              <Button variant="tertiary" size="standard" onPress={() => { setClaimOpen(false); setCodeDraft(''); }}>
+                Not me — close
+              </Button>
+            )}
+          </Card>
+        )
       ) : pending ? (
         <div className="fs-cmd-xfer-quiet">
           <PendingClockIcon /> Transfer pending → {pending.toResource.label}

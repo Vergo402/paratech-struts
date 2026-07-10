@@ -42,6 +42,17 @@ describe('command transfer (ADR-021 handshake)', () => {
     expect(orgReducer(s, initiate('intruder', INCOMING_PERSON))).toBe(s); // non-IC → no-op
   });
 
+  it('a claimCode rides the fold onto pending; a codeless initiate stays codeless (#425)', () => {
+    let s = seedOrgState(OP, DEV);
+    s = orgReducer(s, { ...initiate(DEV, INCOMING_PERSON), claimCode: '4729' } as FieldShoreEvent);
+    expect(s.commandTransfer?.claimCode).toBe('4729');
+    // the code is a UI fat-finger gate, NOT authentication — canAccept's soft claim unchanged
+    expect(canAccept(s.commandTransfer, 'any-device')).toBe(true);
+    let s2 = seedOrgState(OP, DEV);
+    s2 = orgReducer(s2, initiate(DEV, INCOMING_PERSON));
+    expect('claimCode' in (s2.commandTransfer ?? {})).toBe(false); // absent, not undefined-serialized
+  });
+
   it('accept moves command + clears pending; the gold IC follows', () => {
     let s = seedOrgState(OP, DEV);
     s = orgReducer(s, initiate(DEV, INCOMING_PERSON));

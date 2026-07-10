@@ -1866,3 +1866,42 @@
 .fs-rollup-allrow .fs-rollup-cell.col-runner   { color: var(--status-runner-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-secured  { color: var(--status-secured-text); }
 .fs-rollup-allrow .fs-rollup-cell.col-returned { color: var(--status-returned-text); }
+
+/* #425 — the coded-transfer surfaces. The initiator's code block: the 4 digits the
+   outgoing IC reads to the incoming commander with the briefing. */
+.fs-cmd-xfer-code {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+}
+.fs-cmd-xfer-code-label {
+  font: var(--type-caption);
+  color: var(--text-secondary);
+}
+.fs-cmd-xfer-code-digits {
+  font: var(--type-mono-hero);
+  letter-spacing: 0.35em;
+  color: var(--accent);
+}
+
+/* The tappable quiet line on every non-initiator device (56px gloved floor). */
+.fs-cmd-xfer-quiet--claim {
+  width: 100%;
+  min-height: 56px;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-input);
+  background: none;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  cursor: pointer;
+}
+.fs-cmd-xfer-claimhint {
+  margin-left: auto;
+  font: var(--type-caption);
+  color: var(--accent);
+  white-space: nowrap;
+}

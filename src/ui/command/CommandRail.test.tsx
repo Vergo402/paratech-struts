@@ -72,6 +72,69 @@ describe('CommandRail — hand-the-tablet accept (#401)', () => {
   });
 });
 
+describe('CommandRail — 4-digit accept code (#425)', () => {
+  const coded = (): PendingTransfer => ({ initiatedBy: 'someone-else', toResource: PERSON, at: 1, claimCode: '4729' });
+
+  it('a coded pending shows every other device only the quiet tappable line — no loud banner', () => {
+    pending = coded();
+    render(<CommandRail />);
+    expect(screen.queryByText('You are being given command')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept command' })).not.toBeInTheDocument();
+    const line = screen.getByRole('button', { name: /Transfer pending → BC Smith/ });
+    expect(line).toHaveTextContent('Tap if this is you');
+  });
+
+  it('tapping the line asks for the code; the RIGHT code reveals Accept/Decline', async () => {
+    pending = coded();
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    await user.click(screen.getByRole('button', { name: /Transfer pending → BC Smith/ }));
+    expect(screen.getByText('Enter the accept code')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Accept code'), '4729');
+    await user.click(screen.getByRole('button', { name: 'Accept command' }));
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+  });
+
+  it('a WRONG code shows the mismatch error and never reveals Accept', async () => {
+    pending = coded();
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    await user.click(screen.getByRole('button', { name: /Transfer pending → BC Smith/ }));
+    await user.type(screen.getByLabelText('Accept code'), '1111');
+    expect(screen.getByText(/doesn’t match/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Accept command' })).not.toBeInTheDocument();
+  });
+
+  it('the INITIATOR device shows the code to hand off with the briefing', () => {
+    pending = { ...coded(), initiatedBy: 'dev-1' };
+    render(<CommandRail />);
+    expect(screen.getByText('4729')).toBeInTheDocument();
+    expect(screen.getByText(/give to BC Smith/i)).toBeInTheDocument();
+  });
+
+  it('a LEGACY codeless individual pending keeps the loud banner (back-compat)', () => {
+    pending = { initiatedBy: 'someone-else', toResource: PERSON, at: 1 };
+    render(<CommandRail />);
+    expect(screen.getByText('You are being given command')).toBeInTheDocument();
+  });
+
+  it('a device-targeted pending stays loud on the named device only, codeless', () => {
+    pending = { initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
+    render(<CommandRail />);
+    expect(screen.getByText('You are being given command')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Accept code')).not.toBeInTheDocument();
+  });
+
+  it('"Not me — close" collapses the entry back to the quiet line', async () => {
+    pending = coded();
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    await user.click(screen.getByRole('button', { name: /Transfer pending → BC Smith/ }));
+    await user.click(screen.getByRole('button', { name: 'Not me — close' }));
+    expect(screen.getByRole('button', { name: /Transfer pending → BC Smith/ })).toBeInTheDocument();
+  });
+});
+
 describe('CommandRail — PAR/pending-sync indicator (#352)', () => {
   it('shows no pending-sync figure when nothing is pending sync', () => {
     pendingResourceCount = 0;

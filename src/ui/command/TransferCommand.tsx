@@ -21,6 +21,17 @@ import { BackChevronIcon, CheckIcon } from './icons';
  * separate assignment). The brief is the live six-datum ICS-201 snapshot, derived, no
  * manual entry.
  */
+// 4 digits, crypto-random, bias-free (256 % 10 ≠ 0, so use rejection-free scaling
+// via two bytes per digit — overkill-simple: one byte, reject ≥250).
+function mintClaimCode(): string {
+  let out = '';
+  while (out.length < 4) {
+    const [b] = crypto.getRandomValues(new Uint8Array(1));
+    if (b! < 250) out += String(b! % 10);
+  }
+  return out;
+}
+
 export function TransferCommand({ open, onClose }: { open: boolean; onClose: () => void }) {
   const positions = useOrg();
   const emit = useOrgCommit();
@@ -77,7 +88,13 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
 
   const transfer = () => {
     if (!toResource) return;
-    emit({ type: 'CommandTransferInitiated', toResource });
+    // #425 — individual/apparatus targets carry no uid, so the transfer mints a
+    // 4-digit accept code: shown on THIS (outgoing) device, spoken with the
+    // face-to-face/radio handoff, typed by the incoming commander to unlock
+    // Accept/Decline. Device targets are uid-verified — no code. Spread
+    // conditionally (RTDB rejects undefined).
+    const claimCode = toResource.ref === 'device' ? null : mintClaimCode();
+    emit({ type: 'CommandTransferInitiated', toResource, ...(claimCode ? { claimCode } : {}) });
     onClose();
   };
 

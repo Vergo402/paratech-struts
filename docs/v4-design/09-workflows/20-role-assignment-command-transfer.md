@@ -251,6 +251,17 @@ event as the two-device path. On accept the app announces **"Command transferred
 polite `aria-live` region. Device-ref targets are unchanged — only the named device sees Accept. (Covers
 the Level IV single-BC-arrival case: one shared command tablet, no second session.)
 
+**The 4-digit accept code ([#425](https://github.com/Vergo402/paratech-struts/issues/425), 2026-07-10,
+ADR-021 Addendum 2).** For **named-individual and apparatus targets** — where the app has no uid to
+verify — the initiate mints a 4-digit accept code shown on the **outgoing IC's card** ("Accept code —
+give to {name} with the briefing"). Every **other** device sees only a quiet, tappable
+**"⏳ Transfer pending → {name} · Tap if this is you"** line (56px floor) — no full banner. Tapping it
+asks for the code; the matching code reveals Accept / Decline ("That code doesn't match" otherwise, with
+a "Not me — close" out). The code rides the verbal handshake the radio rule already requires; it is a
+fat-finger gate, not authentication (`canAccept`'s soft claim is unchanged). Device-ref targets keep the
+strict uid-matched banner on that one device, codeless; pre-#425 pendings without a code keep the old
+banner behavior. The #401 same-device accept stays codeless (that device already displays the code).
+
 **Never a no-IC state:** because command only leaves on Accept, there is always exactly one IC of
 record — so the IC-gated [End Operation](16-end-of-operation.md) is always reachable, even if the incoming
 IC is offline and never accepts ([ADR-021](../11-decisions/ADR-021-command-transfer-handshake.md)).
@@ -286,7 +297,7 @@ only the IC edits structure.
 |---|---|---|
 | Any device | 1 | Sets its own My Role; the org chart reflects the staffing on next sync |
 | IC's **tablet** (CP) | 2–4 | Assigns resources, reparents (drag), **initiates** transfer; stays IC while Pending |
-| Incoming IC's **phone** | 4-P | On next sync: a prominent **pending-acceptance** state ("You are being given command"); taps **Accept** → becomes IC (or **Decline**) |
+| Incoming IC's **phone** | 4-P | On next sync: device-targeted → the prominent "You are being given command" state; named-person/apparatus → the quiet **Tap if this is you** line, then the **4-digit accept code** unlocks Accept / Decline ([#425](https://github.com/Vergo402/paratech-struts/issues/425)) |
 | IC's shared **tablet** (single device) | 4-P | The pending card also offers "{name}: Accept command" (named-individual targets only, [#401](https://github.com/Vergo402/paratech-struts/issues/401)) — brief, hand the tablet, tap Accept |
 | Operations Section Chief's **device** | — | On next sync: org chart updates; read-only |
 | **Broadcast** (C-13) | — | On next sync: the IC name in the header changes only **after Accept** (never on a still-pending transfer) |

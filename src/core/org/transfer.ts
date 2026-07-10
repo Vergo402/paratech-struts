@@ -12,6 +12,10 @@ export interface PendingTransfer {
   initiatedBy: string; //        the outgoing IC's uid (event.by at initiate time)
   toResource: OrgResourceRef; //  the named incoming commander
   at: number; //                  epoch ms of the initiate
+  /** #425 — the 4-digit accept code for individual/apparatus targets. UI-only
+   *  gate (canAccept's soft claim unchanged); absent = pre-#425 event or a
+   *  device target (uid-verified, no code needed). */
+  claimCode?: string;
 }
 
 // The IC node = the single root command position (parentId null). undefined before seed.

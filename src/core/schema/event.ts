@@ -294,6 +294,15 @@ export const CommandTransferInitiated = z.object({
   type: z.literal('CommandTransferInitiated'),
   ...base,
   toResource: OrgResourceRef, // the named incoming commander (individual or device)
+  // #425 — the 4-digit accept code for individual/apparatus targets (no uid to
+  // verify pre-auth): the outgoing IC's device shows it, the incoming commander
+  // types it to unlock Accept/Decline; everyone else sees only a quiet pending
+  // line. A fat-finger gate, NOT authentication (the log is member-readable) —
+  // canAccept's soft claim is unchanged; the check is UI-only (ADR-021 addendum).
+  // Absent on device-targeted transfers and on every pre-#425 event (legacy
+  // pendings keep the old loud-banner behavior). Emitters spread it conditionally
+  // — RTDB rejects undefined.
+  claimCode: z.string().regex(/^\d{4}$/).optional(),
 });
 
 // The incoming accepts → the reducer moves the IC node's leader + clears pending.
