@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { OrgPositions, OrgResourceRef } from '@core/schema';
-import { childrenOf, isAncestorOrSelf, leaderOf, nextChildOrder, orderForSlot } from '@core/org';
-import { newId } from '@core/id';
+import { childrenOf, isAncestorOrSelf } from '@core/org';
 import { useIsDesktop, tapHaptic } from '@ui/primitives';
 import { useOrgCommit } from './useOrgCommit';
+import { planDrop, dropActionText, type DropConfirm } from './planDrop';
 
 // Drag-and-drop controller for the command org chart (#323). One state machine drives
 // BOTH dragging a position card and dragging a roster chip. Pickup is surface-adaptive
@@ -102,12 +102,8 @@ function buildGaps(source: DragSource, positions: OrgPositions, container: HTMLE
   return boxes;
 }
 
-function actionText(target: DropTarget | null, positions: OrgPositions): string {
-  if (!target) return 'Drag onto a card…';
-  if (target.type === 'gap') return 'Reorder';
-  if (target.type === 'lead') return `Supervisor of ${positions[target.id]?.title ?? ''}`;
-  return `Subordinate of ${positions[target.id]?.title ?? ''}`;
-}
+// Ghost action line — dropActionText (planDrop.ts) is honest about staffed seats (#422).
+const actionText = dropActionText;
 
 // Edge auto-pan ramp: 0 while the pointer is clear of the band, scaling to ±EDGE_SPEED
 // at (or past) the scroller's edge so off-screen drop targets come into reach. `pos` is a
@@ -131,6 +127,10 @@ function scrollParentY(el: HTMLElement | null): HTMLElement | null {
 export interface OrgDragApi {
   drag: OrgDrag | null;
   desktop: boolean;
+  /** A destructive drop (source position removed, subtree cascade) parked for the
+   *  chart's confirm Modal (#427). resolveConfirm(true) commits it; false discards. */
+  confirm: DropConfirm | null;
+  resolveConfirm(ok: boolean): void;
   /** Start a position-card drag. `immediate` (desktop grip) lifts on first move;
    *  otherwise (phone body) it press-and-holds, and a tap opens the node sheet. */
   startNode(e: React.PointerEvent, id: string, immediate: boolean): void;
@@ -165,6 +165,9 @@ export function useOrgDragDrop(opts: {
   const desktop = useIsDesktop();
   const commit = useOrgCommit();
   const [drag, setDrag] = useState<OrgDrag | null>(null);
+  // A parked destructive plan (#427) — the events wait for the chart's confirm Modal.
+  const [confirm, setConfirm] = useState<DropConfirm | null>(null);
+  const pendingEvents = useRef<Parameters<typeof commit>[0][] | null>(null);
 
   // Refs so the window listeners and the async commit always read the latest values.
   const positionsRef = useRef(opts.positions);
@@ -378,49 +381,29 @@ export function useOrgDragDrop(opts: {
     cleanup(); // scroll began (pre-arm) or the gesture was interrupted (armed) — drop nothing
   }
 
+  // The event choices live in planDrop (pure, unit-tested — #422/#427/#428). A plan
+  // with `confirm` is destructive (source position removed): park it for the chart's
+  // Modal instead of committing on pointerup.
   async function commitDrop(target: DropTarget, source: DragSource) {
     if (!isICRef.current) return;
-    const emit = commitRef.current;
-    const positions = positionsRef.current;
-    if (target.type === 'gap') {
-      if (source.kind !== 'node') return;
-      const order = orderForSlot(positions, target.parentId, target.index, source.id);
-      if (positions[source.id]?.parentId !== target.parentId) {
-        await emit({ type: 'PositionReparented', positionId: source.id, newParentId: target.parentId });
-      }
-      await emit({ type: 'PositionReordered', positionId: source.id, order });
-    } else if (target.type === 'lead') {
-      if (source.kind === 'chip') {
-        await emit({ type: 'ResourceAssigned', positionId: target.id, resource: source.resource });
-      } else {
-        // A single-resource card dragged into a supervisor slot becomes the lead line:
-        // move its resources onto the target, then remove the now-empty card.
-        const node = positions[source.id];
-        if (!node) return;
-        if (node.builtIn) {
-          // Protected built-in can't be removed — fall back to a child-drop.
-          await emit({ type: 'PositionReparented', positionId: source.id, newParentId: target.id });
-          await emit({ type: 'PositionReordered', positionId: source.id, order: nextChildOrder(positions, target.id) });
-        } else {
-          const resources = node.assignedResources.length ? node.assignedResources : leaderOf(node) ? [leaderOf(node)!] : [];
-          for (const r of resources) await emit({ type: 'ResourceAssigned', positionId: target.id, resource: r });
-          await emit({ type: 'PositionRemoved', positionId: source.id });
-        }
-      }
-    } else {
-      // child drop
-      if (source.kind === 'chip') {
-        const id = newId();
-        await emit({
-          type: 'PositionAdded',
-          position: { id, title: source.resource.label, kind: 'single-resource', parentId: target.id, builtIn: false, order: nextChildOrder(positions, target.id), assignedResources: [] },
-        });
-        await emit({ type: 'ResourceAssigned', positionId: id, resource: source.resource });
-      } else {
-        await emit({ type: 'PositionReparented', positionId: source.id, newParentId: target.id });
-        await emit({ type: 'PositionReordered', positionId: source.id, order: nextChildOrder(positions, target.id) });
-      }
+    const plan = planDrop(target, source, positionsRef.current);
+    if (!plan) return;
+    if (plan.confirm) {
+      pendingEvents.current = plan.events;
+      setConfirm(plan.confirm);
+      return;
     }
+    const emit = commitRef.current;
+    for (const ev of plan.events) await emit(ev);
+  }
+
+  async function resolveConfirm(ok: boolean) {
+    const events = pendingEvents.current;
+    pendingEvents.current = null;
+    setConfirm(null);
+    if (!ok || !events) return;
+    const emit = commitRef.current;
+    for (const ev of events) await emit(ev);
   }
 
   function beginPress(e: React.PointerEvent, source: DragSource, mode: 'immediate' | 'hold', onTap?: () => void) {
@@ -454,6 +437,8 @@ export function useOrgDragDrop(opts: {
   return {
     drag,
     desktop,
+    confirm,
+    resolveConfirm: (ok) => void resolveConfirm(ok),
     startNode: (e, id, immediate) => beginPress(e, { kind: 'node', id }, immediate ? 'immediate' : 'hold', () => onOpenRef.current(id)),
     startChip: (e, resource) => beginPress(e, { kind: 'chip', resource }, 'immediate'),
     consumeClick: () => {

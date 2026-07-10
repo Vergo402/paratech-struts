@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
 import { rootPosition, currentIC } from '@core/org';
+import { Button, Modal } from '@ui/primitives';
 import { useOrg, useDeviceUidValue, useOrgShorePointCounts } from '@ui/hooks';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
@@ -112,6 +113,33 @@ export function OrgChart({
       </div>
 
       <OrgDragLayer drag={dnd.drag} gapHot={dnd.gapHot} />
+
+      {/* #427 — the drag-merge confirm. A lead-drop of a position card removes the
+          source position (and its whole subtree); pre-#427 the drag path committed
+          that cascade silently while the NodeSheet's Remove kept its Modal (ADR-016).
+          Same doctrine here: destructive → confirm. */}
+      <Modal
+        open={dnd.confirm !== null}
+        onClose={() => dnd.resolveConfirm(false)}
+        title={`Remove ${dnd.confirm?.sourceTitle ?? ''}?`}
+        variant="destructive"
+        footer={
+          <>
+            <Button variant="secondary" onPress={() => dnd.resolveConfirm(false)}>
+              <span data-modal-cancel>Cancel</span>
+            </Button>
+            <Button variant="primary" destructive onPress={() => dnd.resolveConfirm(true)}>
+              Move and remove
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Moving <strong>{dnd.confirm?.resourceLabel}</strong> to <strong>{dnd.confirm?.targetTitle}</strong>{' '}
+          removes this position{dnd.confirm?.hasSubtree ? ' and everything under it' : ''}. Assignments here
+          are cleared.
+        </p>
+      </Modal>
     </div>
   );
 }

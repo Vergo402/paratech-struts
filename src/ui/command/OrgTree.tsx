@@ -10,6 +10,8 @@ import type { OrgDragApi } from './useOrgDragDrop';
 export const READ_ONLY_DND: OrgDragApi = {
   drag: null,
   desktop: true,
+  confirm: null,
+  resolveConfirm: () => {},
   startNode: () => {},
   startChip: () => {},
   consumeClick: () => false,
