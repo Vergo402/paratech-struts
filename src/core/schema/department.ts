@@ -66,6 +66,24 @@ export const Member = z.object({
   // (rank can differ per dept). Self-editable via the SELF_EDIT_RANK rule branch — the
   // ONLY field a member may change on their own row after join; admins may also set it.
   rank: z.string().max(80).optional(),
+  // ---- Admin-provisioned personnel profile (#439). All optional so every pre-#439
+  // row parses unchanged; present ⇒ non-empty (clear = write null, RTDB drops the key).
+  // Self-edits are PINNED by the rules (admin-only via ADMIN_MANAGE), except the one
+  // narrow mustChangePassword true→false self-clear below.
+  // Login email, denormalized display copy — Firebase Auth is the truth; written by
+  // the provision/email-change server callables (the client can't enumerate Auth).
+  email: z.string().min(1).max(120).optional(),
+  // Roster rig id (schema/apparatus.ts) — UI resolves the name; deleted rig → omit.
+  apparatusId: z.string().min(1).max(80).optional(),
+  badge: z.string().min(1).max(40).optional(),
+  phone: z.string().min(1).max(40).optional(),
+  certifications: z.string().min(1).max(500).optional(), // free text (Alex, 2026-07-10)
+  // true = the starter password is unrotated (User Manager key badge). Set by the
+  // provision/reset callables; the member clears it (true→false ONLY) after their
+  // forced first-sign-in password change. The gate FAILS OPEN when unreadable —
+  // hygiene, not a security boundary (the starter is single-use + handed over in
+  // person; this flag keeps unrotated accounts visible to admins).
+  mustChangePassword: z.boolean().optional(),
 });
 export type Member = z.infer<typeof Member>;
 

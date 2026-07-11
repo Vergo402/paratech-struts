@@ -68,10 +68,28 @@
             "rank": {
               ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 80)"
             },
+            "email": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 120)"
+            },
+            "apparatusId": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 80)"
+            },
+            "badge": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 40)"
+            },
+            "phone": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 40)"
+            },
+            "certifications": {
+              ".validate": "!newData.exists() || (newData.isString() && newData.val().length >= 1 && newData.val().length <= 500)"
+            },
+            "mustChangePassword": {
+              ".validate": "!newData.exists() || (newData.isBoolean())"
+            },
             "$other": {
               ".validate": false
             },
-            ".write": "(auth != null && $uid === auth.uid && !data.exists() && newData.child('role').val() === 'default' && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true) || (auth != null && $uid === auth.uid && data.exists() && data.child('active').val() != false && newData.child('role').val() === data.child('role').val() && newData.child('displayName').val() === data.child('displayName').val() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('viaCode').val() === data.child('viaCode').val() && newData.child('active').val() === data.child('active').val()) || (auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && ( !(data.child('role').val() === 'admin' && (!newData.exists() || newData.child('role').val() !== 'admin' || newData.child('active').val() === false)) || ( root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' && $uid !== auth.uid ) ) && ( !(newData.child('role').val() === 'admin' && data.child('role').val() !== 'admin') || root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' ))"
+            ".write": "(auth != null && $uid === auth.uid && !data.exists() && newData.child('role').val() === 'default' && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('deptId').val() === $deptId && root.child('orgs').child('inviteCodes').child(newData.child('viaCode').val()).child('active').val() === true) || (auth != null && $uid === auth.uid && data.exists() && data.child('active').val() != false && newData.child('role').val() === data.child('role').val() && newData.child('displayName').val() === data.child('displayName').val() && newData.child('joinedAt').val() === data.child('joinedAt').val() && newData.child('viaCode').val() === data.child('viaCode').val() && newData.child('active').val() === data.child('active').val() && newData.child('email').val() === data.child('email').val() && newData.child('apparatusId').val() === data.child('apparatusId').val() && newData.child('badge').val() === data.child('badge').val() && newData.child('phone').val() === data.child('phone').val() && newData.child('certifications').val() === data.child('certifications').val() && ( newData.child('mustChangePassword').val() === data.child('mustChangePassword').val() || (data.child('mustChangePassword').val() === true && newData.child('mustChangePassword').val() === false) )) || (auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && root.child('orgs').child($deptId).child('roles').child(root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val()).child('permissions').child('manageUsers').val() === true && ( !(data.child('role').val() === 'admin' && (!newData.exists() || newData.child('role').val() !== 'admin' || newData.child('active').val() === false)) || ( root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' && $uid !== auth.uid ) ) && ( !(newData.child('role').val() === 'admin' && data.child('role').val() !== 'admin') || root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin' ))"
           }
         },
         "roles": {

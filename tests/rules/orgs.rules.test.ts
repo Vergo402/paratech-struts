@@ -167,6 +167,62 @@ describe('join + membership (#420 root cause, anti-lockout)', () => {
   });
 });
 
+describe('provisioned-member profile fields (#439)', () => {
+  it('a member clears their OWN mustChangePassword flag (true → false, the forced-change finish)', async () => {
+    await assertSucceeds(db('member1').ref(`orgs/${DEPT}/members/member1/mustChangePassword`).set(false));
+  });
+
+  it('a member cannot RAISE mustChangePassword (false → true) — the clear is one-way', async () => {
+    await env.withSecurityRulesDisabled((ctx) =>
+      ctx.database().ref(`orgs/${DEPT}/members/member1/mustChangePassword`).set(false),
+    );
+    await assertFails(db('member1').ref(`orgs/${DEPT}/members/member1/mustChangePassword`).set(true));
+  });
+
+  it('a member cannot edit their own admin-owned profile fields (email/apparatusId/badge)', async () => {
+    await assertFails(db('member1').ref(`orgs/${DEPT}/members/member1/email`).set('spoof@evil.example'));
+    await assertFails(db('member1').ref(`orgs/${DEPT}/members/member1/apparatusId`).set('rig-r1'));
+    await assertFails(db('member1').ref(`orgs/${DEPT}/members/member1/badge`).set('999'));
+  });
+
+  it('pin canary: self rank edit still passes with the provisioned fields present', async () => {
+    await assertSucceeds(db('member1').ref(`orgs/${DEPT}/members/member1/rank`).set('Lieutenant'));
+  });
+
+  it('a manageUsers-holder edits another member’s profile fields (ADMIN_MANAGE unchanged)', async () => {
+    await assertSucceeds(
+      db('manager').ref(`orgs/${DEPT}/members/member1`).update({
+        badge: '215', apparatusId: 'rig-r1', certifications: 'FF2, Rescue Tech', phone: '914-555-0100',
+      }),
+    );
+    await assertSucceeds(db('founder').ref(`orgs/${DEPT}/members/member1/email`).set('renamed@hamdenfd.example'));
+  });
+
+  it('an admin CREATES a full provisioned-shape row for a new uid (the server-callable write shape)', async () => {
+    await assertSucceeds(
+      db('founder').ref(`orgs/${DEPT}/members/provisioned1`).set({
+        role: 'default', displayName: 'Dana Kim', joinedAt: 6000,
+        email: 'dkim@hamdenfd.example', apparatusId: 'rig-e2', badge: '312',
+        phone: '914-555-0182', certifications: 'FF2, EMT-B', mustChangePassword: true,
+      }),
+    );
+  });
+
+  it('a stranger cannot self-create a provisioned-shape row (no code, not a manager)', async () => {
+    await assertFails(
+      db('stranger').ref(`orgs/${DEPT}/members/stranger`).set({
+        role: 'default', displayName: 'Stranger', joinedAt: 6000, mustChangePassword: true,
+      }),
+    );
+  });
+
+  it('unknown member fields are still rejected ($other freeze holds after the field additions)', async () => {
+    await assertFails(
+      db('founder').ref(`orgs/${DEPT}/members/member1/favoriteColor`).set('gold'),
+    );
+  });
+});
+
 describe('legacy-tree lockdown (#424)', () => {
   it('/departments is dead — no read, no write, even signed in', async () => {
     await assertFails(db('founder').ref('departments/junk').set({ name: 'junk' }));

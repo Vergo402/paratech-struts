@@ -52,8 +52,9 @@ export const DEPT = 'dept1';
 export const CODE = 'AAAA-2222';
 
 // The canonical fixture: one department with a founder-admin, a second admin,
-// a custom-role manageUsers holder, a plain Default member, and a revoked
-// member — plus one active invite code. Seeded with rules DISABLED.
+// a custom-role manageUsers holder, a plain Default member (provisioned shape,
+// #439 — carries the admin-owned profile fields + an unrotated starter flag),
+// and a revoked member — plus one active invite code. Seeded with rules DISABLED.
 export async function seedDept(env: RulesTestEnvironment): Promise<void> {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await ctx.database().ref().set({
@@ -66,7 +67,11 @@ export async function seedDept(env: RulesTestEnvironment): Promise<void> {
             founder: { role: 'admin', displayName: 'Founder', joinedAt: 1000 },
             admin2: { role: 'admin', displayName: 'Second Admin', joinedAt: 1001 },
             manager: { role: 'custom-mgr', displayName: 'Manager', joinedAt: 1002 },
-            member1: { role: 'default', displayName: 'Member One', joinedAt: 1003 },
+            member1: {
+              role: 'default', displayName: 'Member One', joinedAt: 1003,
+              email: 'member1@hamdenfd.example', apparatusId: 'rig-e2', badge: '214',
+              mustChangePassword: true,
+            },
             revoked: { role: 'default', displayName: 'Revoked', joinedAt: 1004, active: false },
           },
           roles: {

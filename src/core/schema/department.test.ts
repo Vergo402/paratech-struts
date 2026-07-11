@@ -1,11 +1,55 @@
 import { describe, it, expect } from 'vitest';
 import {
+  Member,
   permissionsForRole,
   ADMIN_PERMISSIONS,
   DEFAULT_PERMISSIONS,
   NO_PERMISSIONS,
   PERMISSION_KEYS,
 } from './department';
+
+// The Member row — pre-#439 rows must keep parsing, the provisioned shape must
+// parse whole, and "present ⇒ non-empty" holds for every new optional field.
+describe('Member schema (#439 provisioned profile fields)', () => {
+  const legacy = { role: 'default', displayName: 'Member One', joinedAt: 1003 };
+  const provisioned = {
+    ...legacy,
+    email: 'dkim@hamdenfd.example',
+    apparatusId: 'rig-e2',
+    badge: '312',
+    phone: '914-555-0182',
+    certifications: 'FF2, Rescue Tech, EMT-B',
+    mustChangePassword: true,
+  };
+
+  it('a pre-#439 row (no profile fields) still parses', () => {
+    const r = Member.safeParse(legacy);
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.mustChangePassword).toBeUndefined();
+  });
+
+  it('the full provisioned shape parses with every field intact', () => {
+    const r = Member.safeParse(provisioned);
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.email).toBe('dkim@hamdenfd.example');
+      expect(r.data.apparatusId).toBe('rig-e2');
+      expect(r.data.mustChangePassword).toBe(true);
+    }
+  });
+
+  it('present ⇒ non-empty: an empty-string optional fails (clear = write null, never "")', () => {
+    for (const key of ['email', 'apparatusId', 'badge', 'phone', 'certifications'] as const) {
+      expect(Member.safeParse({ ...legacy, [key]: '' }).success).toBe(false);
+    }
+  });
+
+  it('an unknown key is stripped on parse (the rules $other reject it at the write boundary)', () => {
+    const r = Member.safeParse({ ...provisioned, favoriteColor: 'gold' });
+    expect(r.success).toBe(true);
+    if (r.success) expect('favoriteColor' in r.data).toBe(false);
+  });
+});
 
 // The permission resolver (ADR-017) — keyed off PERMISSION, never role name. The
 // security-relevant assertion is the LAST one: an unknown id floors to Default, NOT

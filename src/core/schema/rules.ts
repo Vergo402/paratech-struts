@@ -286,13 +286,18 @@ const ROLE_MANAGE = [
   `( $roleId !== '${DEFAULT_ROLE_ID}' || newData.exists() )`,
 ].join(' && ');
 
-// SELF-EDIT RANK (#321 P5 inc3) — the ONE narrow exception to "member rows are write-once on
-// join, admin-only after": a member may edit ONLY their own `rank` (free-text title). NO
-// privilege escalation — every other field must equal its prior value, so role/displayName/
-// joinedAt/viaCode/active are all immutable on this branch; `rank` is the only thing free to
-// change (still bounded by its leaf `.validate`, ≤80 chars). `data.exists()` = edit not create;
-// a revoked member (active === false) is locked out. An absent optional field reads as null on
-// both sides, so the equality holds for rows that never carried viaCode/active. CAUTION: NO
+// SELF-EDIT RANK (#321 P5 inc3, extended #439) — the ONE narrow exception to "member rows are
+// write-once on join, admin-only after": a member may edit ONLY their own `rank` (free-text
+// title), plus the one #439 asymmetric allowance below. NO privilege escalation — every other
+// field must equal its prior value, so role/displayName/joinedAt/viaCode/active and the #439
+// admin-owned profile fields (email/apparatusId/badge/phone/certifications) are all immutable
+// on this branch; `rank` is the only thing free to change (still bounded by its leaf
+// `.validate`, ≤80 chars). `data.exists()` = edit not create; a revoked member
+// (active === false) is locked out. An absent optional field reads as null on both sides, so
+// the equality holds for rows that never carried the optionals. The #439 exception:
+// `mustChangePassword` may transition true→false ONLY (the member clearing their own starter
+// flag after the forced first-sign-in password change) — never set, never re-raised, so a
+// member can't hide from or fake the key badge beyond the one legitimate clear. CAUTION: NO
 // literal { }.
 const SELF_EDIT_RANK = [
   'auth != null',
@@ -304,6 +309,13 @@ const SELF_EDIT_RANK = [
   "newData.child('joinedAt').val() === data.child('joinedAt').val()",
   "newData.child('viaCode').val() === data.child('viaCode').val()",
   "newData.child('active').val() === data.child('active').val()",
+  "newData.child('email').val() === data.child('email').val()",
+  "newData.child('apparatusId').val() === data.child('apparatusId').val()",
+  "newData.child('badge').val() === data.child('badge').val()",
+  "newData.child('phone').val() === data.child('phone').val()",
+  "newData.child('certifications').val() === data.child('certifications').val()",
+  "( newData.child('mustChangePassword').val() === data.child('mustChangePassword').val()" +
+    " || (data.child('mustChangePassword').val() === true && newData.child('mustChangePassword').val() === false) )",
 ].join(' && ');
 
 // AUDIT LOG (#380 write, #381 read) — governance actions (role create/edit/delete, assign/
