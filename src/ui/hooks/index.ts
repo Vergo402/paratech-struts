@@ -20,6 +20,15 @@ export {
   type RowOutcome,
   type ParsedImportRow,
 } from '@data/inventory/excel';
+// Google Places address autocomplete (StartOperationModal) — pure module functions
+// re-exported through the hooks seam so ui/* never imports @data directly (invariant 3).
+export {
+  placesEnabled,
+  beginAddressSession,
+  type AddressPick,
+  type AddressSuggestion,
+  type AddressSession,
+} from '@data/places/places';
 export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';

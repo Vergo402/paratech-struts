@@ -453,3 +453,38 @@ describe('cutting-queue bookkeeping (#222)', () => {
     expect(cleared.shorePoints[0]!.cuttingDone).toBeUndefined();
   });
 });
+
+describe('location coordinates — address autocomplete (Places)', () => {
+  const created = (over: Partial<{ location: string; coords: { lat: number; lng: number } }> = {}): FieldShoreEvent => ({
+    type: 'OperationCreated', id: 'e1', opId: 'op1', at: 100, by: 'ic', name: 'Riverside', multiBuilding: false, ...over,
+  });
+  const edited = (over: Record<string, unknown>): FieldShoreEvent => ({
+    type: 'OperationEdited', id: 'e2', opId: 'op1', at: 200, by: 'ic', ...over,
+  } as FieldShoreEvent);
+
+  it('OperationCreated carries coords when a suggestion was picked', () => {
+    const state = operationReducer(EMPTY_OPERATION_STATE, created({ location: '123 Main St', coords: { lat: 47.6, lng: -122.3 } }));
+    expect(state.operation?.coords).toEqual({ lat: 47.6, lng: -122.3 });
+  });
+
+  it('OperationCreated leaves coords undefined for a hand-typed location', () => {
+    const state = operationReducer(EMPTY_OPERATION_STATE, created({ location: 'behind the mall' }));
+    expect(state.operation?.coords).toBeUndefined();
+  });
+
+  it('OperationEdited updates coords to the newly picked address', () => {
+    const state = [created({ location: 'A', coords: { lat: 1, lng: 2 } }), edited({ location: 'B', coords: { lat: 3, lng: 4 } })].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.location).toBe('B');
+    expect(state.operation?.coords).toEqual({ lat: 3, lng: 4 });
+  });
+
+  it('OperationEdited clears coords when coords: null (cleared/hand-edited location)', () => {
+    const state = [created({ location: 'A', coords: { lat: 1, lng: 2 } }), edited({ coords: null })].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.coords).toBeUndefined();
+  });
+
+  it('OperationEdited leaves coords untouched when the field is absent from the patch', () => {
+    const state = [created({ location: 'A', coords: { lat: 1, lng: 2 } }), edited({ name: 'Renamed' })].reduce(operationReducer, EMPTY_OPERATION_STATE);
+    expect(state.operation?.coords).toEqual({ lat: 1, lng: 2 });
+  });
+});

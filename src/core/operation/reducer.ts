@@ -101,6 +101,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           multiBuilding: event.multiBuilding,
           inlineDeploy: event.inlineDeploy ?? true, // absent (old events) → one-step inline
           location: event.location,
+          coords: event.coords,
           divisions: [1], // Ground level — grown via DivisionAdded, never on the wire
           saws: ['A'], // one saw by default (#354) — grown via SawAdded, never on the wire
           status: 'active',
@@ -122,6 +123,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       if (event.multiBuilding !== undefined) op.multiBuilding = event.multiBuilding;
       if (event.inlineDeploy !== undefined) op.inlineDeploy = event.inlineDeploy;
       if (event.location !== undefined) op.location = event.location ?? undefined; // null clears
+      if (event.coords !== undefined) op.coords = event.coords ?? undefined; // null clears
       return { ...state, operation: op };
     }
 

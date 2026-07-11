@@ -13,6 +13,11 @@ _review-to-delete/
 # Node
 node_modules/
 
+# Local env (Google Maps browser key etc.) — never commit real keys
+.env
+.env.local
+.env.*.local
+
 # Firebase local
 .firebase/
 .firebaserc

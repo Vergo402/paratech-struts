@@ -4,6 +4,7 @@ import { newId } from '@core/id';
 import { Button, Modal, TextField, Toggle } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useDeviceUid } from '@ui/hooks';
+import { AddressField } from './AddressField';
 
 export interface StartOperationModalProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
   const [multiBuilding, setMultiBuilding] = useState(false);
   const [inlineDeploy, setInlineDeploy] = useState(true); // new ops default to one-step inline
   const [location, setLocation] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -28,6 +30,7 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
     setMultiBuilding(operation?.multiBuilding ?? false);
     setInlineDeploy(operation?.inlineDeploy ?? true);
     setLocation(operation?.location ?? '');
+    setCoords(operation?.coords ?? null);
   }, [open, operation]);
 
   const trimmedName = name.trim();
@@ -45,6 +48,14 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
       const newLoc = location.trim() || null;
       const oldLoc = operation!.location ?? null;
       if (newLoc !== oldLoc) patch.location = newLoc;
+
+      // Coordinates ride with the location. Cleared text drops them; a manually
+      // edited address (no re-pick) also drops them since they'd be stale.
+      const newCoords = newLoc ? coords : null;
+      const oldCoords = operation!.coords ?? null;
+      if (newCoords?.lat !== oldCoords?.lat || newCoords?.lng !== oldCoords?.lng) {
+        patch.coords = newCoords;
+      }
 
       if (Object.keys(patch).length === 0) {
         onClose();
@@ -75,6 +86,7 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
         multiBuilding,
         inlineDeploy,
         location: location.trim() || undefined,
+        coords: location.trim() ? (coords ?? undefined) : undefined,
       });
 
       if (result.ok) {
@@ -131,10 +143,14 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
           checked={multiBuilding}
           onChange={setMultiBuilding}
         />
-        <TextField
+        <AddressField
           label="Location / address"
           value={location}
-          onChange={setLocation}
+          onChange={(v) => {
+            setLocation(v);
+            setCoords(null); // typed text no longer matches picked coordinates
+          }}
+          onPick={(pick) => setCoords(pick.coords)}
           placeholder="Optional"
         />
       </div>

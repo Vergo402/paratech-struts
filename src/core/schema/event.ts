@@ -21,6 +21,7 @@ export const OperationCreated = z.object({
   multiBuilding: z.boolean(),
   inlineDeploy: z.boolean().optional(), // absent on pre-feature events → reducer defaults true
   location: z.string().optional(),
+  coords: z.object({ lat: z.number(), lng: z.number() }).optional(), // from address autocomplete
 });
 
 export const OperationEdited = z.object({
@@ -30,6 +31,7 @@ export const OperationEdited = z.object({
   multiBuilding: z.boolean().optional(),
   inlineDeploy: z.boolean().optional(), // the mid-incident flip
   location: z.string().nullable().optional(), // null clears the location
+  coords: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(), // null clears
 });
 
 export const OperationEnded = z.object({

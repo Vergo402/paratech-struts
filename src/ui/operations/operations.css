@@ -3049,4 +3049,89 @@ button.fs-spc-head {
 [data-theme='sunlight'] .fs-spd-safety--ok { border-left-color: var(--status-secured-bg); }
 [data-theme='sunlight'] .is-depleted .fs-inv-summary-count { color: var(--danger-bg); }
 [data-theme='sunlight'] .is-low .fs-inv-summary-count { color: var(--status-cutting-bg); }
+
+/* Address autocomplete dropdown (AddressField) — Google Places suggestions under
+   the "Location / address" field. Anchored to the input; the field degrades to a
+   plain text box when autocomplete is off or offline. */
+.fs-addr-wrap { position: relative; }
+
+.fs-addr-spin {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 15px;
+  height: 15px;
+  margin-top: -7.5px;
+  border: 2px solid var(--surface-stroke);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: fs-addr-spin 0.7s linear infinite;
+  pointer-events: none;
+}
+@keyframes fs-addr-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .fs-addr-spin { animation: none; } }
+
+/* Portaled to document.body (the Modal body scroll-clips in-flow dropdowns);
+   top/left/width come inline from the input's measured rect. z-index 400 =
+   the picker-overlay tier, above the form modal (300). */
+.fs-addr-list {
+  position: fixed;
+  z-index: 400;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.fs-addr-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+}
+.fs-addr-opt--active { background: var(--surface-card-hover); }
+
+.fs-addr-opt-pin {
+  flex: none;
+  display: inline-flex;
+  color: var(--text-tertiary);
+}
+.fs-addr-opt--active .fs-addr-opt-pin { color: var(--accent); }
+
+.fs-addr-opt-text { display: flex; flex-direction: column; min-width: 0; }
+.fs-addr-opt-main {
+  font: var(--type-body);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fs-addr-opt-main b { font-weight: 600; } /* the typed portion, per the mockup */
+.fs-addr-opt-sec {
+  font: var(--type-body-small, var(--type-body));
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fs-addr-attrib {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  padding: 6px 12px 4px;
+  margin-top: 2px;
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.fs-addr-attrib strong { font-weight: 500; color: var(--text-secondary); }
 [data-theme='sunlight'] .fs-divtile-st { color: var(--sp-solid); }

@@ -12,6 +12,9 @@ const abs = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
   root: 'src/app',
+  // Env files (.env.local etc.) live at the repo root — next to package.json,
+  // where you'd expect them (see .env.example) — not the Vite root.
+  envDir: abs('.'),
   publicDir: abs('./public'),
   build: {
     outDir: abs('./dist'),

@@ -26,6 +26,10 @@ vi.mock('@ui/hooks', () => ({
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useDeviceUidValue: () => 'device-test',
+  // StartOperationModal's AddressField reaches Places through the hooks seam —
+  // keep autocomplete off so it renders as a plain text box (the no-key path).
+  placesEnabled: () => false,
+  beginAddressSession: async () => ({ suggest: async () => [] }),
   // "Mine" lens (#370) — no role/apparatus by default; Mine renders inert. Tests
   // that need it available override via vi.mocked(useOrg/useMyRole).
   useOrg: () => ({}),

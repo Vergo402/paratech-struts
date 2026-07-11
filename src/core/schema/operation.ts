@@ -19,6 +19,10 @@ export const Operation = z.object({
   // two-step Assign sheet stays available in BOTH modes.
   inlineDeploy: z.boolean(),
   location: z.string().optional(),
+  // Map coordinates for `location`, captured when the address is picked from
+  // Google Places autocomplete (StartOperationModal). Absent for a hand-typed
+  // location — the field works offline without it. Stored for a future map view.
+  coords: z.object({ lat: z.number(), lng: z.number() }).optional(),
   divisions: z.array(z.number().int()),
   // The Cutting Station saw roster (#354) — the ids of the saws on this op's cut
   // station ('A', 'B', …). Initialized to ['A'] by the reducer (one saw, the common
