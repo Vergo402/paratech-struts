@@ -36,6 +36,21 @@ export { useApparatusTypes, type ApparatusTypesApi } from './useApparatusTypes';
 export { useDeptPolicies, type DeptPoliciesApi } from './useDeptPolicies';
 export { useFeedback, type FeedbackApi, type FeedbackCategory } from './useFeedback';
 export type { AdminMutationResult, ProvisionMemberInput, MemberProfilePatch } from '@data/dept';
+// Pure personnel-CSV helpers for the #439 bulk add — re-exported through the hooks
+// seam so ui/* never imports @data directly (invariant 3, same as the excel.ts set).
+export {
+  parseRecords as parsePersonnelRecords,
+  autoMapPersonnel,
+  validatePersonnelRows,
+  validatePersonnelRow,
+  getPersonnelTemplateCSV,
+  PERSONNEL_HEADERS,
+  type ParsedPersonnelRow,
+  type PersonnelColumnMapping,
+  type PersonnelFieldKey,
+  type PersonnelRowOutcome,
+  type PersonnelContext,
+} from '@data/dept/personnelCsv';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
 export { useShorePointHistory, type ShorePointHistory } from './useShorePointHistory';

@@ -16,6 +16,7 @@ import { starterPasswordFor } from '@core/personnel';
 import { permissionSummary } from './permissionSummary';
 import { MemberEditSheet } from './MemberEditSheet';
 import { AddMemberSheet } from './AddMemberSheet';
+import { PersonnelImportFlow } from './PersonnelImportFlow';
 import { BackIcon, LockIcon, KeyIcon } from './icons';
 import { RoleEditorSheet } from './RoleEditorSheet';
 import './admin.css';
@@ -62,8 +63,9 @@ export function UserManagerScreen() {
   // #423 — the regenerate confirm.
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
-  // #439 — add personnel + reset-to-starter.
+  // #439 — add personnel + reset-to-starter + CSV bulk add.
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState<{ uid: string; name: string } | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
 
@@ -162,6 +164,9 @@ export function UserManagerScreen() {
               <div className="fs-um-add-row">
                 <Button variant="primary" size="standard" onPress={() => setAddOpen(true)}>
                   + Add member
+                </Button>
+                <Button variant="secondary" size="standard" onPress={() => setImportOpen(true)}>
+                  Import CSV
                 </Button>
               </div>
               <div className="fs-um-list">
@@ -337,6 +342,19 @@ export function UserManagerScreen() {
           if (res.ok) await um.refresh();
           return res;
         }}
+      />
+
+      {/* #439 — CSV bulk add; the list refreshes when the flow closes. */}
+      <PersonnelImportFlow
+        open={importOpen}
+        onClose={() => {
+          setImportOpen(false);
+          void um.refresh();
+        }}
+        roles={roleList}
+        roster={roster}
+        actorIsAdmin={ownUid !== null && members?.[ownUid]?.role === ADMIN_ROLE_ID}
+        onProvision={um.provisionMember}
       />
 
       <RoleEditorSheet

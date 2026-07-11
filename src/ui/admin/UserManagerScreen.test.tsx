@@ -27,21 +27,32 @@ const actions = {
 const mockMembers = vi.fn((): Record<string, Member> | null => ({}));
 const mockInviteCode = vi.fn((): string | null => 'QK7N-38PW');
 
-vi.mock('@ui/hooks', () => ({
-  usePermissions: () => mockPerms(),
-  useRoles: () => mockRoles(),
-  useSession: () => mockSession(),
-  useDepartment: () => ({ department: { id: 'd1', name: 'Hamden' }, role: 'admin', inviteCode: mockInviteCode() }),
-  useUserManager: () => ({ members: mockMembers(), membersError: false, ...actions }),
-  useApparatus: () => ({
-    roster: [
-      { id: 'rig-e2', name: 'Engine 2', type: 'Engine' },
-      { id: 'rig-r1', name: 'Rescue 1', type: 'Rescue' },
-    ],
-    add: vi.fn(),
-    remove: vi.fn(),
-  }),
-}));
+vi.mock('@ui/hooks', async () => {
+  // The pure personnel-CSV helpers pass through REAL (no firebase in their graph) —
+  // PersonnelImportFlow imports them from this barrel (invariant 3).
+  const personnel = await vi.importActual<typeof import('@data/dept/personnelCsv')>('@data/dept/personnelCsv');
+  return {
+    usePermissions: () => mockPerms(),
+    useRoles: () => mockRoles(),
+    useSession: () => mockSession(),
+    useDepartment: () => ({ department: { id: 'd1', name: 'Hamden' }, role: 'admin', inviteCode: mockInviteCode() }),
+    useUserManager: () => ({ members: mockMembers(), membersError: false, ...actions }),
+    useApparatus: () => ({
+      roster: [
+        { id: 'rig-e2', name: 'Engine 2', type: 'Engine' },
+        { id: 'rig-r1', name: 'Rescue 1', type: 'Rescue' },
+      ],
+      add: vi.fn(),
+      remove: vi.fn(),
+    }),
+    parsePersonnelRecords: personnel.parseRecords,
+    autoMapPersonnel: personnel.autoMapPersonnel,
+    validatePersonnelRows: personnel.validatePersonnelRows,
+    validatePersonnelRow: personnel.validatePersonnelRow,
+    getPersonnelTemplateCSV: personnel.getPersonnelTemplateCSV,
+    PERSONNEL_HEADERS: personnel.PERSONNEL_HEADERS,
+  };
+});
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
 const ROLES: Record<string, Role> = {
