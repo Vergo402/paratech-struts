@@ -1091,7 +1091,10 @@ describe('OperationsBoard', () => {
     expect(rows[0]!.querySelector('.fs-splist-grp')!.textContent).toContain('×3');
   });
 
-  it('list Added direction lives in the Sort menu: newest ↔ oldest', async () => {
+  // Heaviest interaction chain in the file (view switch + two full Filters
+  // open→pick→Escape cycles = 7 userEvent steps); under contended parallel
+  // workers it can brush the 5s default, so it gets its own budget.
+  it('list Added direction lives in the Sort menu: newest ↔ oldest', { timeout: 15_000 }, async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([
