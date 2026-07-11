@@ -111,9 +111,10 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
           currentPeriod: 1,
           periods: [{ number: 1, startedAt: event.at }],
         },
-        // Seed the ADR-008 default org chart with the founding device as IC (free on
-        // re-fold for existing ops — the divisions:[1] precedent, no migration).
-        ...seedOrgState(event.opId, event.by),
+        // Seed the ADR-008 default org chart with the founder as IC — by account for a
+        // signed-in member (follows their devices), by device otherwise (free on re-fold
+        // for existing ops — the divisions:[1] precedent, no migration).
+        ...seedOrgState(event.opId, event.by, event.account),
       };
 
     case 'OperationEdited': {

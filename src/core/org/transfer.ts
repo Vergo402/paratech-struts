@@ -2,6 +2,7 @@ import type { OrgPositions, OrgResourceRef } from '../schema/org';
 import { rootPosition } from './tree';
 import { leaderOf } from './resource';
 import { defaultPositionId } from './defaultTree';
+import { isSelf, type SelfIdentity, type ResolveDeviceOwner } from './self';
 
 // Command transfer (ADR-021) — the two-party handshake state. A DERIVED projection
 // field (never on the wire): set by CommandTransferInitiated, cleared by Accept /
@@ -30,39 +31,46 @@ export function currentIC(positions: OrgPositions): OrgResourceRef | null {
 }
 
 /**
- * Can `by` accept this pending transfer? Pre-auth soft claim (ADR-021 Risk #3):
- * when the incoming commander is a DEVICE ref we can verify by uid (by === value);
- * for an individual/apparatus there is no uid to check pre-auth, so any device may
- * accept on the named commander's behalf (the UI shows Accept only to that device).
- * This is deterministic and replay-safe — it depends only on the event + projection.
+ * Can this actor accept the pending transfer? An ACCOUNT target is uid-verified — the
+ * accepting member's account must equal the target (so they accept from any of their
+ * devices). A DEVICE target verifies by uid (by === value). An individual/apparatus
+ * target carries no uid, so any device may accept on the named commander's behalf (the
+ * UI shows Accept only to that person). Deterministic + replay-safe (event + projection).
  */
-export function canAccept(pending: PendingTransfer | null, by: string): boolean {
+export function canAccept(
+  pending: PendingTransfer | null,
+  by: string,
+  accountId?: string | null,
+): boolean {
   if (!pending) return false;
-  if (pending.toResource.ref === 'device') return pending.toResource.value === by;
+  const t = pending.toResource;
+  if (t.ref === 'account') return accountId != null && t.value === accountId;
+  if (t.ref === 'device') return t.value === by;
   return true;
 }
 
 /**
- * Is device `uid` the Incident Commander or Operations Section Chief of operation
- * `opId`? The Audit Log Incident-view read gate (#211/#217) — a CLIENT gate (the RTDB
- * rules can't see an ICS position). True when the device self-declared My Role at the
- * IC/Ops node, OR is the device-ref leader assigned to it (individual/apparatus refs
- * carry no uid, so only device assignments are verifiable — the gate's floor; the data
- * is member-readable regardless). Works for an active OR an archived (projected) op.
+ * Is this person the Incident Commander or Operations Section Chief of operation `opId`?
+ * The Audit Log Incident-view read gate (#211/#217) — a CLIENT gate (the RTDB rules
+ * can't see an ICS position). True when they self-declared My Role at the IC/Ops node,
+ * OR lead it — matched by isSelf (their account, their own device, or a legacy device
+ * ref the binding resolves to their account). Individual/apparatus leaders carry no
+ * identity. Works for an active OR an archived (projected) op.
  */
 export function isCommanderOf(
   positions: OrgPositions,
   myRole: string | null,
   opId: string,
-  uid: string,
+  self: SelfIdentity,
+  resolve?: ResolveDeviceOwner,
 ): boolean {
   const icId = defaultPositionId(opId, 'ic');
   const opsId = defaultPositionId(opId, 'ops');
   if (myRole === icId || myRole === opsId) return true;
-  const ledByDevice = (id: string): boolean => {
+  const ledByMe = (id: string): boolean => {
     const p = positions[id];
     const l = p ? leaderOf(p) : null;
-    return !!l && l.ref === 'device' && l.value === uid;
+    return !!l && isSelf(l, self, resolve);
   };
-  return ledByDevice(icId) || ledByDevice(opsId);
+  return ledByMe(icId) || ledByMe(opsId);
 }

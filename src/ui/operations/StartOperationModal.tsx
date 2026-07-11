@@ -3,7 +3,7 @@ import type { Operation } from '@core/schema';
 import { newId } from '@core/id';
 import { Button, Modal, TextField, Toggle } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
-import { useCommit, useDeviceUid } from '@ui/hooks';
+import { useCommit, useDeviceUid, useSession } from '@ui/hooks';
 import { AddressField } from './AddressField';
 
 export interface StartOperationModalProps {
@@ -16,6 +16,7 @@ export interface StartOperationModalProps {
 export function StartOperationModal({ open, onClose, operation }: StartOperationModalProps) {
   const commit = useCommit();
   const getUid = useDeviceUid();
+  const { identity } = useSession();
   const editing = !!operation;
 
   const [name, setName] = useState('');
@@ -87,6 +88,11 @@ export function StartOperationModal({ open, onClose, operation }: StartOperation
         inlineDeploy,
         location: location.trim() || undefined,
         coords: location.trim() ? (coords ?? undefined) : undefined,
+        // A signed-in founder holds IC by ACCOUNT (follows their devices); a guest by
+        // device. `by` stays the per-device uid (provenance) either way.
+        ...(identity.kind === 'member'
+          ? { account: { id: identity.accountId, label: identity.displayName } }
+          : {}),
       });
 
       if (result.ok) {

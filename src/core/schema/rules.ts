@@ -379,6 +379,16 @@ export function buildV4OrgsRules(): RuleTree {
   // Incident view reads the event log, gated to IC/Operations client-side.)
   deptNode['audit'] = { '.read': AUDIT_READ, $auditId: { '.write': AUDIT_WRITE, '.validate': AUDIT_VALIDATE } };
 
+  // The device→account binding (ADR-024 follow-up) — member-readable (read cascades from
+  // the dept node), each member self-writes their OWN device→account rows (newData === the
+  // writer's uid). Resolves a legacy device-ref position to its owner's account cross-device.
+  deptNode['deviceOwners'] = {
+    $deviceUid: {
+      '.write': 'auth != null && newData.val() === auth.uid && ' + activeMemberRoot,
+      '.validate': 'newData.isString()',
+    },
+  };
+
   // The invite-code resolver — a sibling of $deptId under /orgs (a named child
   // alongside the wildcard; RTDB applies the named rules to `inviteCodes` and
   // $deptId to every other key). objectRules gives the InviteCode .validate +

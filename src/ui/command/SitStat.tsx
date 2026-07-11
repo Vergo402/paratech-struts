@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { currentIC } from '@core/org';
 import { ChecklistTab, EmptyState, Sheet, SideDrawer, useMediaQuery } from '@ui/primitives';
 import { OrgGlyphIcon } from './icons';
-import { useOperation, useOrg, useDeviceUidValue } from '@ui/hooks';
+import { useOperation, useIsIC } from '@ui/hooks';
 import { CommandRail } from './CommandRail';
 import { CommandWorkspace, type WorkspaceView } from './CommandWorkspace';
 import { EndOperationButton } from './EndOperationButton';
@@ -28,8 +27,9 @@ import './command.css';
  */
 export function SitStat() {
   const operation = useOperation();
-  const positions = useOrg();
-  const uid = useDeviceUidValue();
+  // Command edit gate (ADR-024 follow-up) — IC by account (any device), own device, or a
+  // legacy device-ref resolved to me. A hook, so it stays above the no-op early return.
+  const isIC = useIsIC();
   const navigate = useNavigate();
   const isDeck = useMediaQuery('(min-width: 1024px)');
   const [view, setView] = useState<WorkspaceView>('org');
@@ -51,8 +51,6 @@ export function SitStat() {
     );
   }
 
-  const ic = currentIC(positions);
-  const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
 
   // The edge tab + drawer, hosted in the flex shell so the desktop dock sits beside.
   const checklist = isIC && (

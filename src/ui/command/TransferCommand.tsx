@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OrgResourceRef } from '@core/schema';
 import { currentIC, sameResource } from '@core/org';
 import { Button, TextField, claimOverlay, releaseOverlay, isTopOverlay } from '@ui/primitives';
-import { useOrg } from '@ui/hooks';
+import { useOrg, useRoster } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { ICS201Brief } from './ICS201Brief';
 import { BackChevronIcon, CheckIcon } from './icons';
@@ -34,6 +34,7 @@ function mintClaimCode(): string {
 
 export function TransferCommand({ open, onClose }: { open: boolean; onClose: () => void }) {
   const positions = useOrg();
+  const roster = useRoster(true); // department members (accounts), minus me
   const emit = useOrgCommit();
   const ic = currentIC(positions);
 
@@ -81,6 +82,17 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
     return out;
   }, [positions, ic]);
 
+  // Department members as account-ref targets (the #439 roster) — hand command to a
+  // specific PERSON so it follows their account across devices. Drop the current IC and
+  // anyone already listed above as an account on the chart (no duplicate row).
+  const memberCandidates = useMemo(() => {
+    const onChart = new Set(candidates.filter((c) => c.ref === 'account').map((c) => c.value));
+    const icAcct = ic?.ref === 'account' ? ic.value : null;
+    return roster
+      .filter((m) => m.id !== icAcct && !onChart.has(m.id))
+      .map((m) => ({ ref: 'account' as const, value: m.id, label: m.displayName }));
+  }, [roster, candidates, ic]);
+
   const typed = name.trim();
   const toResource: OrgResourceRef | null = typed
     ? { ref: 'individual', value: typed, label: typed }
@@ -91,9 +103,9 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
     // #425 — individual/apparatus targets carry no uid, so the transfer mints a
     // 4-digit accept code: shown on THIS (outgoing) device, spoken with the
     // face-to-face/radio handoff, typed by the incoming commander to unlock
-    // Accept/Decline. Device targets are uid-verified — no code. Spread
-    // conditionally (RTDB rejects undefined).
-    const claimCode = toResource.ref === 'device' ? null : mintClaimCode();
+    // Accept/Decline. Device AND account targets are uid-verified (the accepting
+    // account/device must match) — no code. Spread conditionally (RTDB rejects undefined).
+    const claimCode = toResource.ref === 'device' || toResource.ref === 'account' ? null : mintClaimCode();
     emit({ type: 'CommandTransferInitiated', toResource, ...(claimCode ? { claimCode } : {}) });
     onClose();
   };
@@ -134,9 +146,9 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <span className="fs-cmd-eyebrow">Transfer command to</span>
-            {candidates.length === 0 ? (
+            {candidates.length === 0 && memberCandidates.length === 0 ? (
               <p className="fs-cmd-roster-empty">No one else is assigned yet — type a name below.</p>
-            ) : (
+            ) : candidates.length === 0 ? null : (
               <ul className="fs-assign-list">
                 {candidates.map((r) => {
                   const on = !typed && picked != null && sameResource(picked, r);
@@ -164,6 +176,41 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
                   );
                 })}
               </ul>
+            )}
+
+            {memberCandidates.length > 0 && (
+              <>
+                <span className="fs-cmd-eyebrow">Department members</span>
+                <ul className="fs-assign-list">
+                  {memberCandidates.map((r) => {
+                    const on = !typed && picked != null && sameResource(picked, r);
+                    return (
+                      <li key={`account:${r.value}`}>
+                        <button
+                          type="button"
+                          className={`fs-assign-row${on ? ' is-on' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => {
+                            setName('');
+                            setPicked(r);
+                          }}
+                        >
+                          <span className="fs-assign-name">{r.label}</span>
+                          <span className="fs-assign-meta">
+                            {on ? (
+                              <>
+                                <CheckIcon /> selected
+                              </>
+                            ) : (
+                              'signed in'
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
 
             <div className="fs-xfer-newname">

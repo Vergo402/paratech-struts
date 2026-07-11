@@ -21,15 +21,20 @@ export const OrgPositionKind = z.enum([
 ]);
 export type OrgPositionKind = z.infer<typeof OrgPositionKind>;
 
-// What an assigned resource points at. Designed so the deferred auth layer needs no
-// reshape — the device keeps riding the per-device uid.
+// What an assigned resource points at.
 //   apparatus  → Apparatus.id (the roster id); label = rig name
-//   individual → free-text person name (no people roster in v4.0); value === label
-//   device     → the per-device uid (the "self / My Role" assignment); label = name
+//   individual → free-text person name (no people roster join); value === label
+//   account    → a signed-in member's Firebase account uid (identity.accountId); label =
+//                displayName. This is a PERSON holding a position — the identity that
+//                follows the account across every device it signs into (not the tablet).
+//                Self-asserted only: a member can only ever place/verify their OWN account.
+//   device     → the per-device uid — the GUEST floor (no account) and legacy pre-account
+//                ICs. Recognised for its own device; resolved to an account at read time
+//                via the device→account binding when the owning device has checked in.
 // `label` is denormalized at assign time so the chart renders without a roster join
 // and an archived op still reads after a rig is renamed/removed.
 export const OrgResourceRef = z.object({
-  ref: z.enum(['apparatus', 'individual', 'device']),
+  ref: z.enum(['apparatus', 'individual', 'device', 'account']),
   value: z.string(),
   label: z.string(),
 });

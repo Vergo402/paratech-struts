@@ -1,15 +1,16 @@
 import { rootPosition, pathToRoot } from '@core/org';
 import { Sheet, Button } from '@ui/primitives';
-import { useOrg, useMyRole, useDeviceUidValue } from '@ui/hooks';
+import { useOrg, useMyRole, useCommandSelf } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 
-/** My Role — this device self-declares its ICS position (separate from the IC's
- *  authoritative assignment; the two may diverge by design). Any device may set it. */
+/** My Role — self-declare the ICS position you're filling (separate from the IC's
+ *  authoritative assignment; the two may diverge by design). A member's role follows
+ *  their account across devices; a guest's is per-device. Anyone may set it. */
 export function MyRoleSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const positions = useOrg();
   const emit = useOrgCommit();
-  const uid = useDeviceUidValue();
-  const myRoleId = useMyRole(uid);
+  const { selfKey } = useCommandSelf();
+  const myRoleId = useMyRole(selfKey ?? undefined);
   const root = rootPosition(positions);
 
   // List positions in tree order (root first), each with its parent for context.
@@ -24,7 +25,7 @@ export function MyRoleSheet({ open, onClose }: { open: boolean; onClose: () => v
 
   return (
     <Sheet open={open} onClose={onClose} title="My role">
-      <p className="fs-myrole-note">Declare the ICS position you are filling on this device.</p>
+      <p className="fs-myrole-note">Declare the ICS position you are filling.</p>
       <ul className="fs-assign-list">
         {ordered.map((p) => (
           <li key={p.id}>

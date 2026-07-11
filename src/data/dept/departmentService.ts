@@ -94,6 +94,12 @@ export interface DepartmentServiceApi {
   // ---- User Manager (#381) — admin governance, manageUsers-gated by the rules ----
   /** Cold-read the department's members map (admin screen only — not a live store). */
   readMembers(): Promise<Record<string, Member> | null>;
+  /** Cold-read the member-readable device→account binding map ({ deviceUid → accountId }) —
+   *  resolves a legacy device-ref position to its owner's account across devices. */
+  readDeviceOwners(): Promise<Record<string, string>>;
+  /** Cold-read the member-readable roster ({ accountId, displayName }) — feeds the
+   *  command-transfer + position pickers so a role can be handed to a specific person. */
+  readRoster(): Promise<{ id: string; displayName: string }[]>;
   /** Cold-read the append-only governance audit trail, chronological (the Audit Log
    *  Administrative view, #211). manageUsers-gated server-side; null on read failure. */
   readAudit(): Promise<AuditEntry[] | null>;
@@ -568,6 +574,51 @@ export function createDepartmentService(deps: {
     }
   }
 
+  // Cold-read the department's device→account binding map (member-readable, NOT admin-
+  // gated): { deviceUid → accountId }. Resolves a legacy device-ref position to its
+  // owner's account so a member's command/roles are recognised across devices. {} when
+  // absent/offline (degrade to device-only matching — never a crash).
+  async function readDeviceOwners(): Promise<Record<string, string>> {
+    const deptId = sessionStore.store.getState().departmentId;
+    if (!deptId) return {};
+    try {
+      const snap = await get(ref(rtdb, `orgs/${deptId}/deviceOwners`));
+      const val = snap.val();
+      if (!val || typeof val !== 'object') return {};
+      const out: Record<string, string> = {};
+      for (const [dev, acct] of Object.entries(val as Record<string, unknown>)) {
+        if (typeof acct === 'string') out[dev] = acct;
+      }
+      return out;
+    } catch {
+      return {};
+    }
+  }
+
+  // Cold-read the department roster as { accountId, displayName } — MEMBER-readable (the
+  // orgs/{dept} read cascades to members; not the admin-gated readMembers). Feeds the
+  // command-transfer + position pickers so an IC can hand a role to a specific PERSON
+  // (account) that then follows them across devices. Active members only; [] on error.
+  async function readRoster(): Promise<{ id: string; displayName: string }[]> {
+    const deptId = sessionStore.store.getState().departmentId;
+    if (!deptId) return [];
+    try {
+      const snap = await get(ref(rtdb, `orgs/${deptId}/members`));
+      const val = snap.val();
+      if (!val || typeof val !== 'object') return [];
+      const out: { id: string; displayName: string }[] = [];
+      for (const [uid, body] of Object.entries(val as Record<string, unknown>)) {
+        const parsed = Member.safeParse(body);
+        if (parsed.success && parsed.data.active !== false) {
+          out.push({ id: uid, displayName: parsed.data.displayName });
+        }
+      }
+      return out.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    } catch {
+      return [];
+    }
+  }
+
   // Read the governance audit trail (the P3 /orgs/{dept}/audit append-only node). The
   // rules gate the read on manageUsers (#381); a denial / offline read returns null →
   // the hook shows a retry state, never a crash. Coarse shape-check, like readMembers.
@@ -939,6 +990,8 @@ export function createDepartmentService(deps: {
     retryPendingDeptPush,
     restorePendingDeptPush,
     readMembers,
+    readDeviceOwners,
+    readRoster,
     readAudit,
     assignRole,
     setMemberRank,

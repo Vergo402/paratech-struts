@@ -24,6 +24,8 @@ vi.mock('@ui/hooks', () => ({
   useHazards: () => [],
   useCommandTransfer: () => pending,
   useDeviceUidValue: () => 'dev-1',
+  useCommandSelf: () => ({ self: { accountId: null, deviceUid: 'dev-1' }, selfKey: 'dev-1' }),
+  useIsIC: () => true,
   usePendingResourceCount: () => pendingResourceCount,
 }));
 

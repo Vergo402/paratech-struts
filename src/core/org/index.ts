@@ -12,3 +12,4 @@ export * from './reorder';
 export * from './transfer';
 export * from './history';
 export * from './orgReducer';
+export * from './self';

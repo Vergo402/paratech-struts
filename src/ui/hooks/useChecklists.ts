@@ -5,7 +5,7 @@ import { checklistInstance, type ChecklistInstance } from '@core/checklist';
 import { newId } from '@core/id';
 import { useCommit } from './useCommit';
 import { useDeviceUid } from './useDeviceUid';
-import { useDeviceUidValue } from './useDeviceUidValue';
+import { useCommandSelf } from './useCommandSelf';
 import { useMyRole } from './useMyRoles';
 
 /** One checklist instance's attestations + the tap-toggle actions. `instanceId`
@@ -27,8 +27,8 @@ export function useChecklists(
   const attestations = useStore(operationStore.store, (s) => checklistInstance(s, checklistId, instanceId));
   const opId = useStore(operationStore.store, (s) => s.operation?.id);
   const positions = useStore(operationStore.store, (s) => s.positions);
-  const uid = useDeviceUidValue();
-  const myRolePid = useMyRole(uid);
+  const { selfKey } = useCommandSelf();
+  const myRolePid = useMyRole(selfKey ?? undefined);
   const getUid = useDeviceUid();
   const commit = useCommit();
 

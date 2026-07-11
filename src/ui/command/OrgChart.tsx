@@ -1,8 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { OrgPositions } from '@core/schema';
-import { rootPosition, currentIC } from '@core/org';
+import { rootPosition } from '@core/org';
 import { Button, Modal } from '@ui/primitives';
-import { useOrg, useDeviceUidValue, useOrgShorePointCounts } from '@ui/hooks';
+import { useOrg, useIsIC, useOrgShorePointCounts } from '@ui/hooks';
 import { MyRoleSheet } from './MyRoleSheet';
 import { RosterStrip } from './RosterStrip';
 import { OrgDragLayer } from './OrgDragLayer';
@@ -55,13 +55,11 @@ export function OrgChart({
 }) {
   const positions: OrgPositions = useOrg();
   const root = rootPosition(positions);
-  const uid = useDeviceUidValue();
-  const ic = currentIC(positions);
   // Live assignment numerals (#434) — per-position shore-point tallies + the queue.
   const spCounts = useOrgShorePointCounts();
-  // Pre-auth IC-gate (pragmatic, ADR-021): this device may restructure if it holds
-  // the IC device-ref, or no device owns the IC. Real auth verifies later.
-  const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
+  // Command edit gate (ADR-024 follow-up): the IC by ACCOUNT (any device they sign into),
+  // by their own device, or a legacy device-ref the binding resolves to them.
+  const isIC = useIsIC();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);

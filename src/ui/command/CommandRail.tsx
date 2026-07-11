@@ -12,6 +12,8 @@ import {
   useHazards,
   useCommandTransfer,
   useDeviceUidValue,
+  useCommandSelf,
+  useIsIC,
   usePendingResourceCount,
 } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
@@ -49,6 +51,9 @@ export function CommandRail({
   const isDesktop = useIsDesktop();
   const pending = useCommandTransfer();
   const uid = useDeviceUidValue();
+  const { self } = useCommandSelf();
+  // Command edit gate (ADR-024 follow-up) — a hook, so it stays above the early return.
+  const isIC = useIsIC();
   const pendingResourceCount = usePendingResourceCount();
   const emit = useOrgCommit();
   const [scope, setScope] = useState<SitStatScope>('all');
@@ -109,9 +114,6 @@ export function CommandRail({
   if (!operation) return null;
 
   const ic = currentIC(positions);
-  // Pre-auth IC gate (ADR-021), same shape as SitStat: this device commands when the IC
-  // is unstaffed, isn't a device ref, or is this device's uid. Real auth verifies later.
-  const isIC = uid != null && (!ic || ic.ref !== 'device' || ic.value === uid);
   const ops = positions[defaultPositionId(operation.id, 'ops')];
   const safety = positions[defaultPositionId(operation.id, 'safety')];
   const opsName = (ops && leaderOf(ops)?.label) ?? 'Unassigned';
@@ -231,7 +233,7 @@ export function CommandRail({
             </div>
           )}
         </Card>
-      ) : pending && !pending.claimCode && canAccept(pending, uid ?? '') ? (
+      ) : pending && !pending.claimCode && canAccept(pending, uid ?? '', self.accountId) ? (
         <Card className="fs-cmd-xfer fs-cmd-xfer--incoming">
           <span className="fs-cmd-xfer-head">
             <FlagIcon /> You are being given command

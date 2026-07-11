@@ -13,16 +13,20 @@ export interface OrgState {
   commandTransfer: PendingTransfer | null;
 }
 
-// Seeded on OperationCreated: the ADR-008 default tree, with the FOUNDING DEVICE
-// holding Incident Commander (its uid is the IC node's leader, so the gold accent
-// has a target from t=0 — workflow "founding device holds IC by default"). Pre-auth
-// the label is "This device"; a real name drops in when the device sets one.
-export function seedOrgState(opId: string, by: string): OrgState {
+// Seeded on OperationCreated: the ADR-008 default tree with the FOUNDER holding Incident
+// Commander from t=0 (so the gold accent has a target). A signed-in MEMBER founder holds
+// it by ACCOUNT (label = their name; follows every device they sign into); a GUEST founder
+// holds it by device ("This device", the pre-account floor). My Role is keyed the same way.
+export function seedOrgState(opId: string, by: string, account?: { id: string; label: string }): OrgState {
   const positions = buildDefaultTree(opId);
   const icId = defaultPositionId(opId, 'ic');
   const ic = positions[icId];
-  if (ic) positions[icId] = { ...ic, assignedResources: [{ ref: 'device', value: by, label: 'This device' }] };
-  return { positions, myRoles: { [by]: icId }, commandTransfer: null };
+  const leader = account
+    ? { ref: 'account' as const, value: account.id, label: account.label }
+    : { ref: 'device' as const, value: by, label: 'This device' };
+  const key = account ? account.id : by;
+  if (ic) positions[icId] = { ...ic, assignedResources: [leader] };
+  return { positions, myRoles: { [key]: icId }, commandTransfer: null };
 }
 
 // Fold one org/My-Role event. Pure. Every illegal/stale event no-ops deterministically
@@ -86,19 +90,22 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
 
     case 'MyRoleSet': {
       const myRoles = { ...state.myRoles };
-      if (event.positionId == null) delete myRoles[event.by];
-      else myRoles[event.by] = event.positionId;
+      const key = event.account?.id ?? event.by; // member → account (follows devices); guest → device
+      if (event.positionId == null) delete myRoles[key];
+      else myRoles[key] = event.positionId;
       return { ...state, myRoles };
     }
 
     // ── Command transfer (ADR-021) — the two-party handshake. Pending state is a
     // projection field; command does NOT move until the incoming accepts.
     case 'CommandTransferInitiated': {
-      // Only the current IC of record may initiate. Pre-auth soft check: when the IC
-      // leader is a device, require by === that uid; an individual/apparatus IC can't
-      // be uid-verified pre-auth (the UI gates the button). Replay-safe (projection only).
+      // Only the current IC of record may initiate. An ACCOUNT IC verifies by account
+      // (so a member initiates from either of their devices); a DEVICE IC by uid; an
+      // individual/apparatus IC can't be uid-verified (the UI gates the button).
+      // Replay-safe (projection only).
       const ic = currentIC(state.positions);
       if (ic && ic.ref === 'device' && ic.value !== event.by) return state;
+      if (ic && ic.ref === 'account' && ic.value !== event.account?.id) return state;
       return {
         ...state,
         commandTransfer: {
@@ -112,7 +119,7 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
 
     case 'CommandTransferAccepted': {
       const pending = state.commandTransfer;
-      if (!canAccept(pending, event.by)) return state; // no pending, or wrong device
+      if (!canAccept(pending, event.by, event.account?.id)) return state; // no pending, or not the target
       const ic = rootPosition(state.positions);
       if (!ic) return state;
       // Move command: incoming becomes the sole leader (replaces index 0 — the

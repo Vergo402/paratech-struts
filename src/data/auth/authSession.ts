@@ -63,6 +63,9 @@ export function createAuthSessionSync(deps: {
           // existed self-heals on its next ordinary app open (no sign-out ritual).
           // Idempotent fire-and-forget; no-ops when the member has no department.
           session.seedUserDeptIndex();
+          // Bind this device → this account so a legacy device-ref position resolves to
+          // its owner across devices (ADR-024 follow-up). Boot-only, fire-and-forget.
+          session.seedDeviceOwner();
           // Retry the dept-create outbox (#419) on every authenticated boot — a dept
           // created through a connectivity hiccup re-pushes until its orgs node +
           // invite code land. Lazy import keeps this module's graph firebase-db-free;

@@ -9,6 +9,7 @@ const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 vi.mock('@ui/hooks', () => ({
   useCommit: () => mockCommit,
   useDeviceUid: () => () => Promise.resolve('device-test'),
+  useSession: () => ({ identity: { kind: 'guest' } }),
   // AddressField (the Location field) reaches Places through the hooks seam; keep
   // autocomplete off here so it renders as a plain text box (the no-key path).
   placesEnabled: () => false,

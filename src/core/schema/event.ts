@@ -14,6 +14,12 @@ const base = {
   by: z.string(),
 } as const;
 
+// The signed-in actor's ACCOUNT identity (ADR-024 follow-up). `by` stays the per-device
+// uid (provenance/audit, never bound to auth.uid in rules); this rides SEPARATELY on the
+// few self/command events so a member's position follows their account across devices.
+// Absent ⟺ a guest actor (no account) → the reducer falls back to the device (`by`).
+const accountTag = z.object({ id: z.string().min(1), label: z.string().min(1) });
+
 export const OperationCreated = z.object({
   type: z.literal('OperationCreated'),
   ...base,
@@ -22,6 +28,7 @@ export const OperationCreated = z.object({
   inlineDeploy: z.boolean().optional(), // absent on pre-feature events → reducer defaults true
   location: z.string().optional(),
   coords: z.object({ lat: z.number(), lng: z.number() }).optional(), // from address autocomplete
+  account: accountTag.optional(), // member founder → IC held by the account (not the device)
 });
 
 export const OperationEdited = z.object({
@@ -277,12 +284,14 @@ export const ResourceCleared = z.object({
   resource: OrgResourceRef.optional(),
 });
 
-// The device (`by`) self-declares its ICS position (v3 openMyRoleModal). null =
-// "clear my role". A device-scoped projection slice, separate from the IC's org.
+// The actor self-declares their ICS position (v3 openMyRoleModal). null = "clear my
+// role". Keyed by the PRINCIPAL — the account for a member (so My Role follows every
+// device they sign into), the device (`by`) for a guest. Separate from the IC's org.
 export const MyRoleSet = z.object({
   type: z.literal('MyRoleSet'),
   ...base,
   positionId: z.string().nullable(),
+  account: accountTag.optional(), // member → My Role keyed by the account (follows devices)
 });
 
 // ── Command transfer (ADR-021, #225) — the two-party handshake. Initiate sets a
@@ -295,7 +304,10 @@ export const MyRoleSet = z.object({
 export const CommandTransferInitiated = z.object({
   type: z.literal('CommandTransferInitiated'),
   ...base,
-  toResource: OrgResourceRef, // the named incoming commander (individual or device)
+  toResource: OrgResourceRef, // the named incoming commander (account / individual / device)
+  // The INITIATING actor's account (member) — lets the fold verify only the current
+  // account-IC may initiate, from either of their devices. Absent for a guest initiator.
+  account: accountTag.optional(),
   // #425 — the 4-digit accept code for individual/apparatus targets (no uid to
   // verify pre-auth): the outgoing IC's device shows it, the incoming commander
   // types it to unlock Accept/Decline; everyone else sees only a quiet pending
@@ -308,10 +320,13 @@ export const CommandTransferInitiated = z.object({
 });
 
 // The incoming accepts → the reducer moves the IC node's leader + clears pending.
-// Guarded at fold time (a matching pending must exist; pre-auth device-uid soft check).
+// Guarded at fold time (a matching pending must exist). An account-targeted transfer is
+// uid-verified — the accepting member's account must equal the target (from any device);
+// a device/individual target keeps the pre-auth soft check (canAccept).
 export const CommandTransferAccepted = z.object({
   type: z.literal('CommandTransferAccepted'),
   ...base,
+  account: accountTag.optional(), // the ACCEPTING member's account (verifies an account target)
 });
 
 export const CommandTransferDeclined = z.object({

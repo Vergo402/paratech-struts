@@ -19,7 +19,7 @@ import {
   useCommit,
   useCommitMany,
   useDeviceUid,
-  useDeviceUidValue,
+  useCommandSelf,
   useInventory,
   useMyRole,
   useOperation,
@@ -377,9 +377,9 @@ export function OperationsBoard() {
   // Role position. uid resolves asynchronously (undefined on first render), so
   // mineAvailable stays false — never flashing available-then-unavailable — until
   // it settles.
-  const deviceUid = useDeviceUidValue();
+  const { selfKey } = useCommandSelf();
   const positions = useOrg();
-  const myRoleId = useMyRole(deviceUid);
+  const myRoleId = useMyRole(selfKey ?? undefined);
   const mineKeys = useMemo(() => myApparatusKeys(positions, myRoleId), [positions, myRoleId]);
   const mineAvailable = mineKeys.length > 0;
   // Create/end/edit an operation is the back-office manageOperations capability (ADR-017 #3,

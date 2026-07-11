@@ -66,6 +66,8 @@ export interface SessionStoreApi {
    *  device can recover this account's department. Idempotent fire-and-forget;
    *  called on every authenticated boot (authSession) AND on create/join. */
   seedUserDeptIndex(): void;
+  /** Bind this device → this account (deviceOwners reverse map) — called on authed boot. */
+  seedDeviceOwner(): void;
 }
 
 const GUEST: Identity = { kind: 'guest' };
@@ -188,6 +190,18 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
     }).catch(() => {});
   }
 
+  // Bind THIS device → this account (ADR-024 follow-up): the member-readable reverse map
+  // that resolves a legacy device-ref position to its owner's account, so a member's
+  // command/roles are recognised on every device without rewriting the log. Written on
+  // every authenticated BOOT (not create/join — a founder has no legacy refs to resolve);
+  // fire-and-forget, heals older devices on a plain reload. Separate from the userDepts
+  // seed so the dept-create write path (one atomic set + code) is unchanged.
+  function seedDeviceOwner(): void {
+    const s = store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId || !s.deviceUid) return;
+    set(ref(rtdb, `orgs/${s.departmentId}/deviceOwners/${s.deviceUid}`), s.identity.accountId).catch(() => {});
+  }
+
   return {
 
     store,
@@ -260,6 +274,7 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
     },
 
     seedUserDeptIndex,
+    seedDeviceOwner,
   };
 }
 

@@ -14,7 +14,7 @@ import {
   leaderOf,
 } from '@core/org';
 import { Sheet, SideDrawer, Modal, Button, TextField, useMediaQuery } from '@ui/primitives';
-import { useOrg, useOperation, useRoleHistory, useApparatus, useShorePoints } from '@ui/hooks';
+import { useOrg, useOperation, useRoleHistory, useApparatus, useShorePoints, useRoster } from '@ui/hooks';
 import { clock } from '@ui/util/time';
 import { useOrgCommit } from './useOrgCommit';
 import { AddPositionForm } from './AddPositionForm';
@@ -86,6 +86,7 @@ export function NodeSheet({
   const emit = useOrgCommit();
   const history = useRoleHistory(op?.id ?? null, positionId);
   const { roster } = useApparatus();
+  const members = useRoster(false); // department members (accounts) — assignable to any position
   const shorePoints = useShorePoints();
   const isDeck = useMediaQuery('(min-width: 1024px)');
   const [mode, setMode] = useState<Mode>('menu');
@@ -273,6 +274,29 @@ export function NodeSheet({
                       <button type="button" className={`fs-assign-row${onHere ? ' is-on' : ''}`} onClick={() => toggle(r)}>
                         <span className="fs-assign-name">{app.name}</span>
                         <span className="fs-assign-meta">{onHere ? 'assigned here' : home ? `at ${home.title}` : 'unassigned'}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+          {/* Department members (accounts) — placing a PERSON in a position ties it to
+              their account, so the role follows them across every device they sign into
+              (not the tablet). A member already holding a position elsewhere shows its home. */}
+          {members.length > 0 && (
+            <>
+              <div className="fs-node-section">Department members</div>
+              <ul className="fs-assign-list">
+                {members.map((m) => {
+                  const r: OrgResourceRef = { ref: 'account', value: m.id, label: m.displayName };
+                  const home = positionForResource(positions, r);
+                  const onHere = has(r);
+                  return (
+                    <li key={m.id}>
+                      <button type="button" className={`fs-assign-row${onHere ? ' is-on' : ''}`} onClick={() => toggle(r)}>
+                        <span className="fs-assign-name">{m.displayName}</span>
+                        <span className="fs-assign-meta">{onHere ? 'assigned here' : home ? `at ${home.title}` : 'signed in'}</span>
                       </button>
                     </li>
                   );

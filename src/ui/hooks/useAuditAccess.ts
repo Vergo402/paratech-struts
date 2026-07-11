@@ -2,7 +2,8 @@ import { isCommanderOf } from '@core/org';
 import { useOperation } from './useOperation';
 import { useOrg } from './useOrg';
 import { useMyRole } from './useMyRoles';
-import { useDeviceUidValue } from './useDeviceUidValue';
+import { useCommandSelf } from './useCommandSelf';
+import { useDeviceOwners } from './useDeviceOwners';
 import { usePastOperations, useArchivedOperation } from './usePastOperations';
 import { usePermissions } from './usePermissions';
 
@@ -25,10 +26,11 @@ export interface AuditAccess {
 }
 
 export function useAuditAccess(): AuditAccess {
-  const uid = useDeviceUidValue();
+  const { self, selfKey } = useCommandSelf();
+  const resolve = useDeviceOwners();
   const liveOp = useOperation();
   const liveOrg = useOrg();
-  const liveMine = useMyRole(uid);
+  const liveMine = useMyRole(selfKey ?? undefined);
   const past = usePastOperations();
   const perms = usePermissions();
 
@@ -40,11 +42,17 @@ export function useAuditAccess(): AuditAccess {
   const opName = isLive ? liveOp.name : (past.data?.[0]?.name ?? null);
 
   let canIncident = false;
-  if (opId && uid) {
+  if (opId && self.deviceUid) {
     canIncident = isLive
-      ? isCommanderOf(liveOrg, liveMine ?? null, opId, uid)
+      ? isCommanderOf(liveOrg, liveMine ?? null, opId, self, resolve)
       : archived.data
-        ? isCommanderOf(archived.data.positions, archived.data.myRoles[uid] ?? null, opId, uid)
+        ? isCommanderOf(
+            archived.data.positions,
+            (selfKey ? archived.data.myRoles[selfKey] : null) ?? null,
+            opId,
+            self,
+            resolve,
+          )
         : false;
   }
 

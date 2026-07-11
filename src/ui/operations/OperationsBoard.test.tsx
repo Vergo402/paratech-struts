@@ -26,6 +26,8 @@ vi.mock('@ui/hooks', () => ({
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useDeviceUidValue: () => 'device-test',
+  useCommandSelf: () => ({ self: { accountId: null, deviceUid: 'device-test' }, selfKey: 'device-test' }),
+  useSession: () => ({ identity: { kind: 'guest' } }),
   // StartOperationModal's AddressField reaches Places through the hooks seam —
   // keep autocomplete off so it renders as a plain text box (the no-key path).
   placesEnabled: () => false,
