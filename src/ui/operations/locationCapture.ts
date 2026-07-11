@@ -19,6 +19,12 @@ type CommitMany = (events: FieldShoreEvent[]) => Promise<{ ok: boolean }>;
 
 const GPS_TIMEOUT_MS = 15_000;
 
+/** One GPS fix (high accuracy). Rejects on denied/unavailable/timeout — callers
+ *  treat a rejection as "no location captured" and never block on it. */
+export function getGpsFix(): Promise<{ lat: number; lng: number }> {
+  return currentPosition();
+}
+
 function currentPosition(): Promise<{ lat: number; lng: number }> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {

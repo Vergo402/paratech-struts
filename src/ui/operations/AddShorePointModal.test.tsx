@@ -11,6 +11,8 @@ const mockOperation = vi.fn((): Operation | null => null);
 const mockShorePoints = vi.fn((): ShorePoint[] => []);
 const mockInventory = vi.fn(() => []);
 const mockRecommendations = vi.fn(() => []);
+const mockW3wEnabled = vi.fn(() => false); // #441 — flipped on in the capture tests
+const mockConvert = vi.fn(() => Promise.resolve('filled.count.soap'));
 
 vi.mock('@ui/hooks', () => ({
   useOperation: () => mockOperation(),
@@ -20,10 +22,9 @@ vi.mock('@ui/hooks', () => ({
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useInventory: () => mockInventory(),
   useRecommendations: () => mockRecommendations(),
-  // locationCapture (#441) reaches w3w through the seam — keep conversion off
-  // (jsdom also has no geolocation, so the background capture no-ops anyway).
-  w3wEnabled: () => false,
-  convertToWords: async () => 'mock.words.off',
+  // #441 — location capture reaches w3w through the seam.
+  w3wEnabled: () => mockW3wEnabled(),
+  convertToWords: () => mockConvert(),
 }));
 
 // Inline mode renders RecommendationCards in the form — mock to a bare Deploy
@@ -523,5 +524,76 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     expect(deployed).toHaveLength(0);
     expect(pending).toHaveLength(1);
     expect(onClose).toHaveBeenCalled();
+  });
+});
+
+describe('location capture (#441) — explicit in the form', () => {
+  beforeEach(() => {
+    mockCommitMany.mockClear();
+    mockConvert.mockClear();
+    mockOperation.mockReturnValue(OP); // two-step (inlineDeploy:false) → "Add Shore Point"
+    mockShorePoints.mockReturnValue([]);
+    mockW3wEnabled.mockReturnValue(true);
+    mockConvert.mockResolvedValue('filled.count.soap');
+    Element.prototype.scrollIntoView = vi.fn();
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: (ok: (p: unknown) => void) => ok({ coords: { latitude: 25.874, longitude: -80.1217 } }) },
+    });
+  });
+
+  function addedFrom(): ShorePoint {
+    const events = mockCommitMany.mock.calls.at(-1)![0] as FieldShoreEvent[];
+    const added = events.find((e) => e.type === 'ShorePointAdded');
+    return (added as Extract<FieldShoreEvent, { type: 'ShorePointAdded' }>).shorePoint;
+  }
+
+  it('captures GPS + words and writes both onto the created point', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: /Capture location/ }));
+    expect(await screen.findByText('filled.count.soap')).toBeInTheDocument(); // words confirm in-form
+    await user.click(submitButton());
+    const sp = addedFrom();
+    expect(sp.coords).toEqual({ lat: 25.874, lng: -80.1217 });
+    expect(sp.w3w).toBe('filled.count.soap');
+  });
+
+  it('conversion off (no key/plan) → coordinates saved, words left for the backfill', async () => {
+    mockW3wEnabled.mockReturnValue(false);
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: /Capture location/ }));
+    expect(await screen.findByText(/25\.87400, -80\.12170/)).toBeInTheDocument(); // coords chip
+    expect(mockConvert).not.toHaveBeenCalled();
+    await user.click(submitButton());
+    const sp = addedFrom();
+    expect(sp.coords).toEqual({ lat: 25.874, lng: -80.1217 });
+    expect(sp.w3w).toBeUndefined();
+  });
+
+  it('no capture → the point saves with no location (unchanged flow)', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(submitButton());
+    const sp = addedFrom();
+    expect(sp.coords).toBeUndefined();
+    expect(sp.w3w).toBeUndefined();
+  });
+
+  it('a failed conversion still keeps the captured coordinates', async () => {
+    mockConvert.mockRejectedValue(new Error('quota'));
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: /Capture location/ }));
+    expect(await screen.findByText(/25\.87400, -80\.12170/)).toBeInTheDocument();
+    await user.click(submitButton());
+    const sp = addedFrom();
+    expect(sp.coords).toEqual({ lat: 25.874, lng: -80.1217 });
+    expect(sp.w3w).toBeUndefined();
   });
 });

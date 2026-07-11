@@ -5,7 +5,7 @@ import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES, parseLoad } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
-import { captureLocation } from './locationCapture';
+import { getGpsFix } from './locationCapture';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
@@ -20,6 +20,8 @@ import {
   useOperation,
   useRecommendations,
   useShorePoints,
+  w3wEnabled,
+  convertToWords,
 } from '@ui/hooks';
 import { DivisionPicker } from './DivisionPicker';
 import { BuildingPicker } from './BuildingPicker';
@@ -87,6 +89,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const [deductions, setDeductions] = useState<Deductions>(NO_DEDUCTIONS);
   const [estimatedLoad, setEstimatedLoad] = useState('');
   const [label, setLabel] = useState('');
+  // #441 — location captured IN this form (the explicit control), written onto the
+  // created point(s) at submit. coords land instantly from GPS; w3w fills in once the
+  // conversion returns. Seeded from the point being edited; reset for a new point (a
+  // GPS fix is per-physical-spot, so it never carries over like division/area).
+  const [captured, setCaptured] = useState<{ coords: { lat: number; lng: number }; w3w?: string } | null>(null);
+  const [capturing, setCapturing] = useState(false);
 
   // Inline find/deploy UI state (create + one-step mode only).
   const [found, setFound] = useState(false);
@@ -121,6 +129,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDeductions(shorePoint.deductions);
       setEstimatedLoad(shorePoint.estimatedLoad != null ? String(shorePoint.estimatedLoad) : '');
       setLabel(shorePoint.label ?? '');
+      setCaptured(shorePoint.coords ? { coords: shorePoint.coords, ...(shorePoint.w3w ? { w3w: shorePoint.w3w } : {}) } : null);
     } else {
       // Last-used defaults (#220, #248 re-drive): the newest point in the op seeds
       // the LOCATION block — building / division / area / crew — so a new point in
@@ -139,8 +148,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDeductions(NO_DEDUCTIONS);
       setEstimatedLoad('');
       setLabel('');
+      setCaptured(null); // GPS is per-physical-spot — never carried from the last point
     }
     setQty('1');
+    setCapturing(false);
     setFound(false);
     setDeploying(false);
     setDeployError(null);
@@ -152,6 +163,31 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   function selectShoreType(next: ShoreTypeId) {
     setShoreType(next);
     if (next === '3-post') setDeductions((d) => ({ ...d, ...THREE_POST_WOOD }));
+  }
+
+  // #441 — the explicit in-form capture. GPS coords land immediately (shown as the
+  // coords chip); the what3words conversion follows and upgrades to the words. Any
+  // failure (permission denied, no fix, offline, quota) is swallowed — coords stay
+  // if we got them, and the words backfill converts after save. Never blocks submit.
+  async function handleCaptureLocation() {
+    if (capturing) return;
+    setCapturing(true);
+    try {
+      const coords = await getGpsFix();
+      setCaptured({ coords });
+      if (w3wEnabled() && navigator.onLine) {
+        try {
+          const w3w = await convertToWords(coords);
+          setCaptured({ coords, w3w });
+        } catch (err) {
+          if (import.meta.env.DEV) console.warn('[AddShorePoint] w3w conversion failed:', err);
+        }
+      }
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn('[AddShorePoint] no GPS fix:', err);
+    } finally {
+      setCapturing(false);
+    }
   }
 
   const qtyNum = qty.trim() === '' ? NaN : Number(qty);
@@ -275,6 +311,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       ...(label.trim() ? { label: label.trim() } : {}),
       ...(assignedResource ? { assignedResource } : {}),
       ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
+      // #441 — the in-form capture rides onto every point of this add (one square per
+      // group/spot). w3w may be absent if the conversion hadn't returned; the board
+      // backfill fills it in from the coords.
+      ...(captured?.coords ? { coords: captured.coords } : {}),
+      ...(captured?.w3w ? { w3w: captured.w3w } : {}),
       status: 'pending',
     }));
   }
@@ -304,9 +345,6 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     );
     if (result.ok) {
       commitHaptic();
-      // #441 — background GPS capture where the inputter stands; one fix fans to
-      // every point of the add. Never awaited, never blocks the workflow.
-      void captureLocation(points.map((p) => p.id), operation.id, commitMany, uid);
       onAdded?.(points);
       onClose();
     }
@@ -341,9 +379,6 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDeploying(false);
       return;
     }
-    // #441 — same background capture as the two-step path, fired once the points
-    // exist (deploy outcomes don't change where the shore physically is).
-    void captureLocation(points.map((p) => p.id), operation.id, commitMany, uid);
     // commitMany can't carry inventory events — deploy each created point with a
     // single commit (its own pre-flight + decrement-abort-on-zero transaction).
     // The chosen combo goes on every point of the add (same opening, same strut).
@@ -395,13 +430,9 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     const members = editMembers;
     if (members.every((m) => m.status === 'pending') && strutsPerShore !== members.length) {
       const at = Date.now();
-      // #441 — the rebuild recreates the SAME physical shore at a new strut count;
-      // its captured location carries over (buildShoreStruts only knows form fields).
-      const rebuilt = buildShoreStruts(sp.seq).map((p) => ({
-        ...p,
-        ...(sp.coords ? { coords: sp.coords } : {}),
-        ...(sp.w3w ? { w3w: sp.w3w } : {}),
-      }));
+      // #441 — buildShoreStruts already spreads the form's captured location (seeded
+      // from this point on open), so the rebuilt legs keep the shore's 3m square.
+      const rebuilt = buildShoreStruts(sp.seq);
       const result = await commitMany(restructureBatch(members, rebuilt, operation.id, uid, at));
       if (result.ok) {
         commitHaptic();
@@ -435,6 +466,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     }
     const newLabel = label.trim() || null;
     if (newLabel !== (sp.label ?? null)) patch.label = newLabel;
+
+    // #441 — a recapture in the edit form. Coords + words travel together; new coords
+    // with words not-yet-returned clear the stale words (the backfill re-converts). Fans
+    // to every group member below (one 3m square per physical shore).
+    const newCoords = captured?.coords ?? null;
+    const oldCoords = sp.coords ?? null;
+    if (newCoords?.lat !== oldCoords?.lat || newCoords?.lng !== oldCoords?.lng) {
+      patch.coords = newCoords;
+    }
+    const newW3w = captured?.w3w ?? null;
+    if (newW3w !== (sp.w3w ?? null)) patch.w3w = newW3w;
 
     if (Object.keys(patch).length === 0) {
       onClose();
@@ -536,6 +578,63 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
           <DivisionPicker value={division} onChange={setDivision} />
           <SidePicker value={side} onChange={setSide} />
           <TextField label="Area / Room #" value={area} onChange={setArea} placeholder="Optional" />
+        </div>
+        {/* #441 — explicit location capture, right with the geographic fields. Coords
+            land instantly; the what3words words confirm before save. Optional + never
+            blocks submit; a point saved without it can be captured from the board. */}
+        <div className="fs-asp-loc">
+          <span className="fs-field-label">Location</span>
+          {captured ? (
+            <>
+              <div className="fs-asp-loc-captured">
+                {captured.w3w ? (
+                  <>
+                    <span className="fs-spc-w3w-slashes" aria-hidden="true">
+                      {'///'}
+                    </span>
+                    <span className="fs-spc-w3w-words">{captured.w3w}</span>
+                  </>
+                ) : (
+                  <span className="fs-spc-w3w-words">
+                    {captured.coords.lat.toFixed(5)}, {captured.coords.lng.toFixed(5)}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="fs-asp-loc-recapture"
+                  onClick={handleCaptureLocation}
+                  disabled={capturing}
+                >
+                  {capturing ? 'Capturing…' : 'Recapture'}
+                </button>
+              </div>
+              <span className="fs-asp-loc-hint">
+                {captured.w3w
+                  ? `Saved with this shore point · ${captured.coords.lat.toFixed(5)}, ${captured.coords.lng.toFixed(5)}`
+                  : w3wEnabled()
+                    ? 'Coordinates saved — the 3 words fill in once online.'
+                    : 'Coordinates saved with this shore point.'}
+              </span>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="fs-spc-w3w fs-spc-w3w--capture fs-asp-loc-btn"
+                onClick={handleCaptureLocation}
+                disabled={capturing}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3.5" />
+                  <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                </svg>
+                {capturing ? 'Capturing…' : 'Capture location (what3words)'}
+              </button>
+              <span className="fs-asp-loc-hint">
+                Uses this device&rsquo;s GPS. Optional — you can also capture it later from the board.
+              </span>
+            </>
+          )}
         </div>
         {(apparatusOptions.length > 1 || assignedResource) && (
           <BottomSheetPicker

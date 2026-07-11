@@ -3179,4 +3179,30 @@ button.fs-spc-head {
 /* Quick View drawer location rows (#441) */
 .fs-spd-w3w-words { font-family: var(--font-mono, monospace); }
 .fs-spd-w3w-coords { font-family: var(--font-mono, monospace); color: var(--text-secondary); }
+
+/* Add Shore Point form — the explicit location capture control (#441). */
+.fs-asp-loc { display: flex; flex-direction: column; gap: 6px; }
+.fs-asp-loc-btn { width: 100%; justify-content: center; margin-top: 0; }
+.fs-asp-loc-btn:disabled { opacity: 0.6; }
+.fs-asp-loc-captured {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-card);
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  min-width: 0;
+}
+.fs-asp-loc-captured .fs-spc-w3w-words { flex: 1; }
+.fs-asp-loc-recapture {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  cursor: pointer;
+}
+.fs-asp-loc-recapture:disabled { color: var(--text-tertiary); cursor: default; }
+.fs-asp-loc-hint { font-size: 11px; color: var(--text-tertiary); }
 [data-theme='sunlight'] .fs-divtile-st { color: var(--sp-solid); }
