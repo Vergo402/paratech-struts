@@ -37,6 +37,7 @@ import { FloatingStack } from './FloatingStack';
 import { ShorePointDetail } from './ShorePointDetail';
 import { InventorySummary } from './InventorySummary';
 import { GroupedShorePoint } from './GroupedShorePoint';
+import { captureLocation, useW3wBackfill } from './locationCapture';
 import { CardBoundary } from './CardBoundary';
 import { useDeleteGhosts, isLeaving } from './useDeleteGhosts';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
@@ -163,6 +164,8 @@ interface ItemCallbacks {
   onRemoveReturn: (sp: ShorePoint) => void;
   /** Group gate (#221 OQ2): set while a grouped Equipment Assigned point has mates still Pending Equipment. */
   advanceDisabledReasonFor: (sp: ShorePoint) => string | undefined;
+  /** #441 — Capture-location for a point with no GPS fix; fans to the whole group. */
+  onCaptureLocation: (sp: ShorePoint) => void;
   /** Board scroll target — fronts the stack on the member it lands inside (S12 §2). */
   activeStackId: string | null;
   /** Over-capacity/unrated flag per point (H1/#415, H2/#416) — computed by the board
@@ -214,6 +217,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
                 capacityFlagOf={cb.capacityFlagOf}
+                onCaptureLocation={cb.onCaptureLocation}
               />
             </CardBoundary>
           </div>
@@ -239,6 +243,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
                 capacityFlag={cb.capacityFlagOf(item.sp)}
+                onCaptureLocation={cb.onCaptureLocation}
               />
             </CardBoundary>
           </div>
@@ -380,6 +385,21 @@ export function OperationsBoard() {
   // Create/end/edit an operation is the back-office manageOperations capability (ADR-017 #3,
   // #380) — orthogonal to the ICS-position gates on the fireground actions (deploy/cut/secure).
   const canManageOps = usePermissions().manageOperations;
+
+  // #441 — converts coords-but-no-words points once online + keyed (one square per
+  // group; the capture fanned identical coords to every member).
+  useW3wBackfill(operation?.status === 'active' ? operation.id : undefined, shorePoints);
+
+  // #441 — the card's quiet Capture-location action. One fix fans to every live
+  // member of the point's group (one physical shore = one 3m square).
+  const handleCaptureLocation = async (sp: ShorePoint) => {
+    if (!operation) return;
+    const ids = sp.groupId
+      ? shorePoints.filter((m) => m.groupId === sp.groupId && !m.deletedAt).map((m) => m.id)
+      : [sp.id];
+    const uid = await getUid();
+    void captureLocation(ids, operation.id, commitMany, uid);
+  };
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   // Past-operations archive drill-in (#238) — the opId being viewed read-only, or
@@ -1129,6 +1149,7 @@ export function OperationsBoard() {
       advanceDisabledReasonFor={advanceDisabledReasonFor}
       activeStackId={scrollToId}
       capacityFlagOf={capacityFlagOf}
+      onCaptureLocation={handleCaptureLocation}
     />
   );
 

@@ -154,6 +154,15 @@ export const ShorePoint = z.object({
   // ShorePointRestored only — NOT user-editable, so absent from ShorePointPatch.
   // Distinct from the card's presentational `removed` (the #222 cut-list sense).
   deletedAt: z.number().int().nonnegative().optional(),
+  // Physical location of the shore (#441). coords = device GPS fix captured at
+  // creation (or via the card's Capture-location action); w3w = the what3words
+  // 3m-square words for those coords ("filled.count.soap", no /// prefix) — the
+  // radio callout. Converted online; absent w3w with coords present = conversion
+  // pending (offline / no key). One fix per GROUP — the capture fans the same
+  // patch to every member. Location metadata, NOT a sizing field: applies in any
+  // status (like label/assignedResource, exempt from the #220 field-lock).
+  coords: z.object({ lat: z.number(), lng: z.number() }).optional(),
+  w3w: z.string().optional(),
 });
 export type ShorePoint = z.infer<typeof ShorePoint>;
 
@@ -176,6 +185,10 @@ export const ShorePointPatch = z
     // The cutter's "Mark Cut Done" toggle (#222) — applies on the `cutting` state,
     // not gated by the Pending field-lock. true = saw ran; false = clear it.
     cuttingDone: z.boolean(),
+    // Location capture (#441) — like label/assignedResource, applies in any status
+    // (a fix can resolve after deploy). null clears both together on a re-capture.
+    coords: z.object({ lat: z.number(), lng: z.number() }).nullable(),
+    w3w: z.string().nullable(),
   })
   .partial();
 export type ShorePointPatch = z.infer<typeof ShorePointPatch>;

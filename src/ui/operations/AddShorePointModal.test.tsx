@@ -20,6 +20,10 @@ vi.mock('@ui/hooks', () => ({
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useInventory: () => mockInventory(),
   useRecommendations: () => mockRecommendations(),
+  // locationCapture (#441) reaches w3w through the seam — keep conversion off
+  // (jsdom also has no geolocation, so the background capture no-ops anyway).
+  w3wEnabled: () => false,
+  convertToWords: async () => 'mock.words.off',
 }));
 
 // Inline mode renders RecommendationCards in the form — mock to a bare Deploy

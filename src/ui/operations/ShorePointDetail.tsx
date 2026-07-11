@@ -193,6 +193,30 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
         </div>
       </section>
 
+      {/* #441 — the point's radio-callout location: what3words + raw coordinates.
+          Only when a fix exists; a point with neither simply has no section. */}
+      {(sp.w3w || sp.coords) && (
+        <section className="fs-spd-section">
+          <h3 className="fs-spd-h">Location</h3>
+          <div className="fs-rec-ledger">
+            {sp.w3w && (
+              <div className="fs-rec-row">
+                <span className="fs-rec-slot-label">what3words</span>
+                <span className="fs-spd-w3w-words">{'///'}{sp.w3w}</span>
+              </div>
+            )}
+            {sp.coords && (
+              <div className="fs-rec-row">
+                <span className="fs-rec-slot-label">Coordinates</span>
+                <span className="fs-spd-w3w-coords">
+                  {sp.coords.lat.toFixed(5)}, {sp.coords.lng.toFixed(5)}
+                </span>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Bill of materials — the single canonical home for the strut model */}
       <section className="fs-spd-section">
         <h3 className="fs-spd-h">Bill of materials</h3>

@@ -600,3 +600,47 @@ describe('ShorePointCard — persistent capacity flag', () => {
     expect(document.querySelector('.fs-spc-flag')).toBeNull();
   });
 });
+
+describe('W3wChip — the radio-callout location row (#441)', () => {
+  it('renders the words chip and copies ///words on tap', async () => {
+    const user = userEvent.setup(); // installs its own clipboard shim — override AFTER
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    render(<ShorePointCard shorePoint={makeSP({ w3w: 'filled.count.soap' })} />);
+    const chip = screen.getByRole('button', { name: 'Copy location ///filled.count.soap' });
+    expect(chip.textContent).toContain('filled.count.soap');
+    await user.click(chip);
+    expect(writeText).toHaveBeenCalledWith('///filled.count.soap');
+    expect(chip.textContent).toContain('Copied');
+  });
+
+  it('coords without words render the copyable coordinate fallback (conversion pending)', () => {
+    render(<ShorePointCard shorePoint={makeSP({ coords: { lat: 25.874072, lng: -80.121703 } })} />);
+    expect(screen.getByRole('button', { name: /Copy location 25\.87407, -80\.12170/ })).toBeInTheDocument();
+  });
+
+  it('no fix + handler → the quiet Capture location action, fanned via the callback', async () => {
+    const onCapture = vi.fn();
+    const sp = makeSP();
+    const user = userEvent.setup();
+    render(<ShorePointCard shorePoint={sp} onCaptureLocation={onCapture} />);
+    await user.click(screen.getByRole('button', { name: 'Capture location' }));
+    expect(onCapture).toHaveBeenCalledWith(sp);
+  });
+
+  it('no handler (archive/Cutting Station) → no capture button, no chip without a fix', () => {
+    render(<ShorePointCard shorePoint={makeSP()} />);
+    expect(screen.queryByRole('button', { name: 'Capture location' })).not.toBeInTheDocument();
+  });
+
+  it('terminal returned card offers no capture (action-free doctrine), but keeps existing words', () => {
+    const { rerender } = render(
+      <ShorePointCard shorePoint={makeSP({ status: 'returned' })} onCaptureLocation={vi.fn()} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Capture location' })).not.toBeInTheDocument();
+    rerender(
+      <ShorePointCard shorePoint={makeSP({ status: 'returned', w3w: 'kept.words.here' })} onCaptureLocation={vi.fn()} />,
+    );
+    expect(screen.getByRole('button', { name: 'Copy location ///kept.words.here' })).toBeInTheDocument();
+  });
+});

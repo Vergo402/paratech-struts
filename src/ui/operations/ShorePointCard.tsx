@@ -73,6 +73,63 @@ function WaitIcon() {
   );
 }
 
+// #441 — the shore point's radio-callout location row. Three states: words chip
+// (copyable ///what.three.words), coords-only chip (fix saved, conversion pending —
+// still copyable, still radio-usable), or the quiet Capture-location action when
+// no fix exists yet. Never blocks anything; absent handler = no button (archive).
+export function W3wChip({
+  sp,
+  onCapture,
+}: {
+  sp: Pick<ShorePoint, 'w3w' | 'coords'>;
+  onCapture?: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const text = sp.w3w
+    ? `///${sp.w3w}`
+    : sp.coords
+      ? `${sp.coords.lat.toFixed(5)}, ${sp.coords.lng.toFixed(5)}`
+      : null;
+
+  if (text) {
+    const copy = async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        /* clipboard unavailable (http / permissions) — the words stay readable */
+      }
+    };
+    return (
+      <button type="button" className="fs-spc-w3w" onClick={copy} aria-label={`Copy location ${text}`}>
+        {sp.w3w ? (
+          <>
+            <span className="fs-spc-w3w-slashes" aria-hidden="true">
+              {'///'}
+            </span>
+            <span className="fs-spc-w3w-words">{sp.w3w}</span>
+          </>
+        ) : (
+          <span className="fs-spc-w3w-words">{text}</span>
+        )}
+        <span className="fs-spc-w3w-copy">{copied ? 'Copied' : 'Copy'}</span>
+      </button>
+    );
+  }
+
+  if (!onCapture) return null;
+  return (
+    <button type="button" className="fs-spc-w3w fs-spc-w3w--capture" onClick={onCapture}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
+      Capture location
+    </button>
+  );
+}
+
 /**
  * ShorePointCard — the lifecycle card (card.md). Presentational: the board
  * owns every modal and commit. Pending Equipment shipped with #220; Equipment Assigned and the
@@ -116,6 +173,10 @@ export interface ShorePointCardProps {
   onRemoveReturn?: (sp: ShorePoint) => void;
   /** Set while a grouped point's mates are still Pending (workflow #221 OQ2 — group advances together). */
   advanceDisabledReason?: string;
+  /** #441 — the quiet "Capture location" action for a point with no GPS fix yet.
+   *  The board fans the capture to the whole group; absent (archive, Cutting
+   *  Station) → no button, the chip still renders when words/coords exist. */
+  onCaptureLocation?: (sp: ShorePoint) => void;
   /**
    * The over-capacity / unrated flag, computed by the board where the full group is
    * known (deployedCapacityFlag + deployedStrutCount, H1/#415), so the card, List row,
@@ -162,6 +223,7 @@ export function ShorePointCard({
   onClearCutDone,
   onRemoveReturn,
   advanceDisabledReason,
+  onCaptureLocation,
   capacityFlag: capacityFlagProp,
   removed = false,
   hazard = false,
@@ -323,6 +385,20 @@ export function ShorePointCard({
       <CapacityFlag flag={capacityFlag} />
 
       {valueShelf}
+
+      {/* #441 — radio-callout location row. Capture is only offered while the
+          shore is still being worked — a terminal returned card stays action-free
+          (its existing words/coords still render as history). */}
+      {!removed && (
+        <W3wChip
+          sp={sp}
+          onCapture={
+            interactive && onCaptureLocation && sp.status !== 'returned'
+              ? () => onCaptureLocation(sp)
+              : undefined
+          }
+        />
+      )}
 
       {sp.status === 'cutting' && sp.cuttingDone && (
         <p className="fs-spc-cutdone">✓ Cut done</p>

@@ -29,6 +29,8 @@ export {
   type AddressSuggestion,
   type AddressSession,
 } from '@data/places/places';
+// what3words conversion (#441, shore point location capture) — same seam discipline.
+export { w3wEnabled, convertToWords } from '@data/w3w/w3w';
 export { useRecommendations } from './useRecommendations';
 export { useCommit, useCommitMany } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';

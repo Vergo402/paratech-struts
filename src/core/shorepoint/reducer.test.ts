@@ -398,6 +398,31 @@ describe('#220 field-lock — editable fields by status', () => {
     } satisfies FieldShoreEvent);
     expect(next.estimatedLoad).toBe(10000); // unchanged — locked
   });
+
+  it('location capture (#441) sets coords + words in any status — metadata, not a sizing field', () => {
+    const next = shorePointReducer(sp({ status: 'secured' }), {
+      type: 'ShorePointEdited',
+      ...meta,
+      spId: 'sp1',
+      patch: { coords: { lat: 25.874, lng: -80.1217 }, w3w: 'filled.count.soap' },
+    } satisfies FieldShoreEvent);
+    expect(next.coords).toEqual({ lat: 25.874, lng: -80.1217 });
+    expect(next.w3w).toBe('filled.count.soap');
+  });
+
+  it('location capture null-clears coords + words (re-capture path)', () => {
+    const next = shorePointReducer(
+      sp({ status: 'process', coords: { lat: 1, lng: 2 }, w3w: 'old.words.here' }),
+      {
+        type: 'ShorePointEdited',
+        ...meta,
+        spId: 'sp1',
+        patch: { coords: null, w3w: null },
+      } satisfies FieldShoreEvent,
+    );
+    expect('coords' in next).toBe(false);
+    expect('w3w' in next).toBe(false);
+  });
 });
 
 describe('deployedCapacityFlag — persistent board-card safety flag (#410 audit #7)', () => {

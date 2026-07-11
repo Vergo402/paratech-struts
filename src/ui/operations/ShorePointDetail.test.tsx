@@ -230,3 +230,24 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
     expect(screen.queryByRole('alert')).toBeNull();
   });
 });
+
+describe('location section (#441)', () => {
+  it('renders what3words + coordinates when the point has a fix', () => {
+    render(<ShorePointDetail sp={makeSp({ w3w: 'filled.count.soap', coords: { lat: 25.874072, lng: -80.121703 } })} />);
+    expect(screen.getByText('Location')).toBeInTheDocument();
+    expect(screen.getByText('///filled.count.soap')).toBeInTheDocument();
+    expect(screen.getByText('25.87407, -80.12170')).toBeInTheDocument();
+  });
+
+  it('shows coordinates alone while words are still pending (conversion offline/quota)', () => {
+    render(<ShorePointDetail sp={makeSp({ coords: { lat: 25.874072, lng: -80.121703 } })} />);
+    expect(screen.getByText('Location')).toBeInTheDocument();
+    expect(screen.queryByText(/^\/\/\//)).toBeNull();
+    expect(screen.getByText('25.87407, -80.12170')).toBeInTheDocument();
+  });
+
+  it('omits the whole section when the point has no location', () => {
+    render(<ShorePointDetail sp={makeSp()} />);
+    expect(screen.queryByText('Location')).toBeNull();
+  });
+});

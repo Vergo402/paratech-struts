@@ -259,6 +259,17 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
     if (patch.cuttingDone) next.cuttingDone = true;
     else delete next.cuttingDone;
   }
+  // Location capture (#441) — physical-spot metadata, not a sizing field: applies
+  // in every status like label/crew (a GPS fix or its words conversion can land
+  // after the point advances past Pending). null clears.
+  if (patch.coords !== undefined) {
+    if (patch.coords === null) delete next.coords;
+    else next.coords = patch.coords;
+  }
+  if (patch.w3w !== undefined) {
+    if (patch.w3w === null) delete next.w3w;
+    else next.w3w = patch.w3w;
+  }
   // #220 field-lock: once a point advances past Pending its sizing fields lock —
   // EXCEPT for a grouped shore, where a re-measure must fan to every leg so one
   // physical shore keeps one length (2026-07-04 audit H3/#417; Alex D2). The sole

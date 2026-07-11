@@ -46,6 +46,8 @@ export interface GroupedShorePointProps {
   /** Highest open-hazard severity in the group's Division (#394) — one location
    *  per group, so the same badge rides every member card. */
   hazard?: ShorePointCardProps['hazard'];
+  /** #441 — Capture-location; the board fans one fix to every member (one square per group). */
+  onCaptureLocation?: ShorePointCardProps['onCaptureLocation'];
 }
 
 // The "Post 2" style member label. groupIndex is 1-based; fall back to array
@@ -78,6 +80,7 @@ export function GroupedShorePoint({
   advanceDisabledReasonFor,
   capacityFlagOf,
   hazard,
+  onCaptureLocation,
 }: GroupedShorePointProps) {
   const n = members.length;
   const initialActive = Math.max(
@@ -156,6 +159,7 @@ export function GroupedShorePoint({
         advanceDisabledReason={advanceDisabledReasonFor?.(member)}
         capacityFlag={capacityFlagOf?.(member)}
         hazard={hazard}
+        onCaptureLocation={onCaptureLocation}
         // The member's own group badge ("2 / 3") rides the card header already.
         key={`spc-${member.id}-${fallbackIndex}`}
       />

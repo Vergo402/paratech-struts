@@ -3134,4 +3134,49 @@ button.fs-spc-head {
   color: var(--text-tertiary);
 }
 .fs-addr-attrib strong { font-weight: 500; color: var(--text-secondary); }
+
+/* Shore point location chip (#441, W3wChip) — the radio-callout row on the card:
+   ///what.three.words (or raw coords while conversion is pending), tap = copy.
+   The capture variant is the quiet dashed action for a point with no fix yet. */
+.fs-spc-w3w {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-2);
+  padding: 6px 10px;
+  background: transparent;
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-button);
+  font: var(--type-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  max-width: 100%;
+}
+.fs-spc-w3w:active { background: var(--surface-card-hover); }
+.fs-spc-w3w-slashes {
+  color: #e11f26; /* the what3words mark — brand red in every theme, like the emblem (ADR-011 exemption) */
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+.fs-spc-w3w-words {
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fs-spc-w3w-copy {
+  margin-left: 2px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.fs-spc-w3w--capture {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+.fs-spc-w3w--capture svg { flex: none; }
+
+/* Quick View drawer location rows (#441) */
+.fs-spd-w3w-words { font-family: var(--font-mono, monospace); }
+.fs-spd-w3w-coords { font-family: var(--font-mono, monospace); color: var(--text-secondary); }
 [data-theme='sunlight'] .fs-divtile-st { color: var(--sp-solid); }

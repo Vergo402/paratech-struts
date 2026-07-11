@@ -5,6 +5,7 @@ import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES, parseLoad } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
+import { captureLocation } from './locationCapture';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
@@ -303,6 +304,9 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     );
     if (result.ok) {
       commitHaptic();
+      // #441 — background GPS capture where the inputter stands; one fix fans to
+      // every point of the add. Never awaited, never blocks the workflow.
+      void captureLocation(points.map((p) => p.id), operation.id, commitMany, uid);
       onAdded?.(points);
       onClose();
     }
@@ -337,6 +341,9 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDeploying(false);
       return;
     }
+    // #441 — same background capture as the two-step path, fired once the points
+    // exist (deploy outcomes don't change where the shore physically is).
+    void captureLocation(points.map((p) => p.id), operation.id, commitMany, uid);
     // commitMany can't carry inventory events — deploy each created point with a
     // single commit (its own pre-flight + decrement-abort-on-zero transaction).
     // The chosen combo goes on every point of the add (same opening, same strut).
@@ -388,7 +395,13 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     const members = editMembers;
     if (members.every((m) => m.status === 'pending') && strutsPerShore !== members.length) {
       const at = Date.now();
-      const rebuilt = buildShoreStruts(sp.seq);
+      // #441 — the rebuild recreates the SAME physical shore at a new strut count;
+      // its captured location carries over (buildShoreStruts only knows form fields).
+      const rebuilt = buildShoreStruts(sp.seq).map((p) => ({
+        ...p,
+        ...(sp.coords ? { coords: sp.coords } : {}),
+        ...(sp.w3w ? { w3w: sp.w3w } : {}),
+      }));
       const result = await commitMany(restructureBatch(members, rebuilt, operation.id, uid, at));
       if (result.ok) {
         commitHaptic();
