@@ -11,6 +11,9 @@ vi.mock('../sync/firebase', () => ({
   set: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('./firebase', () => ({ firebaseAuth: {} }));
+// authSession lazily imports departmentService (the #419 outbox retry), which now
+// pulls the functions seam (#439) — mock it so the graph never reaches firebase/functions.
+vi.mock('../functions/firebase', () => ({ callFunction: vi.fn() }));
 vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn(() => unsubSpy),
 }));

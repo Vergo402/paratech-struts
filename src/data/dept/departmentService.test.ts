@@ -2,11 +2,12 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Hoist mocks before any module that reaches the Firebase seam runs.
-const { setMock, getMock, updateMock, logMock } = vi.hoisted(() => ({
+const { setMock, getMock, updateMock, logMock, callMock } = vi.hoisted(() => ({
   setMock: vi.fn(),
   getMock: vi.fn(),
   updateMock: vi.fn(),
   logMock: vi.fn(),
+  callMock: vi.fn(),
 }));
 vi.mock('../sync/firebase', () => ({
   rtdb: {},
@@ -17,6 +18,7 @@ vi.mock('../sync/firebase', () => ({
   remove: vi.fn(),
 }));
 vi.mock('../sync/diagnostics', () => ({ logSyncEvent: logMock }));
+vi.mock('../functions/firebase', () => ({ callFunction: callMock }));
 
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, type SessionStoreApi } from '../store/session';
@@ -561,5 +563,131 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     expect(await bareSvc.assignRole('uid-x', 'role-x')).toEqual(notConnected);
     // Validation-failing input while disconnected: the ctx guard must answer first.
     expect(await bareSvc.setMemberRank('uid-x', 'r'.repeat(100))).toEqual(notConnected);
+  });
+});
+
+describe('departmentService — admin-provisioned personnel (#439)', () => {
+  let db: FieldShoreDB;
+  let session: SessionStoreApi;
+  let svc: DepartmentServiceApi;
+
+  const auditWrites = () =>
+    setMock.mock.calls.filter(([r]) => (r as { path: string }).path.includes('/audit/'));
+
+  beforeEach(async () => {
+    setMock.mockReset().mockResolvedValue(undefined);
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
+    updateMock.mockReset().mockResolvedValue(undefined);
+    logMock.mockReset().mockResolvedValue(undefined);
+    callMock.mockReset().mockResolvedValue({ uid: 'new-member-uid' });
+    db = createDB(`test-dept-${newId()}`);
+    session = createSessionStore(db);
+    await session.boot(UID);
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    svc = createDepartmentService({ session: () => session, db });
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    if (!r.ok) throw new Error('setup: create failed');
+    setMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  const dana = {
+    email: 'dkim@hamdenfd.example', displayName: 'Dana Kim', starterPassword: 'kim123!',
+    role: 'default', apparatusId: 'rig-e2',
+  };
+
+  it('provisionMember calls the callable with the dept id and audits memberProvisioned', async () => {
+    const r = await svc.provisionMember(dana);
+    expect(r.ok).toBe(true);
+    expect(r.uid).toBe('new-member-uid');
+    expect(callMock).toHaveBeenCalledWith('provisionAccount', expect.objectContaining({
+      ...dana, deptId: expect.any(String),
+    }));
+    expect(auditWrites()).toHaveLength(1);
+    expect(auditWrites()[0]![1]).toMatchObject({ type: 'memberProvisioned', targetUid: 'new-member-uid', roleId: 'default' });
+  });
+
+  it('provisionMember maps already-exists to the invite-code copy and writes NO audit', async () => {
+    callMock.mockRejectedValue({ code: 'functions/already-exists', message: 'exists' });
+    const r = await svc.provisionMember(dana);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/invite code/i);
+    expect(auditWrites()).toHaveLength(0);
+  });
+
+  it('provisionMember maps unreachable-server codes to the offline copy', async () => {
+    callMock.mockRejectedValue({ code: 'functions/unavailable', message: 'unavailable' });
+    const r = await svc.provisionMember(dana);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/reach the server/i);
+  });
+
+  it('provisionMember passes the server message through for application errors', async () => {
+    callMock.mockRejectedValue({ code: 'functions/permission-denied', message: 'Only an Admin can add another Admin.' });
+    const r = await svc.provisionMember({ ...dana, role: 'admin' });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/Only an Admin/);
+  });
+
+  it('setMemberProfile trims, maps "" to null (clear), and audits memberProfileEdited', async () => {
+    const r = await svc.setMemberProfile('uid-x', { rank: ' Lieutenant ', badge: '', apparatusId: 'rig-r1' });
+    expect(r.ok).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining('/members/uid-x') }),
+      { rank: 'Lieutenant', badge: null, apparatusId: 'rig-r1' },
+    );
+    expect(auditWrites()[0]![1]).toMatchObject({ type: 'memberProfileEdited', targetUid: 'uid-x' });
+    expect(callMock).not.toHaveBeenCalled(); // no displayName → no Auth-profile sync
+  });
+
+  it('setMemberProfile with a displayName also syncs the Auth profile (best-effort callable)', async () => {
+    const r = await svc.setMemberProfile('uid-x', { displayName: 'Dana Kim-Reyes' });
+    expect(r.ok).toBe(true);
+    expect(callMock).toHaveBeenCalledWith('adminUpdateAccount', expect.objectContaining({
+      targetUid: 'uid-x', displayName: 'Dana Kim-Reyes',
+    }));
+  });
+
+  it('setMemberProfile rejects an empty displayName (schema requires non-empty)', async () => {
+    const r = await svc.setMemberProfile('uid-x', { displayName: '  ' });
+    expect(r.ok).toBe(false);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('changeMemberEmail + resetMemberPassword ride the callable and audit uid-only entries', async () => {
+    callMock.mockResolvedValue({ ok: true });
+    expect((await svc.changeMemberEmail('uid-x', 'new@fd.example')).ok).toBe(true);
+    expect((await svc.resetMemberPassword('uid-x', 'kim123!')).ok).toBe(true);
+    const types = auditWrites().map(([, body]) => (body as { type: string }).type);
+    expect(types).toEqual(['accountEmailChanged', 'passwordResetToStarter']);
+    for (const [, body] of auditWrites()) {
+      expect(JSON.stringify(body)).not.toMatch(/kim123|new@fd/); // never values, uids only
+    }
+  });
+
+  it('clearMustChangePassword self-writes the one-way flag clear on the OWN row', async () => {
+    const r = await svc.clearMustChangePassword();
+    expect(r.ok).toBe(true);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ path: expect.stringContaining(`/members/${FB_UID}`) }),
+      { mustChangePassword: false },
+    );
+    expect(auditWrites()).toHaveLength(0); // hygiene, not governance
+  });
+
+  it('every #439 method degrades honestly with no department', async () => {
+    const bareDb = createDB(`test-dept-${newId()}`);
+    const bare = createSessionStore(bareDb);
+    await bare.boot(UID);
+    const bareSvc = createDepartmentService({ session: () => bare, db: bareDb });
+    expect((await bareSvc.provisionMember(dana)).ok).toBe(false);
+    expect((await bareSvc.changeMemberEmail('u', 'e@x.y')).ok).toBe(false);
+    expect((await bareSvc.resetMemberPassword('u', 'kim123!')).ok).toBe(false);
+    expect((await bareSvc.clearMustChangePassword()).ok).toBe(false);
+    expect(callMock).not.toHaveBeenCalled();
+    await bareDb.delete();
   });
 });

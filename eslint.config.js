@@ -17,6 +17,9 @@ export default tseslint.config(
       'dist/**',
       'dev-dist/**',
       'node_modules/**',
+      // Cloud Functions workspace (#439) — its own standalone Node/CJS package
+      // with its own strict tsc; the root (browser-app) lint rules don't apply.
+      'functions/**',
       // design-sync tooling + build output (already gitignored) — not app code.
       '.ds-sync/**',
       'ds-bundle/**',

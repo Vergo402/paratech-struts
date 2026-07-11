@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  updatePassword,
   signOut as fbSignOut,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -87,6 +88,13 @@ export interface AccountServiceApi {
   completeMagicLink(url: string): Promise<AuthResult>;
   /** Email a password-reset link (Firebase hosts the reset page). */
   sendPasswordReset(email: string): Promise<ActionResult>;
+  /**
+   * Change the signed-in member's own password (#439 forced first-sign-in change).
+   * Always reauthenticates with the current password first — deterministic,
+   * sidesteps auth/requires-recent-login, and doubles as the "current password"
+   * verification the change screen needs anyway.
+   */
+  changePassword(currentPassword: string, newPassword: string): Promise<ActionResult>;
   /** The signed-in account's email (read-only, from Firebase Auth). null when guest. */
   currentEmail(): string | null;
 }
@@ -280,6 +288,32 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
         await sendPasswordResetEmail(firebaseAuth, addr);
         return { ok: true };
       } catch (err: unknown) {
+        return { ok: false, reason: mapFirebaseError(err) };
+      }
+    },
+
+    async changePassword(currentPassword, newPassword) {
+      const user = firebaseAuth.currentUser;
+      if (!user || !user.email) return { ok: false, reason: "You're not signed in." };
+      if (newPassword.length < 6) {
+        return { ok: false, reason: 'Password must be at least 6 characters.' };
+      }
+      try {
+        // Reauth FIRST, every time (mirrors deleteAccount): deterministic, never
+        // trips auth/requires-recent-login, and verifies the current password.
+        const cred = EmailAuthProvider.credential(user.email, currentPassword);
+        await reauthenticateWithCredential(user, cred);
+        await updatePassword(user, newPassword);
+        return { ok: true };
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code ?? '';
+        if (
+          code === 'auth/invalid-credential' ||
+          code === 'auth/wrong-password' ||
+          code === 'auth/invalid-login-credentials'
+        ) {
+          return { ok: false, reason: "That current password doesn't match." };
+        }
         return { ok: false, reason: mapFirebaseError(err) };
       }
     },

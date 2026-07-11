@@ -1,0 +1,1 @@
+export { starterPasswordFor } from './starterPassword';

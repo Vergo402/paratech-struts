@@ -233,6 +233,17 @@ function describeEntry(e: AuditEntry, names?: AuditNames): Described {
   switch (e.type) {
     case 'roleAssigned':
       return { badge: 'Member', tone: 'neutral', text: `${member(e.targetUid)} assigned role: ${role(e.roleId, e.roleName)}` };
+    // #439 — admin-provisioned personnel. No email/password values in entries, uids only.
+    case 'memberProvisioned':
+      return { badge: 'Member', tone: 'good', text: `${member(e.targetUid)} added to the department — account created`, detail: `role: ${role(e.roleId, e.roleName)}` };
+    case 'memberProfileEdited':
+      return { badge: 'Member', tone: 'neutral', text: `${member(e.targetUid)} — profile updated` };
+    case 'memberRankSet':
+      return { badge: 'Member', tone: 'neutral', text: `${member(e.targetUid)} — rank set` };
+    case 'passwordResetToStarter':
+      return { badge: 'Account', tone: 'warn', text: `${member(e.targetUid)} — password reset to starter` };
+    case 'accountEmailChanged':
+      return { badge: 'Account', tone: 'warn', text: `${member(e.targetUid)} — sign-in email changed` };
     case 'memberRevoked':
       return { badge: 'Member', tone: 'danger', text: `${member(e.targetUid)} — access revoked` };
     case 'memberReactivated':

@@ -3,8 +3,8 @@ import { getAuth } from 'firebase/auth';
 
 // FieldShore v4's OWN Firebase project (fieldshore-database) — separate from
 // v3 production (paratech-c3ab4), per Alex's 2026-06-22 decision. This file
-// (+ data/sync/firebase.ts) are the ONLY places in v4 that touch Firebase
-// directly (invariant 1, lint-enforced).
+// (+ data/sync/firebase.ts + data/functions/firebase.ts, #439) are the ONLY
+// places in v4 that touch Firebase directly (invariant 1, lint-enforced).
 const config = {
   apiKey: 'AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo',
   authDomain: 'fieldshore-database.firebaseapp.com',

@@ -18,6 +18,7 @@ vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
   updateProfile: vi.fn(),
+  updatePassword: vi.fn(),
   signOut: vi.fn(),
   sendSignInLinkToEmail: vi.fn(),
   isSignInWithEmailLink: vi.fn(),
@@ -32,6 +33,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
+  updatePassword,
   signOut as fbSignOut,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
@@ -72,6 +74,7 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
       { user: { uid: FB_UID, displayName: 'Capt. Reyes' } } as never,
     );
     vi.mocked(updateProfile).mockResolvedValue(undefined);
+    vi.mocked(updatePassword).mockResolvedValue(undefined);
     vi.mocked(fbSignOut).mockResolvedValue(undefined);
     vi.mocked(sendSignInLinkToEmail).mockResolvedValue(undefined);
     vi.mocked(isSignInWithEmailLink).mockReturnValue(false);
@@ -307,5 +310,42 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toMatch(/not signed in/i);
     expect(vi.mocked(reauthenticateWithCredential)).not.toHaveBeenCalled();
+  });
+
+  // ---- changePassword (#439 forced first-sign-in change) ----
+
+  it('changePassword: reauths FIRST, then updates (deterministic — never trips requires-recent-login)', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { email: 'r@d.gov' };
+    const res = await account.changePassword('kim123!', 'my-real-password');
+    expect(res.ok).toBe(true);
+    const reauthOrder = vi.mocked(reauthenticateWithCredential).mock.invocationCallOrder[0];
+    const updateOrder = vi.mocked(updatePassword).mock.invocationCallOrder[0];
+    expect(reauthOrder).toBeLessThan(updateOrder!);
+    expect(vi.mocked(updatePassword)).toHaveBeenCalledWith({ email: 'r@d.gov' }, 'my-real-password');
+  });
+
+  it('changePassword: wrong current password → inline reason, no update attempted', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { email: 'r@d.gov' };
+    vi.mocked(reauthenticateWithCredential).mockRejectedValue({ code: 'auth/invalid-credential' });
+    const res = await account.changePassword('wrong', 'my-real-password');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/current password/i);
+    expect(vi.mocked(updatePassword)).not.toHaveBeenCalled();
+  });
+
+  it('changePassword: short new password fails locally — nothing reaches Firebase', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { email: 'r@d.gov' };
+    const res = await account.changePassword('kim123!', 'tiny');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/6 characters/);
+    expect(vi.mocked(reauthenticateWithCredential)).not.toHaveBeenCalled();
+    expect(vi.mocked(updatePassword)).not.toHaveBeenCalled();
+  });
+
+  it('changePassword: signed out → ok:false', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = null;
+    const res = await account.changePassword('a', 'my-real-password');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/not signed in/i);
   });
 });

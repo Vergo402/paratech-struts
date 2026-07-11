@@ -12,6 +12,7 @@ import {
 import { newId } from '@core/id';
 import type { AuditEntry } from '@core/audit';
 import { rtdb, ref, get, set, update, remove } from '../sync/firebase';
+import { callFunction } from '../functions/firebase';
 import { logSyncEvent } from '../sync/diagnostics';
 import { syncStatusStore } from '../sync/syncStatus';
 import { sessionStore, type SessionStoreApi } from '../store/session';
@@ -116,6 +117,44 @@ export interface DepartmentServiceApi {
   revokeInviteCode(): Promise<AdminMutationResult>;
   /** Rotate the invite code: publish a new one, kill the old, update the session. */
   regenerateInviteCode(): Promise<AdminMutationResult & { code?: string }>;
+
+  // ---- Admin-provisioned personnel (#439) — the server-callable-backed ops ----
+  /** Create a member's login on the spot (provisionAccount callable): Auth user +
+   *  member row (mustChangePassword) + userDepts reverse index. Online-only. */
+  provisionMember(input: ProvisionMemberInput): Promise<AdminMutationResult & { uid?: string }>;
+  /** Edit a member's profile fields (client write, ADMIN_MANAGE). '' clears a field.
+   *  A displayName change also syncs the Auth profile (best-effort, via the callable). */
+  setMemberProfile(uid: string, patch: MemberProfilePatch): Promise<AdminMutationResult>;
+  /** Change a member's sign-in email (adminUpdateAccount callable; revokes their sessions). */
+  changeMemberEmail(uid: string, email: string): Promise<AdminMutationResult>;
+  /** Reset a member's password to the starter (adminUpdateAccount callable; re-raises
+   *  mustChangePassword and revokes their sessions). The 0300 forgot-my-password fix. */
+  resetMemberPassword(uid: string, starterPassword: string): Promise<AdminMutationResult>;
+  /** The signed-in member clears their OWN starter flag after the forced change
+   *  (SELF_EDIT rule branch allows exactly the true→false transition). */
+  clearMustChangePassword(): Promise<AdminMutationResult>;
+}
+
+export interface ProvisionMemberInput {
+  email: string;
+  displayName: string;
+  starterPassword: string;
+  role: string;
+  rank?: string;
+  apparatusId?: string;
+  badge?: string;
+  phone?: string;
+  certifications?: string;
+}
+
+/** Editable member-row profile fields. '' = clear (writes null; RTDB drops the key). */
+export interface MemberProfilePatch {
+  displayName?: string;
+  rank?: string;
+  apparatusId?: string;
+  badge?: string;
+  phone?: string;
+  certifications?: string;
 }
 
 export interface AdminMutationResult {
@@ -769,6 +808,129 @@ export function createDepartmentService(deps: {
     return { ok: true, code: newCode };
   }
 
+  // ---- Admin-provisioned personnel (#439) ----
+
+  // Callable failures → plain reasons. The server already speaks user-facing copy
+  // (HttpsError messages), so known application codes pass its message through;
+  // reachability failures get the offline copy (callables are online-only by
+  // design — privileged account ops have no meaningful offline queue).
+  function callableError(err: unknown): string {
+    const code = (err as { code?: string }).code ?? '';
+    const message = (err as { message?: string }).message ?? '';
+    if (code === 'functions/already-exists') {
+      return 'An account with that email already exists — they can join with the invite code instead.';
+    }
+    if (code === 'functions/unavailable' || code === 'functions/deadline-exceeded' || code === 'functions/internal') {
+      return "Couldn't reach the server — check your connection and try again.";
+    }
+    if (message) return message;
+    return 'That change could not be saved. Try again.';
+  }
+
+  async function provisionMember(
+    input: ProvisionMemberInput,
+  ): Promise<AdminMutationResult & { uid?: string }> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    let uid: string;
+    try {
+      const res = await callFunction<
+        ProvisionMemberInput & { deptId: string },
+        { uid: string }
+      >('provisionAccount', { ...input, deptId: c.deptId });
+      uid = res.uid;
+    } catch (err) {
+      return { ok: false, reason: callableError(err) };
+    }
+    void appendAudit(c, 'memberProvisioned', { targetUid: uid, roleId: input.role });
+    return { ok: true, uid };
+  }
+
+  async function setMemberProfile(uid: string, patch: MemberProfilePatch): Promise<AdminMutationResult> {
+    const changes: Record<string, unknown> = {};
+    for (const key of ['displayName', 'rank', 'apparatusId', 'badge', 'phone', 'certifications'] as const) {
+      const v = patch[key];
+      if (v === undefined) continue;
+      const trimmed = v.trim();
+      // '' clears the field (null → RTDB drops the key) — except displayName,
+      // which the schema requires non-empty; an empty name is a caller bug.
+      if (key === 'displayName' && !trimmed) return { ok: false, reason: 'A name is required.' };
+      changes[key] = trimmed || null;
+    }
+    if (!Object.keys(changes).length) return { ok: true };
+    const res = await adminWrite(
+      (c) => update(ref(rtdb, `orgs/${c.deptId}/members/${uid}`), changes),
+      () => ['memberProfileEdited', { targetUid: uid }],
+    );
+    // Keep the Auth profile displayName in sync (resolveDisplayName's fallback
+    // source) — best-effort: the member row is the app's display truth, so a
+    // failed profile sync must not fail the save.
+    if (res.ok && typeof changes.displayName === 'string') {
+      const c = adminCtx();
+      if (c) {
+        void callFunction('adminUpdateAccount', {
+          deptId: c.deptId,
+          targetUid: uid,
+          displayName: changes.displayName,
+        }).catch((err) =>
+          logSyncEvent('auth_profile_sync_failed', {
+            deptId: c.deptId,
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
+    }
+    return res;
+  }
+
+  async function changeMemberEmail(uid: string, email: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const addr = email.trim();
+    if (!addr) return { ok: false, reason: 'Enter an email first.' };
+    try {
+      await callFunction('adminUpdateAccount', { deptId: c.deptId, targetUid: uid, email: addr });
+    } catch (err) {
+      return { ok: false, reason: callableError(err) };
+    }
+    void appendAudit(c, 'accountEmailChanged', { targetUid: uid });
+    return { ok: true };
+  }
+
+  async function resetMemberPassword(uid: string, starterPassword: string): Promise<AdminMutationResult> {
+    const c = adminCtx();
+    if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    try {
+      await callFunction('adminUpdateAccount', {
+        deptId: c.deptId,
+        targetUid: uid,
+        newPassword: starterPassword,
+      });
+    } catch (err) {
+      return { ok: false, reason: callableError(err) };
+    }
+    void appendAudit(c, 'passwordResetToStarter', { targetUid: uid });
+    return { ok: true };
+  }
+
+  // Self-write, like setRank: the SELF_EDIT rule branch permits exactly the
+  // true→false transition. No audit — finishing your own forced password change
+  // is hygiene, not governance.
+  async function clearMustChangePassword(): Promise<AdminMutationResult> {
+    const s = deps.session().store.getState();
+    if (s.identity.kind !== 'member' || !s.departmentId) {
+      return { ok: false, reason: 'Sign in and connect to a department first.' };
+    }
+    try {
+      await update(ref(rtdb, `orgs/${s.departmentId}/members/${s.identity.accountId}`), {
+        mustChangePassword: false,
+      });
+    } catch (err) {
+      return { ok: false, reason: writeError(err) };
+    }
+    return { ok: true };
+  }
+
   return {
     createDepartment,
     joinByCode,
@@ -788,6 +950,11 @@ export function createDepartmentService(deps: {
     deleteRole,
     revokeInviteCode,
     regenerateInviteCode,
+    provisionMember,
+    setMemberProfile,
+    changeMemberEmail,
+    resetMemberPassword,
+    clearMustChangePassword,
   };
 }
 
