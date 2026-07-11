@@ -1,0 +1,19 @@
+{
+  "name": "fieldshore-functions",
+  "description": "FieldShore v4 server callables — privileged account ops (#439). Standalone package, NOT an npm workspace: firebase-tools packages this dir with its own node_modules.",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

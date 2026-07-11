@@ -43,3 +43,7 @@ ds-bundle/
 .design-sync/node_modules
 *.log
 skill-observations/
+
+# v4 server callables (#439)
+functions/node_modules/
+functions/lib/
