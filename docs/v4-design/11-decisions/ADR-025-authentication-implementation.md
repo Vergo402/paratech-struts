@@ -95,3 +95,18 @@ Tracked as a sub-issue of epic [#379](https://github.com/Vergo402/paratech-strut
 ## Notes
 
 The single open sub-item this ADR does not resolve is the offline-auth *token lifetime* (how long a "trust this device" refresh token stays valid offline) — that is plumbing flagged in [`06-signing-in-and-out.md`](../09-workflows/06-signing-in-and-out.md) §Open questions and rides the same Phase-H infrastructure pass as the email transport, not a design call. [ADR-009](ADR-009-database-firebase-rtdb.md) already establishes that Firebase's long-lived refresh token plus flush-time authorization covers multi-hour outages, so the offline window is safe; only the exact lifetime is a tuning question.
+
+---
+
+## Addendum — admin-provisioned accounts beside self-join (#439, Phase J build, 2026-07-10)
+
+The User Manager can now **create a member's login on the spot** (mockup accepted 2026-07-10) — the second of exactly two ways an account comes to exist, beside self-service `createAccount`:
+
+1. **Self-join** (unchanged): create account → join with an invite code. Stays the mutual-aid / edge-case path.
+2. **Admin-provisioned** (#439): an admin (manageUsers-holder) adds a firefighter — name, email, role, rank, apparatus, badge, phone, certifications — and the `provisionAccount` callable (Admin SDK, `functions/src/index.ts`) creates the Auth user and writes the member row + `/userDepts` reverse index in one multi-path update. The member lands in the department on their very first sign-in via the existing `recoverDeptFromCloud` path — no invite code, no new bootstrap.
+
+**Starter-password policy.** `starterPasswordFor(displayName)` (`src/core/personnel/`) derives `${lastname}123!` — last name lowercased, **diacritics folded** (García → garcia; it must be typable on any keyboard, read aloud at 0300), `member` floor below 2 usable characters so every result clears Firebase's 6-char minimum. **Deliberately guessable — acceptable ONLY because it is single-use and distributed in person:** the member row carries `mustChangePassword: true` until the member replaces the starter, the `ChangePasswordGate` blocks the app shell at first sign-in until they do (reauth-first `changePassword`, then the one-way SELF_EDIT `true→false` flag clear), and the User Manager **key badge** keeps every unrotated account visible to admins. **The gate FAILS OPEN** (an unreadable flag renders the app): it is hygiene, not a security boundary — the audit anchor is the account, not the gate.
+
+**Reset-to-starter** (`adminUpdateAccount` callable) is the 0300 forgot-my-password fix: back to the derived starter + the flag re-raised + **refresh tokens revoked** (stale devices drop off within the ID-token hour). Email changes ride the same callable with the same revocation; email-verification status resets on change — nothing gates on it today, noted for whenever something does.
+
+**CSV bulk add** (`personnelCsv.ts` + `PersonnelImportFlow`) provisions row-by-row **sequentially** (Auth throttles parallel creation); the results screen is the starter-password distribution sheet, shown once.

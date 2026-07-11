@@ -26,7 +26,7 @@ The Admin surface for **defining what roles a department has and who holds them*
 This screen has two faces, switched by a [`segmented`](../03-primitives/segmented.md) scope:
 
 1. **Roles** — the department's role definitions: **Admin** (built-in, full, can't be deleted) + the **Default** (built-in, editable — what a new member gets) + any **custom roles** the department creates. Each role is a name + the back-office permission toggles ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)).
-2. **Members** — the people in the department, each with the role they hold. Assign/change a member's role; promote to Admin; revoke access.
+2. **Members** — the people in the department, each with the role they hold. Assign/change a member's role; promote to Admin; revoke access. **Since #439 this is the WHOLE department's personnel, not just self-joined members:** an admin adds a firefighter and the app creates their login on the spot (see §Admin-provisioned personnel below); rows carry a rank · rig sub-line and a **key badge** while the starter password is unrotated.
 
 ## Information hierarchy (above / below fold) — per surface
 
@@ -102,6 +102,15 @@ If/when 2FA lands, the **"require 2FA" department policy** would live here — b
 | Added density | — | sortable column + Roles list | activity / audit columns + role editor | — |
 | Does NOT render | — | — | — | **the whole screen** |
 
+## Admin-provisioned personnel (#439, built 2026-07-10 — mockups accepted in-session)
+
+The Members face grew from role assignment to full personnel management ([ADR-025 addendum](../11-decisions/ADR-025-authentication-implementation.md) records the account policy; [ADR-017 addendum](../11-decisions/ADR-017-custom-department-roles.md) the server-enforced path):
+
+- **Add member** (a [`sheet`](../03-primitives/sheet.md)): name + email (their sign-in) + role + rank + apparatus (from the dept roster) + optional badge / phone / certifications (free text). The **starter password `lastname123!` derives live from the typed name**; success swaps to a hand-over panel repeating email + starter — shown once, read to the member in person. Email-in-use fails inline and names the invite-code alternative.
+- **Member edit** (the same sheet as role assignment, grown): every profile field editable + the sign-in email (a privileged server op) + **Reset password to starter** (destructive [`modal`](../03-primitives/modal.md) showing the exact derived starter; the member's devices are signed out) + the existing Revoke.
+- **CSV bulk add**: the ADR-038 4-step validated import (columns Name, Email, Rank, Apparatus, Badge, Phone, Certs, Role) — role + rig resolved by name, per-row sequential account creation with live progress, and a results screen that doubles as the **starter-password distribution sheet** + an honest per-row failure list. Resolves per-screen open question 4 in the import direction (export still pending).
+- **First sign-in**: the provisioned member lands in the department automatically (`recoverDeptFromCloud`) and the app blocks behind the forced password change until the starter is replaced; the key badge clears when they do.
+
 ## Empty / error / loading states
 
 (Posture set in [`00-ia-foundation.md`](00-ia-foundation.md) §Cross-cutting empty / error / loading.)
@@ -122,5 +131,5 @@ If/when 2FA lands, the **"require 2FA" department policy** would live here — b
 1. **Revoke semantics** — does revoke delete the member's UID from the dept or mark it inactive (retaining their audit trail)? Resolved with the Phase G auth workflow; the audit trail must survive either way (D7.5).
 2. **Permission keys + schema shape** — the exact permission identifiers and the `/departments/{deptId}/roles/` schema are finalized with the data-layer work (Phase H) behind the `data/sync` seam ([ADR-009](../11-decisions/ADR-009-database-firebase-rtdb.md) / [ADR-017](../11-decisions/ADR-017-custom-department-roles.md)).
 3. **Admin-UI ship version** — v4.0 vs v4.1 → [`99-open-questions.md`](../99-open-questions.md) #32 (the model + rules are firmly v4.0).
-4. **Member export** — a CSV of members + roles (Phase I; shares the export pattern with [Inventory](40-inventory.md) / the [Audit Log](53-audit-log.md)).
+4. **Member export** — a CSV of members + roles (Phase I; shares the export pattern with [Inventory](40-inventory.md) / the [Audit Log](53-audit-log.md)). **Import half resolved by #439** (§Admin-provisioned personnel); export still pending.
 5. **2FA org policy** — the "require 2FA" toggle → [`99-open-questions.md`](../99-open-questions.md) #33 (out of current scope).

@@ -88,3 +88,16 @@ Replace the fixed four-role model with:
 ## Notes
 
 The ~8-capability taxonomy is the v4.0 starting set; departments toggle them per role. The fireground-action gates (v3 `canPerformShoreAction`) are unchanged and live in the operation / ICS-position layer, not here. The exact permission keys + the schema shape are finalized with the data-layer work (Phase H), behind the `data/sync` seam (ADR-009).
+
+---
+
+## Addendum — the first server-enforced path + the account-op escalation guard (#439, 2026-07-10)
+
+Provisioning personnel (#439) introduced the app's **first server code**: two Cloud Functions callables (`provisionAccount`, `adminUpdateAccount` — `functions/src/`) performing the ops the client SDK cannot (create ANOTHER user's login; set another user's password/email). Because the **Admin SDK bypasses `database.rules.json` entirely**, `functions/src/guards.ts` re-checks everything the rules would have enforced, using the same data-driven member→role→permission chain:
+
+- **Floor:** caller authenticated + ACTIVE member of the target dept + role carries `manageUsers`.
+- **Escalation guard (must never regress):** granting the Admin role, or touching an existing **Admin's** account (password reset / email change), requires the caller to **be** an Admin and not be the target. This is the server-side mirror of the rules' `adminGainingAdmin` clause — without it, a custom-role manageUsers holder could reset an Admin's password to a guessable starter and **take over the account**, escalating across the whole taxonomy. Re-verify both directions on any guards.ts refactor: emulator smoke drives caller-not-member / plain-member / manager-mints-admin / manager-resets-admin denials.
+
+**Rules-side changes:** the SELF_EDIT branch's equality pins extend to the five #439 profile fields (email/apparatusId/badge/phone/certifications — admin-owned, member-immutable), plus one asymmetric allowance: `mustChangePassword` may self-transition **true→false only** (the member finishing their forced first-sign-in change; never self-raised, never self-hidden). Emulator write-tests in `tests/rules/orgs.rules.test.ts` pin all of it.
+
+**Division of labor stays client-first:** profile-field edits ride the existing `ADMIN_MANAGE` client write; audit entries stay the client's `appendAudit` (one writer shape for the append-only trail — the server writes no audit rows); only the two Auth-privileged ops cross the server. Audit entries record **uids only, never email/password values** (`memberProvisioned` / `memberProfileEdited` / `passwordResetToStarter` / `accountEmailChanged`).
