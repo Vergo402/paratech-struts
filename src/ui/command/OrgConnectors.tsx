@@ -105,21 +105,36 @@ export function OrgConnectors({ canvasRef, deps }: { canvasRef: RefObject<HTMLEl
   const [st, setSt] = useState<{ segs: Seg[]; w: number; h: number }>({ segs: [], w: 0, h: 0 });
 
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    let ro: ResizeObserver | undefined;
+    let raf = 0;
     const measure = () => {
       const c = canvasRef.current;
       if (!c || !c.offsetWidth) return; // pre-layout / jsdom → leave the last good paint
       setSt(compute(c));
     };
-    measure(); // synchronous (pre-paint) so connectors appear with the first frame
-    let ro: ResizeObserver | undefined;
-    if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(measure);
-      ro.observe(canvas);
-    }
+    // `canvasRef` points at a PARENT element (.fs-org-canvas). On the production
+    // first commit pass, that ref is not attached yet when this child's layout
+    // effect runs, so `canvasRef.current` is null. The old code bailed here and
+    // never wired the observer — nothing re-ran (positions is stable), so the SVG
+    // stayed empty and the connector lines never drew. Dev masked it: StrictMode
+    // invokes the effect twice and the 2nd pass has the ref. Poll across frames
+    // until the canvas attaches, then measure + observe (#443).
+    const wire = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        raf = requestAnimationFrame(wire);
+        return;
+      }
+      measure(); // synchronous when the ref is warm (dev / remount) → first-frame paint
+      if (typeof ResizeObserver !== 'undefined') {
+        ro = new ResizeObserver(measure); // initial callback re-measures once laid out
+        ro.observe(canvas);
+      }
+    };
+    wire();
     window.addEventListener('resize', measure);
     return () => {
+      cancelAnimationFrame(raf);
       ro?.disconnect();
       window.removeEventListener('resize', measure);
     };
