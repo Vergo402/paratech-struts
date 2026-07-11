@@ -74,7 +74,12 @@ function ChangePasswordScreen({ onDone }: { onDone: () => Promise<void> }) {
         </span>
       </header>
       <div className="mx-auto flex w-full flex-col gap-5" style={{ maxWidth: 568 }}>
-        <div className="flex flex-col gap-2">
+        {/* Centered lock header — the accepted mockup's panel 5. */}
+        <div className="flex flex-col items-center gap-2" style={{ textAlign: 'center' }}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true" style={{ color: 'var(--accent)' }}>
+            <rect x="6" y="12" width="16" height="11" rx="2.5" stroke="currentColor" strokeWidth="2" />
+            <path d="M9 12V9a5 5 0 0110 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
           <h1 style={{ font: 'var(--type-headline-1)' }}>Set your password</h1>
           <p className="text-ink-tertiary" style={{ font: 'var(--type-body-lg)' }}>
             You signed in with a starter password. Pick your own before continuing.
