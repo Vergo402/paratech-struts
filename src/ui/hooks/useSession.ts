@@ -20,6 +20,8 @@ export interface SessionApi {
   isMagicLink: AccountServiceApi['isMagicLink'];
   completeMagicLink: AccountServiceApi['completeMagicLink'];
   sendPasswordReset: AccountServiceApi['sendPasswordReset'];
+  /** Change the OWN password (reauth-first) — the #439 forced-change screen. */
+  changePassword: AccountServiceApi['changePassword'];
   currentEmail: AccountServiceApi['currentEmail'];
 }
 
@@ -43,6 +45,7 @@ export function useSession(): SessionApi {
     isMagicLink: accountService.isMagicLink,
     completeMagicLink: accountService.completeMagicLink,
     sendPasswordReset: accountService.sendPasswordReset,
+    changePassword: accountService.changePassword,
     currentEmail: accountService.currentEmail,
   };
 }

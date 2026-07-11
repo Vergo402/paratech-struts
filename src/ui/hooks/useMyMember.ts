@@ -11,6 +11,8 @@ export interface MyMemberApi {
   loading: boolean;
   refresh: () => Promise<void>;
   setRank: typeof departmentService.setRank;
+  /** Clear the OWN starter flag after the forced change (#439; SELF_EDIT true→false). */
+  clearMustChangePassword: typeof departmentService.clearMustChangePassword;
 }
 
 export function useMyMember(): MyMemberApi {
@@ -35,5 +37,11 @@ export function useMyMember(): MyMemberApi {
     void refresh();
   }, [refresh]);
 
-  return { member, loading, refresh, setRank: departmentService.setRank };
+  return {
+    member,
+    loading,
+    refresh,
+    setRank: departmentService.setRank,
+    clearMustChangePassword: departmentService.clearMustChangePassword,
+  };
 }

@@ -42,6 +42,7 @@ import { UserManagerScreen, AuditLogScreen } from '@ui/admin';
 import { EmptyState } from '@ui/primitives';
 import { OnboardingHost } from '@ui/onboarding';
 import { RequireDepartment } from '@ui/dept';
+import { ChangePasswordGate } from '@ui/auth';
 
 /**
  * Route tree — the locked 5-tab spine (ADR-014) + the /gallery dev surface,
@@ -63,23 +64,28 @@ function RootBare() {
 function RootLayout() {
   const rail = useHasRailNav();
   return (
-    <div className={rail ? 'fs-shell fs-shell--rail' : 'fs-shell'}>
-      {rail && <SideNav />}
-      <div className="fs-shell-col">
-        {/* Desktop: the rail carries the brand, so the top command-header is
-            dropped and that height goes to content; each screen owns its heading.
-            Phone keeps the header (its title bar). */}
-        {!rail && <AppHeader />}
-        <SyncBanner />
-        <main className="fs-shell-main">
-          <Outlet />
-        </main>
-        {!rail && <BottomNav />}
+    // #439 — a provisioned member on an unrotated starter password sees the
+    // forced-change screen INSTEAD of the shell (fail-open: any unreadable flag
+    // renders the app). /auth is pre-shell, so sign-out can never deadlock here.
+    <ChangePasswordGate>
+      <div className={rail ? 'fs-shell fs-shell--rail' : 'fs-shell'}>
+        {rail && <SideNav />}
+        <div className="fs-shell-col">
+          {/* Desktop: the rail carries the brand, so the top command-header is
+              dropped and that height goes to content; each screen owns its heading.
+              Phone keeps the header (its title bar). */}
+          {!rail && <AppHeader />}
+          <SyncBanner />
+          <main className="fs-shell-main">
+            <Outlet />
+          </main>
+          {!rail && <BottomNav />}
+        </div>
+        {/* First-run tour — renders only when active (account-creation or a Settings
+            replay); mounted here so it survives tab changes and overlays the chrome. */}
+        <OnboardingHost />
       </div>
-      {/* First-run tour — renders only when active (account-creation or a Settings
-          replay); mounted here so it survives tab changes and overlays the chrome. */}
-      <OnboardingHost />
-    </div>
+    </ChangePasswordGate>
   );
 }
 
