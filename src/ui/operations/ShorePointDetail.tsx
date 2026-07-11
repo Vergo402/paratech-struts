@@ -119,11 +119,13 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
   const estLoad = sp.estimatedLoad; // blank renders as "—", not "0 lbs" (undefined ≠ 0)
   // One label for the hero figure AND the ledger's final row, so they agree — and
   // it names the number the ledger actually computes: raw − deductions = the STRUT
-  // effective length. NOT "Set length": that term is the board card's WOOD cut
-  // length (cutLengthInches, #361), a different number; reusing it here collided
-  // two distinct figures under one word (2026-07-02 audit #8). With deductions it
-  // is the "Effective length"; with none, raw == effective, so "Opening length".
-  const lengthLabel = hasDeductions ? 'Effective length' : 'Opening length';
+  // length needed. Vocabulary matches the S12 §3.2 rename shipped on the Quick Find
+  // ledger + Recommendation card. NOT "Set length": that term is the board card's
+  // WOOD cut length (cutLengthInches, #361), a different number; reusing it here
+  // collided two distinct figures under one word (2026-07-02 audit #8). With no
+  // deductions raw == required, so one label holds — and "Raw opening" can't be
+  // reused here anyway (it's the ledger's own top row when deductions exist).
+  const lengthLabel = 'Required strut length';
 
   // Safety — a CONFIRMED re-verification, not a guess (decision F). Computed by the
   // shared shoreSafety() helper so the Quick View hero AND the board's verify surface

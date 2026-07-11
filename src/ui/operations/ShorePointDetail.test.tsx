@@ -75,23 +75,25 @@ describe('ShorePointDetail — measurement ledger', () => {
   it('with deductions: shows the raw opening, the deducted effective length, and the load', () => {
     render(<ShorePointDetail sp={makeSp({ deductions: withDeductions, estimatedLoad: 5000 })} />);
     expect(screen.getByText('Raw opening')).toBeInTheDocument();
-    // "Effective length" labels the hero figure AND the ledger row → 2 occurrences.
-    expect(screen.getAllByText('Effective length').length).toBeGreaterThanOrEqual(1);
+    // "Required strut length" labels the hero figure AND the ledger row → 2 occurrences.
+    expect(screen.getAllByText('Required strut length').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('5,000 lbs')).toBeInTheDocument();
   });
 
-  it('no deductions: collapses to a single "Opening length" (no phantom Raw row)', () => {
+  it('no deductions: single figure, no phantom "Raw opening" ledger row', () => {
     render(<ShorePointDetail sp={makeSp()} />);
+    // raw == required, so there is no separate top "Raw opening" row…
     expect(screen.queryByText('Raw opening')).toBeNull();
-    expect(screen.getAllByText('Opening length').length).toBeGreaterThanOrEqual(1);
+    // …and the figure still carries the one canonical label.
+    expect(screen.getAllByText('Required strut length').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('names its deducted figure "Effective length" — never the card\'s wood "Set length" (audit #8)', () => {
-    // The drawer hero + ledger show raw − deductions = the STRUT effective length.
+  it('names its deducted figure "Required strut length" — never the card\'s wood "Set length" (audit #8)', () => {
+    // The drawer hero + ledger show raw − deductions = the STRUT length needed.
     // "Set length" is the board card\'s WOOD cut length (a different number); the
     // drawer must not reuse that word (2026-07-02 audit #8 — the collision).
     render(<ShorePointDetail sp={makeSp({ status: 'secured', deductions: { ...NO_DEDUCTIONS, topPlate: 'swivel6' } })} />);
-    expect(screen.getAllByText('Effective length').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Required strut length').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText('Set length')).toBeNull();
   });
 });
