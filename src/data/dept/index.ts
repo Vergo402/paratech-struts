@@ -9,4 +9,6 @@ export {
   type JoinDepartmentResult,
   type JoinedDepartment,
   type AdminMutationResult,
+  type ProvisionMemberInput,
+  type MemberProfilePatch,
 } from './departmentService';

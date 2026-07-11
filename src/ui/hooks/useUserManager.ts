@@ -22,6 +22,11 @@ export interface UserManagerApi {
   deleteRole: typeof departmentService.deleteRole;
   revokeInviteCode: typeof departmentService.revokeInviteCode;
   regenerateInviteCode: typeof departmentService.regenerateInviteCode;
+  // ---- #439 admin-provisioned personnel ----
+  provisionMember: typeof departmentService.provisionMember;
+  setMemberProfile: typeof departmentService.setMemberProfile;
+  changeMemberEmail: typeof departmentService.changeMemberEmail;
+  resetMemberPassword: typeof departmentService.resetMemberPassword;
 }
 
 export function useUserManager(enabled = true): UserManagerApi {
@@ -63,5 +68,9 @@ export function useUserManager(enabled = true): UserManagerApi {
     deleteRole: departmentService.deleteRole,
     revokeInviteCode: departmentService.revokeInviteCode,
     regenerateInviteCode: departmentService.regenerateInviteCode,
+    provisionMember: departmentService.provisionMember,
+    setMemberProfile: departmentService.setMemberProfile,
+    changeMemberEmail: departmentService.changeMemberEmail,
+    resetMemberPassword: departmentService.resetMemberPassword,
   };
 }

@@ -19,3 +19,13 @@ export function LockIcon({ style }: { style?: CSSProperties }) {
     </svg>
   );
 }
+
+// The #439 starter-password key — the member-row badge + the add-sheet notice.
+export function KeyIcon({ style }: { style?: CSSProperties }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" style={style}>
+      <circle cx="4.25" cy="4.25" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6.2 6.2l4.8 4.8M9 9l1.6-1.6M10.6 10.6l1.2-1.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -96,6 +96,82 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .fs-um-rolebadge--default { color: var(--text-secondary); border: var(--stroke-width) solid var(--surface-stroke); }
 .fs-um-rolebadge--custom { color: var(--status-process-text); background: var(--status-process-bg); }
 
+/* ---- #439 admin-provisioned personnel ---- */
+/* the unrotated-starter key badge — gold outline, quiet; the row's "hasn't set
+   their own password yet" tell (mustChangePassword === true) */
+.fs-um-keybadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--type-label);
+  color: var(--accent);
+  border: var(--stroke-width) solid color-mix(in srgb, var(--accent) 50%, transparent);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-badge);
+  white-space: nowrap;
+}
+
+/* the "+ Add member" action above the members list */
+.fs-um-add-row {
+  align-self: flex-start;
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+/* the add/edit sheet's stacked profile fields */
+.fs-um-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* the live starter-password notice in the add sheet */
+.fs-um-starter {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-width) solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: var(--radius-card);
+  color: var(--accent);
+}
+.fs-um-starter p { font: var(--type-caption); color: var(--text-secondary); margin: 0; }
+.fs-um-starter svg { flex: 0 0 auto; margin-top: 3px; }
+.fs-um-starter-pw { font-family: var(--font-mono, monospace); color: var(--accent); }
+
+/* the post-create hand-over panel (email + starter, shown once) */
+.fs-um-handover {
+  border: var(--stroke-width) solid var(--surface-stroke);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.fs-um-handover-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+.fs-um-handover-row + .fs-um-handover-row { border-top: var(--stroke-width) solid var(--surface-stroke); }
+.fs-um-handover-label { font: var(--type-caption); color: var(--text-tertiary); white-space: nowrap; }
+.fs-um-handover-value { font: var(--type-body); color: var(--text-primary); word-break: break-all; text-align: right; }
+.fs-um-handover-starter { font-family: var(--font-mono, monospace); color: var(--accent); }
+
+/* the edit sheet's account actions (reset-to-starter + revoke) */
+.fs-um-account-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+}
+.fs-um-reset-label { display: inline-flex; align-items: center; gap: 6px; }
+
 /* the built-in / editable tag on a role row */
 .fs-um-tag {
   font: var(--type-label);

@@ -18,6 +18,10 @@ const actions = {
   deleteRole: vi.fn().mockResolvedValue({ ok: true }),
   revokeInviteCode: vi.fn().mockResolvedValue({ ok: true }),
   regenerateInviteCode: vi.fn().mockResolvedValue({ ok: true, code: 'NEWC-0DE1' }),
+  provisionMember: vi.fn().mockResolvedValue({ ok: true, uid: 'new-uid' }),
+  setMemberProfile: vi.fn().mockResolvedValue({ ok: true }),
+  changeMemberEmail: vi.fn().mockResolvedValue({ ok: true }),
+  resetMemberPassword: vi.fn().mockResolvedValue({ ok: true }),
   refresh: vi.fn().mockResolvedValue(undefined),
 };
 const mockMembers = vi.fn((): Record<string, Member> | null => ({}));
@@ -29,6 +33,14 @@ vi.mock('@ui/hooks', () => ({
   useSession: () => mockSession(),
   useDepartment: () => ({ department: { id: 'd1', name: 'Hamden' }, role: 'admin', inviteCode: mockInviteCode() }),
   useUserManager: () => ({ members: mockMembers(), membersError: false, ...actions }),
+  useApparatus: () => ({
+    roster: [
+      { id: 'rig-e2', name: 'Engine 2', type: 'Engine' },
+      { id: 'rig-r1', name: 'Rescue 1', type: 'Rescue' },
+    ],
+    add: vi.fn(),
+    remove: vi.fn(),
+  }),
 }));
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 
@@ -39,8 +51,11 @@ const ROLES: Record<string, Role> = {
 };
 const MEMBERS: Record<string, Member> = {
   me: { role: 'admin', displayName: 'Capt Vergo', joinedAt: 1 },
-  diaz: { role: 'default', displayName: 'FF Diaz', joinedAt: 2 },
-  marchetti: { role: 'logistics', displayName: 'Lt Marchetti', joinedAt: 3 },
+  diaz: {
+    role: 'default', displayName: 'FF Diaz', joinedAt: 2,
+    rank: 'Firefighter', apparatusId: 'rig-e2', email: 'diaz@fd.example', mustChangePassword: true,
+  },
+  marchetti: { role: 'logistics', displayName: 'Lt Marchetti', joinedAt: 3, apparatusId: 'rig-gone' },
   okafor: { role: 'default', displayName: 'FF Okafor', joinedAt: 4, active: false },
 };
 
@@ -75,7 +90,7 @@ describe('UserManagerScreen', () => {
     const user = userEvent.setup();
     render(<UserManagerScreen />);
     await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
-    expect(await screen.findByText('Assign role')).toBeInTheDocument();
+    expect(await screen.findByText('Member', { selector: 'h2' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Revoke access/ })).toBeInTheDocument();
   });
 
@@ -110,7 +125,7 @@ describe('UserManagerScreen', () => {
     });
     render(<UserManagerScreen />);
     await user.click(screen.getByRole('button', { name: /Chief/ }));
-    await screen.findByText('Assign role');
+    await screen.findByText('Member', { selector: 'h2' });
     // the Default pick is disabled with the promote-first reason; Revoke is disabled too
     expect(screen.getByRole('button', { name: /Default/ })).toBeDisabled();
     // the reason shows on both the disabled pick and the disabled Revoke button
@@ -123,7 +138,7 @@ describe('UserManagerScreen', () => {
     actions.revokeMember.mockResolvedValueOnce({ ok: false, reason: "You don't have permission for that change." });
     render(<UserManagerScreen />);
     await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
-    await screen.findByText('Assign role');
+    await screen.findByText('Member', { selector: 'h2' });
     await user.click(screen.getByRole('button', { name: /Revoke access/ }));
     await screen.findByText('Revoke access?');
     await user.click(screen.getByRole('button', { name: 'Revoke access' }));
@@ -170,10 +185,107 @@ describe('UserManagerScreen', () => {
     // Force the sheet open for the own row by making another admin exist and the
     // sheet target be self: simulate by rendering with a second admin and opening
     // the own row via the assign sheet API — the own row is non-clickable, so this
-    // exercises AssignRoleSheet's isSelf guard directly through the screen's props
+    // exercises MemberEditSheet's isSelf guard directly through the screen's props
     // is not reachable; assert the own row stays non-interactive instead.
     render(<UserManagerScreen />);
     const ownRow = screen.getByText('· you').closest('div.fs-um-row');
     expect(ownRow?.tagName).toBe('DIV'); // not a button — self-management isn't offered
+  });
+  // ---- #439 admin-provisioned personnel ----
+
+  it('member rows show rank · rig sub-lines and the key badge on unrotated starters', () => {
+    render(<UserManagerScreen />);
+    expect(screen.getByText('Firefighter · Engine 2')).toBeInTheDocument(); // diaz
+    expect(screen.getByText('starter')).toBeInTheDocument(); // diaz's key badge
+    // marchetti's rig id points at a deleted rig → no sub-line fabricated
+    const marchetti = screen.getByText('Lt Marchetti').closest('button');
+    expect(marchetti?.querySelector('.fs-um-row-sub')).toBeNull();
+  });
+
+  it('Add member: creates the account and swaps to the hand-over panel (email + starter, once)', async () => {
+    const user = userEvent.setup();
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: '+ Add member' }));
+    await screen.findByText('Add member', { selector: 'h2' });
+    await user.type(screen.getByLabelText('Name'), 'Dana Kim');
+    await user.type(screen.getByLabelText('Email — their sign-in'), 'dkim@fd.example');
+    // the starter derives live from the typed name
+    expect(screen.getAllByText('kim123!').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(actions.provisionMember).toHaveBeenCalledWith(
+      expect.objectContaining({ displayName: 'Dana Kim', email: 'dkim@fd.example', starterPassword: 'kim123!', role: 'default' }),
+    );
+    expect(actions.refresh).toHaveBeenCalled();
+    // hand-over panel: email + starter repeated for the in-person read-out
+    await screen.findByText('Account created', { selector: 'h2' });
+    expect(screen.getByText('dkim@fd.example')).toBeInTheDocument();
+    expect(screen.getByText('kim123!')).toBeInTheDocument();
+  });
+
+  it('Add member: email-in-use failure stays on the form with the invite-code copy', async () => {
+    const user = userEvent.setup();
+    actions.provisionMember.mockResolvedValueOnce({
+      ok: false,
+      reason: 'An account with that email already exists — they can join with the invite code instead.',
+    });
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: '+ Add member' }));
+    await screen.findByText('Add member', { selector: 'h2' });
+    await user.type(screen.getByLabelText('Name'), 'Dana Kim');
+    await user.type(screen.getByLabelText('Email — their sign-in'), 'dkim@fd.example');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/invite code/i);
+    expect(screen.getByText('Add member', { selector: 'h2' })).toBeInTheDocument(); // form stays
+    expect(actions.refresh).not.toHaveBeenCalled();
+  });
+
+  it('edit sheet: profile save routes setMemberProfile with the drafted fields', async () => {
+    const user = userEvent.setup();
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+    await screen.findByText('Member', { selector: 'h2' });
+    await user.clear(screen.getByLabelText('Rank / title'));
+    await user.type(screen.getByLabelText('Rank / title'), 'Lieutenant');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(actions.setMemberProfile).toHaveBeenCalledWith('diaz', expect.objectContaining({ rank: 'Lieutenant' }));
+    expect(actions.refresh).toHaveBeenCalled();
+  });
+
+  it('edit sheet: an email edit routes changeMemberEmail (the privileged server op)', async () => {
+    const user = userEvent.setup();
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+    await screen.findByText('Member', { selector: 'h2' });
+    await user.clear(screen.getByLabelText('Email — their sign-in'));
+    await user.type(screen.getByLabelText('Email — their sign-in'), 'new@fd.example');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(actions.changeMemberEmail).toHaveBeenCalledWith('diaz', 'new@fd.example');
+    expect(actions.setMemberProfile).not.toHaveBeenCalled(); // profile untouched
+  });
+
+  it('Reset password: confirm shows the derived starter and calls the service; failure stays open', async () => {
+    const user = userEvent.setup();
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+    await screen.findByText('Member', { selector: 'h2' });
+    await user.click(screen.getByRole('button', { name: /Reset password to starter/ }));
+    await screen.findByText(/Reset FF Diaz.s password\?/);
+    expect(screen.getByText('diaz123!')).toBeInTheDocument(); // the exact hand-over value
+    await user.click(screen.getByRole('button', { name: 'Reset password' }));
+    expect(actions.resetMemberPassword).toHaveBeenCalledWith('diaz', 'diaz123!');
+    expect(actions.refresh).toHaveBeenCalled();
+  });
+
+  it('Reset password: a FAILED reset keeps the confirm open with the reason (#426 discipline)', async () => {
+    const user = userEvent.setup();
+    actions.resetMemberPassword.mockResolvedValueOnce({ ok: false, reason: "Couldn't reach the server — check your connection and try again." });
+    render(<UserManagerScreen />);
+    await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+    await screen.findByText('Member', { selector: 'h2' });
+    await user.click(screen.getByRole('button', { name: /Reset password to starter/ }));
+    await screen.findByText(/Reset FF Diaz.s password\?/);
+    await user.click(screen.getByRole('button', { name: 'Reset password' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/reach the server/i);
+    expect(screen.getByText(/Reset FF Diaz.s password\?/)).toBeInTheDocument();
   });
 });

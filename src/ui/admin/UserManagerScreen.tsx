@@ -2,18 +2,21 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { InlineSegmented } from '@ui/picker';
 import { Button, EmptyState, Modal } from '@ui/primitives';
-import { useDepartment, usePermissions, useRoles, useSession, useUserManager } from '@ui/hooks';
+import { useApparatus, useDepartment, usePermissions, useRoles, useSession, useUserManager } from '@ui/hooks';
 import {
   ADMIN_ROLE_ID,
   DEFAULT_ROLE_ID,
   ADMIN_PERMISSIONS,
   DEFAULT_PERMISSIONS,
+  type Member,
   type Permissions,
   type Role,
 } from '@core/schema';
+import { starterPasswordFor } from '@core/personnel';
 import { permissionSummary } from './permissionSummary';
-import { AssignRoleSheet } from './AssignRoleSheet';
-import { BackIcon, LockIcon } from './icons';
+import { MemberEditSheet } from './MemberEditSheet';
+import { AddMemberSheet } from './AddMemberSheet';
+import { BackIcon, LockIcon, KeyIcon } from './icons';
 import { RoleEditorSheet } from './RoleEditorSheet';
 import './admin.css';
 
@@ -47,7 +50,7 @@ export function UserManagerScreen() {
   const { inviteCode } = useDepartment();
 
   const [face, setFace] = useState<Face>('members');
-  const [assignTo, setAssignTo] = useState<{ uid: string; name: string; role: string; rank: string } | null>(null);
+  const [assignTo, setAssignTo] = useState<{ uid: string; row: Member } | null>(null);
   const [roleEditor, setRoleEditor] = useState<{ role: Role | null } | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<{ uid: string; name: string } | null>(null);
   const [deleteRoleTarget, setDeleteRoleTarget] = useState<Role | null>(null);
@@ -59,6 +62,13 @@ export function UserManagerScreen() {
   // #423 — the regenerate confirm.
   const [regenOpen, setRegenOpen] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
+  // #439 — add personnel + reset-to-starter.
+  const [addOpen, setAddOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ uid: string; name: string } | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  const { roster } = useApparatus();
+  const rigName = useMemo(() => new Map(roster.map((a) => [a.id, a.name])), [roster]);
 
   const ownUid = identity.kind === 'member' ? identity.accountId : null;
 
@@ -148,14 +158,31 @@ export function UserManagerScreen() {
             <p className="fs-um-row-sub" style={{ padding: 'var(--space-3) 0' }}>Loading members…</p>
           ) : (
             <>
+              {/* #439 — add personnel: the app creates their login on the spot. */}
+              <div className="fs-um-add-row">
+                <Button variant="primary" size="standard" onPress={() => setAddOpen(true)}>
+                  + Add member
+                </Button>
+              </div>
               <div className="fs-um-list">
                 {sortedMembers.map(([uid, m]) => {
                   const revoked = m.active === false;
                   const isOwn = uid === ownUid;
                   const tone = roleTone(m.role);
                   const roleName = roleById.get(m.role)?.name ?? m.role;
+                  // rank · rig (either alone if the other is absent; deleted rig → omit).
+                  const sub = [m.rank, m.apparatusId ? rigName.get(m.apparatusId) : undefined]
+                    .filter(Boolean)
+                    .join(' · ');
                   const badge = (
                     <span className={`fs-um-rolebadge fs-um-rolebadge--${tone}`}>{roleName}</span>
+                  );
+                  // #439 — unrotated starter password: visible until their first
+                  // sign-in change flips mustChangePassword off.
+                  const keyBadge = m.mustChangePassword === true && (
+                    <span className="fs-um-keybadge">
+                      <KeyIcon /> starter
+                    </span>
                   );
                   if (revoked) {
                     return (
@@ -194,6 +221,7 @@ export function UserManagerScreen() {
                           <span className="fs-um-row-name">
                             {m.displayName} <span className="fs-um-you">· you</span>
                           </span>
+                          {sub && <span className="fs-um-row-sub">{sub}</span>}
                         </span>
                         <span className="fs-um-row-right">{badge}</span>
                       </div>
@@ -204,12 +232,14 @@ export function UserManagerScreen() {
                       key={uid}
                       type="button"
                       className="fs-um-row"
-                      onClick={() => setAssignTo({ uid, name: m.displayName, role: m.role, rank: m.rank ?? '' })}
+                      onClick={() => setAssignTo({ uid, row: m })}
                     >
                       <span className="fs-um-row-main">
                         <span className="fs-um-row-name">{m.displayName}</span>
+                        {sub && <span className="fs-um-row-sub">{sub}</span>}
                       </span>
                       <span className="fs-um-row-right">
+                        {keyBadge}
                         {badge}
                         <ChevronIcon />
                       </span>
@@ -274,26 +304,38 @@ export function UserManagerScreen() {
         </div>
       )}
 
-      <AssignRoleSheet
+      <MemberEditSheet
         open={assignTo !== null}
         onClose={() => setAssignTo(null)}
         member={assignTo}
         roleList={roleList}
+        roster={roster}
         isLastAdmin={assignTo ? isLastAdmin(assignTo.uid) : false}
         isSelf={assignTo !== null && assignTo.uid === ownUid}
-        onAssign={async (roleId) => {
-          const res = await um.assignRole(assignTo!.uid, roleId);
-          if (res.ok) await um.refresh();
-          return res;
-        }}
-        onSetRank={async (rank) => {
-          const res = await um.setMemberRank(assignTo!.uid, rank);
-          if (res.ok) await um.refresh();
-          return res;
+        onAssign={(roleId) => actThenRefresh(() => um.assignRole(assignTo!.uid, roleId))}
+        onSaveProfile={(patch) => actThenRefresh(() => um.setMemberProfile(assignTo!.uid, patch))}
+        onChangeEmail={(email) => actThenRefresh(() => um.changeMemberEmail(assignTo!.uid, email))}
+        onRequestReset={() => {
+          if (assignTo) setResetTarget({ uid: assignTo.uid, name: assignTo.row.displayName });
+          setAssignTo(null);
         }}
         onRequestRevoke={() => {
-          if (assignTo) setRevokeTarget({ uid: assignTo.uid, name: assignTo.name });
+          if (assignTo) setRevokeTarget({ uid: assignTo.uid, name: assignTo.row.displayName });
           setAssignTo(null);
+        }}
+      />
+
+      {/* #439 — add personnel; refresh behind the sheet so the new row (key badge)
+          is already in the list when the hand-over panel closes. */}
+      <AddMemberSheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        roleList={roleList}
+        roster={roster}
+        onCreate={async (input) => {
+          const res = await um.provisionMember(input);
+          if (res.ok) await um.refresh();
+          return res;
         }}
       />
 
@@ -397,6 +439,53 @@ export function UserManagerScreen() {
           Anyone holding <strong>{deleteRoleTarget?.name}</strong> moves to the Default role. This can&rsquo;t be undone.
         </p>
         {deleteRoleError && <p role="alert" className="fs-modal-error">{deleteRoleError}</p>}
+      </Modal>
+
+      {/* #439 — reset-to-starter confirm: the admin sees the exact starter they'll
+          hand over; the member's devices are signed out and the key badge returns. */}
+      <Modal
+        open={resetTarget !== null}
+        onClose={() => {
+          setResetTarget(null);
+          setResetError(null);
+        }}
+        title={`Reset ${resetTarget?.name ?? 'this member'}’s password?`}
+        variant="destructive"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onPress={() => {
+                setResetTarget(null);
+                setResetError(null);
+              }}
+            >
+              <span data-modal-cancel>Cancel</span>
+            </Button>
+            <Button
+              variant="primary"
+              destructive
+              onPress={async () => {
+                if (!resetTarget) return;
+                setResetError(null);
+                const res = await actThenRefresh(() =>
+                  um.resetMemberPassword(resetTarget.uid, starterPasswordFor(resetTarget.name)),
+                );
+                if (res.ok) setResetTarget(null);
+                else setResetError(res.reason ?? 'That change could not be saved. Try again.');
+              }}
+            >
+              Reset password
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Their password becomes{' '}
+          <strong className="fs-um-starter-pw">{resetTarget ? starterPasswordFor(resetTarget.name) : ''}</strong>{' '}
+          and they must change it at next sign-in. Anyone signed in on their devices is signed out.
+        </p>
+        {resetError && <p role="alert" className="fs-modal-error">{resetError}</p>}
       </Modal>
 
       <Modal

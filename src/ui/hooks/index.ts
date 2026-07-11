@@ -35,7 +35,7 @@ export { useMyMember, type MyMemberApi } from './useMyMember';
 export { useApparatusTypes, type ApparatusTypesApi } from './useApparatusTypes';
 export { useDeptPolicies, type DeptPoliciesApi } from './useDeptPolicies';
 export { useFeedback, type FeedbackApi, type FeedbackCategory } from './useFeedback';
-export type { AdminMutationResult } from '@data/dept';
+export type { AdminMutationResult, ProvisionMemberInput, MemberProfilePatch } from '@data/dept';
 export { useOnboarding, type OnboardingApi } from './useOnboarding';
 export { usePastOperations, useArchivedOperation } from './usePastOperations';
 export { useShorePointHistory, type ShorePointHistory } from './useShorePointHistory';
