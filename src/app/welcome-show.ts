@@ -25,61 +25,76 @@ export function init(): void {
   gsap.registerPlugin(ScrollTrigger);
 
   // Heavier, softer scroll — one flick travels ~30% less and settles smoothly,
-  // so a single trackpad gesture can no longer blow through an act.
-  const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 0.7 });
+  // so a single trackpad gesture can no longer blow through an act. syncTouch
+  // hands phone touch scrolling to Lenis too (keeps iOS pinning smooth).
+  const lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 0.7, syncTouch: true });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
 
-  const acts = [initMeasure(), initRig(), initStrut(), initAppPan()].filter(
-    (a): a is PacedAct => a !== undefined,
-  );
-  initFilament();
+  // The acts build per breakpoint: desktop keeps the approved wide blocking;
+  // phones (< 900px) get portrait re-blocking of the same beats. matchMedia
+  // reverts and rebuilds everything if the viewport crosses the boundary.
+  const mm = gsap.matchMedia();
+  mm.add({ isDesktop: '(min-width: 900px)', isPhone: '(max-width: 899.98px)' }, (ctx) => {
+    const phone = (ctx.conditions as { isPhone?: boolean } | undefined)?.isPhone === true;
 
-  // Magnetic settle, hand-rolled. (lenis/snap was tried first but its
-  // 'proximity' mode PREDICTS the landing from the last raw input delta, which
-  // flings a big flick past an act's intermediate beats — verified live.)
-  // This version acts only from actual rest: momentum plays out naturally,
-  // then — if the page stopped NEAR a resting pose — it eases onto it. A stop
-  // in the free middle of an act stays exactly where the finger left it.
-  let snapPoints: number[] = [];
-  const rebuildSnaps = () => {
-    snapPoints = acts.flatMap(({ st, rests }) =>
-      rests.map((p) => st.start + p * (st.end - st.start)),
+    const acts = [initMeasure(phone), initRig(phone), initStrut(), initAppPan(phone)].filter(
+      (a): a is PacedAct => a !== undefined,
     );
-  };
-  ScrollTrigger.addEventListener('refresh', rebuildSnaps);
-  rebuildSnaps();
+    if (!phone) initFilament(); // the filament rail is a wide-screen instrument
 
-  let settling = false;
-  let idleTimer = 0;
-  lenis.on('scroll', (l: Lenis) => {
-    if (settling) return;
-    window.clearTimeout(idleTimer);
-    if (Math.abs(l.velocity) > 0.1) return; // still moving — wait for real rest
-    idleTimer = window.setTimeout(() => {
-      const here = lenis.scroll;
-      let best: number | null = null;
-      for (const p of snapPoints) {
-        if (best === null || Math.abs(p - here) < Math.abs(best - here)) best = p;
-      }
-      // Glide only when meaningfully off a pose but within grabbing distance.
-      if (best === null || Math.abs(best - here) < 2 || Math.abs(best - here) > innerHeight * 0.4) return;
-      settling = true;
-      lenis.scrollTo(best, {
-        duration: 0.7,
-        easing: (t: number) => 1 - Math.pow(1 - t, 3),
-        onComplete: () => {
-          settling = false;
-        },
-      });
-    }, 250);
+    // Magnetic settle, hand-rolled. (lenis/snap was tried first but its
+    // 'proximity' mode PREDICTS the landing from the last raw input delta, which
+    // flings a big flick past an act's intermediate beats — verified live.)
+    // This version acts only from actual rest: momentum plays out naturally,
+    // then — if the page stopped NEAR a resting pose — it eases onto it. A stop
+    // in the free middle of an act stays exactly where the finger left it.
+    let snapPoints: number[] = [];
+    const rebuildSnaps = () => {
+      snapPoints = acts.flatMap(({ st, rests }) =>
+        rests.map((p) => st.start + p * (st.end - st.start)),
+      );
+    };
+    ScrollTrigger.addEventListener('refresh', rebuildSnaps);
+    rebuildSnaps();
+
+    let settling = false;
+    let idleTimer = 0;
+    const offSettle = lenis.on('scroll', (l: Lenis) => {
+      if (settling) return;
+      window.clearTimeout(idleTimer);
+      if (Math.abs(l.velocity) > 0.1) return; // still moving — wait for real rest
+      idleTimer = window.setTimeout(() => {
+        const here = lenis.scroll;
+        let best: number | null = null;
+        for (const p of snapPoints) {
+          if (best === null || Math.abs(p - here) < Math.abs(best - here)) best = p;
+        }
+        // Glide only when meaningfully off a pose but within grabbing distance.
+        if (best === null || Math.abs(best - here) < 2 || Math.abs(best - here) > innerHeight * 0.4) return;
+        settling = true;
+        lenis.scrollTo(best, {
+          duration: 0.7,
+          easing: (t: number) => 1 - Math.pow(1 - t, 3),
+          onComplete: () => {
+            settling = false;
+          },
+        });
+      }, 250);
+    });
+
+    return () => {
+      ScrollTrigger.removeEventListener('refresh', rebuildSnaps);
+      window.clearTimeout(idleTimer);
+      if (typeof offSettle === 'function') offSettle();
+    };
   });
 }
 
 /* ---- Act 2 — the measurement ------------------------------------------------ */
 
-function initMeasure(): PacedAct | undefined {
+function initMeasure(phone: boolean): PacedAct | undefined {
   const act = document.querySelector<HTMLElement>('#act2');
   const counterEl = act?.querySelector<HTMLElement>('.counter');
   if (!act || !counterEl) return undefined;
@@ -119,24 +134,36 @@ function initMeasure(): PacedAct | undefined {
     )
     .from('#act2 .ledger-line', { opacity: 0, y: 20, duration: 0.12, stagger: 0.09, ease: 'power1.out' }, 0.55)
     .from('#act2 .ledger-req b', { scale: 1.35, transformOrigin: 'right center', duration: 0.1, ease: 'back.out(2)' }, '>-0.04')
-    .addLabel('ledger')
-    // The ledger asks — the app answers.
-    .to('#act2 .measure-inner', { x: '-21vw', duration: 0.3, ease: 'power2.inOut' }, '+=0.14')
-    .fromTo(
-      '#act2 .measure-phone',
-      { autoAlpha: 0, x: 60, yPercent: -50 },
-      { autoAlpha: 1, x: 0, yPercent: -50, duration: 0.28, ease: 'power2.out' },
-      '<+0.08',
-    )
-    .addLabel('answer')
-    .to({}, { duration: 0.45 }, '>'); // tail hold — the answer pose dwells
+    .addLabel('ledger');
+
+  // The ledger asks — the app answers. Desktop: the block glides LEFT and the
+  // selector fades in from the right. Phone (portrait): the block settles UP
+  // and the selector RISES from the bottom edge (storyboard, 2026-07-12).
+  if (phone) {
+    tl.to('#act2 .measure-inner', { yPercent: -7, scale: 0.94, duration: 0.3, ease: 'power2.inOut' }, '+=0.14')
+      .fromTo(
+        '#act2 .measure-phone',
+        { autoAlpha: 0, y: 110 },
+        { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out' },
+        '<+0.08',
+      );
+  } else {
+    tl.to('#act2 .measure-inner', { x: '-21vw', duration: 0.3, ease: 'power2.inOut' }, '+=0.14')
+      .fromTo(
+        '#act2 .measure-phone',
+        { autoAlpha: 0, x: 60, yPercent: -50 },
+        { autoAlpha: 1, x: 0, yPercent: -50, duration: 0.28, ease: 'power2.out' },
+        '<+0.08',
+      );
+  }
+  tl.addLabel('answer').to({}, { duration: 0.45 }, '>'); // tail hold — the answer pose dwells
 
   return { st: tl.scrollTrigger as ScrollTrigger, rests: restsOf(tl, ['ledger', 'answer']) };
 }
 
 /* ---- Act 3 — off the rig ------------------------------------------------------ */
 
-function initRig(): PacedAct | undefined {
+function initRig(phone: boolean): PacedAct | undefined {
   const act = document.querySelector<HTMLElement>('#act3');
   const canvas = act?.querySelector<HTMLCanvasElement>('.rig-canvas');
   const countEl = act?.querySelector<HTMLElement>('.inv-count-n');
@@ -190,7 +217,9 @@ function initRig(): PacedAct | undefined {
     },
     0,
   )
-    .from('#act3 .inv-card', { autoAlpha: 0, x: 40, duration: 0.12, ease: 'power1.out' }, 0.06)
+    // Desktop: the card floats in from the right. Phone: it's a bottom strip
+    // and rises from the lower edge instead.
+    .from('#act3 .inv-card', { autoAlpha: 0, ...(phone ? { y: 24 } : { x: 40 }), duration: 0.12, ease: 'power1.out' }, 0.06)
     .fromTo('#act3 .inv-note', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.08 }, 0.84)
     // Resting poses: each strut fully out of the bay, then the finished scene.
     .addLabel('strut1', 0.42)
@@ -270,7 +299,7 @@ function initStrut(): PacedAct | undefined {
 
 /* ---- Act 4 — the app cross-pan ----------------------------------------------- */
 
-function initAppPan(): PacedAct | undefined {
+function initAppPan(phone: boolean): PacedAct | undefined {
   const act = document.querySelector<HTMLElement>('#act5');
   const track = act?.querySelector<HTMLElement>('.pan-track');
   if (!act || !track) return undefined;
@@ -308,7 +337,25 @@ function initAppPan(): PacedAct | undefined {
   tl.to({}, { duration: 0.2 }, '>'); // tail hold on the last panel
 
   const total = tl.duration();
-  return { st: tl.scrollTrigger as ScrollTrigger, rests: restTimes.map((t) => t / total) };
+  const rests = restTimes.map((t) => t / total);
+
+  // Phone: gold progress ticks under the pan (storyboard) — the active tick is
+  // the panel whose rest point the scrub is nearest to.
+  if (phone) {
+    const ticks = Array.from(act.querySelectorAll<HTMLElement>('.pan-ticks span'));
+    if (ticks.length) {
+      tl.eventCallback('onUpdate', () => {
+        const p = tl.progress();
+        let active = 0;
+        rests.forEach((r, i) => {
+          if (Math.abs(r - p) < Math.abs((rests[active] ?? 0) - p)) active = i;
+        });
+        ticks.forEach((t, i) => t.classList.toggle('active', i === active));
+      });
+    }
+  }
+
+  return { st: tl.scrollTrigger as ScrollTrigger, rests };
 }
 
 /* ---- Filament stage lighting --------------------------------------------------- */

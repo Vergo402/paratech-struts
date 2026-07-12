@@ -169,6 +169,9 @@ export function createTruckScene(canvas: HTMLCanvasElement): TruckScene {
     const h = canvas.clientHeight || 1;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
+    // Portrait framing: a narrow canvas needs a wider lens or the truck's
+    // length overflows the frame (same scene, phone-friendly field of view).
+    camera.fov = camera.aspect < 1.2 ? 52 : 34;
     camera.updateProjectionMatrix();
     requestRender();
   };

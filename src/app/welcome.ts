@@ -6,7 +6,6 @@ import '@fontsource-variable/public-sans';
 import './welcome.css';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const wide = matchMedia('(min-width: 900px)').matches;
 const saveData =
   (navigator as { connection?: { saveData?: boolean } }).connection?.saveData === true;
 const hasWebGL = (() => {
@@ -47,12 +46,19 @@ if (!reduced) {
   document.querySelectorAll<HTMLVideoElement>('video').forEach((v) => io.observe(v));
 }
 
-if (!reduced && wide && !saveData && hasWebGL) {
-  document.documentElement.classList.add('show-full');
+// The cinematic experience runs on ANY size with motion + WebGL + no data-saver
+// (phones included — portrait re-blocking via gsap.matchMedia). `cine-phone`
+// scopes the portrait CSS and tracks the breakpoint live.
+if (!reduced && !saveData && hasWebGL) {
+  const root = document.documentElement;
+  root.classList.add('show-full');
+  const bp = matchMedia('(min-width: 900px)');
+  root.classList.toggle('cine-phone', !bp.matches);
+  bp.addEventListener('change', (e) => root.classList.toggle('cine-phone', !e.matches));
   import('./welcome-show')
     .then((m) => m.init())
     .catch(() => {
       // Any load/runtime failure degrades to the lite page, never a broken one.
-      document.documentElement.classList.remove('show-full');
+      root.classList.remove('show-full', 'cine-phone');
     });
 }

@@ -998,6 +998,159 @@ h3 {
   }
 }
 
+/* ---- Portrait cinematic (cine-phone) --------------------------------------------
+   The full experience on phones (<900px, gate in welcome.ts): same acts, same
+   beats, portrait blocking per the accepted storyboard (2026-07-12). Scoped to
+   .show-full.cine-phone so the lite/static page is untouched. */
+
+.show-full.cine-phone .filament {
+  display: none; /* the left rail is a wide-screen instrument */
+}
+
+.show-full.cine-phone .hero-content,
+.show-full.cine-phone .hero-credit {
+  padding-left: 28px;
+}
+
+/* Pinned acts are full-viewport stages on phones — without this the section is
+   content-height, "bottom"-anchored pieces land mid-screen, and dead black
+   trails under the composition while pinned. */
+.show-full.cine-phone .act-measure,
+.show-full.cine-phone .act-rig,
+.show-full.cine-phone .act-strut {
+  min-height: 100svh;
+}
+
+.show-full.cine-phone .act-rig,
+.show-full.cine-phone .act-strut {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Act 2 — compact ledger up top; the selector RISES from the bottom edge and
+   owns the lower half (GSAP drives y/opacity). */
+.show-full.cine-phone .act-measure {
+  padding-top: 9vh;
+  padding-bottom: 0;
+}
+
+.show-full.cine-phone .measure-num {
+  font-size: clamp(64px, 20vw, 84px);
+}
+
+.show-full.cine-phone .measure-inner .ledger {
+  margin-top: 12px;
+  max-width: 330px;
+}
+
+.show-full.cine-phone .ledger-line {
+  font-size: 12px;
+  padding: 6px 2px;
+}
+
+.show-full.cine-phone .measure-phone {
+  position: absolute;
+  top: auto;
+  bottom: 2svh;
+  left: 0;
+  right: 0;
+  transform: none;
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.show-full.cine-phone .measure-phone .phone {
+  width: min(46vw, 172px);
+  margin: 0;
+}
+
+/* Act 3 — full-bleed rig; the inventory card becomes a compact bottom strip. */
+.show-full.cine-phone .rig-canvas {
+  height: min(46vh, 420px);
+}
+
+.show-full.cine-phone .inv-card {
+  position: absolute;
+  top: auto;
+  bottom: 2%;
+  left: 4%;
+  right: 4%;
+  transform: none;
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  margin: 0;
+}
+
+.show-full.cine-phone .inv-kicker,
+.show-full.cine-phone .inv-note {
+  display: none;
+}
+
+.show-full.cine-phone .inv-item {
+  margin: 0;
+  flex: none;
+  font-size: 13px;
+}
+
+.show-full.cine-phone .inv-count {
+  gap: 6px;
+}
+
+.show-full.cine-phone .inv-count-n {
+  font-size: 20px;
+}
+
+.show-full.cine-phone .inv-bar {
+  flex: 1;
+  margin: 0;
+}
+
+.show-full.cine-phone .strut-canvas {
+  height: min(56vh, 500px);
+}
+
+/* Act 5 — panels stack (phone above caption) and gold ticks track the pan. */
+.show-full .act-app {
+  position: relative;
+}
+
+.show-full.cine-phone .pan-item {
+  flex-direction: column;
+}
+
+.pan-ticks {
+  display: none;
+}
+
+.show-full.cine-phone .pan-ticks {
+  display: flex;
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  justify-content: center;
+  gap: 6px;
+  z-index: 3;
+}
+
+.pan-ticks span {
+  width: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: #33383e;
+  transition: width 0.3s, background 0.3s;
+}
+
+.pan-ticks span.active {
+  width: 16px;
+  background: var(--gold);
+}
+
 /* ---- Narrow screens ------------------------------------------------------------ */
 
 @media (max-width: 719px) {
