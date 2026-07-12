@@ -83,7 +83,10 @@ export function FloatingStack({
     const r = el.getBoundingClientRect();
     start.current = { px: e.clientX, py: e.clientY, x: r.left, y: r.top };
     dragged.current = false;
-    el.setPointerCapture(e.pointerId);
+    // ponytail: DON'T capture here. Chromium retargets the synthesized `click`
+    // to the pointer-capture element (Pointer Events L3), so capturing the
+    // wrapper on every tap kills the child <button> onClick. Capture lazily
+    // once a real drag starts (below) — a plain tap never captures.
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -92,6 +95,7 @@ export function FloatingStack({
     const dx = e.clientX - s.px;
     const dy = e.clientY - s.py;
     if (!dragged.current && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+    if (!dragged.current) ref.current?.setPointerCapture(e.pointerId);
     dragged.current = true;
     last.current = { x: s.x + dx, y: s.y + dy };
     setDrag(last.current);
