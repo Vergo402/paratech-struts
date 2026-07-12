@@ -218,6 +218,8 @@ Two essays argued the marketing site should exist as a credibility document (how
 
 **Why it matters:** No Phase G marketing-site content brief. Removes a dependency on the (also-dropped) demo mode.
 
+> **Addendum 2026-07-11 (Alex):** A single standalone **welcome page** is now in scope — its own URL (`/welcome.html`), built as a second Vite page entry beside the app (the J-21 pre-approved mechanism), issue #442. It is not a marketing *site*, not a funnel, and not a splash: the app's cold-open is untouched and nothing sits between the user and the work. Scope is one page — dulled public-domain USAR footage hero, five capability cards, one "Open FieldShore" button into the app.
+
 ### 3.4 ~~Capacity inversion~~ — OVERTURNED: capacity is a vehicle-stabilization tool (Alex)
 
 Domain-UX framed v3's "capacity shows only when something is wrong" as a backward safety hierarchy and wanted rated capacity to lead every card. **Alex's correction:** rated capacity and safety factors were conceived as an on-scene tool for large-vehicle stabilization, not the structural-shoring core. Capacity stays computed and available, but it is not the headline that drives the result-card hierarchy.

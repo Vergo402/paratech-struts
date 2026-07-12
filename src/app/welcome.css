@@ -1,0 +1,1017 @@
+/* Welcome page (#442), round 3 — competition showpiece per accepted storyboard
+   (fieldshore_welcome_showpiece_storyboard, 2026-07-12). Fallback-first: with no
+   JS (or reduced motion / old browsers) this renders as a complete static dark
+   editorial page. `html.show-lite` adds native CSS scroll-driven reveals;
+   `html.show-full` (desktop + WebGL + motion-ok) hands choreography to GSAP.
+   Standalone surface — outside the app's theme pipeline and Tailwind build. */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+:root {
+  --ink: #f2f1ee;
+  --ink-2: #aeb3b8;
+  --ink-3: #7a8085;
+  --ink-4: #565c61;
+  --bg: #0b0d0f;
+  --bg-2: #101315;
+  --bg-3: #14171a;
+  --line: #1d2126;
+  --gold: #d4a017;
+  --gold-hi: #e9c34c;
+  --serif: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --sans: 'Public Sans Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* ---- Film grain ---------------------------------------------------------- */
+
+.grain {
+  position: fixed;
+  inset: -100px;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grain {
+    animation: grain-jitter 0.9s steps(3) infinite;
+  }
+}
+
+@keyframes grain-jitter {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-40px, 25px);
+  }
+  66% {
+    transform: translate(30px, -35px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+/* ---- Lifecycle filament (full mode, wide screens) ------------------------- */
+
+.filament {
+  display: none;
+}
+
+.show-full .filament {
+  display: block;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 26px;
+  width: 2px;
+  z-index: 8;
+}
+
+.filament-track,
+.filament-progress {
+  position: absolute;
+  top: 8vh;
+  bottom: 8vh;
+  left: 0;
+  width: 2px;
+  background: #2a2f35;
+}
+
+.filament-progress {
+  background: var(--gold);
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+@supports (animation-timeline: scroll()) {
+  .show-full .filament-progress {
+    animation: filament-grow linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+@keyframes filament-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.filament-stage {
+  position: absolute;
+  left: -4px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--ink-4);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color 0.4s;
+  background: var(--bg);
+  padding: 6px 0;
+}
+
+.filament-stage[data-act='1'] {
+  top: 8vh;
+}
+.filament-stage[data-act='2'] {
+  top: 28vh;
+}
+.filament-stage[data-act='3'] {
+  top: 48vh;
+}
+.filament-stage[data-act='4'] {
+  top: 68vh;
+}
+.filament-stage[data-act='5'] {
+  top: 88vh;
+}
+
+.filament-stage.active {
+  color: var(--gold-hi);
+}
+
+.filament-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 6px;
+}
+
+/* ---- Act 1 — hero ---------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  min-height: min(92svh, 900px);
+}
+
+.hero-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* charcoal-and-gold grade */
+  filter: brightness(0.52) saturate(0.25) sepia(0.32) hue-rotate(-14deg) contrast(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-video,
+  .secured-media {
+    display: none;
+  }
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 13, 15, 0.5);
+}
+
+.topbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.brand-name {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.topbar-link {
+  color: #b9bdc1;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.topbar-link:hover {
+  color: var(--ink);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  padding: 40px 28px;
+  max-width: 860px;
+  margin-block: auto;
+}
+
+.show-full .hero-content {
+  padding-left: 72px;
+}
+
+.hero-eyebrow {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  margin-bottom: 22px;
+}
+
+.display {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(26px, 3.4vw, 40px);
+  line-height: 1.14;
+  letter-spacing: -0.3px;
+  max-width: 17ch;
+}
+
+/* The measured void is the hero beat — a still, oversized numeral, not a
+   scrubbed video. It leads the heading; the sentence settles beneath it. */
+.hero-void {
+  display: block;
+  font-weight: 500;
+  font-size: clamp(84px, 12vw, 150px);
+  line-height: 0.86;
+  letter-spacing: -2px;
+  margin-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-void-unit {
+  color: var(--gold);
+}
+
+.hero-sub {
+  color: var(--ink-2);
+  font-size: clamp(15px, 1.6vw, 17px);
+  line-height: 1.6;
+  max-width: 470px;
+  margin: 18px 0 28px;
+}
+
+.cta-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-block;
+  background: var(--gold);
+  color: #14110a;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px 28px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.cta:hover {
+  background: var(--gold-hi);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.cta-note {
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.scroll-hint {
+  display: none;
+  color: var(--ink-4);
+  font-size: 10.5px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-top: 44px;
+}
+
+.show-full .scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scroll-hint-line {
+  display: inline-block;
+  width: 54px;
+  height: 1px;
+  background: var(--ink-4);
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-hint-line {
+    animation: hint-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+@keyframes hint-sweep {
+  0% {
+    transform: scaleX(0);
+  }
+  55% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: right;
+  }
+}
+
+.hero-credit {
+  position: relative;
+  z-index: 2;
+  color: var(--ink-4);
+  font-size: 10.5px;
+  padding: 0 28px 14px;
+}
+
+.show-full .hero-credit {
+  padding-left: 72px;
+}
+
+/* Load-in: one staggered reveal (hero only). */
+.topbar,
+.hero-content > *,
+.hero-credit {
+  animation: rise 0.7s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+}
+
+.hero-content > .hero-eyebrow {
+  animation-delay: 0.04s;
+}
+.hero-content > .display {
+  animation-delay: 0.14s;
+}
+.hero-content > .hero-sub {
+  animation-delay: 0.26s;
+}
+.hero-content > .cta-row {
+  animation-delay: 0.36s;
+}
+.hero-content > .scroll-hint {
+  animation-delay: 0.48s;
+}
+.hero-credit {
+  animation-delay: 0.36s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar,
+  .hero-content > *,
+  .hero-credit {
+    animation: none;
+  }
+}
+
+/* ---- Lifecycle rail (fallback + phones; full mode uses the filament) ------- */
+
+.rail {
+  background: var(--bg-3);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 13px 28px;
+  overflow: hidden;
+}
+
+.show-full .rail {
+  display: none;
+}
+
+.rail-stage {
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rail-line {
+  flex: 1;
+  height: 1px;
+  background: #33383e;
+  margin: 0 8px;
+  min-width: 8px;
+}
+
+.rail-line-gold {
+  background: var(--gold);
+}
+
+.rail-stage-secured {
+  color: var(--gold-hi);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rail-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+/* ---- Breathers — the pause between acts (pacing pass) ----------------------- */
+
+/* A short stretch of plain dark between chapters, so scroll momentum dies
+   before the next act pins. Full mode only — the fallback/lite page reads as a
+   continuous editorial document and must keep its acts adjacent. */
+.breather {
+  display: none;
+}
+
+.show-full .breather {
+  display: block;
+  height: 48vh;
+  background: var(--bg);
+}
+
+/* ---- Act 2 — the measurement ------------------------------------------------ */
+
+.act-measure {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  padding: clamp(70px, 14vh, 130px) 28px;
+  text-align: center;
+}
+
+.slab {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 46px;
+  background: var(--line);
+}
+
+.slab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 34px, rgba(255, 255, 255, 0.04) 34px 36px);
+}
+
+.slab-top {
+  top: 0;
+}
+
+.slab-bottom {
+  bottom: 0;
+}
+
+.kicker {
+  color: var(--gold);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.measure-num {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(90px, 17vw, 210px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.measure-unit {
+  font-size: 0.45em;
+  color: var(--ink-2);
+}
+
+.ledger {
+  list-style: none;
+  padding: 0;
+  max-width: 380px;
+  margin: 28px auto 0;
+}
+
+.ledger-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
+.ledger-line b {
+  color: var(--ink-2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-req {
+  border-bottom: none;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.ledger-req b {
+  color: var(--gold-hi);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+/* Act 2's second beat — the app's strut-selector answer. Fallback/lite: stacked
+   below the ledger. Full mode: docked right of center, hidden until the GSAP
+   timeline glides the ledger left and fades this in. */
+.measure-phone {
+  margin-top: 34px;
+}
+
+.measure-phone .phone {
+  margin: 0 auto;
+}
+
+.show-full .measure-phone {
+  position: absolute;
+  right: 16%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* ---- Act 3 — the strut ------------------------------------------------------ */
+
+.act-strut {
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center, #121518 0%, var(--bg) 70%);
+  padding: clamp(70px, 12vh, 120px) 28px;
+  text-align: center;
+}
+
+.strut-stage {
+  position: relative;
+  max-width: 900px;
+  margin: 26px auto;
+}
+
+.strut-canvas {
+  display: none;
+  width: 100%;
+  height: min(62vh, 540px);
+}
+
+.show-full .strut-canvas {
+  display: block;
+}
+
+.strut-2d {
+  display: block;
+  width: min(46vw, 220px);
+  margin: 0 auto;
+}
+
+.show-full .strut-2d {
+  display: none;
+}
+
+/* ---- Rig / inventory act ---------------------------------------------------- */
+
+.act-rig {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  padding: clamp(70px, 12vh, 120px) 28px;
+  text-align: center;
+}
+
+.rig-stage {
+  position: relative;
+  max-width: 980px;
+  margin: 26px auto 0;
+}
+
+.rig-canvas {
+  display: none;
+  width: 100%;
+  height: min(58vh, 500px);
+}
+
+.show-full .rig-canvas {
+  display: block;
+}
+
+.rig-2d {
+  display: block;
+  width: min(84vw, 420px);
+  margin: 0 auto;
+}
+
+.show-full .rig-2d {
+  display: none;
+}
+
+.inv-card {
+  background: var(--bg-3);
+  border: 1px solid #23272c;
+  border-radius: 10px;
+  padding: 14px 16px;
+  max-width: 270px;
+  margin: 20px auto 0;
+  text-align: left;
+}
+
+.show-full .inv-card {
+  position: absolute;
+  right: 3%;
+  top: 6%;
+  margin: 0;
+  width: 250px;
+}
+
+.inv-kicker {
+  color: var(--ink-3);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.inv-item {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.inv-sys {
+  color: var(--gold);
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.inv-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.inv-count-n {
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-of {
+  color: var(--ink-4);
+  font-size: 11px;
+}
+
+.inv-bar {
+  margin-top: 8px;
+  height: 5px;
+  border-radius: 3px;
+  background: #23272c;
+  overflow: hidden;
+}
+
+.inv-bar-fill {
+  width: 50%;
+  height: 100%;
+  background: var(--gold);
+}
+
+.inv-note {
+  margin-top: 10px;
+  color: var(--ink-4);
+  font-size: 10.5px;
+}
+
+.rig-caption {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-top: 18px;
+}
+
+.strut-load {
+  color: var(--ink);
+  font-size: clamp(17px, 2.2vw, 22px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.strut-load-num {
+  color: var(--gold-hi);
+}
+
+.strut-caption {
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* ---- Act 4 — the app -------------------------------------------------------- */
+
+.act-app {
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+}
+
+.pan-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(26px, 5vw, 70px);
+  padding: clamp(48px, 9vh, 90px) 28px;
+}
+
+.pan-item:nth-child(even) {
+  flex-direction: row-reverse;
+}
+
+.pan-text {
+  max-width: 420px;
+}
+
+.row-heading {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(23px, 3vw, 30px);
+  line-height: 1.15;
+  letter-spacing: -0.2px;
+}
+
+.row-body {
+  color: var(--ink-3);
+  font-size: 14.5px;
+  line-height: 1.65;
+  margin-top: 12px;
+}
+
+.phone {
+  width: clamp(190px, 22vw, 240px);
+  flex-shrink: 0;
+}
+
+.phone img {
+  display: block;
+  width: 100%;
+  border-radius: 20px;
+  border: 6px solid #23272c;
+  background: var(--bg);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+
+/* Full mode: the four panels become one pinned horizontal pan. */
+.show-full .act-app {
+  overflow: hidden;
+}
+
+.show-full .pan-track {
+  display: flex;
+  width: 500%;
+}
+
+.show-full .pan-item {
+  flex: 0 0 20%;
+  min-height: 100vh;
+}
+
+/* ---- Act 5 — secured --------------------------------------------------------- */
+
+.act-secured {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-3);
+  display: grid;
+  place-items: center;
+  min-height: min(78svh, 760px);
+  padding: 60px 28px;
+  text-align: center;
+}
+
+.secured-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.4) saturate(0.25) sepia(0.32) hue-rotate(-14deg);
+}
+
+.secured-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 13, 15, 0.55);
+}
+
+.secured-inner {
+  position: relative;
+}
+
+.secured-mark {
+  color: var(--gold-hi);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.band-line {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(24px, 3.6vw, 38px);
+  line-height: 1.2;
+  max-width: 640px;
+  margin: 0 auto 30px;
+}
+
+.act-secured .cta-row {
+  justify-content: center;
+}
+
+/* ---- Offline strip + footer --------------------------------------------------- */
+
+.strip {
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  padding: 30px 28px 40px;
+  text-align: center;
+  position: relative;
+}
+
+.strip.ghost::before {
+  content: attr(data-n);
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-140px);
+  color: rgba(242, 241, 238, 0.05);
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 56px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.strip h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.strip p {
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.band {
+  background: #000;
+  border-top: 1px solid var(--line);
+  padding: 18px 28px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.band-note {
+  color: var(--ink-4);
+  font-size: 11px;
+}
+
+/* ---- Lite reveals (phones + any browser with scroll timelines) ---------------- */
+
+@supports (animation-timeline: view()) {
+  .show-lite:not(.show-full) .reveal {
+    animation: reveal-rise 1ms linear both;
+    animation-timeline: view();
+    animation-range: entry 5% entry 45%;
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- View transition into the app --------------------------------------------- */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root) {
+  animation: vt-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+::view-transition-new(root) {
+  animation: vt-in 0.45s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+}
+
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+}
+
+/* ---- Narrow screens ------------------------------------------------------------ */
+
+@media (max-width: 719px) {
+  .pan-item,
+  .pan-item:nth-child(even) {
+    flex-direction: column;
+    padding: 40px 24px;
+  }
+
+  .rail {
+    padding: 12px 16px;
+  }
+
+  .rail-line {
+    margin: 0 5px;
+  }
+}

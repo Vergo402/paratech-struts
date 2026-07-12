@@ -580,3 +580,11 @@ button.fs-set-row:disabled .fs-set-row-desc { color: var(--text-tertiary); }
 .fs-set-row-chev { width: 20px; height: 20px; flex: none; color: var(--text-tertiary); }
 .fs-set-row:focus-visible { outline-offset: -2px; }
 
+
+/* Cross-document view transition opt-in (#442): lets the welcome page's
+   "Open FieldShore" navigation glide into the app instead of hard-cutting.
+   Inert inside the SPA (client-side routing never navigates the document);
+   ignored entirely by browsers without the View Transitions API. */
+@view-transition {
+  navigation: auto;
+}

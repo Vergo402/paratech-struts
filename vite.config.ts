@@ -19,6 +19,14 @@ export default defineConfig({
   build: {
     outDir: abs('./dist'),
     emptyOutDir: true,
+    // Multi-page: the public welcome page (#442) ships beside the app — its own
+    // entry, never in front of the app's cold-open (decision matrix J-21).
+    rollupOptions: {
+      input: {
+        main: abs('./src/app/index.html'),
+        welcome: abs('./src/app/welcome.html'),
+      },
+    },
   },
   // Phone-on-LAN dev: pinned so the same URL works every session. `host: true`
   // binds all interfaces (reach it from a phone on the same Wi-Fi); the fixed
