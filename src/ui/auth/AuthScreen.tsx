@@ -141,7 +141,12 @@ export function AuthScreen() {
           Field<b>Shore</b>
         </span>
       </header>
-      <div className="mx-auto flex w-full flex-col gap-5" style={{ maxWidth: 568 }}>
+      {/* auto margins (inline — Tailwind spacing utilities aren't generated in this theme)
+          center the card mid-viewport; collapses to natural flow (scroll) when taller */}
+      <div
+        className="mx-auto flex w-full flex-col gap-5"
+        style={{ width: '100%', maxWidth: 568, margin: 'auto' }}
+      >
         {children}
       </div>
     </div>

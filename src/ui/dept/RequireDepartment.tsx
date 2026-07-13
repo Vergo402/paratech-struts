@@ -6,8 +6,13 @@ import { useSession, useDepartment } from '@ui/hooks';
 function GuestSignInGate() {
   const navigate = useNavigate();
   return (
-    <div className="flex flex-col gap-5 p-5">
-      <div className="mx-auto flex w-full flex-col gap-5" style={{ maxWidth: 568 }}>
+    <div className="flex min-h-full flex-col gap-5 p-5">
+      {/* auto margins (inline — the Tailwind spacing utilities aren't generated in this
+          theme) center the card mid-pane; short viewports scroll instead of clipping */}
+      <div
+        className="mx-auto flex w-full flex-col gap-5"
+        style={{ width: '100%', maxWidth: 568, margin: 'auto' }}
+      >
         <div
           className="flex flex-col items-center gap-3"
           style={{
@@ -58,8 +63,11 @@ export function RequireDepartment({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex flex-col gap-5 p-5">
-      <div className="mx-auto flex w-full flex-col gap-5" style={{ maxWidth: 568 }}>
+    <div className="flex min-h-full flex-col gap-5 p-5">
+      <div
+        className="mx-auto flex w-full flex-col gap-5"
+        style={{ width: '100%', maxWidth: 568, margin: 'auto' }}
+      >
         <p
           className="text-ink-secondary"
           style={{

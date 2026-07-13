@@ -52,9 +52,15 @@ describe('RequireDepartment (the dept-scoped tab gate)', () => {
     expect(screen.queryByText('Set up your department')).not.toBeInTheDocument();
   });
 
-  it('never gates a guest (ADR-015, guest-first)', () => {
+  it('gates a guest — sign-in screen, not the tab (guest gating, 2026-07-13)', async () => {
+    const user = userEvent.setup();
     setup({ kind: 'guest' }, null);
-    expect(screen.getByText('TAB BODY')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Sign in to continue' })).toBeInTheDocument();
+    expect(screen.queryByText('TAB BODY')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/auth' });
+    await user.click(screen.getByRole('button', { name: 'Create an account' }));
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/auth' });
   });
 
   it('Create / Join route to their setup screens', async () => {

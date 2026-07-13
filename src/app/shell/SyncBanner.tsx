@@ -1,45 +1,21 @@
-import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { useSession, useSyncStatus } from '@ui/hooks';
 
 /**
- * SyncBanner — the chrome notice between header and scroll pane. Two audiences:
+ * SyncBanner — the member sync trust signal between header and scroll pane
+ * (cloud-sync Increment 4, ADR-024). Quiet when everything's synced (renders
+ * nothing — the common case stays clutter-free); speaks up only when offline,
+ * mid-sync, or a department join is waiting on a reconnect. Never dismissible —
+ * it's live status, not a nudge.
  *
- * - GUEST: the dismissible "Sign in to sync" nudge (workflow 06) — a nudge, never
- *   a wall (ADR-015); the work underneath is fully usable as a guest.
- * - MEMBER (cloud-sync Increment 4, ADR-024): the sync trust signal. Quiet when
- *   everything's synced (renders nothing — the common case stays clutter-free);
- *   speaks up only when offline, mid-sync, or a department join is waiting on a
- *   reconnect. Never dismissible — it's live status, not a nudge.
- *
+ * Guests get nothing here — their sign-in entry point is the nav's Sign in
+ * button (the old "Sign in to sync" nudge was dropped 2026-07-13).
  * The /auth route lives outside the shell, so the banner never renders there.
  */
 export function SyncBanner() {
-  const navigate = useNavigate();
   const { identity } = useSession();
   const { online, pendingCount, pendingJoin, pendingDeptPush, syncError } = useSyncStatus();
-  // ponytail: guest dismiss is session-only (in-memory) — it returns on reload.
-  const [dismissed, setDismissed] = useState(false);
 
-  // GUEST — the sign-in nudge.
-  if (identity.kind !== 'member') {
-    if (dismissed) return null;
-    return (
-      <div className="fs-sync-banner">
-        <button type="button" className="fs-sync-banner-cta" onClick={() => navigate({ to: '/auth' })}>
-          Sign in to sync
-        </button>
-        <button
-          type="button"
-          className="fs-sync-banner-dismiss"
-          aria-label="Dismiss"
-          onClick={() => setDismissed(true)}
-        >
-          ✕
-        </button>
-      </div>
-    );
-  }
+  if (identity.kind !== 'member') return null;
 
   // MEMBER — live sync status (priority: a queued join, a dept still owed to the
   // cloud, then offline, then mid-sync).

@@ -20,7 +20,8 @@ import { useSession } from '@ui/hooks';
 export function BottomNav() {
   const [collapsed, setCollapsed] = useState(false);
   const { identity } = useSession();
-  const visibleTabs = identity.kind === 'guest' ? TABS.filter((t) => t.guestOnly) : TABS;
+  const guest = identity.kind === 'guest';
+  const visibleTabs = guest ? TABS.filter((t) => t.guestOnly) : TABS;
   return (
     <div className={`fs-nav-wrap${collapsed ? ' fs-nav-wrap--collapsed' : ''}`}>
       <button
@@ -48,6 +49,25 @@ export function BottomNav() {
               <span>{tab.label}</span>
             </Link>
           ))}
+          {/* Guest: sign-in rides the bar next to Quick Find — the screen's one gold
+              action (mockup 2026-07-13). Members never see it. */}
+          {guest && (
+            <Link to="/auth" className="fs-nav-link fs-nav-link--signin">
+              <svg
+                className="fs-nav-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+              </svg>
+              <span>Sign in</span>
+            </Link>
+          )}
         </nav>
       )}
     </div>

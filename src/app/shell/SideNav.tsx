@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react';
-import { Link, useRouterState } from '@tanstack/react-router';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { TABS } from './navTabs';
 import { useSession } from '@ui/hooks';
 import { APP_VERSION } from './AppHeader';
@@ -32,8 +32,10 @@ export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const inSettings = pathname.startsWith('/settings');
   const [slim, setSlim] = useState(readSlim);
+  const navigate = useNavigate();
   const { identity } = useSession();
-  const visibleTabs = identity.kind === 'guest' ? TABS.filter((t) => t.guestOnly) : TABS;
+  const guest = identity.kind === 'guest';
+  const visibleTabs = guest ? TABS.filter((t) => t.guestOnly) : TABS;
 
   const toggleSlim = () =>
     setSlim((s) => {
@@ -59,6 +61,28 @@ export function SideNav() {
         )}
       </span>
       <div className="fs-rail-links">
+        {/* Guest: sign-in is the rail's one gold action, above the tabs (mockup 2026-07-13) */}
+        {guest && (
+          <button
+            type="button"
+            className="fs-rail-signin"
+            onClick={() => navigate({ to: '/auth' })}
+            title={slim ? 'Sign in' : undefined}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+            </svg>
+            <span>Sign in</span>
+          </button>
+        )}
         {visibleTabs.map((tab) => (
           <Fragment key={tab.to}>
             <Link
