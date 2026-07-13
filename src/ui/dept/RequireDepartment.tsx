@@ -33,7 +33,13 @@ function GuestSignInGate() {
           <Button variant="secondary" fullWidth onPress={() => navigate({ to: '/auth' })}>
             Create an account
           </Button>
-          <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
+          <p
+            className="text-ink-tertiary"
+            style={{
+              font: 'var(--type-caption)',
+              marginTop: 'var(--space-3)',
+            }}
+          >
             New here?{' '}
             <a
               href="/welcome.html"
