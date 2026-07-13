@@ -851,6 +851,7 @@ h3 {
 .phone img {
   display: block;
   width: 100%;
+  height: auto;
   border-radius: 20px;
   border: 6px solid #23272c;
   background: var(--bg);
