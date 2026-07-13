@@ -5,17 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta
       name="description"
-      content="Strut selection, shore point tracking, and inventory accountability for structural collapse operations."
+      content="Strut selection, shore point tracking, and inventory accountability for USAR structural collapse operations. Free, offline-first, works on any phone."
     />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0b0d0f" />
+    <link rel="canonical" href="https://fieldshore-database.web.app/welcome.html" />
+    <!-- Link unfurls (iMessage/Slack/X) need absolute URLs on og:image/og:url. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FieldShore" />
+    <meta property="og:title" content="FieldShore — Rescue shoring, tracked end to end" />
+    <meta
+      property="og:description"
+      content="Strut selection, shore point tracking, and inventory accountability for USAR structural collapse operations. Free, offline-first, works on any phone."
+    />
+    <meta property="og:url" content="https://fieldshore-database.web.app/welcome.html" />
+    <meta property="og:image" content="https://fieldshore-database.web.app/media/welcome/poster.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Safari doesn't take SVG favicons; PNG fallback + home-screen icon. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>FieldShore — Rescue shoring, tracked end to end</title>
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
 
-    <nav class="filament" aria-hidden="true">
+    <div class="filament" aria-hidden="true">
       <span class="filament-track"></span>
       <span class="filament-progress"></span>
       <span class="filament-stage" data-act="1">Pending</span>
@@ -23,7 +38,7 @@
       <span class="filament-stage" data-act="3">Strut set</span>
       <span class="filament-stage" data-act="4">Cutting</span>
       <span class="filament-stage filament-stage-end" data-act="5"><i class="filament-dot"></i>Secured</span>
-    </nav>
+    </div>
 
     <header class="hero act" id="act1">
       <img class="hero-media hero-fallback" src="/media/welcome/poster.jpg" alt="" aria-hidden="true" />
@@ -42,7 +57,7 @@
       </video>
       <div class="hero-scrim" aria-hidden="true"></div>
 
-      <nav class="topbar">
+      <nav class="topbar" aria-label="Primary">
         <span class="brand">
           <img class="brand-mark" src="/favicon.svg" alt="" width="24" height="24" />
           <span class="brand-name">FieldShore</span>
@@ -59,14 +74,14 @@
           of void. This is where every shore starts.
         </h1>
         <p class="hero-sub">
-          FieldShore sizes the strut, traces every piece back to the rig it came off, and holds the
-          whole operation together — on any phone, with zero signal.
+          FieldShore sizes the strut and tracks every piece back to the rig it came off. The whole
+          operation runs on any phone, signal or no signal.
         </p>
         <div class="cta-row">
           <a class="cta" href="/">Open FieldShore</a>
           <span class="cta-note">Free &middot; offline &middot; any phone</span>
         </div>
-        <p class="scroll-hint" aria-hidden="true">Scroll to size it<span class="scroll-hint-line"></span></p>
+        <p class="scroll-hint">Scroll to size it<span class="scroll-hint-line" aria-hidden="true"></span></p>
       </div>
 
       <p class="hero-credit">
@@ -75,7 +90,7 @@
       </p>
     </header>
 
-    <div class="rail" aria-label="Shore point lifecycle">
+    <div class="rail" role="group" aria-label="Shore point lifecycle">
       <span class="rail-stage">Pending</span>
       <span class="rail-line" aria-hidden="true"></span>
       <span class="rail-stage">Assigned</span>
@@ -94,17 +109,20 @@
         <div class="slab slab-top" aria-hidden="true"></div>
         <div class="slab slab-bottom" aria-hidden="true"></div>
         <div class="measure-inner reveal">
-          <p class="kicker" id="measure-heading">The opening</p>
+          <h2 class="kicker" id="measure-heading">The opening</h2>
           <p class="measure-num"><span class="counter" data-to="54">54</span><span class="measure-unit">&Prime;</span></p>
-          <!-- Values transcribed from the app's own ledger for this shore
-               (see shot-shorepoint.png) — never hand-computed. -->
+          <!-- The swivel base's true height is 1.8″ (not an eighth-exact value) —
+               shown as a decimal so the column visibly foots: 54 − 13.8 = 40.2,
+               floored to the ⅛″ grid → 40⅛″. Matches the engine's math exactly;
+               never display-round a row here or the sum stops adding up. -->
           <ul class="ledger">
             <li class="ledger-line"><span>Raw opening</span><b>54&Prime;</b></li>
             <li class="ledger-line"><span>Header &middot; 6&times;6</span><b>&minus;5&frac12;&Prime;</b></li>
-            <li class="ledger-line"><span>Top connector &middot; 6&Prime; Swivel Base</span><b>&minus;1&frac34;&Prime;</b></li>
+            <li class="ledger-line"><span>Top connector &middot; 6&Prime; Swivel Base</span><b>&minus;1.8&Prime;</b></li>
             <li class="ledger-line"><span>Bottom connector &middot; 6&Prime; Rigid Base</span><b>&minus;1&Prime;</b></li>
             <li class="ledger-line"><span>Footer &middot; 6&times;6</span><b>&minus;5&frac12;&Prime;</b></li>
             <li class="ledger-line ledger-req"><span>Required strut</span><b>40&#8539;&Prime;</b></li>
+            <li class="ledger-foot">40.2&Prime; floored to the next &#8539;&Prime;</li>
           </ul>
         </div>
         <!-- Act 2's second beat: the app's ANSWER. A real Quick Find capture staged
@@ -116,6 +134,9 @@
             <img
               src="/media/welcome/shot-strutfit.png"
               alt="FieldShore Quick Find results: 12 struts fit the 40⅛″ required length, led by the LS 304 rated 22,000 lb"
+              width="804"
+              height="1720"
+              decoding="async"
             />
           </div>
         </div>
@@ -124,7 +145,7 @@
       <div class="breather" aria-hidden="true"></div>
 
       <section class="act act-rig" id="act3" aria-labelledby="rig-heading">
-        <p class="kicker reveal" id="rig-heading">Off the rig</p>
+        <h2 class="kicker reveal" id="rig-heading">Off the rig</h2>
         <div class="rig-stage">
           <canvas class="rig-canvas" aria-hidden="true"></canvas>
           <svg class="rig-2d" viewBox="0 0 320 150" aria-hidden="true">
@@ -151,14 +172,14 @@
           </aside>
         </div>
         <p class="rig-caption reveal">
-          Every strut, plate, and extension traced to the rig it came off — and back.
+          Every strut, plate, and extension checked out of its rig and checked back in.
         </p>
       </section>
 
       <div class="breather" aria-hidden="true"></div>
 
       <section class="act act-strut" id="act4" aria-labelledby="strut-heading">
-        <p class="kicker reveal" id="strut-heading">The strut</p>
+        <h2 class="kicker reveal" id="strut-heading">The strut</h2>
         <div class="strut-stage">
           <canvas class="strut-canvas" aria-hidden="true"></canvas>
           <svg class="strut-2d" viewBox="0 0 240 360" aria-hidden="true">
@@ -174,9 +195,9 @@
           </svg>
         </div>
         <p class="strut-load reveal">
-          <span class="counter strut-load-num" data-to="22000">22,000</span> lb rated at this length
+          Rated <span class="counter strut-load-num" data-to="22000">22,000</span> lb at this length
         </p>
-        <p class="strut-caption reveal">LongShore LS 304 &middot; set at 40&#8539;&Prime; &mdash; extended, pinned, and seated as fast as you can scroll.</p>
+        <p class="strut-caption reveal">LongShore LS 304 &middot; set at 40&#8539;&Prime;. Extended, pinned, seated.</p>
       </section>
 
       <div class="breather" aria-hidden="true"></div>
@@ -186,52 +207,52 @@
         <div class="pan-track">
           <article class="pan-item">
             <div class="phone phone-morph-target">
-              <img src="/media/welcome/shot-operations.png" alt="FieldShore Operations board on a phone" />
+              <img src="/media/welcome/shot-operations.png" alt="FieldShore Operations board on a phone" width="390" height="844" decoding="async" />
             </div>
             <div class="pan-text reveal">
               <p class="kicker">Operations</p>
-              <h2 class="row-heading">The whole operation, on one board</h2>
-              <p class="row-body">Shore points move from pending to secured with the crew, the cuts, and every piece tracked.</p>
+              <h2 class="row-heading">One board for the whole job</h2>
+              <p class="row-body">Shore points go pending to secured. Crew, cuts, and equipment all accounted for.</p>
             </div>
           </article>
           <article class="pan-item">
             <div class="phone">
-              <img src="/media/welcome/shot-shorepoint.png" alt="FieldShore shore point detail with ledger, bill of materials, and timeline" />
+              <img src="/media/welcome/shot-shorepoint.png" alt="FieldShore shore point detail with the deduction ledger, every piece on the shore, and a timeline" width="390" height="844" loading="lazy" decoding="async" />
             </div>
             <div class="pan-text reveal">
               <p class="kicker">Shore point tracking</p>
-              <h2 class="row-heading">Every point, pending to secured</h2>
-              <p class="row-body">Required length, the deduction ledger, the bill of materials, and a timeline of who did what.</p>
+              <h2 class="row-heading">Who did what, and when</h2>
+              <p class="row-body">Required length, the deduction math, and the full build, down to the last plate.</p>
             </div>
           </article>
           <article class="pan-item">
             <div class="phone">
-              <img src="/media/welcome/shot-location.png" alt="FieldShore shore point card showing its what3words three-word location address" />
+              <img src="/media/welcome/shot-location.png" alt="FieldShore shore point card showing its what3words three-word location address" width="804" height="1720" loading="lazy" decoding="async" />
             </div>
             <div class="pan-text reveal">
               <p class="kicker">Location &middot; what3words</p>
-              <h2 class="row-heading">Every void, pinned to three words</h2>
-              <p class="row-body">A collapse is acres of rubble. Each shore point carries its own what3words address — the exact 3-metre square, as three words instead of a grid reference read out over the radio.</p>
+              <h2 class="row-heading">The void gets an address</h2>
+              <p class="row-body">There are no street addresses on a pile. Each shore point carries a what3words address: three words for a 10-foot square, easier to say over the radio than a lat-long.</p>
             </div>
           </article>
           <article class="pan-item">
             <div class="phone">
-              <img src="/media/welcome/shot-quickfind.png" alt="FieldShore Quick Find strut results on a phone" />
+              <img src="/media/welcome/shot-quickfind.png" alt="FieldShore Quick Find strut results on a phone" width="390" height="844" loading="lazy" decoding="async" />
             </div>
             <div class="pan-text reveal">
               <p class="kicker">Quick Find</p>
               <h2 class="row-heading">Measurement in, struts out</h2>
-              <p class="row-body">Enter the opening and the load — get the combinations that fit, from your own rigs.</p>
+              <p class="row-body">Punch in the opening and the load. Get the combinations that fit, off your own rigs.</p>
             </div>
           </article>
           <article class="pan-item">
             <div class="phone">
-              <img src="/media/welcome/shot-command.png" alt="FieldShore Command screen with incident roles and status roll-up" />
+              <img src="/media/welcome/shot-command.png" alt="FieldShore Command screen with incident roles and shore points counted by status" width="390" height="844" loading="lazy" decoding="async" />
             </div>
             <div class="pan-text reveal">
-              <p class="kicker">ICS/NIMS command</p>
-              <h2 class="row-heading">Command structure, by doctrine</h2>
-              <p class="row-body">Incident Commander, Operations, Safety — and every shore point rolled up by status.</p>
+              <p class="kicker">ICS command</p>
+              <h2 class="row-heading">Command structure, by the book</h2>
+              <p class="row-body">Command, Operations, Safety on the chart. Shore points counted by status.</p>
             </div>
           </article>
         </div>
@@ -240,8 +261,9 @@
       <div class="breather" aria-hidden="true"></div>
 
       <section class="act act-secured" id="act6" aria-labelledby="secured-heading">
+        <img class="secured-media secured-fallback" src="/media/welcome/poster.jpg" alt="" aria-hidden="true" loading="lazy" decoding="async" />
         <video
-          class="secured-media"
+          class="secured-media secured-video"
           muted
           loop
           playsinline
@@ -254,7 +276,7 @@
         <div class="secured-scrim" aria-hidden="true"></div>
         <div class="secured-inner reveal">
           <p class="secured-mark" aria-hidden="true"><span class="rail-dot"></span>Secured</p>
-          <p class="band-line" id="secured-heading">Built by firefighters, for structural collapse operations.</p>
+          <h2 class="band-line" id="secured-heading">Built by a firefighter who works structural collapse.</h2>
           <div class="cta-row">
             <a class="cta" href="/">Open FieldShore</a>
             <span class="cta-note">Free &middot; offline &middot; any phone</span>
@@ -262,9 +284,9 @@
         </div>
       </section>
 
-      <section class="strip ghost" data-n="05" aria-label="Offline operation">
+      <section class="strip ghost" aria-label="Offline operation">
         <h3>Offline operation</h3>
-        <p>Full function with zero signal; syncs when comms return.</p>
+        <p>Everything works with no signal. Syncs when comms come back.</p>
       </section>
     </main>
 

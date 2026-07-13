@@ -14,7 +14,9 @@
   --ink: #f2f1ee;
   --ink-2: #aeb3b8;
   --ink-3: #7a8085;
-  --ink-4: #565c61;
+  /* 4.6:1 on --bg — the old #565c61 measured ~2.9:1, an AA failure at the
+     10–11px sizes this token styles (credit, hints, filament stages). */
+  --ink-4: #8a9096;
   --bg: #0b0d0f;
   --bg-2: #101315;
   --bg-3: #14171a;
@@ -114,6 +116,14 @@ h3 {
   }
 }
 
+/* No scroll()-timeline support (Safari, Firefox): hide the dead progress line
+   rather than pinning it at zero; the stage labels still work via JS. */
+@supports not (animation-timeline: scroll()) {
+  .show-full .filament-progress {
+    display: none;
+  }
+}
+
 @keyframes filament-grow {
   from {
     transform: scaleY(0);
@@ -176,7 +186,11 @@ h3 {
   background: var(--bg-2);
   display: flex;
   flex-direction: column;
-  min-height: min(92svh, 900px);
+  /* Fill the first viewport — the 92svh/900px cap left a dead black band under
+     the fold on common window sizes. vh line first = fallback for pre-svh
+     browsers. */
+  min-height: 100vh;
+  min-height: 100svh;
 }
 
 .hero-media {
@@ -190,8 +204,9 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Videos only — .secured-fallback shares .secured-media and must stay. */
   .hero-video,
-  .secured-media {
+  .secured-video {
     display: none;
   }
 }
@@ -199,7 +214,9 @@ h3 {
 .hero-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(11, 13, 15, 0.5);
+  /* Left-weighted text protection: a bright video frame (sky, work lights)
+     could out-luminance the body text under a flat 50% scrim. */
+  background: linear-gradient(90deg, rgba(11, 13, 15, 0.82), rgba(11, 13, 15, 0.45) 55%, rgba(11, 13, 15, 0.28));
 }
 
 .topbar {
@@ -274,7 +291,7 @@ h3 {
 .hero-void {
   display: block;
   font-weight: 500;
-  font-size: clamp(84px, 12vw, 150px);
+  font-size: clamp(56px, 12vw, 150px);
   line-height: 0.86;
   letter-spacing: -2px;
   margin-bottom: 12px;
@@ -486,7 +503,7 @@ h3 {
 
 .show-full .breather {
   display: block;
-  height: 48vh;
+  height: 30vh;
   background: var(--bg);
 }
 
@@ -580,6 +597,15 @@ h3 {
   font-size: 16px;
 }
 
+/* The floor-rounding step under the total — the column visibly foots. */
+.ledger-foot {
+  list-style: none;
+  text-align: right;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  padding: 4px 2px 0;
+}
+
 /* Act 2's second beat — the app's strut-selector answer. Fallback/lite: stacked
    below the ledger. Full mode: docked right of center, hidden until the GSAP
    timeline glides the ledger left and fades this in. */
@@ -625,6 +651,9 @@ h3 {
 
 .show-full .strut-canvas {
   display: block;
+  /* Fade the canvas edges so the 3D stage has no hard rectangle boundary. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
 
 .strut-2d {
@@ -662,6 +691,8 @@ h3 {
 
 .show-full .rig-canvas {
   display: block;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
 }
 
 .rig-2d {
@@ -838,7 +869,10 @@ h3 {
 
 .show-full .pan-item {
   flex: 0 0 20%;
+  /* svh, not vh — with the iOS toolbar expanded, 100vh overflows the visible
+     viewport and clips the bottom of each panel. vh line = fallback. */
   min-height: 100vh;
+  min-height: 100svh;
 }
 
 /* ---- Act 5 — secured --------------------------------------------------------- */
@@ -849,6 +883,7 @@ h3 {
   background: var(--bg-3);
   display: grid;
   place-items: center;
+  min-height: min(78vh, 760px);
   min-height: min(78svh, 760px);
   padding: 60px 28px;
   text-align: center;
@@ -976,12 +1011,16 @@ h3 {
   navigation: auto;
 }
 
-::view-transition-old(root) {
-  animation: vt-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
-}
+/* The scale+fade only when motion is welcome — everything else on the page is
+   reduced-motion-gated; this was the one slip. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vt-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
 
-::view-transition-new(root) {
-  animation: vt-in 0.45s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+  ::view-transition-new(root) {
+    animation: vt-in 0.45s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+  }
 }
 
 @keyframes vt-out {
@@ -998,6 +1037,38 @@ h3 {
   }
 }
 
+/* ---- Print ---------------------------------------------------------------------- */
+
+@media print {
+  :root {
+    --ink: #111;
+    --ink-2: #333;
+    --ink-3: #555;
+    --ink-4: #666;
+    --bg: #fff;
+    --bg-2: #fff;
+    --bg-3: #fff;
+    --line: #ccc;
+  }
+
+  html,
+  body,
+  .band,
+  .act-measure {
+    background: #fff !important;
+  }
+
+  .grain,
+  .filament,
+  .hero-media,
+  .hero-scrim,
+  .secured-media,
+  .secured-scrim,
+  video {
+    display: none !important;
+  }
+}
+
 /* ---- Portrait cinematic (cine-phone) --------------------------------------------
    The full experience on phones (<900px, gate in welcome.ts): same acts, same
    beats, portrait blocking per the accepted storyboard (2026-07-12). Scoped to
@@ -1005,6 +1076,12 @@ h3 {
 
 .show-full.cine-phone .filament {
   display: none; /* the left rail is a wide-screen instrument */
+}
+
+/* Static grain reads identically at 5.5% — don't force whole-page compositing
+   on phones that are already driving the WebGL scenes. */
+.show-full.cine-phone .grain {
+  animation: none;
 }
 
 .show-full.cine-phone .hero-content,
@@ -1018,6 +1095,7 @@ h3 {
 .show-full.cine-phone .act-measure,
 .show-full.cine-phone .act-rig,
 .show-full.cine-phone .act-strut {
+  min-height: 100vh;
   min-height: 100svh;
 }
 
@@ -1052,7 +1130,8 @@ h3 {
 .show-full.cine-phone .measure-phone {
   position: absolute;
   top: auto;
-  bottom: 2svh;
+  bottom: 2vh;
+  bottom: calc(2svh + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   transform: none;
@@ -1074,7 +1153,7 @@ h3 {
 .show-full.cine-phone .inv-card {
   position: absolute;
   top: auto;
-  bottom: 2%;
+  bottom: calc(2% + env(safe-area-inset-bottom, 0px));
   left: 4%;
   right: 4%;
   transform: none;
@@ -1130,7 +1209,7 @@ h3 {
 .show-full.cine-phone .pan-ticks {
   display: flex;
   position: absolute;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   left: 0;
   right: 0;
   justify-content: center;

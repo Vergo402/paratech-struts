@@ -60,6 +60,10 @@ export default defineConfig({
       // is NEVER cached. (Inert in this slice — data/sync is a local stub — but the
       // route is written now so the rule is not forgotten when real Firebase lands.)
       workbox: {
+        // The public welcome page is its own entry — without this, offline
+        // navigations to /welcome.html get the app shell instead, and the app
+        // router 404s a page that is sitting right there in the precache.
+        navigateFallbackDenylist: [/^\/welcome\.html/],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>

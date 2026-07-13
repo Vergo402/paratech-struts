@@ -169,6 +169,9 @@ export function createStrutScene(canvas: HTMLCanvasElement): StrutScene {
   };
 
   setProgress(0);
+  // One warm-up frame regardless of the active gate — otherwise the first real
+  // frame compiles every shader mid-scrub and the scene pops in with a hitch.
+  renderer.render(scene, camera);
 
   return {
     setProgress,

@@ -21,8 +21,36 @@ function restsOf(tl: gsap.core.Timeline, labels: string[]): number[] {
   return [0, ...labels.map((l) => (tl.labels[l] ?? 0) / tl.duration())];
 }
 
+// Scenes are singletons per canvas: gsap.matchMedia reverts and rebuilds the
+// acts on every 1100px crossing (iPad rotation crosses it both ways), and
+// recreating a renderer on a canvas that already has one leaks GPU resources.
+const truckScenes = new WeakMap<HTMLCanvasElement, import('./welcome-truck').TruckScene>();
+const strutScenes = new WeakMap<HTMLCanvasElement, StrutScene>();
+
+/** WebGL died or its chunk failed to load — reveal the act's static 2D art. */
+function fallbackTo2D(act: HTMLElement, canvas: HTMLCanvasElement): void {
+  canvas.style.display = 'none';
+  const svg = act.querySelector<SVGElement>('svg');
+  if (svg) svg.style.display = 'block';
+}
+
+/** Permanent 2D handoff if the GPU context is ever lost mid-visit. */
+function guardContextLoss(act: HTMLElement, canvas: HTMLCanvasElement): void {
+  canvas.addEventListener(
+    'webglcontextlost',
+    (e) => {
+      e.preventDefault();
+      fallbackTo2D(act, canvas);
+    },
+    { once: true },
+  );
+}
+
 export function init(): void {
   gsap.registerPlugin(ScrollTrigger);
+  // Android toolbar show/hide fires resize events mid-scroll; recomputing every
+  // pin for those makes pinned content visibly jump.
+  ScrollTrigger.config({ ignoreMobileResize: true });
 
   // Heavier, softer scroll — one flick travels ~30% less and settles smoothly,
   // so a single trackpad gesture can no longer blow through an act. syncTouch
@@ -33,10 +61,13 @@ export function init(): void {
   gsap.ticker.lagSmoothing(0);
 
   // The acts build per breakpoint: desktop keeps the approved wide blocking;
-  // phones (< 900px) get portrait re-blocking of the same beats. matchMedia
-  // reverts and rebuilds everything if the viewport crosses the boundary.
+  // narrow viewports (< 1100px) get portrait re-blocking of the same beats.
+  // matchMedia reverts and rebuilds everything if the viewport crosses over.
+  // Complementary conditions (`not` of the same query) — a max-width mirror
+  // leaves a fractional-pixel dead zone at browser zoom where NEITHER matches
+  // and no acts build. 1100 must match the cine-phone gate in welcome.ts.
   const mm = gsap.matchMedia();
-  mm.add({ isDesktop: '(min-width: 900px)', isPhone: '(max-width: 899.98px)' }, (ctx) => {
+  mm.add({ isDesktop: '(min-width: 1100px)', isPhone: 'not all and (min-width: 1100px)' }, (ctx) => {
     const phone = (ctx.conditions as { isPhone?: boolean } | undefined)?.isPhone === true;
 
     const acts = [initMeasure(phone), initRig(phone), initStrut(), initAppPan(phone)].filter(
@@ -60,12 +91,31 @@ export function init(): void {
     rebuildSnaps();
 
     let settling = false;
+    let settleGuard = 0;
     let idleTimer = 0;
+    // Settle only after a real wheel/touch gesture. Scrollbar drags, PgDn/End,
+    // Home, and find-in-page all arrive as native jumps — settling after those
+    // yanks the page away from where the user deliberately put it.
+    let gestureAt = 0;
+    const markGesture = () => {
+      gestureAt = performance.now();
+      // A new gesture interrupts any in-flight settle glide — Lenis won't fire
+      // that scrollTo's onComplete, so clear the latch here or it sticks
+      // forever and the settle dies for the rest of the session.
+      settling = false;
+      window.clearTimeout(settleGuard);
+    };
+    window.addEventListener('wheel', markGesture, { passive: true });
+    window.addEventListener('touchmove', markGesture, { passive: true });
+
     const offSettle = lenis.on('scroll', (l: Lenis) => {
       if (settling) return;
       window.clearTimeout(idleTimer);
       if (Math.abs(l.velocity) > 0.1) return; // still moving — wait for real rest
       idleTimer = window.setTimeout(() => {
+        // 3s covers post-flick inertia (touchmove stops at finger-lift, the
+        // glide runs on); a scrollbar/keyboard jump has no gesture for minutes.
+        if (performance.now() - gestureAt > 3000) return; // not a wheel/touch stop
         const here = lenis.scroll;
         let best: number | null = null;
         for (const p of snapPoints) {
@@ -74,11 +124,17 @@ export function init(): void {
         // Glide only when meaningfully off a pose but within grabbing distance.
         if (best === null || Math.abs(best - here) < 2 || Math.abs(best - here) > innerHeight * 0.4) return;
         settling = true;
+        // Belt-and-suspenders latch clear — onComplete only fires on an
+        // uninterrupted glide.
+        settleGuard = window.setTimeout(() => {
+          settling = false;
+        }, 900);
         lenis.scrollTo(best, {
           duration: 0.7,
           easing: (t: number) => 1 - Math.pow(1 - t, 3),
           onComplete: () => {
             settling = false;
+            window.clearTimeout(settleGuard);
           },
         });
       }, 250);
@@ -87,6 +143,9 @@ export function init(): void {
     return () => {
       ScrollTrigger.removeEventListener('refresh', rebuildSnaps);
       window.clearTimeout(idleTimer);
+      window.clearTimeout(settleGuard);
+      window.removeEventListener('wheel', markGesture);
+      window.removeEventListener('touchmove', markGesture);
       if (typeof offSettle === 'function') offSettle();
     };
   });
@@ -111,7 +170,7 @@ function initMeasure(phone: boolean): PacedAct | undefined {
   const tl = gsap
     .timeline({
       defaults: { ease: 'none' },
-      scrollTrigger: { trigger: act, start: 'top top', end: '+=310%', pin: true, scrub: 0.4 },
+      scrollTrigger: { trigger: act, start: 'top top', end: '+=270%', pin: true, scrub: 0.25 },
     })
     .fromTo('#act2 .slab-top', { y: '34vh' }, { y: 0, duration: 0.45, ease: 'power2.out' }, 0)
     .fromTo('#act2 .slab-bottom', { y: '-34vh' }, { y: 0, duration: 0.45, ease: 'power2.out' }, 0)
@@ -158,7 +217,9 @@ function initMeasure(phone: boolean): PacedAct | undefined {
   }
   tl.addLabel('answer').to({}, { duration: 0.45 }, '>'); // tail hold — the answer pose dwells
 
-  return { st: tl.scrollTrigger as ScrollTrigger, rests: restsOf(tl, ['ledger', 'answer']) };
+  // No rest at 0 — that pose is closed slabs on black with the content still at
+  // alpha 0, and the settle would park visitors on an empty frame.
+  return { st: tl.scrollTrigger as ScrollTrigger, rests: restsOf(tl, ['ledger', 'answer']).slice(1) };
 }
 
 /* ---- Act 3 — off the rig ------------------------------------------------------ */
@@ -181,9 +242,9 @@ function initRig(phone: boolean): PacedAct | undefined {
     scrollTrigger: {
       trigger: act,
       start: 'top top',
-      end: '+=290%',
+      end: '+=250%',
       pin: true,
-      scrub: 0.4,
+      scrub: 0.25,
       onToggle: (self) => truck?.setActive(self.isActive),
     },
   });
@@ -193,11 +254,22 @@ function initRig(phone: boolean): PacedAct | undefined {
     start: 'top bottom',
     once: true,
     onEnter: () => {
-      void import('./welcome-truck').then((m) => {
-        truck = m.createTruckScene(canvas);
+      const cached = truckScenes.get(canvas);
+      if (cached) {
+        truck = cached;
         truck.setActive(tl.scrollTrigger?.isActive ?? true);
         truck.setProgress(progress.p);
-      });
+        return;
+      }
+      void import('./welcome-truck')
+        .then((m) => {
+          truck = m.createTruckScene(canvas);
+          truckScenes.set(canvas, truck);
+          guardContextLoss(act, canvas);
+          truck.setActive(tl.scrollTrigger?.isActive ?? true);
+          truck.setProgress(progress.p);
+        })
+        .catch(() => fallbackTo2D(act, canvas));
     },
   });
 
@@ -252,7 +324,7 @@ function initStrut(): PacedAct | undefined {
         start: 'top top',
         end: '+=280%',
         pin: true,
-        scrub: 0.4,
+        scrub: 0.25,
         onToggle: (self) => strut?.setActive(self.isActive),
       },
     });
@@ -265,16 +337,30 @@ function initStrut(): PacedAct | undefined {
     start: 'top bottom',
     once: true,
     onEnter: () => {
-      void import('./welcome-strut').then((m) => {
-        strut = m.createStrutScene(canvas);
+      const cached = strutScenes.get(canvas);
+      if (cached) {
+        strut = cached;
         strut.setActive(tl.scrollTrigger?.isActive ?? true);
         strut.setProgress(progress.p);
-      });
+        return;
+      }
+      void import('./welcome-strut')
+        .then((m) => {
+          strut = m.createStrutScene(canvas);
+          strutScenes.set(canvas, strut);
+          guardContextLoss(act, canvas);
+          strut.setActive(tl.scrollTrigger?.isActive ?? true);
+          strut.setProgress(progress.p);
+        })
+        .catch(() => fallbackTo2D(act, canvas));
     },
   });
 
   tl
     .to(progress, { p: 1, duration: 0.86, onUpdate: () => strut?.setProgress(progress.p) }, 0)
+    // The load line stays hidden until the count starts — "0 lb rated" under a
+    // rescue strut is the one number this page must never rest on.
+    .fromTo('#act4 .strut-load', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.06, ease: 'power1.out' }, 0.42)
     .to(
       load,
       {
@@ -284,7 +370,7 @@ function initStrut(): PacedAct | undefined {
           loadNum.textContent = Math.round(load.v).toLocaleString('en-US');
         },
       },
-      0.5,
+      0.45,
     )
     // Resting poses: the gold pin home, then the assembled 22,000 lb shore —
     // which HOLDS for a beat of scroll before the exit collapse begins.
@@ -310,7 +396,7 @@ function initAppPan(phone: boolean): PacedAct | undefined {
     yPercent: 24,
     opacity: 0,
     ease: 'power2.out',
-    scrollTrigger: { trigger: act, start: 'top 90%', end: 'top 10%', scrub: 0.4 },
+    scrollTrigger: { trigger: act, start: 'top 90%', end: 'top 10%', scrub: 0.25 },
   });
 
   // Five panels, paced: each panel-width glide (power1.inOut, so the carriage
@@ -321,7 +407,7 @@ function initAppPan(phone: boolean): PacedAct | undefined {
   const DWELL = 0.08; // the pause on each panel
   const tl = gsap.timeline({
     defaults: { ease: 'none' },
-    scrollTrigger: { trigger: act, start: 'top top', end: '+=520%', pin: true, scrub: 0.5 },
+    scrollTrigger: { trigger: act, start: 'top top', end: '+=420%', pin: true, scrub: 0.3 },
   });
 
   const items = gsap.utils.toArray<HTMLElement>('.pan-item');

@@ -31,8 +31,9 @@ document.querySelectorAll<HTMLImageElement>('.hero-fallback').forEach((img) => {
 });
 
 // Videos play only while on screen (the closing loop has no autoplay — it
-// starts here the first time it scrolls into view).
-if (!reduced) {
+// starts here the first time it scrolls into view). Save-Data users keep the
+// poster stills — the loop is the heaviest asset on the page.
+if (!reduced && !saveData) {
   const io = new IntersectionObserver(
     (entries) => {
       entries.forEach((e) => {
@@ -52,7 +53,10 @@ if (!reduced) {
 if (!reduced && !saveData && hasWebGL) {
   const root = document.documentElement;
   root.classList.add('show-full');
-  const bp = matchMedia('(min-width: 900px)');
+  // 1100, not 900: the desktop blocking (absolute-docked phone, filament rail)
+  // doesn't actually fit until ~1100px — the 900–1100 band overlapped badly.
+  // Must match the gsap.matchMedia boundary in welcome-show.ts.
+  const bp = matchMedia('(min-width: 1100px)');
   root.classList.toggle('cine-phone', !bp.matches);
   bp.addEventListener('change', (e) => root.classList.toggle('cine-phone', !e.matches));
   import('./welcome-show')

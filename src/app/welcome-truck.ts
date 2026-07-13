@@ -85,16 +85,28 @@ export function createTruckScene(canvas: HTMLCanvasElement): TruckScene {
   const label = document.createElement('canvas');
   label.width = 512;
   label.height = 128;
-  const lctx = label.getContext('2d');
-  if (lctx) {
+  const drawLabel = () => {
+    const lctx = label.getContext('2d');
+    if (!lctx) return;
+    lctx.clearRect(0, 0, label.width, label.height);
     lctx.fillStyle = '#b03228';
     lctx.font = '700 72px "Public Sans Variable", sans-serif';
     lctx.textBaseline = 'middle';
     lctx.fillText('RESCUE 2', 24, 64);
-  }
+  };
+  drawLabel();
+  const labelTex = new THREE.CanvasTexture(label);
+  // Without this the texture is sampled as linear and the red washes out pink.
+  labelTex.colorSpace = THREE.SRGBColorSpace;
+  // Cold cache + fast scroll can bake the texture before the webfont lands.
+  void document.fonts.ready.then(() => {
+    drawLabel();
+    labelTex.needsUpdate = true;
+    requestRender();
+  });
   const labelMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(2.4, 0.6),
-    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(label), transparent: true }),
+    new THREE.MeshBasicMaterial({ map: labelTex, transparent: true }),
   );
   labelMesh.position.set(0.05, 0.75, 1.09); // 0.04 proud of the body face — no z-fight
   truck.add(labelMesh);
@@ -187,7 +199,10 @@ export function createTruckScene(canvas: HTMLCanvasElement): TruckScene {
     // Struts slide out one by one and stand leaned in front of the rig.
     struts.forEach((g, i) => {
       const sp = easeOutCubic(seg(p, 0.22 + 0.2 * i, 0.42 + 0.2 * i));
-      g.visible = sp > 0;
+      // Not visible until it's clear of the bay — at tiny sp the racked tube
+      // still lies across the door plane and its end cap pokes through the
+      // closed door at phone camera angles.
+      g.visible = sp > 0.12;
       const outZ = THREE.MathUtils.lerp(0.9, 2.3, Math.min(1, sp * 1.6));
       const downY = THREE.MathUtils.lerp(0.45, -0.34, seg(sp, 0.45, 1));
       g.position.set(-1.95 + i * 0.55, downY, outZ);
@@ -204,6 +219,9 @@ export function createTruckScene(canvas: HTMLCanvasElement): TruckScene {
   };
 
   setProgress(0);
+  // One warm-up frame regardless of the active gate — otherwise the first real
+  // frame compiles every shader mid-scrub and the scene pops in with a hitch.
+  renderer.render(scene, camera);
 
   return {
     setProgress,
