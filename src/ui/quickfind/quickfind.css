@@ -112,9 +112,25 @@
   color: var(--text-tertiary);
   margin-right: 2px;
 }
+/* The explicit ADR-012 floor step — quiet: the exact pre-floor sum the deduction
+   rows foot to, shown only when it lands off the ⅛″ grid. */
+.fs-ledger-floor {
+  border-top: var(--stroke-width) solid var(--surface-stroke);
+  padding-top: var(--space-3);
+}
+.fs-ledger-floor .fs-ledger-label,
+.fs-ledger-floor .fs-ledger-value {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
 .fs-ledger-effective {
   border-top: var(--stroke-width) solid var(--surface-stroke); /* token — sunlight holds (#433) */
   padding-top: var(--space-3);
+}
+/* The floor row already carries the divider — don't rule twice. */
+.fs-ledger-floor + .fs-ledger-effective {
+  border-top: 0;
+  padding-top: 0;
 }
 /* The answer numeral — the 22px hero step (#433 token sweep — was a magic 26px);
    one voice for "Required strut" in the form ledger AND the sheet stat strip. */

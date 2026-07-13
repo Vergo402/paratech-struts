@@ -10,7 +10,7 @@ import {
   isUntracked,
   STATUS_LABELS,
 } from '@core/shorepoint';
-import { Badge, MeasurementValue, WarningGate } from '@ui/primitives';
+import { Badge, InchesValue, MeasurementValue, WarningGate, isEighthsExact } from '@ui/primitives';
 import { useShorePointHistory } from '@ui/hooks';
 import { pieceIdentity } from './pieceIdentity';
 import { dateClock } from '../util/time';
@@ -41,12 +41,13 @@ export interface ShorePointDetailProps {
 function woodRow(label: string, id: WoodSizeId) {
   const wood = WOOD_SIZES.find((w) => w.id === id);
   const selected = !!wood && wood.id !== 'none';
-  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', eighths: selected ? Math.round(wood.height * 8) : 0 };
+  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
 }
 function plateRow(label: string, id: string) {
   const plate = BASE_PLATES.find((p) => p.id === id);
   const selected = !!plate && plate.id !== 'none';
-  return { label, selected, name: selected ? plate.name : 'not selected', eighths: selected ? Math.round(plate.height * 8) : 0 };
+  // EXACT catalog height — off-grid plates render as decimals so the column foots.
+  return { label, selected, name: selected ? plate.name : 'not selected', inches: selected ? plate.height : 0 };
 }
 function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> }) {
   return (
@@ -55,7 +56,7 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> }) {
         <span className="fs-rec-slot-label">{row.label}</span>
         {row.selected ? (
           <span className="fs-rec-slot-value">
-            <MeasurementValue eighths={-row.eighths} />
+            <InchesValue inches={-row.inches} />
           </span>
         ) : (
           <span className="fs-rec-slot-value fs-rec-ns">N/S</span>
@@ -116,6 +117,9 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
   ];
   const effectiveEighths = Math.round(effectiveLengthInches(sp) * 8);
   const hasDeductions = deductionTotalInches(sp.deductions) > 0;
+  // The exact pre-floor result; the hero/ledger total is its ADR-012 floor. When
+  // they differ the ledger shows the floor step so the column foots.
+  const exactInches = sp.measurementEighths / 8 - deductionTotalInches(sp.deductions);
   const estLoad = sp.estimatedLoad; // blank renders as "—", not "0 lbs" (undefined ≠ 0)
   // One label for the hero figure AND the ledger's final row, so they agree — and
   // it names the number the ledger actually computes: raw − deductions = the STRUT
@@ -182,6 +186,12 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
               {ledger.map((row) => (
                 <LedgerSlot key={row.label} row={row} />
               ))}
+              {!isEighthsExact(exactInches) && (
+                <div className="fs-rec-row fs-rec-floor">
+                  <span className="fs-rec-slot-label">Exact — floored to ⅛″</span>
+                  <InchesValue inches={exactInches} className="fs-rec-floor-value" />
+                </div>
+              )}
             </>
           )}
           <div className="fs-rec-row fs-rec-effective-row">

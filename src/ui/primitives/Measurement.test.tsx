@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render } from '@testing-library/react';
-import { MeasurementValue, eighthsToParts } from './Measurement';
+import { InchesValue, MeasurementValue, decimalInchesText, eighthsToParts, isEighthsExact } from './Measurement';
 
 describe('eighthsToParts', () => {
   it('splits and reduces ⅛″-family fractions', () => {
@@ -45,5 +45,30 @@ describe('MeasurementValue', () => {
     expect(a.textContent).toBe('7′ 9 5/8″');
     const { container: b } = render(<MeasurementValue eighths={-12} />);
     expect(b.textContent).toBe('−1 1/2″');
+  });
+});
+
+describe('off-grid inch display (ledger footing)', () => {
+  it('isEighthsExact: grid test is float-tolerant for catalog sums', () => {
+    expect(isEighthsExact(5.5)).toBe(true);
+    expect(isEighthsExact(1.8)).toBe(false); // swivel6 — O&M Table 2-1
+    expect(isEighthsExact(3.4 + 2.6)).toBe(true); // 6.0 despite float residue
+    expect(isEighthsExact(54 - 13.8)).toBe(false); // 40.2 — the footing example
+  });
+
+  it('decimalInchesText: trimmed decimals with the signed-measurement minus (KB-4)', () => {
+    expect(decimalInchesText(-1.8)).toBe('−1.8″');
+    expect(decimalInchesText(40.2)).toBe('40.2″');
+    expect(decimalInchesText(54 - 13.8)).toBe('40.2″'); // float residue trimmed
+  });
+
+  it('InchesValue: on-grid keeps the diagonal fraction, off-grid renders the exact decimal', () => {
+    const { container: a } = render(<InchesValue inches={-5.5} />);
+    expect(a.textContent).toBe('−5 1/2″');
+    // Off-grid catalog heights NEVER round to a fraction — a ledger whose rows
+    // round can't foot against its ADR-012-floored total.
+    const { container: b } = render(<InchesValue inches={-1.8} />);
+    expect(b.textContent).toBe('−1.8″');
+    expect(b.querySelector('.fs-meas')).not.toBeNull();
   });
 });

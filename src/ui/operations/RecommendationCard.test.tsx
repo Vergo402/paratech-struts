@@ -111,26 +111,32 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(slotNames.filter((n) => n === '4"x4" Channel Base')).toHaveLength(2);
   });
 
-  it('ledger math: Raw opening and promoted Required strut length', () => {
+  it('ledger math: the column FOOTS — exact decimal rows + explicit ⅛″ floor step', () => {
     const { container } = render(
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
     );
     expect(container.querySelector('.fs-rec-opening')!.textContent).toBe('56″');
-    // 45 5/8″ — diagonal fraction the value font composes (ADR-028); effective
-    // uses exact plate heights (no on-card ≈/footnote/floor note — declutter).
+    // Off-grid plate heights show the EXACT catalog decimal (channel4x4 = 3.4″),
+    // never a nearest-⅛ fraction — rounded rows made hand-sums miss the total.
+    const values = [...container.querySelectorAll('.fs-rec-slot-value')].map((el) => el.textContent);
+    expect(values).toEqual(['−3 1/2″', '−3.4″', '−3.4″', 'N/S']);
+    // The floor step is explicit: rows sum to the exact 45.7″, floored → 45⅝″.
+    expect(screen.getByText('Exact — floored to ⅛″')).toBeInTheDocument();
+    expect(container.querySelector('.fs-rec-floor-value')!.textContent).toBe('45.7″');
+    // 45 5/8″ — diagonal fraction the value font composes (ADR-028).
     expect(container.querySelector('.fs-rec-effective')!.textContent).toBe('45 5/8″');
-    // Declutter (#248): no floor note, no plate-rounding footnote, no ≈ markers.
-    expect(screen.queryByText('↓ floored to 1/8″')).toBeNull();
-    expect(screen.queryByText(/plate heights to nearest/)).toBeNull();
+    // Still no ≈ markers (the #248 declutter) — the exact value replaces them.
     expect(screen.queryByText('≈')).toBeNull();
   });
 
-  it('no ledger danger marks when every slot is selected', () => {
+  it('no ledger danger marks — and no floor row when the exact result is on-grid', () => {
     const allSelected: Deductions = { headerWood: '4x4', topPlate: 'rigid6', bottomPlate: 'rigid6', footerWood: '6x6' };
-    render(<RecommendationCard combo={STANDARD} deductions={allSelected} source="Rescue 2" onDeploy={vi.fn()} />);
+    const { container } = render(
+      <RecommendationCard combo={STANDARD} deductions={allSelected} source="Rescue 2" onDeploy={vi.fn()} />,
+    );
     expect(screen.queryByText('N/S')).not.toBeInTheDocument();
-    // Rigid Base 1.0″ is an exact eighth — no ≈ footnote either.
-    expect(screen.queryByText(/exact .* used in the math/)).not.toBeInTheDocument();
+    // 56 − (3.5 + 1 + 1 + 5.5) = 45 — on the ⅛″ grid, so no floor step to show.
+    expect(container.querySelector('.fs-rec-floor')).toBeNull();
   });
 
   it('connectors line: selected top/bottom plate names, omitted when neither is selected', () => {

@@ -1422,10 +1422,26 @@ button.fs-spc-head {
   font-size: 1rem; /* body-lg — matches the deduction rows */
 }
 
+/* The explicit ADR-012 floor step — quiet: the exact pre-floor sum the deduction
+   rows foot to, shown only when it lands off the ⅛″ grid. */
+.fs-rec-floor {
+  padding-top: var(--space-1);
+  border-top: 1px solid var(--surface-stroke);
+}
+.fs-rec-floor .fs-rec-slot-label,
+.fs-rec-floor .fs-rec-floor-value {
+  font: var(--type-caption);
+  color: var(--text-tertiary);
+}
 /* Effective is the cut-to answer — promoted: larger, in the strut color. */
 .fs-rec-effective-row {
   padding-top: var(--space-1);
   border-top: 1px solid var(--surface-stroke);
+}
+/* The floor row already carries the divider — don't rule twice. */
+.fs-rec-floor + .fs-rec-effective-row {
+  border-top: 0;
+  padding-top: 0;
 }
 .fs-rec-effective {
   font: var(--type-mono-stat);

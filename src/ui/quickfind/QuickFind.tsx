@@ -3,7 +3,7 @@ import type { Deductions, ShorePoint, WoodSizeId } from '@core/schema';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { BASE_PLATES, parseLoad, plateHeight, sysKeyOf, woodHeight, type StrutSysKey } from '@core/load';
 import { effectiveLengthFrom, findForShorePoint } from '@core/shorepoint';
-import { Button, EmptyState, MeasurementValue, Sheet, TextField, useHasRailNav } from '@ui/primitives';
+import { Button, EmptyState, InchesValue, MeasurementValue, Sheet, TextField, isEighthsExact, useHasRailNav } from '@ui/primitives';
 import { useInventory } from '@ui/hooks';
 // Deep import (not the @ui/operations barrel) — Add Shore Point already imports
 // from @ui/quickfind, so going through the barrel would close an import cycle.
@@ -98,25 +98,29 @@ export function QuickFind() {
     deductions.topPlate !== 'none' ||
     deductions.bottomPlate !== 'none' ||
     deductions.footerWood !== 'none';
-  const totalDeductionEighths = Math.round(
-    (woodHeight(deductions.headerWood) +
-      plateHeight(deductions.topPlate) +
-      plateHeight(deductions.bottomPlate) +
-      woodHeight(deductions.footerWood)) *
-      8,
-  );
+  // EXACT total — plate heights (O&M Table 2-1) mostly live off the ⅛″ grid, so the
+  // ledger shows the exact spec (decimal when off-grid) and the column foots against
+  // the floored total. Rounding rows to eighths made hand-sums miss by up to ⅛″.
+  const totalDeductionInches =
+    woodHeight(deductions.headerWood) +
+    plateHeight(deductions.topPlate) +
+    plateHeight(deductions.bottomPlate) +
+    woodHeight(deductions.footerWood);
+  // The exact pre-floor result; `effective` is its ADR-012 floor. When they differ,
+  // the strip shows the floor step explicitly so the column still foots.
+  const exactInches = measurementEighths / 8 - totalDeductionInches;
 
   // Sheet stat strip (#433): the shared math shown ONCE — applied deductions only,
   // in the fixed physical order (Header → Top → Bottom → Footer, card.md).
   const stripRows = useMemo(() => {
-    const rows: { label: string; eighths: number }[] = [];
+    const rows: { label: string; inches: number }[] = [];
     const wood = (slot: string, id: WoodSizeId) => {
-      if (id !== 'none') rows.push({ label: `${slot} wood ${id.replace('x', '×')}`, eighths: Math.round(woodHeight(id) * 8) });
+      if (id !== 'none') rows.push({ label: `${slot} wood ${id.replace('x', '×')}`, inches: woodHeight(id) });
     };
     const plate = (slot: string, id: string) => {
       if (id !== 'none') {
         const name = BASE_PLATES.find((p) => p.id === id)?.name ?? id;
-        rows.push({ label: `${slot} — ${name}`, eighths: Math.round(plateHeight(id) * 8) });
+        rows.push({ label: `${slot} — ${name}`, inches: plateHeight(id) });
       }
     };
     wood('Header', deductions.headerWood);
@@ -171,7 +175,7 @@ export function QuickFind() {
             <span className="fs-ledger-toggle-state">
               {hasDeductions ? (
                 <>
-                  {appliedSummary(deductions)} · <MeasurementValue eighths={-totalDeductionEighths} />
+                  {appliedSummary(deductions)} · <InchesValue inches={-totalDeductionInches} />
                 </>
               ) : dedOpen ? (
                 'None'
@@ -232,9 +236,15 @@ export function QuickFind() {
             {stripRows.map((row) => (
               <div key={row.label} className="fs-ledger-row">
                 <span className="fs-ledger-label fs-qf-strip-ded">{row.label}</span>
-                <MeasurementValue eighths={-row.eighths} className="fs-ledger-value" />
+                <InchesValue inches={-row.inches} className="fs-ledger-value" />
               </div>
             ))}
+            {!isEighthsExact(exactInches) && (
+              <div className="fs-ledger-row fs-ledger-floor">
+                <span className="fs-ledger-label">Exact — floored to ⅛″</span>
+                <InchesValue inches={exactInches} className="fs-ledger-value" />
+              </div>
+            )}
             <div className="fs-ledger-row fs-ledger-effective">
               <span className="fs-ledger-label">Required strut</span>
               <MeasurementValue eighths={Math.round(effective * 8)} className="fs-ledger-value fs-ledger-value--big" />

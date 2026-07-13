@@ -57,6 +57,29 @@ export interface MeasurementValueProps {
   className?: string;
 }
 
+/** True when an inch value lands exactly on the ⅛″ grid (float-tolerant — catalog
+ *  sums like 3.4 + 2.6 must still read as on-grid). */
+export function isEighthsExact(inches: number): boolean {
+  const e = inches * 8;
+  return Math.abs(e - Math.round(e)) < 1e-6;
+}
+
+/** Trimmed decimal inches ("−1.8″") for values OFF the ⅛″ grid — most O&M Table 2-1
+ *  plate heights. Never a rounded fraction: a ledger whose rows round can't foot
+ *  against its floored total. */
+export function decimalInchesText(inches: number): string {
+  const sign = inches < 0 || Object.is(inches, -0) ? '−' : '';
+  return `${sign}${parseFloat(Math.abs(inches).toFixed(3))}″`;
+}
+
+/** Inch value that may live off the ⅛″ grid: on-grid renders the standard diagonal
+ *  fraction (MeasurementValue); off-grid renders the exact decimal (−1.8″). Ledger
+ *  rows use this so the column always sums to the exact pre-floor result. */
+export function InchesValue({ inches, className }: { inches: number; className?: string }) {
+  if (isEighthsExact(inches)) return <MeasurementValue eighths={Math.round(inches * 8)} className={className} />;
+  return <span className={`fs-meas${className ? ` ${className}` : ''}`}>{decimalInchesText(inches)}</span>;
+}
+
 /** Read-only measurement — Inter value font, tabular figures, diagonal ⅛″ fraction. */
 export function MeasurementValue({ eighths, form = 'inches', className }: MeasurementValueProps) {
   const p = eighthsToParts(eighths);

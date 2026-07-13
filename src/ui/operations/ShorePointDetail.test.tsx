@@ -88,6 +88,25 @@ describe('ShorePointDetail — measurement ledger', () => {
     expect(screen.getAllByText('Required strut length').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('the column FOOTS: off-grid plate shows its exact decimal + the explicit ⅛″ floor step', () => {
+    // swivel6 = 1.8″ (O&M Table 2-1) — off the ⅛″ grid. The row must show −1.8″
+    // (never a rounded −1¾″) and the ledger must surface the ADR-012 floor step,
+    // so hand-summing the column reproduces the total.
+    const { container } = render(
+      <ShorePointDetail sp={makeSp({ deductions: { ...NO_DEDUCTIONS, topPlate: 'swivel6' } })} />,
+    );
+    expect(screen.getByText('−1.8″')).toBeInTheDocument();
+    expect(screen.queryByText('−1 3/4″')).toBeNull();
+    expect(screen.getByText('Exact — floored to ⅛″')).toBeInTheDocument();
+    expect(container.querySelector('.fs-rec-floor-value')).not.toBeNull();
+  });
+
+  it('no floor row when the exact result lands on the ⅛″ grid', () => {
+    // 4x4 (3.5″) + rigid6 (1.0″) = 4.5″ — on-grid, so the quiet floor step stays hidden.
+    const { container } = render(<ShorePointDetail sp={makeSp({ deductions: withDeductions })} />);
+    expect(container.querySelector('.fs-rec-floor')).toBeNull();
+  });
+
   it('names its deducted figure "Required strut length" — never the card\'s wood "Set length" (audit #8)', () => {
     // The drawer hero + ledger show raw − deductions = the STRUT length needed.
     // "Set length" is the board card\'s WOOD cut length (a different number); the

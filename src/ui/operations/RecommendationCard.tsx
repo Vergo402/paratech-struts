@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, sysKeyOf, type StrutCombination } from '@core/load';
 import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
-import { SHORE_TYPE_FOR_STRUTS, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
-import { Button, Card, MeasurementValue, WarningGate, eighthsToParts } from '@ui/primitives';
+import { SHORE_TYPE_FOR_STRUTS, deductionTotalInches, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
+import { Button, Card, InchesValue, MeasurementValue, WarningGate, eighthsToParts, isEighthsExact } from '@ui/primitives';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { SYSTEM_LABELS } from '../inventory/systemLabels';
 
@@ -78,7 +78,7 @@ function connectorSpecs(deductions: Deductions): string[] {
 function woodRow(label: string, id: WoodSizeId) {
   const wood = WOOD_SIZES.find((w) => w.id === id);
   const selected = wood && wood.id !== 'none';
-  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', eighths: selected ? Math.round(wood.height * 8) : 0 };
+  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
 }
 
 function plateRow(label: string, id: string) {
@@ -88,8 +88,9 @@ function plateRow(label: string, id: string) {
     label,
     selected,
     name: selected ? plate.name : 'not selected',
-    // Plate heights display to the nearest ⅛″; the exact spec is used in the math (ADR-012).
-    eighths: selected ? Math.round(plate.height * 8) : 0,
+    // EXACT catalog height — off-grid plates (most of O&M Table 2-1) render as
+    // decimals so the ledger column foots against the floored total.
+    inches: selected ? plate.height : 0,
   };
 }
 
@@ -100,7 +101,7 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typ
         <span className="fs-rec-slot-label">{row.label}</span>
         {row.selected ? (
           <span className="fs-rec-slot-value">
-            <MeasurementValue eighths={-row.eighths} />
+            <InchesValue inches={-row.inches} />
           </span>
         ) : (
           <span className="fs-rec-slot-value fs-rec-ns">N/S</span>
@@ -159,6 +160,10 @@ export function RecommendationCard({
   ];
   const effectiveEighths = Math.round(combo.effectiveLength * 8);
   const openingEighths = Math.round(combo.openingLength * 8);
+  // The exact pre-floor result (raw − exact deductions); combo.effectiveLength is
+  // its ADR-012 floor. When they differ the ledger shows the floor step so the
+  // column foots — rows sum to the exact line, the floor gives the total.
+  const exactInches = combo.openingLength - deductionTotalInches(deductions);
 
   // Rated capacity is the QUIET footer (synthesis §3.4): the engine's per-strut
   // rating at the effective length (conservative-floor row, the caller's 4:1 SP
@@ -327,6 +332,12 @@ export function RecommendationCard({
         {slots.map((row) => (
           <LedgerSlot key={row.label} row={row} />
         ))}
+        {!isEighthsExact(exactInches) && (
+          <div className="fs-rec-row fs-rec-floor">
+            <span className="fs-rec-slot-label">Exact — floored to ⅛″</span>
+            <InchesValue inches={exactInches} className="fs-rec-floor-value" />
+          </div>
+        )}
         <div className="fs-rec-row fs-rec-effective-row">
           <span className="fs-rec-slot-label">Required strut length</span>
           <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
