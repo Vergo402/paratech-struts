@@ -26,6 +26,7 @@ function restsOf(tl: gsap.core.Timeline, labels: string[]): number[] {
 // recreating a renderer on a canvas that already has one leaks GPU resources.
 const truckScenes = new WeakMap<HTMLCanvasElement, import('./welcome-truck').TruckScene>();
 const strutScenes = new WeakMap<HTMLCanvasElement, StrutScene>();
+const cutScenes = new WeakMap<HTMLCanvasElement, import('./welcome-cut').CutScene>();
 
 /** WebGL died or its chunk failed to load — reveal the act's static 2D art. */
 function fallbackTo2D(act: HTMLElement, canvas: HTMLCanvasElement): void {
@@ -70,7 +71,7 @@ export function init(): void {
   mm.add({ isDesktop: '(min-width: 1100px)', isPhone: 'not all and (min-width: 1100px)' }, (ctx) => {
     const phone = (ctx.conditions as { isPhone?: boolean } | undefined)?.isPhone === true;
 
-    const acts = [initMeasure(phone), initRig(phone), initStrut(), initAppPan(phone)].filter(
+    const acts = [initMeasure(phone), initRig(phone), initStrut(), initCut(phone), initAppPan(phone)].filter(
       (a): a is PacedAct => a !== undefined,
     );
     if (!phone) initFilament(); // the filament rail is a wide-screen instrument
@@ -376,11 +377,100 @@ function initStrut(): PacedAct | undefined {
     // which HOLDS for a beat of scroll before the exit collapse begins.
     .addLabel('pinned', 0.64)
     .addLabel('assembled', 0.86)
-    // Exit: the strut collapses toward the next act — it "enters the phone".
+    // Exit: the strut collapses away toward the next act (the cutting station).
     .to(canvas, { scale: 0.5, yPercent: 18, opacity: 0, duration: 0.14, ease: 'power2.in' }, 1.12)
     .to('#act4 .kicker, #act4 .strut-load, #act4 .strut-caption', { opacity: 0, duration: 0.1 }, 1.14);
 
   return { st: tl.scrollTrigger as ScrollTrigger, rests: restsOf(tl, ['pinned', 'assembled']) };
+}
+
+/* ---- Cutting station — the 4x4 gets its length ------------------------------- */
+
+function initCut(phone: boolean): PacedAct | undefined {
+  const act = document.querySelector<HTMLElement>('#actcut');
+  const canvas = act?.querySelector<HTMLCanvasElement>('.cut-canvas');
+  const dot = act?.querySelector<HTMLElement>('.cut-dot');
+  const statusEl = act?.querySelector<HTMLElement>('.cut-status-txt');
+  if (!act || !canvas || !dot || !statusEl) return undefined;
+
+  let cut: import('./welcome-cut').CutScene | null = null;
+  const progress = { p: 0 };
+
+  const tl = gsap.timeline({
+    defaults: { ease: 'none' },
+    scrollTrigger: {
+      trigger: act,
+      start: 'top top',
+      end: '+=260%',
+      pin: true,
+      scrub: 0.25,
+      onToggle: (self) => cut?.setActive(self.isActive),
+    },
+  });
+
+  ScrollTrigger.create({
+    trigger: act,
+    start: 'top bottom',
+    once: true,
+    onEnter: () => {
+      const cached = cutScenes.get(canvas);
+      if (cached) {
+        cut = cached;
+        cut.setActive(tl.scrollTrigger?.isActive ?? true);
+        cut.setProgress(progress.p);
+        return;
+      }
+      void import('./welcome-cut')
+        .then((m) => {
+          cut = m.createCutScene(canvas);
+          cutScenes.set(canvas, cut);
+          guardContextLoss(act, canvas);
+          cut.setActive(tl.scrollTrigger?.isActive ?? true);
+          cut.setProgress(progress.p);
+        })
+        .catch(() => fallbackTo2D(act, canvas));
+    },
+  });
+
+  tl.to(
+    progress,
+    {
+      p: 1,
+      duration: 1,
+      onUpdate: () => {
+        cut?.setProgress(progress.p);
+        // The cut card tracks the saw: queued while marking, live during the
+        // cut, done once the offcut is clear (thresholds match the scene).
+        const state = progress.p < 0.4 ? 'queued' : progress.p < 0.78 ? 'cutting' : 'done';
+        if (dot.dataset.state !== state) {
+          dot.dataset.state = state;
+          statusEl.textContent =
+            state === 'queued' ? 'Queued · marked' : state === 'cutting' ? 'Cutting' : 'Cut · 45½″ ✓';
+        }
+      },
+    },
+    0,
+  )
+    // Desktop: the card floats in from the right (it lives at translateY(-50%),
+    // so both tween poses restate yPercent). Phone: a bottom strip that rises.
+    .fromTo(
+      '#actcut .cut-card',
+      { autoAlpha: 0, ...(phone ? { y: 24 } : { x: 40, yPercent: -50 }) },
+      { autoAlpha: 1, ...(phone ? { y: 0 } : { x: 0, yPercent: -50 }), duration: 0.12, ease: 'power1.out' },
+      0.04,
+    )
+    // The gold dimension callout lands with the laser mark and holds.
+    .fromTo('#actcut .cut-dim', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.08, ease: 'power1.out' }, 0.08)
+    // Resting poses: marked (laser on, blade up), the offcut clear, then done.
+    .addLabel('marked', 0.2)
+    .addLabel('severed', 0.78)
+    .addLabel('done', 1.0)
+    .to({}, { duration: 0.28 }, 1.0); // tail hold — the finished cut dwells
+
+  // No rest at 0 (drop it like initMeasure): p=0 is the empty stage with the
+  // beam still sliding in and the card at alpha 0 — settling there parks the
+  // visitor on a blank frame.
+  return { st: tl.scrollTrigger as ScrollTrigger, rests: restsOf(tl, ['marked', 'severed', 'done']).slice(1) };
 }
 
 /* ---- Act 4 — the app cross-pan ----------------------------------------------- */
@@ -449,13 +539,15 @@ function initAppPan(phone: boolean): PacedAct | undefined {
 function initFilament(): void {
   const stages = document.querySelectorAll<HTMLElement>('.filament-stage');
   if (!stages.length) return;
-  // Six acts light the five lifecycle stages: the rig act is where equipment
-  // gets ASSIGNED, the strut act is STRUT SET — the mapping is the real one.
+  // Seven acts light the five lifecycle stages: the rig act is where equipment
+  // gets ASSIGNED, the strut act is STRUT SET, the saw act is CUTTING (the app
+  // tour keeps it lit) — the mapping is the real one.
   const acts: Array<[string, number]> = [
     ['#act1', 0],
     ['#act2', 0],
     ['#act3', 1],
     ['#act4', 2],
+    ['#actcut', 3],
     ['#act5', 3],
     ['#act6', 4],
   ];
