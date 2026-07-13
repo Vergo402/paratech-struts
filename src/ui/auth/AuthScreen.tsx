@@ -290,7 +290,7 @@ export function AuthScreen() {
         </>
       )}
 
-      <Button variant="primary" fullWidth onPress={() => navigate({ to: HOME })}>
+      <Button variant="secondary" fullWidth onPress={() => navigate({ to: HOME })}>
         Continue as guest
       </Button>
 
