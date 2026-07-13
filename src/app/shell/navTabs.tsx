@@ -31,6 +31,7 @@ export interface NavTab {
   label: string;
   icon: ReactNode;
   exact?: boolean;
+  guestOnly?: boolean;
 }
 
 export const TABS: NavTab[] = [
@@ -38,6 +39,7 @@ export const TABS: NavTab[] = [
   {
     to: '/quickfind',
     label: 'Quick Find',
+    guestOnly: true,
     icon: (
       <NavIcon>
         <circle cx="11" cy="11" r="8" />

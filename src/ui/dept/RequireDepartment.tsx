@@ -3,26 +3,53 @@ import { useNavigate } from '@tanstack/react-router';
 import { Button } from '@ui/primitives';
 import { useSession, useDepartment } from '@ui/hooks';
 
+function GuestSignInGate() {
+  const navigate = useNavigate();
+  return (
+    <div className="flex flex-col gap-5 p-5">
+      <div className="mx-auto flex w-full flex-col gap-5" style={{ maxWidth: 568 }}>
+        <div
+          className="flex flex-col items-center gap-3"
+          style={{
+            border: '1px solid var(--surface-stroke)',
+            borderRadius: 12,
+            padding: '24px 16px',
+            textAlign: 'center',
+          }}
+        >
+          <h1 style={{ font: 'var(--type-headline-2)' }}>Sign in to continue</h1>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body)' }}>
+            Operations, Inventory, Command, and Settings require an account. Quick Find is always
+            available without signing in.
+          </p>
+          <Button variant="primary" fullWidth onPress={() => navigate({ to: '/auth' })}>
+            Sign in
+          </Button>
+          <Button variant="secondary" fullWidth onPress={() => navigate({ to: '/auth' })}>
+            Create an account
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * RequireDepartment — the gate wrapping the department-scoped tabs (Operations,
- * Inventory, Command, Settings). A signed-in member with no department is bound to
- * one before any dept-scoped work (owner rule, 2026-06-22): render the set-up gate
- * instead of the tab, so their work never lands in the shared, demo-seeded 'guest'
- * bucket alongside other no-dept members. Guests are NEVER gated (ADR-015, guest-
- * first) and Quick Find is never wrapped, so a no-dept member can still run the
- * calculator and sign out via the bottom nav. The check is reactive (subscribed
+ * Inventory, Command, Settings). Guests see a sign-in prompt (Quick Find is the
+ * only tab open without an account). A signed-in member with no department is
+ * directed to create or join one before any dept-scoped work — their data must
+ * never land in the shared guest bucket. The check is reactive (subscribed
  * identity + department), so it also catches the async sign-in flip after mount.
- *
- * This narrows ADR-015's "Skip is always a first-class exit" to the dept-scoped tabs,
- * members only — see docs/v4-design/11-decisions/.
  */
 export function RequireDepartment({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { identity, signOut } = useSession();
   const { department } = useDepartment();
 
-  // Guests + members who already have a department pass straight through.
-  if (identity.kind !== 'member') return <>{children}</>;
+  // Guests see the sign-in gate — only Quick Find is open without an account.
+  if (identity.kind !== 'member') return <GuestSignInGate />;
+  // Members with a department pass straight through.
   if (department) return <>{children}</>;
 
   async function signOutToAuth() {

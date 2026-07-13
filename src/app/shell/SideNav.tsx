@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { Link, useRouterState } from '@tanstack/react-router';
 import { TABS } from './navTabs';
+import { useSession } from '@ui/hooks';
 import { APP_VERSION } from './AppHeader';
 import { SettingsRailNav } from './SettingsRailNav';
 
@@ -31,6 +32,8 @@ export function SideNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const inSettings = pathname.startsWith('/settings');
   const [slim, setSlim] = useState(readSlim);
+  const { identity } = useSession();
+  const visibleTabs = identity.kind === 'guest' ? TABS.filter((t) => t.guestOnly) : TABS;
 
   const toggleSlim = () =>
     setSlim((s) => {
@@ -56,7 +59,7 @@ export function SideNav() {
         )}
       </span>
       <div className="fs-rail-links">
-        {TABS.map((tab) => (
+        {visibleTabs.map((tab) => (
           <Fragment key={tab.to}>
             <Link
               to={tab.to}

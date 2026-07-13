@@ -113,13 +113,14 @@ const settingsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   shellRoute.addChildren([
-    // Cold open lands on Operations — the working screen, not the calculator
-    // (Phase H gate kick-back, #248). Quick Find lives at /quickfind.
+    // Cold open lands on Quick Find for guests (the only tab they can use);
+    // signed-in members still have Quick Find as the landing screen until they
+    // navigate elsewhere. Operations remains reachable by tab.
     createRoute({
       getParentRoute: () => shellRoute,
       path: '/',
       beforeLoad: () => {
-        throw redirect({ to: '/operations' });
+        throw redirect({ to: '/quickfind' });
       },
     }),
     // Quick Find is OPEN to everyone (stateless calculator, no department data).

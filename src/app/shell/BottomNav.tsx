@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { TABS } from './navTabs';
+import { useSession } from '@ui/hooks';
 
 /**
  * BottomNav — the fixed 5-tab spine on phone/tablet-portrait (ADR-014 /
@@ -18,6 +19,8 @@ import { TABS } from './navTabs';
  */
 export function BottomNav() {
   const [collapsed, setCollapsed] = useState(false);
+  const { identity } = useSession();
+  const visibleTabs = identity.kind === 'guest' ? TABS.filter((t) => t.guestOnly) : TABS;
   return (
     <div className={`fs-nav-wrap${collapsed ? ' fs-nav-wrap--collapsed' : ''}`}>
       <button
@@ -33,7 +36,7 @@ export function BottomNav() {
       </button>
       {!collapsed && (
         <nav className="fs-nav" aria-label="Main">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <Link
               key={tab.to}
               to={tab.to}
