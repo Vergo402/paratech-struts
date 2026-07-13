@@ -880,13 +880,19 @@ h3 {
     linear-gradient(var(--gold), var(--gold)) center / 100% 1px no-repeat;
 }
 
+/* The cut card mirrors the in-app Cutting Station hero: gold 2px border,
+   "cut this now" pill, the big cut-length number, "Cut length" label, the
+   spelled-out cut math, the auto-figured line, and the location. */
 .cut-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
   background: var(--bg-3);
-  border: 1px solid #23272c;
-  border-radius: 10px;
-  padding: 14px 16px;
-  max-width: 270px;
-  margin: 20px auto 0;
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 15px 17px;
+  max-width: 300px;
+  margin: 22px auto 0;
   text-align: left;
 }
 
@@ -896,75 +902,63 @@ h3 {
   top: 50%;
   transform: translateY(-50%);
   margin: 0;
-  width: 250px;
+  width: 264px;
 }
 
-.cut-kicker {
-  color: var(--ink-3);
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-
-.cut-sp {
-  color: var(--ink);
+.cut-badge {
+  align-self: flex-start;
+  font-size: 10.5px;
   font-weight: 700;
-  font-size: 14px;
-}
-
-.cut-item {
-  color: var(--ink-2);
-  font-size: 12px;
-  margin: 2px 0 10px;
+  letter-spacing: 0.04em;
+  color: var(--gold-hi);
+  background: rgba(212, 160, 23, 0.15);
+  padding: 3px 11px;
+  border-radius: 999px;
 }
 
 .cut-num {
   font-family: var(--serif);
-  color: var(--ink);
-  font-size: 40px;
+  color: var(--gold-hi);
+  font-size: 44px;
   line-height: 1;
+  margin: 2px 0 0;
+}
+
+.cut-lbl {
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: -3px 0 0;
 }
 
 .cut-math {
   color: var(--ink-4);
-  font-size: 10.5px;
-  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 2px 0 0;
 }
 
-.cut-status {
+.cut-auto {
   display: flex;
   align-items: center;
   gap: 7px;
   border-top: 1px solid #23272c;
-  margin-top: 12px;
-  padding-top: 10px;
-  font-size: 12px;
+  padding-top: 9px;
+  margin: 1px 0 0;
+  font-size: 11.5px;
   color: var(--ink-2);
 }
 
-.cut-dot {
+.cut-auto-mark {
   flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--gold);
+  color: var(--gold);
 }
 
-.cut-dot[data-state='queued'] {
-  background: #3a4048;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .cut-dot[data-state='cutting'] {
-    animation: cut-pulse 0.9s ease-in-out infinite;
-  }
-}
-
-@keyframes cut-pulse {
-  50% {
-    opacity: 0.35;
-  }
+.cut-where {
+  color: var(--ink-2);
+  font-size: 12px;
+  margin: 0;
 }
 
 .cut-caption {
@@ -1370,6 +1364,9 @@ h3 {
   height: min(48vh, 440px);
 }
 
+/* Phone: the hero card collapses to a compact bottom strip — badge + big
+   number + "Cut length" label on one row, the auto-figured line beneath. The
+   spelled-out math and location drop (the caption below carries the story). */
 .show-full.cine-phone .cut-card {
   position: absolute;
   top: auto;
@@ -1379,35 +1376,40 @@ h3 {
   transform: none;
   width: auto;
   max-width: none;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
+  gap: 4px 12px;
+  padding: 11px 14px;
   margin: 0;
 }
 
-.show-full.cine-phone .cut-kicker,
-.show-full.cine-phone .cut-sp,
-.show-full.cine-phone .cut-math {
-  display: none;
-}
-
-.show-full.cine-phone .cut-item {
-  margin: 0;
-  flex: none;
-  font-size: 13px;
+.show-full.cine-phone .cut-badge {
+  grid-row: 1;
 }
 
 .show-full.cine-phone .cut-num {
-  font-size: 22px;
+  grid-row: 1;
+  justify-self: end;
+  font-size: 26px;
+  margin: 0;
 }
 
-.show-full.cine-phone .cut-status {
-  flex: 1;
-  justify-content: flex-end;
+.show-full.cine-phone .cut-lbl {
+  display: none;
+}
+
+.show-full.cine-phone .cut-math,
+.show-full.cine-phone .cut-where {
+  display: none;
+}
+
+.show-full.cine-phone .cut-auto {
+  grid-column: 1 / -1;
   border-top: 0;
-  margin: 0;
   padding: 0;
+  margin: 0;
+  font-size: 11px;
 }
 
 .show-full.cine-phone .cut-dim {

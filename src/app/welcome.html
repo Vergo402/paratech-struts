@@ -126,18 +126,19 @@
         <div class="measure-inner reveal">
           <h2 class="kicker" id="measure-heading">The opening</h2>
           <p class="measure-num"><span class="counter" data-to="54">54</span><span class="measure-unit">&Prime;</span></p>
-          <!-- The swivel base's true height is 1.8″ (not an eighth-exact value) —
-               shown as a decimal so the column visibly foots: 54 − 13.8 = 40.2,
-               floored to the ⅛″ grid → 40⅛″. Matches the engine's math exactly;
-               never display-round a row here or the sum stops adding up. -->
+          <!-- 6″ Swivel Base is 1.8″ in the O&M table; shown here as 1⅞″ (its
+               ⅛″-grid neighbor) so the column reads in clean fractions AND foots
+               exactly: 5½ + 1⅞ + 1 + 5½ = 13⅞ → 54 − 13⅞ = 40⅛″. Matches the real
+               Quick Find capture in shot-strutfit.png beside it. Every row stays
+               on the ⅛″ grid — never introduce a decimal or the sum stops footing. -->
           <ul class="ledger">
             <li class="ledger-line"><span>Raw opening</span><b>54&Prime;</b></li>
             <li class="ledger-line"><span>Header &middot; 6&times;6</span><b>&minus;5&frac12;&Prime;</b></li>
-            <li class="ledger-line"><span>Top connector &middot; 6&Prime; Swivel Base</span><b>&minus;1.8&Prime;</b></li>
+            <li class="ledger-line"><span>Top connector &middot; 6&Prime; Swivel Base</span><b>&minus;1&#8542;&Prime;</b></li>
             <li class="ledger-line"><span>Bottom connector &middot; 6&Prime; Rigid Base</span><b>&minus;1&Prime;</b></li>
             <li class="ledger-line"><span>Footer &middot; 6&times;6</span><b>&minus;5&frac12;&Prime;</b></li>
             <li class="ledger-line ledger-req"><span>Required strut</span><b>40&#8539;&Prime;</b></li>
-            <li class="ledger-foot">40.2&Prime; floored to the next &#8539;&Prime;</li>
+            <li class="ledger-foot">Every deduction on the &#8539;&Prime; grid &middot; sums exactly</li>
           </ul>
         </div>
         <!-- Act 2's second beat: the app's ANSWER. A real Quick Find capture staged
@@ -221,48 +222,61 @@
         <h2 class="kicker reveal" id="cut-heading">The cut</h2>
         <div class="cut-stage">
           <canvas class="cut-canvas" aria-hidden="true"></canvas>
-          <svg class="cut-2d" viewBox="0 0 320 190" aria-hidden="true">
-            <ellipse cx="160" cy="180" rx="130" ry="5" fill="#000" opacity="0.4"></ellipse>
-            <polygon points="92,158 82,178 90,178 100,158" fill="#14171a"></polygon>
-            <polygon points="232,158 242,178 234,178 224,158" fill="#14171a"></polygon>
-            <rect x="76" y="140" width="176" height="20" rx="3" fill="#1a1e22"></rect>
-            <rect x="82" y="112" width="164" height="10" rx="2" fill="#2a2f35"></rect>
-            <rect x="228" y="92" width="14" height="50" rx="2" fill="#2a2f35"></rect>
-            <rect x="48" y="122" width="118" height="19" fill="#c79a63"></rect>
-            <rect x="48" y="122" width="4" height="19" fill="#a87e4e"></rect>
-            <rect x="164" y="122" width="2.5" height="19" fill="#e6c489"></rect>
-            <rect x="172" y="125" width="94" height="19" fill="#c79a63" transform="rotate(2 172 144)"></rect>
-            <rect x="172" y="125" width="2.5" height="19" fill="#e6c489" transform="rotate(2 172 144)"></rect>
-            <g transform="rotate(18 234 96)">
-              <rect x="168" y="74" width="66" height="12" rx="5" fill="#3a4048"></rect>
-              <circle cx="166" cy="112" r="30" fill="#b7bcc2"></circle>
-              <circle cx="166" cy="112" r="29" fill="none" stroke="#7a8085" stroke-width="2.5" stroke-dasharray="4 5"></circle>
-              <path d="M 134 112 A 32 32 0 0 1 198 112 L 190 112 A 24 24 0 0 0 142 112 Z" fill="#22262b"></path>
-              <circle cx="166" cy="112" r="8" fill="#3a4048"></circle>
-              <circle cx="166" cy="112" r="3.5" fill="#d4a017"></circle>
-              <rect x="146" y="64" width="40" height="7" rx="3.5" fill="#596068"></rect>
-              <rect x="146" y="64" width="40" height="2.5" rx="1.25" fill="#d4a017"></rect>
+          <!-- Static/no-WebGL fallback: a 3/4 miter saw crosscutting the 4x4,
+               matching the 3D scene's orientation (blade across the width). -->
+          <svg class="cut-2d" viewBox="0 0 340 210" aria-hidden="true">
+            <ellipse cx="170" cy="196" rx="150" ry="7" fill="#000" opacity="0.4"></ellipse>
+            <polygon points="70,150 260,150 296,178 52,178" fill="#1a1e22"></polygon>
+            <polygon points="52,178 296,178 296,186 52,186" fill="#14171a"></polygon>
+            <polygon points="86,178 98,206 108,206 100,178" fill="#14171a"></polygon>
+            <polygon points="260,178 248,206 258,206 272,178" fill="#14171a"></polygon>
+            <polygon points="40,142 165,142 172,124 47,124" fill="#dcb27a"></polygon>
+            <polygon points="40,142 165,142 165,160 40,160" fill="#c79a63"></polygon>
+            <polygon points="40,124 47,124 40,142 40,160" fill="#a87e4e"></polygon>
+            <polygon points="165,142 172,124 172,146 165,160" fill="#e6c489"></polygon>
+            <polygon points="178,142 300,142 307,124 185,124" fill="#dcb27a"></polygon>
+            <polygon points="178,142 300,142 300,160 178,160" fill="#c79a63"></polygon>
+            <polygon points="178,124 185,124 178,142 178,160" fill="#e6c489"></polygon>
+            <rect x="272" y="92" width="20" height="80" rx="3" fill="#22262b"></rect>
+            <g transform="rotate(-8 172 128)">
+              <rect x="172" y="86" width="118" height="16" rx="8" fill="#3a4048"></rect>
+              <ellipse cx="172" cy="128" rx="26" ry="52" fill="#b7bcc2" transform="rotate(-12 172 128)"></ellipse>
+              <ellipse cx="172" cy="128" rx="26" ry="52" fill="none" stroke="#7a8085" stroke-width="2.5" stroke-dasharray="5 6" transform="rotate(-12 172 128)"></ellipse>
+              <ellipse cx="172" cy="128" rx="7" ry="14" fill="#3a4048" transform="rotate(-12 172 128)"></ellipse>
+              <circle cx="172" cy="128" r="3.5" fill="#d4a017"></circle>
+              <rect x="150" y="78" width="44" height="8" rx="4" fill="#596068"></rect>
+              <rect x="150" y="78" width="44" height="2.5" rx="1.25" fill="#d4a017"></rect>
             </g>
-            <line x1="48" y1="108" x2="165" y2="108" stroke="#d4a017" stroke-width="1"></line>
-            <line x1="48" y1="104" x2="48" y2="112" stroke="#d4a017" stroke-width="1"></line>
-            <line x1="165" y1="104" x2="165" y2="112" stroke="#d4a017" stroke-width="1"></line>
-            <text x="106" y="100" fill="#e9c34c" font-size="12" text-anchor="middle">45&#189;&Prime;</text>
+            <line x1="40" y1="112" x2="165" y2="112" stroke="#d4a017" stroke-width="1"></line>
+            <line x1="40" y1="107" x2="40" y2="117" stroke="#d4a017" stroke-width="1"></line>
+            <line x1="165" y1="107" x2="165" y2="117" stroke="#d4a017" stroke-width="1"></line>
+            <text x="102" y="104" fill="#e9c34c" font-size="13" text-anchor="middle">45&#189;&Prime;</text>
           </svg>
           <div class="cut-dim" aria-hidden="true">
             <span class="cut-dim-label">45&frac12;&Prime;</span>
             <span class="cut-dim-line"></span>
           </div>
-          <aside class="cut-card" aria-label="Cutting station cut card">
-            <p class="cut-kicker">Cutting station</p>
-            <p class="cut-sp">Shore Point #1</p>
-            <p class="cut-item">4&times;4 post &middot; T-shore</p>
-            <p class="cut-num">45&frac12;&Prime;</p>
-            <p class="cut-math">54 &minus; 3&frac12; &minus; 3&frac12; &minus; 1&frac12;&Prime; wedge</p>
-            <p class="cut-status"><span class="cut-dot" data-state="done"></span><span class="cut-status-txt">Cut &middot; 45&frac12;&Prime;</span></p>
+          <!-- Mirrors the in-app Cutting Station hero (CuttingStation.tsx): the
+               "Cut this now" pill, the big cut-length number over a "Cut length"
+               label, and the app's own math phrasing — plus the value prop the
+               app leaves implicit: the length is figured automatically. -->
+          <aside class="cut-card" aria-label="Cutting station — cut this now">
+            <span class="cut-badge">Cut this now</span>
+            <p class="cut-num">45&#189;&Prime;</p>
+            <p class="cut-lbl">Cut length</p>
+            <p class="cut-math">Opening 54&Prime; &minus; 4&times;4 header + footer &minus; 1&frac12;&Prime; wedge</p>
+            <p class="cut-auto">
+              <svg class="cut-auto-mark" viewBox="0 0 16 16" aria-hidden="true" width="15" height="15">
+                <path d="M8 1.5l1.6 3.5 3.8.4-2.8 2.6.8 3.7L8 9.9 4.6 12.2l.8-3.7L2.6 5.9l3.8-.4z" fill="currentColor"></path>
+              </svg>
+              Figured automatically &mdash; no tape at the saw
+            </p>
+            <p class="cut-where">Shore Point #1 &middot; Division 1</p>
           </aside>
         </div>
         <p class="cut-caption reveal">
-          Marked off the ledger, cut to the eighth. Every piece leaves the saw with a shore point on it.
+          FieldShore works out the cut length itself &mdash; the opening, minus the shore&rsquo;s lumber
+          and the wedge. The saw crew reads one number and cuts, to the eighth.
         </p>
       </section>
 
@@ -297,7 +311,7 @@
             </div>
             <div class="pan-text reveal">
               <p class="kicker">Location &middot; what3words</p>
-              <h2 class="row-heading">The void gets an address</h2>
+              <h2 class="row-heading">Each shore point gets an address</h2>
               <p class="row-body">There are no street addresses on a pile. Each shore point carries a what3words address: three words for a 10-foot square, easier to say over the radio than a lat-long.</p>
             </div>
           </article>

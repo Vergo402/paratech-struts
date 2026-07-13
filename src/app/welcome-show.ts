@@ -389,9 +389,7 @@ function initStrut(): PacedAct | undefined {
 function initCut(phone: boolean): PacedAct | undefined {
   const act = document.querySelector<HTMLElement>('#actcut');
   const canvas = act?.querySelector<HTMLCanvasElement>('.cut-canvas');
-  const dot = act?.querySelector<HTMLElement>('.cut-dot');
-  const statusEl = act?.querySelector<HTMLElement>('.cut-status-txt');
-  if (!act || !canvas || !dot || !statusEl) return undefined;
+  if (!act || !canvas) return undefined;
 
   let cut: import('./welcome-cut').CutScene | null = null;
   const progress = { p: 0 };
@@ -434,21 +432,7 @@ function initCut(phone: boolean): PacedAct | undefined {
 
   tl.to(
     progress,
-    {
-      p: 1,
-      duration: 1,
-      onUpdate: () => {
-        cut?.setProgress(progress.p);
-        // The cut card tracks the saw: queued while marking, live during the
-        // cut, done once the offcut is clear (thresholds match the scene).
-        const state = progress.p < 0.4 ? 'queued' : progress.p < 0.78 ? 'cutting' : 'done';
-        if (dot.dataset.state !== state) {
-          dot.dataset.state = state;
-          statusEl.textContent =
-            state === 'queued' ? 'Queued · marked' : state === 'cutting' ? 'Cutting' : 'Cut · 45½″ ✓';
-        }
-      },
-    },
+    { p: 1, duration: 1, onUpdate: () => cut?.setProgress(progress.p) },
     0,
   )
     // Desktop: the card floats in from the right (it lives at translateY(-50%),
