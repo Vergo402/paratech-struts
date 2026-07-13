@@ -22,6 +22,21 @@
         /* storage unavailable — keep the data-theme="dark" default */
       }
     </script>
+    <script>
+      // First visit → the public welcome page (Alex, 2026-07-13; amends J-21).
+      // Only the bare root cold-open redirects — deep links (magic-link /auth,
+      // invite joins, tab URLs) always reach the app, and any app load marks
+      // the browser as entered. Welcome's "Open FieldShore" CTAs set the same
+      // flag so the bounce never loops.
+      try {
+        if (!localStorage.getItem('fieldshore_entered')) {
+          if (location.pathname === '/') location.replace('/welcome.html');
+          else localStorage.setItem('fieldshore_entered', '1');
+        }
+      } catch (e) {
+        /* storage unavailable — never trap on marketing, load the app */
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -28,6 +28,21 @@
     <title>FieldShore — Rescue shoring, tracked end to end</title>
   </head>
   <body>
+    <script>
+      // Entering the app from any "Open FieldShore" CTA (href="/") marks this
+      // browser as entered — the app root's first-visit redirect (index.html)
+      // checks the same flag, so the bounce to this page happens exactly once.
+      document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest && e.target.closest('a[href="/"]');
+        if (a) {
+          try {
+            localStorage.setItem('fieldshore_entered', '1');
+          } catch (err) {
+            /* storage unavailable — the app side fails open too */
+          }
+        }
+      });
+    </script>
     <div class="grain" aria-hidden="true"></div>
 
     <div class="filament" aria-hidden="true">

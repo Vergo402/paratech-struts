@@ -293,6 +293,21 @@ export function AuthScreen() {
       <Button variant="primary" fullWidth onPress={() => navigate({ to: HOME })}>
         Continue as guest
       </Button>
+
+      {/* Way back to the public welcome page for the not-yet-signed-in (2026-07-13).
+          A plain <a> — welcome.html is its own entry, not a router route. */}
+      <p
+        className="text-ink-tertiary"
+        style={{ font: 'var(--type-caption)', textAlign: 'center' }}
+      >
+        New here?{' '}
+        <a
+          href="/welcome.html"
+          style={{ color: 'var(--accent)', textDecoration: 'underline', textUnderlineOffset: 2 }}
+        >
+          See what FieldShore does
+        </a>
+      </p>
     </>,
   );
 }

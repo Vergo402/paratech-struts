@@ -20,7 +20,9 @@ export default defineConfig({
     outDir: abs('./dist'),
     emptyOutDir: true,
     // Multi-page: the public welcome page (#442) ships beside the app — its own
-    // entry, never in front of the app's cold-open (decision matrix J-21).
+    // entry. Amends J-21 (Alex, 2026-07-13): a FIRST visit to the bare root
+    // redirects to it (inline script in index.html); every later visit and all
+    // deep links cold-open straight into the app.
     rollupOptions: {
       input: {
         main: abs('./src/app/index.html'),

@@ -33,6 +33,19 @@ function GuestSignInGate() {
           <Button variant="secondary" fullWidth onPress={() => navigate({ to: '/auth' })}>
             Create an account
           </Button>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-caption)' }}>
+            New here?{' '}
+            <a
+              href="/welcome.html"
+              style={{
+                color: 'var(--accent)',
+                textDecoration: 'underline',
+                textUnderlineOffset: 2,
+              }}
+            >
+              See what FieldShore does
+            </a>
+          </p>
         </div>
       </div>
     </div>
