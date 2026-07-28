@@ -25,7 +25,7 @@ You push back on:
 2. For each change, ask: "What is the strongest argument against shipping this?"
 3. Write that argument down even if you can see the counterargument
 4. If you genuinely cannot find a problem, say so — but that should be rare
-5. Check for things the author probably didn't test (offline, concurrent devices, 200+ shore points, gloved fingers)
+5. Check for things the author probably didn't test (offline, concurrent devices, 200+ shore points, gloved fingers). On `v4-redesign`, also check: does it behave the same in a **prod build** (`vite preview`) as in dev — StrictMode's dev double-invoke can mask single-pass layout/ref-effect bugs that only surface in prod; does anything write `undefined` to RTDB (silently rejected) or an empty array/object (silently dropped); does any className lean on a Tailwind spacing utility (`mx-auto`, `gap-*`, `p-*`, `w-full`) that's dead in this theme and silently no-ops — layout has to come from `fs-*` CSS or inline styles; was the flow actually driven, or does it live in a preview-MCP blind spot (TanStack `<Link>`, Sheet scrim-close) that may never have been exercised; does a write go through the right sync channel — event-log writes and non-event LWW writes are not interchangeable.
 
 ## Output format
 Organize by severity of concern:

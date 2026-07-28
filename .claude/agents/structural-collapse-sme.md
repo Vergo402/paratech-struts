@@ -28,12 +28,14 @@ You read every code change through the doctrine lens. Load tables must match the
 - v3.5.2 fixed LongShore 13ft over-reporting by 17.9%, 14ft by 8.3%, 15ft by 5.6%
 - v3.7.2 replaced linear interpolation with conservative-floor
 - v3.9.1 reverted blanket auto-fill of header/footer deductions — T-Shore/Double-T need operator choice
+- **Wood cut-length doctrine (v4, issue #361):** cut length is a SEPARATE formula from strut sizing — shore-type-fixed header/footer (4×4 for T-Shore/Double-T, 6×6 for 3-Post) minus 1.5″ wedge, NO plates, floor down. Do not conflate with the strut-search deduction (which includes plates).
 
 ## Key references
 - Paratech O&M Manual (cited in `app.js` header comments — verify against actual PDF when possible)
 - USACE/FEMA structural collapse doctrine (FEMA ICSSCI / SM-0322 — see MEMORY.md `reference_fema_ics_collapse.md`)
 - `.claude/audits/v3.5.1-deep-audit-round2.md` strut algorithm correctness section
 - `CLAUDE.md` v3.5.2 / v3.7.2 / v3.9.1 fix history
+- **v4 (`v4-redesign` branch):** load tables + catalogs live in `src/core/load/`, pinned by `struts.test.ts` + `plates.test.ts` (catalogs reconciled against Paratech brochures + O&M Table 2-1). Keep these tests green — they're the safety-critical regression guard.
 
 ## Output format
 - Doctrine check: matches / violates / ambiguous

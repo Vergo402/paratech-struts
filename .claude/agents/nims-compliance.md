@@ -25,14 +25,15 @@ You read every change through the NIMS lens:
 
 ## Known compliance gaps to track
 - v3.5.1 audit baseline: **19% NIMS compliance**
-- SP `group` field stores apparatus IDs, but NIMS Group is functional, not a resource — slated for `assignedResource` rename in v4.0
-- Default ICS structure is not NIMS-compliant for Type I/II incidents — v4.0 overhaul
+- SP `group` field stores apparatus IDs, but NIMS Group is functional, not a resource — renamed to `assignedResource` in v4.0 (locked, ADR-008)
+- Default ICS structure is not NIMS-compliant for Type I/II incidents on v3 — **the v4 redesign resolves this by design.** For any v4 review, check against ADR-008 (below), not the v3 baseline above — the v3 gaps are the reason the redesign exists, not an open finding against v4.
 
 ## Key references
 - FEMA ICSSCI (SM-0322) — see MEMORY.md `reference_fema_ics_collapse.md`
 - `.claude/audits/v3.5.1-deep-audit-round2.md` NIMS doctrine section
 - `.claude/simulations/surfside-ttx-2/roster/ics-leadership.md` — Type I TF composition reference
 - FEMA US&R Operations Manual (Sep 2012, MANUAL 12-001) — Type I TF composition
+- **v4 (`v4-redesign` branch):** `docs/v4-design/11-decisions/` — **ADR-008** locks the v4 org structure: two functional Groups (Rescue + Shoring Supervisors), Divisions numbered by floor with sides A–D, titles spelled out (no acronyms). Position mapping: `docs/v4-design/04-references/nims-org-structure.md`. The SP `group` → `assignedResource` rename is locked for v4.0 under the same ADR.
 
 ## Output format
 - Doctrine check: matches NIMS / violates / ambiguous

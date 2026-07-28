@@ -1,6 +1,6 @@
 ---
 name: v4-phase-j-plan
-description: "Build a consolidated Phase J priority list by reading the pre-Phase-J audit report (8 High blocker findings), phase J gate tasks, doctrine deviations, and the live v4 GitHub board. Use whenever Alex says '/v4-phase-j-plan', 'phase J planning', 'consolidate the Phase J backlog', or wants a unified view of Phase J work before cutover. v4-redesign branch only."
+description: "Build a consolidated Phase J priority list by reading the pre-Phase-J audit report (High blocker findings), phase J gate tasks, doctrine deviations, and the live v4 GitHub board. Use whenever Alex says '/v4-phase-j-plan', 'phase J planning', 'consolidate the Phase J backlog', or wants a unified view of Phase J work before cutover. v4-redesign branch only."
 ---
 
 # Phase J Consolidated Planning
@@ -12,10 +12,10 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 1. **Branch guard.** `git branch --show-current` must be `v4-redesign`. If not, stop — never run from another branch.
 
 2. **Read all four sources** (in order):
-   - **`.claude/audits/pre-phase-j-review-2026-07/REPORT.md`** — Extract the **8 High findings** and their **3 findings clusters** (false-SAFE load-share, dept/RBAC/sync governance, commitMany stock-guard). Map each High finding to its GitHub issue (#415–#429). This is the **PRIMARY blocker source** — all three clusters must be resolved before cutover.
+   - **`.claude/audits/pre-phase-j-review-2026-07/REPORT.md`** — Extract **all High findings** and **the report's own cluster grouping** — defer to the report's clustering, never this skill's example tables (the report's bottom-line clusters cover most-but-not-all Highs; standalone findings stay standalone). Map each High finding to its GitHub issue and cross-check status against the live board. This is the **PRIMARY blocker source** — every High must be resolved before cutover.
    - **`docs/v4-design/99-open-questions.md`** — Extract any Phase J questions. Usually sparse (most Phase J decisions lock before Phase I begins). Flag if found.
    - **`docs/v4-design/98-design-docket.md`** — Extract two sections:
-     - **"Doctrine deviation watch"** — 5 flagged deviations (Assign Equipment modal, floating panel, org-chart drag, card compaction, command-transfer handshake) for Phase J doctrine audit
+     - **"Doctrine deviation watch"** — extract **all rows currently in that section** (the count drifts; never assume a fixed number) for the Phase J doctrine audit
      - **"Post-build polish (#341)"** — cosmetic / visual items explicitly deferred until after Phase I (desktop nav, modal redesign, empty-shell idiom)
    - **v4 GitHub board (Project 2)** — Live status of all Phase J issues:
      ```bash
@@ -28,9 +28,9 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
      - This is the **live source of truth for issue status** (Todo / In Progress / Done)
 
 3. **Consolidate into three priority buckets** (Phase J structure):
-   - **🔴 Cutover Blockers:** The 8 High findings + 3 clusters from the pre-Phase-J audit report. All three clusters must be FIXED and re-verified before merge to main.
-   - **🟡 Phase J Required Gates:** The 13 explicit gate tasks (#256–#268), organized into a recommended sequence (what runs in parallel, what's serial).
-   - **🟢 Doctrine Audit + Cosmetic:** The 5 flagged doctrine deviations (Phase J audit) + the #341 post-build polish items (can defer to v4.0.1 patch if capacity is tight).
+   - **🔴 Cutover Blockers:** All High findings from the pre-Phase-J audit report, grouped per the report's own clustering. Every one must be FIXED and re-verified before merge to main.
+   - **🟡 Phase J Required Gates:** The explicit gate tasks (#256–#268), organized into a recommended sequence (what runs in parallel, what's serial).
+   - **🟢 Doctrine Audit + Cosmetic:** The current doctrine-deviation rows (Phase J audit) + the #341 post-build polish items (can defer to v4.0.1 patch if capacity is tight).
 
 4. **For each item, note:**
    - Source (audit report, gate list, docket, board)
@@ -39,12 +39,12 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    - Dependencies / Sequence (what blocks it, what it blocks)
    - Severity for blockers (High / Medium / Low, per audit classification)
 
-5. **Reconcile audit report ⇄ board.** Cross-walk the 8 High findings against issues #415–#429:
+5. **Reconcile audit report ⇄ board.** Cross-walk the High findings against their issues (#415–#429 range):
    - **Missing GitHub issues** — if a High finding in the report has no matching issue number, flag it (might need an issue created)
    - **Status mismatches** — if the report says a finding is "open" but the board shows the issue Done, flag it (trust the board for live status)
    - **Orphaned issues** — if a Phase J issue (#415–#429) was NOT mentioned in the audit report, investigate why
 
-6. **Output format:**
+6. **Output format.** **The tables below are ILLUSTRATIVE ONLY** — a July-2026 snapshot. Every run derives its rows, clusters, counts, and statuses from the live sources read in steps 2–5; where the template and a source disagree, the source wins. (Known template drift already caught twice: #422/H8 is a standalone org-chart command-integrity finding in the report, NOT part of the dept/RBAC/sync cluster; and #415–#417 closed while the template still listed them open.)
    ```markdown
    # Phase J Consolidated Backlog
 
@@ -56,8 +56,9 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    | Cluster | High Issues | Blocker Reason | Effort | Dependencies |
    |---|---|---|---|---|
    | False-SAFE load-share | #415, #416 | Load math divides by planned groupTotal instead of deployed struts; over-capacity flag missing | large | Strut engine fix + UI flag + re-verify at scale |
-   | Dept/RBAC/Sync governance | #418, #419, #420, #422 | Custom roles RBAC rule missing; dept create/join missing retry logic; org drag silently mis-assigns | large | Firebase rule deploy + offline-retry loop + edge-case fix |
+   | Dept/RBAC/Sync governance | #418, #419, #420 | Custom roles RBAC rule missing; dept create/join missing retry logic | large | Firebase rule deploy + offline-retry loop |
    | commitMany stock-guard bypass | #421 | Grouped delete bypasses ShorePointDeleted guard; strands deployed inventory on mixed-status groups | large | Transactional guard fix + grouped-edit fan-out |
+   | Org-chart command integrity (standalone) | #422 | Org drag silently appends "Supervisor of X" as non-leader | medium | Edge-case fix + drag re-verify |
 
    ## 🟡 Phase J Required Gates (must pass before cutover)
 
@@ -151,4 +152,4 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 - Never commit the output (it's analysis, not a new source of truth).
 - Never drop findings from the audit report — the backlog is cumulative.
 - Never write to the board or close issues from this skill — it reads board status, it does not change it.
-- Never deprioritize the 8 High findings — they gate cutover. The audit's severity assessment is authoritative.
+- Never deprioritize the High findings — they gate cutover. The audit's severity assessment is authoritative (its clustering too — see step 2).

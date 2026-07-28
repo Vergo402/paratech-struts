@@ -24,6 +24,15 @@ Run these in parallel at the very start of every v4 session:
 
 After these run, you know exactly where v4 is.
 
+### Phase 0.5 — External-input triage (when Alex brings outside documents)
+
+When Alex drops externally-generated specs, audits, or action plans (files from Downloads, another AI's output, a consultant doc), do NOT plan from them directly — a document's specificity is not evidence of its currency or fit. Before any planning:
+
+1. **Fact-check which codebase/version it describes.** Outside docs routinely analyze v3's root files and call them "v4".
+2. **Diff its proposals against locked ADRs and shipped work** (`docs/v4-design/11-decisions/`, the INDEX). Flag every conflict.
+3. **Ask Alex which conflicts are deliberate re-opens vs. artifacts of missing context** — surface them as explicit confirm/revise questions (per the confirm-specs-before-plan rule).
+4. **Treat the underlying intent as the requirement, not the document's plan structure.** Never inherit its schedule, sequencing, or scope without checking against the repo's decisions.
+
 ---
 
 ## Phase 1 — Identify the active phase

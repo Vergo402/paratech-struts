@@ -35,6 +35,8 @@ This branch is a **dual-app repo** (`package.json`: "v3 ships from root; v4 live
 | `npm run build` | `tsc --noEmit && vite build` → `dist/` (gitignored) |
 | `npm run typecheck` / `npm run lint` | Types only / ESLint |
 
+**Delegation:** agent routing (task type → agent → model tier → oversight) lives in `.claude/agents/DELEGATION.md` — consult it when planning any substantive task.
+
 **Layout & gotchas:**
 - `src/core` (pure logic: load tables, reducers, schema) · `src/data` (store + data/sync seam) · `src/ui` (components by feature) · `src/app` (shell + routes). Path aliases: `@core` `@data` `@ui` `@app`.
 - Tests are colocated `*.test.ts(x)`. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.

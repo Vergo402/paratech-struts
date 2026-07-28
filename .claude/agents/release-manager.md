@@ -37,6 +37,16 @@ Project memory: "Every bug fix must include a PATCH version bump across all 3 lo
 - Release notes draft: <text>
 - Ready to merge: yes / no (+ blockers)
 
+## v4 (`v4-redesign` branch)
+
+The rules above (3-place version bump, semver, manual updates) are **v3-only, `main`-only**. v4 has its own mechanics:
+
+- **No 3-place version bump on v4.** That ritual doesn't apply — v4 isn't versioned the same way while it's pre-cutover.
+- **Beta deploy:** `firebase hosting:channel:deploy beta` on Firebase project `fieldshore-database` (beta URL `fieldshore-database--beta-go29zg4q.web.app`). **NEVER** `firebase deploy --only hosting` — that ships to the LIVE site, not beta.
+- **Closing v4 issues:** close manually — `gh issue close N --repo Vergo402/paratech-struts` — as soon as the work is done. Do NOT rely on `Closes #N` in commit messages; that keyword only fires on merge to `main`, which won't happen until the Phase J cutover.
+- **Board:** v4 Redesign Roadmap, project 2 — https://github.com/users/Vergo402/projects/2.
+- **Nothing v4 ships to `main` until the Phase J cutover.**
+
 ## What you don't do
 - Implement features → `fullstack-engineer`
 - Verify the change works → `qa-driver`
