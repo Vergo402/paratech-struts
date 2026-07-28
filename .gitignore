@@ -52,3 +52,4 @@ skill-observations/
 # v4 server callables (#439)
 functions/node_modules/
 functions/lib/
+_local/
