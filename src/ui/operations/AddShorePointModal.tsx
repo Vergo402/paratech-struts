@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { BuildingSide, Deductions, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
+import type { BuildingSide, Deductions, DeployedComponent, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
 import { SHORE_TYPES, parseLoad } from '@core/load';
@@ -7,7 +7,7 @@ import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
 import { getGpsFix } from './locationCapture';
 import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
-import { assembleBom, effectiveLengthFrom, pendingReasonFor } from '@core/shorepoint';
+import { assembleBom, effectiveLengthFrom, isUntracked, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { BottomSheetPicker, InlineSegmented } from '@ui/picker';
@@ -409,12 +409,58 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     // Honor each result: when stock runs out mid-batch the overflow points stay
     // Pending — surface "deployed X of N" instead of a silent success (audit W1).
     const model = comboModel(combo);
+    // #452 — every member re-resolves its OWN source row. The old loop pinned the
+    // chosen row for the whole set, so member 2 aborted "stock exhausted" while
+    // identical struts sat on another rig. `inventory` here is a render snapshot
+    // that can't refresh mid-loop, so sourcing draws from a working copy decremented
+    // after each successful member — member 2 then finds the next rig's row on its
+    // own. Per-rig sourcing (ADR-033) is intact: each member draws a NEW complete
+    // source row; one member is never split across rows.
+    const working = inventory.map((i) => ({ ...i }));
+    const consume = (bom: DeployedComponent[]) => {
+      for (const c of bom) {
+        if (isUntracked(c)) continue; // off-book — no stock consequence
+        const row = working.find((i) => i.id === c.inventoryId);
+        if (row) row.available -= 1;
+      }
+    };
+    // How off-book the FIRST member's assembly already is (a plate no rig on scene
+    // stocks — the operator saw that on the card and deployed anyway). Anything
+    // beyond this count is a piece the working copy just ran out of, and letting
+    // that ride would deploy a silently untracked component — exactly what ADR-033
+    // forbids. Such a member stays Pending instead, same as before this fix, when
+    // the store's decrement transaction was what aborted it. Deductions are uniform
+    // across `points` (one form state), so one baseline covers every member.
+    const baselineOffBook = assembleBom(
+      combo,
+      points[0]!.deductions,
+      { apparatus: item.apparatus, inventoryId },
+      inventory,
+    ).filter(isUntracked).length;
+
     const deployed: ShorePoint[] = [];
+    const pending: ShorePoint[] = [];
+    let exhausted = false;
     for (const p of points) {
+      if (exhausted) {
+        pending.push(p);
+        continue;
+      }
+      // Prefer the row the operator's card pointed at; fall back to any rig still
+      // stocking the same strut model.
+      const strutRow =
+        working.find((i) => i.id === inventoryId && i.available > 0) ??
+        working.find((i) => i.type === 'strut' && i.model === combo.strut.model && i.available > 0);
       // Each member sources its own full BOM (ADR-033); the store decrements every
       // tracked component atomically. Honor each result so an exhausted-stock member
       // stays Pending (audit W1) rather than failing the whole group.
-      const deployedBom = assembleBom(combo, p.deductions, { apparatus: item.apparatus, inventoryId }, inventory);
+      const deployedBom = strutRow
+        ? assembleBom(combo, p.deductions, { apparatus: strutRow.apparatus, inventoryId: strutRow.id }, working)
+        : undefined;
+      if (!deployedBom || deployedBom.filter(isUntracked).length > baselineOffBook) {
+        pending.push(p); // no strut left on scene, or a piece just ran out
+        continue;
+      }
       const result = await commit({
         type: 'EquipmentDeployed',
         id: newId(),
@@ -428,10 +474,16 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
         ...(combo.unrated ? { unratedAcknowledged: true } : {}),
         ...(shortDeploy ? { overCapacityAcknowledged: true } : {}),
       });
-      if (result.ok) deployed.push(p);
-      else break; // stock exhausted — every remaining point stays Pending
+      if (result.ok) {
+        deployed.push(p);
+        consume(deployedBom);
+      } else {
+        // The store refused a source this pass judged available — stock moved under
+        // us. Stop rather than hammer; every remaining point stays Pending.
+        pending.push(p);
+        exhausted = true;
+      }
     }
-    const pending = points.slice(deployed.length);
     if (deployed.length > 0) commitHaptic(); // no success buzz when nothing deployed
     onDeployed?.(deployed, pending, model); // board owns the lane focus + announce
     onClose();

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { SideDrawer } from './SideDrawer';
+import { claimOverlay, releaseOverlay } from './overlay';
 
 // Desktop = matchMedia('(min-width:768px)') matches. Without the stub jsdom has no
 // matchMedia → useIsDesktop()=false → the phone/modal branch (the test default).
@@ -93,5 +94,33 @@ describe('SideDrawer — desktop (docked companion)', () => {
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('complementary')).toBeNull();
     expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus();
+  });
+
+  // #459 — a Modal/Sheet/Popover opened over the docked drawer (e.g. from a
+  // control inside it) claims the shared overlay stack; the dock itself never
+  // claims it (by design, so the board stays live beside it). Esc meant for that
+  // nested overlay must NOT also close the dock or yank focus to its opener.
+  it('Esc defers to a nested overlay: the dock stays open and focus is not yanked', async () => {
+    stubDesktop();
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole('button', { name: 'Open' }));
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+
+    // Simulate a nested overlay (Modal/Sheet/Popover) claiming the stack, with
+    // its own focus — the dock's Close button is no longer the focused element.
+    const nestedClose = vi.fn();
+    claimOverlay(nestedClose);
+    const nestedControl = document.createElement('button');
+    document.body.appendChild(nestedControl);
+    nestedControl.focus();
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.getByRole('complementary')).toBeInTheDocument(); // dock still open
+    expect(nestedControl).toHaveFocus(); // focus was NOT yanked to the drawer opener
+
+    releaseOverlay(nestedClose);
+    document.body.removeChild(nestedControl);
   });
 });

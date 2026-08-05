@@ -1,6 +1,7 @@
 import { STRUTS, BASE_PLATES } from '@core/load';
 import { System, type InventoryItem } from '@core/schema';
 import { serialize } from '@core/csv';
+import { formulaSafe } from '@core/audit/csv';
 
 // Pure CSV round-trip for the inventory cache (40-inventory.md §Excel import/export).
 // The 10-column contract; CSV-only this slice (xlsx + Reference sheet deferred). No
@@ -65,14 +66,33 @@ function compareItems(a: InventoryItem, b: InventoryItem): number {
   return plateName(a.plateId).localeCompare(plateName(b.plateId));
 }
 
+// Formula-injection guard, export half of the pair (CWE-1236, Phase J audit J257-S2b).
+// Unlike the audit/hazard exports (@core/audit/csv), THIS csv is re-imported by our own
+// parser, so a bare formulaSafe() would corrupt round-trips — validateRow() strips
+// exactly this apostrophe-prefix (stripFormulaGuard, below) on the way back in.
+//
+// Guarded columns — free text a peer device could have written, unconstrained by any
+// enum/catalog check at the storage layer:
+//   - Apparatus:  human-typed rig name (useApparatus.add: `name.trim()`, plain string).
+//   - Model:      InventoryItem.model is `z.string().optional()` — the UI only offers
+//                 catalog models, but cloud-synced data from another device isn't
+//                 re-validated against STRUTS before display/export, so a compromised
+//                 peer's stored value passes through as-is until re-imported.
+// NOT guarded (numeric / id / enum columns — no free-text peer input reaches them):
+//   - ID, Apparatus ID: app-minted (`newId()` / `app-${newId()}`), never user-typed.
+//   - Type, System:     fixed label sets this module controls (typeLabel / SYSTEM_TO_LABEL).
+//   - Plate ID:         BASE_PLATES catalog id, selected from a picker, not free text.
+//   - Plate Name:       derived HERE from the BASE_PLATES catalog (plateName()), never
+//                       the stored value directly — always one of a fixed set of strings.
+//   - Extension Length, Quantity: numeric.
 function rowFor(i: InventoryItem): string[] {
   const typeLabel = i.type === 'strut' ? 'Strut' : i.type === 'extension' ? 'Extension' : 'Plate';
   return [
     i.id,
-    i.apparatus,
+    formulaSafe(i.apparatus),
     i.apparatusId,
     typeLabel,
-    i.type === 'strut' ? i.model ?? '' : '',
+    i.type === 'strut' ? formulaSafe(i.model ?? '') : '',
     i.system ? SYSTEM_TO_LABEL[i.system] : '',
     i.type === 'plate' ? i.plateId ?? '' : '',
     i.type === 'plate' ? plateName(i.plateId) : '',
@@ -196,6 +216,16 @@ export function parseRecords(text: string): { records: string[][]; unterminated:
   return { records, unterminated: inQuotes };
 }
 
+// Formula-injection guard, import half of the pair — strips EXACTLY the prefix
+// formulaSafe() adds (a single leading apostrophe immediately before one of its
+// trigger characters). Anything else that happens to start with an apostrophe is a
+// legitimate value (e.g. an apparatus name someone actually typed with a leading
+// quote) and must survive untouched — this only reverses our own guard, never a
+// general "strip leading apostrophe" rule.
+function stripFormulaGuard(cell: string): string {
+  return /^'[=+\-@\t\r]/.test(cell) ? cell.slice(1) : cell;
+}
+
 const REQUIRED_COLS = ['Type', 'Apparatus', 'Quantity'];
 
 // Accept only a plain run of digits. Number() would otherwise swallow 0x12, 1e2,
@@ -235,7 +265,7 @@ export function validateRow(
   if (type !== 'strut' && type !== 'extension' && type !== 'plate') {
     return { ...base, error: { field: 'Type', message: `unknown Type "${typeRaw}" — skipped` } };
   }
-  const apparatus = at('Apparatus');
+  const apparatus = stripFormulaGuard(at('Apparatus'));
   if (apparatus === TEMPLATE_SENTINEL) return null; // the template's example rows
   if (!apparatus) {
     return { ...base, error: { field: 'Apparatus', message: `missing Apparatus — skipped` } };
@@ -248,7 +278,7 @@ export function validateRow(
   const apparatusId = at('Apparatus ID');
 
   if (type === 'strut') {
-    const model = at('Model');
+    const model = stripFormulaGuard(at('Model'));
     const strut = STRUTS.find((s) => s.model === model);
     if (!strut) {
       return { ...base, error: { field: 'Model', message: `unknown strut Model "${model}" — skipped` } };

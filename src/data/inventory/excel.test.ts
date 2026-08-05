@@ -98,6 +98,95 @@ describe('inventory CSV round-trip', () => {
   });
 });
 
+describe('formula-injection guard (Apparatus + Model, #482)', () => {
+  it('round-trips a formula-leading apparatus name safely and inertly', () => {
+    const payload: InventoryItem[] = [
+      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: '=HYPERLINK("http://evil")', apparatusId: 'app-r2', quantity: 4, available: 4 },
+    ];
+    const csv = toCsv(payload);
+    // exported cell is guarded — never a bare formula trigger in the file
+    expect(csv).toContain("'=HYPERLINK");
+    expect(csv).not.toMatch(/(?<!')=HYPERLINK/);
+
+    const { rows, warnings } = parseCsv(csv);
+    expect(warnings).toEqual([]);
+    // stripped back to the original (inert) text on import
+    expect(rows[0]).toMatchObject({ apparatus: '=HYPERLINK("http://evil")' });
+
+    // re-exporting the imported value reproduces the identical guarded CSV
+    expect(toCsv([{ ...payload[0]!, apparatus: rows[0]!.apparatus }])).toEqual(csv);
+  });
+
+  it('guards every formulaSafe trigger character (=, +, -, @, tab, CR) on Apparatus', () => {
+    const triggers = ['=cmd', '+cmd', '-cmd', '@cmd', '\tcmd', '\rcmd'];
+    for (const t of triggers) {
+      const payload: InventoryItem[] = [
+        { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: t, apparatusId: 'app-r2', quantity: 4, available: 4 },
+      ];
+      const csv = toCsv(payload);
+      const { rows, warnings } = parseCsv(csv);
+      expect(warnings).toEqual([]);
+      expect(rows[0]).toMatchObject({ apparatus: t });
+    }
+  });
+
+  it('guards a formula-leading Model on export, and strip-then-catalog-check still rejects a bogus (non-catalog) payload on import', () => {
+    // No real STRUTS entry starts with a trigger char, so a peer-authored formula
+    // payload in Model can never be a legitimate model — the export guard keeps it
+    // inert if the file is opened in a spreadsheet; strip-then-catalog-check on
+    // import still (correctly) skips it, same as any other unknown model.
+    const payload: InventoryItem[] = [
+      { id: 's1', type: 'strut', model: '=cmd|"/c calc"!A1', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 4, available: 4 },
+    ];
+    const csv = toCsv(payload);
+    expect(csv).toContain("'=cmd|");
+    const { rows, warnings } = parseCsv(csv);
+    expect(rows).toEqual([]);
+    expect(warnings[0]).toMatch(/unknown strut Model/);
+    // and the reported (post-strip) value is the original text, not the guarded one
+    expect(warnings[0]).not.toContain("'=cmd");
+  });
+
+  it('a legitimate value starting with an apostrophe (not guarding anything) survives untouched', () => {
+    const payload: InventoryItem[] = [
+      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: "'Tis Engine 1", apparatusId: 'app-r2', quantity: 4, available: 4 },
+    ];
+    const csv = toCsv(payload);
+    expect(csv).toContain("'Tis Engine 1"); // untouched — apostrophe isn't a trigger char
+    const { rows, warnings } = parseCsv(csv);
+    expect(warnings).toEqual([]);
+    expect(rows[0]).toMatchObject({ apparatus: "'Tis Engine 1" });
+  });
+
+  it('a plain value is untouched by export or import', () => {
+    const csv = toCsv(items);
+    expect(csv).toContain('Rescue 2');
+    expect(csv).toContain('LS 203');
+    const { rows, warnings } = parseCsv(csv);
+    expect(warnings).toEqual([]);
+    expect(rows.find((r) => r.type === 'strut')).toMatchObject({ apparatus: 'Rescue 2', model: 'LS 203' });
+  });
+
+  it('full round-trip is byte-faithful for normal values (export -> import -> export)', () => {
+    const csv1 = toCsv(items);
+    const { rows } = parseCsv(csv1);
+    const reconstructed: InventoryItem[] = rows.map((r) => ({
+      id: r.id || 'x',
+      type: r.type,
+      model: r.model,
+      system: r.system,
+      plateId: r.plateId,
+      length: r.length,
+      apparatus: r.apparatus,
+      apparatusId: r.apparatusId || 'x',
+      quantity: r.quantity,
+      available: r.quantity,
+    }));
+    const csv2 = toCsv(reconstructed);
+    expect(csv2).toEqual(csv1);
+  });
+});
+
 describe('autoMap (header → FieldShore field column index)', () => {
   it('maps every standard header by case-insensitive name', () => {
     const m = autoMap(['ID', 'apparatus', 'Apparatus ID', 'TYPE', 'Model', 'System', 'Plate ID', 'Plate Name', 'Extension Length (in)', 'quantity']);

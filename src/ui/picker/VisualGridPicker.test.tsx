@@ -103,4 +103,26 @@ describe('VisualGridPicker — the L-9 contract', () => {
       'fs-plate-option--unavailable',
     );
   });
+
+  // #461 — the native-controls fallback (OS <select>) must keep unavailable
+  // options SELECTABLE (81f79c0 intentionally dropped `disabled`, the off-book
+  // deploy path) but still carry a non-blocking stock signal, mirroring the
+  // sighted grid's "Not in inventory" demotion — otherwise an AT user picks
+  // blind to stock.
+  describe('native-controls fallback (accessibility.md)', () => {
+    afterEach(() => localStorage.removeItem('fieldshore_native_controls'));
+
+    it('marks unavailable options in their label text, without disabling them', async () => {
+      localStorage.setItem('fieldshore_native_controls', 'true');
+      render(<Harness availableIds={new Set(['rigid6'])} />);
+
+      const select = screen.getByLabelText('Top plate') as HTMLSelectElement;
+      const swivel = Array.from(select.options).find((o) => o.value === 'swivel6')!;
+      const rigid = Array.from(select.options).find((o) => o.value === 'rigid6')!;
+
+      expect(swivel.textContent).toBe('Swivel Base 6" — not in inventory');
+      expect(swivel.disabled).toBe(false); // still pickable — the off-book path
+      expect(rigid.textContent).toBe('Rigid Base 6"'); // in stock — no marker
+    });
+  });
 });

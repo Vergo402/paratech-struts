@@ -131,7 +131,16 @@ export function VisualGridPicker({
     return (
       <PowerSelect
         label={label}
-        options={options.map((o) => ({ value: o.id, label: o.name }))}
+        options={options.map((o) => ({
+          value: o.id,
+          // #461 — 81f79c0 intentionally dropped `disabled: !isAvailable(o.id)`
+          // so unavailable plates stay pickable here too (the off-book deploy
+          // path), but that also dropped the stock signal itself: an AT user
+          // picked blind while the sighted grid still showed "Not in
+          // inventory". Stay non-blocking — append the same demotion as a
+          // label suffix instead of disabling the option.
+          label: isAvailable(o.id) ? o.name : `${o.name} — not in inventory`,
+        }))}
         value={value}
         onChange={onSelect}
       />

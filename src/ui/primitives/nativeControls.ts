@@ -17,7 +17,16 @@ import { useSyncExternalStore } from 'react';
 const STORAGE_KEY = 'fieldshore_native_controls';
 const listeners = new Set<() => void>();
 
+// #460 — a failed setItem (quota, private-mode, storage disabled) used to be
+// silently swallowed while the useSyncExternalStore snapshot kept re-reading
+// localStorage, so the toggle visibly reverted with no feedback. This in-memory
+// fallback is what the snapshot reads FIRST: a failed write still applies for
+// the session. Cleared once a write actually succeeds, so storage stays the
+// source of truth again (and cross-tab sync via the storage event keeps working).
+let memoryOverride: boolean | null = null;
+
 function read(): boolean {
+  if (memoryOverride !== null) return memoryOverride;
   try {
     return localStorage.getItem(STORAGE_KEY) === 'true';
   } catch {
@@ -28,8 +37,9 @@ function read(): boolean {
 export function setNativeControls(next: boolean): void {
   try {
     localStorage.setItem(STORAGE_KEY, String(next));
+    memoryOverride = null; // persisted — storage is authoritative again
   } catch {
-    /* storage unavailable — preference still applies for this session */
+    memoryOverride = next; // persistence failed — the toggle still applies this session
   }
   listeners.forEach((l) => l());
 }

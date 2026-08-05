@@ -9,6 +9,7 @@ import {
   divisionLabel,
   parseDivisionNumber,
   nextSawId,
+  isGroupZoneEdge,
 } from '@core/operation';
 import { myApparatusKeys, currentIC } from '@core/org';
 import { newId } from '@core/id';
@@ -677,7 +678,13 @@ export function OperationsBoard() {
 
   const commitStatusChange = useCallback(
     async (sp: ShorePoint, to: ShorePointStatus, phrase: string) => {
-      const n = lockstepCount(sp);
+      // #458: only announce the lockstep-mate count when this edge is one
+      // groupAdvance actually fans out (GROUP_ZONE on both ends). An
+      // out-of-zone edge (e.g. cutting→runner) always moves the trigger
+      // alone, even inside a group, so it must announce "Shore point", not
+      // "N shore points" — mirror groupAdvance's own `individual` check
+      // rather than re-deriving the zone rule here.
+      const n = sp.groupId && isGroupZoneEdge(sp.status, to) ? lockstepCount(sp) : 1;
       const result = await commit({
         type: 'ShorePointStatusChanged',
         id: newId(),
@@ -1496,14 +1503,14 @@ export function OperationsBoard() {
                 </div>,
                 ...inStatus.map((it) => {
                   const rep = laneItemRep(it);
-                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} onOpen={openDetail} />;
+                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
                 }),
               ];
             })
           ) : (
             listItems.map((it) => {
               const rep = laneItemRep(it);
-              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} onOpen={openDetail} />;
+              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
             })
           )}
         </div>
@@ -1674,7 +1681,14 @@ export function OperationsBoard() {
         }}
       />
 
-      <AssignEquipmentSheet shorePoint={assignSp} onClose={() => setAssignSpId(null)} onDeployed={handleDeployed} />
+      {/* The Add-N-struts rebuild deploys member-by-member and can fall short, so it
+          reports through the same partial-honesty handler as the inline deploy (#451). */}
+      <AssignEquipmentSheet
+        shorePoint={assignSp}
+        onClose={() => setAssignSpId(null)}
+        onDeployed={handleDeployed}
+        onPartialDeployed={handleInlineDeployed}
+      />
 
       {/* "Mine" lens (#370) nudge: tapping Mine (or its hint) while unavailable opens
           this device-wide sheet — the same one Command uses — rather than a

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AddShorePointModal } from './AddShorePointModal';
-import type { Operation, ShorePoint, FieldShoreEvent } from '@core/schema';
+import type { InventoryItem, Operation, ShorePoint, FieldShoreEvent } from '@core/schema';
+import { findForShorePoint } from '@core/shorepoint';
 
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
@@ -544,17 +545,16 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     const onClose = vi.fn();
     // One LS 203 on scene, but a 3-Post needs three struts.
     mockInventory.mockReturnValue([{ ...INV[0], quantity: 1, available: 1 }] as never);
-    mockCommit
-      .mockResolvedValueOnce({ ok: true }) // 1st strut deploys
-      .mockResolvedValueOnce({ ok: false, reason: 'inventory item inv-1 has none available (L-8 abort)' });
+    mockCommit.mockResolvedValueOnce({ ok: true }); // 1st strut deploys; there is no 2nd to draw
     render(<AddShorePointModal open onClose={onClose} onDeployed={onDeployed} />);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
     await setMeasurementFeet(user, 4);
     await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
     await user.click(screen.getByRole('button', { name: /Deploy/ }));
 
-    // The loop stops at the first abort — 1 success + 1 failed attempt, no blind 3rd.
-    expect(mockCommit).toHaveBeenCalledTimes(2);
+    // #452 — the loop now decrements a working copy as it goes, so members 2–3 see
+    // the model is out ACROSS every rig and stay Pending without a doomed round-trip.
+    expect(mockCommit).toHaveBeenCalledTimes(1);
     expect(onDeployed).toHaveBeenCalledTimes(1);
     const [deployed, pending, model] = onDeployed.mock.calls[0]!;
     expect(deployed).toHaveLength(1);
@@ -649,5 +649,174 @@ describe('location capture (#441) — explicit in the form', () => {
     const sp = addedFrom();
     expect(sp.coords).toEqual({ lat: 25.874, lng: -80.1217 });
     expect(sp.w3w).toBeUndefined();
+  });
+});
+
+/**
+ * #452 — a group deploy must re-resolve its source row PER MEMBER.
+ *
+ * The bug: `handleDeploy` resolved `item`/`inventoryId` once, outside the loop, and
+ * pinned that one row for every member. Once it was drained, members 2+ aborted
+ * "stock exhausted" while the identical strut model sat on another rig's row.
+ *
+ * REAL ENGINE. `findForShorePoint` is NOT mocked here — every combo below comes from
+ * the actual fit engine over the actual load tables, so the fixture can't drift into
+ * a shape the app would never hand `handleDeploy`. `useRecommendations` is still the
+ * seam (the component reads its combos through it), but what it returns is real.
+ */
+describe('AddShorePointModal — #452 per-member source resolution', () => {
+  const INLINE_OP: Operation = { ...OP, inlineDeploy: true };
+
+  const strutRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+    id,
+    type: 'strut',
+    model: 'LS 406', // 48–73″ collapsed/extended — fits the 5 ft opening below
+    system: 'LongShore',
+    apparatus,
+    apparatusId: `ap-${id}`,
+    quantity: available,
+    available,
+  });
+
+  const plateRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+    id,
+    type: 'plate',
+    plateId: 'rigid6',
+    apparatus,
+    apparatusId: `ap-${id}`,
+    quantity: available,
+    available,
+  });
+
+  /** The real engine's LS 406 recommendation for a 5 ft opening over `inv`. */
+  function realCombo(inv: InventoryItem[], deductions?: ShorePoint['deductions']) {
+    const sp = makeSP({
+      shoreType: '3-post',
+      measurementEighths: 480, // 5 ft
+      ...(deductions ? { deductions } : {}),
+    });
+    const combo = findForShorePoint(sp, inv).find((c) => c.strut.model === 'LS 406' && c.extensions.length === 0);
+    expect(combo, 'the real engine should recommend a bare LS 406 for this fixture').toBeDefined();
+    return combo!;
+  }
+
+  /** Build a 3-Post at 5 ft and fire the mocked card's Deploy. */
+  async function deployThreePost(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    await setMeasurementFeet(user, 5);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+  }
+
+  const deployEvents = () =>
+    mockCommit.mock.calls
+      .map((c) => c[0] as FieldShoreEvent)
+      .filter((e): e is Extract<FieldShoreEvent, { type: 'EquipmentDeployed' }> => e.type === 'EquipmentDeployed');
+
+  /** Which inventory row each deploy drew its STRUT from, tallied. */
+  function strutClaims() {
+    const tally: Record<string, number> = {};
+    for (const e of deployEvents()) {
+      const strut = e.deployedBom.find((c) => c.role === 'strut')!;
+      const key = strut.inventoryId ?? 'untracked';
+      tally[key] = (tally[key] ?? 0) + 1;
+    }
+    return tally;
+  }
+
+  beforeEach(() => {
+    mockCommit.mockReset().mockResolvedValue({ ok: true });
+    mockCommitMany.mockReset().mockResolvedValue({ ok: true });
+    mockOperation.mockReturnValue(INLINE_OP);
+    mockShorePoints.mockReturnValue([]);
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('spreads a 3-Post across TWO rigs — 1 on one row, 2 on the next, none falsely Pending', async () => {
+    // The model's stock is split 1 + 2. Pre-fix, member 1 drained the first row and
+    // members 2–3 aborted "stock exhausted" with two identical struts still on scene.
+    const inv = [strutRow('inv-a', 'Rescue 2', 1), strutRow('inv-b', 'Engine 4', 2)];
+    mockInventory.mockReturnValue(inv as never);
+    mockRecommendations.mockReturnValue([realCombo(inv)] as never);
+
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await deployThreePost(user);
+
+    const [deployed, pending] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(3);
+    expect(pending).toHaveLength(0);
+
+    // Each member drew a WHOLE row of its own (ADR-033 — never split across rows),
+    // and the claims add up to the stock that was actually on scene. Which rig went
+    // first is engine ordering, so assert the distribution, not the order.
+    expect(deployEvents()).toHaveLength(3);
+    expect(strutClaims()).toEqual({ 'inv-a': 1, 'inv-b': 2 });
+    for (const e of deployEvents()) {
+      expect(e.deployedBom.filter((c) => c.role === 'strut')).toHaveLength(1);
+    }
+  });
+
+  it('genuine exhaustion: 2 struts on scene, 3 members → 2 deploy, 1 honestly Pending', async () => {
+    const inv = [strutRow('inv-a', 'Rescue 2', 1), strutRow('inv-b', 'Engine 4', 1)];
+    mockInventory.mockReturnValue(inv as never);
+    mockRecommendations.mockReturnValue([realCombo(inv)] as never);
+
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    const onClose = vi.fn();
+    render(<AddShorePointModal open onClose={onClose} onDeployed={onDeployed} />);
+    await deployThreePost(user);
+
+    const [deployed, pending, model] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(2);
+    expect(pending).toHaveLength(1);
+    expect(model).toBe('LS 406');
+    // The 3rd member never round-trips the store: the working copy already knows
+    // no rig has an LS 406 left, so it stays Pending without a doomed commit.
+    expect(deployEvents()).toHaveLength(2);
+    expect(strutClaims()).toEqual({ 'inv-a': 1, 'inv-b': 1 });
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('never turns a running-out plate into a silent off-book deploy (ADR-033)', async () => {
+    // Struts for all three, but ONE base plate on scene. Member 1 takes it; members
+    // 2–3 must stay Pending rather than deploy carrying an untracked plate the store
+    // would never decrement.
+    const inv = [strutRow('inv-a', 'Rescue 2', 3), plateRow('inv-p', 'Rescue 2', 1)];
+    mockInventory.mockReturnValue(inv as never);
+    const withPlate = { headerWood: 'none', footerWood: 'none', topPlate: 'rigid6', bottomPlate: 'none' } as const;
+    mockRecommendations.mockReturnValue([realCombo(inv, withPlate)] as never);
+
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    await setMeasurementFeet(user, 5);
+    // Pick the 6" Rigid Base as the top plate through the form's own controls.
+    await user.click(screen.getByRole('button', { name: /Deductions/ }));
+    await user.click(screen.getByRole('button', { name: /Top plate/ }));
+    // The grid's options sit under a CSS-animated overlay jsdom reports as
+    // pointer-events: none — fire the click directly rather than fake a pointer.
+    fireEvent.click(screen.getByRole('option', { name: /6" Rigid Base/ }));
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    const [deployed, pending] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(1);
+    expect(pending).toHaveLength(2);
+    // The one deploy that landed carries the TRACKED plate — and nothing that ran
+    // out ever rode as an inventoryId-less component.
+    expect(deployEvents()).toHaveLength(1);
+    // The PLATE is what held members 2–3, not the struts: the strut row had 3 and
+    // gave up exactly 1. Without this the assertion above would also pass if strut
+    // resolution had failed for an unrelated reason.
+    expect(strutClaims()).toEqual({ 'inv-a': 1 });
+    const plate = deployEvents()[0]!.deployedBom.find((c) => c.role === 'top-plate');
+    expect(plate).toMatchObject({ inventoryId: 'inv-p', source: 'Rescue 2' });
+    for (const e of deployEvents()) {
+      expect(e.deployedBom.some((c) => c.inventoryId === undefined)).toBe(false);
+    }
   });
 });

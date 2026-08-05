@@ -124,6 +124,38 @@ describe('Slider', () => {
     expect(thumb.style.transform).toBe('translateX(0px)'); // snapped back, never committed
   });
 
+  // #462 — a gate can close mid-gesture (e.g. a peer sync regresses a group
+  // mate under the operator's thumb). onPointerEnd must re-check `disabled` at
+  // release, not just trust the press-time value — same doctrine as the
+  // pointercancel guard above: a disabled-mid-drag gesture snaps back without
+  // committing.
+  it('disabled flipping mid-drag makes release a no-op — no commit even past threshold', () => {
+    const onCommit = vi.fn();
+    const { container, rerender } = render(
+      <Slider label="Slide to set Runner" onCommit={onCommit} />,
+    );
+    const track = container.querySelector('.fs-slide-track') as HTMLElement;
+    const thumb = container.querySelector('.fs-slide-thumb') as HTMLElement;
+    const trackSpy = vi.spyOn(track, 'getBoundingClientRect').mockReturnValue(rect(240));
+    const thumbSpy = vi.spyOn(thumb, 'getBoundingClientRect').mockReturnValue(rect(48));
+    try {
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerdown', 400));
+        thumb.dispatchEvent(ptr('pointermove', 400 + 184)); // full travel — past threshold
+      });
+      // The gate closes mid-gesture — the finger is still down.
+      rerender(<Slider label="Slide to set Runner" onCommit={onCommit} disabled />);
+      act(() => {
+        thumb.dispatchEvent(ptr('pointerup', 400 + 184));
+      });
+      expect(onCommit).not.toHaveBeenCalled();
+      expect(thumb.style.transform).toBe('translateX(0px)'); // snapped back, never committed
+    } finally {
+      trackSpy.mockRestore();
+      thumbSpy.mockRestore();
+    }
+  });
+
   it('step-back mirrors the drag leftward and commits', async () => {
     const onCommit = vi.fn();
     const { container } = render(

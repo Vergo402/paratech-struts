@@ -1,6 +1,6 @@
 import type { ShorePoint, ShorePointStatus, ShoreTypeId } from '@core/schema';
 import { divisionLabel, sideLabel } from '@core/operation';
-import { cutLengthInches, effectiveLengthFrom } from '@core/shorepoint';
+import { cutLengthInches, effectiveLengthFrom, STATUS_ORDER } from '@core/shorepoint';
 
 /**
  * Shared shore-point card content (Alex 2026-07-03) — one anatomy across the
@@ -46,6 +46,26 @@ export const STATUS_SHORT_LABEL: Record<ShorePointStatus, string> = {
   secured: 'Secured',
   returned: 'Returned',
 };
+
+/**
+ * The status a MIXED group reads at on a read-only surface: its LEAST-ADVANCED live
+ * leg (Alex's ruling 2026-07-28, #454). The Division tile rendered entirely from
+ * members[0], so a set with one leg secured and two still cutting reported "SEC ×3" —
+ * an at-a-glance overstatement of progress on legs still at the saw. Conservative by
+ * design: a tile/row may never claim a group is further along than its slowest leg.
+ * Identity (location, #, model) still comes from the front leg, which carries the
+ * group's added identity. Ungrouped (one member) → that point's own status.
+ *
+ * Shared by the Division tile and the List row so the two tri-views agree — the same
+ * rule OperationsBoard's laneItemRep/statusKey already use for the List's dividers and
+ * status sort, which is what made the row's own front-leg edge inconsistent with the
+ * divider it sat under.
+ */
+export function groupDisplayStatus(members: readonly ShorePoint[]): ShorePointStatus {
+  const live = members.filter((m) => m.deletedAt == null);
+  const pool = live.length > 0 ? live : members;
+  return pool.reduce((a, b) => (STATUS_ORDER.indexOf(b.status) < STATUS_ORDER.indexOf(a.status) ? b : a)).status;
+}
 
 export function cardLocation(sp: ShorePoint): string {
   return [

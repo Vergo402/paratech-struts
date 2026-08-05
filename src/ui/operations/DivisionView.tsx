@@ -1,8 +1,9 @@
-import type { ShorePoint } from '@core/schema';
+import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType, cardValueEighths, STATUS_SHORT_LABEL } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths, groupDisplayStatus, STATUS_SHORT_LABEL } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
+import { CutTooSmallFlag } from './CutTooSmallFlag';
 
 /**
  * DivisionView (tri-view) — the incident read by BUILDING LEVEL: floors stacked
@@ -22,6 +23,11 @@ interface BandTile {
   sp: ShorePoint;
   /** >1 when this tile stands for a grouped shore (rolodex of N legs). */
   count: number;
+  /** Every live leg this tile stands for (just `sp` for a single) — the tile reads its
+   *  status and its too-small warning from the SET, not from the front leg alone. */
+  members: ShorePoint[];
+  /** The status the tile DISPLAYS: for a group, its least-advanced live leg (#454). */
+  status: ShorePointStatus;
 }
 
 export type LaneItem =
@@ -47,17 +53,29 @@ export interface DivisionViewProps {
 function tilesOf(items: LaneItem[]): BandTile[] {
   return items.map((it) =>
     it.kind === 'group'
-      ? { sp: it.members[0]!, count: it.members.length }
-      : { sp: it.sp, count: 1 },
+      ? {
+          sp: it.members[0]!,
+          count: it.members.length,
+          members: it.members,
+          status: groupDisplayStatus(it.members),
+        }
+      : { sp: it.sp, count: 1, members: [it.sp], status: it.sp.status },
   );
 }
 
-function DivisionTile({ sp, count, flag, onOpen }: BandTile & { flag: CapacityFlagValue; onOpen: (sp: ShorePoint) => void }) {
+function DivisionTile({
+  sp,
+  count,
+  members,
+  status,
+  flag,
+  onOpen,
+}: BandTile & { flag: CapacityFlagValue; onOpen: (sp: ShorePoint) => void }) {
   const model = bomModelLabel(sp);
   return (
     <button
       type="button"
-      className={`fs-divtile is-${sp.status}`}
+      className={`fs-divtile is-${status}`}
       data-sp-id={sp.id}
       onClick={() => onOpen(sp)}
     >
@@ -77,9 +95,10 @@ function DivisionTile({ sp, count, flag, onOpen }: BandTile & { flag: CapacityFl
         </span>
         {/* Status stays a TEXT abbrev here (not color-only): tiles group by floor,
             so the left-edge hue is the only other status cue (Principle 9). */}
-        <span className="fs-divtile-st">{STATUS_SHORT_LABEL[sp.status]}</span>
+        <span className="fs-divtile-st">{STATUS_SHORT_LABEL[status]}</span>
       </span>
       <CapacityFlag flag={flag} />
+      <CutTooSmallFlag members={members} />
     </button>
   );
 }

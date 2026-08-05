@@ -959,6 +959,14 @@ button.fs-spc-head {
   white-space: normal;
   text-align: left;
 }
+/* The COMPACT variant for the dense tri-views (#483): the List row and Division tile
+   carry the two-word "⚠ Too small", so it must hold one line like the red capacity
+   chip beside it — the --warning base wraps because the CARD's copy is a full
+   sentence. Same slot/size otherwise (the .fs-cutstation-hero override at the bottom
+   of this file is the same context-scoped-white-space precedent, inverted). */
+.fs-spc-flag--compact {
+  white-space: nowrap;
+}
 
 /* The measurement is the card's HERO (#432, mess-map #5): dominant numeral +
    micro-label naming WHICH number this is (opening / effective / cut), the

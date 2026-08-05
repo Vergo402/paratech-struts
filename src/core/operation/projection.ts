@@ -1,5 +1,50 @@
 import type { FieldShoreEvent } from '../schema';
-import { operationReducer, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
+import { operationReducer, statusFanTargets, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
+
+/** True when the event NAMES this shore point (Added carries the id under
+ *  shorePoint.id; every other SP event under spId). */
+function namesShorePoint(e: FieldShoreEvent, spId: string): boolean {
+  return e.type === 'ShorePointAdded' ? e.shorePoint.id === spId : 'spId' in e && e.spId === spId;
+}
+
+/**
+ * Every logged event that TOUCHED one shore point, in append (chronological) order
+ * — the Quick View timeline (ADR-019). Not just the events naming the point: a
+ * grouped `ShorePointStatusChanged` fans across every lockstep mate but carries only
+ * the TRIGGER's spId, so a mate's audit trail silently lost those moves (#453).
+ *
+ * Fixed at READ time, deliberately. The alternative — stamping the fanned ids onto
+ * future events — would leave every event ALREADY on disk (and every peer event from
+ * an older build) wrong, and would need this same replay as a backfill anyway. The
+ * log stays the source of truth (ADR-009): membership and lockstep at the moment of
+ * the event are recoverable by folding, so nothing has to be denormalized onto the
+ * wire. A fanned entry is returned as the TRIGGER event itself, so it carries the
+ * same actor (`by`) and timestamp (`at`) — attributable, per the issue.
+ *
+ * Scoped to the point's OWN operation before folding: operationReducer carries
+ * shorePoints across an OperationCreated, so folding a multi-op log raw would mix
+ * points from different incidents into the membership check (projectOperationById's
+ * filter-then-fold shape, for the same reason).
+ */
+export function shorePointHistory(events: readonly FieldShoreEvent[], spId: string): FieldShoreEvent[] {
+  const opId = events.find((e) => namesShorePoint(e, spId))?.opId;
+  if (opId == null) return []; // unknown point — no history
+  const out: FieldShoreEvent[] = [];
+  let state = EMPTY_OPERATION_STATE;
+  for (const e of events) {
+    if (e.opId !== opId) continue;
+    if (namesShorePoint(e, spId)) out.push(e);
+    else if (
+      e.type === 'ShorePointStatusChanged' &&
+      // The state BEFORE the event — the membership/lockstep the fan actually saw.
+      statusFanTargets(state.shorePoints, e.spId, e.from, e.to).includes(spId)
+    ) {
+      out.push(e);
+    }
+    state = operationReducer(state, e);
+  }
+  return out;
+}
 
 /**
  * The opId of the operation that is active at the END of the log — the last

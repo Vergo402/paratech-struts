@@ -580,6 +580,37 @@ describe('OperationsBoard', () => {
     );
   });
 
+  // #458 — cutting→runner leaves the GROUP_ZONE, so groupAdvance moves ONLY the
+  // trigger even though sp-1 is still grouped with sp-2/sp-3 (both further back
+  // in cutting). The SR announcement must say "Shore point", not "3 shore
+  // points" — announcing the group size here would be a false lockstep claim.
+  it('Cutting Station: Send to Runner on a grouped point announces ONE point, not the group size', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    const inGroup = (id: string, groupIndex: number, extra: Partial<ShorePoint> = {}): ShorePoint => ({
+      ...makeSP(id, 'cutting'),
+      shoreType: '3-post',
+      groupId: 'g1',
+      groupIndex,
+      groupTotal: 3,
+      cuttingStartedAt: 10,
+      deployedBom: [{ role: 'strut', ...deployed() }],
+      ...extra,
+    });
+    mockShorePoints.mockReturnValue([
+      inGroup('sp-1', 1, { cuttingDone: true }),
+      inGroup('sp-2', 2),
+      inGroup('sp-3', 3),
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
+    await slideToCommit('Slide to send to Runner');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'cutting', to: 'runner' }),
+    );
+    expect(screen.getAllByRole('status')[1]).toHaveTextContent('Shore point — now Runner.');
+  });
+
   it('the cutting queue counts only cutting points, in FIFO order', async () => {
     const user = userEvent.setup();
     mockOperation.mockReturnValue(ACTIVE_OP);

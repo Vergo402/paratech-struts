@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type FieldShoreEvent } from '../schema';
-import { projectOperation, projectOperationById, projectArchive } from './projection';
+import { projectOperation, projectOperationById, projectArchive, shorePointHistory } from './projection';
 
 let n = 0;
 const eid = () => `e${n++}`;
@@ -127,5 +127,73 @@ describe('projectArchive', () => {
       reopened('op1', 300),
     ];
     expect(projectArchive(log)).toEqual([]);
+  });
+});
+
+/**
+ * shorePointHistory (#453) — the read-time reconstruction of which points a status
+ * event actually MOVED. The store's readShorePointHistory.test.ts drives this through
+ * real Dexie commits; these pin the pure function's two structural choices: the group
+ * fan-out and the per-operation scoping that makes the membership replay honest.
+ */
+describe('shorePointHistory — group fan-out + op scoping (#453)', () => {
+  function grouped(opId: string, spId: string, status: ShorePoint['status'], groupId?: string): FieldShoreEvent {
+    const shorePoint: ShorePoint = {
+      id: spId,
+      opId,
+      division: '1',
+      shoreType: 't-shore',
+      measurementEighths: 40 * 8,
+      deductions: NO_DEDUCTIONS,
+      status,
+      ...(groupId ? { groupId, groupTotal: 2 } : {}),
+    };
+    return { type: 'ShorePointAdded', id: eid(), opId, at: 1, by: 't', shorePoint };
+  }
+  const moved = (
+    opId: string,
+    spId: string,
+    from: ShorePoint['status'],
+    to: ShorePoint['status'],
+  ): FieldShoreEvent => ({ type: 'ShorePointStatusChanged', id: eid(), opId, at: 9, by: 'trigger-dev', spId, from, to });
+
+  it('includes a fanned change on the mate, and excludes it from a mate that was ahead', () => {
+    const log: FieldShoreEvent[] = [
+      created('op1', 'First', 100),
+      grouped('op1', 'a', 'process', 'g1'),
+      grouped('op1', 'b', 'process', 'g1'),
+      grouped('op1', 'ahead', 'strutset', 'g1'),
+      moved('op1', 'a', 'process', 'strutset'),
+    ];
+    expect(shorePointHistory(log, 'b').map((e) => e.type)).toEqual(['ShorePointAdded', 'ShorePointStatusChanged']);
+    expect(shorePointHistory(log, 'ahead').map((e) => e.type)).toEqual(['ShorePointAdded']);
+    // Attributable: the fanned entry IS the trigger event, so actor + time survive.
+    expect(shorePointHistory(log, 'b')[1]!.by).toBe('trigger-dev');
+  });
+
+  it('membership is read AS OF the event — a point added after the change never gets it', () => {
+    const log: FieldShoreEvent[] = [
+      created('op1', 'First', 100),
+      grouped('op1', 'a', 'process', 'g1'),
+      moved('op1', 'a', 'process', 'strutset'),
+      grouped('op1', 'late', 'process', 'g1'),
+    ];
+    expect(shorePointHistory(log, 'late').map((e) => e.type)).toEqual(['ShorePointAdded']);
+  });
+
+  it('scopes to the point\'s own operation — a same-groupId point in ANOTHER op is untouched', () => {
+    const log: FieldShoreEvent[] = [
+      created('op1', 'First', 100),
+      grouped('op1', 'a', 'process', 'g1'),
+      ended('op1', 200),
+      created('op2', 'Second', 300),
+      grouped('op2', 'b', 'process', 'g1'), // same groupId, different incident
+      moved('op1', 'a', 'process', 'strutset'),
+    ];
+    expect(shorePointHistory(log, 'b').map((e) => e.type)).toEqual(['ShorePointAdded']);
+  });
+
+  it('is empty for an unknown point', () => {
+    expect(shorePointHistory([created('op1', 'First', 100)], 'nope')).toEqual([]);
   });
 });

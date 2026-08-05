@@ -127,7 +127,35 @@ export function RecommendationCard({
   onAddStruts,
   variant = 'deploy',
 }: RecommendationCardProps) {
+  // #456 — the acknowledgment is given for ONE risk picture. The sheet keys these
+  // cards only on the strut/extension identity, so a peer edit of the load,
+  // measurement, or deductions while the sheet is open re-renders the SAME card with
+  // a different risk and would leave the old ack standing — a recorded acknowledgment
+  // for a warning nobody was shown. Build the signature from RAW props only (never the
+  // derived flags below) and reset during render, not in an effect: an effect fires
+  // after paint, leaving one frame in which a stale ack could unlock Deploy.
+  const riskKey = [
+    combo.strut.model,
+    combo.extensions.join('+'),
+    combo.openingLength,
+    combo.effectiveLength,
+    combo.capacity,
+    combo.unrated,
+    combo.exceedsCapacity,
+    estimatedLoad,
+    currentStruts,
+    // Value-keyed, not identity-keyed: the parent rebuilds this object each render.
+    deductions.headerWood,
+    deductions.footerWood,
+    deductions.topPlate,
+    deductions.bottomPlate,
+  ].join('|');
   const [acknowledged, setAcknowledged] = useState(false);
+  const [ackedRiskKey, setAckedRiskKey] = useState(riskKey);
+  if (ackedRiskKey !== riskKey) {
+    setAckedRiskKey(riskKey);
+    setAcknowledged(false);
+  }
 
   // Per-strut over-capacity (accepted mockup 2026-07-01): the engine returns 2–4-
   // strut combos unflagged (recommendedQty is advisory), but this card deploys ONE

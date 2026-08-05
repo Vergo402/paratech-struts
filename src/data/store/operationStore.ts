@@ -7,6 +7,7 @@ import {
   projectOperation,
   projectOperationById,
   projectArchive,
+  shorePointHistory,
   EMPTY_OPERATION_STATE,
   type OperationState,
   type ArchivedOperationSummary,
@@ -53,9 +54,10 @@ export interface OperationStoreApi {
   /** Re-project one operation by id (#238 read-only archive drill-in). */
   readOperation(opId: string): Promise<OperationState>;
   /** Every logged event touching one shore point, in append (chronological) order
-   *  — the Quick View timeline. A cold-path read over the retained log (no by-spId
-   *  index); the events table is kept after OperationEnded, so this works for
-   *  archived points too. */
+   *  — the Quick View timeline. Includes group-fanned status changes the point moved
+   *  on even though the event names only the trigger (#453). A cold-path read over the
+   *  retained log (no by-spId index); the events table is kept after OperationEnded,
+   *  so this works for archived points too. */
   readShorePointHistory(spId: string): Promise<FieldShoreEvent[]>;
   /** Org/command role history for one op, append order (#323). Omit positionId for
    *  the whole command timeline (the transfer handoff record); pass one for a single
@@ -365,12 +367,10 @@ export function createOperationStore(opts: {
       return projectOperationById(await loadEvents(), opId);
     },
     async readShorePointHistory(spId: string) {
-      // loadEvents() = seq (append) order = chronological; no sort. ShorePointAdded
-      // carries the id under shorePoint.id; every other SP event under spId.
-      const rows = await loadEvents();
-      return rows.filter((e) =>
-        e.type === 'ShorePointAdded' ? e.shorePoint.id === spId : 'spId' in e && e.spId === spId,
-      );
+      // loadEvents() = seq (append) order = chronological; no sort. The filter is pure
+      // (core/operation) — it includes the group-fanned status changes this point moved
+      // on but whose event names only the trigger (#453).
+      return shorePointHistory(await loadEvents(), spId);
     },
     async readRoleHistory(opId: string, positionId?: string) {
       // loadEvents() = seq (append) order = chronological. The filter is pure (core/org).

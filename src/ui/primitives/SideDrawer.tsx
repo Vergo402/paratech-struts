@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { claimOverlay, releaseOverlay, isTopOverlay, overlayContains } from './overlay';
+import { claimOverlay, releaseOverlay, isTopOverlay, overlayContains, hasOverlayClaim } from './overlay';
 import { useIsDesktop } from './useMediaQuery';
 
 /**
@@ -106,8 +106,16 @@ function DockDrawer({ open, onClose, title, children }: SideDrawerProps) {
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeBtnRef.current?.focus();
     // Local Esc — NOT the overlay stack (the board must stay live). Restore opener.
+    // #459: the dock never claims the overlay stack itself (by design — the board
+    // stays live beside it), but a Modal/Sheet/Popover opened OVER the dock (e.g.
+    // from a control inside it) does claim it, and Radix doesn't stopPropagate its
+    // own Esc handling. So an Esc meant for that nested overlay was also closing
+    // the dock underneath and yanking focus to the drawer's opener. Defer to any
+    // claimed overlay — it owns Esc while it's open; the dock only reacts once the
+    // stack is empty again.
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (hasOverlayClaim()) return;
       e.stopPropagation();
       const opener = openerRef.current;
       closeRef.current();

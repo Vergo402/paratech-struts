@@ -41,6 +41,17 @@ export const EMPTY_OPERATION_STATE: OperationState = {
 const GROUP_ZONE: readonly ShorePointStatus[] = ['process', 'strutset', 'cutting'];
 
 /**
+ * True when an edge stays inside the GROUP_ZONE on both ends, i.e. groupAdvance
+ * would fan it out to every lockstep member rather than moving the trigger alone.
+ * Exported so callers that need to predict the fan-out (e.g. the SR announcement
+ * in OperationsBoard#commitStatusChange, #458) can ask the reducer's own rule
+ * instead of re-deriving it.
+ */
+export function isGroupZoneEdge(from: ShorePointStatus, to: ShorePointStatus): boolean {
+  return GROUP_ZONE.includes(from) && GROUP_ZONE.includes(to);
+}
+
+/**
  * L-7 group fan-out. A status change on a grouped point whose edge stays inside
  * the GROUP_ZONE (process↔strutset↔cutting) moves every group member that is IN
  * LOCKSTEP with the trigger (same current status); an edge that leaves the zone
@@ -55,6 +66,43 @@ const GROUP_ZONE: readonly ShorePointStatus[] = ['process', 'strutset', 'cutting
  * group is in lockstep (the only state the gated UI produces). Broadening group
  * semantics beyond this would be an ADR, not an inline change (plan risk #7).
  */
+/**
+ * The shore points ONE `ShorePointStatusChanged` actually moves — the trigger plus,
+ * for a grouped in-zone edge, every lockstep mate. Empty when the event is a no-op
+ * (unknown trigger, an owned boundary, an illegal or stale transition).
+ *
+ * Extracted from groupAdvance (#453) so the fan rule has ONE definition. The live
+ * projection applies it; readShorePointHistory (data/store) replays it against the
+ * state AT THAT EVENT to decide whether a mate's timeline should carry the change —
+ * a single event carries only the trigger's spId, so nothing else can answer that.
+ * The lockstep filter (`status === from`) is part of the answer, not a detail: a mate
+ * that was ahead or behind never moved, so it must never show the entry either.
+ */
+export function statusFanTargets(
+  shorePoints: readonly ShorePoint[],
+  spId: string,
+  from: ShorePointStatus,
+  to: ShorePointStatus,
+): string[] {
+  const trigger = shorePoints.find((sp) => sp.id === spId);
+  if (!trigger) return [];
+  if (from === 'pending' || to === 'pending') return []; // deploy/return owns this boundary
+  // Symmetric to the pending guard (2026-07-02 audit #2): the secured↔returned edge
+  // is an inventory boundary owned by EquipmentReclaimed (it restores the BOM to
+  // stock). A raw ShorePointStatusChanged across it — no in-app path drives it, but
+  // a peer/replay/off-UI event could — would land 'returned' with the stock still
+  // held (strand), or bounce back to 'secured' and let a second reclaim double-
+  // restore. In-app secured→returned is a Button→EquipmentReclaimed, never a slide.
+  if (from === 'returned' || to === 'returned') return []; // reclaim owns this boundary
+  if (!canTransition(from, to)) return []; // single-step only
+  if (trigger.status !== from) return []; // stale / out-of-order trigger
+
+  const individual = !trigger.groupId || !(GROUP_ZONE.includes(from) && GROUP_ZONE.includes(to));
+  const pool = individual ? [trigger] : shorePoints.filter((sp) => sp.groupId === trigger.groupId);
+  // Only lockstep members move; ahead/behind untouched (L-7).
+  return pool.filter((sp) => sp.status === from).map((sp) => sp.id);
+}
+
 function groupAdvance(
   shorePoints: ShorePoint[],
   spId: string,
@@ -62,31 +110,14 @@ function groupAdvance(
   to: ShorePointStatus,
   at: number,
 ): ShorePoint[] {
-  const trigger = shorePoints.find((sp) => sp.id === spId);
-  if (!trigger) return shorePoints;
-  if (from === 'pending' || to === 'pending') return shorePoints; // deploy/return owns this boundary
-  // Symmetric to the pending guard (2026-07-02 audit #2): the secured↔returned edge
-  // is an inventory boundary owned by EquipmentReclaimed (it restores the BOM to
-  // stock). A raw ShorePointStatusChanged across it — no in-app path drives it, but
-  // a peer/replay/off-UI event could — would land 'returned' with the stock still
-  // held (strand), or bounce back to 'secured' and let a second reclaim double-
-  // restore. In-app secured→returned is a Button→EquipmentReclaimed, never a slide.
-  if (from === 'returned' || to === 'returned') return shorePoints; // reclaim owns this boundary
-  if (!canTransition(from, to)) return shorePoints; // single-step only
-  if (trigger.status !== from) return shorePoints; // stale / out-of-order trigger
+  const affected = new Set(statusFanTargets(shorePoints, spId, from, to));
+  if (affected.size === 0) return shorePoints; // no-op event — same array, no re-render churn
 
-  const individual = !trigger.groupId || !(GROUP_ZONE.includes(from) && GROUP_ZONE.includes(to));
-  const affected = new Set(
-    individual ? [trigger.id] : shorePoints.filter((sp) => sp.groupId === trigger.groupId).map((sp) => sp.id),
-  );
-
-  return shorePoints.map((m) => {
-    if (!affected.has(m.id)) return m;
-    if (m.status !== from) return m; // only lockstep members move; ahead/behind untouched (L-7)
+  return shorePoints.map((m) =>
     // applyCuttingFields stamps/clears the cutting-queue bookkeeping for the
     // strutset↔cutting edges (#222); a no-op on every other transition.
-    return applyCuttingFields({ ...m, status: to }, from, to, at);
-  });
+    affected.has(m.id) ? applyCuttingFields({ ...m, status: to }, from, to, at) : m,
+  );
 }
 
 /** Apply one event to the operation projection. Pure; never mutates `state`. */

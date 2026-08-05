@@ -20,8 +20,9 @@ import { pieceIdentity, sameExtensions } from './pieceIdentity';
  * deploy. No silent untracked deploy: a missing piece BLOCKS Confirm until the
  * operator picks one of the three explicit ways out. Dropping a plate amends the
  * shore point's deductions (the record stays honest) and re-runs the real fit
- * (findForShorePoint) — only if the strut no longer reaches does it warn +
- * acknowledge; it never hard-blocks (field judgment, ADR-033 gate).
+ * (findForShorePoint, catalog mode) — reach loss, a newly over-capacity assembly,
+ * or a newly unrated one each warn + require an acknowledgment tied to THAT
+ * assembly; none hard-block (field judgment, ADR-033 gate).
  */
 export interface DeployResolutionProps {
   sp: ShorePoint;
@@ -37,13 +38,19 @@ export interface DeployResolutionProps {
    * over-capacity assembly, computed here against the AMENDED deductions (a dropped
    * plate can lengthen the span into over-capacity the card never saw, 2026-07-02
    * audit #9) — the parent's original-combo verdict would miss it, and the store
-   * rejects an over-capacity deploy that arrives without the ack. Resolves to the
-   * store result so failures show inline.
+   * rejects an over-capacity deploy that arrives without the ack.
+   * `unratedAck` is the same story for the LongShore unrated zone (#448): a drop can
+   * push the assembly past the rated span, and the parent's pre-drop combo verdict
+   * would send the deploy up WITHOUT the ack the store demands — a dead end. Both
+   * flags are the honest final-assembly verdict, gated behind this panel's own
+   * acknowledgment when the DROP introduced the risk. Resolves to the store result
+   * so failures show inline.
    */
   onConfirm: (
     bom: DeployedComponent[],
     deductions: Deductions,
     overCapacityAck: boolean,
+    unratedAck: boolean,
   ) => Promise<{ ok: boolean; reason?: string }>;
   /** Sheet-level single-flight lock while a deploy is in flight. */
   submitting: boolean;
@@ -175,40 +182,66 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   // The (possibly amended) deductions — a dropped plate flips its slot to 'none'.
   // Persisted with the deploy so the point never records a plate it didn't use.
   const [deductions, setDeductions] = useState<Deductions>(sp.deductions);
-  const [ack, setAck] = useState(false);
+  // The risk signature the operator acknowledged, NOT a bare boolean (#449): a
+  // second plate drop changes the deductions and therefore the signature, so the
+  // first drop's acknowledgment can never pre-satisfy the new risk — even when the
+  // new risk has the identical shape.
+  const [ackedFor, setAckedFor] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ⅛-floor fit re-run with the amended deductions (a dropped plate shrinks the
-  // deduction, so the strut must span MORE). The chosen strut either still appears
-  // in the results or it doesn't — a confirmed determination, not a guess.
-  const stillReaches = useMemo(() => {
-    if (deductions === sp.deductions) return true;
-    const combos = findForShorePoint({ ...sp, deductions }, inventory);
-    return combos.some((x) => x.strut.model === combo.strut.model && sameExtensions(x.extensions, combo.extensions));
-  }, [deductions, inventory, sp, combo]);
+  // ONE ⅛-floor fit re-run against the AMENDED deductions, in CATALOG mode — the
+  // three verdicts below all read off it (#447: the reach re-run used to run
+  // against live inventory, so an off-book or last-in-stock strut falsely read
+  // "no longer reaches"; reach, rating and capacity are physics — system + length —
+  // never a function of stock, per the #410-4 catalog-mode contract).
+  //   · match      — the chosen assembly (model + the same extension set)
+  //   · unratedAny — model-level unrated, matching how the STORE's deployVerdict
+  //     judges it (by model, extensions ignored). Deliberately the conservative
+  //     read: it can only over-ask for an ack, never dead-end a deploy the store
+  //     will reject for a missing acknowledgment (#448).
+  const fit = useMemo(() => {
+    const combos = findForShorePoint({ ...sp, deductions }, null);
+    return {
+      match: combos.find((x) => x.strut.model === combo.strut.model && sameExtensions(x.extensions, combo.extensions)),
+      unratedAny: combos.some((x) => x.unrated && x.strut.model === combo.strut.model),
+    };
+  }, [deductions, sp, combo]);
+
+  // A dropped plate shrinks the deduction, so the strut must span MORE. The chosen
+  // strut either still appears in the catalog results or it doesn't — a confirmed
+  // determination, not a guess.
+  const stillReaches = deductions === sp.deductions || !!fit.match;
 
   // Per-strut over-capacity against the AMENDED deductions (2026-07-02 audit #9).
   // Dropping a plate shrinks the deduction → the strut spans MORE → a lower
   // capacity row → a deploy that was within capacity on the card can cross the
-  // line here. Catalog mode: a strut's rating is physics (system + length), not a
-  // function of stock. This is the TRUE final-assembly verdict, passed up to be
-  // recorded on the event; the store rejects an over-capacity deploy without it.
-  const overCapacity = useMemo(() => {
-    if (sp.estimatedLoad == null) return false;
-    const m = findForShorePoint({ ...sp, deductions }, null).find(
-      (x) => x.strut.model === combo.strut.model && sameExtensions(x.extensions, combo.extensions),
-    );
-    return !!m && !m.unrated && !m.exceedsCapacity && m.capacity > 0 && strutLoadShare(sp) > m.capacity;
-  }, [deductions, sp, combo]);
+  // line here. This is the TRUE final-assembly verdict, passed up to be recorded on
+  // the event; the store rejects an over-capacity deploy without it.
+  const m = fit.match;
+  const overCapacity =
+    sp.estimatedLoad != null && !!m && !m.unrated && !m.exceedsCapacity && m.capacity > 0 && strutLoadShare(sp) > m.capacity;
+
+  // The LongShore unrated zone against the AMENDED deductions (#448) — same shape
+  // as over-capacity: a drop can push the assembly past the rated span the card
+  // never saw. The store rejects an unrated deploy with no recorded acknowledgment,
+  // so this verdict (not the pre-drop combo's) is what rides the event.
+  const unrated = fit.unratedAny;
 
   // The panel's own ack gate fires only for a risk the DROP introduced — reach
-  // loss, or a drop that newly crossed into over-capacity. An assembly that was
-  // already over-capacity from the card carries the card's ack (it gated Deploy
-  // before this step), so it isn't re-acked here; `overCapacity` still records the
-  // true state on the event either way.
-  const dropCrossedOverCapacity = deductions !== sp.deductions && overCapacity;
-  const needsAck = !stillReaches || dropCrossedOverCapacity;
+  // loss, or a drop that newly crossed into over-capacity / the unrated zone. An
+  // assembly that was ALREADY over-capacity or unrated on the card carries the
+  // card's ack (it gated Deploy before this step), so it isn't re-acked here; the
+  // verdicts still record the true state on the event either way.
+  const dropped = deductions !== sp.deductions;
+  const dropCrossedOverCapacity = dropped && overCapacity;
+  const dropCrossedUnrated = dropped && unrated && !combo.unrated;
+  const needsAck = !stillReaches || dropCrossedOverCapacity || dropCrossedUnrated;
+
+  // Identity of the risk currently on screen. Includes the amended plate slots, so
+  // a SECOND drop mints a new signature and re-arms the gate (#449).
+  const riskKey = `${deductions.topPlate}|${deductions.bottomPlate}|${!stillReaches}|${dropCrossedOverCapacity}|${dropCrossedUnrated}`;
+  const ack = ackedFor === riskKey;
   const unresolved = pieces.some((w) => !w.c.inventoryId && !w.offBook);
 
   // ≥2 distinct rigs (by apparatus id, not display name) supplying TRACKED pieces.
@@ -293,7 +326,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   async function handleConfirm() {
     setError(null);
     const bom = pieces.map((w) => w.c);
-    const result = await onConfirm(bom, deductions, overCapacity);
+    const result = await onConfirm(bom, deductions, overCapacity, unrated);
     if (!result.ok) setError(result.reason ?? 'Deploy failed');
   }
 
@@ -381,6 +414,11 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
                 Without this plate, {combo.strut.model} no longer reaches{' '}
                 <MeasurementValue eighths={sp.measurementEighths} /> at this load.
               </>
+            ) : dropCrossedUnrated ? (
+              <>
+                Without this plate, {combo.strut.model} spans past the rated range — the manufacturer publishes no
+                capacity at this length.
+              </>
             ) : (
               <>
                 Without this plate, {combo.strut.model} spans farther — its share of the load now exceeds its rating at
@@ -393,7 +431,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
             className="fs-gate-ack"
             role="checkbox"
             aria-checked={ack}
-            onClick={() => setAck((a) => !a)}
+            onClick={() => setAckedFor((prev) => (prev === riskKey ? null : riskKey))}
           >
             <span className="fs-gate-ack-box" aria-hidden="true">
               {ack ? '✓' : ''}

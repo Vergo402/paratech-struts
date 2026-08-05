@@ -11,6 +11,7 @@ import type {
 } from '../schema';
 import {
   findStrutCombinations,
+  isKnownPlateId,
   woodHeight,
   plateHeight,
   WEDGE_DEDUCTION,
@@ -29,6 +30,21 @@ export function resolveDeductions(sp: ShorePoint): EngineDeductions {
     topPlate: plateHeight(sp.deductions.topPlate),
     bottomPlate: plateHeight(sp.deductions.bottomPlate),
   };
+}
+
+/**
+ * Deduction slots whose plate id this build's catalog doesn't know (#457). Empty for
+ * every well-formed point. `plateHeight` resolves such an id to 0″, so the deduction
+ * total silently UNDER-deducts — the effective length reads longer than it is.
+ *
+ * Deliberately a REPORT, not a rejection. The ids ride `ShorePointEdited` /
+ * `ShorePointAdded` from peers that may run a newer catalog than this build; throwing
+ * in the reducer would wedge sync (an unreadable event replays forever) and a hard
+ * schema enum would drop the whole point. So the math stays, and the surfaces that
+ * state a safety VERDICT degrade to "unknown" instead of asserting a pass.
+ */
+export function unknownPlateIds(deductions: Deductions): string[] {
+  return [deductions.topPlate, deductions.bottomPlate].filter((id) => !isKnownPlateId(id));
 }
 
 // Matches Quick Find's default safety factor (4:1). Capacity is demoted on the

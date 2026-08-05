@@ -372,3 +372,83 @@ describe('RecommendationCard — short deploy (×N struts needed)', () => {
     expect(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ })).toBeInTheDocument();
   });
 });
+
+/**
+ * #456 — an acknowledgment is given for ONE risk picture. The Assign Equipment sheet
+ * keys these cards only on the strut/extension identity, so a PEER edit of the shore
+ * point's load, measurement, or deductions while the sheet is open re-renders the same
+ * card with a different risk. A surviving ack would be a recorded acknowledgment for a
+ * warning nobody was shown — and, on the unrated card, would leave Deploy unlocked.
+ *
+ * Real engine: every combo below comes from findStrutCombinations, so "the risk
+ * changed" means the engine really returned a different one.
+ */
+describe('RecommendationCard — acknowledgment resets when the risk changes (#456)', () => {
+  // Two real unrated combos at different openings (both past the 192″ LongShore chart).
+  const UNRATED_200 = findStrutCombinations(200, 0, 2, null, null, null)[0]!;
+  const UNRATED_210 = findStrutCombinations(210, 0, 2, null, null, null)[0]!;
+  const SHORT_DEPLOY = findStrutCombinations(58.5, 34000, 2, null, null, null).find(
+    (c) => c.strut.model === 'LS 406' && c.extensions.length === 0,
+  )!;
+
+  it('a changed MEASUREMENT (new combo) clears the unrated ack and re-locks Deploy', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <RecommendationCard combo={UNRATED_200} deductions={NO_DEDUCTIONS} onDeploy={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the unrated zone/ }));
+    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeEnabled();
+
+    rerender(<RecommendationCard combo={UNRATED_210} deductions={NO_DEDUCTIONS} onDeploy={vi.fn()} />);
+    expect(screen.getByRole('checkbox', { name: /Team acknowledges the unrated zone/ })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeDisabled();
+    expect(screen.getByText('Acknowledge the unrated zone first')).toBeInTheDocument();
+  });
+
+  it('a changed LOAD clears the over-capacity-short ack', async () => {
+    const user = userEvent.setup();
+    const props = { combo: SHORT_DEPLOY, deductions: NO_DEDUCTIONS, onDeploy: vi.fn(), currentStruts: 1 };
+    const { rerender } = render(<RecommendationCard {...props} estimatedLoad={34000} />);
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ }));
+    expect(screen.getByRole('button', { name: /Deploy 1 of 2 anyway/ })).toBeEnabled();
+
+    // A peer re-estimates the load upward — now 3 struts are needed, not 2.
+    rerender(<RecommendationCard {...props} estimatedLoad={60000} />);
+    expect(screen.getByRole('button', { name: /Deploy 1 of 3 anyway/ })).toBeDisabled();
+    expect(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ })).not.toBeChecked();
+  });
+
+  it('changed DEDUCTIONS clear the ack (same object shape, different values)', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <RecommendationCard combo={UNRATED_200} deductions={NO_DEDUCTIONS} onDeploy={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the unrated zone/ }));
+    rerender(
+      <RecommendationCard
+        combo={UNRATED_200}
+        deductions={{ ...NO_DEDUCTIONS, topPlate: 'swivel6' }}
+        onDeploy={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeDisabled();
+  });
+
+  it('an unrelated re-render KEEPS the ack (a fresh deductions object is not a new risk)', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <RecommendationCard combo={UNRATED_200} deductions={{ ...NO_DEDUCTIONS }} onDeploy={vi.fn()} />,
+    );
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the unrated zone/ }));
+    // New object identity, same VALUES, plus an unrelated prop change.
+    rerender(
+      <RecommendationCard
+        combo={UNRATED_200}
+        deductions={{ ...NO_DEDUCTIONS }}
+        source="Engine 1"
+        onDeploy={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeEnabled();
+  });
+});

@@ -127,7 +127,11 @@ export function Slider({
     const { travelPx } = drag.current;
     drag.current = null;
     setDragging(false);
-    const committed = shouldCommit(offsetRef.current, travelPx); // live travel, not stale state
+    // #462: `disabled` can flip mid-gesture (e.g. a peer sync regresses a group
+    // mate, closing the gate under the operator's thumb). Re-check at release,
+    // not just at press — a disabled-mid-drag gesture snaps back without
+    // committing, same doctrine as the pointercancel guard above.
+    const committed = !disabled && shouldCommit(offsetRef.current, travelPx); // live travel, not stale state
     setOffset(0); // snap back (CSS micro transition when not dragging)
     if (committed) {
       commitHaptic();

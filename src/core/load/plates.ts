@@ -83,8 +83,23 @@ export const SHORE_TYPES: readonly ShoreTypeDef[] = [
 export const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
 
 // ---- Pure lookup helpers (exact catalog heights — L-2 deducts the exact value) ----
+/**
+ * The catalog height for a plate id, or 0 for an id this build doesn't know (#457).
+ *
+ * The 0 fallback is DELIBERATE and stays: a plate id arrives from a peer device that
+ * may run a newer catalog, and the deduction math must not crash or refuse to project
+ * a legally-schema'd event. What it must NOT do is pass silently — an unknown id
+ * contributes 0″ and quietly under-deducts. Callers that state a SAFETY VERDICT check
+ * `isKnownPlateId` first and degrade to "unknown" rather than assert a pass.
+ */
 export function plateHeight(id: string): number {
   return BASE_PLATES.find((p) => p.id === id)?.height ?? 0;
+}
+
+/** Whether this build's catalog knows the plate id — the honesty check for
+ *  plateHeight's 0 fallback (#457). 'none' is a real catalog entry (height 0). */
+export function isKnownPlateId(id: string): boolean {
+  return BASE_PLATES.some((p) => p.id === id);
 }
 
 export function woodHeight(id: WoodSizeId): number {

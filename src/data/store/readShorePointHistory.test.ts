@@ -59,3 +59,77 @@ describe('operationStore.readShorePointHistory', () => {
     expect(await ops.readShorePointHistory('nope')).toEqual([]);
   });
 });
+
+// #453 — a grouped ShorePointStatusChanged fans across every LOCKSTEP mate but carries
+// only the TRIGGER's spId. The mates moved, so their audit trail must show it; a mate
+// that was ahead or behind did NOT move, so its trail must NOT. The negative case is the
+// load-bearing one — a naive "any group event" filter would fabricate history.
+describe('operationStore.readShorePointHistory — group-fanned status changes (#453)', () => {
+  let db: FieldShoreDB;
+  let ops: OperationStoreApi;
+
+  const grouped = (id: string, status: ShorePoint['status'], groupIndex: number): ShorePoint => ({
+    ...makeSp(id),
+    status,
+    groupId: 'grp-1',
+    groupIndex,
+    groupTotal: 3,
+  });
+  const statusChanged = (spId: string, from: ShorePoint['status'], to: ShorePoint['status']): FieldShoreEvent => ({
+    type: 'ShorePointStatusChanged',
+    ...base(),
+    by: 'device-trigger',
+    at: 4242,
+    spId,
+    from,
+    to,
+  });
+
+  beforeEach(async () => {
+    db = createDB(`test-history-fan-${newId()}`);
+    const inventory = createInventoryStore(db);
+    ops = createOperationStore({ db, inventory, enqueue: () => {} });
+    await inventory.boot();
+    await ops.commit(opCreated());
+    // Two legs in lockstep at Equipment Assigned; the third already ahead at Strut Set.
+    await ops.commit(spAdded(grouped('leg-a', 'process', 1))); // groupIndex is 1-based
+    await ops.commit(spAdded(grouped('leg-b', 'process', 2)));
+    await ops.commit(spAdded(grouped('leg-ahead', 'strutset', 3)));
+    // Trigger on leg-a: process → strutset, inside the group zone, so it fans.
+    await ops.commit(statusChanged('leg-a', 'process', 'strutset'));
+  });
+
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('the fanned mate carries the change, attributed to the trigger\'s actor and time', async () => {
+    const history = await ops.readShorePointHistory('leg-b');
+    expect(history.map((e) => e.type)).toEqual(['ShorePointAdded', 'ShorePointStatusChanged']);
+    const change = history[1]!;
+    expect(change.by).toBe('device-trigger');
+    expect(change.at).toBe(4242);
+  });
+
+  it('the mate that was AHEAD (never moved) does not get the entry', async () => {
+    const history = await ops.readShorePointHistory('leg-ahead');
+    expect(history.map((e) => e.type)).toEqual(['ShorePointAdded']);
+  });
+
+  it('an INDIVIDUAL-phase edge (leaves the group zone) reaches only the trigger', async () => {
+    // Both legs are now at Strut Set; walk leg-a to cutting (group-wide), then to
+    // runner — the Send-to-Runner edge leaves the zone and is per-card (#223).
+    await ops.commit(statusChanged('leg-a', 'strutset', 'cutting'));
+    await ops.commit(statusChanged('leg-a', 'cutting', 'runner'));
+    const b = await ops.readShorePointHistory('leg-b');
+    // leg-b got the two group-zone fans, never the runner handoff.
+    expect(b.filter((e) => e.type === 'ShorePointStatusChanged')).toHaveLength(2);
+    expect(b.some((e) => e.type === 'ShorePointStatusChanged' && e.to === 'runner')).toBe(false);
+  });
+
+  it('an ungrouped point is unaffected by a grouped neighbour\'s change', async () => {
+    await ops.commit(spAdded({ ...makeSp('solo'), status: 'process' }));
+    await ops.commit(statusChanged('leg-a', 'strutset', 'cutting'));
+    expect((await ops.readShorePointHistory('solo')).map((e) => e.type)).toEqual(['ShorePointAdded']);
+  });
+});

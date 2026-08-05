@@ -37,7 +37,13 @@ export type BuildingSide = z.infer<typeof BuildingSide>;
 // What the operator SELECTED for each deduction slot. The exact catalog heights
 // are resolved at compute time by the reducer (L-2 — store the choice, deduct
 // the exact value, floor only the final effective length). topPlate/bottomPlate
-// are BASE_PLATES ids (validated against the catalog in the reducer).
+// are BASE_PLATES ids — NOT validated against the catalog anywhere (#457): the ids
+// arrive from peers that may run a newer catalog, so an unknown id must still parse
+// and project rather than wedge sync. plateHeight() resolves one to 0″, which
+// under-deducts; core/shorepoint's unknownPlateIds() reports the condition and the
+// safety verdict (ui/operations/shoreSafety) degrades to "unknown" instead of
+// asserting a pass. (This comment previously claimed a reducer validation that has
+// never existed — the claim, not the behavior, was the bug.)
 export const Deductions = z.object({
   headerWood: WoodSizeId,
   footerWood: WoodSizeId,

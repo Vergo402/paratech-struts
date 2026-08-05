@@ -1,8 +1,9 @@
 import type { ShorePoint } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType, cardValueEighths } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths, groupDisplayStatus } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
+import { CutTooSmallFlag } from './CutTooSmallFlag';
 
 /**
  * ShorePointListRow — the List-view row, at the unified card anatomy (Alex
@@ -18,23 +19,35 @@ import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 export function ShorePointListRow({
   sp,
   count,
+  members,
   flag,
   onOpen,
 }: {
   sp: ShorePoint;
   /** >1 when this row stands for a grouped shore (rolodex of N legs). */
   count: number;
+  /** Every leg this row stands for. A grouped row reads its STATUS EDGE from the
+   *  least-advanced live leg (#454) and its too-small warning from ANY live leg
+   *  (#483) — neither is answerable from the front leg alone. Omitted → the row
+   *  stands for `sp` only (a single, or an un-wired caller: harmless, identical to
+   *  the pre-#454 behavior). */
+  members?: readonly ShorePoint[];
   /** Over-capacity / unrated flag, computed by the board (H1/#415); null = clean. */
   flag: CapacityFlagValue;
   onOpen: (sp: ShorePoint) => void;
 }) {
   const model = bomModelLabel(sp);
+  const legs = members && members.length > 0 ? members : [sp];
+  // Conservative status (Alex's ruling 2026-07-28): a split group's edge color never
+  // reads further along than its slowest leg. Identity below still comes from the
+  // front leg, which carries the group's location/added identity.
+  const status = groupDisplayStatus(legs);
   return (
     <button
       type="button"
       role="listitem"
       data-sp-id={sp.id}
-      className={`fs-splist-row is-${sp.status}`}
+      className={`fs-splist-row is-${status}`}
       onClick={() => onOpen(sp)}
     >
       <span className="fs-splist-top">
@@ -51,6 +64,7 @@ export function ShorePointListRow({
         <MeasurementValue eighths={cardValueEighths(sp)} className="fs-splist-num" />
       </span>
       <CapacityFlag flag={flag} />
+      <CutTooSmallFlag members={legs} />
     </button>
   );
 }

@@ -125,6 +125,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
       ]),
       expect.anything(),
       false, // overCapacityAck — no plate dropped, no over-capacity (audit #9 signature)
+      false, // unratedAck — the assembly is inside the rated range (#448 signature)
     );
   });
 
@@ -140,6 +141,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ role: 'top-plate', source: 'Ladder 3', inventoryId: 'inv-plate-l3' })]),
       expect.anything(),
+      false,
       false,
     );
   });
@@ -187,6 +189,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     expect(onConfirm).toHaveBeenCalledWith(
       expect.arrayContaining([expect.objectContaining({ role: 'top-plate', source: 'Rescue 2', inventoryId: 'inv-new' })]),
       expect.anything(),
+      false,
       false,
     );
   });
