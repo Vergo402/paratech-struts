@@ -52,6 +52,7 @@ import { DivisionView, type LaneItem } from './DivisionView';
 import { ShorePointListRow } from './ShorePointListRow';
 import type { CapacityFlagValue } from './CapacityFlag';
 import { HeaderPill, OpsMetaLine } from './OpsHeaderMeta';
+import { IncidentChipStrip } from '@ui/command';
 import { OpsFilterSheet } from './OpsFilterSheet';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
@@ -1318,6 +1319,10 @@ export function OperationsBoard() {
             onSetRole={() => setMyRoleSheetOpen(true)}
           />
         </div>
+        {/* Incident status chips (#487 Safety Officer + #490 Hazard) — their own row
+            under the meta line, visible on both the board and Cutting Station (this
+            header is shared by both views below). */}
+        <IncidentChipStrip />
       </header>
 
       {/* Phone control row (#432 — was three stacked full-width rows): the

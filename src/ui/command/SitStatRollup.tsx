@@ -7,6 +7,19 @@ import { EmptyState } from '@ui/primitives';
 import { SHORE_TYPE_LABELS } from '@ui/operations/ShorePointCard';
 import { AlertIcon, CaretIcon } from './icons';
 
+/** View-layer abbreviations for the By-Division header row (#488). Full words
+ * always come from STATUS_LABELS (@core) — these are display-only shorthand,
+ * not a second source of truth for the status names. */
+const STATUS_ABBR: Record<ShorePointStatus, string> = {
+  pending: 'Pend',
+  process: 'Assign',
+  strutset: 'Set',
+  cutting: 'Cut',
+  runner: 'Run',
+  secured: 'Secured',
+  returned: "Ret'd",
+};
+
 function CountCells({ counts, colored }: { counts: Record<ShorePointStatus, number>; colored?: boolean }) {
   return (
     <>
@@ -74,6 +87,11 @@ function DivisionRow({ row, lagging }: { row: RollupRow; lagging: boolean }) {
  * Division flagged. Each Division row taps open to its grouped shores. Pure
  * display of the active shore points; the aggregation is core/command. Rendered
  * inline in the command rail on desktop and inside a Sheet on phone.
+ *
+ * Status headers (#488, restoring what #434 dropped): each column shows a color
+ * dot + abbreviated label (Pend / Assign / Set / Cut / Run / Secured / Ret'd),
+ * with a quiet one-line legend below the table spelling out each abbreviation's
+ * full STATUS_LABELS word. Header accessible names are the full word.
  */
 export function SitStatRollup() {
   const shorePoints = useShorePoints();
@@ -102,13 +120,17 @@ export function SitStatRollup() {
               <th scope="col" className="fs-rollup-corner">
                 Division
               </th>
-              {/* Status color dots (#434) — the 150-char abbreviation legend is gone;
-                  the dot carries the column identity (title + sr-only name keep it
-                  accessible), matching the status board's color keys beside it. */}
+              {/* Status color dot + abbreviated label (#488, restoring the spec's
+                  Pend/Assign/Set/Cut/Run/Secured/Ret'd headers dropped in #434).
+                  The header's accessible name is the full STATUS_LABELS word;
+                  the dot + abbreviation are the visible, aria-hidden content. A
+                  one-line legend below the table maps abbreviation -> full word. */}
               {STATUS_ORDER.map((s) => (
-                <th key={s} scope="col" className={`fs-rollup-colhead col-${s}`} title={STATUS_LABELS[s]}>
-                  <span className={`fs-rollup-dot is-${s}`} aria-hidden="true" />
-                  <span className="fs-sr-only">{STATUS_LABELS[s]}</span>
+                <th key={s} scope="col" className={`fs-rollup-colhead col-${s}`} aria-label={STATUS_LABELS[s]}>
+                  <span className="fs-rollup-colhead-inner" aria-hidden="true">
+                    <span className={`fs-rollup-dot is-${s}`} />
+                    <span className="fs-rollup-abbr">{STATUS_ABBR[s]}</span>
+                  </span>
                 </th>
               ))}
               <th scope="col" className="fs-rollup-colhead">
@@ -132,6 +154,14 @@ export function SitStatRollup() {
           </tfoot>
         </table>
       </div>
+      <p className="fs-rollup-legend">
+        {STATUS_ORDER.map((s, i) => (
+          <span key={s} className="fs-rollup-legend-item">
+            <strong>{STATUS_ABBR[s]}</strong> <span>{STATUS_LABELS[s]}</span>
+            {i < STATUS_ORDER.length - 1 ? ' · ' : ''}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }

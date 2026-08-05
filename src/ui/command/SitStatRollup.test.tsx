@@ -39,12 +39,39 @@ describe('SitStatRollup', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it('column heads carry the full status name (dots are accessible)', () => {
+  it('column heads show the abbreviated label and carry the full status name as their accessible name (#488)', () => {
     mockShorePoints.mockReturnValue([sp({ division: '1', status: 'cutting' })]);
     render(<SitStatRollup />);
-    // The legend wall is gone; the accessible name lives on the head cell.
-    for (const label of ['Pending Equipment', 'Cutting Station', 'Strut Equipment Returned']) {
-      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    const abbrevToFull: Record<string, string> = {
+      Pend: 'Pending Equipment',
+      Assign: 'Equipment Assigned',
+      Set: 'Strut Set',
+      Cut: 'Cutting Station',
+      Run: 'Runner',
+      Secured: 'Wood Shore Secured',
+      "Ret'd": 'Strut Equipment Returned',
+    };
+    for (const [abbr, full] of Object.entries(abbrevToFull)) {
+      // Visible abbreviation renders in the header cell (and again in the legend).
+      expect(screen.getAllByText(abbr).length).toBeGreaterThan(0);
+      // ...but the header's accessible name is the full STATUS_LABELS word.
+      expect(screen.getByRole('columnheader', { name: full })).toBeInTheDocument();
+    }
+  });
+
+  it('renders a one-line legend mapping every abbreviation to its full STATUS_LABELS word', () => {
+    mockShorePoints.mockReturnValue([sp({ division: '1', status: 'cutting' })]);
+    render(<SitStatRollup />);
+    for (const full of [
+      'Pending Equipment',
+      'Equipment Assigned',
+      'Strut Set',
+      'Cutting Station',
+      'Runner',
+      'Wood Shore Secured',
+      'Strut Equipment Returned',
+    ]) {
+      expect(screen.getByText(full)).toBeInTheDocument();
     }
   });
 

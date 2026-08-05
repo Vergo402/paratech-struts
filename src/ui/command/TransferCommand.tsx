@@ -1,9 +1,9 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OrgResourceRef } from '@core/schema';
-import { currentIC, sameResource } from '@core/org';
+import { currentIC, positionForResource, sameResource } from '@core/org';
 import { Button, TextField, claimOverlay, releaseOverlay, isTopOverlay } from '@ui/primitives';
-import { useOrg, useRoster } from '@ui/hooks';
+import { useApparatus, useOrg, useRoster } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { ICS201Brief } from './ICS201Brief';
 import { BackChevronIcon, CheckIcon } from './icons';
@@ -15,8 +15,13 @@ import { BackChevronIcon, CheckIcon } from './icons';
  * until the incoming accepts, so the outgoing IC stays IC of record meanwhile. Mirrors
  * OrgFullScreen's Radix Dialog + overlay-claim scaffold (focus trap, Esc, focus return).
  *
- * Recipients = people already on the org chart (individual/device refs, minus the
- * current IC) PLUS a type-a-name field that mints the incoming individual inline (the
+ * Recipients, in ruled order (Alex 2026-08-05: rigs first — personnel rotate, rig
+ * designations stay): the apparatus on scene (#489 — ADR-021 Addendum 2 scopes the
+ * 4-digit accept code to named-individual AND apparatus targets; "Battalion 1 has
+ * command" is a real handoff, so the rig is a first-class target rather than a
+ * re-typed name), then people already on the org chart (individual/device refs, minus
+ * the current IC), then the signed-in department members (account refs, uid-verified)
+ * PLUS a type-a-name field that mints the incoming individual inline (the
  * ref rides the Initiated event; the reducer sets the IC leader to it on Accept — no
  * separate assignment). The brief is the live six-datum ICS-201 snapshot, derived, no
  * manual entry.
@@ -35,6 +40,7 @@ function mintClaimCode(): string {
 export function TransferCommand({ open, onClose }: { open: boolean; onClose: () => void }) {
   const positions = useOrg();
   const roster = useRoster(true); // department members (accounts), minus me
+  const { roster: apparatusRoster } = useApparatus(); // same source as the org chart's "Available rigs"
   const emit = useOrgCommit();
   const ic = currentIC(positions);
 
@@ -81,6 +87,20 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
     }
     return out;
   }, [positions, ic]);
+
+  // Apparatus on scene (#489) — the SAME source the org chart's "Available rigs" strip
+  // uses (`useApparatus().roster`), assigned and unassigned alike, so handing command to
+  // a rig is one tap instead of a re-typed name. Secondary label = the rig's current
+  // command home (its org-chart position title) or "Available". Minus the current IC, so
+  // a rig already holding command can't be handed command.
+  const apparatusCandidates = useMemo(
+    () =>
+      apparatusRoster
+        .map((app) => ({ ref: 'apparatus' as const, value: app.id, label: app.name }))
+        .filter((r) => !(ic && sameResource(r, ic)))
+        .map((r) => ({ resource: r, at: positionForResource(positions, r)?.title ?? null })),
+    [apparatusRoster, positions, ic],
+  );
 
   // Department members as account-ref targets (the #439 roster) — hand command to a
   // specific PERSON so it follows their account across devices. Drop the current IC and
@@ -146,36 +166,80 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <span className="fs-cmd-eyebrow">Transfer command to</span>
-            {candidates.length === 0 && memberCandidates.length === 0 ? (
+            {candidates.length === 0 &&
+            memberCandidates.length === 0 &&
+            apparatusCandidates.length === 0 ? (
               <p className="fs-cmd-roster-empty">No one else is assigned yet — type a name below.</p>
-            ) : candidates.length === 0 ? null : (
-              <ul className="fs-assign-list">
-                {candidates.map((r) => {
-                  const on = !typed && picked != null && sameResource(picked, r);
-                  return (
-                    <li key={`${r.ref}:${r.value}`}>
-                      <button
-                        type="button"
-                        className={`fs-assign-row${on ? ' is-on' : ''}`}
-                        aria-pressed={on}
-                        onClick={() => {
-                          setName('');
-                          setPicked(r);
-                        }}
-                      >
-                        <span className="fs-assign-name">{r.label}</span>
-                        <span className="fs-assign-meta">
-                          {on && (
-                            <>
-                              <CheckIcon /> selected
-                            </>
-                          )}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+            ) : null}
+
+            {/* Rigs lead (Alex, 2026-08-05): personnel change on rigs all the time —
+                the rig designation is the stable thing command passes to. */}
+            {apparatusCandidates.length > 0 && (
+              <>
+                <span className="fs-cmd-eyebrow">Apparatus on scene</span>
+                <ul className="fs-assign-list" aria-label="Apparatus on scene">
+                  {apparatusCandidates.map(({ resource: r, at }) => {
+                    const on = !typed && picked != null && sameResource(picked, r);
+                    return (
+                      <li key={`apparatus:${r.value}`}>
+                        <button
+                          type="button"
+                          className={`fs-assign-row${on ? ' is-on' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => {
+                            setName('');
+                            setPicked(r);
+                          }}
+                        >
+                          <span className="fs-assign-name">{r.label}</span>
+                          <span className="fs-assign-meta">
+                            {on ? (
+                              <>
+                                <CheckIcon /> selected
+                              </>
+                            ) : (
+                              (at ?? 'Available')
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
+            )}
+
+            {candidates.length > 0 && (
+              <>
+                <span className="fs-cmd-eyebrow">On the org chart</span>
+                <ul className="fs-assign-list" aria-label="On the org chart">
+                  {candidates.map((r) => {
+                    const on = !typed && picked != null && sameResource(picked, r);
+                    return (
+                      <li key={`${r.ref}:${r.value}`}>
+                        <button
+                          type="button"
+                          className={`fs-assign-row${on ? ' is-on' : ''}`}
+                          aria-pressed={on}
+                          onClick={() => {
+                            setName('');
+                            setPicked(r);
+                          }}
+                        >
+                          <span className="fs-assign-name">{r.label}</span>
+                          <span className="fs-assign-meta">
+                            {on && (
+                              <>
+                                <CheckIcon /> selected
+                              </>
+                            )}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
 
             {memberCandidates.length > 0 && (

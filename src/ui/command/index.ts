@@ -6,3 +6,4 @@ export { useElapsed, formatElapsed } from './useElapsed';
 // Command-specific) — the Operations board's "Mine" lens (#370) opens the same
 // sheet rather than duplicating "declare my role" UI.
 export { MyRoleSheet } from './MyRoleSheet';
+export { IncidentChipStrip, SafetyOfficerChip, HazardChip } from './IncidentChips';

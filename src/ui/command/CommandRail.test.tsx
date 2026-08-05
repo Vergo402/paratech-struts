@@ -33,6 +33,7 @@ import { CommandRail } from './CommandRail';
 
 const PERSON = { ref: 'individual', value: 'BC Smith', label: 'BC Smith' } as const;
 const DEVICE = { ref: 'device', value: 'dev-2', label: 'Tablet 2' } as const;
+const RIG = { ref: 'apparatus', value: 'app-b1', label: 'Battalion 1' } as const;
 
 beforeEach(() => {
   mockEmit.mockReset().mockResolvedValue(undefined);
@@ -125,6 +126,31 @@ describe('CommandRail — 4-digit accept code (#425)', () => {
     render(<CommandRail />);
     expect(screen.getByText('You are being given command')).toBeInTheDocument();
     expect(screen.queryByLabelText('Accept code')).not.toBeInTheDocument();
+  });
+
+  // #489 — an APPARATUS target is coded exactly like a named individual (neither
+  // carries a uid), so BOTH sides of the handshake must work for a rig: the outgoing
+  // device has to display the code (else it can never be spoken and the transfer is
+  // dead) and keep the #401 hand-the-tablet accept.
+  it('an apparatus-targeted pending shows the code AND the hand-over accept on the initiating device', async () => {
+    pending = { initiatedBy: 'dev-1', toResource: RIG, at: 1, claimCode: '3810' };
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    expect(screen.getByText('3810')).toBeInTheDocument();
+    expect(screen.getByText(/give to Battalion 1/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Battalion 1: Accept command' }));
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+  });
+
+  it('an apparatus-targeted pending is coded, and the right code accepts', async () => {
+    pending = { initiatedBy: 'someone-else', toResource: RIG, at: 1, claimCode: '3810' };
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    expect(screen.queryByText('You are being given command')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Transfer pending → Battalion 1/ }));
+    await user.type(screen.getByLabelText('Accept code'), '3810');
+    await user.click(screen.getByRole('button', { name: 'Accept command' }));
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
   });
 
   it('"Not me — close" collapses the entry back to the quiet line', async () => {

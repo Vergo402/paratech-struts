@@ -39,6 +39,10 @@ vi.mock('@ui/hooks', () => ({
   // that need it available override via vi.mocked(useOrg/useMyRole).
   useOrg: () => ({}),
   useMyRole: () => null,
+  // IncidentChipStrip (#487/#490) reaches Safety Officer + open hazards through the
+  // seam. No hazards by default — the Hazard chip stays hidden; Safety renders
+  // "Unassigned" against the empty useOrg() above.
+  useHazards: () => ({}),
   useChecklists: () => ({ attestations: {}, check: vi.fn(), uncheck: vi.fn() }),
   useChecklistTemplate: () => ({ id: 'orm-tcrm', title: 'T', source: 'fieldshore-baseline', autoCollapseCompleted: false, nodes: [] }),
   useBriefing: () => ({ active: null, begin: vi.fn(), end: vi.fn() }),

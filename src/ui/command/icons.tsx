@@ -95,6 +95,22 @@ export function CheckIcon() {
   );
 }
 
+/** Safety Officer chip glyph (#487) — a shield outline, matches the 20×20/
+ *  currentColor/aria-hidden idiom of the rest of this file. */
+export function ShieldIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M10 2.5L16.5 5V9.5C16.5 13.6 13.9 16.7 10 17.5C6.1 16.7 3.5 13.6 3.5 9.5V5L10 2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 /** Org-chart entry-row glyph — a three-node tree. */
 export function OrgGlyphIcon() {
   return (

@@ -5,6 +5,7 @@ import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity, severityWord } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, StatStrip, TextField, useIsDesktop } from '@ui/primitives';
 import { AlertIcon, ChevronRightIcon, FlagIcon, OrgGlyphIcon, PendingClockIcon } from './icons';
+import { HazardChip } from './IncidentChips';
 import {
   useOperation,
   useShorePoints,
@@ -163,6 +164,13 @@ export function CommandRail({
             : []),
         ]}
       />
+
+      {/* Hazard chip (#490) — quiet danger-tinted summary ABOVE the command-staff
+          card, so "is anything hazardous open" reads before who's assigned. Hidden
+          entirely at zero open hazards (component-internal). Command carries the
+          top hazard's location too — the entry row below already repeats it, but a
+          glance at the top of the rail shouldn't require scrolling to it. */}
+      <HazardChip onPress={onOpenHazards} showLocation />
 
       {/* Command staff — one card, three hairline rows (was three separate cards of
           identical weight). The IC row keeps the gold underline — the single Command IC gold
