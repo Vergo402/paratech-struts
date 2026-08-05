@@ -39,9 +39,9 @@ export function ICS201Brief() {
   );
 
   return (
-    <section className="fs-201" aria-label="ICS-201 briefing">
+    <section className="fs-201" aria-label="Command brief (ICS-201 condensed)">
       <div className="fs-201-head">
-        <span className="fs-201-eyebrow">ICS-201 briefing · live</span>
+        <span className="fs-201-eyebrow">Command brief (ICS-201 condensed) · live</span>
       </div>
       <div className="fs-201-grid">
         {datum('Incident', operation.name)}

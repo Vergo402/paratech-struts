@@ -62,10 +62,19 @@ These extensions attach to the solid shaft end of any AcmeThread or LockStroke s
 | LS 304 | 22-796720 | 36" | 50" | 14" |
 | LS 406 | 22-796730 | 48" | 73" | 25" |
 | LS 610 | 22-796360 | 72" | 116" | 44" |
-| LS 812 | `[TBD]` | 92" | 147" | 55" |
 | LS 1016 | 22-796390 | 114" | 198" | 84" |
 
 > **Model naming:** The numbers (e.g. "610") represent the approximate range in feet (6-10 ft).
+
+> **LS 812 (92"–147") is NOT a stocked size — do not re-add it to this table.**
+> An older brochure/part-number trail (22-796370, 53 lb) and a Fire Apparatus
+> Magazine article list a sixth 92–147" LongShore. Paratech's **live website** and
+> **Product Catalog v.19** both list the line as exactly the five sizes above, and
+> those current sources outrank the older ones. v3 removed LS 812 in **v3.22.3**
+> (2026-07-03); v4 followed on **2026-07-28** (Phase J gate #256/#260). Carrying it
+> let the strut finder recommend equipment no rig stocks. A department that does own
+> one tracks it as external equipment. Pinned absent by `src/core/load/struts.test.ts`;
+> full reasoning in the header comment of `src/core/load/struts.ts`.
 
 ### LongShore Extensions
 
@@ -214,7 +223,10 @@ The following values could not be confirmed from online sources and should be ve
 
 - [ ] AcmeThread exact part numbers (22-7962xx pattern assumed)
 - [ ] LongShore extension exact part numbers
-- [ ] LongShore LS 812 part number
+- [x] ~~LongShore LS 812 part number~~ — **closed 2026-07-28: LS 812 is not a current
+  size.** Resolved against the live Paratech site + Product Catalog v.19 (five sizes),
+  which outrank the older brochure/magazine trail. Removed from the catalog in both
+  apps; do not reopen this line item on the strength of the 22-796370 part number.
 - [ ] LockStroke load capacity table (assumed same as AcmeThread — verify)
 - [ ] HydraFusion collapsed/extended lengths (only stroke confirmed)
 - [ ] Whether load tables apply to strut+extension combos the same as bare struts
@@ -229,7 +241,7 @@ The following values could not be confirmed from online sources and should be ve
 - [Air One Equipment — Paratech Shoring](https://www.aoe.net/product/paratech-structural-shoring/) — load capacity tables, part numbers
 - [Feldfire — AcmeThread Strut](https://www.feldfire.com/Paratech-Acmethread-Strut_p_10559.html) — AcmeThread sizes and weights
 - [Feldfire — LongShore Extensions](https://www.feldfire.com/Paratech-Longshore-Struts-Extension_p_10563.html) — extension weights
-- [Feldfire — LongShore 812](https://www.feldfire.com/Paratech-Longshore-Strut-812_p_10397.html) — LS 812 weight
+- ~~[Feldfire — LongShore 812](https://www.feldfire.com/Paratech-Longshore-Strut-812_p_10397.html)~~ — **superseded** (see the LS 812 note under LongShore Struts); a dealer listing for a discontinued size, outranked by the live Paratech lineup + Catalog v.19
 - [Fire Apparatus Magazine — Strut Systems](https://www.fireapparatusmagazine.com/magazine/strut-systems-versatility-enhances-technical-rescue-equipment-caches/) — color coding, model ranges
 - [Curtis — HydraFusion Kit](https://lncurtis.com/paratech-hydrafusion-strut-kit/) — HydraFusion specs
 - [ManualsLib — HydraFusion Manual](https://www.manualslib.com/manual/3423985/Paratech-22-79ha04k.html) — HFS stroke/weight specs

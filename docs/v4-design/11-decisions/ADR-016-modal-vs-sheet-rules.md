@@ -63,3 +63,7 @@
 ## Notes
 
 The application table (one row per screen) lives in [`00-ia-foundation.md`](../08-information-architecture/00-ia-foundation.md) §Modal-vs-sheet rules and is the live artifact; this ADR is its rationale.
+
+### Known blessed deviations
+
+- **Assign Equipment (#346) — MODAL, not a sheet.** By this ADR's boundary, Assign Equipment is a non-destructive choose/review flow and would default to a sheet. Alex's explicit call (2026-06-19): the bottom sheet read poorly on the wider command-post surface, so it renders as a center-anchored `Modal` (`variant="form"`) instead. Recorded in the component doc-comment (`src/ui/operations/AssignEquipmentSheet.tsx`) and the design docket. Treat this as the one named exception to the table, not a precedent for re-litigating other rows.
