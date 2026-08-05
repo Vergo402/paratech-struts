@@ -226,19 +226,69 @@ describe('AddShorePointModal — create', () => {
     expect(screen.getByText(/whole number of 1 or more/)).toBeInTheDocument();
   });
 
-  it('selecting 3-Post auto-fills 6×6 wood; switching back never resets (v3.9.1)', async () => {
-    const user = userEvent.setup();
-    render(<AddShorePointModal open onClose={() => {}} />);
-    const shoreType = screen.getByRole('radiogroup', { name: 'Shore type' });
-    const headerGroup = () => screen.getByRole('radiogroup', { name: 'Header wood' });
+  // SME-2 (Phase J gate #260). v3.9.1 doctrine: ONLY 3-Post auto-fills its wood
+  // (6×6, USACE/FEMA spec). T-Shore / Double-T can be built 4×4 or 6×6 by load and
+  // span, so their wood must be an EXPLICIT operator choice — not "whatever 3-Post
+  // happened to leave behind." These three cases pin the invariant symmetrically:
+  // the auto-fill retracts on the way out, but never over an operator's own pick.
+  // (Replaces a single test that pinned the old leaky behavior — it asserted the
+  // 6×6 SURVIVED the switch to T-Shore, which is the deviation itself.)
+  describe('SME-2 — 3-Post wood auto-fill is symmetric and never clobbers a choice', () => {
+    /** #349: the deduction pickers start collapsed in the modal — open to reach them. */
+    async function openForm() {
+      const user = userEvent.setup();
+      render(<AddShorePointModal open onClose={() => {}} />);
+      await user.click(screen.getByRole('button', { name: /Deductions/ }));
+      return {
+        user,
+        shoreType: () => screen.getByRole('radiogroup', { name: 'Shore type' }),
+        header: () => screen.getByRole('radiogroup', { name: 'Header wood' }),
+        footer: () => screen.getByRole('radiogroup', { name: 'Footer wood' }),
+      };
+    }
+    const checked = (group: HTMLElement, name: string) =>
+      within(group).getByRole('radio', { name }).getAttribute('aria-checked');
 
-    // #349: the deduction pickers start collapsed in the modal — open to reach Header wood.
-    await user.click(screen.getByRole('button', { name: /Deductions/ }));
-    expect(within(headerGroup()).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true');
-    await user.click(within(shoreType).getByRole('radio', { name: '3-Post' }));
-    expect(within(headerGroup()).getByRole('radio', { name: '6×6' })).toHaveAttribute('aria-checked', 'true');
-    await user.click(within(shoreType).getByRole('radio', { name: 'T-Shore' }));
-    expect(within(headerGroup()).getByRole('radio', { name: '6×6' })).toHaveAttribute('aria-checked', 'true');
+    it('3-Post seeds 6×6/6×6, and leaving 3-Post RETRACTS it back to None', async () => {
+      const f = await openForm();
+      expect(checked(f.header(), 'None')).toBe('true');
+
+      await f.user.click(within(f.shoreType()).getByRole('radio', { name: '3-Post' }));
+      expect(checked(f.header(), '6×6')).toBe('true');
+      expect(checked(f.footer(), '6×6')).toBe('true');
+
+      // The fix: a T-Shore must not inherit a 6×6 the operator never chose for it.
+      await f.user.click(within(f.shoreType()).getByRole('radio', { name: 'T-Shore' }));
+      expect(checked(f.header(), 'None')).toBe('true');
+      expect(checked(f.footer(), 'None')).toBe('true');
+    });
+
+    it('an operator wood pick made on 3-Post SURVIVES the switch away — never clobbered', async () => {
+      const f = await openForm();
+      await f.user.click(within(f.shoreType()).getByRole('radio', { name: '3-Post' }));
+      // Operator overrides the seeded header to 4×4 — an explicit choice.
+      await f.user.click(within(f.header()).getByRole('radio', { name: '4×4' }));
+      expect(checked(f.header(), '4×4')).toBe('true');
+
+      await f.user.click(within(f.shoreType()).getByRole('radio', { name: 'T-Shore' }));
+      // Both woods carry forward untouched: the pair no longer matches the seed, so
+      // the retraction correctly stands down rather than wiping a deliberate choice.
+      expect(checked(f.header(), '4×4')).toBe('true');
+      expect(checked(f.footer(), '6×6')).toBe('true');
+    });
+
+    it('a deliberate 6×6 on a T-Shore survives T-Shore → Double-T (the `prev` gate)', async () => {
+      const f = await openForm();
+      // Never touches 3-Post: the operator picks 6×6 on a T-Shore themselves.
+      await f.user.click(within(f.header()).getByRole('radio', { name: '6×6' }));
+      await f.user.click(within(f.footer()).getByRole('radio', { name: '6×6' }));
+
+      await f.user.click(within(f.shoreType()).getByRole('radio', { name: 'Double-T' }));
+      // Value-equal to the 3-Post seed, but we're not LEAVING 3-Post — retraction
+      // must not fire, or a non-3-Post switch would eat the operator's own 6×6.
+      expect(checked(f.header(), '6×6')).toBe('true');
+      expect(checked(f.footer(), '6×6')).toBe('true');
+    });
   });
 
   it('Building shows only on a multi-building op, and is required there', async () => {
@@ -439,9 +489,13 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     expect(screen.queryByRole('button', { name: 'Save as Pending' })).toBeNull();
   });
 
-  it('offers a Group picker built from on-scene apparatus', () => {
+  // #259/ADR-008: the field is labelled "Assigned", NOT "Group" — it holds an
+  // apparatus assignment (`assignedResource`), and in NIMS a Group is a functional
+  // command unit, not a resource. The old "Group" label was the v3.5.0 misnomer.
+  it('offers an Assigned picker built from on-scene apparatus', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
-    expect(screen.getByText('Group')).toBeInTheDocument();
+    expect(screen.getByText('Assigned')).toBeInTheDocument();
+    expect(screen.queryByText('Group')).toBeNull();
   });
 
   it('Find reveals recommendations; Deploy creates the point AND deploys the strut', async () => {

@@ -20,20 +20,25 @@ describe('strut system key (rec card + shore-point number tab)', () => {
 });
 
 describe('LongShore (gold) catalog matches the Paratech brochure', () => {
-  it('lists all six published models with their collapsed–extended ranges', () => {
+  it('lists all five published models with their collapsed–extended ranges', () => {
     const gold = STRUTS.filter((s) => s.system === 'LongShore').map((s) => `${s.model} ${s.collapsed}-${s.extended}`);
     expect(gold).toEqual([
       'LS 203 26-36',
       'LS 304 36-50',
       'LS 406 48-73',
       'LS 610 72-116',
-      'LS 812 92-147',
       'LS 1016 114-198',
     ]);
   });
 
-  it('includes LS 812 (92-147", part 22-796370) — a real size some Paratech sources omit', () => {
-    expect(STRUTS.some((s) => s.model === 'LS 812')).toBe(true);
+  // Guard, not a formality: LS 812 was carried by v4 until 2026-07-28 on the strength
+  // of an older brochure part number (22-796370). Paratech's live site + Product
+  // Catalog v.19 list exactly five LongShore sizes, so v4 now matches v3.22.3. This
+  // assertion exists so a future reader re-finding the brochure fails the suite
+  // instead of silently restoring a strut no rig stocks. See struts.ts header.
+  it('excludes LS 812 — removed 2026-07-28 to match v3.22.3 (catalog v.19 + live site)', () => {
+    expect(STRUTS.some((s) => s.model === 'LS 812')).toBe(false);
+    expect(STRUTS.some((s) => s.id === 'ls-812')).toBe(false);
   });
 });
 

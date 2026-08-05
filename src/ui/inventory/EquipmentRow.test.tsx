@@ -50,4 +50,21 @@ describe('EquipmentRow', () => {
     screen.getByLabelText('Increase LS 203 quantity').click();
     expect(onIncrement).toHaveBeenCalledWith('a');
   });
+
+  // A rig stocked before LS 812 left the catalog (2026-07-28) still has that row in
+  // Dexie/RTDB. The row must keep rendering its model and count — a catalog removal
+  // may not blank out real stock a department is holding. Only the collapsed–extended
+  // sub-line (a catalog lookup) drops.
+  it('renders an item whose model is no longer in the catalog, minus the range sub-line', () => {
+    render(
+      <EquipmentRow
+        item={strut({ model: 'LS 812', quantity: 2, available: 2 })}
+        onIncrement={() => {}}
+        onDecrement={() => {}}
+      />,
+    );
+    expect(screen.getByText('LS 812')).toBeInTheDocument();
+    expect(screen.queryByText(/″–/)).toBeNull();
+    expect(screen.getByLabelText('Increase LS 812 quantity')).toBeEnabled();
+  });
 });

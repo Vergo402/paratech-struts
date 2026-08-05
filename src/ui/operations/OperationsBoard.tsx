@@ -1353,6 +1353,12 @@ export function OperationsBoard() {
           saws={operation?.saws}
           onAddSaw={addSaw}
           onClaim={claimCut}
+          // The honest deployed-count verdict (H1/#415) — the station can't compute
+          // it (it only sees the cutting queue), so the board hands its own down.
+          capacityFlagOf={capacityFlagOf}
+          // …and the denominator behind it, so the station HERO can spell out the
+          // context ("1 of 3 struts standing") instead of a bare verdict word (SME-1).
+          deployedCountOf={(sp) => deployedStrutCount(sp, shorePoints)}
         />
       ) : (
         <>

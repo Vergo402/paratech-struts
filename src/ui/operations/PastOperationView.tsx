@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { STATUS_ORDER, STATUS_LABELS } from '@core/shorepoint';
+import { useMemo, useState } from 'react';
+import type { ShorePoint } from '@core/schema';
+import { STATUS_ORDER, STATUS_LABELS, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
 import { newId } from '@core/id';
 import { Badge, Button, EmptyState, Modal, SideDrawer } from '@ui/primitives';
 import { useArchivedOperation, useCommit, useDeviceUid } from '@ui/hooks';
@@ -34,6 +35,22 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
   const operation = data?.operation ?? null;
   const points = (data?.shorePoints ?? []).filter((sp) => sp.deletedAt == null);
   const detailSp = detailSpId ? (points.find((sp) => sp.id === detailSpId) ?? null) : null;
+
+  // The same over-capacity / unrated verdict the live board computes (OperationsBoard's
+  // capacityFlagOf), against THIS archived op's own snapshot — the load share divides
+  // by the struts that were actually standing when the incident closed, not the planned
+  // groupTotal (H1/#415, SME-1). An incident archived mid-deploy (1 of a planned 3)
+  // would otherwise be permanently recorded as clean.
+  const capacityFlagOf = useMemo(() => {
+    const flags = new Map<string, ReturnType<typeof deployedCapacityFlag>>();
+    for (const sp of points) {
+      if (sp.deployedBom == null) continue;
+      flags.set(sp.id, deployedCapacityFlag(sp, deployedStrutCount(sp, points)));
+    }
+    return (sp: ShorePoint) => flags.get(sp.id) ?? null;
+    // points is re-derived from `data` each render; key the memo on the source.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const reopen = async () => {
     setReopening(true);
@@ -83,7 +100,12 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
             <div className="fs-lane-cards" role="list">
               {laneItems.map((sp) => (
                 <div key={sp.id} role="listitem">
-                  <ShorePointCard shorePoint={sp} readOnly onOpenDetail={(s) => setDetailSpId(s.id)} />
+                  <ShorePointCard
+                    shorePoint={sp}
+                    readOnly
+                    capacityFlag={capacityFlagOf(sp)}
+                    onOpenDetail={(s) => setDetailSpId(s.id)}
+                  />
                 </div>
               ))}
             </div>
@@ -110,7 +132,10 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         onClose={() => setDetailSpId(null)}
         title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
       >
-        {detailSp && <ShorePointDetail sp={detailSp} />}
+        {/* Same honest denominator in the Quick View verdict as on the cards — the
+            board threads this at OperationsBoard:1555/1583 and the archive must too,
+            or the drawer falls back to the planned groupTotal (SME-1). */}
+        {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, points)} />}
       </SideDrawer>
       </div>
 

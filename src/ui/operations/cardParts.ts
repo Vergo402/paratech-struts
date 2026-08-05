@@ -65,6 +65,13 @@ export function cardLabelType(sp: ShorePoint): string {
 // lumber + wedge, no plates; #361); pre-cut it is the effective strut length.
 const CUT_PHASES = new Set<ShorePointStatus>(['cutting', 'runner', 'secured', 'returned']);
 
+/** True where the value shelf prints a CUT length (so a cut-length warning belongs).
+ *  Exported so the card gates its too-small chip on the SAME set that decides which
+ *  number the shelf shows — the chip can never explain a number that isn't there. */
+export function isCutPhase(sp: Pick<ShorePoint, 'status'>): boolean {
+  return CUT_PHASES.has(sp.status);
+}
+
 /**
  * The value-shelf length in eighths — cut length once cutting, else the effective
  * (post-deduction) strut length. ONE helper so the Board card, List row, and Division

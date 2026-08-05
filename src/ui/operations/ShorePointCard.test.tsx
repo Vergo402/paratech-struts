@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
+import { deployedCapacityFlag } from '@core/shorepoint';
 import { ShorePointCard } from './ShorePointCard';
 import type { ShorePoint } from '@core/schema';
 
@@ -558,6 +559,12 @@ describe('ShorePointCard — created-order number tab (#318)', () => {
 
 // The persistent unrated / over-capacity flag on a DEPLOYED card (2026-07-02 audit
 // #7, v3 parity) — its own line below the header, never on the status-badge row.
+//
+// SME-1 (Phase J gate #260): the card no longer computes this itself. The verdict is
+// always threaded in by the caller, because only the caller can see the whole group
+// and divide the load by the struts ACTUALLY standing (H1/#415). These tests compute
+// the value the way every real caller does — the REAL engine via `deployedCapacityFlag`,
+// nothing mocked — so they'd catch a wrong denominator, not just a missing chip.
 describe('ShorePointCard — persistent capacity flag', () => {
   const ls406 = (over: Partial<ShorePoint> = {}) =>
     makeSP({
@@ -566,9 +573,12 @@ describe('ShorePointCard — persistent capacity flag', () => {
       deployedBom: [{ role: 'strut', model: 'LS 406', system: 'LongShore', source: 'Eng 1', inventoryId: 'inv-1' }],
       ...over,
     });
+  /** What the board/station/archive hand down: the real verdict at N standing struts. */
+  const flagFor = (sp: ShorePoint, deployedCount = 1) => deployedCapacityFlag(sp, deployedCount);
 
   it('shows "⚠ Over capacity" on a deployed shore whose strut share exceeds its rating', () => {
-    render(<ShorePointCard shorePoint={ls406({ estimatedLoad: 34000 })} />);
+    const sp = ls406({ estimatedLoad: 34000 });
+    render(<ShorePointCard shorePoint={sp} capacityFlag={flagFor(sp)} />);
     const flag = document.querySelector('.fs-spc-flag');
     expect(flag).toBeInTheDocument();
     expect(flag!.textContent).toContain('Over capacity');
@@ -578,25 +588,37 @@ describe('ShorePointCard — persistent capacity flag', () => {
   });
 
   it('shows "⚠ Unrated" on a LongShore shore beyond the published chart', () => {
-    render(
-      <ShorePointCard
-        shorePoint={ls406({
-          measurementEighths: 195 * 8,
-          deployedBom: [{ role: 'strut', model: 'LS 1016', system: 'LongShore', source: 'Eng 1', inventoryId: 'inv-1' }],
-        })}
-      />,
-    );
+    const sp = ls406({
+      measurementEighths: 195 * 8,
+      deployedBom: [{ role: 'strut', model: 'LS 1016', system: 'LongShore', source: 'Eng 1', inventoryId: 'inv-1' }],
+    });
+    render(<ShorePointCard shorePoint={sp} capacityFlag={flagFor(sp)} />);
     const flag = document.querySelector('.fs-spc-flag');
     expect(flag!.textContent).toContain('Unrated');
     expect(flag).toHaveClass('fs-spc-flag--unrated');
   });
 
   it('shows NO flag on a clean deployed shore or a load-less one', () => {
-    const { rerender } = render(<ShorePointCard shorePoint={ls406({ estimatedLoad: 5000 })} />);
+    const clean = ls406({ estimatedLoad: 5000 });
+    const { rerender } = render(<ShorePointCard shorePoint={clean} capacityFlag={flagFor(clean)} />);
     expect(document.querySelector('.fs-spc-flag')).toBeNull();
-    rerender(<ShorePointCard shorePoint={ls406()} />); // no load recorded
+    const loadless = ls406(); // no load recorded
+    rerender(<ShorePointCard shorePoint={loadless} capacityFlag={flagFor(loadless)} />);
     expect(document.querySelector('.fs-spc-flag')).toBeNull();
-    rerender(<ShorePointCard shorePoint={makeSP()} />); // pending, no strut
+    const pending = makeSP(); // pending, no strut
+    rerender(<ShorePointCard shorePoint={pending} capacityFlag={flagFor(pending)} />);
+    expect(document.querySelector('.fs-spc-flag')).toBeNull();
+  });
+
+  // SME-1 regression guard. The deleted fallback called `deployedCapacityFlag(sp)`
+  // with no count, which divides by the PLANNED groupTotal — the exact false-SAFE
+  // #415 closed. A card with nothing threaded must now show nothing: silent-absent
+  // is honest, silent-SAFE is not. (If a surface regresses to omitting the prop, the
+  // flag disappears loudly rather than quietly reading clean.)
+  it('with NO flag threaded, renders no chip at all — never a planned-denominator guess', () => {
+    const sp = ls406({ estimatedLoad: 34000 }); // genuinely over capacity at 1 strut
+    expect(flagFor(sp)).toBe('over-capacity'); // …and the engine says so
+    render(<ShorePointCard shorePoint={sp} />); // but nothing was handed down
     expect(document.querySelector('.fs-spc-flag')).toBeNull();
   });
 });
@@ -642,5 +664,56 @@ describe('W3wChip — the radio-callout location row (#441)', () => {
       <ShorePointCard shorePoint={makeSP({ status: 'returned', w3w: 'kept.words.here' })} onCaptureLocation={vi.fn()} />,
     );
     expect(screen.getByRole('button', { name: 'Copy location ///kept.words.here' })).toBeInTheDocument();
+  });
+
+  // SME-3 (Phase J gate #260) — the shelf's cut length floored to 0″ because the
+  // opening can't take the shore-type header + footer + wedge. A bare "0″ cut" reads
+  // like a measured value; the chip says it is an impossibility. Real reducer math
+  // (cutTooSmall → cutLengthInches), nothing stubbed. 3-Post break-even = 12.5″
+  // (2 × 6×6 + 1½″ wedge).
+  describe('SME-3 — the too-small cut-length chip', () => {
+    const CHIP = 'Opening too small — verify measurement';
+    const tooSmall3Post = (over: Partial<ShorePoint> = {}) =>
+      makeSP({ shoreType: '3-post', measurementEighths: 96, status: 'cutting', ...over }); // 12″
+
+    it('appears on a cutting card whose raw cut went below zero', () => {
+      render(<ShorePointCard shorePoint={tooSmall3Post()} />);
+      const chip = screen.getByText(new RegExp(CHIP));
+      expect(chip).toHaveAttribute('role', 'status');
+      // Amber warning variant, NOT the red danger capacity chip — a different order
+      // of alarm (the measurement is unusable; the shore is not declared unsafe).
+      expect(chip).toHaveClass('fs-spc-flag--warning');
+    });
+
+    it('appears at the exact break-even (0″ cut is as unactionable as a negative)', () => {
+      render(<ShorePointCard shorePoint={tooSmall3Post({ measurementEighths: 100 })} />); // 12.5″
+      expect(screen.getByText(new RegExp(CHIP))).toBeInTheDocument();
+    });
+
+    it('is absent one eighth above break-even — the boundary is not off by one', () => {
+      render(<ShorePointCard shorePoint={tooSmall3Post({ measurementEighths: 101 })} />); // 12.625″
+      expect(screen.queryByText(new RegExp(CHIP))).toBeNull();
+    });
+
+    it('rides every cut-length phase (cutting / runner / secured / returned)', () => {
+      for (const status of ['cutting', 'runner', 'secured', 'returned'] as const) {
+        const { unmount } = render(<ShorePointCard shorePoint={tooSmall3Post({ status })} />);
+        expect(screen.getByText(new RegExp(CHIP))).toBeInTheDocument();
+        unmount();
+      }
+    });
+
+    it('is absent BEFORE cutting even at the same tiny opening — the shelf is showing the effective strut length there, and a cut-length warning would explain a number that is not on screen', () => {
+      for (const status of ['pending', 'process', 'strutset'] as const) {
+        const { unmount } = render(<ShorePointCard shorePoint={tooSmall3Post({ status })} />);
+        expect(screen.queryByText(new RegExp(CHIP))).toBeNull();
+        unmount();
+      }
+    });
+
+    it('a normal cutting card is untouched — no chip at all', () => {
+      render(<ShorePointCard shorePoint={makeSP({ status: 'cutting' })} />); // T-Shore 48.5″
+      expect(screen.queryByText(/Opening too small/)).toBeNull();
+    });
   });
 });

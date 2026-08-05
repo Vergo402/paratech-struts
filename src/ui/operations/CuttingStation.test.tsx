@@ -233,4 +233,59 @@ describe('CuttingStation', () => {
     // Read-only: no slide controls on the tail card.
     expect(within(tail).queryByText(/Slide/)).not.toBeInTheDocument();
   });
+
+  // SME-3 (Phase J gate #260) — the hero's promoted number is now clamped at 0 in
+  // `cutLengthInches`, so the station must SAY why instead of printing a bare 0″ the
+  // saw operator can't act on. Real reducer math throughout; nothing stubbed.
+  describe('SME-3 — opening too small for the shore-type wood', () => {
+    const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+    const TOO_SMALL = /Opening too small for standard 6×6 wood — verify measurement/;
+
+    function renderQueue(sp: ShorePoint) {
+      render(
+        <CuttingStation
+          queue={[sp]}
+          sent={[]}
+          onMarkCutDone={noop}
+          onClearCutDone={noop}
+          onSendToRunner={noop}
+          onStepBack={noop}
+        />,
+      );
+    }
+
+    it('warns (and shows 0″, never a negative) when the raw cut goes below zero', () => {
+      // 3-Post, 12″ opening: 12 − 2×5.5 − 1.5 = −0.5 raw → clamped to 0.
+      renderQueue(makeSP('a', { shoreType: '3-post', measurementEighths: 96 }));
+      expect(within(hero()).getByText(TOO_SMALL)).toBeInTheDocument();
+      // The clamp holds at the display layer too: the ONE promoted number reads a
+      // plain 0″, never the "−1/2″" MeasurementValue would happily render.
+      // (Scoped to the numeral — the math line below it legitimately shows minuses.)
+      expect(hero().querySelector('.fs-cutstation-hero-num')).toHaveTextContent(/^0″$/);
+    });
+
+    it('warns at the exact 12.5″ break-even — a 0″ cut is as unactionable as a negative', () => {
+      renderQueue(makeSP('b', { shoreType: '3-post', measurementEighths: 100 }));
+      expect(within(hero()).getByText(TOO_SMALL)).toBeInTheDocument();
+    });
+
+    it('does NOT warn one eighth above break-even — the boundary is not off by one', () => {
+      // 12.625 − 12.5 = 0.125: a real, if tiny, cut.
+      renderQueue(makeSP('c', { shoreType: '3-post', measurementEighths: 101 }));
+      expect(within(hero()).queryByText(TOO_SMALL)).toBeNull();
+    });
+
+    it('a normal cut carries no warning', () => {
+      renderQueue(makeSP('d')); // T-Shore at 48.5″ — the file default
+      expect(screen.queryByText(/Opening too small/)).toBeNull();
+    });
+
+    it('a clean hero with no verdict threaded carries NO chip row at all (SME-1 pixel-identity)', () => {
+      // The hero gained a capacity chip above the too-small one; both are absent on a
+      // healthy cut, so a clean hero renders exactly what it rendered before either
+      // shipped. Counting rows (not matching text) is what makes this a real pin.
+      renderQueue(makeSP('e'));
+      expect(hero().querySelectorAll('.fs-spc-flag-row')).toHaveLength(0);
+    });
+  });
 });

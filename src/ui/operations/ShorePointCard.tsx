@@ -3,12 +3,12 @@ import type { ShorePoint } from '@core/schema';
 import { strutSysKey } from '@core/load';
 import {
   bomModelLabel,
-  deployedCapacityFlag,
+  cutTooSmall,
   deployedStrutOf,
   pendingNeedModels,
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
-import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths } from './cardParts';
+import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths, isCutPhase } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 
 // Short display labels live in cardParts (shared by all three views); re-exported
@@ -180,8 +180,9 @@ export interface ShorePointCardProps {
   /**
    * The over-capacity / unrated flag, computed by the board where the full group is
    * known (deployedCapacityFlag + deployedStrutCount, H1/#415), so the card, List row,
-   * and Division tile show the SAME flag (H2/#416). Omit → the card computes a
-   * planned-denominator fallback (Cutting Station / archive don't thread it).
+   * Division tile, Cutting Station and archive all show the SAME flag (H2/#416).
+   * Omit → NO flag. There is deliberately no local fallback: computing one here can
+   * only divide by the planned groupTotal, which is the #415 false-SAFE (SME-1).
    */
   capacityFlag?: CapacityFlagValue;
   /**
@@ -249,14 +250,16 @@ export function ShorePointCard({
   const deployedStrut = deployedStrutOf(sp);
 
   // Persistent at-a-glance safety flag on a DEPLOYED card (2026-07-02 audit #7, v3
-  // parity): 'unrated' / 'over-capacity'. The board passes the VALUE (computed against
-  // the struts actually standing — H1/#415 — so a short-of-plan group flags), and the
-  // List/Division tiles get the SAME one (H2/#416). Fallback compute for surfaces that
-  // don't thread it (Cutting Station, archive) — never worse than the prior behavior.
-  const capacityFlag = useMemo(
-    () => (capacityFlagProp !== undefined ? capacityFlagProp : deployedCapacityFlag(sp)),
-    [capacityFlagProp, sp],
-  );
+  // parity): 'unrated' / 'over-capacity'. The CALLER computes it, because only the
+  // caller can see the whole group and divide the load by the struts ACTUALLY
+  // STANDING (H1/#415) — Board, List, Division, Cutting Station and the archive all
+  // thread it, so a point flags identically wherever it shows (H2/#416).
+  //
+  // NO local fallback (SME-1, 2026-07-28). The old `deployedCapacityFlag(sp)` fallback
+  // divided by the PLANNED groupTotal, which is the exact false-SAFE #415 closed — a
+  // 1-of-3 partial deploy read clean. A card with no flag threaded now shows no flag
+  // at all: silent-absent is honest, silent-SAFE is not.
+  const capacityFlag = capacityFlagProp ?? null;
 
   // Created-order number tab (top-left): a ghost outline while no strut is
   // assigned, then FILLS with the deployed strut's SYSTEM color (gold/grey/
@@ -337,6 +340,24 @@ export function ShorePointCard({
     </p>
   );
 
+  // SME-3 (Phase J gate #260): the shelf is printing a CUT length and that cut floored
+  // to 0″ — the opening can't take the shore-type header + footer + wedge, so there is
+  // nothing to cut. Without this the card reads a bare "0″ cut", which looks like a
+  // measured value rather than an impossibility. Gated on isCutPhase so the chip can
+  // never explain a number the shelf isn't showing; rides the CARD, so every surface
+  // that renders one (board lanes, grouped stack, Cutting Station lists, archive) gets
+  // it from this single point. Warning (amber) not danger (red): the shore isn't
+  // unsafe, the MEASUREMENT is unusable — a different order of alarm from the
+  // over-capacity chip above, which is red and may render alongside this one.
+  // role="status" (polite) matches the capacity chip: static content, not an interrupt.
+  const tooSmallChip = isCutPhase(sp) && cutTooSmall(sp) && (
+    <span className="fs-spc-flag-row">
+      <span className="fs-spc-flag fs-spc-flag--warning" role="status">
+        ⚠ Opening too small — verify measurement
+      </span>
+    </span>
+  );
+
   return (
     <Card
       className={`fs-spc ${statusClasses(sp)}${removed ? ' is-removed' : ''}${active ? ' is-active' : ''}`}
@@ -385,6 +406,8 @@ export function ShorePointCard({
       <CapacityFlag flag={capacityFlag} />
 
       {valueShelf}
+
+      {tooSmallChip}
 
       {/* #441 — radio-callout location row. Capture is only offered while the
           shore is still being worked — a terminal returned card stays action-free

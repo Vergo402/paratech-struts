@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
-import { CUT_LUMBER, cutLengthInches } from '@core/shorepoint';
+import { CUT_LUMBER, cutLengthInches, cutTooSmall } from '@core/shorepoint';
 import { Badge, Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
 import { usePeerCuts } from '@ui/hooks';
 import { ShorePointCard, SHORE_TYPE_LABELS, CuttingControls } from './ShorePointCard';
+import type { CapacityFlagValue } from './CapacityFlag';
 
 /**
  * CuttingStation — the cut-the-strut-to-length workstation (21-cutting-station.md,
@@ -47,6 +48,28 @@ export interface CuttingStationProps {
   /** Persist a saw's claim of a cut (CuttingClaimed). The station auto-claims the top
    *  unclaimed cut for each free saw; absent → no claiming (read-only demo). */
   onClaim?: (sp: ShorePoint, sawId: string) => void | Promise<void>;
+  /**
+   * The board's over-capacity / unrated verdict for a point (H1/#415, SME-1). It must
+   * come FROM the board: the honest load share divides by the struts actually standing
+   * across the whole group, and this station only sees the cutting queue + the sent
+   * tail — a group-mate still Pending or in Strut Set is invisible here, so a locally
+   * computed denominator would be wrong. Omit → the cards show no flag (never a
+   * planned-denominator guess, which is the false-SAFE #415 closed).
+   */
+  capacityFlagOf?: (sp: ShorePoint) => CapacityFlagValue;
+  /**
+   * How many struts of this point's group are ACTUALLY STANDING — the same
+   * `deployedStrutCount` denominator the flag above was computed against (SME-1). Used
+   * only to spell the deployed context into the HERO's chip ("1 of 3 struts standing"),
+   * so the cutter reads WHY the shore is over capacity, not merely that it is.
+   *
+   * Same rule as the flag, for the same reason: it must come FROM the board, the only
+   * surface that sees the whole group. Omit → the hero chip degrades to the bare flag
+   * word (exactly what the cards show). It NEVER falls back to the planned groupTotal —
+   * a guessed denominator is the #415 false-SAFE, and a wrong count printed under a
+   * safety flag is worse than no count.
+   */
+  deployedCountOf?: (sp: ShorePoint) => number;
 }
 
 /**
@@ -74,6 +97,26 @@ function cutEighths(sp: ShorePoint): number {
   return Math.round(cutLengthInches(sp) * 8);
 }
 
+/**
+ * The HERO's capacity-chip sentence (SME-1, mockup-approved 2026-07-28). The cards
+ * carry the two-word verdict ("Over capacity"); the hero has room for the WHY, so it
+ * appends the honest deployed context — "Over capacity — 1 of 3 struts standing" —
+ * which is the whole point of the finding: the cutter's own group is short of plan.
+ *
+ * `standing` is the board's deployedStrutCount, NEVER a local guess. Absent (or an
+ * ungrouped shore, where "1 of 1 strut standing" is noise, not information) → the bare
+ * verdict word, identical to the cards.
+ *
+ * Plural governs on the DENOMINATOR ("1 of 3 strutS standing"), and the clause only
+ * renders for a real group, so the denominator is always ≥ 2 and the noun is always
+ * plural — no singular branch exists to get wrong.
+ */
+function heroFlagText(flag: Exclude<CapacityFlagValue, null>, standing: number | null, planned: number | null): string {
+  const word = flag === 'unrated' ? 'Unrated length' : 'Over capacity';
+  if (standing == null || planned == null || planned < 2) return word;
+  return `${word} — ${standing} of ${planned} struts standing`;
+}
+
 export function CuttingStation({
   queue,
   sent,
@@ -84,6 +127,8 @@ export function CuttingStation({
   saws,
   onAddSaw,
   onClaim,
+  capacityFlagOf,
+  deployedCountOf,
 }: CuttingStationProps) {
   const isDesktop = useIsDesktop();
   const roster = rosterOf(saws);
@@ -134,7 +179,7 @@ export function CuttingStation({
 
   const removedCards = removed.map((sp) => (
     <div key={`removed-${sp.id}`} className="fs-cutstation-removed">
-      <ShorePointCard shorePoint={sp} removed />
+      <ShorePointCard shorePoint={sp} removed capacityFlag={capacityFlagOf?.(sp)} />
       <Button variant="secondary" onPress={() => dismiss(sp.id)}>
         Dismiss
       </Button>
@@ -149,7 +194,7 @@ export function CuttingStation({
       <div role="list">
         {sent.map((sp) => (
           <div key={sp.id} role="listitem">
-            <ShorePointCard shorePoint={sp} cuttingStation />
+            <ShorePointCard shorePoint={sp} cuttingStation capacityFlag={capacityFlagOf?.(sp)} />
           </div>
         ))}
       </div>
@@ -161,7 +206,12 @@ export function CuttingStation({
   /** A "cut this now" hero — the big cut-length number + subtitle + the SAME
    *  <CuttingControls> the card uses (never the whole card — that doubles the
    *  measurement). Badged with the saw name only when more than one saw runs. */
-  const hero = (sp: ShorePoint, sawId: string | null) => (
+  const hero = (sp: ShorePoint, sawId: string | null) => {
+    // SME-1: the finding's own scenario is a partially-deployed group with ONE leg at
+    // the saw, so the surface that leg is worked on must carry the same verdict the
+    // board card does — and here, with the deployed context spelled out.
+    const heroFlag = capacityFlagOf?.(sp) ?? null;
+    return (
     <div className="fs-cutstation-hero" data-sp-id={sp.id} data-saw={sawId ?? undefined}>
       <span className="fs-cutstation-hero-badge">
         {sawId && multiSaw ? `Saw ${sawId} · cut this now` : 'Cut this now'}
@@ -177,6 +227,31 @@ export function CuttingStation({
         Opening <MeasurementValue eighths={sp.measurementEighths} /> −{' '}
         {CUT_LUMBER[sp.shoreType].replace('x', '×')} header + footer − 1½″ wedge
       </p>
+      {/* SME-1: the board's deployed-count verdict, in the card's existing chip idiom
+          (fs-spc-flag / role="status"), directly under the promoted cut length. FIRST
+          of the two possible chips — a load verdict outranks a measurement-quality
+          one, and a point can carry both. Absent when the shore is clean, so a clean
+          hero is byte-for-byte what it was before this shipped. */}
+      {heroFlag && (
+        <span className="fs-spc-flag-row">
+          <span className={`fs-spc-flag fs-spc-flag--${heroFlag}`} role="status">
+            ⚠ {heroFlagText(heroFlag, deployedCountOf?.(sp) ?? null, sp.groupTotal ?? null)}
+          </span>
+        </span>
+      )}
+      {/* SME-3: the opening can't accommodate the shore-type header + footer + wedge,
+          so the promoted number floored to 0″. Reuses the card's existing capacity-flag
+          chip (fs-spc-flag, role="status" exactly as CapacityFlag renders it) — the
+          warning idiom this surface already speaks — rather than minting a second one.
+          role="status" not "alert": this renders statically with the hero, so a polite
+          announcement is correct; "alert" would interrupt on every mount. */}
+      {cutTooSmall(sp) && (
+        <span className="fs-spc-flag-row">
+          <span className="fs-spc-flag fs-spc-flag--over-capacity" role="status">
+            ⚠ Opening too small for standard {CUT_LUMBER[sp.shoreType].replace('x', '×')} wood — verify measurement
+          </span>
+        </span>
+      )}
       <p className="fs-cutstation-hero-where">{cutSubtitle(sp)}</p>
       {sp.cuttingDone && <p className="fs-cutstation-hero-cutdone">✓ Cut done</p>}
       <div className="fs-cutstation-hero-slide">
@@ -189,7 +264,8 @@ export function CuttingStation({
         />
       </div>
     </div>
-  );
+    );
+  };
 
   /** An idle-saw hero placeholder — the saw is free but the queue has no unclaimed
    *  cut left for it. Keeps the per-saw column present so the roster reads true. */

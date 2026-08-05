@@ -1,13 +1,15 @@
 import type { System } from '../schema';
 
 // Strut models + extension compatibility. Ported VERBATIM from v3 app.js (lines 4-39).
-// Note: LS 812 (92-147", Paratech part 22-796370, 53 lb) is a REAL LongShore size —
-// listed with a part number + net weight in the Paratech brochure. Some Paratech
-// sources (the v.19 catalog summary, the current website lineup) omit it and call the
-// line "5 sizes", but a part number proves existence while an omission doesn't disprove
-// it — so it stays in the catalog. A department that owns an 812 needs it here;
-// inventory gating decides who actually stocks one. (Briefly removed 2026-06-14 on an
-// incomplete sheet; restored once the brochure surfaced the part number.)
+// LS 812 (92-147") is DELIBERATELY ABSENT — do not re-add it from the brochure.
+// Removed 2026-07-28 (Phase J gate #256 parity re-adjudication) to match v3.22.3
+// (origin/main 1ca2933): Paratech's LIVE website and Product Catalog v.19 both list
+// the LongShore line as exactly five sizes — LS 203 / 304 / 406 / 610 / 1016. v4 had
+// kept an 812 on the strength of an older brochure part number (22-796370, 53 lb);
+// that evidence is now judged OUTRANKED by the current catalog + live lineup, which
+// v4's earlier decision (2026-06-14) never checked. Carrying a size nobody stocks let
+// the strut finder recommend equipment that isn't on any rig. A department that does
+// own an 812 tracks it as external equipment. Pinned absent by struts.test.ts.
 
 export interface Strut {
   id: string;
@@ -30,7 +32,6 @@ export const STRUTS: readonly Strut[] = [
   { id: 'ls-304', model: 'LS 304', system: 'LongShore', color: 'gold', collapsed: 36, extended: 50 },
   { id: 'ls-406', model: 'LS 406', system: 'LongShore', color: 'gold', collapsed: 48, extended: 73 },
   { id: 'ls-610', model: 'LS 610', system: 'LongShore', color: 'gold', collapsed: 72, extended: 116 },
-  { id: 'ls-812', model: 'LS 812', system: 'LongShore', color: 'gold', collapsed: 92, extended: 147 },
   { id: 'ls-1016', model: 'LS 1016', system: 'LongShore', color: 'gold', collapsed: 114, extended: 198 },
   // LockStroke (Grey — same load table as AcmeThread)
   { id: 'lk-19-25', model: 'LK 19-25', system: 'LockStroke', color: 'grey', collapsed: 19, extended: 25 },

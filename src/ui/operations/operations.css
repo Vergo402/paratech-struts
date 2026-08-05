@@ -289,6 +289,7 @@
   padding-bottom: var(--space-2);
 }
 .fs-ops-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -301,11 +302,19 @@
   color: var(--text-secondary);
   cursor: pointer;
 }
+/* Invisible hit-area expansion — visual pill stays 32px tall, tappable box
+   grows to the 44px back-office floor (same ::before idiom as .fs-stepper-btn). */
+.fs-ops-chip::before {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}
 .fs-ops-chip:hover { background: var(--surface-card-hover); color: var(--text-primary); }
 .fs-ops-chip:focus-visible { outline-offset: 1px; }
 .fs-ops-chip-x { color: var(--text-tertiary); font-size: 11px; }
 .fs-ops-chip:hover .fs-ops-chip-x { color: var(--text-primary); }
 .fs-ops-chip-clear {
+  position: relative;
   flex: none;
   font: var(--type-body-medium);
   color: var(--accent);
@@ -937,6 +946,18 @@ button.fs-spc-head {
   border-radius: var(--radius-badge);
   padding: 4px 10px;
   white-space: nowrap;
+}
+/* SME-3 warning variant of the same chip — amber, not red. The base chip is DANGER
+   (over capacity / unrated: the shore may be unsafe); this one says the MEASUREMENT
+   is unusable, a different order of alarm, so it takes the theme's amber warning ramp
+   (--status-waiting-*, defined in all four themes). It is also a full sentence rather
+   than a two-word pill, so nowrap must be undone or it overflows a phone card. */
+.fs-spc-flag--warning {
+  color: var(--status-waiting-text);
+  background: var(--status-waiting-bg);
+  border-color: var(--status-waiting-text);
+  white-space: normal;
+  text-align: left;
 }
 
 /* The measurement is the card's HERO (#432, mess-map #5): dominant numeral +
@@ -1686,6 +1707,7 @@ button.fs-spc-head {
   gap: var(--space-2);
 }
 .fs-stepper-btn {
+  position: relative;
   width: 36px;
   height: 36px;
   border: 1px solid var(--surface-stroke);
@@ -1695,6 +1717,14 @@ button.fs-spc-head {
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+}
+/* Invisible hit-area expansion (fireground deploy panel — §7 56px floor). Visual
+   size stays 36px; ::before extends the tappable box symmetrically without
+   growing the rendered button (same idiom as .fs-gs-expand / .fs-cutstation-back). */
+.fs-stepper-btn::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
 }
 .fs-stepper-btn:disabled { opacity: 0.4; cursor: default; }
 .fs-stepper-val {
@@ -2230,6 +2260,19 @@ button.fs-spc-head {
   color: var(--status-cutting-text);
   font-variant-numeric: diagonal-fractions tabular-nums;
   margin: 0;
+}
+/* SME-3 too-small warning: the hero reuses the card's danger chip verbatim
+   (.fs-spc-flag), but the card's chip is a two-word pill ("Over capacity") and
+   carries `white-space: nowrap`. This one is a full sentence, so it MUST wrap or it
+   overflows the hero on a phone — the one surface where an unreadable warning is
+   worst. The row's card-context margin-top also doubles up with the hero's column
+   `gap`; zero it so the hero's rhythm holds. Chip colors/border/type unchanged. */
+.fs-cutstation-hero .fs-spc-flag-row {
+  margin-top: 0;
+}
+.fs-cutstation-hero .fs-spc-flag {
+  white-space: normal;
+  text-align: left;
 }
 /* The spelled-out cut math under the hero (accepted mockup). */
 .fs-cutstation-hero-math {
@@ -3222,3 +3265,10 @@ button.fs-spc-head {
 .fs-asp-loc-recapture:disabled { color: var(--text-tertiary); cursor: default; }
 .fs-asp-loc-hint { font-size: 11px; color: var(--text-tertiary); }
 [data-theme='sunlight'] .fs-divtile-st { color: var(--sp-solid); }
+
+/* Invisible hit-area expansion for the chip-row Clear button (44px floor, #258). */
+.fs-ops-chip-clear::before {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
+}

@@ -35,8 +35,14 @@ import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardPa
 const SHORE_TYPE_OPTIONS = SHORE_TYPES.map((t) => ({ value: t.id, label: SHORE_TYPE_LABELS[t.id] }));
 
 // v3.9.1 lesson: ONLY 3-Post auto-fills its wood (6×6 per USACE/FEMA spec).
-// T-Shore / Double-T can be built 4×4 or 6×6 by load and span — the operator
-// must choose explicitly; switching away from 3-Post never resets the choice.
+// T-Shore / Double-T can be built 4×4 or 6×6 by load and span — the operator must
+// choose explicitly. Symmetric by design (SME-2, 2026-07-28): switching AWAY from
+// 3-Post retracts this auto-fill, but only while BOTH woods still read exactly as
+// seeded — anything else is an operator choice and is never clobbered. The test is
+// value-equality, not touched-ness: an operator who changes 6×6 → 4×4 → 6×6 lands
+// back on the seed and the retraction fires. Accepted — nothing in the form records
+// intent, and the retracted state (None/None) is the explicit-choice default the
+// v3.9.1 doctrine wants for a T-Shore anyway.
 const THREE_POST_WOOD: Pick<Deductions, 'headerWood' | 'footerWood'> = {
   headerWood: '6x6',
   footerWood: '6x6',
@@ -161,8 +167,26 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   }, [open]);
 
   function selectShoreType(next: ShoreTypeId) {
+    const prev = shoreType; // the closure value IS the type we're leaving
     setShoreType(next);
-    if (next === '3-post') setDeductions((d) => ({ ...d, ...THREE_POST_WOOD }));
+    if (next === '3-post') {
+      setDeductions((d) => ({ ...d, ...THREE_POST_WOOD }));
+      return;
+    }
+    // Leaving 3-Post: retract the auto-fill so 6×6 can't ride into a T-Shore /
+    // Double-T the operator never picked it for (SME-2, the v3.9.1 explicit-choice
+    // doctrine — the invariant has to hold symmetrically, not just on entry). Only
+    // when BOTH woods still match the seed exactly; any other pair is a choice the
+    // operator made and is never clobbered (see the THREE_POST_WOOD note on why
+    // value-equality, not touched-ness). Gated on `prev` so a T-Shore → Double-T
+    // switch leaves a deliberate 6×6 alone.
+    if (prev === '3-post') {
+      setDeductions((d) =>
+        d.headerWood === THREE_POST_WOOD.headerWood && d.footerWood === THREE_POST_WOOD.footerWood
+          ? { ...d, headerWood: NO_DEDUCTIONS.headerWood, footerWood: NO_DEDUCTIONS.footerWood }
+          : d,
+      );
+    }
   }
 
   // #441 — the explicit in-form capture. GPS coords land immediately (shown as the
@@ -638,7 +662,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
         </div>
         {(apparatusOptions.length > 1 || assignedResource) && (
           <BottomSheetPicker
-            label="Group"
+            label="Assigned"
             options={apparatusOptions}
             value={assignedResource}
             onSelect={setAssignedResource}

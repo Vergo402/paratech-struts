@@ -85,6 +85,36 @@ describe('cutLengthInches — wood cut length, shore-type-fixed lumber + wedge (
     // …and that is NOT the strut effective length, which DOES use the operator deduction.
     expect(effectiveLengthInches(point)).not.toBe(31.5);
   });
+
+  // SME-3 (Phase J gate #260). The 3-Post cut deduction is 12.5″ (2 × 6×6 + 1½″
+  // wedge), which EXCEEDS the smallest catalog strut's 12″ collapsed length — so a
+  // near-minimum opening that legitimately reached `cutting` (strut sizing gates on
+  // the operator's own deductions, which can be overridden down to none) could drive
+  // this negative. `MeasurementValue` renders negatives with a sign, so the saw
+  // operator's one promoted number would have read "−1/2″" with no defined action.
+  // The clamp keeps it physical; CuttingStation warns on `<= 0` so it isn't hidden.
+  describe('floored at 0 — the promoted cut number is never negative', () => {
+    it("clamps the audit's worked case: 3-Post at a 12″ opening (raw −0.5″) → 0", () => {
+      // 12 − 2×5.5 − 1.5 = −0.5
+      expect(cutLengthInches(sp({ shoreType: '3-post', measurementEighths: 96 }))).toBe(0);
+    });
+
+    it('3-Post at exactly the 12.5″ break-even is 0 — the boundary the warning must also catch', () => {
+      // 12.5 − 11 − 1.5 = 0 exactly: clamped and unclamped agree, and `<= 0` still warns
+      // because a 0″ cut is as unactionable as a negative one.
+      expect(cutLengthInches(sp({ shoreType: '3-post', measurementEighths: 100 }))).toBe(0);
+    });
+
+    it('one eighth above break-even is a real cut — the clamp does not swallow it', () => {
+      // 12.625 − 12.5 = 0.125 — the first value that must render (and must NOT warn).
+      expect(cutLengthInches(sp({ shoreType: '3-post', measurementEighths: 101 }))).toBe(0.125);
+    });
+
+    it('leaves the reachable T-Shore floor untouched (8.5″ deduction < the 12″ smallest strut)', () => {
+      // 12 − 2×3.5 − 1.5 = 3.5 — positive, so the clamp is inert here by construction.
+      expect(cutLengthInches(sp({ shoreType: 't-shore', measurementEighths: 96 }))).toBe(3.5);
+    });
+  });
 });
 
 describe('L-7 — single-SP status transitions', () => {

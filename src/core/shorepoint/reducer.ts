@@ -231,10 +231,31 @@ export const CUT_LUMBER: Record<ShoreTypeId, WoodSizeId> = {
  * standard header + footer (NOT the operator's strut selection) plus a flat
  * loading-wedge allowance, and NO plates (the cut wood replaces the strut+plates).
  * Cut short — the wedge takes up the slack; long is the hazard (#361).
+ *
+ * FLOORED AT 0 (SME-3, 2026-07-28). A 3-Post's fixed cut deduction is 12.5″
+ * (2 × 6×6 + 1½″ wedge), which exceeds the smallest strut's 12″ collapsed length, so
+ * a near-minimum opening could drive this negative and render a signed length on the
+ * cutting-station hero — a number a saw operator has no defined action for. The
+ * clamp keeps the value physical; the hero warns on `<= 0` (a 0″ cut is just as
+ * meaningless as a negative one), so the clamp never silently hides the condition.
  */
 export function cutLengthInches(sp: ShorePoint): number {
   const lumber = woodHeight(CUT_LUMBER[sp.shoreType]);
-  return Math.floor((sp.measurementEighths / 8 - 2 * lumber - WEDGE_DEDUCTION) * 8) / 8;
+  return Math.max(0, Math.floor((sp.measurementEighths / 8 - 2 * lumber - WEDGE_DEDUCTION) * 8) / 8);
+}
+
+/**
+ * The opening leaves NO cuttable length after the shore-type header + footer + wedge
+ * (SME-3). Every surface that promotes a cut length must warn on this instead of
+ * printing a bare 0″ the saw operator has no defined action for.
+ *
+ * Deliberately expressed against `cutLengthInches` rather than re-deriving the raw
+ * formula: the clamp makes 0 the ONLY reachable value at or below zero (anything
+ * positive floors to ≥ ⅛″), so `<= 0` on the clamped value is exactly "the unclamped
+ * cut was ≤ 0". One formula, no drift between the number and the warning about it.
+ */
+export function cutTooSmall(sp: ShorePoint): boolean {
+  return cutLengthInches(sp) <= 0;
 }
 
 function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
