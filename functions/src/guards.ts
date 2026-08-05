@@ -62,6 +62,30 @@ export function requireAdminForAdminGrant(requestedRole: string, callerRole: str
 }
 
 /**
+ * Escalation guard for setting an existing member's CREDENTIAL — password or
+ * sign-in email (J257-S7, Alex 2026-07-28: restrict to Admins). `manageUsers`
+ * alone is no longer enough: a non-Admin holder could reset any non-Admin
+ * member's password to a value they know (or repoint their sign-in email to an
+ * address they control, then run a reset) and sign in as them. Because ICS
+ * positions follow the ACCOUNT (device→account binding, 2026-07-11), assuming a
+ * member's login assumes their fireground position — up to Incident Commander —
+ * which breaks ADR-017's claim that the back-office RBAC axis and the fireground
+ * ICS axis are orthogonal. Account custody is now an Admin-only act.
+ *
+ * NOT applied to provisionAccount: minting a NEW member with a starter password
+ * is the "add personnel" capability manageUsers is FOR, and it takes over no
+ * existing identity. The vector is resetting an existing member's credential.
+ */
+export function requireAdminForCredentialChange(callerRole: string): void {
+  if (callerRole !== ADMIN_ROLE_ID) {
+    throw new HttpsError(
+      'permission-denied',
+      "Only an Admin can change a member's password or sign-in email.",
+    );
+  }
+}
+
+/**
  * Escalation guard for TOUCHING an existing member's account (password/email):
  * the target must be a member of the same dept, and touching an Admin's account
  * requires the caller to BE an Admin and not be targeting themselves through

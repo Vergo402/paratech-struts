@@ -4,6 +4,9 @@ import { operationStore } from '../store/registry';
 import { sessionStore } from '../store/session';
 import { syncStatusStore } from './syncStatus';
 import { peerCutStore } from './peerCuts';
+// Type-only (erased at build) — importing the diagnostics VALUE here would drag
+// Firebase into module init, which the seam below deliberately avoids.
+import type { SyncDiagnosticDetail } from './diagnostics';
 
 // data/sync — the ONE backend path (module-boundaries.md). Cloud-sync Increment 2:
 // the real event upload + the merge guard. flush() drains the in-memory queue to
@@ -27,7 +30,7 @@ async function firebaseSet(path: string, value: unknown): Promise<void> {
 }
 
 /** Default failure ledger — lazy for the same reason (L-8, never throws). */
-function firebaseLog(event: string, detail: Record<string, unknown>): void {
+function firebaseLog(event: string, detail: SyncDiagnosticDetail): void {
   void import('./diagnostics').then(({ logSyncEvent }) => logSyncEvent(event, detail));
 }
 
@@ -91,7 +94,7 @@ export function createSyncService(deps: {
   /** Cloud write transport — injected so tests stay firebase-free (default: RTDB set). */
   set?: (path: string, value: unknown) => Promise<void>;
   /** Failure ledger — injected for the same reason (default: /diagnostics/sync). */
-  log?: (event: string, detail: Record<string, unknown>) => void;
+  log?: (event: string, detail: SyncDiagnosticDetail) => void;
   /** Reactive pending-count sink (cloud-sync Increment 4 banner). Injected so unit tests
    *  stay store-free; defaults to the syncStatus singleton. */
   notifyPending?: (count: number) => void;

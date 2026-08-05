@@ -35,10 +35,14 @@ if (start && start.index !== undefined) {
 const orgsValue = JSON.stringify(buildV4OrgsRules(), null, 2).split('\n').join('\n    ');
 const orgsBlock = `    "orgs": ${orgsValue},\n`;
 
-// 3. Insert it just before the top-level "$other" catch-all (4-space — unique).
-const marker = '    "$other": {';
+// 3. Insert it just before the TOP-LEVEL "$other" catch-all. The marker is
+// newline-anchored on exactly 4 spaces: a bare '    "$other": {' is a SUBSTRING
+// of any deeper-indented "$other" (the legacy /feedback + /diagnostics trees each
+// carry one since J257-S5), so an unanchored replace() spliced the whole orgs
+// block inside /feedback and corrupted the file.
+const marker = '\n    "$other": {';
 if (!raw.includes(marker)) throw new Error('gen-rules: $other marker not found in database.rules.json');
-raw = raw.replace(marker, orgsBlock + marker);
+raw = raw.replace(marker, '\n' + orgsBlock + marker.slice(1));
 
 writeFileSync(rulesPath, raw, 'utf8');
 console.log('database.rules.json regenerated (v3 preserved verbatim + /orgs).');

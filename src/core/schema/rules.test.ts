@@ -210,18 +210,50 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(dept.members.$uid.$other['.validate']).toBe(false);
   });
 
-  it('custom-role management is manageUsers-gated with the built-ins structurally protected (#418)', () => {
+  it('custom-role management is ADMIN-ONLY with the built-ins structurally protected (#418, J257-S4)', () => {
     const w = committed.rules.orgs.$deptId.roles.$roleId['.write'];
     // the write rule EXISTS — the pre-Phase-J audit H4 defect was its total absence
     // (default-deny killed the whole ADR-017 custom-role feature in production)
     expect(w).toBeDefined();
-    // active membership + the manageUsers capability (data-driven, no role names)
+    // active membership is still the floor
     expect(w).toContain(".child('active').val() != false");
-    expect(w).toContain("child('permissions').child('manageUsers').val() === true");
+    // J257-S4 — the actor must hold the ADMIN ROLE ITSELF. Role AUTHORING is the
+    // escalation path: a manageUsers holder could mint a custom role carrying all
+    // eight permissions and self-assign it (adminGainingAdmin never fires — the new
+    // role's id isn't the literal `admin` token), taking full back-office control
+    // with no Admin ever approving it.
+    expect(w).toContain(
+      "root.child('orgs').child($deptId).child('members').child(auth.uid).child('role').val() === 'admin'",
+    );
+    // ...and the manageUsers path is GONE. This negative IS the J257-S4 fix: a
+    // non-Admin manageUsers holder is denied role create / edit / delete. A positive
+    // 'admin' assertion alone would still pass if the old permission gate survived
+    // alongside it.
+    expect(w).not.toContain('manageUsers');
     // the Admin role is fully immutable post-create (the anti-lockout floor)
     expect(w).toContain("$roleId !== 'admin'");
     // Default is editable but never deletable (every join lands on it)
     expect(w).toContain("( $roleId !== 'default' || newData.exists() )");
+  });
+
+  it('a member row can never be self-deleted by the client — the delete path MUST be the server callable (J257-S1)', () => {
+    // This pins WHY `deleteOwnAccount` exists as a Cloud Function. A client
+    // remove() on your own member row sets newData to null, so:
+    //   · the self-edit branch fails every field-equality clause, and
+    //   · the admin-manage branch requires `$uid !== auth.uid` for an admin
+    //     losing admin, and manageUsers for anyone else.
+    // If a future rule edit ever opened a client-side self-delete, the callable's
+    // sole-Admin refusal would be bypassable — so the shape is asserted here.
+    const w = committed.rules.orgs.$deptId.members.$uid['.write'];
+    // the self-edit branch pins role/displayName/joinedAt to their PRIOR values;
+    // against a null newData every one of those is false → no self-delete
+    expect(w).toContain("newData.child('role').val() === data.child('role').val()");
+    // the only branch that tolerates `!newData.exists()` is the admin-manage one,
+    // and it demands a DIFFERENT active admin actor
+    expect(w).toContain('!newData.exists()');
+    expect(w).toContain('$uid !== auth.uid');
+    // there is no self-delete branch: no clause pairs your own uid with a removal
+    expect(w).not.toContain('$uid === auth.uid && !newData.exists()');
   });
 
   it('the governance audit log is manageUsers-gated, append-only, and read-gated on the parent (#380/#381)', () => {
@@ -256,5 +288,73 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(committed.rules.$other).toEqual({ '.read': false, '.write': false });
     // /orgs is a top-level sibling, never nested inside a legacy tree
     expect(committed.rules.departments.orgs).toBeUndefined();
+  });
+
+  // ---- J257-S5 — the two auth-only side channels are SHAPED and CAPPED ----
+  // Both nodes were `auth != null` with no closed shape and (for diagnostics) no
+  // type or size constraint at all, on a metered Blaze project: any signed-in
+  // account could push multi-megabyte payloads under unbounded arbitrary keys.
+  // These trees are HAND-MAINTAINED (gen-rules.ts splices only /orgs and preserves
+  // everything else verbatim), so they get the same drift gate the generator gives
+  // /orgs: the writer's key list is enumerated against the rule's named children.
+  // The v3.8.2 incident is the reason — a validate rule that didn't match the
+  // payload shape silently rejected every write for months.
+
+  it('/feedback names exactly the fields feedbackService writes and rejects the rest (J257-S5)', () => {
+    const node = committed.rules.feedback.$feedbackId;
+    // the closed shape — unknown children are rejected outright
+    expect(node.$other).toEqual({ '.validate': false });
+    // every key feedbackService.submit() sends has a named validator; a writer that
+    // adds a key without a rule fails HERE instead of PERMISSION_DENIED in the field
+    const written = ['category', 'text', 'timestamp', 'deptId', 'deptName', 'appVersion', 'uid'];
+    expect(Object.keys(node).filter((k) => !k.startsWith('.') && k !== '$other').sort()).toEqual(
+      [...written].sort(),
+    );
+    // required trio is type-pinned
+    expect(node.category['.validate']).toContain('isString');
+    expect(node.text['.validate']).toContain('length <= 5000');
+    expect(node.timestamp['.validate']).toBe('newData.isNumber()');
+    // deptId/deptName are OPTIONAL: the writer sends `?? null` and RTDB DROPS a null
+    // child, so a member with no department writes neither key. A required validator
+    // here would silently kill feedback from exactly those users.
+    for (const k of ['deptId', 'deptName', 'appVersion', 'uid']) {
+      expect(node[k]['.validate'], `${k} must tolerate an absent child`).toContain(
+        '!newData.exists() ||',
+      );
+    }
+    // caps, pinned by number so a rule edit can't quietly widen them
+    expect(node.deptId['.validate']).toContain('length <= 64');
+    expect(node.deptName['.validate']).toContain('length <= 100');
+    expect(node.appVersion['.validate']).toContain('length <= 40');
+    // attributability: the stamped uid must BE the caller (identity.accountId is the
+    // Firebase account uid — the same value /userDepts/$uid is gated on)
+    expect(node.uid['.validate']).toContain("newData.val() === auth.uid");
+  });
+
+  it('/diagnostics/sync names exactly the SyncDiagnosticDetail keys and caps every one (J257-S5)', () => {
+    const node = committed.rules.diagnostics.sync.$logId;
+    expect(node.$other).toEqual({ '.validate': false });
+    // ts + event are the envelope; the five optional keys ARE SyncDiagnosticDetail
+    // (diagnostics.ts) — the closed TS type and this list must stay in lockstep
+    const written = ['ts', 'event', 'deptId', 'error', 'reason', 'path', 'id'];
+    expect(Object.keys(node).filter((k) => !k.startsWith('.') && k !== '$other').sort()).toEqual(
+      [...written].sort(),
+    );
+    // the envelope is now TYPED (pre-fix it was bare hasChild — any value of any size)
+    expect(node['.validate']).toContain("newData.child('ts').isNumber()");
+    expect(node['.validate']).toContain("newData.child('event').isString()");
+    // caps must equal diagnostics.ts's EVENT_CAP / DETAIL_CAPS, which CLAMP before the
+    // write — a cap with no writer-side clamp converts "logged a long error" into
+    // "logged nothing", losing the diagnostic exactly when it fires
+    expect(node.event['.validate']).toContain('length <= 80'); // EVENT_CAP
+    expect(node.deptId['.validate']).toContain('length <= 64');
+    expect(node.error['.validate']).toContain('length <= 500');
+    expect(node.reason['.validate']).toContain('length <= 500');
+    expect(node.path['.validate']).toContain('length <= 200');
+    expect(node.id['.validate']).toContain('length <= 128');
+    // all five details are optional — logSyncEvent omits empty values by design
+    for (const k of ['deptId', 'error', 'reason', 'path', 'id']) {
+      expect(node[k]['.validate']).toContain('!newData.exists() ||');
+    }
   });
 });

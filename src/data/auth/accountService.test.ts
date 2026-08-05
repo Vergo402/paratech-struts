@@ -14,6 +14,9 @@ vi.mock('../sync/firebase', () => ({
   remove: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('./firebase', () => ({ firebaseAuth: {} }));
+// J257-S1 — account deletion is now a SERVER op (the client SDK can't remove its
+// own member row; see the rules-test "member row can never be self-deleted").
+vi.mock('../functions/firebase', () => ({ callFunction: vi.fn().mockResolvedValue({ ok: true }) }));
 vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
   signInWithEmailAndPassword: vi.fn(),
@@ -44,6 +47,7 @@ import {
 } from 'firebase/auth';
 import { firebaseAuth } from './firebase';
 import { remove } from '../sync/firebase';
+import { callFunction } from '../functions/firebase';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, SESSION_KEY, type SessionStoreApi } from '../store/session';
 import { createAccountService, type AccountServiceApi } from './accountService';
@@ -83,6 +87,7 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     );
     vi.mocked(sendPasswordResetEmail).mockResolvedValue(undefined);
     vi.mocked(deleteUser).mockResolvedValue(undefined);
+    vi.mocked(callFunction).mockResolvedValue({ ok: true } as never);
     vi.mocked(reauthenticateWithCredential).mockResolvedValue({} as never);
     (firebaseAuth as { currentUser: unknown }).currentUser = null;
     window.localStorage.clear();
@@ -268,39 +273,69 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     expect((await account.sendPasswordReset('   ')).ok).toBe(false);
   });
 
-  it('deleteAccount: re-auths with the password, then deletes the Firebase user (ok)', async () => {
+  // J257-S1 — the delete is a SERVER op. The client SDK could drop the Auth user
+  // and the /userDepts entry but could NEVER remove orgs/{dept}/members/{uid}
+  // (a remove() nulls newData, which every write branch rejects), so the old flow
+  // left a live member row carrying email/phone/badge behind — and a departing
+  // sole Admin stranded the department permanently.
+  it('deleteAccount: re-auths with the password, then calls the deleteOwnAccount callable (ok)', async () => {
     (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
     const res = await account.deleteAccount('pw');
     expect(res.ok).toBe(true);
     expect(vi.mocked(reauthenticateWithCredential)).toHaveBeenCalledOnce();
-    expect(vi.mocked(deleteUser)).toHaveBeenCalledOnce();
+    expect(vi.mocked(callFunction)).toHaveBeenCalledWith('deleteOwnAccount', {
+      deptId: session.store.getState().departmentId,
+    });
+    // the client NEVER deletes the Auth user itself any more — the server does, so
+    // the member row and the reverse index can't survive the Auth deletion
+    expect(vi.mocked(deleteUser)).not.toHaveBeenCalled();
+    expect(vi.mocked(remove)).not.toHaveBeenCalled();
   });
 
-  it('deleteAccount: drops the /userDepts reverse-index entry before deleting the user', async () => {
+  it('deleteAccount: signs out after the server delete so the device never holds a dead credential', async () => {
     (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
     const order: string[] = [];
-    vi.mocked(remove).mockImplementationOnce(async () => { order.push('remove'); });
-    vi.mocked(deleteUser).mockImplementationOnce(async () => { order.push('delete'); });
+    vi.mocked(callFunction).mockImplementationOnce(async () => { order.push('callable'); return { ok: true } as never; });
+    vi.mocked(fbSignOut).mockImplementationOnce(async () => { order.push('signout'); });
     const res = await account.deleteAccount('pw');
     expect(res.ok).toBe(true);
-    expect(vi.mocked(remove)).toHaveBeenCalledWith({ path: `userDepts/${FB_UID}` });
-    expect(order).toEqual(['remove', 'delete']); // index cleared while still authenticated
+    // server-side deleteUser does NOT clear this device's cached credential the way
+    // the old client-side deleteUser did — and the sign-out must come AFTER the
+    // callable (an unauthenticated caller gets `unauthenticated` from the server)
+    expect(order).toEqual(['callable', 'signout']);
   });
 
-  it('deleteAccount: a failed reverse-index cleanup is swallowed (account still deletes)', async () => {
+  it("deleteAccount: the sole-Admin refusal reaches the user verbatim and nothing is deleted", async () => {
     (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
-    vi.mocked(remove).mockRejectedValueOnce(new Error('permission denied'));
+    vi.mocked(callFunction).mockRejectedValueOnce({
+      code: 'functions/failed-precondition',
+      message:
+        "You're the only Admin in this department. Promote another member to Admin first, then delete your account.",
+    });
     const res = await account.deleteAccount('pw');
-    expect(res.ok).toBe(true);
-    expect(vi.mocked(deleteUser)).toHaveBeenCalledOnce();
+    expect(res.ok).toBe(false);
+    // an APPLICATION refusal speaks the server's own copy — it names the hand-off,
+    // so it must not be swallowed into a generic "something went wrong"
+    if (!res.ok) expect(res.reason).toMatch(/only Admin/i);
+    // still signed in: the account was NOT deleted, so the session must survive
+    expect(vi.mocked(fbSignOut)).not.toHaveBeenCalled();
   });
 
-  it('deleteAccount: a wrong password fails with a password reason and never deletes', async () => {
+  it('deleteAccount: an unreachable server gets the offline wording, not the raw code', async () => {
+    (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
+    vi.mocked(callFunction).mockRejectedValueOnce({ code: 'functions/unavailable', message: 'internal' });
+    const res = await account.deleteAccount('pw');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toMatch(/connection/i);
+  });
+
+  it('deleteAccount: a wrong password fails with a password reason and never reaches the server', async () => {
     (firebaseAuth as { currentUser: unknown }).currentUser = { uid: FB_UID, email: 'reyes@dept14.gov' };
     vi.mocked(reauthenticateWithCredential).mockRejectedValueOnce({ code: 'auth/invalid-credential' });
     const res = await account.deleteAccount('wrong');
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toMatch(/password doesn't match/i);
+    expect(vi.mocked(callFunction)).not.toHaveBeenCalled();
     expect(vi.mocked(deleteUser)).not.toHaveBeenCalled();
   });
 
@@ -310,6 +345,7 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.reason).toMatch(/not signed in/i);
     expect(vi.mocked(reauthenticateWithCredential)).not.toHaveBeenCalled();
+    expect(vi.mocked(callFunction)).not.toHaveBeenCalled();
   });
 
   // ---- changePassword (#439 forced first-sign-in change) ----

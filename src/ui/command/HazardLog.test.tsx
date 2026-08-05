@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { Hazards } from '@core/hazard';
 import type { Operation } from '@core/schema';
 import { HazardLog } from './HazardLog';
+import { download } from '@ui/util/download';
 
 const mockHazards = vi.fn((): Hazards => ({}));
 const mockOperation = vi.fn((): Operation | null => null);
@@ -21,6 +22,7 @@ vi.mock('@ui/hooks', () => ({
   usePermissions: () => ({ manageUsers: mockManageUsers() }),
   useUserManager: () => ({ members: mockMembers() }),
 }));
+vi.mock('@ui/util/download', () => ({ download: vi.fn() }));
 
 const OP: Operation = {
   id: 'op-1',
@@ -47,6 +49,7 @@ beforeEach(() => {
   mockCommit.mockClear();
   mockMembers.mockReturnValue(null);
   mockManageUsers.mockReturnValue(false);
+  vi.mocked(download).mockClear();
 });
 
 describe('HazardLog', () => {
@@ -135,5 +138,19 @@ describe('HazardLog', () => {
     expect(mockCommit).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'HazardReopened', opId: 'op-1', hazardId: 'h3', by: 'device-test' }),
     );
+  });
+
+  it('export: formula-guards a peer-controlled location before it reaches the CSV (#257 J257-S2)', async () => {
+    const user = userEvent.setup();
+    mockHazards.mockReturnValue({
+      h1: { id: 'h1', type: 'structural', location: '=HYPERLINK("http://evil","x")', severity: 'high', reportedBy: 'u2', reportedAt: 2000 },
+    });
+    render(<HazardLog />);
+    await user.click(screen.getByRole('button', { name: 'Export ICS-208' }));
+
+    expect(download).toHaveBeenCalledTimes(1);
+    const csv = vi.mocked(download).mock.calls[0]![1];
+    expect(csv).toContain(`'=HYPERLINK`); // apostrophe-prefixed → inert text
+    expect(csv).not.toMatch(/(^|,)"?=HYPERLINK/m); // never a bare leading =
   });
 });

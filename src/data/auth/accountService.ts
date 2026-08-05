@@ -8,13 +8,12 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
   sendPasswordResetEmail,
-  deleteUser,
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from 'firebase/auth';
 import { sessionStore, type SessionStoreApi } from '../store/session';
 import { firebaseAuth } from './firebase';
-import { rtdb, ref, remove } from '../sync/firebase';
+import { callFunction } from '../functions/firebase';
 
 // data/auth — the account seam: the ONE path a member creates an account /
 // signs in / signs out / requests a magic-link or password reset. Firebase Auth
@@ -75,9 +74,12 @@ export interface AccountServiceApi {
   /** Sign out → guest. Never discards local work. */
   signOut(): Promise<void>;
   /**
-   * Permanently delete the signed-in account. Re-authentication (the password) is
-   * required by Firebase for this destructive op and doubles as the confirm gate.
-   * Auth-only — the local data wipe is the caller's (useSession) job.
+   * Permanently delete the signed-in account: re-auth with the password (the
+   * confirm gate), then the `deleteOwnAccount` server callable removes the
+   * department member row, the /userDepts reverse index, and the Auth user
+   * (J257-S1). REFUSED when the caller is the department's only active Admin —
+   * the reason names the hand-off. The local data wipe stays the caller's
+   * (useSession) job.
    */
   deleteAccount(password: string): Promise<ActionResult>;
   /** Email a one-time sign-in link (Firebase built-in email). Sign-in-only (ADR-025). */
@@ -112,6 +114,22 @@ function mapFirebaseError(err: unknown): string {
   if (code === 'auth/invalid-action-code' || code === 'auth/expired-action-code') {
     return 'That sign-in link has expired or was already used — request a new one.';
   }
+  return 'Something went wrong. Try again.';
+}
+
+/**
+ * Callable failures → plain reasons (mirrors departmentService.callableError).
+ * The server speaks user-facing copy, so an application-level refusal — notably
+ * the sole-Admin `failed-precondition` from deleteOwnAccount — passes its own
+ * message straight through; only unreachability gets the offline wording.
+ */
+function mapCallableError(err: unknown): string {
+  const code = (err as { code?: string }).code ?? '';
+  const message = (err as { message?: string }).message ?? '';
+  if (code === 'functions/unavailable' || code === 'functions/deadline-exceeded') {
+    return "Couldn't reach the server — check your connection and try again.";
+  }
+  if (message) return message;
   return 'Something went wrong. Try again.';
 }
 
@@ -173,19 +191,13 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
       const user = firebaseAuth.currentUser;
       if (!user || !user.email) return { ok: false, reason: "You're not signed in." };
       try {
-        // Re-auth first (Firebase requires a fresh login for deleteUser; the password
-        // entry is also the confirmation). Does NOT touch the session store — the
-        // caller captured departmentId before this and wipes local data after, so an
-        // async onAuthStateChanged→setGuest can't blank the bucket id mid-flight.
+        // Re-auth first (the password entry is the confirmation gate, and the
+        // server refuses to act on a stale session). Does NOT touch the session
+        // store — the caller captured departmentId before this and wipes local
+        // data after, so an async onAuthStateChanged→setGuest can't blank the
+        // bucket id mid-flight.
         const cred = EmailAuthProvider.credential(user.email, password);
         await reauthenticateWithCredential(user, cred);
-        // Drop this account's reverse-index entry BEFORE deleteUser revokes the
-        // token (the rule gates it to auth.uid == $uid). Best-effort: a stale entry
-        // can never grant access (recoverDeptFromCloud re-checks the member record),
-        // so a failure here is hygiene-only — await it, swallow the error, move on.
-        await remove(ref(rtdb, `userDepts/${user.uid}`)).catch(() => {});
-        await deleteUser(user);
-        return { ok: true };
       } catch (err: unknown) {
         const code = (err as { code?: string }).code ?? '';
         if (
@@ -197,6 +209,30 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
         }
         return { ok: false, reason: mapFirebaseError(err) };
       }
+
+      // The delete itself is a SERVER op (J257-S1). The client SDK can drop the
+      // Auth user and the /userDepts entry, but it can NEVER remove
+      // orgs/{dept}/members/{uid}: a remove() sets newData to null, which the
+      // SELF_EDIT_RANK rule rejects and ADMIN_MANAGE denies for a self-delete. The
+      // old client-side flow therefore left a live member row behind — the deleted
+      // person's email/phone/badge stayed readable by the whole department, and a
+      // departing sole Admin stranded it permanently. The callable removes the
+      // member row + the reverse index + the Auth user, and refuses outright when
+      // the caller is the department's only active Admin.
+      try {
+        await callFunction<{ deptId: string | null }, { ok: true }>('deleteOwnAccount', {
+          deptId: deps.session().store.getState().departmentId,
+        });
+      } catch (err: unknown) {
+        return { ok: false, reason: mapCallableError(err) };
+      }
+
+      // Server-side deleteUser does NOT clear this device's cached credential the
+      // way the old client-side deleteUser did — sign out explicitly so the app
+      // never sits signed-in-as-a-deleted-account while the caller wipes local
+      // data and redirects.
+      await fbSignOut(firebaseAuth).catch(() => {});
+      return { ok: true };
     },
 
     async sendMagicLink(email) {

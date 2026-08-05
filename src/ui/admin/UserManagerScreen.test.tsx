@@ -287,6 +287,78 @@ describe('UserManagerScreen', () => {
     expect(actions.refresh).toHaveBeenCalled();
   });
 
+  // ---- J257-S4 / J257-S7 / #463 — a NON-ADMIN manageUsers holder ----
+  // Two backend facts the sheet must mirror, so nothing is offered that the
+  // backend denies: role AUTHORING is Admin-only in the rules (J257-S4), and
+  // credential custody — reset password / change sign-in email — is Admin-only on
+  // the server (J257-S7, requireAdminForCredentialChange). ADMIN_MANAGE has ALWAYS
+  // denied a non-Admin actor demoting or revoking an Admin, or granting Admin
+  // (#463) — the sheet used to offer those and the click failed with a raw
+  // permission error.
+  describe('a non-Admin manageUsers holder', () => {
+    // TWO admins, so the anti-lockout reason can't mask the Admin-only reason
+    const NON_ADMIN_VIEW: Record<string, Member> = {
+      me: { role: 'logistics', displayName: 'Lt Marchetti', joinedAt: 1 },
+      chief: { role: 'admin', displayName: 'Chief Reyes', joinedAt: 2 },
+      deputy: { role: 'admin', displayName: 'Deputy Nakata', joinedAt: 3 },
+      diaz: { role: 'default', displayName: 'FF Diaz', joinedAt: 4, email: 'diaz@fd.example' },
+    };
+    beforeEach(() => {
+      // holds manageUsers (so the screen renders) but is NOT the Admin role
+      mockPerms.mockReturnValue({ ...DEFAULT_PERMISSIONS, manageUsers: true });
+      mockMembers.mockReturnValue(NON_ADMIN_VIEW);
+      mockSession.mockReturnValue({
+        identity: { kind: 'member', accountId: 'me', displayName: 'Lt Marchetti' },
+      });
+    });
+
+    it('Roles face is READ-ONLY — no Create role, no role opens (J257-S4)', async () => {
+      const user = userEvent.setup();
+      render(<UserManagerScreen />);
+      await user.click(screen.getByText('Roles'));
+      // the escalation path: minting a custom role with all eight permissions and
+      // self-assigning it would be full back-office control with no Admin approving
+      expect(screen.queryByRole('button', { name: /Create role/ })).toBeNull();
+      expect(screen.getByText(/Only an Admin can create or change roles/i)).toBeInTheDocument();
+      // every role row — Default and the custom one included — is inert, not a button
+      expect(screen.queryByRole('button', { name: /Default/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Logistics/ })).toBeNull();
+    });
+
+    it('the member sheet hides BOTH credential controls (J257-S7)', async () => {
+      const user = userEvent.setup();
+      render(<UserManagerScreen />);
+      await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+      await screen.findByText('Member', { selector: 'h2' });
+      // assuming a member's login assumes their ICS position, so custody is Admin-only
+      expect(screen.queryByRole('button', { name: /Reset password to starter/ })).toBeNull();
+      expect(screen.queryByLabelText('Email — their sign-in')).toBeNull();
+      // the rest of the profile stays editable — manageUsers still owns profile edits
+      expect(screen.getByLabelText('Rank / title')).toBeInTheDocument();
+    });
+
+    it('cannot grant Admin to a non-Admin member (#463)', async () => {
+      const user = userEvent.setup();
+      render(<UserManagerScreen />);
+      await user.click(screen.getByRole('button', { name: /FF Diaz/ }));
+      await screen.findByText('Member', { selector: 'h2' });
+      expect(screen.getByRole('button', { name: /Admin/ })).toBeDisabled();
+      expect(screen.getByText(/Only an Admin can grant Admin/)).toBeInTheDocument();
+    });
+
+    it('cannot demote or revoke an Admin (#463)', async () => {
+      const user = userEvent.setup();
+      render(<UserManagerScreen />);
+      await user.click(screen.getByRole('button', { name: /Chief Reyes/ }));
+      await screen.findByText('Member', { selector: 'h2' });
+      // two admins exist, so this is NOT the anti-lockout reason — it's the actor rank
+      expect(screen.getByRole('button', { name: /Default/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /Revoke access/ })).toBeDisabled();
+      expect(screen.getAllByText(/Only an Admin can change an Admin/).length).toBeGreaterThan(0);
+      expect(screen.queryByText(/Promote another member to Admin first/)).toBeNull();
+    });
+  });
+
   it('Reset password: a FAILED reset keeps the confirm open with the reason (#426 discipline)', async () => {
     const user = userEvent.setup();
     actions.resetMemberPassword.mockResolvedValueOnce({ ok: false, reason: "Couldn't reach the server — check your connection and try again." });

@@ -261,13 +261,21 @@ const ADMIN_MANAGE = [
   `( !(${adminGainingAdmin}) || ${actorIsAdmin} )`,
 ].join(' && ');
 
-// ROLE MANAGEMENT (#418, pre-Phase-J audit H4) — custom-role create/edit/delete at
-// /orgs/{deptId}/roles/{roleId}. The generator emitted only .validate here, so the
-// whole ADR-017 custom-role feature was default-deny in production (createRole/
-// editRole/deleteRole all PERMISSION_DENIED; deleteRole half-applied — holders
-// reassigned, role survived). Gate = active membership + manageUsers (the same
-// axis as ADMIN_MANAGE; "Manage users & roles" is one permission key), with the
-// built-ins protected STRUCTURALLY by their stable id tokens:
+// ROLE MANAGEMENT (#418, pre-Phase-J audit H4; RESTRICTED TO ADMINS by J257-S4) —
+// custom-role create/edit/delete at /orgs/{deptId}/roles/{roleId}. The generator
+// emitted only .validate here, so the whole ADR-017 custom-role feature was
+// default-deny in production (createRole/editRole/deleteRole all PERMISSION_DENIED;
+// deleteRole half-applied — holders reassigned, role survived).
+//
+// Gate = active membership + the ADMIN role itself, NOT the manageUsers permission
+// (Alex, 2026-07-28). J257-S4: while role AUTHORING was manageUsers-gated, a
+// non-Admin manageUsers holder could mint a custom role carrying all eight
+// permissions and self-assign it via ADMIN_MANAGE — adminGainingAdmin never fires,
+// because the new role's id isn't the literal `admin` token. That is full
+// back-office control with no Admin ever approving it. Authoring the permission
+// taxonomy is now an Admin-only act; manageUsers keeps add / revoke / assign of
+// non-Admin members. The built-ins stay protected STRUCTURALLY by their stable
+// id tokens:
 //   · the Admin role is fully immutable post-create (its fixed all-true
 //     permissions are the anti-lockout floor — an editable Admin could be
 //     hollowed out into a lockout),
@@ -281,7 +289,7 @@ const ADMIN_MANAGE = [
 const ROLE_MANAGE = [
   'auth != null',
   actorIsMember,
-  permissionGate('manageUsers'),
+  actorIsAdmin, // J257-S4: Admin-only, NOT manageUsers (see the note above)
   `$roleId !== '${ADMIN_ROLE_ID}'`,
   `( $roleId !== '${DEFAULT_ROLE_ID}' || newData.exists() )`,
 ].join(' && ');
@@ -351,7 +359,8 @@ export function buildV4OrgsRules(): RuleTree {
   // count-free ≥1-Admin anti-lockout. Founder's own row writes via the dept create-cascade.
   memberNode['.write'] = `(${JOIN_SELF_WRITE}) || (${SELF_EDIT_RANK}) || (${ADMIN_MANAGE})`;
   deptNode['members'] = { $uid: memberNode };
-  // manageUsers-holders manage custom roles; Admin immutable, Default undeletable (#418).
+  // ADMINS manage custom roles (J257-S4 — no longer manageUsers); Admin role
+  // immutable, Default undeletable (#418).
   const roleNode = objectRules(RoleNode);
   roleNode['.write'] = ROLE_MANAGE;
   deptNode['roles'] = { $roleId: roleNode };

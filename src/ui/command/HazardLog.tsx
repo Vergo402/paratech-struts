@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Hazard, HazardSeverity, HazardType } from '@core/hazard';
 import { openHazardsBySeverity, severityWord } from '@core/hazard';
+import { formulaSafe } from '@core/audit/csv';
 import { newId } from '@core/id';
 import { Badge, Button, Card, EmptyState, Sheet, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -70,7 +71,11 @@ export function HazardLog() {
     const header = ['Type', 'Location', 'Severity', 'Status', 'Reported', 'Reported by', 'Mitigated', 'Mitigated by'];
     const body = sorted.map((h) => [
       TYPE_LABEL[h.type],
-      h.location,
+      // formulaSafe guard (CWE-1236, #257 J257-S2): location is PEER-controlled free
+      // text — a value like `=HYPERLINK(...)` would execute when the export opens in
+      // Excel/Sheets. reportedBy/mitigatedBy are device uids (not peer free text), so
+      // they don't need the guard.
+      formulaSafe(h.location),
       severityWord(h.severity),
       h.mitigatedAt != null ? 'Mitigated' : 'Open',
       new Date(h.reportedAt).toLocaleString(),

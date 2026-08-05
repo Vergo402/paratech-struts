@@ -15,7 +15,7 @@ const AUDIT_CSV_HEADERS = ['When', 'Type', 'Action', 'Detail', 'By'] as const;
 // convention for "this is text"). Audit exports are analysis files, never re-imported
 // by the app, so the prefix is safe here — do NOT push this into @core/csv serialize:
 // the inventory CSV round-trips through our own importer, which a prefix would corrupt.
-function formulaSafe(cell: string): string {
+export function formulaSafe(cell: string): string {
   return /^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell;
 }
 

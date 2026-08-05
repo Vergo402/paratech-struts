@@ -98,6 +98,12 @@ export function UserManagerScreen() {
     [members],
   );
   const isLastAdmin = (uid: string) => activeAdminUids.length === 1 && activeAdminUids[0] === uid;
+  // J257-S4/S7 — the viewer's own ROLE, not just their permissions. Role authoring
+  // and credential custody (password / sign-in email) are Admin-only; a non-Admin
+  // manageUsers holder keeps add / revoke / assign of non-Admin members. Gating on
+  // the same axis the rules and the server guards use keeps the UI honest: nothing
+  // is offered that the backend will deny (#463).
+  const viewerIsAdmin = ownUid !== null && members?.[ownUid]?.role === ADMIN_ROLE_ID;
   const editingRole = roleEditor?.role ?? null; // the role open in the editor (null = create)
 
   const sortedMembers = useMemo(() => {
@@ -278,7 +284,10 @@ export function UserManagerScreen() {
         <div>
           <div className="fs-um-list">
             {roleList.map((r) => {
-              const locked = r.id === ADMIN_ROLE_ID; // Admin is fixed
+              // Admin is fixed; for a non-Admin viewer EVERY role is read-only
+              // (J257-S4 — role authoring is the escalation path, so it is
+              // Admin-only in the rules and must not be offered here).
+              const locked = r.id === ADMIN_ROLE_ID || !viewerIsAdmin;
               const tag = r.id === ADMIN_ROLE_ID ? 'built-in' : r.id === DEFAULT_ROLE_ID ? 'built-in · editable' : null;
               const inner = (
                 <>
@@ -301,11 +310,17 @@ export function UserManagerScreen() {
               );
             })}
           </div>
-          <div className="fs-um-create">
-            <Button variant="primary" size="standard" onPress={() => setRoleEditor({ role: null })}>
-              + Create role
-            </Button>
-          </div>
+          {viewerIsAdmin ? (
+            <div className="fs-um-create">
+              <Button variant="primary" size="standard" onPress={() => setRoleEditor({ role: null })}>
+                + Create role
+              </Button>
+            </div>
+          ) : (
+            <p className="fs-um-foot">
+              <LockIcon /> Only an Admin can create or change roles
+            </p>
+          )}
         </div>
       )}
 
@@ -317,6 +332,7 @@ export function UserManagerScreen() {
         roster={roster}
         isLastAdmin={assignTo ? isLastAdmin(assignTo.uid) : false}
         isSelf={assignTo !== null && assignTo.uid === ownUid}
+        viewerIsAdmin={viewerIsAdmin}
         onAssign={(roleId) => actThenRefresh(() => um.assignRole(assignTo!.uid, roleId))}
         onSaveProfile={(patch) => actThenRefresh(() => um.setMemberProfile(assignTo!.uid, patch))}
         onChangeEmail={(email) => actThenRefresh(() => um.changeMemberEmail(assignTo!.uid, email))}
@@ -353,7 +369,7 @@ export function UserManagerScreen() {
         }}
         roles={roleList}
         roster={roster}
-        actorIsAdmin={ownUid !== null && members?.[ownUid]?.role === ADMIN_ROLE_ID}
+        actorIsAdmin={viewerIsAdmin}
         onProvision={um.provisionMember}
       />
 

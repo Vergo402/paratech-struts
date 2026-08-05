@@ -247,8 +247,14 @@ export function AccountPage() {
             device. It can&rsquo;t be undone.
           </p>
           <p className="text-ink-tertiary" style={{ font: 'var(--type-body)' }}>
-            Your department is <strong>not</strong> deleted &mdash; it stays for your crew. Removing
-            an entire department is a request to the FieldShore admin.
+            You are removed from your department&rsquo;s roster and your profile is deleted with it.
+            The department itself is <strong>not</strong> deleted &mdash; it stays for your crew,
+            and the work you logged stays in its record. Removing an entire department is a request
+            to the FieldShore admin.
+          </p>
+          <p className="text-ink-tertiary" style={{ font: 'var(--type-body)' }}>
+            If you are your department&rsquo;s only Admin, promote someone else to Admin first
+            &mdash; otherwise no one can manage the department after you go.
           </p>
           <TextField
             label="Enter your password to confirm"

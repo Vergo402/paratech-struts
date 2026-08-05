@@ -27,6 +27,20 @@ export interface MemberEditSheetProps {
   /** The member IS the signed-in viewer. The ADMIN_MANAGE rule forbids an admin
    *  demoting/revoking THEMSELVES (actor must differ from target) — mirror it. */
   isSelf: boolean;
+  /**
+   * The VIEWER holds the Admin role (not merely `manageUsers`). Two backend
+   * facts this mirrors, so the sheet never offers what the backend denies:
+   *   · J257-S7 — credential custody (reset password / change sign-in email) is
+   *     Admin-only on the server (requireAdminForCredentialChange). Assuming a
+   *     member's login assumes their ICS position, so this is not a back-office-
+   *     only power.
+   *   · #463 — the ADMIN_MANAGE rule has ALWAYS denied a non-Admin actor
+   *     demoting, promoting-to-Admin, or revoking an Admin (adminLosingAdmin /
+   *     adminGainingAdmin need an Admin actor). The sheet used to offer those
+   *     controls anyway, so the click failed with a permission error. Now they
+   *     are disabled with the real reason.
+   */
+  viewerIsAdmin: boolean;
   onAssign: (roleId: string) => Promise<AdminMutationResult>;
   onSaveProfile: (patch: MemberProfilePatch) => Promise<AdminMutationResult>;
   onChangeEmail: (email: string) => Promise<AdminMutationResult>;
@@ -44,6 +58,10 @@ function CheckIcon() {
 
 const LAST_ADMIN_REASON = 'Promote another member to Admin first';
 const SELF_ADMIN_REASON = 'Another Admin must make this change';
+// #463 — the rule text, spoken plainly. Both cases were previously offered and
+// then denied by ADMIN_MANAGE at write time.
+const TOUCH_ADMIN_REASON = 'Only an Admin can change an Admin';
+const GRANT_ADMIN_REASON = 'Only an Admin can grant Admin';
 const UNASSIGNED = '__none__';
 
 export function MemberEditSheet({
@@ -54,6 +72,7 @@ export function MemberEditSheet({
   roster,
   isLastAdmin,
   isSelf,
+  viewerIsAdmin,
   onAssign,
   onSaveProfile,
   onChangeEmail,
@@ -71,6 +90,10 @@ export function MemberEditSheet({
   const [saving, setSaving] = useState(false);
 
   const row = member?.row ?? null;
+  const targetIsAdmin = row?.role === ADMIN_ROLE_ID;
+  // J257-S7 — password reset and sign-in-email change are the two credential ops;
+  // the server refuses both for a non-Admin caller, so don't render them at all.
+  const canChangeCredentials = viewerIsAdmin;
   useEffect(() => {
     if (!open) return;
     setError(null);
@@ -105,7 +128,10 @@ export function MemberEditSheet({
       badge.trim() !== was(row.badge) ||
       phone.trim() !== was(row.phone) ||
       certifications.trim() !== was(row.certifications));
-  const emailDirty = row !== null && email.trim() !== was(row.email) && email.trim() !== '';
+  // Hidden for a non-Admin viewer (J257-S7) — pinned false so no stale draft can
+  // ride along into save() and hit the server's credential guard.
+  const emailDirty =
+    canChangeCredentials && row !== null && email.trim() !== was(row.email) && email.trim() !== '';
   const dirty = profileDirty || emailDirty;
 
   const save = async () => {
@@ -152,8 +178,22 @@ export function MemberEditSheet({
           // The last active admin can't be moved off Admin, and an admin can't
           // demote THEMSELVES (both enforced by the ADMIN_MANAGE rule too).
           const selfAdminBlocked = isSelf && row?.role === ADMIN_ROLE_ID && r.id !== ADMIN_ROLE_ID;
-          const blocked = (isLastAdmin && r.id !== ADMIN_ROLE_ID) || selfAdminBlocked;
-          const reason = selfAdminBlocked && !isLastAdmin ? SELF_ADMIN_REASON : LAST_ADMIN_REASON;
+          // #463 — a non-Admin viewer can neither move an Admin off Admin
+          // (adminLosingAdmin) nor promote anyone to Admin (adminGainingAdmin).
+          const demoteAdminBlocked = !viewerIsAdmin && targetIsAdmin && r.id !== ADMIN_ROLE_ID;
+          const grantAdminBlocked = !viewerIsAdmin && !targetIsAdmin && r.id === ADMIN_ROLE_ID;
+          const blocked =
+            (isLastAdmin && r.id !== ADMIN_ROLE_ID) ||
+            selfAdminBlocked ||
+            demoteAdminBlocked ||
+            grantAdminBlocked;
+          const reason = grantAdminBlocked
+            ? GRANT_ADMIN_REASON
+            : demoteAdminBlocked
+              ? TOUCH_ADMIN_REASON
+              : selfAdminBlocked && !isLastAdmin
+                ? SELF_ADMIN_REASON
+                : LAST_ADMIN_REASON;
           return (
             <button
               key={r.id}
@@ -176,14 +216,16 @@ export function MemberEditSheet({
         <TextField label="Name" value={name} onChange={setName} maxLength={80} />
         <TextField label="Rank / title" value={rank} onChange={setRank} maxLength={80} placeholder="e.g. Captain, Rescue Specialist" />
         <BottomSheetPicker label="Apparatus" options={rigOptions} value={apparatusId} onSelect={setApparatusId} />
-        <TextField
-          label="Email — their sign-in"
-          value={email}
-          onChange={setEmail}
-          maxLength={120}
-          inputMode="text"
-          helper="Changing this signs them out everywhere; they sign back in with the new email."
-        />
+        {canChangeCredentials && (
+          <TextField
+            label="Email — their sign-in"
+            value={email}
+            onChange={setEmail}
+            maxLength={120}
+            inputMode="text"
+            helper="Changing this signs them out everywhere; they sign back in with the new email."
+          />
+        )}
         <TextField label="Badge / ID" value={badge} onChange={setBadge} maxLength={40} />
         <TextField label="Phone" value={phone} onChange={setPhone} maxLength={40} inputMode="numeric" />
         <TextField label="Certifications" value={certifications} onChange={setCertifications} maxLength={500} />
@@ -200,19 +242,30 @@ export function MemberEditSheet({
       {error && <p className="fs-um-sheet-error" role="alert">{error}</p>}
 
       <div className="fs-um-account-actions">
-        <Button variant="tertiary" size="standard" onPress={onRequestReset}>
-          <span className="fs-um-reset-label">
-            <KeyIcon /> Reset password to starter
-          </span>
-        </Button>
+        {canChangeCredentials && (
+          <Button variant="tertiary" size="standard" onPress={onRequestReset}>
+            <span className="fs-um-reset-label">
+              <KeyIcon /> Reset password to starter
+            </span>
+          </Button>
+        )}
         <Button
           variant="tertiary"
           destructive
           size="standard"
           onPress={onRequestRevoke}
-          disabled={isLastAdmin || (isSelf && row?.role === ADMIN_ROLE_ID)}
+          // #463 — revoking an Admin needs an Admin actor (adminLosingAdmin
+          // treats a deactivation as losing admin), so a non-Admin viewer is
+          // told why instead of hitting a permission error.
+          disabled={isLastAdmin || (isSelf && targetIsAdmin) || (!viewerIsAdmin && targetIsAdmin)}
           disabledReason={
-            isLastAdmin ? LAST_ADMIN_REASON : isSelf && row?.role === ADMIN_ROLE_ID ? SELF_ADMIN_REASON : undefined
+            isLastAdmin
+              ? LAST_ADMIN_REASON
+              : isSelf && targetIsAdmin
+                ? SELF_ADMIN_REASON
+                : !viewerIsAdmin && targetIsAdmin
+                  ? TOUCH_ADMIN_REASON
+                  : undefined
           }
         >
           Revoke access
