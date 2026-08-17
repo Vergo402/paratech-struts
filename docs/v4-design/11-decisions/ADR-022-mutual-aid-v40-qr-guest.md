@@ -8,11 +8,14 @@
 
 - [x] Proposed
 - [x] Accepted *(Phase G gate discussion — Alex, 2026-06-09: "full mutual aid into v4.0," "QR everywhere in v4.0," and "an arriving department with no account / no apparatus should still be able to use the app for the duration of the incident")*
+- [x] **Implementation deferred past v4.0** — design decisions locked; v4.0 ships zero code; tracked in [#493](https://github.com/Vergo402/paratech-struts/issues/493) (ruled 2026-08-17)
 
 **Date:** 2026-06-09
 **Author:** Claude Opus 4.8 (Phase G gate closeout)
 **Reviewer(s):** Alex (decision — three explicit calls: mutual aid → v4.0; QR everywhere v4.0; walk-up guests are a typed unit tag with v3 external-equipment handling, no on-the-fly deployable inventory)
 **Supersedes:** the **v4.5 timing** of cross-dept incident sharing. **Does not** supersede [ADR-003](ADR-003-scope-everyday-expandable.md)'s *scope* (local 2–5 departments; federal/IST still out) — only its deferral.
+
+**Amended 2026-08-17:** Design decisions accepted; implementation and code carry to #493 (past v4.0).
 
 ---
 

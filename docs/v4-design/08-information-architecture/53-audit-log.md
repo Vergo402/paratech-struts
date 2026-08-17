@@ -70,13 +70,23 @@ One persistence path, many formatted reads — no parallel data model.
 
 ## After-action auto-email (outside the radio rule — a Principle-10 scope clarification, [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md))
 
-When an **incident is completed** (End Operation), the assembled after-action record — the export-convergence packet above (ICS-201/203/207/208/209 + PAR snapshot + Hazard Log ICS-208 + raw CSV) — is **automatically emailed to the Incident Commander / Operations Section Chief** (Alex, #217 gate). This is the **first outbound thing the app does**, and it is **outside the scope of [Principle 10](../02-principles.md)** (no in-app comms / no push) — **not an exception to it**: it fires **only after the incident closes**, **only to IC/Ops**, carries **only the after-action record, read later** — **never during an operation, never tactical, never a life-safety signal**. The radio rule stays **fully in force** — this is documentation, not communication.
+When an **incident is completed** (End Operation), the assembled after-action record **design decision is locked** — the export-convergence packet (ICS-201/203/207/208/209 + PAR snapshot + Hazard Log ICS-208 + raw CSV) *would* be automatically emailed to the Incident Commander / Operations Section Chief (Alex, #217 gate). This is **outside the scope of [Principle 10](../02-principles.md)** (no in-app comms / no push) — **not an exception to it**: it fires **only after the incident closes**, **only to IC/Ops**, carries **only the after-action record, read later** — **never during an operation, never tactical, never a life-safety signal**. The radio rule stays **fully in force** — this is documentation, not communication.
 
-**Decided in [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md)** ([#305](https://github.com/Vergo402/paratech-struts/issues/305) — the scope-clarification record for Principle 10: an after-action record read *later* is outside the radio rule, not an exception to it). **On by default, department-disableable** — the opt-out toggle ships with the [Settings](50-settings.md) pass ([#308](https://github.com/Vergo402/paratech-struts/issues/308)). Recipients are the IC + Operations Section Chief **as assigned at close** (Ops unfilled → IC only; neither filled → department Admin fallback); a **guest** commander with no address simply isn't emailed — the record persists **here** regardless (email is a *sink*, not the record). The **email transport + address sourcing** is Phase H infrastructure ([`99-open-questions.md`](../99-open-questions.md) #35); the trigger wiring ships with the after-action feature ([`99-open-questions.md`](../99-open-questions.md) #32).
+**Decided in [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md)** ([#305](https://github.com/Vergo402/paratech-struts/issues/305) — the scope-clarification record for Principle 10: an after-action record read *later* is outside the radio rule, not an exception to it). **Policy toggle ships v4.0, department-disableable** — the opt-out toggle ships with the [Settings](50-settings.md) pass ([#308](https://github.com/Vergo402/paratech-struts/issues/308)). Recipients *would be* the IC + Operations Section Chief **as assigned at close** (Ops unfilled → IC only; neither filled → department Admin fallback); a **guest** commander with no address simply isn't emailed — the record persists **here** regardless (email is a *sink*, not the record). The **email transport + send mechanism** is **deferred past v4.0** ([#495](https://github.com/Vergo402/paratech-struts/issues/495)); the trigger wiring ships with the after-action feature ([`99-open-questions.md`](../99-open-questions.md) #32).
+
+**Amended 2026-08-17:** v4.0 ships the policy toggle only; no send mechanism in v4.0. Email transport deferred to #495 (past v4.0).
 
 ## What ships v4.0 (and the flagged ambiguity)
 
-The **event-log persistence ships v4.0** — it is THE persistence path of the whole app (ADR-009), not an add-on. Whether *this review/after-action UI* ships v4.0 or v4.1 is **ambiguous in the source** (master-plan D7 "Option B" vs. synthesis "deferred") — **not resolved here; tracked as [`99-open-questions.md`](../99-open-questions.md) #32** (shared with [User Manager](51-user-manager.md)). The IA is identical either way.
+The **event-log persistence ships v4.0** — it is THE persistence path of the whole app (ADR-009), not an add-on.
+
+**v4.0 export set (decided, gate review M12):**
+- **Raw CSV of the event log** — ships v4.0
+- **ICS-201 / 203 / 207 / 208 / 209 assembled forms + PAR snapshot + Hazard Log ICS-208** — **deferred past v4.0**, tracked in [#494](https://github.com/Vergo402/paratech-struts/issues/494) (ruled 2026-08-17)
+
+Whether *this review/after-action UI surface* ships v4.0 or v4.1 is **ambiguous in the source** (master-plan D7 "Option B" vs. synthesis "deferred") — **not resolved here; tracked as [`99-open-questions.md`](../99-open-questions.md) #32** (shared with [User Manager](51-user-manager.md)). The IA is identical either way.
+
+**Amended 2026-08-17:** v4.0 ships raw CSV export only. Assembled forms export deferred to #494 (past v4.0).
 
 ## 2FA forward hook (future, out of current scope)
 

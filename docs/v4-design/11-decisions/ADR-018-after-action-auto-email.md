@@ -8,11 +8,14 @@
 
 - [x] Proposed
 - [x] Accepted *(Phase F [#217](https://github.com/Vergo402/paratech-struts/issues/217) gate follow-up [#305](https://github.com/Vergo402/paratech-struts/issues/305) — Alex, 2026-06-09)*
+- [x] **Policy toggle ships v4.0; email transport deferred past v4.0** — tracked in [#495](https://github.com/Vergo402/paratech-struts/issues/495) (ruled 2026-08-17)
 
 **Date:** 2026-06-09
 **Author:** Claude Opus 4.8 (Phase F gate follow-up #305)
 **Reviewer(s):** Alex (#305 — approved 2026-06-09; **directed the scope-clarification framing** — the after-action email does not break the radio rule and is not an exception to it)
 **Clarifies:** [Principle 10](../02-principles.md) ("Respect the radio") — its **scope**. The principle is not changed; this records that it does not reach after-action records delivery.
+
+**Amended 2026-08-17:** The department policy **toggle ships in v4.0 Settings**, but there is **no send mechanism in v4.0**. Email transport deferred to #495 (past v4.0).
 
 ---
 
@@ -55,7 +58,7 @@ The specifics — and the reason it stays plainly **records, not communication**
 ### Ship split
 
 - The **scope clarification + the feature decision** are **locked now**.
-- The **email transport** — the send mechanism + IC/Ops address sourcing — is **Phase H infrastructure** ([`99-open-questions.md`](../99-open-questions.md) #35), like other platform-infra deferrals.
+- The **email transport** — the send mechanism + IC/Ops address sourcing — is **deferred past v4.0** ([#495](https://github.com/Vergo402/paratech-struts/issues/495); ruled 2026-08-17). v4.0 ships the **policy toggle only** (Settings).
 - The **trigger wiring** (End Operation → assemble the packet → send) ships with the **after-action review feature**, which rides the existing v4.0-vs-v4.1 UI-deferral question ([`99-open-questions.md`](../99-open-questions.md) #32). **Decision now; plumbing later.**
 
 ---

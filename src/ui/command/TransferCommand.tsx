@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { OrgResourceRef } from '@core/schema';
 import { currentIC, positionForResource, sameResource } from '@core/org';
 import { Button, TextField, claimOverlay, releaseOverlay, isTopOverlay } from '@ui/primitives';
-import { useApparatus, useOrg, useRoster } from '@ui/hooks';
+import { useApparatus, useOrg, useRoster, useShorePoints } from '@ui/hooks';
 import { useOrgCommit } from './useOrgCommit';
 import { ICS201Brief } from './ICS201Brief';
 import { BackChevronIcon, CheckIcon } from './icons';
@@ -16,15 +16,23 @@ import { BackChevronIcon, CheckIcon } from './icons';
  * OrgFullScreen's Radix Dialog + overlay-claim scaffold (focus trap, Esc, focus return).
  *
  * Recipients, in ruled order (Alex 2026-08-05: rigs first — personnel rotate, rig
- * designations stay): the apparatus on scene (#489 — ADR-021 Addendum 2 scopes the
- * 4-digit accept code to named-individual AND apparatus targets; "Battalion 1 has
- * command" is a real handoff, so the rig is a first-class target rather than a
- * re-typed name), then people already on the org chart (individual/device refs, minus
- * the current IC), then the signed-in department members (account refs, uid-verified)
- * PLUS a type-a-name field that mints the incoming individual inline (the
- * ref rides the Initiated event; the reducer sets the IC leader to it on Accept — no
- * separate assignment). The brief is the live six-datum ICS-201 snapshot, derived, no
- * manual entry.
+ * designations stay): the apparatus assigned to THIS operation (#489 — ADR-021
+ * Addendum 2 scopes the 4-digit accept code to named-individual AND apparatus
+ * targets; "Battalion 1 has command" is a real handoff, so the rig is a first-class
+ * target rather than a re-typed name), then people already on the org chart
+ * (individual/device refs, minus the current IC), then the signed-in department
+ * members (account refs, uid-verified) PLUS a type-a-name field that mints the
+ * incoming individual inline (the ref rides the Initiated event; the reducer sets
+ * the IC leader to it on Accept — no separate assignment). The brief is the live
+ * six-datum ICS-201 snapshot, derived, no manual entry.
+ *
+ * Apparatus scoping (independent review R6, 2026-08-17): the app has no on-scene
+ * telemetry, so the list must not claim more than the data supports. It is filtered
+ * to rigs actually assigned to the active op — apparatus referenced by an org-chart
+ * position's assignedResources, UNION apparatus named in a live shore point's
+ * assignedResource — deduped by apparatus id. Idle department rigs never appear.
+ * The unearned "Available" status text goes with it; the row shows the rig's
+ * command-chart position when it has one, or nothing.
  */
 // 4 digits, crypto-random, bias-free (256 % 10 ≠ 0, so use rejection-free scaling
 // via two bytes per digit — overkill-simple: one byte, reject ≥250).
@@ -40,7 +48,8 @@ function mintClaimCode(): string {
 export function TransferCommand({ open, onClose }: { open: boolean; onClose: () => void }) {
   const positions = useOrg();
   const roster = useRoster(true); // department members (accounts), minus me
-  const { roster: apparatusRoster } = useApparatus(); // same source as the org chart's "Available rigs"
+  const { roster: apparatusRoster } = useApparatus(); // full department roster — filtered to the op below
+  const shorePoints = useShorePoints(); // active op's shore points — the 2nd assignment signal
   const emit = useOrgCommit();
   const ic = currentIC(positions);
 
@@ -88,18 +97,36 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
     return out;
   }, [positions, ic]);
 
-  // Apparatus on scene (#489) — the SAME source the org chart's "Available rigs" strip
-  // uses (`useApparatus().roster`), assigned and unassigned alike, so handing command to
-  // a rig is one tap instead of a re-typed name. Secondary label = the rig's current
-  // command home (its org-chart position title) or "Available". Minus the current IC, so
-  // a rig already holding command can't be handed command.
+  // Apparatus assigned to THIS operation (#489, scoped per R6 — no on-scene telemetry
+  // exists, so the list can't claim the whole department roster is present). A rig
+  // qualifies via either assignment signal: it holds an org-chart position, or a live
+  // shore point's assignedResource names it (@core/org's positionForShorePoint /
+  // shorePointsForResource join the same two signals elsewhere). Deduped by id. Minus
+  // the current IC, so a rig already holding command can't be handed command.
+  const assignedApparatusIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const p of Object.values(positions)) {
+      for (const r of p.assignedResources) {
+        if (r.ref === 'apparatus') ids.add(r.value);
+      }
+    }
+    const byName = new Map(apparatusRoster.map((app) => [app.name, app.id]));
+    for (const sp of shorePoints) {
+      if (sp.deletedAt != null || !sp.assignedResource) continue;
+      const id = byName.get(sp.assignedResource);
+      if (id) ids.add(id);
+    }
+    return ids;
+  }, [positions, shorePoints, apparatusRoster]);
+
   const apparatusCandidates = useMemo(
     () =>
       apparatusRoster
+        .filter((app) => assignedApparatusIds.has(app.id))
         .map((app) => ({ ref: 'apparatus' as const, value: app.id, label: app.name }))
         .filter((r) => !(ic && sameResource(r, ic)))
         .map((r) => ({ resource: r, at: positionForResource(positions, r)?.title ?? null })),
-    [apparatusRoster, positions, ic],
+    [apparatusRoster, assignedApparatusIds, positions, ic],
   );
 
   // Department members as account-ref targets (the #439 roster) — hand command to a
@@ -166,47 +193,48 @@ export function TransferCommand({ open, onClose }: { open: boolean; onClose: () 
             </div>
 
             <span className="fs-cmd-eyebrow">Transfer command to</span>
-            {candidates.length === 0 &&
-            memberCandidates.length === 0 &&
-            apparatusCandidates.length === 0 ? (
+            {candidates.length === 0 && memberCandidates.length === 0 ? (
               <p className="fs-cmd-roster-empty">No one else is assigned yet — type a name below.</p>
             ) : null}
 
             {/* Rigs lead (Alex, 2026-08-05): personnel change on rigs all the time —
-                the rig designation is the stable thing command passes to. */}
-            {apparatusCandidates.length > 0 && (
-              <>
-                <span className="fs-cmd-eyebrow">Apparatus on scene</span>
-                <ul className="fs-assign-list" aria-label="Apparatus on scene">
-                  {apparatusCandidates.map(({ resource: r, at }) => {
-                    const on = !typed && picked != null && sameResource(picked, r);
-                    return (
-                      <li key={`apparatus:${r.value}`}>
-                        <button
-                          type="button"
-                          className={`fs-assign-row${on ? ' is-on' : ''}`}
-                          aria-pressed={on}
-                          onClick={() => {
-                            setName('');
-                            setPicked(r);
-                          }}
-                        >
-                          <span className="fs-assign-name">{r.label}</span>
-                          <span className="fs-assign-meta">
-                            {on ? (
-                              <>
-                                <CheckIcon /> selected
-                              </>
-                            ) : (
-                              (at ?? 'Available')
-                            )}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </>
+                the rig designation is the stable thing command passes to. Scoped to the
+                op's assigned apparatus only (R6, 2026-08-17) — no on-scene telemetry
+                exists, so the section can't claim the full department roster is present;
+                it always renders (with a quiet empty line) rather than hiding silently. */}
+            <span className="fs-cmd-eyebrow">Apparatus on scene</span>
+            {apparatusCandidates.length === 0 ? (
+              <p className="fs-cmd-roster-empty">No apparatus assigned to this operation yet.</p>
+            ) : (
+              <ul className="fs-assign-list" aria-label="Apparatus on scene">
+                {apparatusCandidates.map(({ resource: r, at }) => {
+                  const on = !typed && picked != null && sameResource(picked, r);
+                  return (
+                    <li key={`apparatus:${r.value}`}>
+                      <button
+                        type="button"
+                        className={`fs-assign-row${on ? ' is-on' : ''}`}
+                        aria-pressed={on}
+                        onClick={() => {
+                          setName('');
+                          setPicked(r);
+                        }}
+                      >
+                        <span className="fs-assign-name">{r.label}</span>
+                        <span className="fs-assign-meta">
+                          {on ? (
+                            <>
+                              <CheckIcon /> selected
+                            </>
+                          ) : (
+                            at
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
 
             {candidates.length > 0 && (

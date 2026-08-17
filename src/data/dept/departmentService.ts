@@ -198,6 +198,12 @@ interface PendingDeptPushRow {
 const OUTBOX_SET_TIMEOUT_MS = 8000;
 const CREATE_WAIT_MS = 4000;
 
+// The same hang class applies to one-time get()s, not just set()s: offline, get()
+// never rejects either — it just never resolves. Cold-read screens that key their
+// loading state off the promise settling (Audit Log, #211) would spin forever
+// without a bound. Bounded so the hook can show the retry state instead.
+const READ_TIMEOUT_MS = 8000;
+
 function timeoutMs<T>(ms: number, value: T): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
@@ -207,11 +213,12 @@ export function createDepartmentService(deps: {
   /** Global meta DB for the pending-join intent (default: the global singleton). */
   db?: FieldShoreDB;
   /** Outbox timing overrides (tests only — production uses the defaults). */
-  timeouts?: { outboxSet?: number; createWait?: number };
+  timeouts?: { outboxSet?: number; createWait?: number; read?: number };
 }): DepartmentServiceApi {
   const db = deps.db ?? globalDb;
   const outboxSetMs = deps.timeouts?.outboxSet ?? OUTBOX_SET_TIMEOUT_MS;
   const createWaitMs = deps.timeouts?.createWait ?? CREATE_WAIT_MS;
+  const readMs = deps.timeouts?.read ?? READ_TIMEOUT_MS;
   let retrying = false; // one retry at a time — a rapid double 'online' must not race two joins
 
   async function readIntent(): Promise<PendingJoinIntent | null> {
@@ -622,11 +629,22 @@ export function createDepartmentService(deps: {
   // Read the governance audit trail (the P3 /orgs/{dept}/audit append-only node). The
   // rules gate the read on manageUsers (#381); a denial / offline read returns null →
   // the hook shows a retry state, never a crash. Coarse shape-check, like readMembers.
+  //
+  // Raced against READ_TIMEOUT_MS (#211): an offline get() never rejects — it buffers
+  // forever — so without a bound this promise would never settle and AuditLogScreen
+  // would show "Loading…" eternally. On timeout, resolve null just like a read error;
+  // the hook already renders "Couldn't load the trail" + Retry for that case.
   async function readAudit(): Promise<AuditEntry[] | null> {
     const c = adminCtx();
     if (!c) return null;
+    const TIMED_OUT = 'timed-out' as const;
     try {
-      const snap = await get(ref(rtdb, `orgs/${c.deptId}/audit`));
+      const result = await Promise.race([
+        get(ref(rtdb, `orgs/${c.deptId}/audit`)),
+        timeoutMs(readMs, TIMED_OUT),
+      ]);
+      if (result === TIMED_OUT) return null;
+      const snap = result;
       const val = snap.val();
       if (!val || typeof val !== 'object') return [];
       const out: AuditEntry[] = [];

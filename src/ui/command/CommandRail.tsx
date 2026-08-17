@@ -5,7 +5,7 @@ import { currentIC, leaderOf, defaultPositionId, canAccept } from '@core/org';
 import { openHazardsBySeverity, severityWord } from '@core/hazard';
 import { Badge, Button, Card, Segmented, Sheet, StatStrip, TextField, useIsDesktop } from '@ui/primitives';
 import { AlertIcon, ChevronRightIcon, FlagIcon, OrgGlyphIcon, PendingClockIcon } from './icons';
-import { HazardChip } from './IncidentChips';
+import { HazardChip, useSafetyOfficerLabel } from './IncidentChips';
 import {
   useOperation,
   useShorePoints,
@@ -56,6 +56,11 @@ export function CommandRail({
   // Command edit gate (ADR-024 follow-up) — a hook, so it stays above the early return.
   const isIC = useIsIC();
   const pendingResourceCount = usePendingResourceCount();
+  // N6 — the same Safety Officer lookup IncidentChips' SafetyOfficerChip uses, so the
+  // staff-card row and the chip agree by construction, not by two hand-copied
+  // lookups drifting apart. A hook (calls useOperation/useOrg internally), so it
+  // has to sit here with the rest — above the `if (!operation) return null` below.
+  const safetyLabel = useSafetyOfficerLabel();
   const emit = useOrgCommit();
   const [scope, setScope] = useState<SitStatScope>('all');
   const [transferOpen, setTransferOpen] = useState(false);
@@ -116,9 +121,11 @@ export function CommandRail({
 
   const ic = currentIC(positions);
   const ops = positions[defaultPositionId(operation.id, 'ops')];
-  const safety = positions[defaultPositionId(operation.id, 'safety')];
   const opsName = (ops && leaderOf(ops)?.label) ?? 'Unassigned';
-  const safetyName = (safety && leaderOf(safety)?.label) ?? 'Unassigned';
+  // Deliberately the FIRST Safety leader only (leaderOf), same as the chip — a
+  // position can carry more than one assigned resource, but the staff row and
+  // the chip both show a single name, so they must pick the same one.
+  const safetyName = safetyLabel ?? 'Unassigned';
   const ROSTER_PREVIEW = 3;
   const topHazard = openHazards[0];
 
@@ -196,7 +203,7 @@ export function CommandRail({
         </div>
         <div className="fs-cmd-staff-row">
           <span className="fs-cmd-eyebrow">Safety Officer</span>
-          <span className={`fs-cmd-staff-name${safety && leaderOf(safety) ? '' : ' is-unassigned'}`}>{safetyName}</span>
+          <span className={`fs-cmd-staff-name${safetyLabel ? '' : ' is-unassigned'}`}>{safetyName}</span>
         </div>
       </Card>
 
@@ -380,7 +387,7 @@ export function CommandRail({
             {openHazards.length > 0 && topHazard ? (
               <>
                 <span className={`fs-cmd-entry-chip is-${topHazard.severity}`}>
-                  {openHazards.length} {severityWord(topHazard.severity).toUpperCase()}
+                  {openHazards.length} open · {severityWord(topHazard.severity)}
                 </span>
                 <span className="fs-cmd-entry-meta">{topHazard.location}</span>
               </>

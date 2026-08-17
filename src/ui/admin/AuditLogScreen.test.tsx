@@ -107,6 +107,17 @@ describe('AuditLogScreen', () => {
     expect(screen.getByText(`from ${STATUS_LABELS.process}`)).toBeInTheDocument();
   });
 
+  it('administrative read error (#211) shows the retry state, not "Loading…", and Retry calls refresh()', async () => {
+    const user = userEvent.setup();
+    mockAccess.mockReturnValue({ opId: 'op1', opName: 'Maple St', canIncident: false, canAdministrative: true, loading: false });
+    mockAuditTrail.mockReturnValue({ entries: null, error: true, refresh: auditRefresh });
+    render(<AuditLogScreen />);
+    expect(screen.queryByText('Loading…')).not.toBeInTheDocument();
+    expect(screen.getByText('Couldn’t load the trail')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(auditRefresh).toHaveBeenCalledTimes(1);
+  });
+
   it('export builds a CSV of the active view', async () => {
     const user = userEvent.setup();
     mockAccess.mockReturnValue({ opId: 'op1', opName: 'Maple St', canIncident: true, canAdministrative: false, loading: false });

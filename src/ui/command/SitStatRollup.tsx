@@ -89,9 +89,9 @@ function DivisionRow({ row, lagging }: { row: RollupRow; lagging: boolean }) {
  * inline in the command rail on desktop and inside a Sheet on phone.
  *
  * Status headers (#488, restoring what #434 dropped): each column shows a color
- * dot + abbreviated label (Pend / Assign / Set / Cut / Run / Secured / Ret'd),
- * with a quiet one-line legend below the table spelling out each abbreviation's
- * full STATUS_LABELS word. Header accessible names are the full word.
+ * dot + abbreviated label (Pend / Assign / Set / Cut / Run / Secured / Ret'd).
+ * No legend — Q1 restores the no-legend state of #434; the header's accessible
+ * name (the full STATUS_LABELS word) is the only place the full word lives.
  */
 export function SitStatRollup() {
   const shorePoints = useShorePoints();
@@ -123,8 +123,7 @@ export function SitStatRollup() {
               {/* Status color dot + abbreviated label (#488, restoring the spec's
                   Pend/Assign/Set/Cut/Run/Secured/Ret'd headers dropped in #434).
                   The header's accessible name is the full STATUS_LABELS word;
-                  the dot + abbreviation are the visible, aria-hidden content. A
-                  one-line legend below the table maps abbreviation -> full word. */}
+                  the dot + abbreviation are the visible, aria-hidden content. */}
               {STATUS_ORDER.map((s) => (
                 <th key={s} scope="col" className={`fs-rollup-colhead col-${s}`} aria-label={STATUS_LABELS[s]}>
                   <span className="fs-rollup-colhead-inner" aria-hidden="true">
@@ -154,14 +153,6 @@ export function SitStatRollup() {
           </tfoot>
         </table>
       </div>
-      <p className="fs-rollup-legend">
-        {STATUS_ORDER.map((s, i) => (
-          <span key={s} className="fs-rollup-legend-item">
-            <strong>{STATUS_ABBR[s]}</strong> <span>{STATUS_LABELS[s]}</span>
-            {i < STATUS_ORDER.length - 1 ? ' · ' : ''}
-          </span>
-        ))}
-      </p>
     </div>
   );
 }

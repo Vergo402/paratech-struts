@@ -59,7 +59,7 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> }) {
             <InchesValue inches={-row.inches} />
           </span>
         ) : (
-          <span className="fs-rec-slot-value fs-rec-ns">N/S</span>
+          <span className="fs-rec-slot-value fs-rec-ns">Not recorded</span>
         )}
       </div>
       <span className="fs-rec-slot-name">{row.name}</span>

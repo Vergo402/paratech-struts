@@ -11,7 +11,12 @@ import type { PendingTransfer } from '@core/org';
 const mockEmit = vi.fn();
 let pending: PendingTransfer | null = null;
 let pendingResourceCount = 0;
+// N6 — mutable (not a fresh seedOrgState() per call) so a test can assign a
+// Safety Officer and have BOTH CommandRail and IncidentChips' SafetyOfficerChip
+// (rendered against the same mocked @ui/hooks) read that same position.
+let orgPositions = seedOrgState('op1', 'dev-1').positions;
 
+vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('./useOrgCommit', () => ({ useOrgCommit: () => mockEmit }));
 // Null out children that drag in their own hook graphs — not under test here.
 vi.mock('./SitStatRollup', () => ({ SitStatRollup: () => null }));
@@ -20,7 +25,7 @@ vi.mock('./OpPeriod', () => ({ OpPeriodIndicator: () => null, OpRolloverCard: ()
 vi.mock('@ui/hooks', () => ({
   useOperation: () => ({ id: 'op1', name: 'Test Op', location: '' }),
   useShorePoints: () => [],
-  useOrg: () => seedOrgState('op1', 'dev-1').positions,
+  useOrg: () => orgPositions,
   useHazards: () => [],
   useCommandTransfer: () => pending,
   useDeviceUidValue: () => 'dev-1',
@@ -30,6 +35,8 @@ vi.mock('@ui/hooks', () => ({
 }));
 
 import { CommandRail } from './CommandRail';
+import { SafetyOfficerChip } from './IncidentChips';
+import { defaultPositionId } from '@core/org';
 
 const PERSON = { ref: 'individual', value: 'BC Smith', label: 'BC Smith' } as const;
 const DEVICE = { ref: 'device', value: 'dev-2', label: 'Tablet 2' } as const;
@@ -39,6 +46,7 @@ beforeEach(() => {
   mockEmit.mockReset().mockResolvedValue(undefined);
   pending = null;
   pendingResourceCount = 0;
+  orgPositions = seedOrgState('op1', 'dev-1').positions;
 });
 
 describe('CommandRail — hand-the-tablet accept (#401)', () => {
@@ -230,5 +238,76 @@ describe('CommandRail — entry rows (#434 Stage 2c)', () => {
     render(<CommandRail />);
     expect(screen.queryByRole('button', { name: /Org Chart/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Hazards/ })).not.toBeInTheDocument();
+  });
+});
+
+// Scoped lookups — once a Safety resource is assigned, "Safety Officer" ALSO
+// shows up as the resource-roster row's home badge, and the assigned name shows
+// up in that roster row too. Filter down to the staff card specifically.
+const safetyRowName = () => {
+  const eyebrow = screen.getAllByText('Safety Officer').find((el) => el.closest('.fs-cmd-staff-row'));
+  return eyebrow!.closest('.fs-cmd-staff-row')!.querySelector('.fs-cmd-staff-name')!;
+};
+const chipValue = () => screen.getByRole('button', { name: /^Safety Officer:/ }).querySelector('.fs-ichip-v')!;
+
+// N6 — the staff-card Safety Officer row (CommandRail) and the SafetyOfficerChip
+// (IncidentChips) both derive from useSafetyOfficerLabel now, instead of two
+// hand-copied `defaultPositionId` + `leaderOf` lookups that could silently drift
+// apart. Both are rendered here against the SAME mocked @ui/hooks state so a
+// regression that reintroduces a second, diverging lookup would show up as these
+// two surfaces disagreeing.
+describe('CommandRail + SafetyOfficerChip — same label by construction (#490 N6)', () => {
+  it('agree when unassigned', () => {
+    render(
+      <>
+        <CommandRail />
+        <SafetyOfficerChip />
+      </>,
+    );
+    expect(safetyRowName()).toHaveTextContent('Unassigned');
+    expect(chipValue()).toHaveTextContent('Unassigned');
+  });
+
+  it('agree on the assigned name', () => {
+    const safetyId = defaultPositionId('op1', 'safety');
+    orgPositions = {
+      ...orgPositions,
+      [safetyId]: {
+        ...orgPositions[safetyId]!,
+        assignedResources: [{ ref: 'individual', value: 'FF Alvarez', label: 'FF Alvarez' }],
+      },
+    };
+    render(
+      <>
+        <CommandRail />
+        <SafetyOfficerChip />
+      </>,
+    );
+    expect(safetyRowName()).toHaveTextContent('FF Alvarez');
+    expect(chipValue()).toHaveTextContent('FF Alvarez');
+  });
+
+  it('agree on the assigned-but-empty-label edge — both render an empty name, not a fallback', () => {
+    const safetyId = defaultPositionId('op1', 'safety');
+    orgPositions = {
+      ...orgPositions,
+      [safetyId]: {
+        ...orgPositions[safetyId]!,
+        assignedResources: [{ ref: 'individual', value: 'ff-unnamed', label: '' }],
+      },
+    };
+    render(
+      <>
+        <CommandRail />
+        <SafetyOfficerChip />
+      </>,
+    );
+    // Neither surface falls back to "Unassigned" text for an assigned-but-empty
+    // label (nullish coalescing only, not a truthiness check) — both render an
+    // empty name, with the is-unassigned visual treatment either way.
+    expect(safetyRowName()).toHaveTextContent('');
+    expect(safetyRowName()).toHaveClass('is-unassigned');
+    expect(chipValue()).toHaveTextContent('');
+    expect(chipValue()).toHaveClass('is-unassigned');
   });
 });

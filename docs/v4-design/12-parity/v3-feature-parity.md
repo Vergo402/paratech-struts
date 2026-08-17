@@ -62,6 +62,8 @@ Major v3 screens/features mapped to their v4 design home. 🟡 Pending = the scr
 | Command / SitStat | ✅ | [`30-command-sitstat.md`](../08-information-architecture/30-command-sitstat.md) |
 | Org Chart (ICS roles, drag-assign, command transfer) | ✅ | [`31-org-chart.md`](../08-information-architecture/31-org-chart.md) |
 | Hazard Log | ✅ | [`32-hazard-log.md`](../08-information-architecture/32-hazard-log.md) |
+| **Hazard surfacing** (compact chip on Operations/Cutting headers + Command chip) | ✅ **Covered** | [`30-command-sitstat.md`](../08-information-architecture/30-command-sitstat.md) (amended 2026-08-17 per #491) |
+| **Broadcast wall-board** (C-13, read-only projection) | 🔴 **Gap** | Spec exists ([`30-command-sitstat.md`](../08-information-architecture/30-command-sitstat.md)); deferred past v4.0 — tracked in [#496](https://github.com/Vergo402/paratech-struts/issues/496) (ruled 2026-08-17 per #491) |
 | Inventory (apparatus stock, ± stepper) | ✅ | [`40-inventory.md`](../08-information-architecture/40-inventory.md) |
 | Excel import/export (ID + Plate-ID round-trip, orphan guard) | ✅ | [`40-inventory.md`](../08-information-architecture/40-inventory.md) §Excel |
 | Visual-grid plate / wood picker | ✅ preserved verbatim | [`picker.md`](../03-primitives/picker.md), [`sheet.md`](../03-primitives/sheet.md) |
@@ -74,6 +76,9 @@ Major v3 screens/features mapped to their v4 design home. 🟡 Pending = the scr
 | Anonymous Auth → **per-account binding** (superseded 2026-07-11) | ✅ | `src/data/sync/authSession.ts`; `src/ui/hooks/useCommandSelf.ts` (`commandsIC`/`useIsIC`) — ICS positions/IC/My-Role follow the signed-in **account**, not the device, so a multi-device admin isn't locked out of org edits. Originally shipped as per-device UID binding; row reworded to match the shipped behavior. |
 | Capacity / load-table ratings | ⚪ Demoted by design (not deleted) | [`06-synthesis.md`](../06-synthesis.md) §3.4 |
 | Brand: FieldStruts → FieldShore (localStorage key migration) | ✅ | `index.html` migration shim; [ADR-013](../11-decisions/ADR-013-brand-emblem-full-color.md) (emblem) |
+| **After-action auto-email** (policy toggle + transport) | 🔴 **Gap** | [ADR-018](../11-decisions/ADR-018-after-action-auto-email.md); policy toggle ships v4.0 Settings, **no send mechanism** — deferred past v4.0 — tracked in [#495](https://github.com/Vergo402/paratech-struts/issues/495) (ruled 2026-08-17 per #491) |
+| **Mutual aid (cross-dept incident sharing, QR join, guest participation)** | 🔴 **Gap** | [ADR-022](../11-decisions/ADR-022-mutual-aid-v40-qr-guest.md); design decisions accepted, **zero implementation in v4.0** — deferred past v4.0 — tracked in [#493](https://github.com/Vergo402/paratech-struts/issues/493) (ruled 2026-08-17 per #491) |
+| **Audit Log ICS-form export** (ICS-203 / 207 / 209 assembled forms) | 🔴 **Gap** | [`53-audit-log.md`](../08-information-architecture/53-audit-log.md); raw CSV ships v4.0, **assembled forms deferred** — tracked in [#494](https://github.com/Vergo402/paratech-struts/issues/494) (ruled 2026-08-17 per #491) |
 
 ---
 

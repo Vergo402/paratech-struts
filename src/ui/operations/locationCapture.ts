@@ -88,10 +88,16 @@ export function useW3wBackfill(opId: string | undefined, shorePoints: ShorePoint
   const getUid = useDeviceUid();
 
   useEffect(() => {
-    if (!opId || !w3wEnabled()) return;
+    if (!opId) return;
 
     let cancelled = false;
     const run = async () => {
+      // Re-checked on every call, not just at effect mount — the 'online' listener
+      // below fires run() on each reconnect regardless of when the effect was set
+      // up, and the latch (#441 follow-up) can flip mid-session after this effect
+      // already mounted. Without this re-check a latched key kept retrying forever
+      // on every 'online' event.
+      if (!w3wEnabled()) return;
       if (!navigator.onLine) return;
       const pending = shorePoints.filter((sp) => sp.coords && !sp.w3w && !sp.deletedAt && !attempted.has(sp.id));
       if (pending.length === 0) return;

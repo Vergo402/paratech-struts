@@ -52,26 +52,11 @@ describe('SitStatRollup', () => {
       "Ret'd": 'Strut Equipment Returned',
     };
     for (const [abbr, full] of Object.entries(abbrevToFull)) {
-      // Visible abbreviation renders in the header cell (and again in the legend).
+      // Visible abbreviation renders in the header cell.
       expect(screen.getAllByText(abbr).length).toBeGreaterThan(0);
-      // ...but the header's accessible name is the full STATUS_LABELS word.
+      // ...but the header's accessible name is the full STATUS_LABELS word — the
+      // only place the full word lives now that Q1 dropped the legend (#488).
       expect(screen.getByRole('columnheader', { name: full })).toBeInTheDocument();
-    }
-  });
-
-  it('renders a one-line legend mapping every abbreviation to its full STATUS_LABELS word', () => {
-    mockShorePoints.mockReturnValue([sp({ division: '1', status: 'cutting' })]);
-    render(<SitStatRollup />);
-    for (const full of [
-      'Pending Equipment',
-      'Equipment Assigned',
-      'Strut Set',
-      'Cutting Station',
-      'Runner',
-      'Wood Shore Secured',
-      'Strut Equipment Returned',
-    ]) {
-      expect(screen.getByText(full)).toBeInTheDocument();
     }
   });
 

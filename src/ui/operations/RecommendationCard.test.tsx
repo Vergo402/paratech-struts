@@ -101,8 +101,8 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     );
     const labels = [...container.querySelectorAll('.fs-rec-slot .fs-rec-slot-label')].map((el) => el.textContent);
     expect(labels).toEqual(['Header', 'Top Connector', 'Bottom Connector', 'Footer']);
-    // Footer is unselected → N/S + "not selected".
-    expect(screen.getByText('N/S')).toBeInTheDocument();
+    // Footer is unselected → "Not recorded" + "not selected".
+    expect(screen.getByText('Not recorded')).toBeInTheDocument();
     expect(screen.getByText('not selected')).toBeInTheDocument();
     // Selected slots carry their names on the sub-line (scoped to the ledger —
     // the connectors line also shows the plate names now, #248).
@@ -119,7 +119,7 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     // Off-grid plate heights show the EXACT catalog decimal (channel4x4 = 3.4″),
     // never a nearest-⅛ fraction — rounded rows made hand-sums miss the total.
     const values = [...container.querySelectorAll('.fs-rec-slot-value')].map((el) => el.textContent);
-    expect(values).toEqual(['−3 1/2″', '−3.4″', '−3.4″', 'N/S']);
+    expect(values).toEqual(['−3 1/2″', '−3.4″', '−3.4″', 'Not recorded']);
     // The floor step is explicit: rows sum to the exact 45.7″, floored → 45⅝″.
     expect(screen.getByText('Exact — floored to ⅛″')).toBeInTheDocument();
     expect(container.querySelector('.fs-rec-floor-value')!.textContent).toBe('45.7″');
@@ -134,7 +134,7 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     const { container } = render(
       <RecommendationCard combo={STANDARD} deductions={allSelected} source="Rescue 2" onDeploy={vi.fn()} />,
     );
-    expect(screen.queryByText('N/S')).not.toBeInTheDocument();
+    expect(screen.queryByText('Not recorded')).not.toBeInTheDocument();
     // 56 − (3.5 + 1 + 1 + 5.5) = 45 — on the ⅛″ grid, so no floor step to show.
     expect(container.querySelector('.fs-rec-floor')).toBeNull();
   });

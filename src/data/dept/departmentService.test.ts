@@ -691,3 +691,51 @@ describe('departmentService — admin-provisioned personnel (#439)', () => {
     await bareDb.delete();
   });
 });
+
+describe('departmentService.readAudit — offline behavior (#211)', () => {
+  let db: FieldShoreDB;
+  let session: SessionStoreApi;
+  let svc: DepartmentServiceApi;
+
+  beforeEach(async () => {
+    setMock.mockReset().mockResolvedValue(undefined);
+    getMock.mockReset().mockResolvedValue({ exists: () => false });
+    logMock.mockReset().mockResolvedValue(undefined);
+    db = createDB(`test-dept-${newId()}`);
+    session = createSessionStore(db);
+    await session.boot(UID);
+    await session.setMember({ accountId: FB_UID, displayName: memberName });
+    svc = createDepartmentService({ session: () => session, db, timeouts: { read: 20 } });
+    const r = await svc.createDepartment('Hamden Fire Rescue');
+    if (!r.ok) throw new Error('setup: create failed');
+    setMock.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('parses and chronologically sorts a normal read', async () => {
+    getMock.mockResolvedValueOnce({
+      val: () => ({
+        e2: { id: 'e2', type: 'roleAssigned', at: 200, by: UID },
+        e1: { id: 'e1', type: 'memberRevoked', at: 100, by: UID },
+      }),
+    });
+    const entries = await svc.readAudit();
+    expect(entries).not.toBeNull();
+    expect(entries!.map((e) => e.id)).toEqual(['e1', 'e2']);
+  });
+
+  it('a get() that never settles (offline buffering) resolves to null instead of hanging', async () => {
+    getMock.mockReturnValueOnce(new Promise(() => {})); // never resolves — the offline defect
+    const entries = await svc.readAudit();
+    expect(entries).toBeNull();
+  });
+
+  it('a rejected read resolves to null', async () => {
+    getMock.mockRejectedValueOnce(new Error('network down'));
+    const entries = await svc.readAudit();
+    expect(entries).toBeNull();
+  });
+});

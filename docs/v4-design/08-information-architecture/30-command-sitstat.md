@@ -18,7 +18,7 @@ The Incident Commander's home: the one screen that answers "what is the state of
 ## Primary role(s) and surface(s)
 
 - **Primary role(s):** the **Incident Commander**; the **Operations Section Chief** and **Group Supervisors** read it (NIMS titles spelled out — [ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
-- **Primary surface(s):** **phone is the floor** (a solo IC runs command from a phone). Tablet is the canonical CP surface; laptop adds the after-action/audit depth; **broadcast projects SitStat** as the room's canonical board (C-13).
+- **Primary surface(s):** **phone is the floor** (a solo IC runs command from a phone). Tablet is the canonical CP surface; laptop adds the after-action/audit depth; **broadcast** (deferred past v4.0 — tracked in #496, ruled 2026-08-17).
 
 ## Information hierarchy (above / below fold) — per surface
 
@@ -33,8 +33,8 @@ The Incident Commander's home: the one screen that answers "what is the state of
 ### Laptop (Toughbook)
 - **Above fold:** denser SitStat + the command-palette jump; role-history / audit reachable.
 
-### Broadcast TV (read-only projection — the C-13 layout)
-- **Left third:** the org chart to Section-Chief depth. **Center:** the shore-point status board (per-status counts). **Persistent header:** incident name + IC + Safety Officer + OP/elapsed. ≥ 32pt; no interactive primitives; no animation.
+### Broadcast TV (deferred past v4.0 — tracked in #496, ruled 2026-08-17)
+- **Design** (read-only projection — the C-13 layout): **Left third:** the org chart to Section-Chief depth. **Center:** the shore-point status board (per-status counts). **Persistent header:** incident name + IC + Safety Officer + OP/elapsed. ≥ 32pt; no interactive primitives; no animation. **Build status:** not included in v4.0; implementation tracked in #496.
 
 ## Primary action + secondary actions
 
@@ -69,16 +69,20 @@ The Command home shows, above the fold, **exactly these six**, seeded by v3's `r
 
 Nothing competes with these six above the fold; everything else is a tap away.
 
+**Amended 2026-08-17 per #491:** Hazard chip placement — a compact hazard chip (count + worst severity + location suffix) rides at the top of Command; the chip strip (Safety Officer + hazard) appears on Operations and Cutting headers; the Hazards entry row below the fold remains.
+
 ### SitStat scope — All incident vs. By Division ([#353](https://github.com/Vergo402/paratech-struts/issues/353), built)
 
 The per-status board (datum 5) defaults to the **whole-incident** 7-status tally — unchanged. At Surfside scale the IC also needs to see *which Division is behind*, so a [`segmented`](../03-primitives/segmented.md) toggle above the board flips its scope:
 
 - **All incident** (default) — the existing whole-incident 7-status board, untouched.
-- **By Division** — a table, one **row per Division** (top-floor-first via `compareDivisionValues` / `divisionLabel`), columns = the seven statuses (abbreviated headers — Pend / Assign / Set / Cut / Run / Secured / Ret'd, with a one-line legend mapping each to its full `STATUS_LABELS` word) plus a **Total** column, and a bottom **"All divisions"** totals row equal to the whole-incident numbers.
+- **By Division** — a table, one **row per Division** (top-floor-first via `compareDivisionValues` / `divisionLabel`, with full-word accessible names), columns = the seven statuses (abbreviated headers — Pend / Assign / Set / Cut / Run / Secured / Ret'd) plus a **Total** column, and a bottom **"All divisions"** totals row equal to the whole-incident numbers.
   - **Lagging-Division flag:** the Division with the most shore points still at **Pending Equipment** (`pending`) gets a danger tint + an alert-triangle icon. Single, fixed heuristic — most-awaiting-equipment, ties broken by board order; no configurable scoring.
   - **Expand a Division row** to reveal its grouped shores (clustered by `groupId`; solo points are their own cluster) with per-group, per-status counts — a plain lazy expand/collapse.
 - **Surface adaptation:** **phone** (the floor) opens By Division as a [`sheet`](../03-primitives/sheet.md) (an interrupt over the board); **desktop/tablet** (`useIsDesktop`, ≥768px, [ADR-032](../11-decisions/ADR-032-surface-adaptive-pickers.md)) renders it **inline** in the command rail.
 - Soft-deleted points (`deletedAt != null`) are skipped in every tally, matching the board. Pure display of data already present — no new schema, no new data. The aggregation is a pure core function (`src/core/command/sitstat-rollup.ts`, `rollupByDivision`); the React view (`SitStatRollup`) stays thin.
+
+**Amended 2026-08-17 per #491:** legend removed (per #434, reaffirmed as design decision); headers use full-word accessible names.
 
 ## Command transfer (§2.5)
 
@@ -93,14 +97,14 @@ v3 has **no transfer ceremony** — command moves implicitly when a device self-
 ## Locked cross-cutting rules this screen honors
 
 - [x] **Phone is the floor** — a solo IC runs command phone-only.
-- [x] **Persistent Safety Officer + OP header** on this and every IC-facing screen (C-6).
+- [x] **Persistent Safety Officer + OP header** on Operations / Cutting Station / Command (C-6, narrowed 2026-08-17 per #491 Q4).
 - [x] **NIMS terminology** — titles spelled out, no acronyms ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)); `group` → **assignedResource**.
 - [x] **No safety-hold / no in-app comms / no push** (Principle 10) — SitStat surfaces hazards/safety **visibly**; it never gates or signals.
 - [x] **Status = slide-to-advance, always reversible** ([ADR-010](../11-decisions/ADR-010-status-commit-model.md)) — Command reads status; advancing happens on the [Operations](20-operations.md) cards.
 - [x] **Tap geometry** — 56pt one-tap entries; End-Op button ≥ 56pt with the destructive default-Cancel modal.
 - [x] **Modal-vs-sheet** per the ADR-016 Command/SitStat row: transfer = full-screen takeover; role assignment + roster adds = sheet; End Operation = modal.
 - [x] **Capacity demoted** — not a SitStat datum.
-- [x] **Broadcast = read-only** (C-13 layout; no interactive primitive).
+- [x] **Broadcast = read-only** (broadcast surface deferred past v4.0 — tracked in #496, ruled 2026-08-17).
 
 ## The four-surface table (this screen)
 

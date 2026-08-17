@@ -77,6 +77,23 @@ describe('SafetyOfficerChip (#487)', () => {
     expect(onPress).toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
   });
+
+  it('N2 — has a meaningful accessible name (unassigned)', () => {
+    render(<SafetyOfficerChip />);
+    expect(screen.getByRole('button', { name: 'Safety Officer: unassigned — opens Command' })).toBeInTheDocument();
+  });
+
+  it('N2 — has a meaningful accessible name (assigned)', () => {
+    const positions = seedOrgState('op-1', 'dev-1').positions;
+    const safetyId = defaultPositionId('op-1', 'safety');
+    positions[safetyId] = {
+      ...positions[safetyId]!,
+      assignedResources: [{ ref: 'individual', value: 'FF Alvarez', label: 'FF Alvarez' }],
+    };
+    mockOrg.mockReturnValue(positions);
+    render(<SafetyOfficerChip />);
+    expect(screen.getByRole('button', { name: 'Safety Officer: FF Alvarez — opens Command' })).toBeInTheDocument();
+  });
 });
 
 const HIGH: Hazards = {
@@ -111,16 +128,16 @@ describe('HazardChip (#490)', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows "1 HIGH" with one open high hazard', () => {
+  it('shows "1 open · HIGH" with one open high hazard (R2 — count of open hazards, not a count of that severity)', () => {
     mockHazards.mockReturnValue(HIGH);
     render(<HazardChip />);
-    expect(screen.getByText('1 HIGH')).toBeInTheDocument();
+    expect(screen.getByText('1 open · HIGH')).toBeInTheDocument();
   });
 
   it('picks the highest OPEN severity, ignoring a mitigated higher one', () => {
     mockHazards.mockReturnValue(LOW_AND_MITIGATED);
     render(<HazardChip />);
-    expect(screen.getByText('1 LOW')).toBeInTheDocument();
+    expect(screen.getByText('1 open · LOW')).toBeInTheDocument();
   });
 
   it('appends the top hazard location only when showLocation is set', () => {
@@ -144,6 +161,12 @@ describe('HazardChip (#490)', () => {
     await user.click(screen.getByRole('button'));
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/command' });
   });
+
+  it('N2 — has a meaningful accessible name stating both the open count and the worst severity', () => {
+    mockHazards.mockReturnValue(HIGH);
+    render(<HazardChip />);
+    expect(screen.getByRole('button', { name: '1 open hazards, highest HIGH — opens Command' })).toBeInTheDocument();
+  });
 });
 
 describe('IncidentChipStrip', () => {
@@ -158,6 +181,6 @@ describe('IncidentChipStrip', () => {
     mockHazards.mockReturnValue(HIGH);
     render(<IncidentChipStrip />);
     expect(screen.getByText('Safety')).toBeInTheDocument();
-    expect(screen.getByText('1 HIGH')).toBeInTheDocument();
+    expect(screen.getByText('1 open · HIGH')).toBeInTheDocument();
   });
 });
