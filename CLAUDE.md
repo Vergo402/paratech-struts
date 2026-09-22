@@ -73,7 +73,7 @@ There are **two separate project boards**. Always use the one that matches the b
 | FieldShore Roadmap (v3) | `1` | https://github.com/users/Vergo402/projects/1 | v3 issues — bugs, features, releases on `main` |
 | v4 Redesign Roadmap | `2` | https://github.com/users/Vergo402/projects/2 | v4 issues — all work on `v4-redesign` branch |
 
-When starting work on any GitHub issue (whether via `/plan`, `/v4-plan`, or ad-hoc), set its Project Status to **In Progress** using the correct board:
+When starting work on any GitHub issue (whether via `/plan-release`, `/plan-v4`, or ad-hoc), set its Project Status to **In Progress** using the correct board:
 
 ```bash
 # v3 issue (project 1)
@@ -107,7 +107,7 @@ The board Status updates to Done automatically when the issue closes.
 Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
 
 On every change:
-0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics). See `feedback_project_field_mutations.md` memory.
+0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan-release` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics). See `feedback_project_field_mutations.md` memory.
 1. Update version in **3 places:**
    - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
    - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
@@ -385,7 +385,7 @@ The per-release "What shipped" view from v3.9.2 onward lives in **`.claude/plans
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
-> **v4 is now an active, deliberate redesign on the `v4-redesign` branch** (forked at v3.19.1) — not just a backlog. All v4 design lives under **`docs/v4-design/`**; start with `00-INDEX.md`. The master plan ("constitution") is `~/.claude/plans/v4-master-plan.md` — all FieldShore plan files in the global `~/.claude/plans/` use descriptive `v4-`/`v3-`/`fieldshore-` names, mapped from their old random names in `.claude/plans/GLOBAL-PLAN-INDEX.md`. Use the `/v4-plan` (`/v4`) skill for v4 work; `/plan` is for v3 release work. **Nothing v4 ships to `main` until the Phase J cutover.**
+> **v4 is now an active, deliberate redesign on the `v4-redesign` branch** (forked at v3.19.1) — not just a backlog. All v4 design lives under **`docs/v4-design/`**; start with `00-INDEX.md`. The master plan ("constitution") is `~/.claude/plans/v4-master-plan.md` — all FieldShore plan files in the global `~/.claude/plans/` use descriptive `v4-`/`v3-`/`fieldshore-` names, mapped from their old random names in `.claude/plans/GLOBAL-PLAN-INDEX.md`. Use the `/plan-v4` (`/plan-v4`) skill for v4 work; `/plan-release` is for v3 release work. **Nothing v4 ships to `main` until the Phase J cutover.**
 >
 > **Phase status (2026-07-10):** **A–H DONE. Phase I (whole-app build, by workflow) IN PROGRESS.** A–D (foundation, reference teardowns, 12 brainstorm essays, synthesis + decision matrix); E (design system, 15 primitives, ADR-010–013) gate passed 2026-06-07; F (19 screen specs × 4 surfaces) gate #217 passed 2026-06-09; G (20 workflow specs, ADR-021/022) gate #239 passed 2026-06-09; H (vertical slice foundation) unblocked Phase I 2026-06-14. **Phase I shipped so far:** Quick Find (#320), full Operations lifecycle (deploy → cutting → runner → secured → returned, ADR-036), Inventory (#200) with deploy-BOM sourcing (ADR-033), Quick View drawer (#340, ADR-019), org-chart redesign (#396), Command SitStat + Cutting Station visual pass (#376), v4 auth/RBAC (#377 P0–P4), cloud sync (#369). **Pre-Phase-J audit (2026-07-04, PR #414)** found 8 High blockers; **all 12 blocker issues (#418–#429) were fixed, re-verified, and closed 2026-07-10** (`3c37d93..c185949`; report: `.claude/audits/pre-phase-j-review-2026-07/REPORT.md`), followed by the 6-stage cleanup/consolidation (`47473d8..8c2e3d2`) whose adversarial review confirmed and fixed 3 residual deviations (`b78058f`). **The cutover NO-GO is cleared; #439 (User Manager admin-provisioned personnel) shipped + closed 2026-07-11** (`a22bb88..88d577f` — fieldshore-database now on **Blaze**, the first server functions `provisionAccount`/`adminUpdateAccount` live in us-central1, rules deployed, live-verified end-to-end). **Next: the Stage 2 gates #256–#268.** The INDEX (`docs/v4-design/00-INDEX.md`) is the live truth for per-file status.
 >

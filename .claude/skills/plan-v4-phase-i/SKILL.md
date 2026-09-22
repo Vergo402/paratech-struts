@@ -1,5 +1,5 @@
 ---
-name: v4-phase-i-plan
+name: plan-v4-phase-i
 description: "Build a consolidated Phase I priority list by reading all four sources of Phase I work (99-open-questions.md, gaps register, design docket, and the live v4 GitHub board). Use whenever Alex says '/v4-phase-i-plan', 'phase I planning', 'consolidate the Phase I backlog', or wants a unified view of pending Phase I work. v4-redesign branch only."
 ---
 

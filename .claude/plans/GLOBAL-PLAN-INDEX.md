@@ -15,7 +15,7 @@
 
 ## Going-forward rule (no harness setting exists for this)
 
-At the **end of each FieldShore planning session**, rename the harness-created random-named plan file in `~/.claude/plans/` to the convention above, update any references, and append the old→new pair to this file. The `/v4-plan` skill carries this as a closing step. Plan-file naming is fixed harness behavior — there is no settings/hook toggle (verified 2026-06-07).
+At the **end of each FieldShore planning session**, rename the harness-created random-named plan file in `~/.claude/plans/` to the convention above, update any references, and append the old→new pair to this file. The `/plan-v4` skill carries this as a closing step. Plan-file naming is fixed harness behavior — there is no settings/hook toggle (verified 2026-06-07).
 
 ## Reversibility
 

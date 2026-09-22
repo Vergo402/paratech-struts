@@ -1,5 +1,5 @@
 ---
-name: plan
+name: plan-release
 description: "Unified release workflow: ship open bugs as a PATCH, or plan the next MINOR/MAJOR release. Reads the FieldShore Roadmap GitHub Project as the single source of truth for tracked items. Use this skill whenever Alex says 'plan the next release', 'start planning', 'what should we work on next', 'fix the bugs', 'ship the open bugs', 'triage issues', 'patch the bugs', 'what issues are open', '/plan', '/issue-triage', or '/work'."
 ---
 
@@ -18,7 +18,7 @@ Detect what Alex is asking for:
 | Said | Mode |
 |---|---|
 | "ship the open bugs", "fix the bugs", "patch the bugs", "triage issues", "/issue-triage" | **ship-bugs** |
-| "plan the next release", "start planning", "what should we work on next", "/plan" | **plan-release** |
+| "plan the next release", "start planning", "what should we work on next", "/plan-release" | **plan-release** |
 | "/work" or ambiguous | ask explicitly |
 
 If ambiguous:
@@ -523,7 +523,7 @@ Order matters (each step independently reversible until the next runs):
    Review agents (B6): {N} approve, {M} concerns, {K} block
    New agents drafted: {0 or list}
 
-   Next: run /plan in ship mode to execute (or `git checkout -b feature/v{VERSION}-{theme}`).
+   Next: run /plan-release in ship mode to execute (or `git checkout -b feature/v{VERSION}-{theme}`).
    ```
 
 ---

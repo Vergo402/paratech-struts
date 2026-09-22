@@ -1,5 +1,5 @@
 ---
-name: level-ii-sim
+name: sim-level-ii
 description: "Run the FEMA Level II structural collapse simulation — mid-rise residential partial floor collapse. Stress-tests FieldShore at regional-response scale: 20+ apparatus, state USAR TF, 60 shore points, 3 OP periods, full ICS General Staff. Use this skill whenever Alex says 'run level ii simulation', 'level 2 sim', 'riverside sim', or '/level-ii-sim'."
 ---
 

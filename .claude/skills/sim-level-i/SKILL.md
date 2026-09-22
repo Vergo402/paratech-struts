@@ -1,5 +1,5 @@
 ---
-name: level-i-sim
+name: sim-level-i
 description: "Run the FEMA Level I structural collapse simulation — Surfside-scale multi-agency federal response. Wraps and enhances the existing Surfside TTX-2 infrastructure. 250 shore points, 4 OP periods, 36 hours, federal USAR task forces, full ICS with UC. Use this skill whenever Alex says 'run level i simulation', 'level 1 sim', 'surfside sim', or '/level-i-sim'."
 ---
 

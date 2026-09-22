@@ -1,5 +1,5 @@
 ---
-name: ship-design-ideas
+name: design-ship-ideas
 description: "Ship the open design-exploration ideas from the v4 board into the Claude Design project. Regenerates docs/guides/design-exploration-queue.md from the open `design-idea` issues, commits it, and does a lightweight guidelines-only push to claude.ai/design (no component rebuild). Use whenever Alex says '/ship-design-ideas', 'ship the design ideas', 'send ideas to design', or 'push the design queue'. v4-redesign branch only."
 ---
 

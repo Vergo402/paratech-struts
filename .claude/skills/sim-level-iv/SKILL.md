@@ -1,5 +1,5 @@
 ---
-name: level-iv-sim
+name: sim-level-iv
 description: "Run the FEMA Level IV structural collapse simulation — URM strip mall partial collapse. Stress-tests FieldShore at working-incident scale: 4 apparatus, 8 shore points (including grouped T-Shore), single OP period. Use this skill whenever Alex says 'run level iv simulation', 'level 4 sim', 'hamden sim', or '/level-iv-sim'."
 ---
 

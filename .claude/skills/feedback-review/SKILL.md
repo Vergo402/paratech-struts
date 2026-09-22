@@ -1,5 +1,5 @@
 ---
-name: feedbackreview
+name: feedback-review
 description: "Pull feedback from Firebase, create GitHub issues, clear transferred entries, and draft a fix plan. Use this skill whenever Alex says 'review feedback', 'feedback review', 'check feedback', 'triage feedback', or '/feedbackreview'."
 ---
 

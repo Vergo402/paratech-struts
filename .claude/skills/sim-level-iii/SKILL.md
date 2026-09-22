@@ -1,5 +1,5 @@
 ---
-name: level-iii-sim
+name: sim-level-iii
 description: "Run the FEMA Level III structural collapse simulation — warehouse roof pancake. Stress-tests FieldShore at extended-attack scale: 10 apparatus, 25 shore points, 2 OP periods, command transfer, LongShore struts. Use this skill whenever Alex says 'run level iii simulation', 'level 3 sim', 'meadowville sim', or '/level-iii-sim'."
 ---
 

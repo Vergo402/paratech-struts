@@ -1,5 +1,5 @@
 ---
-name: level-v-sim
+name: sim-level-v
 description: "Run the FEMA Level V structural collapse simulation — car into residential building. Stress-tests FieldShore at minimal operational scale: 1 engine, 3 shore points, single OP period. Use this skill whenever Alex says 'run level v simulation', 'level 5 sim', 'verplanck sim', or '/level-v-sim'."
 ---
 

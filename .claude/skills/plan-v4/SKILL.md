@@ -1,5 +1,5 @@
 ---
-name: v4-plan
+name: plan-v4
 description: "FieldShore v4 long-design workflow. Loads the v4 redesign plan, the v4-design folder, and the current phase state. Dispatches the appropriate agents for the active phase, handles gate notifications, and keeps the v4-redesign branch on rails. Different from /plan, which is for v3 release work. Use this skill whenever Alex says '/v4-plan', '/v4', 'continue v4', 'v4 status', 'next v4 phase', 'dispatch v4 essays', 'v4 gate', or 'where are we on v4'."
 ---
 
@@ -142,6 +142,7 @@ Alex is never waiting on a gate without knowing it's ready.
 - Don't merge `v4-redesign` to `main` until Phase J explicitly approves it.
 - Don't ask Alex "what phase are we in?" — the INDEX tells you.
 - Don't update the principles file without an ADR explaining why.
+- Don't let parallel agents touch git. Every brief for a parallel dispatch forbids all git commands (stash/checkout/restore/reset/clean/commit) — a sibling's state-restoring command silently reverts the others' uncommitted work. Use worktree isolation if an agent genuinely needs git; see `.claude/agents/DELEGATION.md` oversight item 5.
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: primitive
+name: design-primitive
 description: "Author a single v4 design-system primitive doc end-to-end for one GitHub issue, always in plan mode. Use when Alex says '/primitive <#>', 'start primitive #N', 'do the <name> primitive', or 'author the primitive for issue #N'. Narrower, plan-gated sibling of /v4-plan: one primitive, one issue. v4-redesign branch only."
 ---
 

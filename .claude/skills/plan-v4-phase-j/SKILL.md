@@ -1,5 +1,5 @@
 ---
-name: v4-phase-j-plan
+name: plan-v4-phase-j
 description: "Build a consolidated Phase J priority list by reading the pre-Phase-J audit report (High blocker findings), phase J gate tasks, doctrine deviations, and the live v4 GitHub board. Use whenever Alex says '/v4-phase-j-plan', 'phase J planning', 'consolidate the Phase J backlog', or wants a unified view of Phase J work before cutover. v4-redesign branch only."
 ---
 
