@@ -14,7 +14,7 @@ describe('nativeControls — #460 in-memory fallback when storage writes fail', 
     const { result } = renderHook(() => useNativeControls());
     expect(result.current).toBe(false);
 
-    vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('QuotaExceededError');
     });
 
@@ -30,7 +30,7 @@ describe('nativeControls — #460 in-memory fallback when storage writes fail', 
 
   it('clears the fallback once a write succeeds again, restoring storage as the source of truth', async () => {
     const { setNativeControls } = await import('./nativeControls');
-    const setItemSpy = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const setItemSpy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('QuotaExceededError');
     });
     setNativeControls(true); // fails — falls back to memory
