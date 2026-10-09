@@ -109,8 +109,8 @@ Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
 On every change:
 0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan-release` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics). See `feedback_project_field_mutations.md` memory.
 1. Update version in **3 places:**
-   - `index.html` header label: `<div class="version-label">v{VERSION}</div>` (~line 60)
-   - `app.js` feedback appVersion: `appVersion: '{VERSION}'` (~line 1989)
+   - `index.html` header label: `<div class="version-label">v{VERSION}</div>` 
+   - `app.js`: `const APP_VERSION = '{VERSION}'` (near the top of the file)
    - `sw.js` cache name: `const CACHE_NAME = 'fieldshore-v{VERSION}';`
 2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
 3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
@@ -211,7 +211,7 @@ The v4 redesign (`v4-redesign` branch) forked at **v3.19.1**, so every v3 featur
 - **Plate picker:** Uses bottom sheet pattern (anchored to `bottom: 0`, `max-height: 60vh`) with a scrim backdrop. v3.5.1 fix: `touch-action: pan-y` + `transform: translateZ(0)` + `visibility` toggle (instead of `display`) for iOS scroll reliability.
 - **Firebase + service worker:** Firebase WebSocket URLs are excluded from SW caching (see `sw.js` fetch handler).
 - **Local-first writes (v3.5.3):** Every mutation writes to in-memory state + localStorage first (`persistOperation()` / `persistInventory()`), then conditionally syncs to Firebase. `firebaseSave()` handles offline queuing internally. Never fork on `if (db) { firebase } else { localStorage }` — always do both.
-- **`persistOperation()` / `persistInventory()`:** Centralized localStorage saves. Use these instead of raw `safeSetItem` calls. Defined at ~line 677.
+- **`persistOperation()` / `persistInventory()`:** Centralized localStorage saves. Use these instead of raw `safeSetItem` calls.
 - **`firebaseSave()` wrapper:** All Firebase writes go through this — handles the online/offline split in one place.
 - **`escapeHtml()`:** Returns escaped via `div.textContent = s; return div.innerHTML`. **CRITICAL:** This escapes `<`, `>`, `&` but NOT `"` or `'`. Safe for element text contexts ONLY, not attribute values. Use `escapeAttr()` inside `attr="..."` interpolations.
 - **Org chart drag-and-drop:** Supports 3 input methods — tap-to-pick-and-place, HTML5 drag events, touch drag with floating clone. State tracked via `orgChartPickedRole`.

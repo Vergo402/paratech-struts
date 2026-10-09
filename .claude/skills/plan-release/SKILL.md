@@ -484,7 +484,7 @@ Auto-detect additional agents from scope:
 
 **Always include** `release-manager`, `qa-driver`, and `skeptical-senior-engineer`. Cap typically ≤ 7 agents total.
 
-Dispatch in parallel — single message with multiple `Agent` tool calls. Each agent receives: plan path, scope (1-2 sentences), asked to return APPROVE / CONCERNS / BLOCK + top concern + detailed findings.
+Dispatch in parallel — single message with multiple `Agent` tool calls. Each agent receives: plan path, scope (1-2 sentences), asked to return APPROVE / CONCERNS / BLOCK + top concern + detailed findings. Every brief also forbids **all** git commands (no stash/checkout/restore/reset/clean/commit) — parallel agents share one working tree, and a state-restoring command silently reverts sibling work.
 
 Recursion cap: depth 1. An agent may suggest one more agent; that agent may not suggest a third.
 

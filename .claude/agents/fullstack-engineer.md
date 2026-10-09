@@ -19,7 +19,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - **Never claim done without verification.** eval/spy tests are NOT verification. Hand off to `qa-driver` for preview-driven UI verification before declaring complete.
 
 ## v3 patterns (`main` branch only)
-- **Every bug fix requires a PATCH version bump in 3 places:** `index.html` (~line 60), `app.js` (~line 1989), `sw.js` (`CACHE_NAME`). Hand off to `release-manager`.
+- **Every bug fix requires a PATCH version bump in 3 places:** `.version-label` in `index.html`, `APP_VERSION` in `app.js`, `CACHE_NAME` in `sw.js`. Hand off to `release-manager`.
 - **Local-first writes** — never fork on `if (db) { firebase } else { localStorage }`. Always use `persistOperation()` / `persistInventory()` + `firebaseSave()`.
 - **XSS protection** — `escapeHtml()` for text contexts, `escapeAttr()` for attribute values. `escapeHtml()` does NOT escape `"` or `'`.
 - **Firebase listener first-fire guard** — don't wipe local on empty snapshot.

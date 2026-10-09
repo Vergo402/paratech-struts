@@ -31,6 +31,8 @@ npm run build       # tsc --noEmit && vite build → dist/ + PWA service worker
 
 **Commit gate:** any commit that intentionally changes component behavior runs `npx vitest run` + `npx tsc --noEmit` first — and when changing a contract, grep tests for assertions pinning the old behavior and move them in the SAME commit (a red test left behind reads as a regression to the next session). Gate commands run bare — never piped (`| tail` etc. eats the exit code); filter a saved output file afterward.
 
+**Parallel agents in a shared tree: no git, ever.** Every parallel implementation agent brief must say *"run NO git commands at all — no stash, checkout, restore, reset, clean, or commit; use only file tools + test commands."* A sibling's `git stash pop` / `git checkout HEAD <file>` is as destructive as a commit: it silently reverts other agents' uncommitted work, and the agent cannot judge what is "unrelated" — only the orchestrator sees the whole tree (a 2026-08-17 agent popped a months-old stash, `checkout HEAD`-ed the ~25 conflicted files, reverted four siblings' finished work, and reported "Nothing was lost"). If agents must use git, dispatch them into separate worktrees. The orchestrator snapshots `git status --short | sort` before dispatch and diffs it against each completion notification, so cross-agent damage surfaces immediately instead of at commit time.
+
 ## Interactive driving — preview MCP (clicks + screenshots)
 
 `preview_start` reads `.claude/launch.json`. The dev server pins **:5199** (`strictPort`): if it's free, start `fieldshore-v4-dev`; if :5199 is already taken, start **`fieldshore-v4-verify`** (autoPort — boots a throwaway instance on a free port). Then drive the returned `serverId`:
@@ -40,7 +42,16 @@ npm run build       # tsc --noEmit && vite build → dist/ + PWA service worker
 - `preview_console_logs level=error` → runtime errors.
 - **Switch tabs with `preview_eval` running `location.assign('/operations')`, NOT a click** — the nav is a TanStack Router `<Link>` the MCP's click can't drive. Routes: `/quickfind /operations /inventory /command /settings`.
 
-All five routes are live, drivable screens (Phase I shipped Quick Find, Operations, Inventory, Command, Settings). Local data is **IndexedDB** (Dexie); cloud sync + auth exist — to get past auth gates locally, seed the `fieldshore_session` Dexie meta row with `role:'admin'` but identity `{kind:'guest'}` and `departmentId` null (a seeded member gets downgraded by the auth reconcile; a departmentId switches the Dexie bucket away from seeded data).
+All five routes are live, drivable screens (Phase I shipped Quick Find, Operations, Inventory, Command, Settings). Local data is **IndexedDB** (Dexie); cloud sync + auth exist.
+
+**Getting past the auth gates locally** — recipe proven 2026-08-05 against `34c0822`, where `RequireDepartment` began requiring `identity.kind === 'member'` **and** a department. The old `role:'admin'` + guest-identity seed is dead: it now lands on "Sign in to continue" and every scene-building step times out. The working recipe:
+
+1. Block all Firebase hosts at the driver level.
+2. Plant a fake persisted Firebase-auth user in `firebaseLocalStorageDb` whose uid matches the seeded member session — the authSession reconcile then no-ops instead of downgrading you.
+3. Seed the member+dept session row **and** the memberships map in `fieldshore-global`.
+4. **Double-boot.** The first boot creates the dept bucket schema; then plant fixture inventory + roster into that bucket (`activateBucket` only auto-seeds the *guest* bucket) and reload.
+
+Reference implementation: `.claude/audits/phase-j/261-shots/driver.mjs`. Re-verify this recipe whenever auth/gating changes ship — it is a claim about the app's current gate logic, and it rots silently.
 
 ### Verification tricks (battle-tested)
 - **Dropdown OPTIONS (PickerSurface/Popover): don't trust `ref_N` clicks** — overlays resort/highlight between `read_page` and click, landing the wrong row. Screenshot, click by coordinate, then read back the applied-summary text to confirm the selection. Buttons/radios outside dropdowns are ref-safe.
@@ -48,7 +59,9 @@ All five routes are live, drivable screens (Phase I shipped Quick Find, Operatio
 - **Wheel scrolls nothing but clicks work, over a portaled surface inside a Modal** → suspect the dialog scroll-lock (react-remove-scroll kills wheel at document-bubble over portals), not CSS. Diagnose event deaths empirically: phase-recorder listeners (elCapture/elBubble/docCapture/docBubble) + one synthetic cancelable event pinpoint where it dies before you write an ordering-dependent fix.
 - **Test times out ONLY in full parallel runs** → time it solo first (`npx vitest run <file> -t '<name>'`). Solo ≪1s + no waitFor/timers = CPU contention, not a race — scope `{ timeout: N }` (~3× worst observed) on that test; don't hunt phantom races. Race-hunting is for assertion failures and real async waits.
 - **Scroll-cinematic / rAF-gated canvas pages (GSAP pins, Lenis, three.js): the preview MCP captures black frames** — teleport-scroll leaves rAF frozen while the DOM tree reads "visible". Probe liveness first (`document.hidden`, a 10-frame rAF tick count); if frozen, drive with headless Playwright (cached Chromium, `docs/v4-design/13-slice/capture-screenshots.mjs` camera pattern) and use small continuous scroll deltas, never big `scrollTo` jumps. A DOM snapshot showing an element visible is not proof it painted.
+- **Page-side dynamic imports of `/src/...` 404 to `index.html`** — Vite's root is `src/app`, so app-relative paths don't resolve from the browser. Import via `/@fs/<absolute path>` instead.
 - **Layout/ref effects** (`useLayoutEffect`, canvas refs) must be verified in a `vite preview` prod build — dev StrictMode double-invoke masks single-pass bugs that only show on beta.
+- **External services: probe them live before claiming a feature works** — a green build says nothing about a remote key. Before any review or "verified" claim that touches an integration, enumerate every env key (`grep -rn "import.meta.env" src/`) and hit each remote endpoint once (what3words, Google Places, Firebase callables), recording the HTTP status. A 402/403 from a quota-dead or referrer-locked key renders as a *silent graceful degrade* in the UI, so screenshots pass while the feature is dead. Referrer-locked keys (Places) can't be proven on localhost — probe them on the beta URL or mark them untested, never "working".
 
 ## Run (human path)
 ```bash

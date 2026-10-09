@@ -23,8 +23,8 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
        | jq -r '.items[] | select(.content.title | contains("[Phase J]")) | "\(.status)\t#\(.content.number)\t\(.content.title)"'
      ```
      Extract:
-     - **13 explicit Phase J gate tasks** (#256–#268): parity, audits, field review, migration, rollback, merge, release
-     - **Audit findings issues** (#415–#429): map these to the 8 High findings clusters from the report
+     - **The explicit Phase J gate tasks** (#256–#268): parity, audits, field review, migration, rollback, merge, release — derive the current set and each status from the board, never from a remembered count
+     - **Audit findings issues** (#415–#429): map these using the report's own clustering — derive the clusters from the report itself; never assume a fixed cluster count
      - This is the **live source of truth for issue status** (Todo / In Progress / Done)
 
 3. **Consolidate into three priority buckets** (Phase J structure):
@@ -51,7 +51,7 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    ## 🔴 Cutover Blockers (must fix before merging v4-redesign → main)
 
    ### Audit Finding Clusters (Pre-Phase-J Review, PR #414, 2026-07-04)
-   [Summary of the 3 clusters, point to the REPORT.md, note: NO-GO determination pending these fixes]
+   [Summary of the report's clusters (derive the count from the report), point to the REPORT.md, note: NO-GO determination pending these fixes]
 
    | Cluster | High Issues | Blocker Reason | Effort | Dependencies |
    |---|---|---|---|---|
@@ -82,7 +82,7 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 
    ## 🟢 Doctrine Audit + Cosmetic
 
-   ### Phase J Doctrine Audit (5 flagged deviations)
+   ### Phase J Doctrine Audit (all rows currently in the docket's deviation-watch section)
    | Deviation | Issue | Type | Impact | Notes |
    |---|---|---|---|---|
    | Assign Equipment modal (centered, not sheet) | #346 | ADR-016 deviation | Non-breaking; approved by Alex | Recorded in AssignEquipmentSheet.tsx doc-comment |
@@ -101,9 +101,9 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    ## GitHub Tracking Status
 
    [Summary of audit-report / board reconciliation]
-   - **All 8 High findings tracked:** #415–#429 have corresponding GitHub issues
-   - **13 gate tasks tracked:** #256–#268 all on the board
-   - **Doctrine deviations tracked:** 5 deviations recorded in docket + ADRs
+   - **All High findings tracked:** every High finding in the report maps to a board issue
+   - **Gate tasks tracked:** every gate task in the #256–#268 range appears on the board
+   - **Doctrine deviations tracked:** every deviation row recorded in docket + ADRs
    - **No orphaned findings:** All High findings map to board issues
 
    [Any status mismatches or newly discovered blockers]
@@ -124,7 +124,7 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    - **Cutover:** #267 (merge), #268 (tag) — after all gates pass
 
    ### Stage 3: Doctrine Audit + Cosmetic (if capacity remains)
-   - Walk the 5 deviations against the locked doctrine and sign off (should be brief — they're already flagged + spec'd)
+   - Walk the current doctrine-deviation rows against the locked doctrine and sign off (should be brief — they're already flagged + spec'd)
    - Polish the #341 items only if spare cycles; otherwise defer to v4.0.1
 
    ---
@@ -146,6 +146,20 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 
 7. **Do NOT commit.** This is a planning output, not a permanent file. Show Alex the consolidated list in the response. If Alex approves, he'll decide whether to sequence the work or adjust the plan.
 
+## Disposition walks over visible UI
+
+When walking a triage/disposition list where items change what Alex would *see*, present the decision **with an inline `show_widget` mockup in the same turn as the question** — or batch the mockups first and walk the list against them. A ruling made on a text description of a visible surface is **provisional**: re-confirm it at the mockup checkpoint before anything gets built. For a visual decision the mockup *is* the question; a text description is a lossy proxy. (Proven in the #491 walk: one text-option ruling reversed the moment the mockup showed it, and three other text-option questions bounced back asking for visuals instead of answering.)
+
+## Whole-product review scoping
+
+Any gate that claims to review the *product* (#256 parity, #257–#260 audits, #261 field review) scopes itself before it starts — not from the finding list that triggered it. A review that only walks the surfaces its trigger points at inherits the trigger's blind spots.
+
+1. **Coverage matrix first.** Enumerate routes × features × themes × auth-states and publish the matrix in the review artifact, each cell marked exercised / not-exercised per track. The matrix is the denominator; findings are the numerator. An unexercised cell is a stated gap, never a silent pass.
+2. **Probe every external dependency live.** List every env key and every remote API the app calls (what3words, Google Places, Firebase callables), hit each one, and record the status in the artifact. Quota-dead and referrer-locked keys degrade gracefully in the UI, so they survive screenshot review indefinitely.
+3. **Grep memory for known-broken items.** Search the session-memory directory for `QuotaExceeded`, `broken`, `dead`, `degrades`, `WON'T-FIX` before declaring coverage. Memory is a review input, not just a session-start briefing.
+
+(Proven the hard way in #261: three independent review tracks plus main-loop verification all missed that what3words was returning HTTP 402 in production — a failure recorded in memory since 2026-07-11 — because every track scoped itself to the surfaces the gate findings named.)
+
 ## Never
 
 - Never run from a branch other than `v4-redesign`.
@@ -153,3 +167,5 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 - Never drop findings from the audit report — the backlog is cumulative.
 - Never write to the board or close issues from this skill — it reads board status, it does not change it.
 - Never deprioritize the High findings — they gate cutover. The audit's severity assessment is authoritative (its clustering too — see step 2).
+- Never treat a text-only ruling on a visible surface as final — it is provisional until re-confirmed at the mockup checkpoint.
+- Never let a review track declare coverage without a published coverage matrix and a live external-dependency probe.

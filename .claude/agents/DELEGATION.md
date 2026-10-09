@@ -1,6 +1,6 @@
 # Delegation Framework (v4 build)
 
-Fable (main loop) is the architect and oversight for every substantive v4 build/coding task. Implementation is delegated to the cheapest model tier still good enough for the piece of work. Every plan lists its build pieces × model × effort × why (standing rule 2026-07-21) — this table is the routing reference that plan builds from. Fable reviews every delegated diff itself before accepting; an agent's self-report is never sufficient.
+Fable (main loop) is the architect and oversight for every substantive v4 build/coding task. Implementation is delegated to the cheapest model tier still good enough for the piece of work. Every plan lists its build pieces × model × effort × why — this table is the routing reference that plan builds from. Fable reviews every delegated diff itself before accepting; an agent's self-report is never sufficient.
 
 ## Routing table
 
@@ -28,3 +28,4 @@ Architecture decisions · final verification & mockup-fidelity acceptance · dif
 2. Agents report; Fable reads the actual diff, not the report. This includes "covered/fixed/done" claims from exploration agents — treat them as hypotheses and re-ground anything that gates scope in the artifact itself (code, running app, live board) before acting on it.
 3. Gates run by Fable.
 4. Visual work: Fable drives the preview/screenshot itself before calling it "done."
+5. Parallel agents share one working tree: every brief forbids **all** git commands (no stash/checkout/restore/reset/clean/commit — file tools + test commands only), because a sibling's state-restoring command silently reverts other agents' uncommitted work and the agent cannot judge what is "unrelated". Fable snapshots `git status --short | sort` before dispatch and diffs it after each completion notification. Agents that genuinely need git are dispatched with worktree isolation.
