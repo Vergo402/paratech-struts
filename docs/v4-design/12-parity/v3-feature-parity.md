@@ -48,6 +48,8 @@ v4 ADRs that mandate a change to the **v3 app** not yet made. Under the ship-v3-
 
 → **Done:** shipped in **v3.22.0** ([#300](https://github.com/Vergo402/paratech-struts/issues/300)) — `Math.round`→`Math.floor` to 1/8″ at the three live cut-/effective-length sites (app.js 189 / 6579 / 7692), disclaimer + extension warning retained.
 
+
+**§2 closed 2026-10-09 — no further v3 backports are owed.** Alex confirmed FieldShore has **no users** (sole beta tester); v3 is reference/archive until the Phase J cutover, so the ship-v3-in-parallel posture is retired. The v4-only fixes a 2026-10-09 review found missing from v3 — capacity looked up with the ⅛″-floored length instead of the exact length (v4 `src/core/load/engine.ts` `exactLength`, #410-1), queued offline writes discarded on version change, and six group/deploy edge cases — are recorded as **won't-backport** in [#497](https://github.com/Vergo402/paratech-struts/issues/497) (closed). Any new v3 obligation needs a user base first (see CLAUDE.md "Deployment status").
 ---
 
 ## §3 — Standing v3 surfaces → v4 IA coverage (curated, living)
