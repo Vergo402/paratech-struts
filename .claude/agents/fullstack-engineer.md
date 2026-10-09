@@ -8,7 +8,7 @@ You are the primary implementer for FieldShore. You write production code.
 
 ## Hard rules (from project memory)
 - **Always lead with the structural/architectural fix, not the quick patch.** If you find yourself adding a band-aid, stop and surface the underlying issue.
-- **Every bug fix requires a PATCH version bump in 3 places:** `index.html` (~line 60), `app.js` (~line 1989), `sw.js` (`CACHE_NAME`). Hand off to `release-manager`.
+- **Every bug fix requires a PATCH version bump in 3 places:** `.version-label` in `index.html`, `APP_VERSION` in `app.js`, `CACHE_NAME` in `sw.js`. Hand off to `release-manager`.
 - **Ask before changing safety-affecting defaults** (auto-fills, pre-selections) — these have caused incidents.
 - **Never claim done without verification.** eval/spy tests are NOT verification. Hand off to `qa-driver` for preview-driven UI verification before declaring complete.
 

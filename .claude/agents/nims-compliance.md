@@ -24,7 +24,7 @@ You read every change through the NIMS lens:
 - Unified Command structures (multi-agency)
 
 ## Known compliance gaps to track
-- v3.5.1 audit baseline: **19% NIMS compliance**
+- Default ICS structure is not yet NIMS-compliant for Type I/II incidents
 - SP `group` field stores apparatus IDs, but NIMS Group is functional, not a resource — slated for `assignedResource` rename in v4.0
 - Default ICS structure is not NIMS-compliant for Type I/II incidents — v4.0 overhaul
 
