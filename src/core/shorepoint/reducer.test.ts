@@ -7,6 +7,7 @@ import {
   deductionTotalInches,
   cutLengthInches,
   deployedCapacityFlag,
+  unknownPlateIds,
   strutLoadShareDeployed,
   deployedStrutCount,
 } from './reducer';
@@ -488,6 +489,50 @@ describe('deployedCapacityFlag — persistent board-card safety flag (#410 audit
 
   it('no flag for a pending shore with no strut on record', () => {
     expect(deployedCapacityFlag(sp())).toBeNull();
+  });
+
+  describe('#484 — unknown connector', () => {
+    const unknownTop = { headerWood: 'none', footerWood: 'none', topPlate: 'zz-future-plate', bottomPlate: 'none' } as const;
+
+    it('flags unknown-connector for a deployed shore with a plate id outside the catalog', () => {
+      const point = sp({ measurementEighths: 468, estimatedLoad: 5000, deductions: unknownTop, deployedBom: strutBom('LS 406') });
+      expect(deployedCapacityFlag(point)).toBe('unknown-connector');
+    });
+
+    it('over-capacity OUTRANKS unknown-connector (a real load verdict beats the missing-data tell)', () => {
+      const point = sp({ measurementEighths: 468, estimatedLoad: 34000, deductions: unknownTop, deployedBom: strutBom('LS 406') });
+      expect(deployedCapacityFlag(point)).toBe('over-capacity');
+    });
+
+    it('unrated OUTRANKS unknown-connector', () => {
+      const point = sp({ measurementEighths: 195 * 8, deductions: unknownTop, deployedBom: strutBom('LS 1016') });
+      expect(deployedCapacityFlag(point)).toBe('unrated');
+    });
+
+    it('never flags a point with no strut on record (absence of data is not a flag)', () => {
+      expect(deployedCapacityFlag(sp({ deductions: unknownTop }))).toBeNull();
+    });
+
+    it('an unknown STRUT model (stale catalog) is NOT an unknown connector — stays null', () => {
+      const point = sp({ measurementEighths: 468, estimatedLoad: 5000, deployedBom: strutBom('LS 812') });
+      expect(deployedCapacityFlag(point)).toBeNull();
+    });
+  });
+});
+
+describe('unknownPlateIds (#457/#484)', () => {
+  const d = (topPlate: string, bottomPlate: string) =>
+    ({ headerWood: 'none', footerWood: 'none', topPlate, bottomPlate }) as never;
+
+  it('is empty for catalog plates and for "none"', () => {
+    expect(unknownPlateIds(d('none', 'none'))).toEqual([]);
+    expect(unknownPlateIds(d('channel4x4', 'swivel6'))).toEqual([]);
+  });
+
+  it('reports the unknown slot(s) in top, bottom order', () => {
+    expect(unknownPlateIds(d('zz-top', 'none'))).toEqual(['zz-top']);
+    expect(unknownPlateIds(d('none', 'zz-bot'))).toEqual(['zz-bot']);
+    expect(unknownPlateIds(d('zz-top', 'zz-bot'))).toEqual(['zz-top', 'zz-bot']);
   });
 });
 

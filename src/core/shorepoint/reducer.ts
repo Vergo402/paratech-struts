@@ -179,20 +179,31 @@ function sameExtLengths(a: number[], b: number[]): boolean {
  * The persistent board-card safety flag for a DEPLOYED shore (2026-07-02 audit #7,
  * v3 parity): 'unrated' (LongShore beyond the published chart) or 'over-capacity'
  * (this strut's share of the load exceeds its rating at the deployed length), else
- * null. Catalog-mode — capacity is physics (system + length), not stock — so it
- * agrees with the Quick View verdict and doesn't flicker as inventory changes.
- * Null when there's no strut on record, no catalog match, or (for over-capacity) no
- * recorded load: the ABSENCE of data is never a flag. Matches the deployed assembly
- * by strut model + extension multiset, exactly like the drawer.
+ * 'unknown-connector' (#484: a deduction names a plate id this build's catalog doesn't
+ * know — it deducts 0″, so every length and capacity figure for the point is derived
+ * from a length that is too long), else null. Catalog-mode — capacity is physics
+ * (system + length), not stock — so it agrees with the Quick View verdict and doesn't
+ * flicker as inventory changes. Null when there's no strut on record, no catalog match
+ * (and no unknown connector), or (for over-capacity) no recorded load: the ABSENCE of
+ * data is never a flag. Matches the deployed assembly by strut model + extension
+ * multiset, exactly like the drawer.
+ *
+ * PRECEDENCE (#484): unrated / over-capacity win over unknown-connector. Those are
+ * concrete "this shore may be unsafe" verdicts the crew must act on; unknown-connector
+ * is a missing-data tell and must never HIDE one. Only `unknownPlateIds` triggers it —
+ * an unknown STRUT model (stale catalog) keeps its existing null handling.
  */
-export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): 'unrated' | 'over-capacity' | null {
+export type DeployedCapacityFlag = 'unrated' | 'over-capacity' | 'unknown-connector';
+
+export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): DeployedCapacityFlag | null {
   const strut = deployedStrutOf(sp);
   if (!strut?.model) return null;
+  const unknownConnector = unknownPlateIds(sp.deductions).length > 0 ? 'unknown-connector' : null;
   const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
   const match = findForShorePoint(sp, null).find(
     (c) => c.strut.model === strut.model && sameExtLengths(c.extensions, exts),
   );
-  if (!match) return null;
+  if (!match) return unknownConnector;
   if (match.unrated) return 'unrated';
   if (match.exceedsCapacity) return 'over-capacity';
   // Divide by the struts actually standing when the caller knows the count (H1/#415);
@@ -200,7 +211,7 @@ export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): 'u
   // deploy would then still read SAFE, the bug this closes).
   const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
   if (sp.estimatedLoad != null && share > match.capacity) return 'over-capacity';
-  return null;
+  return unknownConnector;
 }
 
 /**

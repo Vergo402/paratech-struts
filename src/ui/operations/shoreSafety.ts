@@ -12,9 +12,13 @@ import { sameExtensions } from './pieceIdentity';
  * The re-verified safety verdict for a DEPLOYED shore — a CONFIRMED re-run of the
  * fit engine against the point's own persisted inputs, matched to the deployed
  * assembly by strut model + extension multiset (decision F, never a false pass).
- * One source for the verdict: the Quick View hero (ShorePointDetail) AND the board
- * "verify" surface (the red edge / banner / Division rail) both read it, so a point
- * flags identically wherever it shows. `warn` = over-capacity OR unrated (the thing
+ * Read ONLY by the Quick View drawer (ShorePointDetail). The board surfaces — Board
+ * card, List row, Division tile, archived-incident viewer — do NOT read this; they get
+ * their flag from `deployedCapacityFlag` (core/shorepoint/reducer.ts) threaded through
+ * CapacityFlag. The two are kept in step by hand: both run the same catalog-mode fit,
+ * and both degrade on an unknown connector (#457 here, #484 there as the amber
+ * "Unknown connector" chip), so a point never reads clean on the board while the
+ * drawer calls it unverifiable. `warn` = over-capacity OR unrated (the thing
  * to physically check); `unknown` = no strut on record / not re-verifiable / no usable
  * load recorded (absent, or a schema-legal 0 — #455) / a connector outside this build's
  * catalog (#457) — reference, not an exception, and never asserted as a pass;

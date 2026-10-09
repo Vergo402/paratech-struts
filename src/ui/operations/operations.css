@@ -967,6 +967,14 @@ button.fs-spc-head {
 .fs-spc-flag--compact {
   white-space: nowrap;
 }
+/* #484 — unknown connector chip: the same amber as --warning (missing data, not a load
+   verdict), but a two-word pill so it holds one line in the List row / Division tile. */
+.fs-spc-flag--unknown-connector {
+  color: var(--status-waiting-text);
+  background: var(--status-waiting-bg);
+  border-color: var(--status-waiting-text);
+  white-space: nowrap;
+}
 
 /* The measurement is the card's HERO (#432, mess-map #5): dominant numeral +
    micro-label naming WHICH number this is (opening / effective / cut), the
@@ -1411,7 +1419,8 @@ button.fs-spc-head {
   padding-left: var(--space-4);
 }
 .fs-rec-slot .fs-rec-slot-value,
-.fs-rec-slot .fs-rec-ns {
+.fs-rec-slot .fs-rec-ns,
+.fs-rec-slot .fs-rec-unk {
   white-space: nowrap;
 }
 
@@ -1444,6 +1453,25 @@ button.fs-spc-head {
 .fs-rec-ns,
 .fs-rec-slot.is-ns .fs-rec-slot-name {
   color: var(--danger-text);
+}
+
+/* #484 unknown connector — AMBER, not the danger red of N/S. N/S is a decision the
+   operator made; this is DATA this build can't read (a plate id outside its catalog,
+   deducting 0"), so the length below is too long. Same amber ramp as the SME-3 warning
+   chip (--status-waiting-*, defined in all four themes; it keeps a dark -text in
+   sunlight, so no sunlight override is needed). A tell, never a gate. */
+.fs-rec-slot.is-unknown .fs-rec-slot-label,
+.fs-rec-slot.is-unknown .fs-rec-slot-value,
+.fs-rec-slot.is-unknown .fs-rec-slot-name,
+.fs-rec-effective-row.is-unknown .fs-rec-effective,
+.fs-rec-unk-mark {
+  color: var(--status-waiting-text);
+}
+.fs-rec-slot.is-unknown .fs-rec-slot-value {
+  font-weight: 600;
+}
+.fs-rec-unk-mark {
+  margin-right: var(--space-1);
 }
 
 .fs-rec-opening {

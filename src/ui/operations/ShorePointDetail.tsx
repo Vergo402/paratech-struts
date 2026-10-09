@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { FieldShoreEvent, ShorePoint, WoodSizeId } from '@core/schema';
-import { BASE_PLATES, WOOD_SIZES } from '@core/load';
+import { BASE_PLATES, WOOD_SIZES, isKnownPlateId } from '@core/load';
 import {
   componentLabel,
   deductionTotalInches,
@@ -16,6 +16,7 @@ import { pieceIdentity } from './pieceIdentity';
 import { dateClock } from '../util/time';
 import { cardLocation } from './cardParts';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
+import { UnknownConnectorCaution } from './RecommendationCard';
 import { shoreSafety } from './shoreSafety';
 
 /**
@@ -41,20 +42,25 @@ export interface ShorePointDetailProps {
 function woodRow(label: string, id: WoodSizeId) {
   const wood = WOOD_SIZES.find((w) => w.id === id);
   const selected = !!wood && wood.id !== 'none';
-  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
+  return { label, selected, unknown: false, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
 }
 function plateRow(label: string, id: string) {
   const plate = BASE_PLATES.find((p) => p.id === id);
   const selected = !!plate && plate.id !== 'none';
+  // #484 — mirror of RecommendationCard's unknown-connector state (id outside this
+  // build's catalog → deducts 0″ → every length here reads too long).
+  const unknown = id !== 'none' && !isKnownPlateId(id);
   // EXACT catalog height — off-grid plates render as decimals so the column foots.
-  return { label, selected, name: selected ? plate.name : 'not selected', inches: selected ? plate.height : 0 };
+  return { label, selected, unknown, name: unknown ? 'Unknown connector' : selected ? plate.name : 'not selected', inches: selected ? plate.height : 0 };
 }
-function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> }) {
+function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typeof woodRow> }) {
   return (
-    <div className={`fs-rec-slot${row.selected ? '' : ' is-ns'}`}>
+    <div className={`fs-rec-slot${row.unknown ? ' is-unknown' : row.selected ? '' : ' is-ns'}`}>
       <div className="fs-rec-row">
         <span className="fs-rec-slot-label">{row.label}</span>
-        {row.selected ? (
+        {row.unknown ? (
+          <span className="fs-rec-slot-value fs-rec-unk">−?″</span>
+        ) : row.selected ? (
           <span className="fs-rec-slot-value">
             <InchesValue inches={-row.inches} />
           </span>
@@ -62,7 +68,7 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> }) {
           <span className="fs-rec-slot-value fs-rec-ns">Not recorded</span>
         )}
       </div>
-      <span className="fs-rec-slot-name">{row.name}</span>
+      <span className="fs-rec-slot-name">{row.unknown ? '⚠ Unknown connector' : row.name}</span>
     </div>
   );
 }
@@ -116,7 +122,10 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
     woodRow('Footer', sp.deductions.footerWood),
   ];
   const effectiveEighths = Math.round(effectiveLengthInches(sp) * 8);
-  const hasDeductions = deductionTotalInches(sp.deductions) > 0;
+  // #484: an unknown connector deducts 0″, so without this the ledger (and its tell)
+  // would be hidden for a point whose only deduction is the unknown plate.
+  const hasUnknownConnector = ledger.some((r) => r.unknown);
+  const hasDeductions = deductionTotalInches(sp.deductions) > 0 || hasUnknownConnector;
   // The exact pre-floor result; the hero/ledger total is its ADR-012 floor. When
   // they differ the ledger shows the floor step so the column foots.
   const exactInches = sp.measurementEighths / 8 - deductionTotalInches(sp.deductions);
@@ -194,15 +203,23 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
               )}
             </>
           )}
-          <div className="fs-rec-row fs-rec-effective-row">
+          <div className={`fs-rec-row fs-rec-effective-row${hasUnknownConnector ? ' is-unknown' : ''}`}>
             <span className="fs-rec-slot-label">{lengthLabel}</span>
-            <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
+            <span>
+              {hasUnknownConnector && (
+                <span className="fs-rec-unk-mark" role="img" aria-label="Length incomplete — unknown connector">
+                  ⚠
+                </span>
+              )}
+              <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
+            </span>
           </div>
           <div className="fs-rec-row">
             <span className="fs-rec-slot-label">Estimated load</span>
             <span className="fs-rec-opening">{estLoad != null ? `${estLoad.toLocaleString()} lbs` : '—'}</span>
           </div>
         </div>
+        {hasUnknownConnector && <UnknownConnectorCaution />}
       </section>
 
       {/* #441 — the point's radio-callout location: what3words + raw coordinates.

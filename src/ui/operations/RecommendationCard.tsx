@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BASE_PLATES, WOOD_SIZES, sysKeyOf, type StrutCombination } from '@core/load';
+import { BASE_PLATES, WOOD_SIZES, isKnownPlateId, sysKeyOf, type StrutCombination } from '@core/load';
 import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
 import { SHORE_TYPE_FOR_STRUTS, deductionTotalInches, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
 import { Button, Card, InchesValue, MeasurementValue, WarningGate, eighthsToParts, isEighthsExact } from '@ui/primitives';
@@ -78,28 +78,44 @@ function connectorSpecs(deductions: Deductions): string[] {
 function woodRow(label: string, id: WoodSizeId) {
   const wood = WOOD_SIZES.find((w) => w.id === id);
   const selected = wood && wood.id !== 'none';
-  return { label, selected, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
+  return { label, selected, unknown: false, name: selected ? wood.id.replace('x', '×') : 'not selected', inches: selected ? wood.height : 0 };
 }
 
 function plateRow(label: string, id: string) {
   const plate = BASE_PLATES.find((p) => p.id === id);
   const selected = plate && plate.id !== 'none';
+  // #484 — an id this build's catalog doesn't know (peer on a newer catalog, or a
+  // later release renamed it). It deducts 0″, so the length below is too long: say so
+  // (amber tell) instead of reading as "not selected". Never reachable from the picker.
+  const unknown = id !== 'none' && !isKnownPlateId(id);
   return {
     label,
     selected,
-    name: selected ? plate.name : 'not selected',
+    unknown,
+    name: unknown ? 'Unknown connector' : selected ? plate.name : 'not selected',
     // EXACT catalog height — off-grid plates (most of O&M Table 2-1) render as
     // decimals so the ledger column foots against the floored total.
     inches: selected ? plate.height : 0,
   };
 }
 
+/** The single amber caution under a ledger holding an unknown connector (#484). */
+export function UnknownConnectorCaution() {
+  return (
+    <p className="fs-rec-caution" role="status">
+      A connector on this shore isn&apos;t in this app&apos;s catalog — its height is missing from this length. Update the app or re-check the connectors.
+    </p>
+  );
+}
+
 function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typeof woodRow> }) {
   return (
-    <div className={`fs-rec-slot${row.selected ? '' : ' is-ns'}`}>
+    <div className={`fs-rec-slot${row.unknown ? ' is-unknown' : row.selected ? '' : ' is-ns'}`}>
       <div className="fs-rec-row">
         <span className="fs-rec-slot-label">{row.label}</span>
-        {row.selected ? (
+        {row.unknown ? (
+          <span className="fs-rec-slot-value fs-rec-unk">−?″</span>
+        ) : row.selected ? (
           <span className="fs-rec-slot-value">
             <InchesValue inches={-row.inches} />
           </span>
@@ -107,7 +123,7 @@ function LedgerSlot({ row }: { row: ReturnType<typeof plateRow> | ReturnType<typ
           <span className="fs-rec-slot-value fs-rec-ns">Not recorded</span>
         )}
       </div>
-      <span className="fs-rec-slot-name">{row.name}</span>
+      <span className="fs-rec-slot-name">{row.unknown ? '⚠ Unknown connector' : row.name}</span>
     </div>
   );
 }
@@ -186,6 +202,7 @@ export function RecommendationCard({
     plateRow('Bottom Connector', deductions.bottomPlate),
     woodRow('Footer', deductions.footerWood),
   ];
+  const hasUnknownConnector = slots.some((r) => r.unknown);
   const effectiveEighths = Math.round(combo.effectiveLength * 8);
   const openingEighths = Math.round(combo.openingLength * 8);
   // The exact pre-floor result (raw − exact deductions); combo.effectiveLength is
@@ -366,9 +383,16 @@ export function RecommendationCard({
             <InchesValue inches={exactInches} className="fs-rec-floor-value" />
           </div>
         )}
-        <div className="fs-rec-row fs-rec-effective-row">
+        <div className={`fs-rec-row fs-rec-effective-row${hasUnknownConnector ? ' is-unknown' : ''}`}>
           <span className="fs-rec-slot-label">Required strut length</span>
-          <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
+          <span>
+            {hasUnknownConnector && (
+              <span className="fs-rec-unk-mark" role="img" aria-label="Length incomplete — unknown connector">
+                ⚠
+              </span>
+            )}
+            <MeasurementValue eighths={effectiveEighths} className="fs-rec-effective" />
+          </span>
         </div>
         {shortDeploy && (
           <div className="fs-rec-row">
@@ -377,6 +401,8 @@ export function RecommendationCard({
           </div>
         )}
       </div>
+
+      {hasUnknownConnector && <UnknownConnectorCaution />}
 
       {needTell}
 

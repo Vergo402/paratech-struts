@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
 import type { OperationState } from '@core/operation';
 import type { Operation, ShorePoint } from '@core/schema';
+import { CapacityFlag } from './CapacityFlag';
 import { CuttingStation } from './CuttingStation';
 import { PastOperationView } from './PastOperationView';
 import { shoreSafety } from './shoreSafety';
@@ -280,5 +281,59 @@ describe('SME-3 — the too-small chip reaches the archived-incident viewer', ()
     archiveWith(THREE_OF_THREE); // 58.5″ 3-Post — 45.5″ of cut
     render(<PastOperationView opId="op1" onClose={vi.fn()} />);
     expect(screen.queryByText(TOO_SMALL)).toBeNull();
+  });
+});
+
+/**
+ * #484 (Phase J pre-TTX) — a deployed shore whose connector id this build's catalog
+ * doesn't know deducts 0″, so every length it shows reads too long. Before this the
+ * Board card, List row and Division tile said NOTHING (only the Quick View drawer —
+ * #457 — knew). The flag now rides the same threaded CapacityFlag to every surface.
+ * Amber tell, never a gate.
+ */
+describe('#484 — unknown connector reaches every deployed surface', () => {
+  const UNKNOWN = { headerWood: 'none', footerWood: 'none', topPlate: 'zz-future-plate', bottomPlate: 'none' } as const;
+  const clean = (id: string) => leg(id, { deployedBom: bom(), estimatedLoad: 5000, status: 'process', deductions: UNKNOWN });
+  const POINTS = [clean('a'), clean('b'), clean('c')];
+
+  it('the board verdict function returns unknown-connector (parity source for every surface)', () => {
+    expect(boardFlagOf(POINTS)(POINTS[0]!)).toBe('unknown-connector');
+  });
+
+  it('CapacityFlag renders the amber chip with the exact label', () => {
+    render(<CapacityFlag flag="unknown-connector" />);
+    const chip = screen.getByRole('status');
+    expect(chip).toHaveTextContent('⚠ Unknown connector');
+    expect(chip.className).toContain('fs-spc-flag--unknown-connector');
+  });
+
+  it('the Cutting Station hero says Unknown connector, not Over capacity', () => {
+    const cut = POINTS.map((p) => ({ ...p, status: 'cutting' as const }));
+    render(
+      <CuttingStation
+        queue={[cut[0]!]}
+        sent={[]}
+        onMarkCutDone={vi.fn()}
+        onClearCutDone={vi.fn()}
+        onSendToRunner={vi.fn()}
+        onStepBack={vi.fn()}
+        capacityFlagOf={boardFlagOf(cut)}
+        deployedCountOf={(sp) => deployedStrutCount(sp, cut)}
+      />,
+    );
+    const hero = screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+    expect(within(hero).getByText(/Unknown connector/)).toHaveTextContent('Unknown connector — 3 of 3 struts standing');
+    expect(within(hero).queryByText(/Over capacity/)).toBeNull();
+  });
+
+  it('the archived-incident viewer records it', () => {
+    archiveWith(POINTS);
+    render(<PastOperationView opId="op1" onClose={vi.fn()} />);
+    expect(screen.getAllByText(/Unknown connector/).length).toBeGreaterThan(0);
+  });
+
+  it('a clean deploy with known plates shows no chip', () => {
+    const known = POINTS.map((p) => ({ ...p, deductions: { ...UNKNOWN, topPlate: 'channel4x4' } }));
+    expect(boardFlagOf(known)(known[0]!)).toBeNull();
   });
 });

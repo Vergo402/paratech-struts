@@ -112,7 +112,8 @@ function cutEighths(sp: ShorePoint): number {
  * plural — no singular branch exists to get wrong.
  */
 function heroFlagText(flag: Exclude<CapacityFlagValue, null>, standing: number | null, planned: number | null): string {
-  const word = flag === 'unrated' ? 'Unrated length' : 'Over capacity';
+  const word =
+    flag === 'unrated' ? 'Unrated length' : flag === 'unknown-connector' ? 'Unknown connector' : 'Over capacity';
   if (standing == null || planned == null || planned < 2) return word;
   return `${word} — ${standing} of ${planned} struts standing`;
 }

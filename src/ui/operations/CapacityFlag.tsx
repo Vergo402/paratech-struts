@@ -6,9 +6,18 @@
  * tri-views silently broke). Presentational only: the flag VALUE is computed once
  * upstream where the full group is known — deployedCapacityFlag + deployedStrutCount,
  * so a short-of-plan group reads over-capacity (H1/#415) — and passed in. Null → nothing.
+ * 'unknown-connector' (#484) is the AMBER missing-data tell (a plate id outside this build's
+ * catalog); the danger kinds outrank it upstream.
  */
 
-export type CapacityFlagValue = 'unrated' | 'over-capacity' | null;
+export type CapacityFlagValue = 'unrated' | 'over-capacity' | 'unknown-connector' | null;
+
+/** The chip's one-line label per kind (the CuttingStation hero reuses these words). */
+export const CAPACITY_FLAG_LABEL = {
+  unrated: 'Unrated',
+  'over-capacity': 'Over capacity',
+  'unknown-connector': 'Unknown connector',
+} as const;
 
 export function CapacityFlag({ flag }: { flag: CapacityFlagValue }) {
   if (!flag) return null;
@@ -17,7 +26,7 @@ export function CapacityFlag({ flag }: { flag: CapacityFlagValue }) {
   return (
     <span className="fs-spc-flag-row">
       <span className={`fs-spc-flag fs-spc-flag--${flag}`} role="status">
-        ⚠ {flag === 'unrated' ? 'Unrated' : 'Over capacity'}
+        ⚠ {CAPACITY_FLAG_LABEL[flag]}
       </span>
     </span>
   );

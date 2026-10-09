@@ -88,6 +88,29 @@ describe('ShorePointDetail — measurement ledger', () => {
     expect(screen.getAllByText('Required strut length').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('#484 unknown connector: the ledger shows even when it is the ONLY deduction (it deducts 0″), amber slot + caution', () => {
+    const onlyUnknown = { headerWood: 'none', footerWood: 'none', topPlate: 'zz-future-plate', bottomPlate: 'none' } as const;
+    const { container } = render(<ShorePointDetail sp={makeSp({ deductions: onlyUnknown })} />);
+    // Total deduction is 0″, yet the ledger must render or the tell would vanish.
+    expect(screen.getByText('Raw opening')).toBeInTheDocument();
+    const slot = [...container.querySelectorAll('.fs-rec-slot')].find((el) => el.textContent?.includes('Top Connector'))!;
+    expect(slot.classList.contains('is-unknown')).toBe(true);
+    expect(slot).toHaveTextContent('⚠ Unknown connector');
+    expect(slot).toHaveTextContent('−?″');
+    expect(screen.queryByText('Not recorded', { selector: '.fs-rec-slot.is-unknown *' })).toBeNull();
+    expect(container.querySelector('.fs-rec-effective-row')!.classList.contains('is-unknown')).toBe(true);
+    expect(
+      screen.getByText(
+        "A connector on this shore isn't in this app's catalog — its height is missing from this length. Update the app or re-check the connectors.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('#484: catalogued connectors show no unknown state', () => {
+    const { container } = render(<ShorePointDetail sp={makeSp({ deductions: withDeductions })} />);
+    expect(container.querySelector('.is-unknown')).toBeNull();
+  });
+
   it('the column FOOTS: off-grid plate shows its exact decimal + the explicit ⅛″ floor step', () => {
     // swivel6 = 1.8″ (O&M Table 2-1) — off the ⅛″ grid. The row must show −1.8″
     // (never a rounded −1¾″) and the ledger must surface the ADR-012 floor step,

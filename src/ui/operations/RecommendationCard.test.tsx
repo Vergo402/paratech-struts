@@ -111,6 +111,38 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(slotNames.filter((n) => n === '4"x4" Channel Base')).toHaveLength(2);
   });
 
+  it('#484 unknown connector: amber slot, marked total, exact caution — never "Not recorded", never a gate', () => {
+    const onDeploy = vi.fn();
+    const unknownSel: Deductions = { ...SELECTIONS, topPlate: 'zz-future-plate' };
+    const { container } = render(
+      <RecommendationCard combo={STANDARD} deductions={unknownSel} source="Rescue 2" onDeploy={onDeploy} />,
+    );
+    const slot = [...container.querySelectorAll('.fs-rec-slot')].find((el) => el.textContent?.includes('Top Connector'))!;
+    expect(slot.classList.contains('is-unknown')).toBe(true);
+    expect(slot.classList.contains('is-ns')).toBe(false);
+    expect(slot).toHaveTextContent('⚠ Unknown connector');
+    expect(slot).toHaveTextContent('−?″');
+    // The footer is still genuinely unselected, so the single "Not recorded" is the footer's.
+    expect(screen.getAllByText('Not recorded')).toHaveLength(1);
+    expect(container.querySelector('.fs-rec-effective-row')!.classList.contains('is-unknown')).toBe(true);
+    expect(container.querySelector('.fs-rec-unk-mark')).not.toBeNull();
+    expect(
+      screen.getByText(
+        "A connector on this shore isn't in this app's catalog — its height is missing from this length. Update the app or re-check the connectors.",
+      ),
+    ).toBeInTheDocument();
+    // A tell, not a gate: Deploy stays enabled and no acknowledgment is demanded.
+    expect(screen.getByRole('button', { name: /deploy/i })).toBeEnabled();
+  });
+
+  it('#484: a fully catalogued card shows no unknown-connector state', () => {
+    const { container } = render(
+      <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
+    );
+    expect(container.querySelector('.is-unknown')).toBeNull();
+    expect(screen.queryByText(/isn't in this app's catalog/)).toBeNull();
+  });
+
   it('ledger math: the column FOOTS — exact decimal rows + explicit ⅛″ floor step', () => {
     const { container } = render(
       <RecommendationCard combo={STANDARD} deductions={SELECTIONS} source="Rescue 2" onDeploy={vi.fn()} />,
