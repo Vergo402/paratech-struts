@@ -406,6 +406,49 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       expect(onPartial.mock.calls[0]![1]).toHaveLength(0); // nothing left Pending
     });
 
+    // #486 — extensions used to stay pinned to the engine's combo-time row, so member
+    // 2 (strut from Engine 1) paired with Rescue 2's already-claimed extension →
+    // cross-truck → Pending. Now it falls back to its own rig's extension.
+    it('each member re-resolves its own EXTENSION row too (one 12″ per rig → both deploy)', async () => {
+      const user = userEvent.setup();
+      const onPartial = vi.fn();
+      const sp = shortSp();
+      const extRow = (id: string, apparatus: string, apparatusId: string): InventoryItem => ({
+        id, type: 'extension', length: 12, system: 'LongShore', apparatus, apparatusId, quantity: 1, available: 1,
+      });
+      const EXT_COMBO: StrutCombination = {
+        ...COMBO,
+        extensions: [12],
+        extTotal: 12,
+        adjCollapsed: 60,
+        adjExtended: 85,
+        componentCount: 2,
+        extensionSources: [{ length: 12, inventoryId: 'ext-r2' }],
+      };
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([EXT_COMBO]);
+      // Order matters: the engine-resolved Rescue 2 extension is listed first, so
+      // member 1 (strut inv-1 on Rescue 2) sources cleanly from its own rig.
+      mockInventory.mockReturnValue([
+        { ...INV_ITEM, quantity: 1, available: 1 },
+        { ...INV_ITEM, id: 'inv-2', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 1, available: 1 },
+        extRow('ext-r2', 'Rescue 2', 'app-r2'),
+        extRow('ext-e1', 'Engine 1', 'app-e1'),
+      ]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
+
+      await user.click(screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ }));
+
+      const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+      expect(deploys).toHaveLength(2);
+      const pairs = deploys.map((e) => {
+        const bom = e.deployedBom as Array<{ role: string; inventoryId?: string }>;
+        return [bom.find((c) => c.role === 'strut')!.inventoryId, bom.find((c) => c.role === 'extension')!.inventoryId];
+      });
+      expect(pairs).toEqual(expect.arrayContaining([['inv-1', 'ext-r2'], ['inv-2', 'ext-e1']]));
+      expect(onPartial.mock.calls[0]![1]).toHaveLength(0); // nothing left Pending
+    });
+
     it('Deploy 1 of 2 anyway: locked until acknowledged; the event carries the recorded ack', async () => {
       const user = userEvent.setup();
       const sp = shortSp();

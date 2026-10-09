@@ -1,4 +1,4 @@
-import type { StrutCombination } from '../load';
+import { extensionRowCompatible, type StrutCombination } from '../load';
 import type { Deductions, DeployedComponent, InventoryItem, ShorePoint } from '../schema';
 import { UNTRACKED_SOURCE } from '../schema';
 
@@ -46,12 +46,13 @@ export function deployedRigs(sp: ShorePoint): string[] {
 
 /**
  * Assemble a deployed bill of materials from a chosen recommendation (ADR-033).
- * Strut from the chosen rig; extensions from the rows the engine already resolved
- * (combo.extensionSources, availability-gated, W8 pooling preserved); plates from
+ * Strut from the chosen rig; extensions re-resolved against the PASSED inventory
+ * (#486) — the engine's resolved row (combo.extensionSources) while it still has an
+ * unclaimed unit, else any compatible row preferring the strut's rig; plates from
  * the shore's deductions, auto-sourced preferring the strut's rig (carried-forward
  * decision 3), falling back to any on-scene rig that stocks the plate.
  *
- * A plate the shore needs but no on-scene rig stocks is recorded UNTRACKED here
+ * A piece the shore needs but no on-scene rig stocks is recorded UNTRACKED here
  * (inventoryId absent). This is the AUTO-SOURCE foundation only; Phase 3's
  * missing-piece chooser replaces that silent fallback with an explicit choice
  * (quick-add ∥ deploy-untracked-with-confirm ∥ set-to-None) before commit.
@@ -86,24 +87,41 @@ export function assembleBom(
   ];
   if (strutTracked) claim(strutSource.inventoryId!);
 
-  // Pair each required extension LENGTH with a row the engine resolved for it
-  // (combo.extensionSources, one entry per instance), consuming each source once.
-  // A length with no resolved source (catalog mode, or not in tracked stock) is
-  // recorded UNTRACKED — extensions follow the same model as plates (decision 2),
-  // and the extension must never silently vanish from the deployed identity.
+  // #486 — each required extension LENGTH re-resolves its OWN row against the
+  // PASSED inventory, mirroring pushPlate. A group deploy hands each member a
+  // decremented working copy, so member 2+ must not re-claim the row the engine
+  // pinned at combo time once member 1 drained it.
+  //   (a) the engine's resolved row (combo.extensionSources, one entry per instance)
+  //       while it still has an unclaimed unit — W8 pooling preserved;
+  //   (b) else any compatible row (extensionRowCompatible — the engine's own
+  //       predicate) with an unclaimed unit, preferring the strut's rig;
+  //   (c) else UNTRACKED — extensions follow the same model as plates (decision 2)
+  //       and must never silently vanish from the deployed identity.
+  // Every pick is recorded in `claimed`, so two same-length extensions take two
+  // DISTINCT units, and inventoryId is set only when a row was actually found.
+  const unclaimed = (i: InventoryItem) => i.available - (claimed[i.id] ?? 0) > 0;
   const extSources = [...(combo.extensionSources ?? [])];
   for (const length of combo.extensions) {
-    const idx = extSources.findIndex((s) => s.length === length);
-    const src = idx >= 0 ? extSources.splice(idx, 1)[0] : undefined;
-    const row = src ? inventory.find((i) => i.id === src.inventoryId) : undefined;
+    const idx = extSources.findIndex((s) => {
+      if (s.length !== length) return false;
+      const r = inventory.find((i) => i.id === s.inventoryId);
+      return r !== undefined && unclaimed(r);
+    });
+    // Consume the engine entry exactly once (spliced OUTSIDE any callback).
+    const engineId = idx >= 0 ? extSources.splice(idx, 1)[0]!.inventoryId : undefined;
+    const engineRow = engineId !== undefined ? inventory.find((i) => i.id === engineId) : undefined;
+    const rows = engineRow
+      ? []
+      : inventory.filter((i) => extensionRowCompatible(i, length, combo.strut.system) && unclaimed(i));
+    const pick = engineRow ?? rows.find((r) => r.apparatus === strutSource.apparatus) ?? rows[0];
     bom.push({
       role: 'extension',
       length,
       system: combo.strut.system,
-      source: row?.apparatus ?? UNTRACKED_SOURCE,
-      inventoryId: src?.inventoryId,
+      source: pick?.apparatus ?? UNTRACKED_SOURCE,
+      inventoryId: pick?.id,
     });
-    if (src) claim(src.inventoryId);
+    if (pick) claim(pick.id);
   }
 
   pushPlate(bom, 'top-plate', deductions.topPlate, strutSource.apparatus, inventory, claimed, claim);

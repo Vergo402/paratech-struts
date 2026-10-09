@@ -74,6 +74,113 @@ describe('assembleBom — ADR-033 deploy assembly', () => {
   });
 });
 
+// #486 — extensions re-resolve per assembly against the PASSED inventory, mirroring
+// pushPlate: the engine's row while it still has an unclaimed unit, else any
+// compatible row (strut's rig preferred), else UNTRACKED. Every pick is claimed.
+describe('assembleBom — #486 per-member extension re-resolution', () => {
+  const NONE = { topPlate: 'none', bottomPlate: 'none' };
+  const extRow = (
+    id: string,
+    apparatus: string,
+    available: number,
+    length = 12,
+    system: InventoryItem['system'] = 'LongShore',
+  ): InventoryItem => ({ id, type: 'extension', length, system, apparatus, apparatusId: `app-${apparatus}`, quantity: Math.max(available, 1), available });
+  const exts = (bom: ReturnType<typeof assembleBom>) => bom.filter((c) => c.role === 'extension');
+
+  it('engine row exhausted (member 2 of a group) → falls back to another rig’s compatible row', () => {
+    const bom = assembleBom(
+      combo({ extensions: [12], extensionSources: [{ length: 12, inventoryId: 'ext-a' }] }),
+      NONE,
+      { apparatus: 'Engine 4', inventoryId: 'inv-strut-e4' },
+      [extRow('ext-a', 'Rescue 2', 0), extRow('ext-b', 'Engine 4', 1)],
+    );
+    expect(exts(bom)).toEqual([expect.objectContaining({ length: 12, inventoryId: 'ext-b', source: 'Engine 4' })]);
+  });
+
+  it('takes the engine row with stock even when it is NOT first in inventory (entry consumed once)', () => {
+    // Guards the engine-entry consumption: it must be spliced exactly once, not per
+    // row scanned — a row listed after others would otherwise lose its source entry.
+    const bom = assembleBom(
+      combo({ extensions: [12], extensionSources: [{ length: 12, inventoryId: 'ext-c' }] }),
+      NONE,
+      strutSrc,
+      [plateRow('inv-p', 'Rescue 2', 1), extRow('ext-b', 'Rescue 2', 1), extRow('ext-c', 'Engine 4', 1)],
+    );
+    expect(exts(bom)[0]).toMatchObject({ inventoryId: 'ext-c', source: 'Engine 4' }); // engine row first (mirrors pushPlate precedence)
+  });
+
+  it('never emits the engine row’s id once that row has no unit left (no phantom tracked piece)', () => {
+    const bom = assembleBom(
+      combo({ extensions: [12], extensionSources: [{ length: 12, inventoryId: 'ext-a' }] }),
+      NONE,
+      strutSrc,
+      [extRow('ext-a', 'Rescue 2', 0)],
+    );
+    const [ext] = exts(bom);
+    expect(ext!.inventoryId).toBeUndefined();
+    expect(ext!.source).toBe('untracked');
+  });
+
+  it('2× same length, ONE unit on one row → one tracked, one untracked (claim consulted)', () => {
+    const bom = assembleBom(
+      combo({ extensions: [12, 12], extensionSources: [{ length: 12, inventoryId: 'ext-a' }, { length: 12, inventoryId: 'ext-a' }] }),
+      NONE,
+      strutSrc,
+      [extRow('ext-a', 'Rescue 2', 1)],
+    );
+    expect(exts(bom).map((e) => e.inventoryId)).toEqual(['ext-a', undefined]);
+  });
+
+  it('2× same length, one unit on each of two rows → two DISTINCT rows', () => {
+    const bom = assembleBom(
+      combo({ extensions: [12, 12], extensionSources: [{ length: 12, inventoryId: 'ext-a' }, { length: 12, inventoryId: 'ext-a' }] }),
+      NONE,
+      strutSrc,
+      [extRow('ext-a', 'Rescue 2', 1), extRow('ext-b', 'Engine 4', 1)],
+    );
+    expect(exts(bom).map((e) => e.inventoryId)).toEqual(['ext-a', 'ext-b']);
+  });
+
+  it('2× same length, TWO units on one row → both from that row', () => {
+    const bom = assembleBom(
+      combo({ extensions: [12, 12], extensionSources: [{ length: 12, inventoryId: 'ext-a' }, { length: 12, inventoryId: 'ext-a' }] }),
+      NONE,
+      strutSrc,
+      [extRow('ext-a', 'Rescue 2', 2)],
+    );
+    expect(exts(bom).map((e) => e.inventoryId)).toEqual(['ext-a', 'ext-a']);
+  });
+
+  it('fallback prefers the strut’s rig over another rig that also stocks it', () => {
+    const bom = assembleBom(combo({ extensions: [12] }), NONE, strutSrc, [
+      extRow('ext-e4', 'Engine 4', 1),
+      extRow('ext-r2', 'Rescue 2', 1), // Rescue 2 = strut rig
+    ]);
+    expect(exts(bom)[0]!.inventoryId).toBe('ext-r2');
+  });
+
+  it('LockStroke strut falls back to an AcmeThread extension (interchange), never a LongShore one', () => {
+    const lk = combo({ strut: { model: 'LK 36-57', system: 'LockStroke' } as StrutCombination['strut'], extensions: [12] });
+    const tracked = assembleBom(lk, NONE, strutSrc, [extRow('ext-at', 'Rescue 2', 1, 12, 'AcmeThread')]);
+    expect(exts(tracked)[0]!.inventoryId).toBe('ext-at');
+    const wrongSystem = assembleBom(lk, NONE, strutSrc, [extRow('ext-ls', 'Rescue 2', 1, 12, 'LongShore')]);
+    expect(exts(wrongSystem)[0]!.inventoryId).toBeUndefined();
+  });
+
+  it('a different length never satisfies the need', () => {
+    const bom = assembleBom(combo({ extensions: [12] }), NONE, strutSrc, [extRow('ext-24', 'Rescue 2', 1, 24)]);
+    expect(exts(bom)[0]!.inventoryId).toBeUndefined();
+  });
+
+  it('catalog mode (no extensionSources) auto-sources extensions from stock like plates', () => {
+    const c = combo({ extensions: [12], extensionSources: undefined });
+    const bom = assembleBom(c, NONE, strutSrc, [extRow('ext-r2', 'Rescue 2', 1)]);
+    expect(exts(bom)[0]).toMatchObject({ inventoryId: 'ext-r2', source: 'Rescue 2' });
+    expect(bomSourceStatus(c, NONE, strutSrc, [extRow('ext-r2', 'Rescue 2', 1)]).status).toBe('complete');
+  });
+});
+
 describe('bomSourceStatus — card stock readiness (decisions 5–6)', () => {
   const ded = { topPlate: 'plate-x', bottomPlate: 'none' };
 

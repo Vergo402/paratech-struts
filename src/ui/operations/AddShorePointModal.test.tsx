@@ -819,4 +819,63 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
       expect(e.deployedBom.some((c) => c.inventoryId === undefined)).toBe(false);
     }
   });
+
+  // #486 — the #452 fix re-resolved the STRUT per member, but extensions stayed
+  // pinned to the engine's combo-time row. Member 2 then re-claimed member 1's
+  // (already drained) extension row. That row still EXISTS, so the component isn't
+  // untracked and the baseline gate let it through — with the mocked commit the
+  // deploy COUNT looks fine pre-fix; the distinct-extension-row assertion is the one
+  // that catches it (in the real store the decrement would abort member 2).
+  it('re-resolves EXTENSIONS per member: one 12″ per rig → both deploy on distinct rows', async () => {
+    const extRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+      id,
+      type: 'extension',
+      length: 12,
+      system: 'LongShore',
+      apparatus,
+      apparatusId: `ap-${id}`,
+      quantity: available,
+      available,
+    });
+    // 7 ft = 84″: bare LS 406 tops out at 73″; LS 406 + 12″ spans 60–85″ (LongShore
+    // takes at most one extension), so the real engine must recommend LS 406 + 12″.
+    const inv = [
+      strutRow('inv-a', 'Rescue 2', 1),
+      strutRow('inv-b', 'Engine 4', 1),
+      extRow('ext-a', 'Rescue 2', 1),
+      extRow('ext-b', 'Engine 4', 1),
+    ];
+    mockInventory.mockReturnValue(inv as never);
+    const sp = makeSP({ shoreType: 'double-t', measurementEighths: 84 * 8 });
+    const combo = findForShorePoint(sp, inv).find(
+      (c) => c.strut.model === 'LS 406' && c.extensions.length === 1 && c.extensions[0] === 12,
+    );
+    expect(combo, 'the real engine should recommend LS 406 + 12″ for this fixture').toBeDefined();
+    mockRecommendations.mockReturnValue([combo!] as never);
+
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'Double-T' }));
+    await setMeasurementFeet(user, 7);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    const [deployed, pending] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(2);
+    expect(pending).toHaveLength(0);
+    expect(strutClaims()).toEqual({ 'inv-a': 1, 'inv-b': 1 });
+    const extIds = deployEvents().map((e) => {
+      const ext = e.deployedBom.filter((c) => c.role === 'extension');
+      expect(ext).toHaveLength(1);
+      return ext[0]!.inventoryId;
+    });
+    expect(new Set(extIds)).toEqual(new Set(['ext-a', 'ext-b'])); // distinct rows, both tracked
+    // Each member's extension came off the same rig as its own strut (ADR-033).
+    for (const e of deployEvents()) {
+      const strut = e.deployedBom.find((c) => c.role === 'strut')!;
+      const ext = e.deployedBom.find((c) => c.role === 'extension')!;
+      expect(ext.source).toBe(strut.source);
+    }
+  });
 });

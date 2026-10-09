@@ -93,6 +93,24 @@ export function getLoadCapacity(system: System, totalLengthIn: number, sfIndex: 
   return upper[sfIndex + 1]!;
 }
 
+/**
+ * True if an inventory row is an extension that fits a strut of `system` at exactly
+ * `length` inches: same system, or the LockStroke↔AcmeThread interchange. Shared by
+ * the engine's availability gate + source pick below and the deploy BOM's per-member
+ * re-resolution (core/shorepoint/bom.ts, #486) so the two can never disagree on
+ * what counts as a matching extension. Availability is NOT checked here — each
+ * caller applies its own ledger (pooled sum, greedy `taken`, or the BOM's `claimed`).
+ */
+export function extensionRowCompatible(row: InventoryItem, length: number, system: System): boolean {
+  return (
+    row.type === 'extension' &&
+    row.length === length &&
+    (row.system === system ||
+      (system === 'LockStroke' && row.system === 'AcmeThread') ||
+      (system === 'AcmeThread' && row.system === 'LockStroke'))
+  );
+}
+
 export function findStrutCombinations(
   requiredLength: number,
   estimatedLoad: number,
@@ -194,14 +212,7 @@ export function findStrutCombinations(
           // Diverges from the verbatim v3 port (which required one row ≥ qty) — it
           // only ever WIDENS availability, never over-rates capacity (audit W8).
           const avail = inv
-            .filter(
-              (i) =>
-                i.type === 'extension' &&
-                i.length === parseInt(size) &&
-                (i.system === strut.system ||
-                  (strut.system === 'LockStroke' && i.system === 'AcmeThread') ||
-                  (strut.system === 'AcmeThread' && i.system === 'LockStroke')),
-            )
+            .filter((i) => extensionRowCompatible(i, parseInt(size), strut.system))
             .reduce((sum, i) => sum + i.available, 0);
           if (avail < qty) {
             extAvailable = false;
@@ -274,13 +285,7 @@ export function findStrutCombinations(
           .filter((e) => e > 0)
           .map((size) => {
             const row = inv.find(
-              (i) =>
-                i.type === 'extension' &&
-                i.length === size &&
-                (i.system === strut.system ||
-                  (strut.system === 'LockStroke' && i.system === 'AcmeThread') ||
-                  (strut.system === 'AcmeThread' && i.system === 'LockStroke')) &&
-                i.available - (taken[i.id] || 0) > 0,
+              (i) => extensionRowCompatible(i, size, strut.system) && i.available - (taken[i.id] || 0) > 0,
             );
             if (!row) return null;
             taken[row.id] = (taken[row.id] || 0) + 1;
