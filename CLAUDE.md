@@ -6,6 +6,8 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 
 **Live:** https://vergo402.github.io/paratech-struts/
 
+**Deployment status (2026-10-09): beta only — no users.** Alex is the sole tester; no department has onboarded. The v3 site above and its Firebase project `paratech-c3ab4` are reference/archive, not a fielded app: route every fix to v4 (`src/`, Firebase `fieldshore-database`), never patch v3 for "production" reasons. `hfd217` in the v3 database is Alex's own test department. Re-check this line before calling anything production-critical.
+
 ---
 
 ## Architecture
