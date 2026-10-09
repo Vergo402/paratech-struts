@@ -13,9 +13,17 @@
 - `v3-release|audit|fix|verify|feedback-<ver>-<topic>.md` — v3 maintenance history
 - `fieldshore-<topic>.md` — cross-cutting (executive briefing, repo audit, tooling)
 
-## Going-forward rule (no harness setting exists for this)
+## Going-forward rule (revised 2026-10-09)
 
-At the **end of each FieldShore planning session**, rename the harness-created random-named plan file in `~/.claude/plans/` to the convention above, update any references, and append the old→new pair to this file. The `/plan-v4` skill carries this as a closing step. Plan-file naming is fixed harness behavior — there is no settings/hook toggle (verified 2026-06-07).
+`~/.claude/plans/` is **ephemeral** — the harness purges it on roughly a 30-day retention (confirmed 2026-10-09: every FieldShore plan, including `v4-master-plan.md`, was gone; the Aug-3 Time Machine backup still held five). Any plan that outlives its session, or is referenced from repo docs, memory or a skill, is **saved into this repo under `.claude/plans/`** (public repo: no account IDs, key names with values, or personal data) and indexed below. At the end of each FieldShore planning session, copy the harness plan file here under the naming convention above, then add its row. Plans that must stay private go to `~/Documents/FieldShore-backups/` and get a row that says "(private)".
+
+### In-repo plans (2026-10 onward)
+
+| harness name | in-repo / location | note |
+|---|---|---|
+| floofy-waddling-hickey (purged) | `.claude/plans/v4-phase-j-pre-ttx-safety-minibatch.md` | DRAFT — recovered 2026-10-09 from the 2026-08-22 transcript; #484 mockup question unanswered |
+| currently-i-have-these-delightful-chipmunk | `~/Documents/FieldShore-backups/fieldshore-restart-plan-2026-10-09.md` (private) | 2026-10 restart plan: Tier 0 money/data/keys, Tier 1 deadlines, Tier 3 workspace cleanup |
+| (recovered set) | `~/Documents/FieldShore-backups/recovered-plans-2026-08-03/` (private) | 40 plan files from the Aug-3 Time Machine backup, 5 FieldShore-related; master plan not among them |
 
 ## Reversibility
 
