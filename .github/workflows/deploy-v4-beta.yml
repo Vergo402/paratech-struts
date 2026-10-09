@@ -20,6 +20,7 @@ jobs:
         env:
           # Browser key, referrer-restricted in Google Cloud; stored as a repo secret.
           VITE_GOOGLE_MAPS_KEY: ${{ secrets.VITE_GOOGLE_MAPS_KEY }}
+          VITE_W3W_KEY: ${{ secrets.VITE_W3W_KEY }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
