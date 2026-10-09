@@ -36,7 +36,7 @@ Final visual acceptance and mockup-fidelity judgment stay with the orchestrator 
 6. To get past auth gates locally: seed the `fieldshore_session` Dexie meta row with `role:'admin'`, but identity MUST stay `{kind:'guest'}` and `departmentId` null — a seeded member gets downgraded back to guest by the auth reconcile, and a real `departmentId` switches the Dexie bucket away from your seeded data.
 7. Hand-rolled drags (e.g. the org chart) drive via scripted PointerEvents: `pointerdown` on the source, `pointermove`/`pointerup` on `window`, waiting one rAF before the up event.
 8. Layout/ref effects (`useLayoutEffect`, canvas refs) MUST be verified in a `vite preview` prod build, not just dev — StrictMode's double-invoke in dev can mask a single-pass bug that only shows up on beta/prod (real incident: org chart connectors invisible on beta only).
-9. Beta URL for verifying deployed state: `fieldshore-database--beta-go29zg4q.web.app` (a Hosting **preview channel** — NOT `fieldshore-database.web.app`, which is live).
+9. Beta URL for verifying deployed state: the current beta Channel URL (read it from the latest `v4 Beta Deploy` run: `gh run list --workflow deploy-v4-beta.yml --limit 1` → run log; the hostname rotates whenever the channel is recreated) (a Hosting **preview channel** — NOT `fieldshore-database.web.app`, the production hostname — hosting disabled 2026-10-09 until the Phase J cutover).
 
 ## What "works" means
 - Flow completes from a fresh state

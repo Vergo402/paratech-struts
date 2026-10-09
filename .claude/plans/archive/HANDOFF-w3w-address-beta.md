@@ -11,7 +11,7 @@ There are **two different URLs** on `fieldshore-database`:
 
 | What | URL | Deploy command |
 |---|---|---|
-| **Beta (what Alex uses)** | `https://fieldshore-database--beta-go29zg4q.web.app` | `firebase hosting:channel:deploy beta --project fieldshore-database --expires 30d` |
+| **Beta (what Alex uses)** | the current beta Channel URL (from the latest `v4 Beta Deploy` run; the hostname rotates when the channel is recreated) | `firebase hosting:channel:deploy beta --project fieldshore-database --expires 30d` |
 | Live channel (NOT the beta) | `https://fieldshore-database.web.app` | `firebase deploy --only hosting` |
 
 **`firebase deploy --only hosting` pushes to LIVE, which is NOT Alex's beta.** A whole debugging
