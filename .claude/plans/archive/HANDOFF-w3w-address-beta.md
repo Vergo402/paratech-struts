@@ -54,7 +54,7 @@ To deploy to beta: `npm run build && npx firebase hosting:channel:deploy beta --
 
 - `VITE_GOOGLE_MAPS_KEY` — browser key, referrer-restricted. Its allowlist already covers BOTH
   the beta-channel origin AND live (verified). Address autocomplete **works on beta**.
-- `VITE_W3W_KEY=ZT3HDU71` — **demo key, returns HTTP 402 QuotaExceeded** for convert-to-3wa. So
+- `VITE_W3W_KEY=<REDACTED — rotate the key; the value lives only in .env.local>` — **demo key, returns HTTP 402 QuotaExceeded** for convert-to-3wa. So
   the capture shows **coordinates only, not the 3 words**, on beta. This is EXPECTED, not a bug —
   needs a what3words plan with convert-to-3wa access. If the plan is upgraded on the SAME key, no
   rebuild is needed; a NEW key value requires a rebuild + redeploy (baked at build time).
