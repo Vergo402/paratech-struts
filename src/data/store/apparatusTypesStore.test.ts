@@ -83,3 +83,40 @@ describe('apparatus types store — LWW blob wrap / unwrap', () => {
     expect(next.localStamp()).toBe(500); // durable
   });
 });
+
+// ---- #481 per-element salvage ----------------------------------------------
+describe('apparatus types store — per-element salvage (#481)', () => {
+  let db: FieldShoreDB;
+  let blobs: unknown[];
+  let store: ApparatusTypesStoreApi;
+
+  beforeEach(async () => {
+    db = createDB(`test-at-salvage-${newId()}`);
+    blobs = [];
+    store = createApparatusTypesStore(db, { onBlob: (env) => blobs.push(env) });
+    await store.boot();
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('applyRemote keeps the good types when one element is malformed (stamp preserved, no echo)', async () => {
+    await store.applyRemote([{ id: 'a', name: 'Crane' }, { id: 'bad' }, { id: 'b', name: 'Boat' }], 500);
+    expect(store.store.getState().types.map((t) => t.id)).toEqual(['a', 'b']);
+    expect(store.localStamp()).toBe(500);
+    expect(blobs).toHaveLength(0);
+    const raw = JSON.parse((await db.meta.get(APPARATUS_TYPES_KEY))!.value);
+    expect(raw.lastWriteAt).toBe(500);
+    expect(raw.value.map((t: { id: string }) => t.id)).toEqual(['a', 'b']);
+  });
+
+  it('boot keeps the good types from a row with one malformed element', async () => {
+    await db.meta.put({
+      key: APPARATUS_TYPES_KEY,
+      value: JSON.stringify({ value: [{ id: 'a', name: 'Crane' }, { id: 'x' }], lastWriteAt: 42 }),
+    });
+    await store.boot();
+    expect(store.store.getState().types.map((t) => t.id)).toEqual(['a']);
+    expect(store.localStamp()).toBe(42);
+  });
+});

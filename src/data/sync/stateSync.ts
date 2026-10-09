@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { InventoryItem } from '@core/schema';
 
 // data/sync — pure helpers for non-event state sync (cloud-sync Increment 3).
@@ -44,6 +45,44 @@ export function toCloudRow(item: InventoryItem): CloudRow {
 export const tombstone = (id: string, lastWriteAt: number): Tombstone => ({ id, deleted: true, lastWriteAt });
 
 export const wrapBlob = <T>(value: T, lastWriteAt: number): BlobEnvelope<T> => ({ value, lastWriteAt });
+
+// #481 per-element salvage. A whole-list `z.array(X).catch([])` collapses the ENTIRE synced
+// list when ONE element fails to parse, then persists the empty list WITH the remote stamp,
+// so local can never win it back by last-write-wins. These combinators parse element by
+// element and drop only the bad ones; non-container input still degrades to empty.
+const warnDrop = (label: string, key: string | number, err: z.ZodError): void => {
+  if (import.meta.env.MODE === 'development') {
+    console.warn(`[stateSync] dropped malformed ${label} entry ${key}`, err.issues);
+  }
+};
+
+export const salvageArray = <T extends z.ZodTypeAny>(element: T, label: string) =>
+  z
+    .array(z.unknown())
+    .catch([])
+    .transform((items): z.infer<T>[] => {
+      const out: z.infer<T>[] = [];
+      items.forEach((raw, i) => {
+        const r = element.safeParse(raw);
+        if (r.success) out.push(r.data as z.infer<T>);
+        else warnDrop(label, i, r.error);
+      });
+      return out;
+    });
+
+export const salvageRecord = <T extends z.ZodTypeAny>(value: T, label: string) =>
+  z
+    .record(z.unknown())
+    .catch({})
+    .transform((rec): Record<string, z.infer<T>> => {
+      const out: Record<string, z.infer<T>> = {};
+      for (const [k, raw] of Object.entries(rec)) {
+        const r = value.safeParse(raw);
+        if (r.success) out[k] = r.data as z.infer<T>;
+        else warnDrop(label, k, r.error);
+      }
+      return out;
+    });
 
 /** The stamp of any record (row, tombstone, or envelope); 0 when absent/unstamped. */
 export const stampOf = (r: { lastWriteAt?: number } | null | undefined): number =>

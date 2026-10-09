@@ -32,8 +32,10 @@ export interface DeptPoliciesStoreApi {
   applyRemote(value: unknown, stamp: number): Promise<void>;
 }
 
-// A wrong-shape row degrades to {} (→ all defaults) rather than dead-ending boot.
-const Policies = z.object({ afterActionEmail: z.boolean() }).partial().catch({});
+// A wrong-shape row degrades to {} (→ all defaults) rather than dead-ending boot; a
+// malformed FIELD degrades alone to its default (#481) so a future second policy can't be
+// dragged down by a bad sibling.
+const Policies = z.object({ afterActionEmail: z.boolean().optional().catch(undefined) }).catch({});
 
 /** Resolve the stored (partial) blob into the full state, applying the on-by-default. */
 function resolve(value: unknown): DeptPoliciesState {

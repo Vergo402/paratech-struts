@@ -1,9 +1,8 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { z } from 'zod';
 import { Apparatus } from '@core/schema';
 import { type FieldShoreDB } from './db';
 import type { InventoryStoreApi } from './inventoryStore';
-import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, salvageArray, type BlobEnvelope } from '../sync/stateSync';
 
 // The department apparatus roster — which rigs exist, independent of the stock they
 // carry. Durable copy is ONE json row in `meta` (APPARATUS_ROSTER_KEY), mirroring
@@ -49,7 +48,7 @@ export interface ApparatusStoreApi {
 
 // A wrong-shape row degrades to an empty roster rather than dead-ending boot — the
 // scope-tab union still surfaces rigs that carry stock, so no rig silently vanishes.
-const Roster = z.array(Apparatus).catch([]);
+const Roster = salvageArray(Apparatus, 'apparatus');
 
 /** Cloud-write hook (cloud-sync Increment 3) — fired after the durable write so the
  *  registry can push the whole-roster blob to /orgs/{deptId}/apparatus. */

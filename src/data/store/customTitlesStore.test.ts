@@ -100,3 +100,43 @@ describe('custom titles store — LWW blob wrap / unwrap', () => {
     expect(next.localStamp()).toBe(500); // durable
   });
 });
+
+// ---- #481 per-element salvage ----------------------------------------------
+describe('custom titles store — per-element salvage (#481)', () => {
+  let db: FieldShoreDB;
+  let blobs: unknown[];
+  let store: CustomTitlesStoreApi;
+
+  beforeEach(async () => {
+    db = createDB(`test-ct-salvage-${newId()}`);
+    blobs = [];
+    store = createCustomTitlesStore(db, { onBlob: (env) => blobs.push(env) });
+    await store.boot();
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('applyRemote keeps the good titles when one element is malformed (stamp preserved, no echo)', async () => {
+    await store.applyRemote(
+      [{ id: 'a', title: 'A', kind: 'group' }, { id: 'bad' }, { id: 'b', title: 'B', kind: 'group' }],
+      500,
+    );
+    expect(store.store.getState().titles.map((t) => t.id)).toEqual(['a', 'b']);
+    expect(store.localStamp()).toBe(500);
+    expect(blobs).toHaveLength(0);
+    const raw = JSON.parse((await db.meta.get(CUSTOM_TITLES_KEY))!.value);
+    expect(raw.lastWriteAt).toBe(500);
+    expect(raw.value.map((t: { id: string }) => t.id)).toEqual(['a', 'b']);
+  });
+
+  it('boot keeps the good titles from a row with one malformed element', async () => {
+    await db.meta.put({
+      key: CUSTOM_TITLES_KEY,
+      value: JSON.stringify({ value: [{ id: 'a', title: 'A', kind: 'group' }, { id: 'x' }], lastWriteAt: 42 }),
+    });
+    await store.boot();
+    expect(store.store.getState().titles.map((t) => t.id)).toEqual(['a']);
+    expect(store.localStamp()).toBe(42);
+  });
+});

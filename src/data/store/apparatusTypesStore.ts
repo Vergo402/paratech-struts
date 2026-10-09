@@ -1,8 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { z } from 'zod';
 import { ApparatusTypeCustom } from '@core/schema';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, salvageArray, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's custom apparatus-type vocabulary (#321 P5 inc4b) — types the
 // department adds on top of the built-in APPARATUS_TYPES catalog (load/apparatus.ts).
@@ -37,7 +36,7 @@ export interface ApparatusTypesStoreApi {
 }
 
 // A wrong-shape row degrades to an empty vocabulary rather than dead-ending boot.
-const Types = z.array(ApparatusTypeCustom).catch([]);
+const Types = salvageArray(ApparatusTypeCustom, 'apparatusTypes');
 
 /** Cloud-write hook — push the whole-types blob to /orgs/{deptId}/apparatusTypes
  *  after the durable write. */

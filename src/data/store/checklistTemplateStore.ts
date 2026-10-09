@@ -1,9 +1,8 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { z } from 'zod';
 import { ChecklistTemplate, type ChecklistId, type ChecklistNode } from '@core/schema';
 import { BASELINE_TEMPLATES } from '@core/checklist';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, salvageRecord, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's checklist library (#230, ADR-020). Departments fully author the
 // three checklists (IC Command / Task Level / ORM-TCRM); a checklist is the shipped
@@ -45,7 +44,7 @@ export interface ChecklistTemplateStoreApi {
 
 // A wrong-shape row degrades to "no overrides" (every checklist falls back to its
 // baseline) rather than dead-ending boot.
-const Overrides = z.record(ChecklistTemplate).catch({});
+const Overrides = salvageRecord(ChecklistTemplate, 'checklists');
 
 /** Cloud-write hook (cloud-sync Increment 3) — push the whole-overrides blob to
  *  /orgs/{deptId}/checklists after the durable write. */

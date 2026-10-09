@@ -1,8 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { z } from 'zod';
 import { CustomTitle } from '@core/schema';
 import { type FieldShoreDB } from './db';
-import { wrapBlob, readBlobRow, type BlobEnvelope } from '../sync/stateSync';
+import { wrapBlob, readBlobRow, salvageArray, type BlobEnvelope } from '../sync/stateSync';
 
 // The department's custom ICS-title library (#323) — titles the department adds on top
 // of the built-in POSITION_LIBRARY catalog. Durable copy is ONE json row in `meta`
@@ -36,7 +35,7 @@ export interface CustomTitlesStoreApi {
 }
 
 // A wrong-shape row degrades to an empty library rather than dead-ending boot.
-const Titles = z.array(CustomTitle).catch([]);
+const Titles = salvageArray(CustomTitle, 'titles');
 
 /** Cloud-write hook (cloud-sync Increment 3) — push the whole-titles blob to
  *  /orgs/{deptId}/titles after the durable write. */

@@ -99,3 +99,33 @@ describe('checklistTemplateStore', () => {
     expect(blobs).toHaveLength(0);
   });
 });
+
+// ---- #481 per-key salvage ---------------------------------------------------
+describe('checklistTemplateStore — per-key salvage (#481)', () => {
+  it('applyRemote keeps the good override when another key is malformed (stamp preserved)', async () => {
+    const blobs: unknown[] = [];
+    const synced = createChecklistTemplateStore(db, { onBlob: (env) => blobs.push(env) });
+    await synced.boot();
+    const fork = { ...BASELINE_TEMPLATES['orm-tcrm'], source: 'department' as const };
+    await synced.applyRemote({ 'orm-tcrm': fork, 'ic-command': { id: 'ic-command' } }, 900);
+    expect(synced.effective('orm-tcrm').source).toBe('department');
+    expect(synced.effective('ic-command')).toBe(BASELINE_TEMPLATES['ic-command']);
+    expect(synced.localStamp()).toBe(900);
+    expect(blobs).toHaveLength(0);
+    const raw = JSON.parse((await db.meta.get('fieldshore_checklist_templates'))!.value);
+    expect(Object.keys(raw.value)).toEqual(['orm-tcrm']);
+    expect(raw.lastWriteAt).toBe(900);
+  });
+
+  it('boot keeps the good override from a row with one malformed key', async () => {
+    const fork = { ...BASELINE_TEMPLATES['ic-command'], source: 'department' as const };
+    await db.meta.put({
+      key: 'fieldshore_checklist_templates',
+      value: JSON.stringify({ value: { 'ic-command': fork, 'task-level': { id: 'task-level' } }, lastWriteAt: 42 }),
+    });
+    await store.boot();
+    expect(store.effective('ic-command').source).toBe('department');
+    expect(store.effective('task-level')).toBe(BASELINE_TEMPLATES['task-level']);
+    expect(store.localStamp()).toBe(42);
+  });
+});

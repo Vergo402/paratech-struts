@@ -76,3 +76,35 @@ describe('dept policies store — LWW blob wrap / unwrap', () => {
     expect(next.localStamp()).toBe(500); // durable
   });
 });
+
+// ---- #481 per-field salvage -------------------------------------------------
+describe('dept policies store — per-field salvage (#481)', () => {
+  let db: FieldShoreDB;
+  let store: DeptPoliciesStoreApi;
+
+  beforeEach(async () => {
+    db = createDB(`test-dp-salvage-${newId()}`);
+    store = createDeptPoliciesStore(db);
+    await store.boot();
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('applyRemote: a malformed field degrades alone to its default; stamp preserved', async () => {
+    await store.applyRemote({ afterActionEmail: 'yes', unknownField: 1 }, 5);
+    expect(store.store.getState().afterActionEmail).toBe(true);
+    expect(store.localStamp()).toBe(5);
+    const raw = JSON.parse((await db.meta.get(DEPT_POLICIES_KEY))!.value);
+    expect(raw).toMatchObject({ value: { afterActionEmail: true }, lastWriteAt: 5 });
+  });
+
+  it('applyRemote: a valid field survives; raw non-object blobs still resolve to defaults', async () => {
+    await store.applyRemote({ afterActionEmail: false }, 6);
+    expect(store.store.getState().afterActionEmail).toBe(false);
+    for (const v of [null, 42, [1, 2], 'x']) {
+      await store.applyRemote(v, 7);
+      expect(store.store.getState().afterActionEmail).toBe(true);
+    }
+  });
+});

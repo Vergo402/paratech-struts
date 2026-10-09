@@ -118,3 +118,43 @@ describe('apparatus store — LWW blob sync', () => {
     expect(deletes.sort()).toEqual(['i1', 'i2']); // both cascaded rows tombstoned
   });
 });
+
+// ---- #481 per-element salvage ----------------------------------------------
+describe('apparatus store — per-element salvage (#481)', () => {
+  let db: FieldShoreDB;
+  let blobs: unknown[];
+  let app: ApparatusStoreApi;
+
+  beforeEach(async () => {
+    db = createDB(`test-app-salvage-${newId()}`);
+    blobs = [];
+    app = createApparatusStore(db, { onBlob: (env) => blobs.push(env) });
+    await app.boot();
+  });
+  afterEach(async () => {
+    await db.delete();
+  });
+
+  it('applyRemote keeps the good rigs when one element is malformed (stamp preserved, no echo)', async () => {
+    await app.applyRemote(
+      [{ id: 'r1', name: 'One', type: 'Engine' }, { id: 'bad' }, { id: 'r2', name: 'Two', type: 'Rescue' }],
+      777,
+    );
+    expect(app.store.getState().roster.map((a) => a.id)).toEqual(['r1', 'r2']);
+    expect(app.localStamp()).toBe(777);
+    expect(blobs).toHaveLength(0);
+    const raw = JSON.parse((await db.meta.get(APPARATUS_ROSTER_KEY))!.value);
+    expect(raw.lastWriteAt).toBe(777);
+    expect(raw.value.map((a: { id: string }) => a.id)).toEqual(['r1', 'r2']);
+  });
+
+  it('boot keeps the good rigs from a row with one malformed element', async () => {
+    await db.meta.put({
+      key: APPARATUS_ROSTER_KEY,
+      value: JSON.stringify({ value: [{ id: 'r1', name: 'One', type: 'Engine' }, { id: 'x' }], lastWriteAt: 42 }),
+    });
+    await app.boot();
+    expect(app.store.getState().roster.map((a) => a.id)).toEqual(['r1']);
+    expect(app.localStamp()).toBe(42);
+  });
+});
