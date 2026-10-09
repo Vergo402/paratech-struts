@@ -1,11 +1,15 @@
-> **DRAFT — NOT APPROVED.** Recovered 2026-10-09 from the 2026-08-22 planning session
-> (the harness plan folder purged the original). ExitPlanMode died with that session.
-> Alex's question at the #484 mockup — *"how is it possible to select an unknown connector?"* —
-> was never answered. Re-run the mockup checkpoint and ExitPlanMode before building.
-> Rulings recorded 2026-08-19: #485 shows the raw value until cutting; fold the deployed-side
-> unknown-connector gap into #484. Code basis `0364d04` == current `src/`.
+> **APPROVED 2026-10-09** at the re-run mockup checkpoint (recovered 2026-10-09 from the
+> 2026-08-22 planning session after the harness plan folder purged the original).
+> Alex's question — *"how is it possible to select an unknown connector?"* — answered: it cannot
+> be selected; the picker only offers this build's catalog. An unknown id arrives only (1) via a
+> peer `ShorePointEdited`/`ShorePointAdded` from a device on a newer catalog, or (2) when a later
+> release removes/renames a plate id under a saved point. The reducer keeps the point (rejecting
+> would wedge sync), so the fix is a tell, not a gate.
+> Rulings re-confirmed 2026-10-09: #484 amber tell on every length surface, **no deploy gate**;
+> deployed-side gap folded in; #485 raw opening until every leg is cutting; build all four fixes.
+> Code basis `0364d04`; line refs below are approximate against `182aecf` — re-locate by symbol.
 
-ch — #484 · #485 · #486 · #481
+# Pre-TTX safety mini-batch — #484 · #485 · #486 · #481
 
 ## Context
 
