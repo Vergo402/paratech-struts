@@ -8,7 +8,7 @@ import {
   pendingNeedModels,
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
-import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths, isCutPhase } from './cardParts';
+import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths, cardValueLabel, isCutPhase } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 
 // Short display labels live in cardParts (shared by all three views); re-exported
@@ -283,9 +283,9 @@ export function ShorePointCard({
   const location = cardLocation(sp);
   const labelType = cardLabelType(sp);
 
-  // Cut length once cutting, else effective strut length — shared with List/Division
-  // via cardValueEighths so all three print the same number (#361, audit #416 D3).
-  const valueEighths = cardValueEighths(sp);
+  // Cut length once cutting, else the raw measured opening — shared with List/Division
+  // via cardValueEighths so all three print the same number (#361, #485, audit #416 D3).
+  const valueEighths = cardValueEighths(sp, sp.status);
 
   // The strut model rides the tertiary length line once deployed (bomModelLabel)
   // — except at the Cutting Station, where the value is the cut length alone
@@ -326,12 +326,7 @@ export function ShorePointCard({
 
   // The measurement is the card's HERO (#5): dominant numeral + micro-label
   // naming which number this is, the strut model as the quiet suffix.
-  const valueLabel =
-    sp.status === 'pending'
-      ? 'opening'
-      : sp.status === 'process' || sp.status === 'strutset'
-        ? 'effective'
-        : 'cut';
+  const valueLabel = cardValueLabel(sp.status);
   const valueShelf = (
     <p className="fs-spc-value">
       <MeasurementValue eighths={valueEighths} className="fs-spc-value-num" />

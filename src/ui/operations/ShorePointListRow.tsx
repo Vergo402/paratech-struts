@@ -1,7 +1,7 @@
 import type { ShorePoint } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType, cardValueEighths, groupDisplayStatus } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths, cardValueLabel, groupDisplayStatus } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 import { CutTooSmallFlag } from './CutTooSmallFlag';
 
@@ -13,8 +13,9 @@ import { CutTooSmallFlag } from './CutTooSmallFlag';
  * deployed shore is beyond rating — the same over-capacity/unrated flag the Board
  * card carries (audit H2/#416). Medium density — read-only, tap opens the detail
  * drawer; actions live there (and the Board). Status color rides the `.is-<status>`
- * left edge (primitives.css), never raw hex. All three views show the effective/cut
- * length (cardValueEighths, audit #416 D3), not the raw opening.
+ * left edge (primitives.css), never raw hex. All three views show the same value
+ * (cardValueEighths, audit #416 D3 / #485): the raw opening until the group reaches
+ * cutting, then the cut length — labelled "opening"/"cut".
  */
 export function ShorePointListRow({
   sp,
@@ -61,7 +62,9 @@ export function ShorePointListRow({
       <span className="fs-splist-sub">{cardLabelType(sp)}</span>
       <span className="fs-splist-val">
         {model ? <span className="fs-splist-model">{model} · </span> : null}
-        <MeasurementValue eighths={cardValueEighths(sp)} className="fs-splist-num" />
+        <MeasurementValue eighths={cardValueEighths(sp, status)} className="fs-splist-num" />
+        {' '}
+        <span className="fs-splist-sfx">{cardValueLabel(status)}</span>
       </span>
       <CapacityFlag flag={flag} />
       <CutTooSmallFlag members={legs} />

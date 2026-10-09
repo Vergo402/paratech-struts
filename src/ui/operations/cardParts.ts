@@ -1,14 +1,14 @@
 import type { ShorePoint, ShorePointStatus, ShoreTypeId } from '@core/schema';
 import { divisionLabel, sideLabel } from '@core/operation';
-import { cutLengthInches, effectiveLengthFrom, STATUS_ORDER } from '@core/shorepoint';
+import { cutLengthInches, STATUS_ORDER } from '@core/shorepoint';
 
 /**
  * Shared shore-point card content (Alex 2026-07-03) — one anatomy across the
  * Division tile, Board card, and List row so they read the same: SP-# top-left,
  * assigned-apparatus pill top-right, the LOCATION as the primary/focus line,
  * then label·type, then a de-emphasized strut·length line. These helpers give the
- * two text lines + the shared value length (cardValueEighths — cut-phase aware, the
- * SAME number on all three views now; audit #416 D3); each view supplies its own SP-#
+ * two text lines + the shared value length (cardValueEighths — raw opening until the
+ * cut phase, the SAME number on all three views; audit #416 D3, #485); each view supplies its own SP-#
  * and apparatus pill.
  *
  * SHORE_TYPE_LABELS lives here (not in ShorePointCard) so these helpers don't
@@ -82,7 +82,7 @@ export function cardLabelType(sp: ShorePoint): string {
 }
 
 // From the cutting phase on, the value shelf shows the wood CUT length (shore-type
-// lumber + wedge, no plates; #361); pre-cut it is the effective strut length.
+// lumber + wedge, no plates; #361); pre-cut it is the RAW measured opening (#485).
 const CUT_PHASES = new Set<ShorePointStatus>(['cutting', 'runner', 'secured', 'returned']);
 
 /** True where the value shelf prints a CUT length (so a cut-length warning belongs).
@@ -93,14 +93,23 @@ export function isCutPhase(sp: Pick<ShorePoint, 'status'>): boolean {
 }
 
 /**
- * The value-shelf length in eighths — cut length once cutting, else the effective
- * (post-deduction) strut length. ONE helper so the Board card, List row, and Division
- * tile print the SAME number for a point (2026-07-04 audit #416 D3: the two tri-views
- * printed the RAW opening in the slot where the Board printed effective/cut). × 8 lands
- * on an exact eighth; round() only defends float noise — no double-floor.
+ * The value-shelf length in eighths — the wood CUT length once cutting, else the RAW
+ * measured opening (`measurementEighths`, no deductions; #485, Alex 2026-10-09). The
+ * deducted strut length lives in the Details ledger, not on the compact surfaces.
+ *
+ * `phaseStatus` is the phase SOURCE, passed explicitly: a card passes its own
+ * `sp.status`; the Division tile / List row pass `groupDisplayStatus(members)` so a
+ * split group (one leg cutting, one at strut set) reads "opening" at its least-advanced
+ * leg. ONE helper so Board card, List row, and Division tile print the SAME number
+ * (audit #416 D3). × 8 lands on an exact eighth; round() only defends float noise.
  */
-export function cardValueEighths(sp: ShorePoint): number {
-  return Math.round(
-    (CUT_PHASES.has(sp.status) ? cutLengthInches(sp) : effectiveLengthFrom(sp.measurementEighths, sp.deductions)) * 8,
-  );
+export function cardValueEighths(sp: ShorePoint, phaseStatus: ShorePointStatus): number {
+  return isCutPhase({ status: phaseStatus }) ? Math.round(cutLengthInches(sp) * 8) : sp.measurementEighths;
+}
+
+/** The micro-label naming which number the value shelf shows — two states only
+ *  (#485): 'opening' pre-cut, 'cut' from cutting on. Same phase source as
+ *  cardValueEighths, so the label can never name a number that isn't printed. */
+export function cardValueLabel(phaseStatus: ShorePointStatus): 'opening' | 'cut' {
+  return isCutPhase({ status: phaseStatus }) ? 'cut' : 'opening';
 }

@@ -159,7 +159,7 @@ describe('ShorePointCard', () => {
     );
     // The strut identity rides the quiet value line (model · length); the source
     // rig moved entirely to Details (not on the card face).
-    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
+    expect(valueLineText()).toBe('48 1/2″openingLS 203');
     expect(screen.queryByText('Rescue 2')).not.toBeInTheDocument();
     // No pending-only actions — the slide stack owns the card now (#221).
     expect(screen.queryByRole('button', { name: 'Assign Equipment' })).not.toBeInTheDocument();
@@ -184,12 +184,13 @@ describe('ShorePointCard', () => {
       />,
     );
     // Deployed: hero number + phase label + quiet model suffix (#432 anatomy v2).
-    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
+    expect(valueLineText()).toBe('48 1/2″openingLS 203');
   });
 
-  it('value line: the deducted (effective) length + the deployed strut', () => {
-    // 4×4 header + 4×4 footer = 7″ = 56 eighths deducted. Raw 48½″ (388),
-    // effective 41½″ (332). The line carries the effective length + the strut.
+  it('value line: strut set still reads the RAW opening (no deductions) + the deployed strut', () => {
+    // #485 (Alex 2026-10-09): until cutting, the shelf shows what the crew measured.
+    // 4×4 header + 4×4 footer would deduct 7″, but the shelf stays at raw 48½″ (388
+    // eighths) — the deducted number lives in the Details ledger, not the card face.
     render(
       <ShorePointCard
         shorePoint={makeSP({
@@ -200,7 +201,7 @@ describe('ShorePointCard', () => {
         })}
       />,
     );
-    expect(valueLineText()).toBe('41 1/2″effectiveLS 203');
+    expect(valueLineText()).toBe('48 1/2″openingLS 203');
   });
 
   it('value line: cutting reads the WOOD cut length alone (no strut model)', () => {
@@ -331,7 +332,7 @@ describe('ShorePointCard', () => {
     expect(screen.queryByRole('button', { name: 'Assign equipment' })).toBeNull();
     // Presentational content stays — label · type subline + the quiet model · length line.
     expect(screen.getByText('B-2 · T-Shore')).toBeInTheDocument();
-    expect(valueLineText()).toBe('48 1/2″effectiveLS 203');
+    expect(valueLineText()).toBe('48 1/2″openingLS 203');
 
     // Pending readOnly: no Assign button / Edit / Delete.
     rerender(<ShorePointCard shorePoint={makeSP({ status: 'pending' })} readOnly />);
@@ -703,7 +704,7 @@ describe('W3wChip — the radio-callout location row (#441)', () => {
       }
     });
 
-    it('is absent BEFORE cutting even at the same tiny opening — the shelf is showing the effective strut length there, and a cut-length warning would explain a number that is not on screen', () => {
+    it('is absent BEFORE cutting even at the same tiny opening — the shelf is showing the raw opening there, and a cut-length warning would explain a number that is not on screen', () => {
       for (const status of ['pending', 'process', 'strutset'] as const) {
         const { unmount } = render(<ShorePointCard shorePoint={tooSmall3Post({ status })} />);
         expect(screen.queryByText(new RegExp(CHIP))).toBeNull();

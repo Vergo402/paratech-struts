@@ -87,6 +87,55 @@ describe('#454 — a split group reads at its least-advanced leg', () => {
   });
 });
 
+describe('#485 — value is the RAW opening until the group reaches cutting', () => {
+  // 60″ opening, 3-Post (12.5″ deduction) → cut length 47½″.
+  const RAW_TEXT = '60″';
+  const CUT_TEXT = '47 1/2″';
+  const SPLIT_PRECUT = [leg('a', { status: 'cutting' }), leg('b', { status: 'strutset' })];
+  const ALL_CUTTING = [leg('a', { status: 'secured' }), leg('b'), leg('c')];
+
+  it('Division tile: a split group with one leg cutting + one strut-set reads raw "opening"', () => {
+    const { container } = renderDivision(SPLIT_PRECUT);
+    const tile = container.querySelector('.fs-divtile')!;
+    expect(tile.querySelector('.fs-divtile-num')!.textContent).toBe(RAW_TEXT);
+    expect(tile.querySelector('.fs-divtile-sfx')!.textContent).toBe('opening');
+    expect(tile.querySelector('.fs-divtile-st')!.textContent).toBe('Strut Set');
+  });
+
+  it('List row: same split group reads raw "opening" at status strut set', () => {
+    const { container } = render(
+      <ShorePointListRow sp={SPLIT_PRECUT[0]!} count={2} members={SPLIT_PRECUT} flag={null} onOpen={vi.fn()} />,
+    );
+    const row = container.querySelector('.fs-splist-row')!;
+    expect(row.querySelector('.fs-splist-num')!.textContent).toBe(RAW_TEXT);
+    expect(row.querySelector('.fs-splist-sfx')!.textContent).toBe('opening');
+    expect(row.classList.contains('is-strutset')).toBe(true);
+  });
+
+  it('Division tile: every live leg cutting-or-later (front leg secured) reads the cut length', () => {
+    const { container } = renderDivision(ALL_CUTTING);
+    const tile = container.querySelector('.fs-divtile')!;
+    expect(tile.querySelector('.fs-divtile-num')!.textContent).toBe(CUT_TEXT);
+    expect(tile.querySelector('.fs-divtile-sfx')!.textContent).toBe('cut');
+  });
+
+  it('List row: every live leg cutting-or-later reads the cut length', () => {
+    const { container } = render(
+      <ShorePointListRow sp={ALL_CUTTING[0]!} count={3} members={ALL_CUTTING} flag={null} onOpen={vi.fn()} />,
+    );
+    const row = container.querySelector('.fs-splist-row')!;
+    expect(row.querySelector('.fs-splist-num')!.textContent).toBe(CUT_TEXT);
+    expect(row.querySelector('.fs-splist-sfx')!.textContent).toBe('cut');
+  });
+
+  it('an ungrouped pre-cut point reads raw "opening" on both views', () => {
+    const solo = leg('solo', { groupId: undefined, groupTotal: undefined, status: 'process' });
+    const { container } = render(<ShorePointListRow sp={solo} count={1} flag={null} onOpen={vi.fn()} />);
+    expect(container.querySelector('.fs-splist-num')!.textContent).toBe(RAW_TEXT);
+    expect(container.querySelector('.fs-splist-sfx')!.textContent).toBe('opening');
+  });
+});
+
 describe('#483 — compact "Too small" chip on both dense views', () => {
   it('Division tile shows it when ANY live member is too small', () => {
     // Front leg is fine; the third leg's opening is unusable.

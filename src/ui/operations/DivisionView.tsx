@@ -1,7 +1,7 @@
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
-import { cardLocation, cardLabelType, cardValueEighths, groupDisplayStatus, STATUS_SHORT_LABEL } from './cardParts';
+import { cardLocation, cardLabelType, cardValueEighths, cardValueLabel, groupDisplayStatus, STATUS_SHORT_LABEL } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 import { CutTooSmallFlag } from './CutTooSmallFlag';
 
@@ -91,7 +91,9 @@ function DivisionTile({
       <span className="fs-divtile-val">
         <span className="fs-divtile-ml">
           {model ? <span className="fs-divtile-model">{model} · </span> : null}
-          <MeasurementValue eighths={cardValueEighths(sp)} className="fs-divtile-num" />
+          <MeasurementValue eighths={cardValueEighths(sp, status)} className="fs-divtile-num" />
+          {' '}
+          <span className="fs-divtile-sfx">{cardValueLabel(status)}</span>
         </span>
         {/* Status stays a TEXT abbrev here (not color-only): tiles group by floor,
             so the left-edge hue is the only other status cue (Principle 9). */}
