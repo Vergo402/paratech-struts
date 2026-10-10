@@ -1,5 +1,5 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { firebaseApp } from '../auth/firebase';
+import { getFunctions, httpsCallable, connectFunctionsEmulator } from 'firebase/functions';
+import { firebaseApp, USE_EMULATORS } from '../auth/firebase';
 
 // data/functions — the Cloud Functions callable connection (#439). This file,
 // data/auth/firebase.ts, and data/sync/firebase.ts are the ONLY v4 Firebase
@@ -11,6 +11,11 @@ import { firebaseApp } from '../auth/firebase';
 // (create a login, reset a password) that have no meaningful offline queue; an
 // unreachable function surfaces as an inline error, never a pending banner.
 const fns = getFunctions(firebaseApp);
+
+// Emulator fence (#262 TTX): the exercise runs Auth + Database emulators only;
+// this connect exists purely so a callable fails fast locally instead of
+// reaching production functions. Same flag as auth/firebase.ts.
+if (USE_EMULATORS) connectFunctionsEmulator(fns, '127.0.0.1', 5001);
 
 export type CallableError = { code?: string; message?: string };
 

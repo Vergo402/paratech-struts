@@ -6,6 +6,8 @@
   "description": "FieldShore v4 — USAR/FEMA rescue-strut + shoring PWA (vertical slice). v3 ships from the repo root; v4 lives under src/.",
   "scripts": {
     "dev": "vite",
+    "dev:emu": "vite --mode emulators --port 5200",
+    "emulators": "PATH=/opt/homebrew/opt/openjdk/bin:$PATH firebase emulators:start --only auth,database --project fieldshore-database",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",

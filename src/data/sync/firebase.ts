@@ -1,5 +1,5 @@
-import { getDatabase } from 'firebase/database';
-import { firebaseApp } from '../auth/firebase';
+import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+import { firebaseApp, USE_EMULATORS } from '../auth/firebase';
 
 // data/sync — the real Firebase Realtime Database connection (ADR-009). This
 // file, data/auth/firebase.ts, and data/functions/firebase.ts (#439) are the
@@ -14,4 +14,23 @@ import { firebaseApp } from '../auth/firebase';
 // stay in syncService.ts until that follow-on session.
 export const rtdb = getDatabase(firebaseApp);
 
-export { ref, get, set, push, update, child, onValue, remove, serverTimestamp } from 'firebase/database';
+// Emulator fence (#262 TTX): only `npm run dev:emu` sets the flag (see
+// auth/firebase.ts). The SDK no-ops a repeat call with the same host/port, so
+// Vite HMR re-running this module is safe.
+if (USE_EMULATORS) connectDatabaseEmulator(rtdb, '127.0.0.1', 9000);
+
+// goOffline/goOnline are re-exported so the TTX exercise driver can drop and
+// restore the connection on the same module instance the app uses.
+export {
+  ref,
+  get,
+  set,
+  push,
+  update,
+  child,
+  onValue,
+  remove,
+  serverTimestamp,
+  goOffline,
+  goOnline,
+} from 'firebase/database';
