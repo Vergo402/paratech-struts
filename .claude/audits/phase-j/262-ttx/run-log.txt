@@ -1,0 +1,80 @@
+OK   reset: RTDB root deleted; auth emulator accounts reset → 200
+OK   accounts written to fixtures/accounts.json (not printed)
+INFO A first auth-emulator request: http://127.0.0.1:9099/emulator/auth/iframe
+OK   scene: A signs up (Create Account)
+INFO dept e1aa5a8b-28e0-4fe9-8dc7-6dc37fcea349; invite code via REST == UI sheet code
+OK   scene: A creates Millbrook Fire Department
+INFO B first auth-emulator request: http://127.0.0.1:9099/emulator/auth/iframe
+OK   scene: B signs up + joins by code
+INFO C first auth-emulator request: http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp
+OK   scene: C signs up + joins by code
+INFO sessions: A=member/admin/dept-ok B=member/default/dept-ok C=member/default/dept-ok; members in RTDB: 3
+OK   scene: sessions + member rows
+INFO BC-1 type → Chief
+OK   scene: A adds apparatus BC-1 (unlocks the inventory data controls)
+INFO import: Import 12 rows → 12 rows imported.
+OK   scene: A imports millbrook-inventory.csv
+INFO inventory rigs: BC-1 0 items Engine 1 8 items Engine 2 8 items Rescue 1 24 items +
+OK   scene: roster provisioned (Engine 1/2, Rescue 1)
+OK   probe 10: export → re-import → IDs and counts unchanged
+INFO op 3fe36b42-3e75-480d-80be-38a0c3b45748; OperationCreated 46e990bf-dfda-44e8-9eac-ea6309b88ad7; address field role=combobox
+OK   scene: A starts operation (822 Dixwell Ave typed plain)
+OK   scene: A adds Alpha → Engine 1
+OK   scene: A adds Bravo → Engine 2 + swivel plates
+OK   scene: A adds Charlie
+OK   scene: A adds Delta
+OK   scene: A adds Echo
+OK   scene: A adds Foxtrot (3-Post)
+INFO cards on A: 8 (6 before fanning out the 3-Post stack); spIds by label: Alpha×1 Bravo×1 Charlie×1 Delta×1 Echo×1 Foxtrot×3
+OK   scene: 8 cards on the board
+OK   scene: A deploys Alpha from stock
+OK   scene: A deploys Bravo from stock
+OK   scene: A deploys Charlie from stock
+OK   scene: A deploys the Foxtrot 3-Post legs
+OK   scene: A slides Charlie → Strut Set
+INFO Foxtrot legs: cutting,cutting,cutting
+OK   scene: A slides Foxtrot → Strut Set → Cutting Station
+OK   scene: org chart — Engine 1 → Shoring Group, Safety Officer staffed
+INFO scene statuses: {"A":{"Alpha":"process","Bravo":"process","Charlie":"strutset","Delta":"pending","Echo":"pending","Foxtrot":"cutting,cutting,cutting"},"B":{"Alpha":"process","Bravo":"process","Charlie":"strutset","Delta":"pending","Echo":"pending","Foxtrot":"cutting,cutting,cutting"},"C":{"Alpha":"process","Bravo":"process","Charlie":"strutset","Delta":"pending","Echo":"pending","Foxtrot":"cutting,cutting,cutting"}}
+OK   scene: captures on all three
+OK   scene: evidence
+OK   probe 3: Operations node → Add position under this ×2 (6 reports)
+OK   probe 3: ×2 more (8 reports)
+OK   probe 3: same badge on B and C
+OK   probe 12: convergence gate (did the race start from agreement?)
+OK   probe 12: A and B open Assign Equipment on Delta
+OK   probe 12: synchronized Deploy taps (Promise.all)
+OK   probe 12: Delta + stock + BOM source on A, B, C after sync
+OK   probe 1a: B goes offline
+OK   probe 1a: A hands over command → member B
+OK   probe 1a: C sees nothing targeted
+OK   probe 1a: B (still offline) state
+OK   probe 1a: B reconnects → "You are being given command" → Accept
+OK   probe 1a: IC leader on A, B, C
+OK   probe 1b: B (IC) hands over → Engine 1 (code on B)
+OK   probe 1b: C "Tap if this is you" → wrong code rejected → right code → Accept
+OK   probe 1b: leader = Engine 1 on A, B, C
+OK   probe 2: backdate OperationCreated by 2h41m (REST + every device IndexedDB)
+OK   probe 2: read brief + clocks on A
+OK   probe 2: read brief + clocks on B
+OK   probe 2: read brief + clocks on C
+OK   probe 2: C-only >24h read (local patch 27h12m, then restore)
+OK   probe 2: evidence
+OK   probe 1b (#401): C hands over to its own name and accepts on the same device
+OK   probe 1b: leader = C holder on A, B, C
+OK   probe 1c: convergence gate (did the race start from agreement?)
+OK   probe 1c: A initiates → member B (online)
+OK   probe 1c: A offline → Cancel transfer
+OK   probe 1c: B accepts online
+OK   probe 1c: A reconnects; one IC on all three?
+OK   probe 4: convergence gate (did the race start from agreement?)
+OK   probe 4: Alpha at Equipment Assigned on A and B
+OK   probe 4: A offline slides Alpha → Strut Set
+OK   probe 4: B online moves Alpha back to Pending (Return & Step Back)
+OK   probe 4: A reconnects; Alpha status on A, B, C
+OK   probe 6: convergence gate (did the race start from agreement?)
+OK   probe 6: A and B offline; each adds a HIGH hazard
+OK   probe 6: both reconnect; chips, rows and card badges on A, B, C
+OK   probe 5/11: C cold-reads Quick View (Charlie: no connectors; Bravo: swivel plates; a Foxtrot leg)
+OK   probe 9: B → Settings → Help & Reference → Send feedback
+OK   late re-check: reload A, B, C after 30 s idle; re-read IC, Alpha, Delta, hazards

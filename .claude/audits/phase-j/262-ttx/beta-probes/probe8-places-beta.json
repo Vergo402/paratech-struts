@@ -1,0 +1,26 @@
+{
+  "probe": "8 Places autocomplete on beta",
+  "when": "2026-10-09 (Alex signed in on the beta in the built-in browser pane)",
+  "surface": "Edit Operation form (an operation 'Tetst' was already active, so Start Operation was unavailable) -> Location / address combobox",
+  "observed": {
+    "combobox_present": true,
+    "maps_js_loaded_with_places": true,
+    "listbox_opened": false,
+    "autocomplete_rpc": "https://places.googleapis.com/$rpc/google.maps.places.v1.Places/AutocompletePlaces -> 403",
+    "console": "Google Maps JavaScript API error: RefererNotAllowedMapError — Your site URL to be authorized: https://fieldshore-database--beta-2rs8x80s.web.app/operations",
+    "direct_AutocompleteService_call": "callback never fired within 8 s"
+  },
+  "status": "PASS after key fix (first attempt BLOCKED by key configuration; see rerun_2026_10_10)",
+  "fix": "Google Cloud -> Credentials -> the Maps/Places key (suffix _mwM) -> Website restrictions -> add https://fieldshore-database--beta-2rs8x80s.web.app/* ; re-run this probe",
+  "rerun_2026_10_10": {
+    "after": "Alex added https://fieldshore-database--beta-2rs8x80s.web.app/* to the Maps key website restrictions",
+    "observed": {
+      "combobox_present": true,
+      "listbox_opened": true,
+      "options": 5,
+      "first": "822 Dixwell Avenue, Hamden, CT, USA"
+    },
+    "capture": "08-places-beta-suggestions.jpg",
+    "status": "PASS"
+  }
+}

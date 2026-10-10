@@ -1,0 +1,372 @@
+{
+ "F1-transfer-race": {
+  "driver-artifact": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "No harness mechanism explains the reading; the code produces it deterministically.\n\nMechanism: the transfer fold is order-dependent and the app folds in LOCAL append order. `CommandTransferAccepted` no-ops when there is no pending transfer (orgReducer.ts:120-122), and `Cancelled` likewise no-ops when pending is already null (orgReducer.ts:139-141). Every event, local or remote, is appended with a fresh Dexie `seq` (operationStore.ts:271-273, db.ts:30) and projection replays by seq, not `at` (operationStore.ts:359-380). `reconcile()` sorts only the INCOMING batch by `at` (syncService.ts:188); it never re-orders against rows already committed locally. So A committed Cancelled (seq 33) while offline, then received Accepted (seq 34) → no-op → IC stays Chen. B/C committed Accepted (seq 33), then received A's flushed Cancelled (seq 34) → no-op → IC Brennan. Evidence matches exactly: 1c.json `localOrder` (A: 33:Cancelled,34:Accepted; B/C: 33:Accepted,34:Cancelled), `cancelInRestWhileOffline:false`, and late-recheck.json after 30 s + reload still A=Chen, B/C=Brennan (reload replays the same seq order).\n\nArtifact candidates ruled out: the offline lever (driver.mjs:285-300) only severs the network; the local Dexie commit of Cancelled happens before sync regardless (operationStore.ts:19-20), and `goOnline` flushes the queue exactly as a real reconnect would. Both taps were real role-button clicks (driver.mjs:1215, 1224). The OperationCreated.at backdating touches an unrelated event, and the fold ignores `at` anyway. Screenshots 66/67 corroborate the DOM reads (CommandRail.tsx:192).",
+   "rootCause": "Command-transfer events are folded in per-device local append order with no convergence rule: Accepted and Cancelled each no-op when pending is already cleared, so whichever lands first on a device wins permanently; reconcile sorts only the incoming batch by `at`, never re-basing against already-committed local rows.",
+   "fixSketch": "Make the transfer handshake converge regardless of arrival order. Structural option: when reconcile receives an event whose `at` precedes the local log tail for the same op, re-project from the full log sorted by (at, id) instead of incremental seq fold (operationStore.ts commit path, syncService.ts:188). Targeted option: stamp Accepted/Cancelled/Declined with the Initiated event id, and in orgReducer resolve the pair deterministically (e.g., Accept wins over Cancel for the same initiation, or earliest `at` wins) by keeping a resolved-transfer record instead of no-op-ing on `commandTransfer === null`. Add a reducer test folding [Init, Cancel, Accept] and [Init, Accept, Cancel] to the same IC.",
+   "severity": "High",
+   "blocksCutover": true,
+   "citations": [
+    "src/core/org/orgReducer.ts:120-122",
+    "src/core/org/orgReducer.ts:139-141",
+    "src/data/store/operationStore.ts:271-273",
+    "src/data/store/operationStore.ts:359-380",
+    "src/data/store/db.ts:30",
+    "src/data/sync/syncService.ts:188",
+    "src/ui/command/CommandRail.tsx:192",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:285-300",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:1213-1240",
+    ".claude/audits/phase-j/262-ttx/evidence/1c.json (ui.localOrder, ui.cancelInRestWhileOffline, ui.ic)",
+    ".claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices.*.ic)",
+    ".claude/audits/phase-j/262-ttx/66-p1c-after-sync-A.png",
+    ".claude/audits/phase-j/262-ttx/67-p1c-after-sync-B.png"
+   ]
+  },
+  "root-cause": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "Confirmed defect: the command-transfer fold is order-dependent and the projection has no canonical order, so devices that receive the two resolvers in different sequence diverge forever. Smoking gun: evidence/1c.json `ui.localOrder` shows A folded seq 33=Cancelled, 34=Accepted while B/C folded 33=Accepted, 34=Cancelled; late-recheck.json confirms after 30 s + reload A=Chen, B/C=Brennan. Code path: orgReducer.ts:122 no-ops Accepted when `commandTransfer` is null; :140 no-ops Cancelled when null. Whichever resolver lands first clears pending and the second becomes a silent no-op, yet is still durably appended (operationStore.ts:273) and folded incrementally in arrival order (:290). On A (offline) Cancelled committed locally first; on reconnect reconcile's `at`-sort (syncService.ts:190) only orders within one incoming batch, so Accepted (later `at`) folds onto an already-cleared pending. Boot/reload re-projects from local seq order (:359-361), so the split persists. B/C saw Accepted first (A's Cancelled was queued offline) and got the mirror no-op. Not by design: ADR-021:55 assumes serial escape paths (\"any of these returns to a single IC\"); ADR-009:25 assumes conflicts \"mostly evaporate\" with the event log. Neither specifies a concurrent cancel-vs-accept outcome, and no test covers it (transfer.test.ts:98 tests cancel alone). Severity High: ADR-021's load-bearing invariant (one agreed IC of record, End-Op authority) is silently violated across devices under the designed-for offline scenario, with no banner or conflict signal.",
+   "rootCause": "Projection order is local append (Dexie seq), not a canonical total order, and the ADR-021 resolver fold (Accepted/Cancelled/Declined) is non-commutative: the first resolver to arrive clears `commandTransfer` (orgReducer.ts:122/140) and the second no-ops. Devices receiving the same two events in different arrival order fold different IC-of-record states; reload re-projects in the same local seq order (operationStore.ts:359-361), so the divergence is permanent.",
+   "fixSketch": "Structural (removes the bug class, not a patch): (1) Give the projection one canonical total order used by every device: sort the log by (`at`, `id`) wherever it is folded — `loadEvents()` (boot/lifecycle re-project) and reconcile — and in `doCommit` when an arriving event's `at` precedes the last-folded `at`, re-project from the sorted log instead of folding incrementally (operationStore.ts:290). All devices then converge on the same resolver (here Cancelled@439261 beats Accepted@440844 → Chen everywhere). Cost is a full re-project only on out-of-order arrival; fine at ADR-009's \"handful of devices\" scale. (2) Key the handshake: add `transferId` (the Initiated event id) to Accepted/Declined/Cancelled and store it on `PendingTransfer`; the fold resolves a pending only when ids match, so a late resolver can never clear or be swallowed by a different transfer. (3) Make the losing resolver visible: role history (core/org/history.ts) already lists both events; render the no-op'd one as \"superseded\" in the Command rail's transfer record so the field sees the race rather than a silent outcome. Add a reducer test folding [Init, Cancel, Accept] and [Init, Accept, Cancel] and asserting identical IC. Secondary (same change): orgReducer.ts:140 lacks an initiator check for Cancelled; add `event.by === pending.initiatedBy`/account match for parity with Initiated.",
+   "severity": "High",
+   "blocksCutover": true,
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/1c.json (ui.localOrder, ui.ic, ui.restTransferEvents)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices.*.ic, devices.*.events seq 33-34)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/66-p1c-after-sync-A.png",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/67-p1c-after-sync-B.png",
+    "src/core/org/orgReducer.ts:120-135",
+    "src/core/org/orgReducer.ts:138-142",
+    "src/data/store/operationStore.ts:273",
+    "src/data/store/operationStore.ts:290",
+    "src/data/store/operationStore.ts:359-361",
+    "src/data/sync/syncService.ts:185-191",
+    "src/data/sync/eventListener.ts:64-73",
+    "src/core/operation/reducer.ts:276-284",
+    "src/core/schema/event.ts:297-340",
+    "src/core/org/transfer.test.ts:98-106",
+    "docs/v4-design/11-decisions/ADR-021-command-transfer-handshake.md:54-56",
+    "docs/v4-design/11-decisions/ADR-009-database-firebase-rtdb.md:25"
+   ]
+  },
+  "field-impact": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "Critical",
+   "blocksCutover": true,
+   "rootCause": "The command-transfer fold is order-dependent, and each device replays its own local append order (Dexie seq), not a global clock. orgReducer treats CommandTransferAccepted and CommandTransferCancelled as \"first one to touch the pending slot wins; the other is a silent no-op\" (orgReducer.ts:120-141). Device A committed its own Cancelled offline (seq 33) and later merged Accepted (seq 34) -> Accepted no-ops, IC stays Chen. B and C committed Accepted (seq 33) then merged Cancelled (seq 34) -> Cancelled no-ops, IC = Brennan. syncService.reconcile sorts only the incoming batch by `at` (syncService.ts:182-186); it cannot reorder events already appended locally. boot()/loadEvents replays in seq order (operationStore.ts:128, 358-360), so a reload reproduces the same per-device order forever. Accepted/Cancelled carry no transferId (event.ts:326-345), so the reducer has no way to resolve the pair deterministically.",
+   "reasoning": "Confirmed, not refuted. evidence/1c.json ui.localOrder shows identical 34 events on all three devices but A holds \"33:Cancelled, 34:Accepted\" while B and C hold \"33:Accepted, 34:Cancelled\"; ui.ic = A: Chen, B/C: Brennan. late-recheck.json (30 s idle + reload) shows the same split, and ui.xfer is [] everywhere -- no pending banner, no conflict signal on any screen (screenshots 66/67 confirm: A's IC row reads Lt. K. Chen with Chen on the roster; B's reads Capt. D. Brennan with Chen gone).\n\nFireground impact: two phones on the same incident name two different Incident Commanders, both with a live Transfer button and zero indication anything is wrong. Brennan (on B) has accepted on the radio and is giving orders; whoever holds A, plus anyone who later joins from A's log, believes Chen still commands. The transfer-of-command record (ADR-021's reason for the event log) now contains contradictory entries, so the after-action can't say who held command. It also compounds: the Initiated guard checks the local IC (orgReducer.ts:101-107), so A will reject future transfers B/C accept and vice versa -- command state can never reconverge for the life of the operation.\n\nTrigger is routine: an initiator who loses signal (basement, void, steel structure) for any window during which the incoming accepts. The ~1.5 s gap in the trace is incidental; a 5-minute offline window behaves identically. This is exactly the two-ICs case the rubric names Critical and the scenario #262 exists to catch. Block cutover.",
+   "fixSketch": "1. Make the fold order-independent: add transferId (= the Initiated event id) to Accepted/Declined/Cancelled; in orgReducer, resolve per transfer with a fixed rule regardless of arrival order -- Accepted wins (command physically changed hands and was announced; a Cancelled that lands after an Accepted for the same transferId is a no-op and should raise a conflict note to the initiator). Keep \"late Accepted after Declined\" as no-op. 2. Stop depending on local seq for projections: project in global (at, id) order in boot()/readOperation (or re-sort in loadEvents), matching what reconcile already does for incoming batches. 3. UI: when the log holds both Accepted and Cancelled for one transferId, CommandRail shows a \"Command conflict -- confirm IC of record\" banner instead of silently picking. 4. Vitest: feed both permutations of [Initiated, Cancelled, Accepted] to operationReducer and assert identical IC; add a two-store reconcile test mirroring the 1c probe.",
+   "citations": [
+    "src/core/org/orgReducer.ts:120-141",
+    "src/core/org/orgReducer.ts:101-107",
+    "src/data/sync/syncService.ts:182-186",
+    "src/data/store/operationStore.ts:128",
+    "src/data/store/operationStore.ts:358-360",
+    "src/core/schema/event.ts:326-345",
+    "src/ui/command/CommandRail.tsx:122",
+    "src/ui/command/CommandRail.tsx:192",
+    ".claude/audits/phase-j/262-ttx/evidence/1c.json (ui.localOrder, ui.ic, ui.xfer)",
+    ".claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices.A.ic vs B/C)",
+    ".claude/audits/phase-j/262-ttx/66-p1c-after-sync-A.png",
+    ".claude/audits/phase-j/262-ttx/67-p1c-after-sync-B.png"
+   ]
+  }
+ },
+ "F2-status-race": {
+  "driver-artifact": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "No harness mechanism explains the reading; the code does. Evidence: A's offline lever was genuine (.info/connected=false, RTDB socket closed, aEventInRestWhileOffline=false), and after reconnect REST holds BOTH Alpha events (strutset@...469944 by A, EquipmentReturned@...474224 by B) — exactly the cloud state two real devices would produce. Readings come from each device's IndexedDB log + inventory table and REST, not from a stale render, and every `go()` is a full page.goto (driver.mjs:194-197), so firstMerge re-ran on each check and reproduced the split (late-recheck: local 37 vs REST 39 on all three, A lacks EquipmentReturned, B/C lack strutset). OperationCreated backdating only touches event index 0 and does not alter Alpha ordering; the probe-4 gate shows all three devices agreeing on Alpha=process and on stock before the race (the 1 missing event each is the earlier duplicate Delta deploy, REST idx 24/25 — same defect class, not a confound).\n\nMechanism: on B/C, reconcile's L-7 guard drops A's ShorePointStatusChanged because local status (pending) ≠ event.from (process) (syncService.ts:202), and will keep dropping it on every snapshot since Alpha never returns to process. On A, B's EquipmentReturned hits the store pre-flight `sp.status !== 'process'` (A is strutset) → ok:false, never appended, stock never restored (operationStore.ts:203-204; reducer.ts:433 has the same premise). Both drops are silent. Worse, a cold-joining device folding REST in `at` order would land strutset/0-of-2 (A's view), so the log is non-convergent by join order. Real product defect.",
+   "severity": "High",
+   "blocksCutover": true,
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/syncService.ts:189-205",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/store/operationStore.ts:196-215",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/core/shorepoint/reducer.ts:431-437",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/eventListener.ts:84-90",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:194-197",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:283-302",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:1252-1288",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/4.json (ui.gate, ui.aOffline, ui.aEventInRestWhileOffline, ui.after, ui.restAlphaEvents, ui.localAlphaEvents)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices.*.alpha, strutStock, localEventCount vs restEventCount)"
+   ],
+   "rootCause": "Two devices emit sibling events off the same base (Alpha=process): A's ShorePointStatusChanged process→strutset and B's EquipmentReturned process→pending. Each side's premise guard (syncService L-7 guard for status changes; operationStore pre-flight for EquipmentReturned) silently rejects the other's event because local status no longer equals the event's precondition, and the design's recovery assumption (\"re-applies once we reach event.from\") never holds. Inventory `available` is moved by the incremental transaction only on the committing device, so stock diverges with status. There is no deterministic conflict rule and no surfacing of dropped peer events.",
+   "fixSketch": "1) Make convergence deterministic: when a peer event fails its premise, detect the sibling conflict (same spId, same `from`/base, overlapping `at` window) and resolve by a fixed rule — e.g. earliest `at`+id wins — then emit a compensating event locally (the losing side rolls back: A would revert strutset→process and accept the return, or B/C would re-deploy the BOM and apply strutset) so every device folds the same final state. Alternatively re-fold the projection from the union(local, cloud) log in `at`/id order on reconcile and derive `available` from the folded log rather than per-device incremental txns (it is already documented as event-owned). 2) Never drop silently: route `reconcile().dropped` conflicts to syncStatusStore as a sync-conflict banner/toast per ADR-024, naming the shore point and the two moves. 3) Add a syncService test: offline strutset vs online return from the same base must converge on A, B, C and on a cold-joining D, including stock counts. 4) Same fix covers the sibling duplicate-deploy case (REST idx 24/25 on Delta) that left every device 1 event short before probe 4."
+  },
+  "root-cause": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "High",
+   "blocksCutover": true,
+   "rootCause": "Each device gates incoming peer events on its OWN current projection with no arbiter and no total order: a divergent branch is rejected silently and forever, so two devices that committed opposite events from the same base (process) never converge, and because inventory `available` is mutated transactionally inside the winning local commit (not derived from the folded log), stock diverges with status.",
+   "reasoning": "Confirmed from evidence and code. REST holds both events (ba675392 strutset@469944, 176cd8c8 EquipmentReturned@474224) yet A's local log lacks B's event and B/C lack A's, while later HazardLogged events reached all three (evidence/late-recheck.json: localEventCount 37 vs restEventCount 39 on every device). Two symmetric rejection paths: (1) On B/C, A's ShorePointStatusChanged{from:process} hits the L-7 guard at syncService.ts:200-206; local Alpha is already `pending`, so it is dropped without commit. The comment's premise (\"re-applies once we reach event.from\") never holds for a divergent branch, so every onValue re-delivery re-drops it. (2) On A, B's EquipmentReturned has no sync guard and goes to ops.commit (syncService.ts:211) → operationStore.ts:203-207 pre-flight requires status `process`; A's Alpha is `strutset`, so it returns ok:false, never appended, stock never restored (shorepoint/reducer.ts:433 would also no-op). Result exactly matches the probe: A strutset + Rescue 1 AT 56-88 0/2; B/C pending + 1/2. Not by design: ADR-009:25 asserts conflict resolution \"mostly evaporates\" under the event log, and the #262 plan lists this only as a hypothesis to prove (v4-phase-j-262-ttx.md:36,120). The guards correctly prevent stranding/double-restore, but nothing converges the branches and nothing logs or surfaces the loss (no diagnostics call on either drop path).",
+   "fixSketch": "Replace per-device premise-gating with deterministic replay of one totally-ordered log. (a) Treat the cloud log as the order of record: every event already carries (at, id); reconcile should append incoming peer events to the local log unconditionally (dedup by &id) instead of dropping on failed premise, then re-project the operation from the merged log sorted by (at, id) — the reducer already no-ops the losing branch deterministically (statusFanTargets trigger.status!==from; shorepoint reducer status!=='process'). All devices then fold the same sequence to the same state (here: strutset wins; B's return loses on every device, including B). (b) Make inventory `available` a projection (quantity − units in deployedBom of non-returned points, from the folded state) rather than a counter mutated in doCommit's Dexie transaction, so stock converges with status; applyRemoteRow already recomputes available this way, extend it to the local path. (c) For the losing device, the local commit that was durable but lost on replay must be surfaced (ADR-024 staleness is life-safety): a \"your change didn't take — Alpha moved by Lt. Chen\" toast plus a logSyncEvent('merge-lost') diagnostics row. Minimum interim hardening if (a)-(b) are deferred: log every reconcile drop to /diagnostics/sync and show a conflict banner instead of silent drop at syncService.ts:203 and :212.",
+   "citations": [
+    "src/data/sync/syncService.ts:200-206",
+    "src/data/sync/syncService.ts:211-212",
+    "src/data/store/operationStore.ts:196-207",
+    "src/data/store/operationStore.ts:289-294",
+    "src/core/shorepoint/reducer.ts:431-437",
+    "src/core/operation/reducer.ts:97-98",
+    "src/data/sync/eventListener.ts:81-90",
+    ".claude/audits/phase-j/262-ttx/evidence/4.json (ui.after, ui.restAlphaEvents, ui.localAlphaEvents)",
+    ".claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices.*.alpha, strutStock, localEventCount vs restEventCount)",
+    "docs/v4-design/11-decisions/ADR-009-database-firebase-rtdb.md:25",
+    ".claude/plans/v4-phase-j-262-ttx.md:36",
+    ".claude/plans/v4-phase-j-262-ttx.md:120"
+   ]
+  },
+  "field-impact": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "Critical",
+   "blocksCutover": true,
+   "rootCause": "Concurrent fork from the same base is dropped silently on both sides and never re-converges. A's offline ShorePointStatusChanged(process→strutset) reaches B/C after they already applied EquipmentReturned (Alpha=pending), so the L-7 guard (syncService.ts:202) drops it because local.status≠from. B's EquipmentReturned reaches A after A is at strutset, so the store pre-flight (operationStore.ts:203-206, \"return requires an Equipment Assigned shore point\") rejects it. Both rejections land in `dropped` (syncService.ts:212) with no UI surfacing, and onValue re-delivery (eventListener.ts:89) can never succeed because neither precondition will ever hold again. Inventory cannot self-heal: `available` is never synced, it is derived from each device's own event log (stateSync.ts:26-30), so the stock split (0/2 vs 1/2) is permanent too.",
+   "reasoning": "Evidence is unambiguous: the server log holds all three Alpha events (deploy, A's strutset, B's return), but every device is missing exactly one (4.json ui.localAlphaEvents / missingVsRest=1), and after 30 s plus reload A still shows Alpha=strutset with Rescue 1 AT 56-88 0/2 while B and C show Alpha=pending with 1/2 (late-recheck.json, screenshots 72/73). No banner, no pending-sync count, no conflict chip: each phone believes it is correct.\n\nFireground impact: one opening, two truths. The IC's phone (A) says Alpha is shored with a strut set and Rescue 1's last AT 56-88 is committed. The Division board (B) and the desktop at command (C) say Alpha has no equipment and Rescue 1 has a free AT 56-88. Whichever is physically true, somebody acts on a lie: either a crew assigns that \"free\" strut to another point while it is actually standing in Alpha (double-deploy, PAR/inventory wrong), or the IC clears entry under an opening the board shows as shored when the crew has actually pulled the equipment. This is \"inventory lies\" and \"two phones disagree on whether an opening is shored\" in one finding, it is permanent, and it is invisible. A fourth device joining later projects the server log in `at` order and would side with A (return rejected after strutset), so the disagreement can grow to three-way.\n\nThe design choice to drop rather than merge is defensible; dropping without telling anyone is not. Must be fixed before cutover.",
+   "fixSketch": "1) Detect a true fork, not just a stale echo: when reconcile drops an event whose `from`/precondition matches a status this point held in our own history but we have since moved past via a different event, record a per-shore-point conflict (both event ids, both devices, both outcomes). 2) Surface it: a conflict chip on the ShorePointCard and a board-level banner (\"Alpha: two devices disagree - Strut Set vs Returned to inventory\"), with slides on that point disabled until resolved. 3) Resolve by a human choice that emits a fresh event from the resolver's current state (e.g. \"Confirm strut set\" or \"Confirm returned\"), so every device converges through the normal commit path; the inventory transaction rides along. 4) Persist the dropped-but-server-present events locally (quarantine table) so the conflict survives reload and a late-joining device sees the same conflict instead of silently picking a side. 5) Add a syncService test for the A-offline/B-return fork asserting the conflict is raised on both sides and that stock converges after resolution.",
+   "citations": [
+    ".claude/audits/phase-j/262-ttx/evidence/4.json (ui.after, ui.restAlphaEvents, ui.localAlphaEvents, gate.devices[*].missingVsRest)",
+    ".claude/audits/phase-j/262-ttx/evidence/late-recheck.json (ui.devices A/B/C alpha + strutStock after 30 s + reload)",
+    ".claude/audits/phase-j/262-ttx/72-p4-after-sync-A.png",
+    ".claude/audits/phase-j/262-ttx/73-p4-after-sync-B.png",
+    "src/data/sync/syncService.ts:200-206",
+    "src/data/sync/syncService.ts:211-212",
+    "src/data/store/operationStore.ts:199-206",
+    "src/data/sync/stateSync.ts:26-30",
+    "src/data/sync/eventListener.ts:89"
+   ]
+  }
+ },
+ "F3-concurrent-deploy": {
+  "driver-artifact": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "No harness lever can account for this reading; the product mechanism is deterministic and already code-confirmed as REPORT.md finding C-1.\n\nHarness checks: probe 12 ran from a verified converged state (gate: 24/24 events on A/B/C, 0 missing/extra, Delta pending on all). It executes before any offline probe and before the OperationCreated backdate (probe 2, driver.mjs:1121), so context.setOffline/goOffline (driver.mjs:291-299) and backdating never touched it; backdating only edits OperationCreated.at anyway. Promise.allSettled(commitDeploy A, B) is the intended stimulus (two users tapping Deploy), not a reading error. readLog reads the app's own Dexie events store; opEvents reads the real RTDB path. The emulator enforced the same append-only rule prod would.\n\nProduct mechanism: both devices clear the local Pending pre-flight (operationStore.ts:169), decrement Engine 2 locally, and flush with create-only set per distinct event id (syncService.ts:157-159), so the cloud log accepts both. On reconcile each peer event re-enters commit (syncService.ts:212) and is rejected \"deploy requires a Pending shore point\" into dropped, permanently (no self-heal, unlike status changes). C holds be2e9511 because reconcile sorts by `at` (syncService.ts:184) and the second fails the guard. Evidence matches exactly: 12.json devices A/B/C each hold one seq-25 deploy; 1c.json two minutes later shows the split persisted.\n\nOne correction to the claim: a cold-joiner replays via firstMerge→reconcile→commit (eventListener.ts:64-73), so its projected state would show ONE deploy (the earlier-`at`, B's), not two. The cloud log itself does carry two deploys for one unit, and attribution disagrees (A's log says A deployed Delta; B, C, and any cold joiner say B did). Had A and B picked different assemblies, visible state would diverge too, as C-1 describes.",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "rootCause": "The append-only cloud log has no per-shore-point deploy claim: two EquipmentDeployed events with distinct ids for the same pending point both land in RTDB, while each device's reconcile rejects the peer's event via the local Pending pre-flight guard, so the shared log and per-device logs permanently disagree (known pre-Phase-J finding C-1; this TTX run is its first live reproduction).",
+   "fixSketch": "Add a create-only claim node written atomically with the deploy event (multi-location update: orgs/{dept}/events/{opId}/{eventId} + orgs/{dept}/deployClaims/{opId}/{spId} = eventId, rule `!data.exists()` on the claim). The second writer's upload then fails; on that specific rejection the loser rolls back locally (applyReturnTxn for its BOM, remove its local event, surface \"another device deployed this point first\") and the next snapshot applies the winner's event normally. Alternative client-only rule: on reconcile, an incoming EquipmentDeployed for a point already in `process` with an earlier `at` (id tiebreak) wins — return local BOM to stock, append the peer's event. Either way, disposition C-1 explicitly (accept-and-document vs fix) before cutover.",
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/12.json (ui.gate, ui.deployIdsByDevice, ui.restDeltaEvents, ui.localInventory)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/1c.json (devices.*.events Delta EquipmentDeployed; rest)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:957-1007",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:291-299",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:1121",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:221-232",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/store/operationStore.ts:106-118",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/store/operationStore.ts:167-169",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/store/operationStore.ts:186-193",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/syncService.ts:157-159",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/syncService.ts:184-213",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/eventListener.ts:64-73",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/eventListener.ts:89",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/data/store/inventoryStore.ts:366-370",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/v4-audit-2026-07/REPORT.md:106-107"
+   ]
+  },
+  "root-cause": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "Confirmed, with one correction. Each device's deploy passes the Pending pre-flight (operationStore.ts:167-169) against its OWN state, appends locally and decrements Engine 2 in one Dexie txn (:188-194, inventoryStore.ts:367-374), then enqueues (:294). The serialize chain (:106-119) only orders commits on one device; its comment claims cross-deploy protection it does not provide. flush writes each event under its own id (syncService.ts:157-159) and the cloud rule is append-only per EVENT id, not per shore point (database.rules.json:159), so both land — evidence/12.json restDeltaEvents. On pull-down, reconcile's L-7 guard covers only ShorePointStatusChanged (syncService.ts:200-206); EquipmentDeployed goes to commit(fromRemote) (:211), fails the same Pending guard and is silently `dropped` (:212) — never appended, never logged. A keeps its own 0e27b0c8; B keeps be2e9511; C, receiving both, applies earliest-`at` first (:190) and rejects the second. 1c.json shows missingVsRest:1 on every device persisting — permanent local/shared-log divergence; readEventLog/export read the local log (:379-383), so A's audit log names a different deployer than B/C's.\n\nCorrection: a cold-joining device replays through the same commit guard, so it converges on the earlier event (one decrement), not two. Only a direct cloud-log reader (after-action email, #264 migration validation) sees two deploys. Latent hazard: dropped peer events are re-offered on every snapshot (eventListener.ts:89, resync :96-98); if Delta is later Returned to pending, the orphan deploy would auto-apply as a ghost deploy.\n\nNot by design: audit C-1 (REPORT.md:106-107) is report-only; the TTX plan records \"no disposition\" (v4-phase-j-262-ttx.md:32); essay 01-architecture.md:162 promised a reconciliation prompt that was never built; stateListener.ts:40-50 lists accepted limitations and omits this.",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "rootCause": "The Pending guard that prevents a double deploy is evaluated only against device-local state (operationStore.ts:167-169), and the shared log has no per-shore-point arbitration: the cloud write rule is append-only per event id (database.rules.json:159), and reconcile has no conflict rule for inventory-consequential events — a peer EquipmentDeployed that fails the local pre-flight is silently dropped (syncService.ts:211-212), never compensated, never surfaced. The shared log therefore accepts N concurrent deploys for one point while every device durably keeps exactly one, chosen by arrival/`at` order.",
+   "fixSketch": "Make the shared log the arbiter of \"who deployed this point\", and make the loser compensate. (1) Shared-log claim: flush writes the EquipmentDeployed event AND a create-only claim `orgs/{dept}/claims/{opId}/{spId}` = eventId in one multi-path update(); the rule on the claim path is `!data.exists()`, so the second device's whole write is rejected atomically — a duplicate deploy can never enter the shared log. (2) Local compensation: on that rejection (and symmetrically when reconcile receives a peer deploy that beats a locally-queued one), run one Dexie txn that restores the BOM to stock (applyReturnTxn), deletes the never-synced local row, and re-projects the point to pending, then applies the peer event — so local log == shared log and stock stays single-decremented. The existing 'queued' row state already marks the provisional window to the UI. (3) Stop silent drops: reconcile must log inventory-consequential `dropped` events via the diagnostics ledger and must not retry a rejected EquipmentDeployed on later snapshots (gate re-application on the claim, closing the ghost-redeploy path). (4) Fix the misleading comment at operationStore.ts:106-110 (device-local only). Pure client-side alternative if rules are frozen: deterministic earliest-(at,id)-wins in reconcile with the same compensation txn — converges all devices with the cold-join projection but leaves the loser in the shared log and depends on wall-clock `at`.",
+   "citations": [
+    "src/data/store/operationStore.ts:106-119",
+    "src/data/store/operationStore.ts:159-169",
+    "src/data/store/operationStore.ts:188-194",
+    "src/data/store/operationStore.ts:211-212",
+    "src/data/store/operationStore.ts:294",
+    "src/data/store/operationStore.ts:379-383",
+    "src/data/store/inventoryStore.ts:367-374",
+    "src/data/sync/syncService.ts:154-172",
+    "src/data/sync/syncService.ts:190",
+    "src/data/sync/syncService.ts:200-212",
+    "src/data/sync/eventListener.ts:84-98",
+    "src/data/sync/stateListener.ts:40-57",
+    "src/core/shorepoint/reducer.ts:425-428",
+    "database.rules.json:159",
+    ".claude/audits/phase-j/262-ttx/evidence/12.json (ui.restDeltaEvents, ui.deployIdsByDevice, ui.eachDeviceHoldsAllRestDeploys)",
+    ".claude/audits/phase-j/262-ttx/evidence/1c.json (ui.gate.devices.*.missingVsRest=1, allInAgreement=false)",
+    ".claude/audits/v4-audit-2026-07/REPORT.md:106-107",
+    ".claude/plans/v4-phase-j-262-ttx.md:32",
+    "docs/v4-design/05-essays/01-architecture.md:162"
+   ]
+  },
+  "field-impact": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "rootCause": "No conflict rule for two EquipmentDeployed events on one shore point. Each device commits its own deploy first; the peer's event then fails the commit pre-flight (\"deploy requires a Pending shore point\", operationStore.ts:170) inside reconcile (syncService.ts:211-212) and is dropped without being appended. Unlike a dropped status change, the premise (Pending) never recurs, so the drop is permanent — the July audit's C-1 (REPORT.md:106), still undispositioned.",
+   "reasoning": "Evidence confirms the race: 12.json ui.restDeltaEvents holds two EquipmentDeployed for Delta (spId c44c91f1) on the same row inv-e6feb490 at 1791605308231 (B, uid 1cf84c62) and ...236 (A, uid b064d641). A kept only its own (0e27b0c8); B and C kept B's (be2e9511). 1c.json, ~2 minutes later, still shows every device 31 local vs 32 cloud — it does not heal.\n\nWhat the crew sees: nothing wrong on the board. All three devices agree Delta is Strut Set with one AT 56-88 from Engine 2, and Engine 2 stock reads 0/2 everywhere (12.json gate/localInventory). Stock does not lie, nobody double-claims a strut, no second IC. The disagreement is in the record: Delta's history/after-action on A credits A's deploy; on B, C and any later-joining device it credits B's. A cold-joining device would NOT double-apply — reconcile replays in `at` order (syncService.ts:190) through the same Pending guard, so the second deploy is dropped and it converges to B's event, isolating A as the odd record. That clause of the claim is refuted; the divergence itself is real.\n\nWhy only Medium here: both phones picked the identical assembly, so stock converged. The dangerous sibling — same race, different rigs or struts — would leave two commanders seeing different struts on one opening and disagreeing stock counts, which is the audit's C-1. This probe does not demonstrate that, but it proves the mechanism. Not a cutover blocker alone; C-1 needs a written disposition (accept and document, or the fix below) before #262 closes.",
+   "fixSketch": "In syncService.reconcile (or the operationStore remote-commit pre-flight), when an incoming EquipmentDeployed targets a point already in `process` via a locally-applied deploy, compare (at, id) of the two deploy events; if the incoming one is earlier, run one Dexie rw transaction that restores the local BOM to stock, decrements the incoming BOM, appends BOTH events (loser first, so local and cloud logs match), and sets deployedBom to the winner's; if the local one is earlier, append the loser to the local log as a no-op so logs agree. Pair it with a toast on the losing device (\"Delta was also deployed by another device — showing theirs\") and a Vitest for the two-device race.",
+   "citations": [
+    ".claude/audits/phase-j/262-ttx/evidence/12.json (ui.restDeltaEvents, ui.deployIdsByDevice, ui.gate.devices.*.strutStock, ui.localInventory)",
+    ".claude/audits/phase-j/262-ttx/evidence/1c.json (ui.gate: localEventCount 31 vs restEventCount 32, missingVsRest 1 on A/B/C)",
+    "src/data/store/operationStore.ts:168-170",
+    "src/data/store/operationStore.ts:107-115",
+    "src/data/sync/syncService.ts:190",
+    "src/data/sync/syncService.ts:200-212",
+    "src/data/sync/eventListener.ts:64-73",
+    "src/core/shorepoint/reducer.ts:425-428",
+    ".claude/audits/v4-audit-2026-07/REPORT.md:106-107",
+    ".claude/plans/v4-phase-j-262-ttx.md:32",
+    ".claude/audits/phase-j/262-ttx/REPORT.md:35-37"
+   ]
+  }
+ },
+ "F4-card-hazard-badge": {
+  "driver-artifact": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "No harness mechanism can produce this reading; the badge code path is absent from the product. OperationsBoard.tsx:237-249 renders ShorePointCard with no `hazard` prop, and GroupedShorePoint (OperationsBoard.tsx:207) is never passed one either; `hazardsForDivision` (reducer.ts:79) has zero callers outside tests (only a comment in useHazards.ts:6). So `.fs-spc-hazard` (ShorePointCard.tsx:321) cannot render for any device, online or offline, regardless of setOffline/goOffline, REST backdating or step order. The wiring existed in 138d1be (OperationsBoard imported hazardsForDivision and computed per-SP severity, 2 occurrences) and was dropped by merge 73e95a1 (2026-07-03), whose message states OperationsBoard/ShorePointCard were resolved \"design-import (theirs)\"; at 73e95a1 the count is 0 and ShorePointCard's prop comment reverted to \"Presentational only... future hazard-log workflow set it\" (ShorePointCard.tsx:195-198). The helper text promising the badge survived (HazardLog.tsx:259). Driver input is valid: AddShorePointModal.tsx:87/296 defaults division to \"1\", so every TTX card is Div 1 (79-p6-board-A.png shows all 8 as \"Div 1\"); location \"1\" parses via parseDivisionNumber (division.ts) to 1 and would match them all. The hazards did sync (evidence/6.json restHazards both HazardLogged; 78-p6-hazard-log-A.png shows both rows), so this is not a sync race. cardHazardBadges=0 is real product behavior: a Phase-F merge regression, not a test artifact.",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "rootCause": "Merge 73e95a1 took OperationsBoard.tsx and ShorePointCard.tsx from the design-import branch (\"theirs\"), silently discarding 138d1be's hazard-badge wiring (hazardsForDivision import + per-SP severity → `hazard` prop). The core helper and the Add Hazard help text remained, so the spec promise outlived the implementation.",
+   "fixSketch": "In OperationsBoard.tsx: read `useHazards()`, add `hazardOf = (sp) => hazardsForDivision(hazards, sp.division)[0]?.severity` alongside capacityFlagOf, and pass `hazard={!!hazardOf(item.sp)}` (or the severity, restoring the 138d1be prop shape) to ShorePointCard at :237 and to GroupedShorePoint at :207. Add an OperationsBoard test that logs a hazard at location \"1\" and asserts `.fs-spc-hazard` appears on Div 1 cards only. Optionally re-run the P6 probe's cardHazardBadges check as the regression gate.",
+   "citations": [
+    "src/ui/operations/OperationsBoard.tsx:237-249",
+    "src/ui/operations/OperationsBoard.tsx:207",
+    "src/ui/operations/ShorePointCard.tsx:195-198",
+    "src/ui/operations/ShorePointCard.tsx:321",
+    "src/core/hazard/reducer.ts:72-83",
+    "src/ui/hooks/useHazards.ts:6",
+    "src/ui/command/HazardLog.tsx:259",
+    "src/ui/operations/AddShorePointModal.tsx:87",
+    "src/ui/operations/AddShorePointModal.tsx:296",
+    "src/core/operation/division.ts (parseDivisionNumber)",
+    "git 138d1be (OperationsBoard.tsx:33,1191 — wiring present)",
+    "git 73e95a1 merge message (OperationsBoard/ShorePointCard → design-import theirs)",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:1295",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:1322",
+    ".claude/audits/phase-j/262-ttx/evidence/6.json (devices.*.cardHazardBadges, restHazards)",
+    ".claude/audits/phase-j/262-ttx/79-p6-board-A.png",
+    ".claude/audits/phase-j/262-ttx/78-p6-hazard-log-A.png"
+   ]
+  },
+  "root-cause": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "High",
+   "blocksCutover": true,
+   "rootCause": "Merge commit 73e95a1 (2026-07-03, \"design-import tri-view ... this session's Operations tri-view wins, keep ... Hazard Log\") took the design-import copies of OperationsBoard.tsx and ShorePointCard.tsx, which predate #394 (138d1be, 2026-06-29). That dropped the board's `hazardFor` selector (useHazards + hazardsForDivision(hazards, sp.division)[0]?.severity) and the `hazard={cb.hazardFor(...)}` props on both card call sites, and reverted ShorePointCard's `hazard?: HazardSeverity` row (\"⚠ HIGH hazard in area\") to a presentational `hazard?: boolean` that nothing on the live board sets. The merge also rewrote the only test to assert the boolean pill, so the gate stayed green. hazardsForDivision survives in core but has zero UI callers.",
+   "reasoning": "Defect, not design. Evidence: every card is Div 1 (79-p6-board-A.png); hazard c0693ee5 has location \"1\" (evidence/6.json restHazards), which parseDivisionNumber resolves to 1 (src/core/operation/division.ts:46-52), so hazardsForDivision (src/core/hazard/reducer.ts:79-85) would return it for all Div 1 cards. Yet cardHazardBadges=0 on A/B/C. Code path: OperationsBoard.tsx:237-250 and :207-216 render ShorePointCard/GroupedShorePoint with capacityFlag/advanceDisabledReason but no `hazard` prop; ShorePointCard.tsx:198/230 defaults `hazard=false`, so line 321 never renders. No file under src/ui calls hazardsForDivision (only the hook comment, useHazards.ts:6). `git diff 73e95a1^1 73e95a1` shows the removed lines: `hazardFor` callback, the two `hazard={cb.hazardFor(...)}` props, the HazardSeverity prop and hazardRow in the card, and the test assertion changed from \"⚠ HIGH hazard in area\" to \"⚠ Hazard\". Doctrine explicitly requires the badge: 32-hazard-log.md:63 (\"v4.0 matching rule (decided): resolve ... to a Division and badge every SP card in it\"), 21-hazard-log.md:145-166 Step 4, and the live helper text HazardLog.tsx:259 promises it. The second hazard (\"Div 1 rear wall lean\") correctly does NOT badge — unresolvable free text, log+header only (reducer.ts:73-77). Offline/reconnect is irrelevant: the regression is present on every device, online or not. Severity High: a decided v4.0 safety-visibility surface (Principle 7) is silently absent while the UI promises it; informational only (Principle 10), so not Critical.",
+   "fixSketch": "Restore the #394 wiring, but as one shared per-card selector so the badge can't drift from the other card surfaces (the H2/#416 pattern): (1) OperationsBoard.tsx — `const hazards = useHazards(); const hazardFor = useCallback((sp) => hazardsForDivision(hazards, sp.division)[0]?.severity, [hazards]);` add `hazardFor` to ItemCallbacks and pass `hazard={cb.hazardFor(item.sp)}` / `hazard={cb.hazardFor(item.members[0]!)}`; feed the same selector to DivisionView tiles, ShorePointListRow and CuttingStation so lanes/List/Division/Cutting agree. (2) ShorePointCard.tsx — `hazard?: HazardSeverity` (not boolean), render `⚠ ${severityWord(hazard)} hazard in area` on its own row (workflow Step 4; GroupedShorePoint.tsx:48 already types it as the card's prop). (3) Tests — a board-level test that seeds useHazards with a location \"1\" hazard and asserts the badge on a division \"1\" card and its absence on \"Roof\"/\"Div 1 rear wall lean\"; the current ShorePointCard prop test is what let the merge pass. (4) Archive view (PastOperationView) stays unbadged or reads the frozen register — decide and document in 32-hazard-log.md OQ3.",
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/6.json (ui.devices.*.cardHazardBadges, restHazards)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/79-p6-board-A.png",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/78-p6-hazard-log-A.png",
+    "src/ui/operations/OperationsBoard.tsx:207-250",
+    "src/ui/operations/ShorePointCard.tsx:195-198",
+    "src/ui/operations/ShorePointCard.tsx:230",
+    "src/ui/operations/ShorePointCard.tsx:298-321",
+    "src/ui/operations/GroupedShorePoint.tsx:46-48",
+    "src/core/hazard/reducer.ts:70-85",
+    "src/core/operation/division.ts:46-52",
+    "src/ui/hooks/useHazards.ts:5-6",
+    "src/ui/command/HazardLog.tsx:259",
+    "src/ui/command/IncidentChips.tsx:84-105",
+    "src/ui/operations/ShorePointCard.test.tsx:257-267",
+    "git 138d1be feat(v4): ICS-208 Hazard Log register (#394)",
+    "git 73e95a1 merge(v4): design-import tri-view into v4-redesign (diff vs 73e95a1^1 removes hazardFor + HazardSeverity prop)",
+    "docs/v4-design/08-information-architecture/32-hazard-log.md:60-67",
+    "docs/v4-design/09-workflows/21-hazard-log.md:145-166"
+   ]
+  },
+  "field-impact": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "High",
+   "blocksCutover": true,
+   "rootCause": "The per-card hazard badge was never wired. `hazardsForDivision()` (src/core/hazard/reducer.ts:79) is the designed matcher but has zero UI callers; OperationsBoard renders `<ShorePointCard>` (line 237) and `<GroupedShorePoint>` without ever passing the `hazard` prop that both components already accept (ShorePointCard.tsx:198/321, GroupedShorePoint.tsx:48/161). So `.fs-spc-hazard` can never render, on any device, regardless of sync. Not a two-phones-disagree bug: it is a deterministic feature gap that every device shows identically.",
+   "reasoning": "Observation is real and reproducible, not a sync artifact: all three devices agree (cardHazardBadges=0 on A, B, C) while the same devices show both hazard rows and the \"2 open · HIGH\" chip on Operations, Command and the entry chip. One logged hazard has location \"1\" (evidence/6.json restHazards[0]) and every shore point in the op is Div 1 (79-p6-board-A.png), so the v4.0 matching rule (32-hazard-log.md:63) should badge all 8 cards. It badges none because no screen ever calls hazardsForDivision or passes `hazard` to the card.\n\nFireground impact: the chip still tells the crew that hazards exist somewhere, so this is not Critical (no false SAFE, no inventory lie, one IC). But the feature's whole point is locality: in a multi-division collapse a crew working Div 3 sees only a global \"2 open · HIGH\" and has no cue on the card they are about to slide to Strut Set. Worse, the Add Hazard helper text (HazardLog.tsx:259) tells the Safety Officer that typing a Division number \"will also flag that Division's shore-point cards\", so the SO believes the crew has been warned when nothing on their screen changed. A documented Principle-7 \"visible safety\" promise is false and actively misleading. The app never gates on hazards (spec line 67), radio remains the real control, so decisions stay recoverable; High, not Critical.\n\nBlocks cutover: yes. It is a shipped-spec safety surface (#394 P9) that does not exist, the help text lies about it, and the fix is a small wiring change with an existing pure matcher and existing props.",
+   "fixSketch": "In OperationsBoard (and PastOperationView if desired): `const hazards = useHazards();` then for each rendered item compute `const spHazards = hazardsForDivision(hazards, item.sp.division)` and pass `hazard={spHazards.length > 0}` to `<ShorePointCard>` (line 237) and the equivalent (top severity across members' divisions) to `<GroupedShorePoint>` (prop already exists, GroupedShorePoint.tsx:48). Consider upgrading the card pill from a bare \"⚠ Hazard\" to include the severity word (reuse severityWord) so it's text-not-color per Principle 9. Add a Testing Library test: render the board with one open hazard at location \"1\" and a Div 1 point, assert `.fs-spc-hazard` present; mitigate it, assert gone. Until wired, soften the HazardLog helper text so the Safety Officer isn't promised a card flag that doesn't appear.",
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/6.json (ui.devices.A/B/C.cardHazardBadges = 0; ui.restHazards[0].hazard.location = \"1\"; restHazards[1].hazard.location = \"Div 1 rear wall lean\")",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/79-p6-board-A.png (all 8 points are Div 1; chip \"2 open · HIGH\" shown; no card pill)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/78-p6-hazard-log-A.png (both HIGH rows visible)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/driver.mjs:1322 (counts .fs-spc-hazard on /operations)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/core/hazard/reducer.ts:71-85 (hazardsForDivision — matcher exists, no UI caller)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/core/operation/division.ts:44-50 (parseDivisionNumber accepts bare \"1\")",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/OperationsBoard.tsx:237-249 (ShorePointCard rendered without hazard prop)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/ShorePointCard.tsx:195-198,321 (hazard prop + .fs-spc-hazard pill)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/GroupedShorePoint.tsx:46-48,161 (hazard prop accepted, never supplied)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/command/HazardLog.tsx:259 (helper text promises card flag)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/docs/v4-design/08-information-architecture/32-hazard-log.md:63,67,77 (v4.0 matching rule; badge informs, never gates; Principle 7)"
+   ]
+  }
+ },
+ "F5-quickview-no-connector-rows": {
+  "driver-artifact": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "No harness mechanism produces this reading. Pulled the raw (non-lite) ShorePointAdded for Charlie straight from the still-running emulator: `deductions: {headerWood:'none', footerWood:'none', topPlate:'none', bottomPlate:'none'}` — fully recorded, identical bytes on every device, untouched by the offline lever, OperationCreated backdating, or step order (none of those rewrite shore-point payloads). Bravo's raw event carries `swivel6` top/bottom. The driver's `liteEvent` strips `deductions` from evidence/5-11.json, which is why the JSON looks like Charlie \"has no deductions\" — a logging omission, not a product state. The rendering is deterministic: ShorePointDetail.tsx:128 sets `hasDeductions = deductionTotalInches(...) > 0 || hasUnknownConnector`, and :189 gates the entire Raw-opening / Header / Top / Bottom / Footer block on it, so an all-'none' point drops every slot row. Device A (the author) renders the same; \"cold reader\" is incidental. Playwright merely scraped `.fs-rec-slot-label`; screenshot 87 confirms the DOM scrape visually, 88 confirms Bravo's rows. Deeper point: `Deductions` fields are required strings with `NO_DEDUCTIONS` as the only zero state, so the model cannot express \"unrecorded\" — Bravo's \"Not recorded\" on Header is itself a relabel of 'none'. This is the open read-surface vocabulary question already parked as Q3 in the #261 adjudication (acceptance criterion owed, not a refutation). Hero length 84″ is correct; no safety math affected.",
+   "rootCause": "ShorePointDetail.tsx hides the whole deduction ledger when total deduction is 0 and no unknown connector; combined with a Deductions model that has no \"unrecorded\" value (only 'none'), a cold reader cannot distinguish deliberate no-connectors from never-entered. Evidence JSON's liteEvent additionally drops the deductions object, masking the true data.",
+   "severity": "Low",
+   "blocksCutover": false,
+   "fixSketch": "Render the four ledger rows unconditionally (drop the `hasDeductions &&` gate at ShorePointDetail.tsx:189 or keep only Raw-opening/Exact rows gated) and relabel the 'none' state honestly (\"None\" rather than \"Not recorded\"), per the Q3 acceptance criterion. Separately, add `deductions` to the driver's liteEvent so evidence JSON reflects the real payload.",
+   "citations": [
+    "src/ui/operations/ShorePointDetail.tsx:128",
+    "src/ui/operations/ShorePointDetail.tsx:189-203",
+    "src/ui/operations/ShorePointDetail.tsx:42-54",
+    "src/core/schema/shorepoint.ts:51-59",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:337-358 (addPoint — Charlie plates:false)",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:830-836 (POINTS)",
+    ".claude/audits/phase-j/262-ttx/driver.mjs:1334-1356 (probe 5/11 quickView)",
+    ".claude/audits/phase-j/262-ttx/driver.mjs liteEvent (strips deductions)",
+    ".claude/audits/phase-j/262-ttx/evidence/5-11.json ui.Charlie / ui.Bravo",
+    "emulator REST orgs/e1aa5a8b…/events/3fe36b42… id 68f6de51 (Charlie raw deductions all 'none')",
+    ".claude/audits/phase-j/262-ttx/87-p5-quickview-charlie-noconnectors-C.png",
+    ".claude/audits/phase-j/262-ttx/88-p5-quickview-bravo-connectors-C.png",
+    ".claude/audits/phase-j/261-independent-review-adjudication.md:42 (Q3)"
+   ]
+  },
+  "root-cause": {
+   "refuted": false,
+   "confidence": "high",
+   "reasoning": "Confirmed defect, not refuted. Path: ShorePointDetail.tsx:117-122 builds the four ledger rows unconditionally, but :128 derives `hasDeductions = deductionTotalInches(sp.deductions) > 0 || hasUnknownConnector`, and :189 wraps Raw opening + all four LedgerSlots + the floor row in `{hasDeductions && ...}`. Charlie's deductions are all `'none'` (NO_DEDUCTIONS, schema shorepoint.ts:55 — the Add modal default, AddShorePointModal.tsx:95), so the total is 0 and the whole block is skipped; only the `lengthLabel` and Estimated load rows (:205-220) render. Evidence matches: 5-11.json Charlie slotLabels = [\"Required strut length\",\"Estimated load\"], Bravo/Foxtrot show all four slots with 2 \"Not recorded\". The gate is deliberate locally (test ShorePointDetail.test.tsx:83 \"no phantom Raw opening row\"; comment :131-139 \"with no deductions raw == required\") but it contradicts the card doctrine card.md:205: \"Every slot is always shown... v3 silently omitted unselected slots; v4 surfaces them... The omission of a footer or a connector is a decision the operator should see, not infer.\" The Phase H gate script (:28) restates \"nothing is hidden\" for the Recommendation ledger; the Quick View mirror (:38) broke that by gating on a computed total. Adjudication 261 Q3 already flagged the cold-reader read-surface as needing an acceptance criterion, still unanswered. Secondary issue: the schema cannot represent \"unrecorded\" vs \"none\" (`'none'` is both the default and an explicit choice), so the \"Not recorded\" wording at :68 overclaims even when shown.",
+   "rootCause": "src/ui/operations/ShorePointDetail.tsx:128 + :189 hide the entire deduction ledger (Raw opening + Header/Top/Bottom/Footer slots) when the computed deduction total is 0, so a point whose four slots are all 'none' renders no slot rows. Structural cause: slot visibility is derived from a numeric aggregate instead of from the four stored slot values, violating card.md:205 \"every slot is always shown\".",
+   "fixSketch": "1) Remove the aggregate gate for the slots: in ShorePointDetail.tsx render the four LedgerSlots unconditionally (always from sp.deductions); keep only the \"Exact — floored\" row conditional on !isEighthsExact. Keep \"Raw opening\" always too (raw==required is still true information; the \":83 phantom row\" test flips to assert the slots are present with zero deductions). Delete `hasDeductions`; `hasUnknownConnector` remains for the caution. 2) Make the label honest to the data: the schema has no unset state, so a 'none' slot must read as the card doctrine's explicit \"None / not selected\" (card.md:205), not \"Not recorded\" — change :68 and RecommendationCard.tsx:123 together so both ledgers agree. If a true \"nobody recorded it\" state is wanted, that is a schema change (optional Deductions on ShorePointAdded, NO_DEDUCTIONS applied only on explicit operator confirm) — file against Q3 as the acceptance criterion rather than fake it in the UI. Update ShorePointDetail.test.tsx:83 and add a test: all-'none' point shows four slots.",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "citations": [
+    "src/ui/operations/ShorePointDetail.tsx:117-122",
+    "src/ui/operations/ShorePointDetail.tsx:128",
+    "src/ui/operations/ShorePointDetail.tsx:189",
+    "src/ui/operations/ShorePointDetail.tsx:68",
+    "src/ui/operations/ShorePointDetail.test.tsx:83-89",
+    "src/core/schema/shorepoint.ts:47-60",
+    "src/ui/operations/AddShorePointModal.tsx:95",
+    "docs/v4-design/03-primitives/card.md:205",
+    "docs/v4-design/13-slice/_PHASE-H-GATE-SCRIPT.md:28",
+    ".claude/audits/phase-j/261-independent-review-adjudication.md:42",
+    ".claude/audits/phase-j/262-ttx/evidence/5-11.json",
+    ".claude/audits/phase-j/262-ttx/87-p5-quickview-charlie-noconnectors-C.png",
+    ".claude/audits/phase-j/262-ttx/88-p5-quickview-bravo-connectors-C.png"
+   ]
+  },
+  "field-impact": {
+   "refuted": false,
+   "confidence": "high",
+   "severity": "Medium",
+   "blocksCutover": false,
+   "reasoning": "Confirmed in code and evidence. `ShorePointDetail.tsx:128` sets `hasDeductions = deductionTotalInches(...) > 0 || hasUnknownConnector`, and `:189` hides the entire Raw-opening/Header/Connector/Footer ledger when it is false. Charlie's `ShorePointAdded` event carries only `measurementEighths: 672` (no deductions object), so device C renders just two rows (evidence `ui.Charlie.slotLabels`, `notRecorded: 0`; screenshot 87). Bravo, with two slots filled, shows the other two as red \"Not recorded\" (`:68`; screenshot 88). The display is inverted: the point with the LEAST information gets the QUIETEST screen, and a cold reader comparing Foxtrot/Bravo to Charlie will reasonably infer \"nothing needed\" rather than \"nothing entered\".\n\nCrew experience: a Shoring Group Supervisor or incoming IC on the desktop opens Charlie, sees 84\" = raw opening, BOM shows a bare AT 56-88, and cannot tell whether the strut was set metal-to-wood or whether Engine 2 skipped the connector step while recording. If swivel bases were actually used, the true strut length is ~80.4\" and the \"rated 13,081 lbs at this length\" line is computed on the wrong length.\n\nWhy Medium, not High: the Safety strip already reads UNVERIFIED (no false SAFE), the BOM independently shows no plates, and the point is physically verifiable by walking to it or keying the radio. No two-IC or inventory lie. This is precisely the unresolved #261 Q3 read-surface acceptance criterion failing in practice, so it should ride in the pre-cutover fix batch, but it does not alone block v4.0.",
+   "rootCause": "Quick View suppresses the deduction ledger whenever the deduction total is zero (`hasDeductions` gate at ShorePointDetail.tsx:128/189), and the data model conflates \"operator chose None\" with \"never recorded\" (`woodRow`/`plateRow` treat `'none'` and absent identically as unselected).",
+   "fixSketch": "Structural: distinguish absent from explicit `'none'` in `sp.deductions` (undefined = not recorded; `'none'` = operator confirmed no header/connector/footer). In ShorePointDetail, drop the `hasDeductions &&` gate so the four ledger rows always render in Quick View; each slot shows a name, \"None\" (explicit), or \"Not recorded\" (absent). When all four are absent, add a one-line tell under the ledger (\"Connectors and lumber were never recorded for this point\") and consider feeding that state into the Safety strip's UNVERIFIED wording. Mirror the same slot semantics in RecommendationCard so the two ledgers stay identical (comment at :39 already notes the duplication). Closes #261 Q3 with a testable acceptance criterion: a cold reader can always tell \"none used\" from \"nobody recorded\".",
+   "citations": [
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/ShorePointDetail.tsx:128",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/ShorePointDetail.tsx:189-197",
+    "/Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/ShorePointDetail.tsx:42-68",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/evidence/5-11.json (ui.Charlie.slotLabels / notRecorded=0; rest[] ShorePointAdded Charlie has no deductions)",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/87-p5-quickview-charlie-noconnectors-C.png",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/262-ttx/88-p5-quickview-bravo-connectors-C.png",
+    "/Users/alex/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/261-independent-review-adjudication.md:42"
+   ]
+  }
+ }
+}

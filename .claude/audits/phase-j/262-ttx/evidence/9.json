@@ -1,0 +1,14 @@
+{
+  "probe": "9",
+  "at": "2026-10-10T04:12:28.151Z",
+  "confirmation": "Thanks — your feedback was sent.",
+  "restFeedback": [
+    {
+      "category": "bug",
+      "text": "TTX #262 test — ignore (emulator run)",
+      "deptName": "Millbrook Fire Department",
+      "appVersion": "v4.0.0-slice.1",
+      "hasTimestamp": true
+    }
+  ]
+}

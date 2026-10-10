@@ -1,0 +1,4 @@
+# Test-account passwords for the #262 emulator run — never commit.
+fixtures/accounts.json
+# Evidence dumps ARE committed (no secrets: event logs, inventory rows, UI reads).
+!evidence/*.json

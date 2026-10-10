@@ -1,0 +1,2155 @@
+{
+  "probe": "6",
+  "at": "2026-10-10T04:12:18.081Z",
+  "deptId": "e1aa5a8b-28e0-4fe9-8dc7-6dc37fcea349",
+  "opId": "3fe36b42-3e75-480d-80be-38a0c3b45748",
+  "ui": {
+    "gate": {
+      "restEventCount": 37,
+      "devices": {
+        "A": {
+          "localEventCount": 35,
+          "missingVsRest": 2,
+          "extraVsRest": 0,
+          "strutStock": [
+            "Engine 1|AT 56-88|2/2",
+            "Engine 2|AT 56-88|0/2",
+            "Rescue 1|AT 37-58|1/4",
+            "Rescue 1|AT 56-88|0/2"
+          ],
+          "alpha": [
+            "strutset"
+          ],
+          "delta": [
+            "process"
+          ]
+        },
+        "B": {
+          "localEventCount": 35,
+          "missingVsRest": 2,
+          "extraVsRest": 0,
+          "strutStock": [
+            "Engine 1|AT 56-88|2/2",
+            "Engine 2|AT 56-88|0/2",
+            "Rescue 1|AT 37-58|1/4",
+            "Rescue 1|AT 56-88|1/2"
+          ],
+          "alpha": [
+            "pending"
+          ],
+          "delta": [
+            "process"
+          ]
+        },
+        "C": {
+          "localEventCount": 35,
+          "missingVsRest": 2,
+          "extraVsRest": 0,
+          "strutStock": [
+            "Engine 1|AT 56-88|2/2",
+            "Engine 2|AT 56-88|0/2",
+            "Rescue 1|AT 37-58|1/4",
+            "Rescue 1|AT 56-88|1/2"
+          ],
+          "alpha": [
+            "pending"
+          ],
+          "delta": [
+            "process"
+          ]
+        }
+      },
+      "allInAgreement": false
+    },
+    "aOffline": {
+      "lever": "goOffline",
+      "infoConnected": "false",
+      "navigatorOnLine": false,
+      "rtdbSocketClosed": 1
+    },
+    "bOffline": {
+      "lever": "goOffline",
+      "infoConnected": "false",
+      "navigatorOnLine": false,
+      "rtdbSocketClosed": 1
+    },
+    "inRestWhileOffline": 0,
+    "aOnline": {
+      "lever": "goOnline",
+      "infoConnected": "true",
+      "navigatorOnLine": true
+    },
+    "bOnline": {
+      "lever": "goOnline",
+      "infoConnected": "true",
+      "navigatorOnLine": true
+    },
+    "devices": {
+      "A": {
+        "commandChip": "2 open · HIGH Div 1 rear wall lean",
+        "entryChip": "2 open · HIGH",
+        "openRows": 2,
+        "rows": [
+          "HIGH Structural instability Div 1 rear wall lean Reported 12:11 AM · A teammate",
+          "HIGH Structural instability 1 Reported 12:11 AM · You"
+        ],
+        "opsChip": "2 open · HIGH",
+        "cardHazardBadges": 0
+      },
+      "B": {
+        "commandChip": "2 open · HIGH Div 1 rear wall lean",
+        "entryChip": "2 open · HIGH",
+        "openRows": 2,
+        "rows": [
+          "HIGH Structural instability Div 1 rear wall lean Reported 12:11 AM · You",
+          "HIGH Structural instability 1 Reported 12:11 AM · A teammate"
+        ],
+        "opsChip": "2 open · HIGH",
+        "cardHazardBadges": 0
+      },
+      "C": {
+        "commandChip": "2 open · HIGH Div 1 rear wall lean",
+        "entryChip": "2 open · HIGH",
+        "openRows": 2,
+        "rows": [
+          "HIGH Structural instability Div 1 rear wall lean Reported 12:11 AM · A teammate",
+          "HIGH Structural instability 1 Reported 12:11 AM · A teammate"
+        ],
+        "opsChip": "2 open · HIGH",
+        "cardHazardBadges": 0
+      }
+    },
+    "restHazards": [
+      {
+        "id": "8e564626-07bc-4cbb-85af-5122fb5e6583",
+        "type": "HazardLogged",
+        "at": 1791605504713,
+        "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+        "hazard": {
+          "id": "c0693ee5-64ed-406f-a531-a8f3dfac467a",
+          "severity": "high",
+          "location": "1"
+        }
+      },
+      {
+        "id": "41602476-02e0-4524-b766-788abbab4efa",
+        "type": "HazardLogged",
+        "at": 1791605507724,
+        "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+        "hazard": {
+          "id": "60fe7326-d0c7-4857-a5a4-bdcf145a2d50",
+          "severity": "high",
+          "location": "Div 1 rear wall lean"
+        }
+      }
+    ]
+  },
+  "rest": [
+    {
+      "id": "46e990bf-dfda-44e8-9eac-ea6309b88ad7",
+      "type": "OperationCreated",
+      "at": 1791595719050,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "account": {
+        "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+        "label": "BC R. Alvarez"
+      }
+    },
+    {
+      "id": "acae60ef-f6fe-46a0-b89f-c4ae87f501fd",
+      "type": "ShorePointAdded",
+      "at": 1791605220921,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+        "label": "Alpha",
+        "measurementEighths": 576,
+        "assignedResource": "Engine 1"
+      }
+    },
+    {
+      "id": "9e297be8-c47c-405b-bf3d-c08bac9e1e0e",
+      "type": "ShorePointAdded",
+      "at": 1791605224470,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+        "label": "Bravo",
+        "measurementEighths": 624,
+        "assignedResource": "Engine 2"
+      }
+    },
+    {
+      "id": "68f6de51-9985-445c-9629-cec830531e1e",
+      "type": "ShorePointAdded",
+      "at": 1791605226603,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+        "label": "Charlie",
+        "measurementEighths": 672
+      }
+    },
+    {
+      "id": "88a13812-03b9-4df6-a0f1-e04d08790545",
+      "type": "ShorePointAdded",
+      "at": 1791605228038,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "c44c91f1-e40a-4988-b464-27416b2db348",
+        "label": "Delta",
+        "measurementEighths": 528
+      }
+    },
+    {
+      "id": "821e9a97-cea2-4b02-8b03-d55d6735eeec",
+      "type": "ShorePointAdded",
+      "at": 1791605229486,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "0dc77826-4f8a-4b6e-a2c2-68a43c547547",
+        "label": "Echo",
+        "measurementEighths": 600
+      }
+    },
+    {
+      "id": "3d68eacd-b6cf-4d40-83a8-b9d0d092a427",
+      "type": "ShorePointAdded",
+      "at": 1791605230936,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+        "label": "Foxtrot",
+        "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+        "groupIndex": 3,
+        "measurementEighths": 528
+      }
+    },
+    {
+      "id": "a0b651da-7952-4338-8a5b-425147f6d33c",
+      "type": "ShorePointAdded",
+      "at": 1791605230936,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+        "label": "Foxtrot",
+        "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+        "groupIndex": 2,
+        "measurementEighths": 528
+      }
+    },
+    {
+      "id": "c720195c-717a-4ef8-b6d7-cefbfc1383f3",
+      "type": "ShorePointAdded",
+      "at": 1791605230936,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "shorePoint": {
+        "id": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+        "label": "Foxtrot",
+        "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+        "groupIndex": 1,
+        "measurementEighths": 528
+      }
+    },
+    {
+      "id": "4cef8a98-c046-4bfd-9569-2fd44cb53303",
+      "type": "EquipmentDeployed",
+      "at": 1791605232888,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
+          "model": "AT 56-88",
+          "role": "strut",
+          "source": "Rescue 1",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "54b43c20-8cf4-4673-99fb-983db04a8eda",
+      "type": "EquipmentDeployed",
+      "at": 1791605234604,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
+          "model": "AT 56-88",
+          "role": "strut",
+          "source": "Rescue 1",
+          "system": "AcmeThread"
+        },
+        {
+          "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
+          "plateId": "swivel6",
+          "role": "top-plate",
+          "source": "Rescue 1"
+        },
+        {
+          "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
+          "plateId": "swivel6",
+          "role": "bottom-plate",
+          "source": "Rescue 1"
+        }
+      ]
+    },
+    {
+      "id": "ed5d8b94-b08d-4495-a37a-7b9a8c6444ec",
+      "type": "EquipmentDeployed",
+      "at": 1791605236379,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454",
+          "model": "AT 56-88",
+          "role": "strut",
+          "source": "Engine 2",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "935758ea-fb2e-46c3-a9a1-d2809cd714b8",
+      "type": "EquipmentDeployed",
+      "at": 1791605238104,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
+          "model": "AT 37-58",
+          "role": "strut",
+          "source": "Rescue 1",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "155e66de-8caf-4e56-9e3a-a0de5732840e",
+      "type": "EquipmentDeployed",
+      "at": 1791605239790,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
+          "model": "AT 37-58",
+          "role": "strut",
+          "source": "Rescue 1",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "94a17f06-4cee-4776-9924-e307da32ed0a",
+      "type": "EquipmentDeployed",
+      "at": 1791605241824,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
+          "model": "AT 37-58",
+          "role": "strut",
+          "source": "Rescue 1",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "94fbd5c1-2d8e-49ed-9b9c-68b93bc59ae1",
+      "type": "ShorePointStatusChanged",
+      "at": 1791605243035,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+      "from": "process",
+      "to": "strutset"
+    },
+    {
+      "id": "f9f1e6f2-4deb-4069-a87e-95f86d429fa5",
+      "type": "ShorePointStatusChanged",
+      "at": 1791605244118,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+      "from": "process",
+      "to": "strutset"
+    },
+    {
+      "id": "d69bf711-03b3-47de-bc01-0a3209970aaa",
+      "type": "ShorePointStatusChanged",
+      "at": 1791605245533,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+      "from": "strutset",
+      "to": "cutting"
+    },
+    {
+      "id": "6e91dd56-27bc-4596-a0d7-efa2a22e7c23",
+      "type": "ResourceAssigned",
+      "at": 1791605249839,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "resource": {
+        "label": "Engine 1",
+        "ref": "apparatus",
+        "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c"
+      },
+      "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-shoring"
+    },
+    {
+      "id": "4ae760da-1b49-490a-85b3-357957c7da12",
+      "type": "ResourceAssigned",
+      "at": 1791605251652,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "resource": {
+        "label": "Lt. M. Okafor",
+        "ref": "individual",
+        "value": "Lt. M. Okafor"
+      },
+      "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-safety"
+    },
+    {
+      "id": "7cde9c61-65f4-449f-bea1-0eca8449d9b9",
+      "type": "PositionAdded",
+      "at": 1791605277302,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "position": {
+        "id": "b098cc8a-ba18-4cef-8ec7-e7a55fa32759",
+        "title": "Branch Director",
+        "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+      }
+    },
+    {
+      "id": "66d31cdb-586d-40d2-bc66-87e8348aec03",
+      "type": "PositionAdded",
+      "at": 1791605279416,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "position": {
+        "id": "fa5be07b-ad3e-4cd6-a555-19220fc08edb",
+        "title": "Branch Director",
+        "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+      }
+    },
+    {
+      "id": "35ceb8f1-26a2-4af8-9ec4-ae8c5e751288",
+      "type": "PositionAdded",
+      "at": 1791605283083,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "position": {
+        "id": "c816cec2-e402-4c39-aba5-a69dd6bab823",
+        "title": "Branch Director",
+        "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+      }
+    },
+    {
+      "id": "533bbc32-d537-4e33-9ef3-c974482cd21a",
+      "type": "PositionAdded",
+      "at": 1791605285165,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "position": {
+        "id": "a9318e71-83ad-48a4-854c-2fc467a84da0",
+        "title": "Branch Director",
+        "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+      }
+    },
+    {
+      "id": "be2e9511-0c75-4403-b59c-1098ac129cef",
+      "type": "EquipmentDeployed",
+      "at": 1791605308231,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "spId": "c44c91f1-e40a-4988-b464-27416b2db348",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454",
+          "model": "AT 56-88",
+          "role": "strut",
+          "source": "Engine 2",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "0e27b0c8-48b1-4046-8374-25a02cacdc49",
+      "type": "EquipmentDeployed",
+      "at": 1791605308236,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "c44c91f1-e40a-4988-b464-27416b2db348",
+      "deployedBom": [
+        {
+          "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454",
+          "model": "AT 56-88",
+          "role": "strut",
+          "source": "Engine 2",
+          "system": "AcmeThread"
+        }
+      ]
+    },
+    {
+      "id": "ab885294-10df-402d-a7be-e233fd90c600",
+      "type": "CommandTransferInitiated",
+      "at": 1791605338883,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "toResource": {
+        "label": "Capt. D. Brennan",
+        "ref": "account",
+        "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV"
+      },
+      "account": {
+        "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+        "label": "BC R. Alvarez"
+      }
+    },
+    {
+      "id": "b03d821c-eb87-42a8-b52e-639c565f8019",
+      "type": "CommandTransferAccepted",
+      "at": 1791605344781,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "account": {
+        "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+        "label": "Capt. D. Brennan"
+      }
+    },
+    {
+      "id": "f936af77-dc26-4585-a191-57de8644385a",
+      "type": "CommandTransferInitiated",
+      "at": 1791605363776,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "toResource": {
+        "label": "Engine 1",
+        "ref": "apparatus",
+        "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c"
+      },
+      "account": {
+        "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+        "label": "Capt. D. Brennan"
+      },
+      "claimCode": "7973"
+    },
+    {
+      "id": "26e008ce-1c4b-4cd7-9f26-438c58f45ef7",
+      "type": "CommandTransferAccepted",
+      "at": 1791605368464,
+      "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+      "account": {
+        "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+        "label": "Lt. K. Chen"
+      }
+    },
+    {
+      "id": "9f139b92-c3b3-4953-b0aa-e4db1a9e759c",
+      "type": "CommandTransferInitiated",
+      "at": 1791605416126,
+      "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+      "toResource": {
+        "label": "Lt. K. Chen",
+        "ref": "individual",
+        "value": "Lt. K. Chen"
+      },
+      "account": {
+        "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+        "label": "Lt. K. Chen"
+      },
+      "claimCode": "1607"
+    },
+    {
+      "id": "afbc0008-53f7-4255-b75a-d10fe02e9737",
+      "type": "CommandTransferAccepted",
+      "at": 1791605417077,
+      "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+      "account": {
+        "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+        "label": "Lt. K. Chen"
+      }
+    },
+    {
+      "id": "e0008851-5674-4532-948f-e2a71f0f9075",
+      "type": "CommandTransferInitiated",
+      "at": 1791605435313,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "toResource": {
+        "label": "Capt. D. Brennan",
+        "ref": "account",
+        "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV"
+      },
+      "account": {
+        "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+        "label": "BC R. Alvarez"
+      }
+    },
+    {
+      "id": "4f39585d-6c2c-4787-bcd1-022495bc4a6e",
+      "type": "CommandTransferCancelled",
+      "at": 1791605439261,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d"
+    },
+    {
+      "id": "be159880-d2a8-4614-8ed6-4bf69a6bca80",
+      "type": "CommandTransferAccepted",
+      "at": 1791605440844,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "account": {
+        "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+        "label": "Capt. D. Brennan"
+      }
+    },
+    {
+      "id": "ba675392-0952-4714-b3fa-6646e1eecbfb",
+      "type": "ShorePointStatusChanged",
+      "at": 1791605469944,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+      "from": "process",
+      "to": "strutset"
+    },
+    {
+      "id": "176cd8c8-71c3-4ff1-af0d-b4607c443af1",
+      "type": "EquipmentReturned",
+      "at": 1791605474224,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94"
+    },
+    {
+      "id": "8e564626-07bc-4cbb-85af-5122fb5e6583",
+      "type": "HazardLogged",
+      "at": 1791605504713,
+      "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+      "hazard": {
+        "id": "c0693ee5-64ed-406f-a531-a8f3dfac467a",
+        "severity": "high",
+        "location": "1"
+      }
+    },
+    {
+      "id": "41602476-02e0-4524-b766-788abbab4efa",
+      "type": "HazardLogged",
+      "at": 1791605507724,
+      "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+      "hazard": {
+        "id": "60fe7326-d0c7-4857-a5a4-bdcf145a2d50",
+        "severity": "high",
+        "location": "Div 1 rear wall lean"
+      }
+    }
+  ],
+  "devices": {
+    "A": {
+      "connected": true,
+      "url": "http://localhost:5200/operations",
+      "events": [
+        {
+          "id": "46e990bf-dfda-44e8-9eac-ea6309b88ad7",
+          "type": "OperationCreated",
+          "at": 1791595719050,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 1,
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "acae60ef-f6fe-46a0-b89f-c4ae87f501fd",
+          "type": "ShorePointAdded",
+          "at": 1791605220921,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 2,
+          "shorePoint": {
+            "id": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+            "label": "Alpha",
+            "measurementEighths": 576,
+            "assignedResource": "Engine 1"
+          }
+        },
+        {
+          "id": "9e297be8-c47c-405b-bf3d-c08bac9e1e0e",
+          "type": "ShorePointAdded",
+          "at": 1791605224470,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 3,
+          "shorePoint": {
+            "id": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+            "label": "Bravo",
+            "measurementEighths": 624,
+            "assignedResource": "Engine 2"
+          }
+        },
+        {
+          "id": "68f6de51-9985-445c-9629-cec830531e1e",
+          "type": "ShorePointAdded",
+          "at": 1791605226603,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 4,
+          "shorePoint": {
+            "id": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+            "label": "Charlie",
+            "measurementEighths": 672
+          }
+        },
+        {
+          "id": "88a13812-03b9-4df6-a0f1-e04d08790545",
+          "type": "ShorePointAdded",
+          "at": 1791605228038,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 5,
+          "shorePoint": {
+            "id": "c44c91f1-e40a-4988-b464-27416b2db348",
+            "label": "Delta",
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "821e9a97-cea2-4b02-8b03-d55d6735eeec",
+          "type": "ShorePointAdded",
+          "at": 1791605229486,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 6,
+          "shorePoint": {
+            "id": "0dc77826-4f8a-4b6e-a2c2-68a43c547547",
+            "label": "Echo",
+            "measurementEighths": 600
+          }
+        },
+        {
+          "id": "c720195c-717a-4ef8-b6d7-cefbfc1383f3",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 7,
+          "shorePoint": {
+            "id": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 1,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "a0b651da-7952-4338-8a5b-425147f6d33c",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 8,
+          "shorePoint": {
+            "id": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 2,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "3d68eacd-b6cf-4d40-83a8-b9d0d092a427",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 9,
+          "shorePoint": {
+            "id": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 3,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "4cef8a98-c046-4bfd-9569-2fd44cb53303",
+          "type": "EquipmentDeployed",
+          "at": 1791605232888,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 10,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            }
+          ]
+        },
+        {
+          "id": "54b43c20-8cf4-4673-99fb-983db04a8eda",
+          "type": "EquipmentDeployed",
+          "at": 1791605234604,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 11,
+          "spId": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            },
+            {
+              "role": "top-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            },
+            {
+              "role": "bottom-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            }
+          ]
+        },
+        {
+          "id": "ed5d8b94-b08d-4495-a37a-7b9a8c6444ec",
+          "type": "EquipmentDeployed",
+          "at": 1791605236379,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 12,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "935758ea-fb2e-46c3-a9a1-d2809cd714b8",
+          "type": "EquipmentDeployed",
+          "at": 1791605238104,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 13,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "155e66de-8caf-4e56-9e3a-a0de5732840e",
+          "type": "EquipmentDeployed",
+          "at": 1791605239790,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 14,
+          "spId": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94a17f06-4cee-4776-9924-e307da32ed0a",
+          "type": "EquipmentDeployed",
+          "at": 1791605241824,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 15,
+          "spId": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94fbd5c1-2d8e-49ed-9b9c-68b93bc59ae1",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605243035,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 16,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "f9f1e6f2-4deb-4069-a87e-95f86d429fa5",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605244118,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 17,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "d69bf711-03b3-47de-bc01-0a3209970aaa",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605245533,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 18,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "strutset",
+          "to": "cutting"
+        },
+        {
+          "id": "6e91dd56-27bc-4596-a0d7-efa2a22e7c23",
+          "type": "ResourceAssigned",
+          "at": 1791605249839,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 19,
+          "resource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-shoring"
+        },
+        {
+          "id": "4ae760da-1b49-490a-85b3-357957c7da12",
+          "type": "ResourceAssigned",
+          "at": 1791605251652,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 20,
+          "resource": {
+            "ref": "individual",
+            "value": "Lt. M. Okafor",
+            "label": "Lt. M. Okafor"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-safety"
+        },
+        {
+          "id": "7cde9c61-65f4-449f-bea1-0eca8449d9b9",
+          "type": "PositionAdded",
+          "at": 1791605277302,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 21,
+          "position": {
+            "id": "b098cc8a-ba18-4cef-8ec7-e7a55fa32759",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "66d31cdb-586d-40d2-bc66-87e8348aec03",
+          "type": "PositionAdded",
+          "at": 1791605279416,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 22,
+          "position": {
+            "id": "fa5be07b-ad3e-4cd6-a555-19220fc08edb",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "35ceb8f1-26a2-4af8-9ec4-ae8c5e751288",
+          "type": "PositionAdded",
+          "at": 1791605283083,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 23,
+          "position": {
+            "id": "c816cec2-e402-4c39-aba5-a69dd6bab823",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "533bbc32-d537-4e33-9ef3-c974482cd21a",
+          "type": "PositionAdded",
+          "at": 1791605285165,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 24,
+          "position": {
+            "id": "a9318e71-83ad-48a4-854c-2fc467a84da0",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "0e27b0c8-48b1-4046-8374-25a02cacdc49",
+          "type": "EquipmentDeployed",
+          "at": 1791605308236,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 25,
+          "spId": "c44c91f1-e40a-4988-b464-27416b2db348",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "ab885294-10df-402d-a7be-e233fd90c600",
+          "type": "CommandTransferInitiated",
+          "at": 1791605338883,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 26,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "b03d821c-eb87-42a8-b52e-639c565f8019",
+          "type": "CommandTransferAccepted",
+          "at": 1791605344781,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 27,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "f936af77-dc26-4585-a191-57de8644385a",
+          "type": "CommandTransferInitiated",
+          "at": 1791605363776,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 28,
+          "toResource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "claimCode": "7973"
+        },
+        {
+          "id": "26e008ce-1c4b-4cd7-9f26-438c58f45ef7",
+          "type": "CommandTransferAccepted",
+          "at": 1791605368464,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 29,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "9f139b92-c3b3-4953-b0aa-e4db1a9e759c",
+          "type": "CommandTransferInitiated",
+          "at": 1791605416126,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 30,
+          "toResource": {
+            "ref": "individual",
+            "value": "Lt. K. Chen",
+            "label": "Lt. K. Chen"
+          },
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          },
+          "claimCode": "1607"
+        },
+        {
+          "id": "afbc0008-53f7-4255-b75a-d10fe02e9737",
+          "type": "CommandTransferAccepted",
+          "at": 1791605417077,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 31,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "e0008851-5674-4532-948f-e2a71f0f9075",
+          "type": "CommandTransferInitiated",
+          "at": 1791605435313,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 32,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "4f39585d-6c2c-4787-bcd1-022495bc4a6e",
+          "type": "CommandTransferCancelled",
+          "at": 1791605439261,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 33
+        },
+        {
+          "id": "be159880-d2a8-4614-8ed6-4bf69a6bca80",
+          "type": "CommandTransferAccepted",
+          "at": 1791605440844,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 34,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "ba675392-0952-4714-b3fa-6646e1eecbfb",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605469944,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 35,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "8e564626-07bc-4cbb-85af-5122fb5e6583",
+          "type": "HazardLogged",
+          "at": 1791605504713,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 36,
+          "hazard": {
+            "id": "c0693ee5-64ed-406f-a531-a8f3dfac467a",
+            "severity": "high",
+            "location": "1"
+          }
+        },
+        {
+          "id": "41602476-02e0-4524-b766-788abbab4efa",
+          "type": "HazardLogged",
+          "at": 1791605507724,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 37,
+          "hazard": {
+            "id": "60fe7326-d0c7-4857-a5a4-bdcf145a2d50",
+            "severity": "high",
+            "location": "Div 1 rear wall lean"
+          }
+        }
+      ]
+    },
+    "B": {
+      "connected": true,
+      "url": "http://localhost:5200/operations",
+      "events": [
+        {
+          "id": "46e990bf-dfda-44e8-9eac-ea6309b88ad7",
+          "type": "OperationCreated",
+          "at": 1791595719050,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 1,
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "acae60ef-f6fe-46a0-b89f-c4ae87f501fd",
+          "type": "ShorePointAdded",
+          "at": 1791605220921,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 2,
+          "shorePoint": {
+            "id": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+            "label": "Alpha",
+            "measurementEighths": 576,
+            "assignedResource": "Engine 1"
+          }
+        },
+        {
+          "id": "9e297be8-c47c-405b-bf3d-c08bac9e1e0e",
+          "type": "ShorePointAdded",
+          "at": 1791605224470,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 3,
+          "shorePoint": {
+            "id": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+            "label": "Bravo",
+            "measurementEighths": 624,
+            "assignedResource": "Engine 2"
+          }
+        },
+        {
+          "id": "68f6de51-9985-445c-9629-cec830531e1e",
+          "type": "ShorePointAdded",
+          "at": 1791605226603,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 4,
+          "shorePoint": {
+            "id": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+            "label": "Charlie",
+            "measurementEighths": 672
+          }
+        },
+        {
+          "id": "88a13812-03b9-4df6-a0f1-e04d08790545",
+          "type": "ShorePointAdded",
+          "at": 1791605228038,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 5,
+          "shorePoint": {
+            "id": "c44c91f1-e40a-4988-b464-27416b2db348",
+            "label": "Delta",
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "821e9a97-cea2-4b02-8b03-d55d6735eeec",
+          "type": "ShorePointAdded",
+          "at": 1791605229486,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 6,
+          "shorePoint": {
+            "id": "0dc77826-4f8a-4b6e-a2c2-68a43c547547",
+            "label": "Echo",
+            "measurementEighths": 600
+          }
+        },
+        {
+          "id": "c720195c-717a-4ef8-b6d7-cefbfc1383f3",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 7,
+          "shorePoint": {
+            "id": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 1,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "a0b651da-7952-4338-8a5b-425147f6d33c",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 8,
+          "shorePoint": {
+            "id": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 2,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "3d68eacd-b6cf-4d40-83a8-b9d0d092a427",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 9,
+          "shorePoint": {
+            "id": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 3,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "4cef8a98-c046-4bfd-9569-2fd44cb53303",
+          "type": "EquipmentDeployed",
+          "at": 1791605232888,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 10,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            }
+          ]
+        },
+        {
+          "id": "54b43c20-8cf4-4673-99fb-983db04a8eda",
+          "type": "EquipmentDeployed",
+          "at": 1791605234604,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 11,
+          "spId": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            },
+            {
+              "role": "top-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            },
+            {
+              "role": "bottom-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            }
+          ]
+        },
+        {
+          "id": "ed5d8b94-b08d-4495-a37a-7b9a8c6444ec",
+          "type": "EquipmentDeployed",
+          "at": 1791605236379,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 12,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "935758ea-fb2e-46c3-a9a1-d2809cd714b8",
+          "type": "EquipmentDeployed",
+          "at": 1791605238104,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 13,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "155e66de-8caf-4e56-9e3a-a0de5732840e",
+          "type": "EquipmentDeployed",
+          "at": 1791605239790,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 14,
+          "spId": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94a17f06-4cee-4776-9924-e307da32ed0a",
+          "type": "EquipmentDeployed",
+          "at": 1791605241824,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 15,
+          "spId": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94fbd5c1-2d8e-49ed-9b9c-68b93bc59ae1",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605243035,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 16,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "f9f1e6f2-4deb-4069-a87e-95f86d429fa5",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605244118,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 17,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "d69bf711-03b3-47de-bc01-0a3209970aaa",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605245533,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 18,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "strutset",
+          "to": "cutting"
+        },
+        {
+          "id": "6e91dd56-27bc-4596-a0d7-efa2a22e7c23",
+          "type": "ResourceAssigned",
+          "at": 1791605249839,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 19,
+          "resource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-shoring"
+        },
+        {
+          "id": "4ae760da-1b49-490a-85b3-357957c7da12",
+          "type": "ResourceAssigned",
+          "at": 1791605251652,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 20,
+          "resource": {
+            "ref": "individual",
+            "value": "Lt. M. Okafor",
+            "label": "Lt. M. Okafor"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-safety"
+        },
+        {
+          "id": "7cde9c61-65f4-449f-bea1-0eca8449d9b9",
+          "type": "PositionAdded",
+          "at": 1791605277302,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 21,
+          "position": {
+            "id": "b098cc8a-ba18-4cef-8ec7-e7a55fa32759",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "66d31cdb-586d-40d2-bc66-87e8348aec03",
+          "type": "PositionAdded",
+          "at": 1791605279416,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 22,
+          "position": {
+            "id": "fa5be07b-ad3e-4cd6-a555-19220fc08edb",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "35ceb8f1-26a2-4af8-9ec4-ae8c5e751288",
+          "type": "PositionAdded",
+          "at": 1791605283083,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 23,
+          "position": {
+            "id": "c816cec2-e402-4c39-aba5-a69dd6bab823",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "533bbc32-d537-4e33-9ef3-c974482cd21a",
+          "type": "PositionAdded",
+          "at": 1791605285165,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 24,
+          "position": {
+            "id": "a9318e71-83ad-48a4-854c-2fc467a84da0",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "be2e9511-0c75-4403-b59c-1098ac129cef",
+          "type": "EquipmentDeployed",
+          "at": 1791605308231,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 25,
+          "spId": "c44c91f1-e40a-4988-b464-27416b2db348",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "ab885294-10df-402d-a7be-e233fd90c600",
+          "type": "CommandTransferInitiated",
+          "at": 1791605338883,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 26,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "b03d821c-eb87-42a8-b52e-639c565f8019",
+          "type": "CommandTransferAccepted",
+          "at": 1791605344781,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 27,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "f936af77-dc26-4585-a191-57de8644385a",
+          "type": "CommandTransferInitiated",
+          "at": 1791605363776,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 28,
+          "toResource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "claimCode": "7973"
+        },
+        {
+          "id": "26e008ce-1c4b-4cd7-9f26-438c58f45ef7",
+          "type": "CommandTransferAccepted",
+          "at": 1791605368464,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 29,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "9f139b92-c3b3-4953-b0aa-e4db1a9e759c",
+          "type": "CommandTransferInitiated",
+          "at": 1791605416126,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 30,
+          "toResource": {
+            "ref": "individual",
+            "value": "Lt. K. Chen",
+            "label": "Lt. K. Chen"
+          },
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          },
+          "claimCode": "1607"
+        },
+        {
+          "id": "afbc0008-53f7-4255-b75a-d10fe02e9737",
+          "type": "CommandTransferAccepted",
+          "at": 1791605417077,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 31,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "e0008851-5674-4532-948f-e2a71f0f9075",
+          "type": "CommandTransferInitiated",
+          "at": 1791605435313,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 32,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "be159880-d2a8-4614-8ed6-4bf69a6bca80",
+          "type": "CommandTransferAccepted",
+          "at": 1791605440844,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 33,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "4f39585d-6c2c-4787-bcd1-022495bc4a6e",
+          "type": "CommandTransferCancelled",
+          "at": 1791605439261,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 34
+        },
+        {
+          "id": "176cd8c8-71c3-4ff1-af0d-b4607c443af1",
+          "type": "EquipmentReturned",
+          "at": 1791605474224,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 35,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94"
+        },
+        {
+          "id": "41602476-02e0-4524-b766-788abbab4efa",
+          "type": "HazardLogged",
+          "at": 1791605507724,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 36,
+          "hazard": {
+            "id": "60fe7326-d0c7-4857-a5a4-bdcf145a2d50",
+            "severity": "high",
+            "location": "Div 1 rear wall lean"
+          }
+        },
+        {
+          "id": "8e564626-07bc-4cbb-85af-5122fb5e6583",
+          "type": "HazardLogged",
+          "at": 1791605504713,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 37,
+          "hazard": {
+            "id": "c0693ee5-64ed-406f-a531-a8f3dfac467a",
+            "severity": "high",
+            "location": "1"
+          }
+        }
+      ]
+    },
+    "C": {
+      "connected": true,
+      "url": "http://localhost:5200/operations",
+      "events": [
+        {
+          "id": "46e990bf-dfda-44e8-9eac-ea6309b88ad7",
+          "type": "OperationCreated",
+          "at": 1791595719050,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 1,
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "acae60ef-f6fe-46a0-b89f-c4ae87f501fd",
+          "type": "ShorePointAdded",
+          "at": 1791605220921,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 2,
+          "shorePoint": {
+            "id": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+            "label": "Alpha",
+            "measurementEighths": 576,
+            "assignedResource": "Engine 1"
+          }
+        },
+        {
+          "id": "9e297be8-c47c-405b-bf3d-c08bac9e1e0e",
+          "type": "ShorePointAdded",
+          "at": 1791605224470,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 3,
+          "shorePoint": {
+            "id": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+            "label": "Bravo",
+            "measurementEighths": 624,
+            "assignedResource": "Engine 2"
+          }
+        },
+        {
+          "id": "68f6de51-9985-445c-9629-cec830531e1e",
+          "type": "ShorePointAdded",
+          "at": 1791605226603,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 4,
+          "shorePoint": {
+            "id": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+            "label": "Charlie",
+            "measurementEighths": 672
+          }
+        },
+        {
+          "id": "88a13812-03b9-4df6-a0f1-e04d08790545",
+          "type": "ShorePointAdded",
+          "at": 1791605228038,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 5,
+          "shorePoint": {
+            "id": "c44c91f1-e40a-4988-b464-27416b2db348",
+            "label": "Delta",
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "821e9a97-cea2-4b02-8b03-d55d6735eeec",
+          "type": "ShorePointAdded",
+          "at": 1791605229486,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 6,
+          "shorePoint": {
+            "id": "0dc77826-4f8a-4b6e-a2c2-68a43c547547",
+            "label": "Echo",
+            "measurementEighths": 600
+          }
+        },
+        {
+          "id": "c720195c-717a-4ef8-b6d7-cefbfc1383f3",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 7,
+          "shorePoint": {
+            "id": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 1,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "a0b651da-7952-4338-8a5b-425147f6d33c",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 8,
+          "shorePoint": {
+            "id": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 2,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "3d68eacd-b6cf-4d40-83a8-b9d0d092a427",
+          "type": "ShorePointAdded",
+          "at": 1791605230936,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 9,
+          "shorePoint": {
+            "id": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+            "label": "Foxtrot",
+            "groupId": "d9326b80-e53c-4916-967b-9e71386b6fd5",
+            "groupIndex": 3,
+            "measurementEighths": 528
+          }
+        },
+        {
+          "id": "4cef8a98-c046-4bfd-9569-2fd44cb53303",
+          "type": "EquipmentDeployed",
+          "at": 1791605232888,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 10,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            }
+          ]
+        },
+        {
+          "id": "54b43c20-8cf4-4673-99fb-983db04a8eda",
+          "type": "EquipmentDeployed",
+          "at": 1791605234604,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 11,
+          "spId": "62c8cc4d-b502-446b-9fe3-5813eea7085e",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1"
+            },
+            {
+              "role": "top-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            },
+            {
+              "role": "bottom-plate",
+              "plateId": "swivel6",
+              "source": "Rescue 1",
+              "inventoryId": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+            }
+          ]
+        },
+        {
+          "id": "ed5d8b94-b08d-4495-a37a-7b9a8c6444ec",
+          "type": "EquipmentDeployed",
+          "at": 1791605236379,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 12,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "935758ea-fb2e-46c3-a9a1-d2809cd714b8",
+          "type": "EquipmentDeployed",
+          "at": 1791605238104,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 13,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "155e66de-8caf-4e56-9e3a-a0de5732840e",
+          "type": "EquipmentDeployed",
+          "at": 1791605239790,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 14,
+          "spId": "7626aa3c-c834-4b68-b3cd-ed960123a6b5",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94a17f06-4cee-4776-9924-e307da32ed0a",
+          "type": "EquipmentDeployed",
+          "at": 1791605241824,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 15,
+          "spId": "f1f86833-1380-4c65-a1f7-c1289bd2afc3",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 37-58",
+              "system": "AcmeThread",
+              "source": "Rescue 1",
+              "inventoryId": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58"
+            }
+          ]
+        },
+        {
+          "id": "94fbd5c1-2d8e-49ed-9b9c-68b93bc59ae1",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605243035,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 16,
+          "spId": "5bcaa40c-d5d5-48df-8dbb-01ef10ee67e1",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "f9f1e6f2-4deb-4069-a87e-95f86d429fa5",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605244118,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 17,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "process",
+          "to": "strutset"
+        },
+        {
+          "id": "d69bf711-03b3-47de-bc01-0a3209970aaa",
+          "type": "ShorePointStatusChanged",
+          "at": 1791605245533,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 18,
+          "spId": "fef0d185-ec12-4ff7-b019-419e4a13fae7",
+          "from": "strutset",
+          "to": "cutting"
+        },
+        {
+          "id": "6e91dd56-27bc-4596-a0d7-efa2a22e7c23",
+          "type": "ResourceAssigned",
+          "at": 1791605249839,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 19,
+          "resource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-shoring"
+        },
+        {
+          "id": "4ae760da-1b49-490a-85b3-357957c7da12",
+          "type": "ResourceAssigned",
+          "at": 1791605251652,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 20,
+          "resource": {
+            "ref": "individual",
+            "value": "Lt. M. Okafor",
+            "label": "Lt. M. Okafor"
+          },
+          "positionId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-safety"
+        },
+        {
+          "id": "7cde9c61-65f4-449f-bea1-0eca8449d9b9",
+          "type": "PositionAdded",
+          "at": 1791605277302,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 21,
+          "position": {
+            "id": "b098cc8a-ba18-4cef-8ec7-e7a55fa32759",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "66d31cdb-586d-40d2-bc66-87e8348aec03",
+          "type": "PositionAdded",
+          "at": 1791605279416,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 22,
+          "position": {
+            "id": "fa5be07b-ad3e-4cd6-a555-19220fc08edb",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "35ceb8f1-26a2-4af8-9ec4-ae8c5e751288",
+          "type": "PositionAdded",
+          "at": 1791605283083,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 23,
+          "position": {
+            "id": "c816cec2-e402-4c39-aba5-a69dd6bab823",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "533bbc32-d537-4e33-9ef3-c974482cd21a",
+          "type": "PositionAdded",
+          "at": 1791605285165,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 24,
+          "position": {
+            "id": "a9318e71-83ad-48a4-854c-2fc467a84da0",
+            "title": "Branch Director",
+            "parentId": "3fe36b42-3e75-480d-80be-38a0c3b45748:pos-ops"
+          }
+        },
+        {
+          "id": "be2e9511-0c75-4403-b59c-1098ac129cef",
+          "type": "EquipmentDeployed",
+          "at": 1791605308231,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 25,
+          "spId": "c44c91f1-e40a-4988-b464-27416b2db348",
+          "deployedBom": [
+            {
+              "role": "strut",
+              "model": "AT 56-88",
+              "system": "AcmeThread",
+              "source": "Engine 2",
+              "inventoryId": "inv-e6feb490-7a77-4756-8038-91558c24b454"
+            }
+          ]
+        },
+        {
+          "id": "ab885294-10df-402d-a7be-e233fd90c600",
+          "type": "CommandTransferInitiated",
+          "at": 1791605338883,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 26,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "b03d821c-eb87-42a8-b52e-639c565f8019",
+          "type": "CommandTransferAccepted",
+          "at": 1791605344781,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 27,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "f936af77-dc26-4585-a191-57de8644385a",
+          "type": "CommandTransferInitiated",
+          "at": 1791605363776,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 28,
+          "toResource": {
+            "ref": "apparatus",
+            "value": "app-48deecd4-c670-4786-a3f2-3cd45ce74f0c",
+            "label": "Engine 1"
+          },
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "claimCode": "7973"
+        },
+        {
+          "id": "26e008ce-1c4b-4cd7-9f26-438c58f45ef7",
+          "type": "CommandTransferAccepted",
+          "at": 1791605368464,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 29,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "9f139b92-c3b3-4953-b0aa-e4db1a9e759c",
+          "type": "CommandTransferInitiated",
+          "at": 1791605416126,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 30,
+          "toResource": {
+            "ref": "individual",
+            "value": "Lt. K. Chen",
+            "label": "Lt. K. Chen"
+          },
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          },
+          "claimCode": "1607"
+        },
+        {
+          "id": "afbc0008-53f7-4255-b75a-d10fe02e9737",
+          "type": "CommandTransferAccepted",
+          "at": 1791605417077,
+          "by": "b715816e-fa1a-4038-b0bb-484dcb0c0124",
+          "seq": 31,
+          "account": {
+            "id": "g4gw5mcaZfuisYQyfpL1Xry5jkwy",
+            "label": "Lt. K. Chen"
+          }
+        },
+        {
+          "id": "e0008851-5674-4532-948f-e2a71f0f9075",
+          "type": "CommandTransferInitiated",
+          "at": 1791605435313,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 32,
+          "toResource": {
+            "ref": "account",
+            "value": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          },
+          "account": {
+            "id": "3GwZDypXloeKIRIma1LAeCX113sH",
+            "label": "BC R. Alvarez"
+          }
+        },
+        {
+          "id": "be159880-d2a8-4614-8ed6-4bf69a6bca80",
+          "type": "CommandTransferAccepted",
+          "at": 1791605440844,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 33,
+          "account": {
+            "id": "fzwS4uWOlhAyEs7hvhN1JzkOZsBV",
+            "label": "Capt. D. Brennan"
+          }
+        },
+        {
+          "id": "4f39585d-6c2c-4787-bcd1-022495bc4a6e",
+          "type": "CommandTransferCancelled",
+          "at": 1791605439261,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 34
+        },
+        {
+          "id": "176cd8c8-71c3-4ff1-af0d-b4607c443af1",
+          "type": "EquipmentReturned",
+          "at": 1791605474224,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 35,
+          "spId": "eb88a728-276c-4861-8ea9-ec825f2b4a94"
+        },
+        {
+          "id": "8e564626-07bc-4cbb-85af-5122fb5e6583",
+          "type": "HazardLogged",
+          "at": 1791605504713,
+          "by": "b064d641-d802-47ed-8227-c1cf9873d27d",
+          "seq": 36,
+          "hazard": {
+            "id": "c0693ee5-64ed-406f-a531-a8f3dfac467a",
+            "severity": "high",
+            "location": "1"
+          }
+        },
+        {
+          "id": "41602476-02e0-4524-b766-788abbab4efa",
+          "type": "HazardLogged",
+          "at": 1791605507724,
+          "by": "1cf84c62-4ad5-4522-97e9-a7217baeee47",
+          "seq": 37,
+          "hazard": {
+            "id": "60fe7326-d0c7-4857-a5a4-bdcf145a2d50",
+            "severity": "high",
+            "location": "Div 1 rear wall lean"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "probe": "9 Feedback form live check (beta, live project)",
+  "when": "2026-10-09, Alex signed in on the beta in the built-in browser pane",
+  "steps": "Settings -> Help & reference -> Send feedback -> category Other -> text -> Send feedback",
+  "observed": {
+    "dialog_closed_after_submit": true,
+    "live_db_entry": { "key": "-P3YwvycQPpVWrKj7yAB", "timestamp": 1791604539346, "category": "other", "appVersion": "v4.0.0-slice.1", "text": "TTX #262 test — ignore (feedback-path probe, 2026-10-09)" },
+    "verified_by": "firebase database:get /feedback --project fieldshore-database (read-only, Alex's CLI auth); 2 entries total in the live node"
+  },
+  "status": "PASS",
+  "notes": ["appVersion stamped as v4.0.0-slice.1 — the version label has not been bumped since Phase I slice 1 (observation, not a failure)", "the feedback-review skill reads the v3 project paratech-c3ab4, so v4 feedback never reaches triage (process gap to file)"]
+}
