@@ -1,0 +1,99 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>#499 sync conflict surfacing — accepted mockup</title>
+<style>
+:root{--surface-0:#f4f3ee;--surface-1:#faf9f5;--surface-2:#fff;--text-primary:#141413;--text-secondary:#5f5e5a;--text-muted:#888780;--border:rgba(0,0,0,.12);--border-stronger:rgba(0,0,0,.4);--bg-warning:#faeeda;--text-warning:#633806;--bg-danger:#fcebeb;--text-danger:#791f1f;--border-danger:#f09595;--radius:8px}
+body{margin:0;background:var(--surface-0);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif;color:var(--text-primary);padding:20px}
+h1{font-size:16px;font-weight:500;margin:0 0 4px}
+.cap{font-size:12px;color:var(--text-muted);margin:0 0 14px}
+.ph{width:400px;margin:0;background:var(--surface-1);border:0.5px solid var(--border);border-radius:16px;padding:12px;box-sizing:border-box}
+.sec{background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.lbl{font-size:12px;color:var(--text-muted);margin:0 0 8px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:0.5px solid var(--border);font-size:14px}
+.row:first-of-type{border-top:0}
+.meta{font-size:12px;color:var(--text-muted);white-space:nowrap}
+.noeff{color:var(--text-secondary)}
+.q{color:var(--text-secondary)}
+button{font:inherit;font-size:13px;padding:6px 10px;background:transparent;border:0.5px solid var(--border-stronger);border-radius:8px;color:inherit}
+button:disabled{opacity:.45}
+.grid{display:flex;gap:20px;align-items:flex-start}
+</style></head><body>
+<h1>#499 — losing-branch surfacing (accepted 2026-10-10)</h1>
+<p class="cap">Left: Phone A, which was offline and lost both races. Right: Phone B, which stayed online — its board never changed.</p>
+<div class="grid">
+<div class="ph">
+  <div class="sec">
+    <p class="lbl">Sync line (below the header, stays until acknowledged)</p>
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px;padding:8px 10px;background:var(--bg-warning);color:var(--text-warning);border-radius:var(--radius)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg>
+      <span style="flex:1">Synced — 2 of your changes had no effect</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6 -6l6 6"/></svg>
+    </div>
+    <div style="padding:6px 2px 0">
+      <div class="row" style="flex-direction:column;gap:2px">
+        <span style="font-weight:500">Alpha — now Pending</span>
+        <span class="q" style="font-size:13px">Your Strut Set had no effect. Engine 2 returned AT 56-88 to inventory while you were offline.</span>
+        <span class="meta">10:05 · another device</span>
+      </div>
+      <div class="row" style="flex-direction:column;gap:2px">
+        <span style="font-weight:500">Incident Commander — Lt. K. Chen</span>
+        <span class="q" style="font-size:13px">Your cancel had no effect. Lt. K. Chen accepted command while you were offline.</span>
+        <span class="meta">10:04 · another device</span>
+      </div>
+      <div style="display:flex;justify-content:flex-end;padding-top:8px"><button>Got it</button></div>
+    </div>
+  </div>
+  <div class="sec">
+    <p class="lbl">Shore point Alpha · Quick View timeline</p>
+    <div class="row"><span>Equipment assigned — AT 56-88 from Rescue 1</span><span class="meta">09:52 · this device</span></div>
+    <div class="row"><span class="noeff">Strut Set — no effect</span><span class="meta">10:03 · this device</span></div>
+    <div class="row"><span>Returned to inventory — Pending</span><span class="meta">10:05 · another device</span></div>
+  </div>
+  <div class="sec">
+    <p class="lbl">Inventory · Rescue 1 · two phones each deployed the last AT 56-88 offline</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div>
+        <div style="font-size:15px;font-weight:500">AT 56-88</div>
+        <div style="font-size:12px;color:var(--text-muted)">56″–88″</div>
+        <div style="height:3px;background:var(--border);border-radius:2px;margin:6px 0;width:140px"></div>
+        <span style="font-size:12px;padding:2px 8px;border-radius:var(--radius);background:var(--bg-danger);color:var(--text-danger)">over-allocated — needs resolving</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button disabled style="width:36px">−</button>
+        <span style="font-size:22px;font-weight:500;color:var(--text-danger)">−1<span style="font-size:13px;color:var(--text-muted);font-weight:400">/2</span></span>
+        <button style="width:36px">+</button>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <p class="lbl">Incident Commander · Role history</p>
+    <div class="row"><span>Command transfer initiated — to Lt. K. Chen</span><span class="meta">10:01</span></div>
+    <div class="row"><span class="noeff">Command transfer cancelled — no effect</span><span class="meta">10:03</span></div>
+    <div class="row"><span>Command transfer accepted — Lt. K. Chen</span><span class="meta">10:04</span></div>
+  </div>
+  <div class="sec" style="margin-bottom:0">
+    <p class="lbl">End Operation confirm</p>
+    <p style="font-size:14px;margin:0 0 8px">This archives every shore point and ends the active operation. You can start a new one afterward.</p>
+    <p style="font-size:13px;margin:0 0 8px;padding:8px 10px;background:var(--bg-warning);color:var(--text-warning);border-radius:var(--radius)">2 shore points still hold equipment — Rescue 1 (1), Engine 2 (1)</p>
+    <label style="display:flex;align-items:center;gap:8px;font-size:14px;margin:0 0 12px"><input type="checkbox"> All equipment is back on the rigs</label>
+    <div style="display:flex;justify-content:flex-end;gap:8px"><button>Cancel</button><button style="color:var(--text-danger);border-color:var(--border-danger)">End Operation</button></div>
+  </div>
+</div>
+<div class="ph">
+  <div class="sec">
+    <p class="lbl">Sync line</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Nothing shown — online and nothing queued. Phone B's board never changed when A reconnected.</p>
+  </div>
+  <div class="sec">
+    <p class="lbl">Shore point Alpha · Quick View timeline</p>
+    <div class="row"><span>Equipment assigned — AT 56-88 from Rescue 1</span><span class="meta">09:52 · another device</span></div>
+    <div class="row"><span class="noeff">Strut Set — no effect</span><span class="meta">10:03 · another device</span></div>
+    <div class="row"><span>Returned to inventory — Pending</span><span class="meta">10:05 · this device</span></div>
+  </div>
+  <div class="sec">
+    <p class="lbl">Past operations</p>
+    <div class="row"><span>Oak St — superseded</span><span class="meta">read-only</span></div>
+    <div class="row"><span>Main St</span><span class="meta">active</span></div>
+  </div>
+</div>
+</div>
+</body></html>

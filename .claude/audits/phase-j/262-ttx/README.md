@@ -21,6 +21,11 @@ npm run dev:emu        # Vite in emulator mode on http://localhost:5200
 node .claude/audits/phase-j/262-ttx/driver.mjs
 ```
 
+Notes for the #499 / ADR-041 rules:
+- The rules now require `receivedAt == now` (serverTimestamp sentinel) on every event create. The driver writes no event bodies itself; its one event PATCH backdates `at` only, and that must not change canonical order.
+- Evidence sorts events canonically (`receivedAt`, then `at`, then id), matching `src/core/operation/eventLog.ts`.
+- Inventory `available` in evidence is derived as quantity − held (`heldFromEvents`), because the stored field is gone.
+
 The driver uses Playwright 1.53 from the npx cache
 (`/Users/alex/.npm/_npx/88950a7d37a5e205/node_modules/playwright/index.mjs`, override with
 `PW_PATH`) and launches installed Chrome (`channel: 'chrome'`).

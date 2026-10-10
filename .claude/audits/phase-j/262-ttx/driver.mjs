@@ -96,6 +96,48 @@ const until = async (fn, { timeout = 15000, interval = 500, label = 'condition' 
 const untilSoft = async (fn, opts) => { try { return await until(fn, opts); } catch { return null; } };
 
 // ─────────────────────────────────────────────────────────────── REST (emulator)
+// Canonical event order — source of truth: src/core/operation/eventLog.ts (ADR-041).
+// Server-stamped receivedAt first (events without it sort last), then `at`, then id.
+// Ids compare with < >, never localeCompare, so the order matches the app's fold.
+const compareCanonical = (a, b) => {
+  const ra = a.receivedAt ?? Infinity;
+  const rb = b.receivedAt ?? Infinity;
+  if (ra !== rb) return ra < rb ? -1 : 1;
+  if (a.at !== b.at) return a.at < b.at ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+};
+// Evidence-only fold. `available` is no longer stored on inventory rows (derived, ADR-033
+// / ADR-041), so the driver derives it as quantity − held. Held = tracked BOM components
+// (inventoryId set) on points that are deployed and not returned. Simple fold, not the
+// app's projection (the app's own projection is the oracle): per spId we keep the latest
+// deployedBom and status from the events below.
+const heldFromEvents = (events) => {
+  const pts = {};
+  for (const e of [...events].sort(compareCanonical)) {
+    const p = (pts[e.spId] ??= { bom: null, status: 'pending' });
+    switch (e.type) {
+      case 'EquipmentDeployed': p.bom = e.deployedBom ?? null; p.status = 'process'; break;
+      case 'EquipmentReturned': p.bom = null; p.status = 'pending'; break;
+      case 'EquipmentReclaimed': p.status = 'returned'; break;
+      case 'ShorePointStatusChanged': p.status = e.to; break;
+      case 'ComponentResourced':
+        if (p.bom) p.bom = p.bom.map((c, i) => (i === e.componentIndex ? { ...c, inventoryId: e.inventoryId } : c));
+        break;
+      default: break;
+    }
+  }
+  const held = {};
+  for (const p of Object.values(pts)) {
+    if (!p.bom || p.status === 'returned') continue;
+    for (const c of p.bom) if (c.inventoryId) held[c.inventoryId] = (held[c.inventoryId] ?? 0) + 1;
+  }
+  return held;
+};
+const derivedAvailable = (rows, events) => {
+  const held = heldFromEvents(events);
+  return rows.map((r) => ({ ...r, available: r.quantity - (held[r.id] ?? 0) }));
+};
+
 const restUrl = (path, q = '') => `${DB}/${path ? `${path}.json` : '.json'}?ns=${NS}${q}`;
 const rest = async (method, path, body, q = '') => {
   const r = await fetch(restUrl(path, q), {
@@ -109,14 +151,16 @@ const rest = async (method, path, body, q = '') => {
 };
 const opEvents = async (ctx) => {
   const v = await rest('GET', `orgs/${ctx.deptId}/events/${ctx.opId}`);
-  return Object.values(v ?? {}).sort((a, b) => a.at - b.at || String(a.id).localeCompare(String(b.id)));
+  return Object.values(v ?? {}).sort(compareCanonical);
 };
+// Inventory rows carry `quantity` only; `available` is derived in evidence (derivedAvailable).
 const restInventory = async (ctx) => {
   const v = await rest('GET', `orgs/${ctx.deptId}/inventory`);
-  return Object.entries(v ?? {}).map(([k, r]) => ({ key: k, id: r.id ?? k, apparatus: r.apparatus, type: r.type, model: r.model, plateId: r.plateId, length: r.length, quantity: r.quantity, available: r.available }));
+  return Object.entries(v ?? {}).map(([k, r]) => ({ key: k, id: r.id ?? k, apparatus: r.apparatus, type: r.type, model: r.model, plateId: r.plateId, length: r.length, quantity: r.quantity }));
 };
 const liteEvent = (e) => ({
   id: e.id, type: e.type, at: e.at, by: e.by, seq: e.seq,
+  receivedAt: e.receivedAt, batchId: e.batchId, transferId: e.transferId,
   ...(e.spId ? { spId: e.spId } : {}),
   ...(e.from ? { from: e.from } : {}),
   ...(e.to ? { to: e.to } : {}),
@@ -236,7 +280,7 @@ const readInventory = (dev, deptId) => dev.page.evaluate(async (deptId) => new P
     const db = req.result;
     try {
       const all = db.transaction('inventory', 'readonly').objectStore('inventory').getAll();
-      all.onsuccess = () => { db.close(); resolve(all.result.map((r) => ({ id: r.id, apparatus: r.apparatus, type: r.type, model: r.model, plateId: r.plateId, length: r.length, quantity: r.quantity, available: r.available }))); };
+      all.onsuccess = () => { db.close(); resolve(all.result.map((r) => ({ id: r.id, apparatus: r.apparatus, type: r.type, model: r.model, plateId: r.plateId, length: r.length, quantity: r.quantity }))); };
       all.onerror = () => { db.close(); resolve([]); };
     } catch { db.close(); resolve([]); }
   };
@@ -610,12 +654,13 @@ const run = async () => {
     const restIds = new Set((await opEvents(ctx)).map((e) => e.id));
     const out = { restEventCount: restIds.size, devices: {} };
     for (const D of ALL) {
-      const ids = new Set((await readLog(D, ctx.deptId)).filter((e) => e.opId === ctx.opId).map((e) => e.id));
+      const lev = (await readLog(D, ctx.deptId)).filter((e) => e.opId === ctx.opId).sort(compareCanonical);
+      const ids = new Set(lev.map((e) => e.id));
       const o = {
         localEventCount: ids.size,
         missingVsRest: [...restIds].filter((id) => !ids.has(id)).length,
         extraVsRest: [...ids].filter((id) => !restIds.has(id)).length,
-        strutStock: (await readInventory(D, ctx.deptId)).filter((r) => r.type === 'strut').map((r) => `${r.apparatus}|${r.model}|${r.available}/${r.quantity}`).sort(),
+        strutStock: derivedAvailable(await readInventory(D, ctx.deptId), lev).filter((r) => r.type === 'strut').map((r) => `${r.apparatus}|${r.model}|${r.available}/${r.quantity}`).sort(),
       };
       if (D.page.url().includes('/operations')) { o.alpha = await cardStatus(D.page, 'Alpha'); o.delta = await cardStatus(D.page, 'Delta'); }
       out.devices[D.name] = o;
@@ -776,6 +821,8 @@ const run = async () => {
     const f2 = await exportCsv('p10-export-2.csv');
     const e2 = csvIds(f2);
     const sameIds = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+    // Before the op there are no op events, so nothing is held and available = quantity.
+    const evNow = ctx.opId ? await opEvents(ctx) : [];
     const observed = {
       sceneImport: importObs,
       export1: { rows: e1.count, header: e1.header, ids: e1.ids },
@@ -787,10 +834,10 @@ const run = async () => {
       localAfter: localAfter.length,
       idsUnchangedRest: sameIds(before.map((r) => r.id), after.map((r) => r.id)),
       idsUnchangedCsv: sameIds(e1.ids, e2.ids),
-      quantitiesBefore: before.map((r) => `${r.apparatus}|${r.type}|${r.model ?? r.plateId ?? r.length}|${r.quantity}/${r.available}`).sort(),
-      quantitiesAfter: after.map((r) => `${r.apparatus}|${r.type}|${r.model ?? r.plateId ?? r.length}|${r.quantity}/${r.available}`).sort(),
+      quantitiesBefore: derivedAvailable(before, evNow).map((r) => `${r.apparatus}|${r.type}|${r.model ?? r.plateId ?? r.length}|${r.quantity}/${r.available}`).sort(),
+      quantitiesAfter: derivedAvailable(after, evNow).map((r) => `${r.apparatus}|${r.type}|${r.model ?? r.plateId ?? r.length}|${r.quantity}/${r.available}`).sort(),
     };
-    writeFileSync(join(EVID, '10.json'), JSON.stringify({ probe: '10', at: new Date().toISOString(), ...observed, restInventoryAfter: after, localInventoryAfter: localAfter }, null, 2));
+    writeFileSync(join(EVID, '10.json'), JSON.stringify({ probe: '10', at: new Date().toISOString(), ...observed, restInventoryAfter: derivedAvailable(after, evNow), localInventoryAfter: derivedAvailable(localAfter, evNow) }, null, 2));
     record('10', 'ran', { ...observed, evidence: 'evidence/10.json' });
   }, [A]);
   if (!results.find((r) => r.probe === '10')) record('10', 'skipped', { reason: 'probe step failed — see run log SKIP line' });
@@ -1121,6 +1168,9 @@ const run = async () => {
   await step('probe 2: backdate OperationCreated by 2h41m (REST + every device IndexedDB)', async () => {
     const target = Date.now() - (2 * 3600 + 41 * 60) * 1000;
     p2.backdatedTo = target;
+    // Backdating `at` must NOT change the canonical order: receivedAt wins (ADR-041). The
+    // PATCH is an owner-bypass write of `at` only (no receivedAt in the body, by design);
+    // the evidence sort (opEvents → compareCanonical) proves the event keeps its place.
     await rest('PATCH', `orgs/${ctx.deptId}/events/${ctx.opId}/${ctx.opCreatedId}`, { at: target });
     p2.localPatched = {};
     for (const D of ALL) p2.localPatched[D.name] = await patchLocalAt(D, ctx.deptId, ctx.opCreatedId, target);
@@ -1402,7 +1452,8 @@ const run = async () => {
       o.alpha = await cardStatus(D.page, 'Alpha');
       o.delta = await cardStatus(D.page, 'Delta');
       o.cardHazardBadges = await D.page.locator('.fs-spc-hazard').count();
-      o.strutStock = (await readInventory(D, ctx.deptId)).filter((r) => r.type === 'strut').map((r) => `${r.apparatus}|${r.model}|${r.available}/${r.quantity}`);
+      const lateEv = (await readLog(D, ctx.deptId)).filter((e) => e.opId === ctx.opId).sort(compareCanonical);
+      o.strutStock = derivedAvailable(await readInventory(D, ctx.deptId), lateEv).filter((r) => r.type === 'strut').map((r) => `${r.apparatus}|${r.model}|${r.available}/${r.quantity}`);
       o.localEventCount = (await readLog(D, ctx.deptId)).filter((e) => e.opId === ctx.opId).length;
       await shot(D, 'late-board');
       late.devices[D.name] = o;

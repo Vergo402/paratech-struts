@@ -90,3 +90,21 @@ Also recorded, not findings: page error "Transition was aborted because of inval
 - **Alex:** decide #262 (close, or keep open until F1/F2 are fixed and re-run); #492 what3words plan.
 - **Ops note (F8):** key hygiene — the Firebase browser key keeps `localhost:5199/*`, `localhost:5200/*`, the two live domains and the current beta host; the beta entry needs updating when the channel rotates (30 days without a push).
 - **Re-run recipe:** `npm run emulators`, `npm run dev:emu`, `node .claude/audits/phase-j/262-ttx/driver.mjs` (README in the folder). Probes 1c, 4 and 12 are the regression checks for the fixes.
+
+## 8. Addendum — 2026-10-10 re-run on the #499 build (ADR-041)
+
+Same harness (emulators + `driver.mjs`, updated for ADR-041: canonical evidence sort, `receivedAt`/`batchId`/`transferId` in `liteEvent`, stock derived as `quantity − held`), full run, 412 s. The `evidence/` folder, `results.json` and `run-log.txt` now hold THIS run; the morning run that produced F1–F3 (its evidence and 96 JPEG captures) is preserved in git at `2c60a2f`. The re-run's 96 PNG captures (25 MB) are kept out of the repo at `~/Documents/FieldShore-backups/262-ttx-rerun-2026-10-10-captures/`; the fidelity screens are in `../499-shots/`.
+
+| Probe | Reading on A / B / C | Events per device | Result |
+|---|---|---|---|
+| 12 (concurrent deploy, F3 / #500) | Delta deployed; both `EquipmentDeployed` present in all three logs; Eng 1 AT 56-88 0/2 | 26 / 26 / 26 | identical — converged |
+| 1c (transfer cancel-vs-accept, F1) | IC = Capt. D. Brennan (B's accept reached the cloud first; A's offline cancel lost); no pending transfer | 35 / 35 / 35 | identical — converged |
+| 4 (opposite status moves, F2) | Alpha = Pending Equipment; R1 AT 56-88 1/2 (B's return reached the cloud first; A's offline Strut Set lost) | 37 / 37 / 37 | identical — converged |
+| 6 (concurrent hazards) | both hazards on all three | 39 / 39 / 39 | identical |
+| late re-check (30 s) | unchanged on all three | — | stable |
+
+Losing branch surfaced (device A only, read from the live banner — the driver does not capture it): after probe 4 "Synced — 1 of your changes had no effect · #1 · Alpha — now Pending Equipment · Your Strut Set had no effect. Another device returned equipment to inventory while you were offline."; after 1c "Incident Commander — Capt. D. Brennan · Your cancel had no effect. Capt. D. Brennan accepted command while you were offline." B and C show nothing. Screens: `../499-shots/7a-sync-line.png`, `7a2-sync-line-1c.png`, `7b-timeline.png`, `7d-role-history.png`, `7e-end-op.png`.
+
+Errors: no `PERMISSION_DENIED`, no `receivedAt` rejections, prod-fence hits 0. Regression vs the morning run: none (same 15 probes recorded; 7 and 8 skipped as before).
+
+Findings status: **#499 fixed** (F1 + F2 converge; proof also in `src/data/store/convergence.test.ts`, 3,000 seeds); **#500 converges** (F3: both deploys now in every log, same state everywhere); **#501** (card hazard badge) untouched — next; #502, #503 untouched. Recommendation unchanged in shape: close #262 after #501 lands and Alex reviews the surfaced-loss UX on his own phone.

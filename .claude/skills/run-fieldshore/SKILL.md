@@ -64,6 +64,9 @@ npm run dev:emu     # Vite --mode emulators on :5200; sets VITE_USE_EMULATORS=tr
 
 `dev:emu` runs on :5200, so the normal `fieldshore-v4-dev` preview config on :5199 (`.claude/launch.json:24`) stays free. The three `src/data/**/firebase.ts` modules call `connect*Emulator` only when that flag is set.
 
+The emulator always loads the committed `database.rules.json` (regenerate with `npm run gen:rules` after editing `src/core/schema/rules.ts`; rules tests run via `npm run test:rules`, which needs `/opt/homebrew/opt/openjdk/bin` on PATH).
+For the live project, rules deploy **after** the client build is on the beta channel (`firebase deploy --only database --project fieldshore-database`): since ADR-041 every event create must carry `receivedAt: serverTimestamp()`, so rules deployed first would reject every upload from the older build.
+
 With the emulators up, real sign-ups work: `/auth` → **Create Account** (display name, email, password of at least 6 characters) → **Create department** or **Join department**.
 
 Playwright drivers for this live under `.claude/audits/phase-j/262-ttx/` (created by Stage 1 of `.claude/plans/v4-phase-j-262-ttx.md`): 3 browser contexts, `channel: 'chrome'` because no ms-playwright browsers are cached, and `isMobile` + `hasTouch` contexts get the status slider while mouse contexts get the button. The slide-or-button split is the `(hover: hover) and (pointer: fine)` media query (`useHasMouse`, `src/ui/primitives/useMediaQuery.ts:67-68`, read at `src/ui/primitives/Slider.tsx:75`, `:157`). Reference drivers: `.claude/audits/phase-j/261-shots/driver.mjs` and `.claude/audits/phase-j/minibatch-shots/driver.mjs`.

@@ -2,7 +2,7 @@ OK   reset: RTDB root deleted; auth emulator accounts reset → 200
 OK   accounts written to fixtures/accounts.json (not printed)
 INFO A first auth-emulator request: http://127.0.0.1:9099/emulator/auth/iframe
 OK   scene: A signs up (Create Account)
-INFO dept e1aa5a8b-28e0-4fe9-8dc7-6dc37fcea349; invite code via REST == UI sheet code
+INFO dept 5db2334b-1cad-409e-9045-26dff03db764; invite code via REST == UI sheet code
 OK   scene: A creates Millbrook Fire Department
 INFO B first auth-emulator request: http://127.0.0.1:9099/emulator/auth/iframe
 OK   scene: B signs up + joins by code
@@ -17,7 +17,7 @@ OK   scene: A imports millbrook-inventory.csv
 INFO inventory rigs: BC-1 0 items Engine 1 8 items Engine 2 8 items Rescue 1 24 items +
 OK   scene: roster provisioned (Engine 1/2, Rescue 1)
 OK   probe 10: export → re-import → IDs and counts unchanged
-INFO op 3fe36b42-3e75-480d-80be-38a0c3b45748; OperationCreated 46e990bf-dfda-44e8-9eac-ea6309b88ad7; address field role=combobox
+INFO op fe9b83a2-55fd-4bcd-a478-b6276694e7c5; OperationCreated ea726ce9-853e-4756-9269-0729b3734a2f; address field role=combobox
 OK   scene: A starts operation (822 Dixwell Ave typed plain)
 OK   scene: A adds Alpha → Engine 1
 OK   scene: A adds Bravo → Engine 2 + swivel plates

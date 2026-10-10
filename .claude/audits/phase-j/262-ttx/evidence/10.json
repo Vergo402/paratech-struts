@@ -1,6 +1,6 @@
 {
   "probe": "10",
-  "at": "2026-10-10T04:06:54.752Z",
+  "at": "2026-10-10T22:44:31.909Z",
   "sceneImport": {
     "steps": [
       "Pick your file",
@@ -18,18 +18,18 @@
     "rows": 12,
     "header": "ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity",
     "ids": [
-      "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "inv-fc30a188-bd6f-40b7-a437-bfc05850634b",
-      "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
-      "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+      "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "inv-b03571be-752c-485b-86b3-cf69e942de17",
+      "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
+      "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "inv-28e10630-960c-4129-bed8-e78070a9af16"
     ]
   },
   "reimport": {
@@ -48,52 +48,52 @@
   "export2": {
     "rows": 12,
     "ids": [
-      "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "inv-fc30a188-bd6f-40b7-a437-bfc05850634b",
-      "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
-      "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd"
+      "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "inv-b03571be-752c-485b-86b3-cf69e942de17",
+      "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
+      "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "inv-28e10630-960c-4129-bed8-e78070a9af16"
     ]
   },
   "restBefore": {
     "count": 12,
     "ids": [
-      "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
-      "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
-      "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "inv-fc30a188-bd6f-40b7-a437-bfc05850634b"
+      "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
+      "inv-28e10630-960c-4129-bed8-e78070a9af16",
+      "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "inv-b03571be-752c-485b-86b3-cf69e942de17"
     ]
   },
   "restAfter": {
     "count": 12,
     "ids": [
-      "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
-      "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
-      "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "inv-fc30a188-bd6f-40b7-a437-bfc05850634b"
+      "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
+      "inv-28e10630-960c-4129-bed8-e78070a9af16",
+      "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "inv-b03571be-752c-485b-86b3-cf69e942de17"
     ]
   },
   "localBefore": 12,
@@ -101,142 +101,46 @@
   "idsUnchangedRest": true,
   "idsUnchangedCsv": true,
   "quantitiesBefore": [
-    "Engine 1|plate|chainwedge|2/undefined",
-    "Engine 1|plate|swivel6|4/undefined",
-    "Engine 1|strut|AT 56-88|2/undefined",
-    "Engine 2|plate|chainwedge|2/undefined",
-    "Engine 2|plate|swivel6|4/undefined",
-    "Engine 2|strut|AT 56-88|2/undefined",
-    "Rescue 1|extension|24|2/undefined",
-    "Rescue 1|plate|chainwedge|4/undefined",
-    "Rescue 1|plate|rigid6|4/undefined",
-    "Rescue 1|plate|swivel6|8/undefined",
-    "Rescue 1|strut|AT 37-58|4/undefined",
-    "Rescue 1|strut|AT 56-88|2/undefined"
+    "Engine 1|plate|chainwedge|2/2",
+    "Engine 1|plate|swivel6|4/4",
+    "Engine 1|strut|AT 56-88|2/2",
+    "Engine 2|plate|chainwedge|2/2",
+    "Engine 2|plate|swivel6|4/4",
+    "Engine 2|strut|AT 56-88|2/2",
+    "Rescue 1|extension|24|2/2",
+    "Rescue 1|plate|chainwedge|4/4",
+    "Rescue 1|plate|rigid6|4/4",
+    "Rescue 1|plate|swivel6|8/8",
+    "Rescue 1|strut|AT 37-58|4/4",
+    "Rescue 1|strut|AT 56-88|2/2"
   ],
   "quantitiesAfter": [
-    "Engine 1|plate|chainwedge|2/undefined",
-    "Engine 1|plate|swivel6|4/undefined",
-    "Engine 1|strut|AT 56-88|2/undefined",
-    "Engine 2|plate|chainwedge|2/undefined",
-    "Engine 2|plate|swivel6|4/undefined",
-    "Engine 2|strut|AT 56-88|2/undefined",
-    "Rescue 1|extension|24|2/undefined",
-    "Rescue 1|plate|chainwedge|4/undefined",
-    "Rescue 1|plate|rigid6|4/undefined",
-    "Rescue 1|plate|swivel6|8/undefined",
-    "Rescue 1|strut|AT 37-58|4/undefined",
-    "Rescue 1|strut|AT 56-88|2/undefined"
+    "Engine 1|plate|chainwedge|2/2",
+    "Engine 1|plate|swivel6|4/4",
+    "Engine 1|strut|AT 56-88|2/2",
+    "Engine 2|plate|chainwedge|2/2",
+    "Engine 2|plate|swivel6|4/4",
+    "Engine 2|strut|AT 56-88|2/2",
+    "Rescue 1|extension|24|2/2",
+    "Rescue 1|plate|chainwedge|4/4",
+    "Rescue 1|plate|rigid6|4/4",
+    "Rescue 1|plate|swivel6|8/8",
+    "Rescue 1|strut|AT 37-58|4/4",
+    "Rescue 1|strut|AT 56-88|2/2"
   ],
   "restInventoryAfter": [
     {
-      "key": "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "id": "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "apparatus": "Engine 2",
-      "type": "plate",
-      "plateId": "swivel6",
-      "quantity": 4
-    },
-    {
-      "key": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
-      "id": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
-      "apparatus": "Rescue 1",
-      "type": "plate",
-      "plateId": "swivel6",
-      "quantity": 8
-    },
-    {
-      "key": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "id": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
-      "apparatus": "Rescue 1",
-      "type": "strut",
-      "model": "AT 56-88",
-      "quantity": 2
-    },
-    {
-      "key": "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "id": "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "apparatus": "Engine 1",
-      "type": "plate",
-      "plateId": "swivel6",
-      "quantity": 4
-    },
-    {
-      "key": "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "id": "inv-4989c411-da17-4302-94f7-b28e48193848",
-      "apparatus": "Engine 1",
-      "type": "plate",
-      "plateId": "chainwedge",
-      "quantity": 2
-    },
-    {
-      "key": "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "id": "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
-      "apparatus": "Rescue 1",
-      "type": "plate",
-      "plateId": "rigid6",
-      "quantity": 4
-    },
-    {
-      "key": "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "id": "inv-c8147cbb-798d-4eab-9816-65148427956a",
-      "apparatus": "Rescue 1",
-      "type": "plate",
-      "plateId": "chainwedge",
-      "quantity": 4
-    },
-    {
-      "key": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "id": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
-      "apparatus": "Rescue 1",
-      "type": "strut",
-      "model": "AT 37-58",
-      "quantity": 4
-    },
-    {
-      "key": "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
-      "id": "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
+      "key": "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
+      "id": "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
       "apparatus": "Rescue 1",
       "type": "extension",
       "length": 24,
-      "quantity": 2
+      "quantity": 2,
+      "available": 2
     },
     {
-      "key": "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "id": "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "apparatus": "Engine 2",
-      "type": "strut",
-      "model": "AT 56-88",
-      "quantity": 2
-    },
-    {
-      "key": "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "id": "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
-      "apparatus": "Engine 1",
-      "type": "strut",
-      "model": "AT 56-88",
-      "quantity": 2
-    },
-    {
-      "key": "inv-fc30a188-bd6f-40b7-a437-bfc05850634b",
-      "id": "inv-fc30a188-bd6f-40b7-a437-bfc05850634b",
-      "apparatus": "Engine 2",
-      "type": "plate",
-      "plateId": "chainwedge",
-      "quantity": 2
-    }
-  ],
-  "localInventoryAfter": [
-    {
-      "id": "inv-1339735c-350d-4a1c-b321-4284f8e23932",
-      "apparatus": "Engine 2",
-      "type": "plate",
-      "plateId": "swivel6",
-      "quantity": 4,
-      "available": 4
-    },
-    {
-      "id": "inv-17c0ba5a-0f58-43e9-9b01-692f2b87fafd",
+      "key": "inv-28e10630-960c-4129-bed8-e78070a9af16",
+      "id": "inv-28e10630-960c-4129-bed8-e78070a9af16",
       "apparatus": "Rescue 1",
       "type": "plate",
       "plateId": "swivel6",
@@ -244,7 +148,8 @@
       "available": 8
     },
     {
-      "id": "inv-1b2f257e-6cb9-4647-b0bc-62c0c3ef38b1",
+      "key": "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "id": "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
       "apparatus": "Rescue 1",
       "type": "strut",
       "model": "AT 56-88",
@@ -252,15 +157,8 @@
       "available": 2
     },
     {
-      "id": "inv-2e175761-a958-40e6-81bf-c831b0d290b1",
-      "apparatus": "Engine 1",
-      "type": "plate",
-      "plateId": "swivel6",
-      "quantity": 4,
-      "available": 4
-    },
-    {
-      "id": "inv-4989c411-da17-4302-94f7-b28e48193848",
+      "key": "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "id": "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
       "apparatus": "Engine 1",
       "type": "plate",
       "plateId": "chainwedge",
@@ -268,7 +166,35 @@
       "available": 2
     },
     {
-      "id": "inv-87981ce3-3348-4499-b9ee-20d6ce0b8a4d",
+      "key": "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "id": "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "apparatus": "Engine 2",
+      "type": "plate",
+      "plateId": "swivel6",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "key": "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "id": "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "apparatus": "Engine 2",
+      "type": "plate",
+      "plateId": "chainwedge",
+      "quantity": 2,
+      "available": 2
+    },
+    {
+      "key": "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "id": "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
+      "apparatus": "Engine 1",
+      "type": "strut",
+      "model": "AT 56-88",
+      "quantity": 2,
+      "available": 2
+    },
+    {
+      "key": "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "id": "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
       "apparatus": "Rescue 1",
       "type": "plate",
       "plateId": "rigid6",
@@ -276,7 +202,17 @@
       "available": 4
     },
     {
-      "id": "inv-c8147cbb-798d-4eab-9816-65148427956a",
+      "key": "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "id": "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "apparatus": "Engine 1",
+      "type": "plate",
+      "plateId": "swivel6",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "key": "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "id": "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
       "apparatus": "Rescue 1",
       "type": "plate",
       "plateId": "chainwedge",
@@ -284,7 +220,8 @@
       "available": 4
     },
     {
-      "id": "inv-d2abae7e-c28b-4f0c-b847-2c5b45dfef58",
+      "key": "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "id": "inv-a30fc765-7daf-4684-962d-c45cb554599d",
       "apparatus": "Rescue 1",
       "type": "strut",
       "model": "AT 37-58",
@@ -292,7 +229,18 @@
       "available": 4
     },
     {
-      "id": "inv-e1c0dbb0-ea2b-4b99-b16b-15daec8dcfdf",
+      "key": "inv-b03571be-752c-485b-86b3-cf69e942de17",
+      "id": "inv-b03571be-752c-485b-86b3-cf69e942de17",
+      "apparatus": "Engine 2",
+      "type": "strut",
+      "model": "AT 56-88",
+      "quantity": 2,
+      "available": 2
+    }
+  ],
+  "localInventoryAfter": [
+    {
+      "id": "inv-15c4678b-e265-4f87-bbc6-2b99eaed374c",
       "apparatus": "Rescue 1",
       "type": "extension",
       "length": 24,
@@ -300,15 +248,47 @@
       "available": 2
     },
     {
-      "id": "inv-e6feb490-7a77-4756-8038-91558c24b454",
-      "apparatus": "Engine 2",
+      "id": "inv-28e10630-960c-4129-bed8-e78070a9af16",
+      "apparatus": "Rescue 1",
+      "type": "plate",
+      "plateId": "swivel6",
+      "quantity": 8,
+      "available": 8
+    },
+    {
+      "id": "inv-5efeab06-7264-49f2-b741-75de8a5f3e17",
+      "apparatus": "Rescue 1",
       "type": "strut",
       "model": "AT 56-88",
       "quantity": 2,
       "available": 2
     },
     {
-      "id": "inv-e8b07e4a-b843-4689-bda6-5323b12ab112",
+      "id": "inv-6bf58d04-cca1-4beb-9423-cbc0196df96c",
+      "apparatus": "Engine 1",
+      "type": "plate",
+      "plateId": "chainwedge",
+      "quantity": 2,
+      "available": 2
+    },
+    {
+      "id": "inv-799e8396-87c4-4474-8562-6109fab68890",
+      "apparatus": "Engine 2",
+      "type": "plate",
+      "plateId": "swivel6",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "id": "inv-7c2adc10-1495-4db3-aaa6-a2ed6e338a68",
+      "apparatus": "Engine 2",
+      "type": "plate",
+      "plateId": "chainwedge",
+      "quantity": 2,
+      "available": 2
+    },
+    {
+      "id": "inv-80ea156a-b247-46b4-acc3-54a17a4c0d2a",
       "apparatus": "Engine 1",
       "type": "strut",
       "model": "AT 56-88",
@@ -316,10 +296,42 @@
       "available": 2
     },
     {
-      "id": "inv-fc30a188-bd6f-40b7-a437-bfc05850634b",
-      "apparatus": "Engine 2",
+      "id": "inv-847613a3-fb70-41a8-b862-45ead1b2973f",
+      "apparatus": "Rescue 1",
+      "type": "plate",
+      "plateId": "rigid6",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "id": "inv-91cda9d3-0980-4f39-8342-65dcc7345a2b",
+      "apparatus": "Engine 1",
+      "type": "plate",
+      "plateId": "swivel6",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "id": "inv-a17fcccf-aefc-42e0-8e47-7a18c06985a2",
+      "apparatus": "Rescue 1",
       "type": "plate",
       "plateId": "chainwedge",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "id": "inv-a30fc765-7daf-4684-962d-c45cb554599d",
+      "apparatus": "Rescue 1",
+      "type": "strut",
+      "model": "AT 37-58",
+      "quantity": 4,
+      "available": 4
+    },
+    {
+      "id": "inv-b03571be-752c-485b-86b3-cf69e942de17",
+      "apparatus": "Engine 2",
+      "type": "strut",
+      "model": "AT 56-88",
       "quantity": 2,
       "available": 2
     }
