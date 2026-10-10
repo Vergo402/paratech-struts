@@ -36,7 +36,7 @@ The apparatus-centric equipment catalog: what struts, extensions, and connector 
 
 - **Primary action (one — Principle 4):** adjust stock — the **± quantity stepper** on an item row ([`input.md`](../03-primitives/input.md)).
 - **Secondary actions:** **Add Equipment** (quick-add grids); **Add Apparatus**; **Import / Export Excel**; open **Quick View**; switch apparatus scope.
-- **Destructive / inventory-consequential:** removing an apparatus or an item, and an **import that would orphan deployed struts**, raise a [`modal`](../03-primitives/modal.md) confirm (the ADR-016 Inventory row); a `±` that would drop a deployed item below its deployed count is clamped, not destructive.
+- **Destructive / inventory-consequential:** removing an apparatus or an item, and an **import that would orphan deployed struts**, raise a [`modal`](../03-primitives/modal.md) confirm (the ADR-016 Inventory row); quantity floors at the units held (ADR-041); an import or a peer quantity below held is not blocked, it reads as over-allocated.
 
 ## Composed primitives
 
@@ -55,7 +55,7 @@ The apparatus-centric equipment catalog: what struts, extensions, and connector 
 
 - **Apparatus scope first:** a [`segmented`](../03-primitives/segmented.md) scope-tab per apparatus (name + item-count); selecting filters the list to that rig (faithful to v3 `selectedApparatus`).
 - **Grouped system → type** (faithful order): **Gold (LongShore) · Grey (AcmeThread) · LockStroke** sections, each with struts (sorted by collapsed length) then extensions (by length); then a system-independent **Connector Plates** section (alphabetical).
-- **Each item row** ([`list.md`](../03-primitives/list.md) row): model / size / plate-name; a **deployed-count [`badge`](../03-primitives/badge.md)** when an operation is active and any are deployed; the **± stepper** ([`input.md`](../03-primitives/input.md)) showing available vs. quantity. Dropping qty to 0 with nothing deployed removes the item (faithful to v3); a `±` is **clamped** so available never exceeds quantity and a deployed item can't be removed (the v3.5.2 transaction-sanity rule).
+- **Each item row** ([`list.md`](../03-primitives/list.md) row): model / size / plate-name; a **deployed-count [`badge`](../03-primitives/badge.md)** when an operation is active and any are deployed; the **± stepper** ([`input.md`](../03-primitives/input.md)) showing available vs. quantity. Dropping qty to 0 with nothing deployed removes the item (faithful to v3); a `±` floors quantity at the units **held** (ADR-041), so a deployed item can't be removed. An import or a peer quantity below held reads as **over-allocated**: the count reads negative in the danger color with the chip "over-allocated — needs resolving" (accepted mockup `.claude/audits/phase-j/499-shots/mockup-accepted-2026-10-10.png`).
 
 ## Add flows
 
@@ -137,7 +137,7 @@ The **per-row sync state** (synced / pending, the PAR/accountability visibility 
 - [x] **NIMS terminology** — apparatus types + spelled-out terms ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - [x] **Tap geometry** — 56pt rows + stepper targets; 8pt dead zones ([`spacing-grid.md`](../07-design-system/spacing-grid.md)).
 - [x] **Modal-vs-sheet** per the ADR-016 Inventory row: pickers/quick-add/Quick View = sheet; Add Apparatus (large) / delete / import-orphan = modal.
-- [x] **No silent data loss** — the import orphan-confirm + the qty clamp protect deployed references (Principle 10 / the v3.5.2 transaction-sanity lessons).
+- [x] **No silent data loss** — the import orphan-confirm + the quantity-floors-at-held rule (and the over-allocated tell) protect deployed references (Principle 10 / the v3.5.2 transaction-sanity lessons).
 - [x] **Visual-grid plate picker preserved** verbatim ([`picker.md`](../03-primitives/picker.md) / [`sheet.md`](../03-primitives/sheet.md)).
 - [x] **Loaders are the exception** but the Excel round-trip is a real one → determinate ([`loading-state.md`](../03-primitives/loading-state.md)).
 - [x] **Capacity demoted** — not shown here (Inventory is counts, not ratings).

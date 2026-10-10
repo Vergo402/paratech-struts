@@ -88,6 +88,26 @@ and then reconnect, the app merges both automatically with no clash and no lost 
 (The name — "conflict-free replicated data type" — is a mouthful; the point is "no
 collisions when everyone syncs back up.")
 
+**Canonical order** — The one order every phone replays the log in: when the cloud
+received the change, then when the phone made it, then its id. Same events, same
+order, same board on every phone.
+
+**Receipt time** *(`receivedAt`)* — The cloud's own timestamp on a change, stamped
+when it arrives. It decides the order; the phone's own time stays on the record
+as audit time only.
+
+**Provisional** — A change this phone made that the cloud hasn't confirmed yet. It
+shows on this phone and sorts after everything the cloud already has.
+
+**Held** — Units counted as deployed because the log says a shore point still
+holds them. Available = what's on the rig minus what's held.
+
+**Over-allocated** — More units held than the rig has, shown as a negative count.
+Usually two crews claimed the same strut while offline.
+
+**"No effect"** — A change that lost a race and changed nothing. It stays in the
+log and the history shows it, so you can see it didn't take.
+
 **IndexedDB** *(Dexie)* — The phone's built-in storage drawer for the app's offline
 data — bigger and sturdier than the basic one v3 uses. (Dexie is just a friendlier
 tool for working with it.)

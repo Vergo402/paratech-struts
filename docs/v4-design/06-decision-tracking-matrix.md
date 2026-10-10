@@ -239,7 +239,7 @@ The 218 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 09-data-resilience | I-16 | Listener scoping by role; lazy-load checklists, hazards, archived ops; listener fire-count instrumentation. | accepted | Phase H wiring. |
 | 09-data-resilience | I-17 | Ship "How sync works" page on v4 marketing site. | rejected | Marketing site dropped (Q6); "how sync works" content lives in the user manual. |
 | 09-data-resilience | I-18 | Promote APP_VERSION + appVersion filter on pendingWrites to first-class resilience contract. | accepted | Carries verbatim from v3.8.2. |
-| 09-data-resilience | I-19 | Inventory available counts stay on v3.16.4 transaction + offlineTouched pattern; Cloud Function path for create only. | accepted | Both paths coexist; clients pick based on online state. |
+| 09-data-resilience | I-19 | Inventory available counts stay on v3.16.4 transaction + offlineTouched pattern; Cloud Function path for create only. | superseded by ADR-041 | Available is derived from the event log (`quantity − held`); no transaction + `offlineTouched` pattern. |
 | 09-data-resilience | I-20 | Hub mode and Build A coexist; if hub unreachable >60s peers auto-fall-back to Firebase directly. | deferred | v4.0 ships Build A only; hub coexistence design at v4.5/v5.0 RN ramp. |
 | 10-implementation | J-1 | Adopt Vite as build tool; single vite.config.ts; vite-plugin-pwa for SW. | accepted | Same as architecture A-3. |
 | 10-implementation | J-2 | Adopt React 18 as UI framework. | accepted | Same as architecture A-2 / tech-debt L-21. |

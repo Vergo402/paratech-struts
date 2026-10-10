@@ -221,6 +221,8 @@ Text based wireframes initially, optionally Figma later.
 
 ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 
+- `11-decisions/ADR-041-canonical-event-order-and-derived-inventory.md` 🟢 — **Canonical event order and derived inventory** (#499): every device folds the log in one order keyed by cloud receipt time; peer events append unconditionally and the losing branch is surfaced, never dropped; held stock is derived from the log. Accepted, 2026-10-10.
+
 ---
 
 ## How to Use This Folder

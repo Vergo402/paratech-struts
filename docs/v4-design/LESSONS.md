@@ -68,7 +68,7 @@
 
 **The fix (v3.5.2).** Transaction handlers **abort on a missing node** (no phantom creation) and **clamp `available` to `quantity`** (no over-increment). Excel round-trips preserve item `ID` so deployed-strut references aren't orphaned (rec NEW-6); imports carry extensions and plates with the fields the validate rule needs (v3.9.0).
 
-**The v4 rule.** Atomic inventory mutations run server-side (`allocateAndCreate` Cloud Function, rec **I-11**) with a local-transaction + `offlineTouched` fallback when offline (rec **I-19**); bounds and existence are invariants, not hopes.
+**The v4 rule.** Atomic inventory mutations run server-side (`allocateAndCreate` Cloud Function, rec **I-11**) while held stock is derived from the event log rather than stored and mutated (ADR-041, superseding rec **I-19**'s transaction + `offlineTouched` pattern); bounds and existence are invariants, not hopes.
 
 ## 9. The plate picker's iOS reliability was paid for once — carry it verbatim
 

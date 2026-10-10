@@ -28,7 +28,7 @@ Build A's mechanics for v4.0:
 - A **per-device Firebase anonymous UID**, persisted to IndexedDB at `fieldshore_auth_uid`, Firebase `LOCAL` persistence — the same per-device anon UID [ADR-009](ADR-009-database-firebase-rtdb.md) and [ADR-022](ADR-022-mutual-aid-v40-qr-guest.md) describe (one UID per device; provisioned members and guests both ride it — see Reconciliation below).
 - **Storage moves `localStorage` → IndexedDB via Dexie** (the 5 MB localStorage cap is a real constraint at task-force scale).
 - **Per-row sync state** on the Accountability screen (the PAR test case): synced / pending + freshness-on-tap. A global sync dot is not enough where staleness is life-safety.
-- Reconciliation rides the **event-sourced append log** ([ADR-009](ADR-009-database-firebase-rtdb.md)): each device appends locally; on reconnect the outgoing queue flushes and incoming events merge; the v3.5.3 local-first contract, v3.9.0 `STATUS_ORDER` progression guard, v3.16.4 `offlineTouched` pipe, and the `/diagnostics/sync/` ledger all cross verbatim.
+- Reconciliation rides the **event-sourced append log** ([ADR-009](ADR-009-database-firebase-rtdb.md)): each device appends locally; on reconnect the outgoing queue flushes and incoming events merge; the v3.5.3 local-first contract and the `/diagnostics/sync/` ledger cross verbatim; ~~the v3.9.0 `STATUS_ORDER` progression guard and the v3.16.4 `offlineTouched` pipe~~ — both superseded by ADR-041 (exact-premise fold in canonical order; held stock derived from the log).
 
 ---
 

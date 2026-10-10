@@ -164,7 +164,7 @@ stateDiagram-v2
 ```
 
 - **Commits via:** the **± quantity stepper** ([`input.md`](../03-primitives/input.md), the `±` routed here per [`button.md`](../03-primitives/button.md)); commits in place, no confirm.
-- **Reverses via:** the stepper itself (symmetric). **The clamp is the safety rule** — available never exceeds quantity, and quantity can't drop below the count currently **deployed** in an active operation (the v3.5.2 transaction-sanity rule; [`40-inventory.md`](../08-information-architecture/40-inventory.md)). Attempting to is silently clamped, not an error.
+- **Reverses via:** the stepper itself (symmetric). **The clamp is the safety rule** — available is derived (`quantity − held`, ADR-041), and quantity floors at the units **held** by shore points in an active operation ([`40-inventory.md`](../08-information-architecture/40-inventory.md)). Attempting to go lower is silently floored, not an error; an import or a peer quantity below held reads as over-allocated.
 - **App response:** the count updates; a **deployed-count [`badge`](../03-primitives/badge.md)** shows on the row if an operation is active and any are out.
 
 ### Path C — Bulk import (the whole department, by file)
@@ -281,7 +281,7 @@ Single-actor — *one role across devices*, not a multi-role hand-off ([`00-work
 - [x] **Status = slide-to-advance** — **n/a** here: a setup workflow has no shore-point status transition, so there is no slide and no Step-back to provide. (Stated, not skipped — the honest reading of [ADR-010](../11-decisions/ADR-010-status-commit-model.md) for a non-lifecycle flow.)
 - [x] **No timed-undo toast** — reversibility is the ± stepper and remove-at-0; nothing here uses a transient undo.
 - [x] **Heavy confirm reserved for destructive/terminal** — only **Delete apparatus** and the **import-orphan** check raise a [`modal`](../03-primitives/modal.md); every everyday add is a sheet/tap/stepper.
-- [x] **No silent data loss** — the ± clamp protects deployed references; the orphan guard protects an active op's struts (Principle 10; v3.5.2 transaction-sanity lessons; [`LESSONS.md`](../LESSONS.md)).
+- [x] **No silent data loss** — the ± floor at held protects deployed references; the orphan guard protects an active op's struts (Principle 10; v3.5.2 transaction-sanity lessons; [`LESSONS.md`](../LESSONS.md)).
 - [x] **No push / no in-app comms** — surfaces reflect the event log on sync.
 - [x] **NIMS terminology** — apparatus types spelled out ([ADR-008](../11-decisions/ADR-008-nims-org-structure.md)).
 - [x] **Measurements** — collapsed/extended dimensions are resolved from `STRUTS[]` by the app, not entered; the file carries Model, not inches ([`40-inventory.md`](../08-information-architecture/40-inventory.md) §The column contract).
