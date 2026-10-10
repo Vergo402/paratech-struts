@@ -13,7 +13,7 @@ Stress-tests FieldShore at working-incident scale: multiple apparatus, a Safety 
 
 ## ⚠️ v4 RE-POINT — READ FIRST (overrides the v3 body below)
 
-This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.xlsx`). It now runs against the **v4 app** (`v4-redesign` branch: Vite/TS/React under `src/`, local-first Dexie/IndexedDB, Firebase **stubbed**). Where the body below disagrees, **this block wins.** Verified against source 2026-06-22.
+This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.xlsx`). It now runs against the **v4 app** (`v4-redesign` branch: Vite/TS/React under `src/`, local-first Dexie/IndexedDB, Firebase ~~**stubbed**~~ **[corrected 2026-10-09: cloud sync has been live since 2026-06-23, see D-7 below]**). Where the body below disagrees, **this block wins.** Verified against source 2026-06-22, re-verified 2026-10-09 (see strike-throughs).
 
 **Launch (replaces Phase 1 §2):** v4 dev server at **`http://localhost:5199`** via the preview MCP (`preview_start`) — NOT `npx serve -l 8095 .`. Blank page on first load = stale PWA service worker → hard-refresh (⌘⇧R). Baseline = **v4.0 early Phase I**, not v3.17.2.
 
@@ -34,11 +34,11 @@ This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.
 **Grouped-shore mechanics (v4-new) — CORRECTED 2026-07-02 (SIM-IV O-5, [#400]):** the shared-`groupId` lock-step group is driven by the shore **TYPE**, not by quantity. A grouped shore = one physical shore whose type takes **>1 strut** — **Double-T (2 struts)** or **3-Post (3 struts)** — and those struts share a `groupId` / `groupIndex` / `groupTotal`. **"Number of Shore Sets" (the Add form's quantity) stamps N INDEPENDENT shores** that do NOT share a groupId and do NOT move lock-step. So a **T-Shore (1 strut) with quantity 3 = three loose, independent cards — NOT a group** (the v3 "qty>1 shares a groupId" model is wrong for v4; it primed the SIM-IV false alarm). **To exercise the grouped phase-split (D-1/D-2/D-3), create a Double-T or a 3-Post** (one shore, 2–3 grouped struts): pre-cutting transitions move the group lock-step; cutting→runner→secured move members individually. This is reducer-enforced. **Where the body below says "T-Shore group of 3 / quantity 3," substitute a 3-Post** (3 grouped struts, closest to the intended 3-member group).
 
 **Checks that are N/A in v4 — do NOT log these as findings (the feature is deliberately deferred):**
-- **D-6** (Firebase security-rule validation) — N/A: v4 writes to local Dexie event log, not Firebase.
-- **D-7** (real-time concurrent multi-user views) — N/A: cloud sync `flush()` is a no-op stub. Tracked by **#369**.
-- **N-1** (command-transfer recorded) and the **E+0:12 transfer** — N/A: transfer *core* exists but has **no UI**. Workaround: simulate manually — add a Division Alpha Supervisor under IC → assign Torres → clear Torres from IC → assign Whitfield to IC (tests reparent + reassign, skips the atomic handshake).
+- ~~**D-6** (Firebase security-rule validation) — N/A: v4 writes to local Dexie event log, not Firebase.~~ **Corrected 2026-10-09:** v4 syncs the local event log to Realtime Database under `database.rules.json` (generated `/orgs` block; `npm run test:rules`), and the local emulators load the same file (`npm run emulators`). **D-6 is a live check.**
+- ~~**D-7** (real-time concurrent multi-user views) — N/A: cloud sync `flush()` is a no-op stub. Tracked by **#369**.~~ **Corrected 2026-10-09:** `flush()` is not a stub. It writes each queued event to Realtime Database (`src/data/sync/syncService.ts:157-159`), and cloud sync has been live since 2026-06-23. **D-7 is now a live check.**
+- ~~**N-1** (command-transfer recorded) and the **E+0:12 transfer** — N/A: transfer *core* exists but has **no UI**. Workaround: simulate manually — add a Division Alpha Supervisor under IC → assign Torres → clear Torres from IC → assign Whitfield to IC (tests reparent + reassign, skips the atomic handshake).~~ **Corrected 2026-10-09:** the transfer UI has shipped (`src/ui/command/TransferCommand.tsx`, `CommandRail.tsx`, ADR-021 + Addendum 2 4-digit code). **N-1 and the E+0:12 transfer are now live checks.**
 - **U-9 attribution half** (Quick Find shows which rig has the strut) — N/A by design (catalog-only Quick Find). Keep the lookup half (does it return matching struts?).
-- **Safety hazard logging** (Safety persona, E+2:30) — N/A: the Hazard Log is a placeholder ("ICS-208 register builds next"); display-only. Safety communicates verbally. *(This is its own future ICS-208 workflow, not #369.)*
+- ~~**Safety hazard logging** (Safety persona, E+2:30) — N/A: the Hazard Log is a placeholder ("ICS-208 register builds next"); display-only. Safety communicates verbally. *(This is its own future ICS-208 workflow, not #369.)*~~ **Corrected 2026-10-09:** the hazard log has shipped (ICS-208 register in `src/ui/command/HazardLog.tsx`, reducer in `src/core/hazard/reducer.ts`; the #490 hazard chip is in `src/ui/command/IncidentChips.tsx`). **Safety hazard logging is now a live check.**
 
 **Still fully live in v4 (run these hard — this is the real signal):** operation lifecycle end-to-end · grouped-shore phase-split (**Double-T / 3-Post**, per the corrected mechanic above) · multi-apparatus deploy bill-of-materials + return-to-source rig (#330) · org chart / Safety Officer / Division-Area fields / span-of-control · Quick Find lookup · rain/mobile UX.
 
@@ -201,7 +201,7 @@ Ask Alex: start fresh, or resume from a specific phase? Default: Phase 1.
 1. Confirm branch is `v4-redesign`; baseline = v4.0 early Phase I
 2. Start the v4 dev server: `preview_start` → app at `http://localhost:5199` (NOT `npx serve -l 8095`)
 3. Verify app loads via `preview_snapshot` (blank page → hard-refresh stale PWA SW)
-4. Confirm local-first storage is active (Dexie/IndexedDB) — there is **no** Firebase connection to check in v4 (cloud sync stubbed, #369)
+4. Confirm local-first storage is active (Dexie/IndexedDB) — ~~there is **no** Firebase connection to check in v4 (cloud sync stubbed, #369)~~ **corrected 2026-10-09:** cloud sync is live; for a multi-device run use the local emulators (`npm run emulators` + `npm run dev:emu` on :5200, see run-fieldshore "Two devices / Firebase emulators")
 5. **Success:** App loads on :5199, v4 shell renders
 
 ### Phase 2 — Inventory Import (UI only)  *(v4 — CSV, see RE-POINT block)*

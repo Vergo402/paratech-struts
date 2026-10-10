@@ -53,6 +53,21 @@ All five routes are live, drivable screens (Phase I shipped Quick Find, Operatio
 
 Reference implementation: `.claude/audits/phase-j/261-shots/driver.mjs`. Re-verify this recipe whenever auth/gating changes ship — it is a claim about the app's current gate logic, and it rots silently.
 
+### Two devices / Firebase emulators (added 2026-10-09)
+
+The recipe above is **single-device and offline-only** (a fake persisted user plus blocked Firebase hosts). For multi-device sync tests, run the app against the **local Firebase emulators** instead:
+
+```bash
+npm run emulators   # Auth :9099 + Realtime Database :9000, project fieldshore-database, loads database.rules.json; needs Java (the script prepends /opt/homebrew/opt/openjdk/bin to PATH)
+npm run dev:emu     # Vite --mode emulators on :5200; sets VITE_USE_EMULATORS=true from .env.emulators
+```
+
+`dev:emu` runs on :5200, so the normal `fieldshore-v4-dev` preview config on :5199 (`.claude/launch.json:24`) stays free. The three `src/data/**/firebase.ts` modules call `connect*Emulator` only when that flag is set.
+
+With the emulators up, real sign-ups work: `/auth` → **Create Account** (display name, email, password of at least 6 characters) → **Create department** or **Join department**.
+
+Playwright drivers for this live under `.claude/audits/phase-j/262-ttx/` (created by Stage 1 of `.claude/plans/v4-phase-j-262-ttx.md`): 3 browser contexts, `channel: 'chrome'` because no ms-playwright browsers are cached, and `isMobile` + `hasTouch` contexts get the status slider while mouse contexts get the button. The slide-or-button split is the `(hover: hover) and (pointer: fine)` media query (`useHasMouse`, `src/ui/primitives/useMediaQuery.ts:67-68`, read at `src/ui/primitives/Slider.tsx:75`, `:157`). Reference drivers: `.claude/audits/phase-j/261-shots/driver.mjs` and `.claude/audits/phase-j/minibatch-shots/driver.mjs`.
+
 ### Verification tricks (battle-tested)
 - **Dropdown OPTIONS (PickerSurface/Popover): don't trust `ref_N` clicks** — overlays resort/highlight between `read_page` and click, landing the wrong row. Screenshot, click by coordinate, then read back the applied-summary text to confirm the selection. Buttons/radios outside dropdowns are ref-safe.
 - **Theme-token CSS (box-shadow/filter): check COMPUTED values in ≥2 themes** — `var(--a), var(--b)` where one theme resolves a token to `none` is an invalid shadow list and the whole declaration drops silently (passes tests/lint). Mirror `.fs-card`'s two-rule split instead of comma-joining.
@@ -76,6 +91,9 @@ Ctrl-C to stop. Useless headless — for automated checks use the gate or the pr
 - **Installed an npm dep and the dev server doesn't see it?** Restart `npm run dev` — Vite won't re-optimize deps on HMR.
 - **`localStorage is not available` during `npm test`** — harmless jsdom/node noise; the suite still passes.
 - **`npm run build` warns "chunks larger than 500 kB"** — a hint, not an error; build succeeds and emits the PWA `sw.js`.
+- **Deploying a point whose plate is untracked opens the missing-piece chooser.** A plate with no available inventory row gets no `inventoryId`, so the deploy review shows the chooser and holds Confirm until you resolve it: pick a truck, or **Deploy off-book (untracked)**, then **Confirm & deploy**. (`src/core/shorepoint/bom.ts:186-194`; `src/ui/operations/DeployResolution.tsx:154`, `:245`, `:270`, `:352`, `:393`, `:455-456`)
+- **The Board / List / Division layout is a per-operation localStorage pref**: key `fs-board-prefs-<opId>`, JSON with `layout: 'lanes' | 'list' | 'division'` (`'lanes'` is the Board view). Read at `src/ui/operations/OperationsBoard.tsx:498-502`, written at `:518`; type at `src/ui/operations/ViewToggle.tsx:9`. The minibatch driver writes it directly (`.claude/audits/phase-j/minibatch-shots/driver.mjs:218-222`).
+- **A strut-set/cutting straddle inside a group needs a detour.** A transition whose both ends are in `GROUP_ZONE` (`process`, `strutset`, `cutting`) fans out to every lockstep member (same status); an edge that leaves the zone (cutting→runner, runner→cutting) moves only the trigger (`src/core/operation/reducer.ts:41`, `:50-51`, `:100-103`). Each leg is one status step (`src/core/shorepoint/status.ts:32-33`): leg 1 strutset→cutting (fans out), leg 1 cutting→runner, leg 2 cutting→strutset (fans the rest), leg 1 runner→cutting.
 
 ## Troubleshooting
 | Symptom | Fix |
