@@ -12,7 +12,10 @@ import { APPARATUS_ROSTER_KEY } from './apparatusStore';
 //   200″ measurement → UNRATED-ZONE warning (#40 gate): LS 1016 + 12″ LongShore
 //                      extension physically reaches, but >192″ is beyond
 //                      Paratech's published chart → capacity 0 + warning combo
-//   Squad 3          → zero-available rig (drives the no-inventory empty state)
+//   Squad 3          → a plain small rig. (Before ADR-041 it was seeded "on paper,
+//                      none available" via a stored `available: 0`; stock out on
+//                      scene now comes from deploy events, never from a seed row,
+//                      so that premise is gone.)
 //
 // Ids are deterministic ('inv-…') — readable in tests, stable across boots.
 
@@ -20,40 +23,40 @@ const item = (
   id: string,
   apparatus: string,
   apparatusId: string,
-  fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity' | 'available'>,
+  fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity'>,
 ): InventoryItem => ({ id, apparatus, apparatusId, ...fields });
 
 export function buildSeedInventory(): InventoryItem[] {
-  const r2 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity' | 'available'>) =>
+  const r2 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity'>) =>
     item(id, 'Rescue 2', 'app-rescue-2', fields);
-  const e1 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity' | 'available'>) =>
+  const e1 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity'>) =>
     item(id, 'Engine 1', 'app-engine-1', fields);
-  const s3 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity' | 'available'>) =>
+  const s3 = (id: string, fields: Partial<InventoryItem> & Pick<InventoryItem, 'type' | 'quantity'>) =>
     item(id, 'Squad 3', 'app-squad-3', fields);
 
   return [
     // ---- Rescue 2 — the rich rig (real recommendations) ----
-    r2('inv-r2-ls203', { type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 4, available: 4 }),
-    r2('inv-r2-ls304', { type: 'strut', model: 'LS 304', system: 'LongShore', quantity: 4, available: 4 }),
-    r2('inv-r2-ls406', { type: 'strut', model: 'LS 406', system: 'LongShore', quantity: 2, available: 2 }),
-    r2('inv-r2-at2536', { type: 'strut', model: 'AT 25-36', system: 'AcmeThread', quantity: 4, available: 4 }),
-    r2('inv-r2-at3758', { type: 'strut', model: 'AT 37-58', system: 'AcmeThread', quantity: 4, available: 4 }),
-    r2('inv-r2-lsext12', { type: 'extension', system: 'LongShore', length: 12, quantity: 2, available: 2 }),
-    r2('inv-r2-lsext24', { type: 'extension', system: 'LongShore', length: 24, quantity: 2, available: 2 }),
-    r2('inv-r2-atext6', { type: 'extension', system: 'AcmeThread', length: 6, quantity: 2, available: 2 }),
-    r2('inv-r2-atext12', { type: 'extension', system: 'AcmeThread', length: 12, quantity: 2, available: 2 }),
-    r2('inv-r2-rigid6', { type: 'plate', plateId: 'rigid6', quantity: 8, available: 8 }),
-    r2('inv-r2-swivel6', { type: 'plate', plateId: 'swivel6', quantity: 4, available: 4 }),
+    r2('inv-r2-ls203', { type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 4 }),
+    r2('inv-r2-ls304', { type: 'strut', model: 'LS 304', system: 'LongShore', quantity: 4 }),
+    r2('inv-r2-ls406', { type: 'strut', model: 'LS 406', system: 'LongShore', quantity: 2 }),
+    r2('inv-r2-at2536', { type: 'strut', model: 'AT 25-36', system: 'AcmeThread', quantity: 4 }),
+    r2('inv-r2-at3758', { type: 'strut', model: 'AT 37-58', system: 'AcmeThread', quantity: 4 }),
+    r2('inv-r2-lsext12', { type: 'extension', system: 'LongShore', length: 12, quantity: 2 }),
+    r2('inv-r2-lsext24', { type: 'extension', system: 'LongShore', length: 24, quantity: 2 }),
+    r2('inv-r2-atext6', { type: 'extension', system: 'AcmeThread', length: 6, quantity: 2 }),
+    r2('inv-r2-atext12', { type: 'extension', system: 'AcmeThread', length: 12, quantity: 2 }),
+    r2('inv-r2-rigid6', { type: 'plate', plateId: 'rigid6', quantity: 8 }),
+    r2('inv-r2-swivel6', { type: 'plate', plateId: 'swivel6', quantity: 4 }),
 
     // ---- Engine 1 — modest, carries the unrated-zone driver ----
-    e1('inv-e1-at1925', { type: 'strut', model: 'AT 19-25', system: 'AcmeThread', quantity: 2, available: 2 }),
-    e1('inv-e1-at2536', { type: 'strut', model: 'AT 25-36', system: 'AcmeThread', quantity: 2, available: 2 }),
-    e1('inv-e1-ls1016', { type: 'strut', model: 'LS 1016', system: 'LongShore', quantity: 2, available: 2 }),
-    e1('inv-e1-lsext48', { type: 'extension', system: 'LongShore', length: 48, quantity: 1, available: 1 }),
+    e1('inv-e1-at1925', { type: 'strut', model: 'AT 19-25', system: 'AcmeThread', quantity: 2 }),
+    e1('inv-e1-at2536', { type: 'strut', model: 'AT 25-36', system: 'AcmeThread', quantity: 2 }),
+    e1('inv-e1-ls1016', { type: 'strut', model: 'LS 1016', system: 'LongShore', quantity: 2 }),
+    e1('inv-e1-lsext48', { type: 'extension', system: 'LongShore', length: 48, quantity: 1 }),
 
-    // ---- Squad 3 — stock on paper, none available (no-inventory empty state) ----
-    s3('inv-s3-ls304', { type: 'strut', model: 'LS 304', system: 'LongShore', quantity: 2, available: 0 }),
-    s3('inv-s3-at3758', { type: 'strut', model: 'AT 37-58', system: 'AcmeThread', quantity: 1, available: 0 }),
+    // ---- Squad 3 — a plain small rig ----
+    s3('inv-s3-ls304', { type: 'strut', model: 'LS 304', system: 'LongShore', quantity: 2 }),
+    s3('inv-s3-at3758', { type: 'strut', model: 'AT 37-58', system: 'AcmeThread', quantity: 1 }),
   ];
 }
 

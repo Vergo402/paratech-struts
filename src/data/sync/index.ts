@@ -5,7 +5,9 @@ export {
   type SyncServiceApi,
   type RowSyncState,
   type ReconcileResult,
+  type ReconcileOptions,
 } from './syncService';
+export { cloudIndex, createCloudIndex, type CloudIndex, type CloudIndexEntry } from './cloudIndex';
 export { eventListenerSync, createEventListenerSync, type EventListenerSync } from './eventListener';
 export { stateListenerSync, createStateListenerSync, type StateListenerSync } from './stateListener';
 export { rolesListenerSync, createRolesListenerSync, type RolesListenerSync } from './rolesListener';

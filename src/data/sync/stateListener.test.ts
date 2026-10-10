@@ -9,7 +9,7 @@ import type { CloudRow } from './stateSync';
 
 const row = (id: string, lastWriteAt: number, quantity = 1): InventoryItem => ({
   id, type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2',
-  quantity, available: quantity, lastWriteAt,
+  quantity, lastWriteAt,
 });
 const cloudRow = (id: string, lastWriteAt: number, quantity = 1): CloudRow => ({
   id, type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2',
@@ -22,7 +22,6 @@ describe('stateListenerSync — cloud → local LWW', () => {
   let setState: ReturnType<typeof vi.fn>;
   let applyRemoteRow: ReturnType<typeof vi.fn>;
   let applyRemoteDelete: ReturnType<typeof vi.fn>;
-  let onInventoryReady: ReturnType<typeof vi.fn>;
   let invRows: InventoryItem[];
   // one representative blob (apparatus); the three share the same handler
   let appStamp: number;
@@ -40,7 +39,6 @@ describe('stateListenerSync — cloud → local LWW', () => {
     createStateListenerSync({
       deptId: () => deptId,
       setState,
-      onInventoryReady,
       inventory: { rows: () => invRows, applyRemoteRow, applyRemoteDelete },
       blobs: [blobCfg()],
       subscribe: (path, cb) => {
@@ -55,7 +53,6 @@ describe('stateListenerSync — cloud → local LWW', () => {
     setState = vi.fn();
     applyRemoteRow = vi.fn(async () => {});
     applyRemoteDelete = vi.fn(async () => {});
-    onInventoryReady = vi.fn();
     invRows = [];
     appStamp = 0;
     appValue = [];
@@ -137,20 +134,6 @@ describe('stateListenerSync — cloud → local LWW', () => {
     make().start();
     subs['orgs/dept-1/apparatus']!(null);
     expect(setState).not.toHaveBeenCalled();
-  });
-
-  it('fires onInventoryReady after the inventory FIRST snapshot lands (re-drives dropped deploys), once', async () => {
-    invRows = [row('a', 100)];
-    make().start();
-    subs['orgs/dept-1/inventory']!({ a: cloudRow('a', 200) }); // first
-    await Promise.resolve(); // let the applies + onInventoryReady await settle
-    await Promise.resolve();
-    expect(onInventoryReady).toHaveBeenCalledTimes(1);
-
-    subs['orgs/dept-1/inventory']!({ b: cloudRow('b', 300) }); // steady → no re-fire
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(onInventoryReady).toHaveBeenCalledTimes(1);
   });
 
   it('start() is idempotent and stop() detaches every subscription', () => {

@@ -30,8 +30,8 @@ describe('custom-role management (#418)', () => {
     await assertSucceeds(db('founder').ref(`orgs/${DEPT}/roles/logistics`).set(role));
   });
 
-  it('a custom manageUsers-holder (non-admin ROLE) creates a role — permission-driven, not name-driven', async () => {
-    await assertSucceeds(db('manager').ref(`orgs/${DEPT}/roles/logistics`).set(role));
+  it('a custom manageUsers-holder (non-admin ROLE) cannot create a role — Admin-only since J257-S4 (dc6d322)', async () => {
+    await assertFails(db('manager').ref(`orgs/${DEPT}/roles/logistics`).set(role));
   });
 
   it('a Default member cannot create a role', async () => {
@@ -274,5 +274,97 @@ describe('department founding (CREATE_ONLY cascade)', () => {
     await assertSucceeds(db('member1').ref(`orgs/${DEPT}/name`).get());
     await assertFails(db('outsider').ref(`orgs/${DEPT}/name`).get());
     expect(true).toBe(true);
+  });
+});
+
+describe('event log — server-stamped canonical order (ADR-041, #499)', () => {
+  // The RTDB server-timestamp sentinel, written literally so the test imports no SDK
+  // helper (identical on the wire to serverTimestamp() / ServerValue.TIMESTAMP).
+  const SV = { '.sv': 'timestamp' };
+  const OP = 'op-1';
+  const evPath = (id: string) => `orgs/${DEPT}/events/${OP}/${id}`;
+  // withSecurityRulesDisabled resolves void — capture the read inside the callback
+  const readAdmin = async (path: string): Promise<unknown> => {
+    let val: unknown;
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      val = (await ctx.database().ref(path).get()).val();
+    });
+    return val;
+  };
+  const event = (id: string, receivedAt?: unknown) => ({
+    id, opId: OP, type: 'OperationCreated', at: 1_700_000_000_000, by: 'device-a',
+    ...(receivedAt === undefined ? {} : { receivedAt }),
+  });
+
+  it('an active member creates an event stamped with serverTimestamp() — strict `== now` holds', async () => {
+    const before = Date.now();
+    await assertSucceeds(db('member1').ref(evPath('e1')).set(event('e1', SV)));
+    const after = Date.now();
+    // the stored stamp is a real server number, not the sentinel
+    const stamped = ((await readAdmin(evPath('e1'))) as { receivedAt: unknown }).receivedAt;
+    expect(typeof stamped).toBe('number');
+    // emulator clock sanity (same host): the resolved stamp lands inside the write window
+    expect(stamped).toBeGreaterThanOrEqual(before - 1000);
+    expect(stamped).toBeLessThanOrEqual(after + 1000);
+  });
+
+  it('a client-literal numeric receivedAt is rejected (only the server may stamp order)', async () => {
+    await assertFails(db('member1').ref(evPath('e2')).set(event('e2', Date.now() - 60_000)));
+    await assertFails(db('member1').ref(evPath('e3')).set(event('e3', Date.now() + 60_000)));
+    await assertFails(db('member1').ref(evPath('e4')).set(event('e4', 1000)));
+  });
+
+  it('an event with no receivedAt is rejected (a pre-ADR-041 client cannot upload)', async () => {
+    await assertFails(db('member1').ref(evPath('e5')).set(event('e5')));
+  });
+
+  it('an existing event cannot be overwritten — even with a fresh server stamp (create-only)', async () => {
+    await assertSucceeds(db('member1').ref(evPath('e6')).set(event('e6', SV)));
+    await assertFails(db('member1').ref(evPath('e6')).set({ ...event('e6', SV), type: 'OperationEnded' }));
+    await assertFails(db('founder').ref(evPath('e6')).set(event('e6', SV))); // not even an admin
+    await assertFails(db('member1').ref(evPath('e6')).remove()); //              nor deleted
+  });
+
+  it('a multi-path update() of a batch succeeds and shares ONE server stamp', async () => {
+    await assertSucceeds(
+      db('member1').ref(`orgs/${DEPT}/events/${OP}`).update({
+        b1: event('b1', SV),
+        b2: { ...event('b2', SV), at: 1_700_000_000_001 },
+      }),
+    );
+    const v = (await readAdmin(`orgs/${DEPT}/events/${OP}`)) as Record<string, { receivedAt: unknown }>;
+    expect(typeof v.b1.receivedAt).toBe('number');
+    expect(v.b1.receivedAt).toBe(v.b2.receivedAt); // atomic batch → one stamp; (at, id) breaks the tie
+  });
+
+  it('a chunk update() rooted at /events with deep {opId}/{id} keys succeeds — the production flush shape', async () => {
+    await assertSucceeds(
+      db('member1').ref(`orgs/${DEPT}/events`).update({
+        [`${OP}/k1`]: event('k1', SV),
+        [`op-other/k2`]: { ...event('k2', SV), opId: 'op-other' },
+      }),
+    );
+    const v1 = (await readAdmin(evPath('k1'))) as { receivedAt: unknown };
+    const v2 = (await readAdmin(`orgs/${DEPT}/events/op-other/k2`)) as { receivedAt: unknown };
+    expect(typeof v1.receivedAt).toBe('number');
+    expect(v1.receivedAt).toBe(v2.receivedAt); // one stamp for the whole chunk
+    // Deep keys must not escape the per-event rule: an unstamped member rejects the chunk.
+    await assertFails(
+      db('member1').ref(`orgs/${DEPT}/events`).update({ [`${OP}/k3`]: event('k3', SV), [`${OP}/k4`]: event('k4') }),
+    );
+    expect(await readAdmin(evPath('k3'))).toBeNull();
+  });
+
+  it('a batch with ONE unstamped event is rejected whole (atomic update)', async () => {
+    await assertFails(
+      db('member1').ref(`orgs/${DEPT}/events/${OP}`).update({ c1: event('c1', SV), c2: event('c2') }),
+    );
+    expect(await readAdmin(evPath('c1'))).toBeNull();
+  });
+
+  it('a non-member, a revoked member, or an anonymous caller cannot create an event', async () => {
+    await assertFails(db('outsider').ref(evPath('n1')).set(event('n1', SV)));
+    await assertFails(db('revoked').ref(evPath('n2')).set(event('n2', SV)));
+    await assertFails(db(null).ref(evPath('n3')).set(event('n3', SV)));
   });
 });

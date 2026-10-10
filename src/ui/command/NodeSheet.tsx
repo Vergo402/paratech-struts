@@ -247,7 +247,12 @@ export function NodeSheet({
             <ul className="fs-node-history">
               {history.events.map((e) => (
                 <li key={e.id}>
-                  <span className="fs-node-hist-line">{describe(e, positionId)}</span>
+                  {/* #499 — a change that lost a race reads muted, "— no effect". */}
+                  {history.outcomes?.get(e.id) === 'no-effect' ? (
+                    <span className="fs-node-hist-line fs-node-hist-line--no-effect">{describe(e, positionId)} — no effect</span>
+                  ) : (
+                    <span className="fs-node-hist-line">{describe(e, positionId)}</span>
+                  )}
                   <span className="fs-node-hist-time">{clock(e.at)}</span>
                 </li>
               ))}

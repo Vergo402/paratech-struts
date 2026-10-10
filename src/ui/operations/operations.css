@@ -2548,16 +2548,24 @@ button.fs-spc-head {
   border: var(--stroke-width) solid var(--danger-text);
   border-radius: var(--radius-card);
 }
-.fs-endop-warning-lead {
-  font: var(--type-body);
-  color: var(--danger-text);
-  margin: 0;
-}
-.fs-endop-warning-rigs {
-  margin: var(--space-2) 0 0;
-  padding-left: var(--space-4);
+.fs-endop-warning {
   font: var(--type-body-medium);
   color: var(--danger-text);
+}
+.fs-endop-release {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  margin-top: var(--space-3);
+  font: var(--type-body);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.fs-endop-release input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
 }
 .fs-endop-warning-count {
   font: var(--type-mono);
@@ -2711,6 +2719,9 @@ button.fs-spc-head {
 .fs-spd-event-label {
   font: var(--type-body-medium);
   color: var(--text-primary);
+}
+.fs-spd-event-label--no-effect {
+  color: var(--text-secondary);
 }
 .fs-spd-event-meta {
   flex: none;
@@ -2953,7 +2964,8 @@ button.fs-spc-head {
 }
 
 /* tone overrides — count only, not the whole row */
-.is-depleted .fs-inv-summary-count { color: var(--danger-text); }
+.is-depleted .fs-inv-summary-count,
+.is-over-allocated .fs-inv-summary-count { color: var(--danger-text); }
 .is-low .fs-inv-summary-count      { color: var(--status-cutting-text); }
 
 
@@ -3142,7 +3154,8 @@ button.fs-spc-head {
 [data-theme='sunlight'] .fs-cutstation-back { color: var(--status-cutting-bg); }
 [data-theme='sunlight'] .fs-cutstation-row-num { color: var(--status-cutting-bg); }
 [data-theme='sunlight'] .fs-spd-safety--ok { border-left-color: var(--status-secured-bg); }
-[data-theme='sunlight'] .is-depleted .fs-inv-summary-count { color: var(--danger-bg); }
+[data-theme='sunlight'] .is-depleted .fs-inv-summary-count,
+[data-theme='sunlight'] .is-over-allocated .fs-inv-summary-count { color: var(--danger-bg); }
 [data-theme='sunlight'] .is-low .fs-inv-summary-count { color: var(--status-cutting-bg); }
 
 /* Address autocomplete dropdown (AddressField) — Google Places suggestions under

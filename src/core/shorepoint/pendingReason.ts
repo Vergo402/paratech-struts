@@ -1,4 +1,4 @@
-import type { InventoryItem, PendingReason, ShorePoint } from '../schema';
+import type { StockRow, PendingReason, ShorePoint } from '../schema';
 import { findForShorePoint } from './reducer';
 
 /**
@@ -23,7 +23,7 @@ import { findForShorePoint } from './reducer';
  * tell a stock problem from a geometry problem. Copy nuance is reserved for
  * the Phase H copy pass (workflow #221 OQ1).
  */
-export function pendingReasonFor(sp: ShorePoint, inventory: InventoryItem[]): PendingReason | undefined {
+export function pendingReasonFor(sp: ShorePoint, inventory: StockRow[]): PendingReason | undefined {
   const stocked = findForShorePoint(sp, inventory);
   if (stocked.some((c) => !c.exceedsCapacity)) return undefined;
   const catalog = findForShorePoint(sp, null);

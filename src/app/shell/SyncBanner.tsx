@@ -1,4 +1,6 @@
-import { useSession, useSyncStatus } from '@ui/hooks';
+import { useState } from 'react';
+import { useOverridden, useSession, useSyncStatus } from '@ui/hooks';
+import { clockTime } from '@ui/util/time';
 
 /**
  * SyncBanner — the member sync trust signal between header and scroll pane
@@ -14,6 +16,8 @@ import { useSession, useSyncStatus } from '@ui/hooks';
 export function SyncBanner() {
   const { identity } = useSession();
   const { online, pendingCount, pendingJoin, pendingDeptPush, syncError } = useSyncStatus();
+  const overridden = useOverridden();
+  const [expanded, setExpanded] = useState(false);
 
   if (identity.kind !== 'member') return null;
 
@@ -68,6 +72,49 @@ export function SyncBanner() {
     return (
       <div className="fs-sync-banner fs-sync-banner--info" role="status">
         <span className="fs-sync-banner-text">Syncing {changes(pendingCount)}…</span>
+      </div>
+    );
+  }
+
+  // #499 — synced, but some of THIS device's changes lost a race and had no effect. A
+  // persistent quiet state until acknowledged (Principle 10): never a toast, never a modal.
+  // Lowest priority so queued/offline/stuck status always speaks first.
+  if (overridden.rows.length > 0) {
+    const n = overridden.rows.length;
+    return (
+      <div className="fs-sync-banner fs-sync-banner--warning fs-sync-banner--overridden" role="status">
+        <button
+          type="button"
+          className="fs-sync-banner-toggle"
+          aria-expanded={expanded}
+          aria-controls="fs-sync-overridden-list"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <span className="fs-sync-banner-text">
+            Synced — {n} of your changes had no effect
+          </span>
+          <svg className="fs-sync-banner-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d={expanded ? 'M6 15l6 -6l6 6' : 'M6 9l6 6l6 -6'} />
+          </svg>
+        </button>
+        {expanded && (
+          <div id="fs-sync-overridden-list" className="fs-sync-overridden">
+            <ul className="fs-sync-overridden-rows">
+              {overridden.rows.map((r) => (
+                <li key={r.id} className="fs-sync-overridden-row">
+                  <strong className="fs-sync-overridden-title">{r.title}</strong>
+                  <span className="fs-sync-overridden-line">{r.line}</span>
+                  <span className="fs-sync-overridden-meta">
+                    {clockTime(r.at)} · {r.who}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="fs-sync-overridden-ack" onClick={overridden.acknowledge}>
+              Got it
+            </button>
+          </div>
+        )}
       </div>
     );
   }

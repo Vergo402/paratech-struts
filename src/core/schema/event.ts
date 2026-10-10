@@ -10,8 +10,17 @@ import { Hazard } from './hazard';
 const base = {
   id: z.string(), // event id (crypto.randomUUID)
   opId: z.string(),
-  at: z.number().int(),
+  at: z.number().int(), // device event time — audit only; the store stamps it from the monotonic clock
   by: z.string(),
+  // ADR-041 — cloud ORDER stamp. Set by RTDB (serverTimestamp) when the event is first
+  // uploaded; absent on a device's own not-yet-confirmed (provisional) events; legacy cloud
+  // events without one fold as receivedAt = at. Canonical fold order on every device is
+  // (receivedAt ?? +∞, at, id). REDUCERS MUST NEVER READ IT (pinned by a grep test).
+  receivedAt: z.number().int().optional(),
+  // ADR-041 — commitMany batch tag. Events sharing a batchId fold all-or-nothing (a dry fold
+  // in which any member no-ops makes the whole batch no-effect) and upload as one multi-path
+  // update. Absent on single commits and on every pre-ADR-041 event.
+  batchId: z.string().optional(),
 } as const;
 
 // The signed-in actor's ACCOUNT identity (ADR-024 follow-up). `by` stays the per-device
@@ -44,6 +53,11 @@ export const OperationEdited = z.object({
 export const OperationEnded = z.object({
   type: z.literal('OperationEnded'),
   ...base,
+  // ADR-041 — "All equipment is back on the rigs" on the End Operation confirm. When true,
+  // the held-stock projection stops counting this operation's deployed BOMs (they were
+  // physically returned without per-point reclaims); OperationReopened re-holds them.
+  // Absent (legacy / unchecked) = the equipment stays counted as deployed.
+  stockReleased: z.boolean().optional(),
 });
 
 // Re-open a previously ended operation (ADR-036) — flips an archived op's status
@@ -323,20 +337,28 @@ export const CommandTransferInitiated = z.object({
 // Guarded at fold time (a matching pending must exist). An account-targeted transfer is
 // uid-verified — the accepting member's account must equal the target (from any device);
 // a device/individual target keeps the pre-auth soft check (canAccept).
+// ADR-041 — every resolver names the handshake it resolves: `transferId` = the id of the
+// CommandTransferInitiated event. The fold resolves ONLY a pending transfer with that id,
+// so [Init, Cancel, Accept] and [Init, Accept, Cancel] converge on every device (the cloud
+// order decides which resolver lands first; the other no-ops). Absent = a pre-ADR-041
+// event → legacy behaviour (resolves whatever is pending).
 export const CommandTransferAccepted = z.object({
   type: z.literal('CommandTransferAccepted'),
   ...base,
   account: accountTag.optional(), // the ACCEPTING member's account (verifies an account target)
+  transferId: z.string().optional(),
 });
 
 export const CommandTransferDeclined = z.object({
   type: z.literal('CommandTransferDeclined'),
   ...base,
+  transferId: z.string().optional(),
 });
 
 export const CommandTransferCancelled = z.object({
   type: z.literal('CommandTransferCancelled'),
   ...base,
+  transferId: z.string().optional(),
 });
 
 // ── ICS-208 hazard register (#296) — granular, keyed-object, concurrent-safe.

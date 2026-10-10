@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { DeployResolution } from './DeployResolution';
-import type { Apparatus, InventoryItem, ShorePoint } from '@core/schema';
+import type { Apparatus, StockRow, ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 
 /**
@@ -17,7 +17,7 @@ import type { StrutCombination } from '@core/load';
  * catalog, real ⅛-floor deduction math, real unrated-zone rule.
  */
 
-const mockInventory = vi.fn((): InventoryItem[] => []);
+const mockInventory = vi.fn((): StockRow[] => []);
 const mockRoster = vi.fn((): Apparatus[] => []);
 
 vi.mock('@ui/hooks', () => ({
@@ -119,7 +119,7 @@ describe('drop-a-plate re-fit against the real engine', () => {
         measurementEighths: 195 * 8,
         deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'base45', bottomPlate: 'rigid6' },
       });
-    const LS1016: InventoryItem = {
+    const LS1016: StockRow = {
       id: 'inv-1016',
       type: 'strut',
       model: 'LS 1016',
@@ -127,6 +127,7 @@ describe('drop-a-plate re-fit against the real engine', () => {
       apparatus: 'Rescue 2',
       apparatusId: 'app-r2',
       quantity: 1,
+      held: 0,
       available: 1,
     };
     const longCombo = () =>
@@ -141,7 +142,7 @@ describe('drop-a-plate re-fit against the real engine', () => {
       // Strut + the 1″ bottom plate on scene; only the 5.4″ top plate is missing.
       mockInventory.mockReturnValue([
         LS1016,
-        { id: 'inv-rigid6', type: 'plate', plateId: 'rigid6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, available: 1 },
+        { id: 'inv-rigid6', type: 'plate', plateId: 'rigid6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, held: 0, available: 1 },
       ]);
       render(<DeployResolution sp={longSp()} combo={longCombo()} onBack={vi.fn()} onConfirm={onConfirm} submitting={false} />);
 

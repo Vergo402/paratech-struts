@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { BASE_PLATES, findStrutCombinations } from '@core/load';
-import { NO_DEDUCTIONS, STATUS_IDS, type Deductions, type InventoryItem, type ShorePointStatus } from '@core/schema';
+import { NO_DEDUCTIONS, STATUS_IDS, type Deductions, type StockRow, type ShorePointStatus } from '@core/schema';
 import {
   Badge,
   Button,
@@ -34,7 +34,7 @@ const REC_DEDUCTIONS: Deductions = {
   bottomPlate: 'channel4x4',
   footerWood: 'none',
 };
-const REC_INVENTORY: InventoryItem[] = [
+const REC_INVENTORY: StockRow[] = [
   {
     id: 'demo-inv-ls304',
     type: 'strut',
@@ -43,6 +43,7 @@ const REC_INVENTORY: InventoryItem[] = [
     apparatus: 'Rescue 2',
     apparatusId: 'demo-app-r2',
     quantity: 4,
+    held: 0,
     available: 4,
   },
 ];

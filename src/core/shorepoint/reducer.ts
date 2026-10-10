@@ -7,7 +7,7 @@ import type {
   ShoreTypeId,
   WoodSizeId,
   FieldShoreEvent,
-  InventoryItem,
+  StockRow,
 } from '../schema';
 import {
   findStrutCombinations,
@@ -58,7 +58,7 @@ const SP_SAFETY_FACTOR_INDEX = 2;
  * operator estimate (feeds the engine's capacity gating); absent = 0 (capacity
  * demoted, ADR-012).
  */
-export function findForShorePoint(sp: ShorePoint, inventory?: InventoryItem[] | null): StrutCombination[] {
+export function findForShorePoint(sp: ShorePoint, inventory?: StockRow[] | null): StrutCombination[] {
   const requiredLength = sp.measurementEighths / 8;
   return findStrutCombinations(
     requiredLength,
@@ -188,19 +188,35 @@ function sameExtLengths(a: number[], b: number[]): boolean {
  * data is never a flag. Matches the deployed assembly by strut model + extension
  * multiset, exactly like the drawer.
  *
- * PRECEDENCE (#484): unrated / over-capacity win over unknown-connector. Those are
+ * 'no-fit' (ADR-041): no catalog strut spans the opening at all — only reachable by a
+ * deploy committed off the in-app gate (peer / replay); it, and a point whose load
+ * exceeds every ≤4-strut combo ('over-capacity'), are flagged before model matching.
+ *
+ * PRECEDENCE (#484): no-fit / unrated / over-capacity win over unknown-connector. Those are
  * concrete "this shore may be unsafe" verdicts the crew must act on; unknown-connector
  * is a missing-data tell and must never HIDE one. Only `unknownPlateIds` triggers it —
  * an unknown STRUT model (stale catalog) keeps its existing null handling.
  */
-export type DeployedCapacityFlag = 'unrated' | 'over-capacity' | 'unknown-connector';
+export type DeployedCapacityFlag = 'unrated' | 'over-capacity' | 'no-fit' | 'unknown-connector';
 
 export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): DeployedCapacityFlag | null {
   const strut = deployedStrutOf(sp);
   if (!strut?.model) return null;
   const unknownConnector = unknownPlateIds(sp.deductions).length > 0 ? 'unknown-connector' : null;
   const exts = (sp.deployedBom ?? []).filter((c) => c.role === 'extension' && c.length != null).map((c) => c.length!);
-  const match = findForShorePoint(sp, null).find(
+  const combos = findForShorePoint(sp, null);
+  // ADR-041 / plan D4 — the READ-TIME truth for a deploy that was committed without the
+  // deploy UI's verdict (a peer, replay, or off-app write): the fold never refuses a
+  // deploy, so these per-POINT verdicts must flag it here, independent of which model
+  // was deployed (deployVerdict's same two branches). Both outrank unknown-connector
+  // (#484 precedence: a concrete "may be unsafe" verdict is never hidden by a
+  // missing-data tell).
+  //  - no-fit: no catalog strut spans this opening at all — a geometrically impossible
+  //    deploy (in-app the card shows "nothing fits" instead of a Deploy).
+  //  - exceedsCapacity: no ≤4-strut combo carries the recorded load at this length.
+  if (combos.length === 0) return 'no-fit';
+  if (combos.some((c) => c.exceedsCapacity)) return 'over-capacity';
+  const match = combos.find(
     (c) => c.strut.model === strut.model && sameExtLengths(c.extensions, exts),
   );
   if (!match) return unknownConnector;
@@ -285,39 +301,79 @@ export function cutTooSmall(sp: ShorePoint): boolean {
   return cutLengthInches(sp) <= 0;
 }
 
+/**
+ * Structural equality for the patchable field values — primitives plus the flat
+ * `deductions` / `coords` objects. A patch arrives as a freshly parsed object on every
+ * fold (re-projection, peer ingest), so reference comparison would call an identical
+ * re-measure a change; ADR-041 needs "no field moved" to read as no effect.
+ */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a as object);
+  const kb = Object.keys(b as object);
+  if (ka.length !== kb.length) return false;
+  return ka.every((k) => (a as Record<string, unknown>)[k] === (b as Record<string, unknown>)[k]);
+}
+
+type PatchKey = keyof ShorePointPatch & keyof ShorePoint;
+
+/**
+ * Apply a ShorePointEdited patch. Returns the SAME point when no field actually moved
+ * (ADR-041) — including a patch whose only fields are #220-locked sizing fields on a
+ * post-Pending ungrouped point: that re-measure is discarded, so it must read as no
+ * effect, not as an applied edit.
+ */
 function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   const next: ShorePoint = { ...sp };
-  // building/area/label: `null` clears the field (the OperationEdited.location
-  // convention), `undefined` = no change.
-  // label / crew / cut-done apply in EVERY status (below); sizing fields are
+  let changed = false;
+  // `null` clears the field (the OperationEdited.location convention), `undefined` = no
+  // change. Clearing an already-absent field is not a change.
+  const clearable = (key: PatchKey) => {
+    const v = patch[key];
+    if (v === undefined) return;
+    if (v === null) {
+      if (key in next) {
+        delete (next as Record<string, unknown>)[key];
+        changed = true;
+      }
+      return;
+    }
+    if (!sameValue(next[key], v)) {
+      (next as Record<string, unknown>)[key] = v;
+      changed = true;
+    }
+  };
+  const settable = (key: PatchKey) => {
+    const v = patch[key];
+    if (v === undefined || sameValue(next[key], v)) return;
+    (next as Record<string, unknown>)[key] = v;
+    changed = true;
+  };
+  // label / crew / cut-done / location apply in EVERY status (below); sizing fields are
   // #220-locked past Pending except for grouped shores — see the guard further down.
-  if (patch.label !== undefined) {
-    if (patch.label === null) delete next.label;
-    else next.label = patch.label;
-  }
+  clearable('label');
   // Crew assignment is reassignable throughout the op (accountability, not a
   // lock) — applied before the Pending field-lock, alongside label.
-  if (patch.assignedResource !== undefined) {
-    if (patch.assignedResource === null) delete next.assignedResource;
-    else next.assignedResource = patch.assignedResource;
-  }
+  clearable('assignedResource');
   // Mark Cut Done (#222) — a cutting-state toggle, not a Pending-locked field, so
   // it too applies before the early return. false clears the flag entirely.
   if (patch.cuttingDone !== undefined) {
-    if (patch.cuttingDone) next.cuttingDone = true;
-    else delete next.cuttingDone;
+    if (patch.cuttingDone) {
+      if (next.cuttingDone !== true) {
+        next.cuttingDone = true;
+        changed = true;
+      }
+    } else if ('cuttingDone' in next) {
+      delete next.cuttingDone;
+      changed = true;
+    }
   }
   // Location capture (#441) — physical-spot metadata, not a sizing field: applies
   // in every status like label/crew (a GPS fix or its words conversion can land
   // after the point advances past Pending). null clears.
-  if (patch.coords !== undefined) {
-    if (patch.coords === null) delete next.coords;
-    else next.coords = patch.coords;
-  }
-  if (patch.w3w !== undefined) {
-    if (patch.w3w === null) delete next.w3w;
-    else next.w3w = patch.w3w;
-  }
+  clearable('coords');
+  clearable('w3w');
   // #220 field-lock: once a point advances past Pending its sizing fields lock —
   // EXCEPT for a grouped shore, where a re-measure must fan to every leg so one
   // physical shore keeps one length (2026-07-04 audit H3/#417; Alex D2). The sole
@@ -326,28 +382,16 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   // the UI confirms first when a set leg is present. Ungrouped points keep the hard lock.
   // ponytail: grouped-bypass rides the fan-to-all-members invariant — if a single-leg
   // grouped edit path is ever added, gate this on an explicit patch flag instead.
-  if (sp.status !== 'pending' && sp.groupId == null) return next;
-  if (patch.division !== undefined) next.division = patch.division;
-  if (patch.building !== undefined) {
-    if (patch.building === null) delete next.building;
-    else next.building = patch.building;
-  }
-  if (patch.area !== undefined) {
-    if (patch.area === null) delete next.area;
-    else next.area = patch.area;
-  }
-  if (patch.side !== undefined) {
-    if (patch.side === null) delete next.side;
-    else next.side = patch.side;
-  }
-  if (patch.shoreType !== undefined) next.shoreType = patch.shoreType;
-  if (patch.measurementEighths !== undefined) next.measurementEighths = patch.measurementEighths;
-  if (patch.deductions !== undefined) next.deductions = patch.deductions;
-  if (patch.estimatedLoad !== undefined) {
-    if (patch.estimatedLoad === null) delete next.estimatedLoad;
-    else next.estimatedLoad = patch.estimatedLoad;
-  }
-  return next;
+  if (sp.status !== 'pending' && sp.groupId == null) return changed ? next : sp;
+  settable('division');
+  clearable('building');
+  clearable('area');
+  clearable('side');
+  settable('shoreType');
+  settable('measurementEighths');
+  settable('deductions');
+  clearable('estimatedLoad');
+  return changed ? next : sp;
 }
 
 /**
@@ -454,6 +498,8 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
       if (sp.status === 'returned') return sp; // lockstep with the store's re-source guard
       const old = sp.deployedBom[event.componentIndex];
       if (!old) return sp;
+      // Re-pointing a component at the rig it already draws from moves nothing.
+      if (old.source === event.source && old.inventoryId === event.inventoryId) return sp;
       const updated: DeployedComponent = { ...old, source: event.source };
       if (event.inventoryId === undefined) delete updated.inventoryId;
       else updated.inventoryId = event.inventoryId;

@@ -33,6 +33,7 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
   const [detailSpId, setDetailSpId] = useState<string | null>(null);
 
   const operation = data?.operation ?? null;
+  const superseded = operation != null && operation.status !== 'ended';
   const points = (data?.shorePoints ?? []).filter((sp) => sp.deletedAt == null);
   const detailSp = detailSpId ? (points.find((sp) => sp.id === detailSpId) ?? null) : null;
 
@@ -68,11 +69,13 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         <button type="button" className="fs-archive-back" aria-label="Back to past operations" onClick={onClose}>
           <BackIcon />
         </button>
-        <h1 className="fs-archive-view-name">{operation?.name ?? 'Closed incident'}</h1>
+        <h1 className="fs-archive-view-name">
+          {operation ? (superseded ? `${operation.name} — superseded` : operation.name) : 'Closed incident'}
+        </h1>
       </header>
 
       <p className="fs-archive-banner" role="status">
-        Viewing a closed incident — read-only
+        {superseded ? 'Viewing a superseded incident — read-only' : 'Viewing a closed incident — read-only'}
       </p>
 
       <div className="fs-ops-shell">
@@ -121,6 +124,11 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         />
       )}
 
+      {/* A superseded incident (lost the active-op race, never ended — #499) is read-only
+          here like any archived one, and re-openable the same way: re-opening it (when no
+          operation is active) is the ONE path to return its equipment or end it with "All
+          equipment is back on the rigs" — otherwise its deployed stock would stay held on
+          every device forever (adversarial review B1). */}
       <div className="fs-archive-actions">
         <Button variant="secondary" onPress={() => setConfirmOpen(true)}>
           Re-open this incident

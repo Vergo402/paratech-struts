@@ -3,10 +3,10 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
-import type { InventoryItem, ShorePoint } from '@core/schema';
+import type { StockRow, ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 
-const mockInventory = vi.fn((): InventoryItem[] => []);
+const mockInventory = vi.fn((): StockRow[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
 const mockCommit = vi.fn();
 const mockCommitMany = vi.fn();
@@ -38,7 +38,7 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
-const INV_ITEM: InventoryItem = {
+const INV_ITEM: StockRow = {
   id: 'inv-1',
   type: 'strut',
   model: 'LS 406',
@@ -46,6 +46,7 @@ const INV_ITEM: InventoryItem = {
   apparatus: 'Rescue 2',
   apparatusId: 'app-r2',
   quantity: 2,
+  held: 0,
   available: 2,
 };
 
@@ -142,7 +143,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     const onDeployed = vi.fn();
     // The extension is in stock on the SAME rig as the strut (engine resolved its
     // source) → a clean one-rig assembly that deploys in one tap.
-    const EXT_ITEM: InventoryItem = {
+    const EXT_ITEM: StockRow = {
       id: 'inv-ext',
       type: 'extension',
       system: 'LongShore',
@@ -150,6 +151,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       apparatus: 'Rescue 2',
       apparatusId: 'app-r2',
       quantity: 1,
+      held: 0,
       available: 1,
     };
     mockRecommendations.mockReturnValue([
@@ -268,6 +270,23 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       expect(screen.getAllByRole('alert')[0]).toHaveTextContent('none available');
     });
 
+    it('a re-projection that re-creates equal deductions appends no spurious ShorePointEdited (#499)', async () => {
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      const sp = platedSp();
+      const props = { onClose: vi.fn(), onDeployed: vi.fn(), onPartialDeployed: vi.fn() };
+      const { rerender } = render(<AssignEquipmentSheet shorePoint={sp} {...props} />);
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /^Deploy/ }));
+      await user.click(screen.getByRole('button', { name: /Deploy off-book/ })); // resolve the missing plate without amending
+      // The store re-projected while the panel was open: every object is new, values equal.
+      rerender(<AssignEquipmentSheet shorePoint={{ ...sp, deductions: { ...sp.deductions } }} {...props} />);
+      await user.click(screen.getByRole('button', { name: /Confirm & deploy/ }));
+      const types = mockCommit.mock.calls.map((c) => c[0].type);
+      expect(types).toContain('EquipmentDeployed');
+      expect(types).not.toContain('ShorePointEdited');
+    });
+
     it('keeps the amendment when the deploy succeeds', async () => {
       mockRecommendations.mockReturnValue([COMBO]);
       mockInventory.mockReturnValue([INV_ITEM]);
@@ -347,7 +366,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       const sp = shortSp();
       mockShorePoints.mockReturnValue([sp]);
       mockRecommendations.mockReturnValue([COMBO]);
-      mockInventory.mockReturnValue([{ ...INV_ITEM, quantity: 1, available: 1 }]); // one strut on scene, two needed
+      mockInventory.mockReturnValue([{ ...INV_ITEM, quantity: 1, held: 0, available: 1 }]); // one strut on scene, two needed
       render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
 
       await user.click(screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ }));
@@ -391,8 +410,8 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       mockShorePoints.mockReturnValue([sp]);
       mockRecommendations.mockReturnValue([COMBO]);
       mockInventory.mockReturnValue([
-        { ...INV_ITEM, quantity: 1, available: 1 },
-        { ...INV_ITEM, id: 'inv-2', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 1, available: 1 },
+        { ...INV_ITEM, quantity: 1, held: 0, available: 1 },
+        { ...INV_ITEM, id: 'inv-2', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 1, held: 0, available: 1 },
       ]);
       render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
 
@@ -413,8 +432,8 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       const user = userEvent.setup();
       const onPartial = vi.fn();
       const sp = shortSp();
-      const extRow = (id: string, apparatus: string, apparatusId: string): InventoryItem => ({
-        id, type: 'extension', length: 12, system: 'LongShore', apparatus, apparatusId, quantity: 1, available: 1,
+      const extRow = (id: string, apparatus: string, apparatusId: string): StockRow => ({
+        id, type: 'extension', length: 12, system: 'LongShore', apparatus, apparatusId, quantity: 1, held: 0, available: 1,
       });
       const EXT_COMBO: StrutCombination = {
         ...COMBO,
@@ -430,8 +449,8 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       // Order matters: the engine-resolved Rescue 2 extension is listed first, so
       // member 1 (strut inv-1 on Rescue 2) sources cleanly from its own rig.
       mockInventory.mockReturnValue([
-        { ...INV_ITEM, quantity: 1, available: 1 },
-        { ...INV_ITEM, id: 'inv-2', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 1, available: 1 },
+        { ...INV_ITEM, quantity: 1, held: 0, available: 1 },
+        { ...INV_ITEM, id: 'inv-2', apparatus: 'Engine 1', apparatusId: 'app-e1', quantity: 1, held: 0, available: 1 },
         extRow('ext-r2', 'Rescue 2', 'app-r2'),
         extRow('ext-e1', 'Engine 1', 'app-e1'),
       ]);

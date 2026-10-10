@@ -66,8 +66,8 @@ export function AuditLogScreen() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const incidentRows = useMemo<AuditRow[]>(
-    () => (opId ? describeEventLog(incident.events, opId).slice().reverse() : []),
-    [incident.events, opId],
+    () => (opId ? describeEventLog(incident.events, opId, incident.outcomes).slice().reverse() : []),
+    [incident.events, incident.outcomes, opId],
   );
   // The active op's period boundaries (#395) — drives the "By period" grouping.
   // Projected from the same event log the Incident view already reads (cold path).
@@ -253,7 +253,7 @@ function AuditRowItem({ row, who, expanded, onToggle }: { row: AuditRow; who: st
       data-static={hasDetail ? undefined : ''}
     >
       <span className="fs-al-row-top">
-        <span className="fs-al-row-text">{row.text}</span>
+        <span className={row.noEffect ? 'fs-al-row-text fs-al-row-text--no-effect' : 'fs-al-row-text'}>{row.text}</span>
         <span className={`fs-al-badge fs-al-badge--${row.tone}`}>{row.badge}</span>
       </span>
       <span className="fs-al-row-meta">

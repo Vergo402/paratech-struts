@@ -6,7 +6,7 @@ import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import type { InventoryItem } from '@core/schema';
 import { newId } from '@core/id';
 
-const stock = (over: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'apparatusId' | 'quantity' | 'available'>): InventoryItem => ({
+const stock = (over: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'apparatusId' | 'quantity'>): InventoryItem => ({
   type: 'strut',
   model: 'LS 203',
   system: 'LongShore',
@@ -39,7 +39,7 @@ describe('apparatus store (meta-JSON roster)', () => {
   it('removeApparatus cascade-clears an empty rig (roster + its stock, one txn)', async () => {
     await app.boot();
     await app.addApparatus({ id: 'app-1', name: 'Engine 1', type: 'Engine' });
-    await db.inventory.bulkAdd([stock({ id: 'i1', apparatusId: 'app-1', quantity: 2, available: 2 })]);
+    await db.inventory.bulkAdd([stock({ id: 'i1', apparatusId: 'app-1', quantity: 2 })]);
     await inv.boot();
     await app.removeApparatus('app-1', inv);
     expect(app.store.getState().roster).toEqual([]);
@@ -50,8 +50,10 @@ describe('apparatus store (meta-JSON roster)', () => {
   it('removeApparatus refuses (and rolls back) when a rig holds deployed stock', async () => {
     await app.boot();
     await app.addApparatus({ id: 'app-1', name: 'Engine 1', type: 'Engine' });
-    await db.inventory.bulkAdd([stock({ id: 'i1', apparatusId: 'app-1', quantity: 2, available: 0 })]);
+    await db.inventory.bulkAdd([stock({ id: 'i1', apparatusId: 'app-1', quantity: 2 })]);
     await inv.boot();
+    // ADR-041: held comes from the folded event log (operationStore pushes it in).
+    inv.setHeld({ i1: 2 });
     await expect(app.removeApparatus('app-1', inv)).rejects.toThrow();
     expect(app.store.getState().roster).toHaveLength(1);
     expect(await db.inventory.get('i1')).toBeDefined();
@@ -110,8 +112,8 @@ describe('apparatus store — LWW blob sync', () => {
     const inv = createInventoryStore(db, { onDelete: (id) => deletes.push(id) });
     await app.addApparatus({ id: 'app-1', name: 'Engine 1', type: 'Engine' });
     await db.inventory.bulkAdd([
-      stock({ id: 'i1', apparatusId: 'app-1', quantity: 1, available: 1 }),
-      stock({ id: 'i2', apparatusId: 'app-1', quantity: 2, available: 2 }),
+      stock({ id: 'i1', apparatusId: 'app-1', quantity: 1 }),
+      stock({ id: 'i2', apparatusId: 'app-1', quantity: 2 }),
     ]);
     await inv.boot();
     await app.removeApparatus('app-1', inv);

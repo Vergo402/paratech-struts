@@ -59,7 +59,7 @@ const FB_UID = 'firebase-uid-abc123';
 
 const sentinel: InventoryItem = {
   id: 'inv-sentinel', type: 'strut', model: 'LS 203', system: 'LongShore',
-  apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, available: 1,
+  apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1,
 };
 
 describe('accountService (account seam — create / sign in / sign out)', () => {

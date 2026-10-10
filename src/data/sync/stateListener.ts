@@ -9,7 +9,6 @@ import {
 } from '../store/registry';
 import { sessionStore } from '../store/session';
 import { syncService } from './syncService';
-import { eventListenerSync } from './eventListener';
 import { firebaseSubscribe } from './subscribe';
 import {
   type BlobEnvelope,
@@ -47,13 +46,10 @@ import {
 //   · Clock skew: stamps are device wall-clock (Date.now). A badly-skewed phone can let a
 //     stale edit win or make a tombstone hard to overwrite until real time catches up.
 //     A logical/Lamport clock is deferred (over-built for v4.0's edit volume).
-// Deploy-replay coordination (NOT a limitation — handled): the event log replays deploys
-// (which decrement inventory via applyDeployTxn) and inventory pulls down here as two
-// uncoordinated subscriptions. A deploy that replays BEFORE its stock row arrives aborts
-// applyDeployTxn and is dropped (NOT appended, &id free). To close the window in BOTH
-// orderings: once the inventory FIRST snapshot durably lands, onInventoryReady fires
-// eventListenerSync.resync(), which re-reconciles the latest event snapshot so the dropped
-// deploy re-applies immediately (idempotent — already-applied events fail the &id dedup).
+// Stock is a projection (ADR-041): `held` is derived from the event log and `available =
+// quantity − held`, so no event ever waits for a stock row — a deploy that arrives before
+// its row folds normally and the inventory view fills in when the row lands. The two
+// subscriptions need no coordination.
 //
 // FIREBASE SEAM — firebase-free at module load: the default `subscribe` lazily imports
 // ./firebase only once start() runs; unit tests inject a fake subscribe.
@@ -80,9 +76,6 @@ export function createStateListenerSync(deps: {
     applyRemoteDelete: (id: string) => Promise<void>;
   };
   blobs: BlobConfig[];
-  /** Fired once the inventory FIRST snapshot has durably landed — the event listener
-   *  re-reconciles so a deploy/return dropped before its stock row arrived re-applies. */
-  onInventoryReady?: () => void;
   subscribe?: (path: string, cb: (snap: unknown) => void) => () => void;
 }): StateListenerSync {
   const subscribe = deps.subscribe ?? firebaseSubscribe;
@@ -110,11 +103,7 @@ export function createStateListenerSync(deps: {
       }
     }
 
-    // Wait for the pulled rows to DURABLY land, THEN tell the event listener to re-reconcile
-    // (so a deploy/return dropped before its stock row arrived re-applies). First snapshot
-    // only — steady-state events already see the inventory that's now present.
     await Promise.all(applies);
-    if (first) deps.onInventoryReady?.();
   }
 
   // A meta blob is a single { value, lastWriteAt } envelope. Pull when the cloud stamp is
@@ -168,9 +157,8 @@ export function createStateListenerSync(deps: {
 export const stateListenerSync = createStateListenerSync({
   deptId: () => sessionStore.store.getState().departmentId,
   setState: (relPath, value) => void syncService.setState(relPath, value),
-  onInventoryReady: () => eventListenerSync.resync(),
   inventory: {
-    rows: () => inventoryStore.store.getState().items,
+    rows: () => inventoryStore.store.getState().rows, // persisted rows — never the derived view (ADR-041)
     applyRemoteRow: (row) => inventoryStore.applyRemoteRow(row),
     applyRemoteDelete: (id) => inventoryStore.applyRemoteDelete(id),
   },

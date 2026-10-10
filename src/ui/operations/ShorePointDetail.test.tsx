@@ -9,7 +9,7 @@ import { ShorePointDetail } from './ShorePointDetail';
 
 // Control the inventory + timeline (the @data seam) and the engine re-fit. Keep
 // every other @core/shorepoint helper real so the BOM/ledger render for real.
-const mockHistory = vi.fn((): ShorePointHistory => ({ events: [], deviceUid: 'me' }));
+const mockHistory = vi.fn((): ShorePointHistory => ({ events: [], outcomes: new Map(), deviceUid: 'me' }));
 vi.mock('@ui/hooks', () => ({
   useInventory: () => [],
   useShorePointHistory: () => mockHistory(),
@@ -46,7 +46,7 @@ const combo = (over: Partial<StrutCombination>): StrutCombination =>
   ({ strut: { model: 'LS 406' }, extensions: [], capacity: 12000, ...over }) as unknown as StrutCombination;
 
 beforeEach(() => {
-  mockHistory.mockReturnValue({ events: [], deviceUid: 'me' });
+  mockHistory.mockReturnValue({ events: [], outcomes: new Map(), deviceUid: 'me' });
   mockFind.mockReturnValue([]);
 });
 
@@ -141,6 +141,23 @@ describe('ShorePointDetail — measurement ledger', () => {
 });
 
 describe('ShorePointDetail — timeline', () => {
+  it('a change that lost a race reads muted as "<label> — no effect", meta unchanged (#499)', () => {
+    mockHistory.mockReturnValue({
+      events: [
+        { type: 'EquipmentDeployed', id: 'e2', at: 2, by: 'them' },
+        { type: 'ShorePointStatusChanged', id: 'e3', at: 3, by: 'me', to: 'strutset' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ] as any,
+      outcomes: new Map([['e2', 'applied'], ['e3', 'no-effect']]),
+      deviceUid: 'me',
+    });
+    render(<ShorePointDetail sp={makeSp()} />);
+    const lost = screen.getByText('Strut Set — no effect');
+    expect(lost).toHaveClass('fs-spd-event-label--no-effect');
+    expect(lost.parentElement).toHaveTextContent(/this device/);
+    expect(screen.getByText('Equipment deployed')).not.toHaveClass('fs-spd-event-label--no-effect');
+  });
+
   it('maps events to plain copy and degrades the "who" per device', () => {
     mockHistory.mockReturnValue({
       events: [
@@ -149,6 +166,7 @@ describe('ShorePointDetail — timeline', () => {
         { type: 'ShorePointStatusChanged', id: 'e3', at: 3, by: 'me', to: 'strutset' },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ] as any,
+      outcomes: new Map(),
       deviceUid: 'me',
     });
     render(<ShorePointDetail sp={makeSp()} />);

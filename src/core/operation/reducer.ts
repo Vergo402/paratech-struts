@@ -103,6 +103,43 @@ export function statusFanTargets(
   return pool.filter((sp) => sp.status === from).map((sp) => sp.id);
 }
 
+/**
+ * `arr.map(fn)` that returns the SAME array when `fn` returned every element unchanged
+ * (ADR-041). Reference identity is how the fold reports "this event had no effect": a
+ * reducer case whose every slice is the input slice returns the input `state`, so the
+ * canonical event log can record the outcome per event and the UI does not re-render on
+ * a no-op. Allocates only once the first element actually changes.
+ */
+export function mapSame<T>(arr: readonly T[], fn: (t: T) => T): readonly T[] {
+  let out: T[] | null = null;
+  for (let i = 0; i < arr.length; i++) {
+    const prev = arr[i]!;
+    const next = fn(prev);
+    if (out === null) {
+      if (next === prev) continue;
+      out = arr.slice(0, i);
+    }
+    out.push(next);
+  }
+  return out ?? arr;
+}
+
+/** `{ ...state, shorePoints }` — or `state` itself when the array is unchanged. */
+function withShorePoints(state: OperationState, shorePoints: readonly ShorePoint[]): OperationState {
+  return shorePoints === state.shorePoints ? state : { ...state, shorePoints: shorePoints as ShorePoint[] };
+}
+
+/**
+ * A point that still HOLDS deployed equipment — a BOM on record and not yet reclaimed
+ * (a `returned` point keeps its BOM as history; its stock is already back). Such a point
+ * can never be deleted: a delete would strand those units (a hard delete also erases
+ * the BOM, so they could never be reconciled). Fold-time rule (ADR-041) so a peer or
+ * replayed delete of a holder no-ops identically on every device (2026-07-02 audit #6).
+ */
+function holdsEquipment(sp: ShorePoint): boolean {
+  return sp.deployedBom != null && sp.status !== 'returned';
+}
+
 function groupAdvance(
   shorePoints: ShorePoint[],
   spId: string,
@@ -122,8 +159,26 @@ function groupAdvance(
 
 /** Apply one event to the operation projection. Pure; never mutates `state`. */
 export function operationReducer(state: OperationState, event: FieldShoreEvent): OperationState {
+  // ADR-041 — a CLOSED operation accepts no further work. Once OperationEnded has folded
+  // (it reached the cloud first), a later deploy / status change / edit from a device that
+  // was offline folds as no-effect on every device — and that device is told (its event
+  // lands in `overridden`) instead of silently writing into an archived incident, or into
+  // stock the IC already released. Only Reopened (and a repeat Ended, which may carry a
+  // changed `stockReleased`) act on an ended op.
+  if (
+    state.operation?.status === 'ended' &&
+    event.type !== 'OperationReopened' &&
+    event.type !== 'OperationEnded' &&
+    event.type !== 'OperationCreated'
+  ) {
+    return state;
+  }
   switch (event.type) {
     case 'OperationCreated':
+      // A duplicate create of the op this state already holds no-ops (safe replay).
+      // Folds are per-op (projectOperationById / the canonical log), so this never
+      // blocks a DIFFERENT op's create; which op is active is projection.ts's rule.
+      if (state.operation?.id === event.opId) return state;
       return {
         ...state,
         operation: {
@@ -150,24 +205,41 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
 
     case 'OperationEdited': {
       if (!state.operation) return state;
-      const op: Operation = { ...state.operation };
+      const prev = state.operation;
+      const op: Operation = { ...prev };
       if (event.name !== undefined) op.name = event.name;
       if (event.multiBuilding !== undefined) op.multiBuilding = event.multiBuilding;
       if (event.inlineDeploy !== undefined) op.inlineDeploy = event.inlineDeploy;
       if (event.location !== undefined) op.location = event.location ?? undefined; // null clears
       if (event.coords !== undefined) op.coords = event.coords ?? undefined; // null clears
-      return { ...state, operation: op };
+      // Last-write-wins, but an edit that moves nothing is a no-op (ADR-041 identity).
+      const same =
+        op.name === prev.name &&
+        op.multiBuilding === prev.multiBuilding &&
+        op.inlineDeploy === prev.inlineDeploy &&
+        op.location === prev.location &&
+        op.coords?.lat === prev.coords?.lat &&
+        op.coords?.lng === prev.coords?.lng;
+      return same ? state : { ...state, operation: op };
     }
 
-    case 'OperationEnded':
+    case 'OperationEnded': {
+      // ADR-041 — `stockReleased` ("All equipment is back on the rigs") rides the end;
+      // the held-stock projection reads it. The LATEST end of an ended op wins, so a
+      // second end only matters when it changes that answer.
       if (!state.operation) return state;
-      return { ...state, operation: { ...state.operation, status: 'ended' } };
+      const stockReleased = event.stockReleased === true;
+      if (state.operation.status === 'ended' && !!state.operation.stockReleased === stockReleased) return state;
+      return { ...state, operation: { ...state.operation, status: 'ended', stockReleased } };
+    }
 
     case 'OperationReopened':
       // ADR-036 — un-archive. Folded per-op (projectOperationById/projectArchive),
       // the op's OperationEnded comes first then this, so the final status is active.
+      // Re-opening re-holds the op's deployed equipment (ADR-041: stockReleased off).
       if (!state.operation) return state;
-      return { ...state, operation: { ...state.operation, status: 'active' } };
+      if (state.operation.status === 'active' && !state.operation.stockReleased) return state;
+      return { ...state, operation: { ...state.operation, status: 'active', stockReleased: false } };
 
     case 'DivisionAdded': {
       // Idempotent: concurrent "add floor above" from two devices converges.
@@ -218,42 +290,50 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
       // point can be claimed (a stale claim against a moved point no-ops, so replay
       // is safe). The claim is persisted here, not derived from queue position —
       // that is what keeps an out-of-order finish from reshuffling claims.
-      return {
-        ...state,
-        shorePoints: state.shorePoints.map((sp) =>
-          sp.id === event.spId && sp.status === 'cutting' ? { ...sp, sawId: event.sawId } : sp,
+      return withShorePoints(
+        state,
+        mapSame(state.shorePoints, (sp) =>
+          sp.id === event.spId && sp.status === 'cutting' && sp.sawId !== event.sawId
+            ? { ...sp, sawId: event.sawId }
+            : sp,
         ),
-      };
+      );
 
     case 'ShorePointAdded':
+      // Idempotent by point id (the PositionAdded/HazardLogged model): a point that
+      // already exists is never duplicated — e.g. a restructure re-add whose hard
+      // delete no-opped on a holder (ADR-041) must not mint a phantom twin.
+      if (state.shorePoints.some((sp) => sp.id === event.shorePoint.id)) return state;
       return { ...state, shorePoints: [...state.shorePoints, event.shorePoint] };
 
-    case 'ShorePointDeleted':
+    case 'ShorePointDeleted': {
+      // Unknown point, or a point still holding deployed equipment → no effect (the
+      // holder rule, see holdsEquipment). An already soft-deleted point keeps its first
+      // deletedAt (a repeat soft delete is a no-op).
+      const target = state.shorePoints.find((sp) => sp.id === event.spId);
+      if (!target || holdsEquipment(target)) return state;
       // hard (structural, e.g. a strut dropped on a type change): filter it out
       // for good. Default soft-delete (#319): flag, don't filter — the point stays
       // in the array so it's restorable and its seq stays a high-water mark.
-      return event.hard
-        ? { ...state, shorePoints: state.shorePoints.filter((sp) => sp.id !== event.spId) }
-        : {
-            ...state,
-            shorePoints: state.shorePoints.map((sp) =>
-              sp.id === event.spId ? { ...sp, deletedAt: event.at } : sp,
-            ),
-          };
+      if (event.hard) return { ...state, shorePoints: state.shorePoints.filter((sp) => sp.id !== event.spId) };
+      return withShorePoints(
+        state,
+        mapSame(state.shorePoints, (sp) =>
+          sp.id === event.spId && sp.deletedAt == null ? { ...sp, deletedAt: event.at } : sp,
+        ),
+      );
+    }
 
     case 'ShorePointRestored':
-      return {
-        ...state,
-        shorePoints: state.shorePoints.map((sp) =>
-          sp.id === event.spId ? { ...sp, deletedAt: undefined } : sp,
+      return withShorePoints(
+        state,
+        mapSame(state.shorePoints, (sp) =>
+          sp.id === event.spId && sp.deletedAt != null ? { ...sp, deletedAt: undefined } : sp,
         ),
-      };
+      );
 
     case 'ShorePointStatusChanged':
-      return {
-        ...state,
-        shorePoints: groupAdvance(state.shorePoints, event.spId, event.from, event.to, event.at),
-      };
+      return withShorePoints(state, groupAdvance(state.shorePoints, event.spId, event.from, event.to, event.at));
 
     case 'ShorePointEdited':
     case 'StrutDeployed':
@@ -262,7 +342,9 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'EquipmentReturned':
     case 'EquipmentReclaimed':
     case 'ComponentResourced':
-      return { ...state, shorePoints: state.shorePoints.map((sp) => shorePointReducer(sp, event)) };
+      // shorePointReducer returns the SAME point for every no-op, so mapSame keeps
+      // the array — and this case keeps `state` — when the event moved nothing.
+      return withShorePoints(state, mapSame(state.shorePoints, (sp) => shorePointReducer(sp, event)));
 
     // ICS org chart (#323) — delegated to the pure orgReducer over the two org slices.
     case 'PositionAdded':
@@ -281,6 +363,13 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
         { positions: state.positions, myRoles: state.myRoles, commandTransfer: state.commandTransfer },
         event,
       );
+      if (
+        org.positions === state.positions &&
+        org.myRoles === state.myRoles &&
+        org.commandTransfer === state.commandTransfer
+      ) {
+        return state; // the event moved nothing (ADR-041 identity)
+      }
       return { ...state, positions: org.positions, myRoles: org.myRoles, commandTransfer: org.commandTransfer };
     }
 
@@ -289,7 +378,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'HazardMitigated':
     case 'HazardReopened': {
       const h = hazardReducer({ hazards: state.hazards }, event);
-      return { ...state, hazards: h.hazards };
+      return h.hazards === state.hazards ? state : { ...state, hazards: h.hazards };
     }
 
     // Checklist attestation + ORM/TCRM briefing sessions (#203/#204/#205) —
@@ -299,6 +388,7 @@ export function operationReducer(state: OperationState, event: FieldShoreEvent):
     case 'BriefingStarted':
     case 'BriefingEnded': {
       const c = checklistReducer({ checklists: state.checklists, briefings: state.briefings }, event);
+      if (c.checklists === state.checklists && c.briefings === state.briefings) return state;
       return { ...state, checklists: c.checklists, briefings: c.briefings };
     }
 

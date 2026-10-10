@@ -28,7 +28,7 @@ const routeGet = (map: Record<string, unknown>) => ({ path }: { path: string }) 
 // A sentinel inventory row sign-out must never touch (workflow 06 §Step 4).
 const sentinel: InventoryItem = {
   id: 'inv-sentinel', type: 'strut', model: 'LS 203', system: 'LongShore',
-  apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, available: 1,
+  apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1,
 };
 
 describe('session store (guest ⇄ member, persisted)', () => {

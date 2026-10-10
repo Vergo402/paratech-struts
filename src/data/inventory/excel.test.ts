@@ -3,9 +3,9 @@ import { toCsv, parseCsv, getTemplateCSV, CSV_HEADERS, autoMap, validateRow, val
 import type { InventoryItem } from '@core/schema';
 
 const items: InventoryItem[] = [
-  { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 4, available: 4 },
-  { id: 'e1', type: 'extension', system: 'LongShore', length: 12, apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 2, available: 2 },
-  { id: 'p1', type: 'plate', plateId: 'swivel6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 3, available: 3 },
+  { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 4 },
+  { id: 'e1', type: 'extension', system: 'LongShore', length: 12, apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 2 },
+  { id: 'p1', type: 'plate', plateId: 'swivel6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 3 },
 ];
 
 describe('inventory CSV round-trip', () => {
@@ -20,7 +20,7 @@ describe('inventory CSV round-trip', () => {
   it('omits zero-quantity rows (blank = not carried)', () => {
     const withZero = [
       ...items,
-      { id: 'z', type: 'strut', model: 'LS 304', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 0, available: 0 } as InventoryItem,
+      { id: 'z', type: 'strut', model: 'LS 304', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 0 } as InventoryItem,
     ];
     expect(toCsv(withZero)).not.toContain('LS 304');
   });
@@ -32,8 +32,8 @@ describe('inventory CSV round-trip', () => {
 
   it('sorts apparatus → type (Strut before Plate)', () => {
     const mixed: InventoryItem[] = [
-      { id: 'b', type: 'plate', plateId: 'rigid6', apparatus: 'Engine 1', apparatusId: 'e1', quantity: 1, available: 1 },
-      { id: 'a', type: 'strut', model: 'AT 25-36', system: 'AcmeThread', apparatus: 'Engine 1', apparatusId: 'e1', quantity: 1, available: 1 },
+      { id: 'b', type: 'plate', plateId: 'rigid6', apparatus: 'Engine 1', apparatusId: 'e1', quantity: 1 },
+      { id: 'a', type: 'strut', model: 'AT 25-36', system: 'AcmeThread', apparatus: 'Engine 1', apparatusId: 'e1', quantity: 1 },
     ];
     const lines = toCsv(mixed).trim().split('\r\n');
     expect(lines[1]).toContain('AT 25-36');
@@ -42,7 +42,7 @@ describe('inventory CSV round-trip', () => {
 
   it('round-trips a comma-bearing apparatus name + inch-mark plate name (RFC-4180)', () => {
     const tricky: InventoryItem[] = [
-      { id: 'p', type: 'plate', plateId: 'swivel6', apparatus: 'Engine 1, Reserve', apparatusId: 'er', quantity: 1, available: 1 },
+      { id: 'p', type: 'plate', plateId: 'swivel6', apparatus: 'Engine 1, Reserve', apparatusId: 'er', quantity: 1 },
     ];
     const { rows, warnings } = parseCsv(toCsv(tricky));
     expect(warnings).toEqual([]);
@@ -101,7 +101,7 @@ describe('inventory CSV round-trip', () => {
 describe('formula-injection guard (Apparatus + Model, #482)', () => {
   it('round-trips a formula-leading apparatus name safely and inertly', () => {
     const payload: InventoryItem[] = [
-      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: '=HYPERLINK("http://evil")', apparatusId: 'app-r2', quantity: 4, available: 4 },
+      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: '=HYPERLINK("http://evil")', apparatusId: 'app-r2', quantity: 4 },
     ];
     const csv = toCsv(payload);
     // exported cell is guarded — never a bare formula trigger in the file
@@ -121,7 +121,7 @@ describe('formula-injection guard (Apparatus + Model, #482)', () => {
     const triggers = ['=cmd', '+cmd', '-cmd', '@cmd', '\tcmd', '\rcmd'];
     for (const t of triggers) {
       const payload: InventoryItem[] = [
-        { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: t, apparatusId: 'app-r2', quantity: 4, available: 4 },
+        { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: t, apparatusId: 'app-r2', quantity: 4 },
       ];
       const csv = toCsv(payload);
       const { rows, warnings } = parseCsv(csv);
@@ -136,7 +136,7 @@ describe('formula-injection guard (Apparatus + Model, #482)', () => {
     // inert if the file is opened in a spreadsheet; strip-then-catalog-check on
     // import still (correctly) skips it, same as any other unknown model.
     const payload: InventoryItem[] = [
-      { id: 's1', type: 'strut', model: '=cmd|"/c calc"!A1', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 4, available: 4 },
+      { id: 's1', type: 'strut', model: '=cmd|"/c calc"!A1', system: 'LongShore', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 4 },
     ];
     const csv = toCsv(payload);
     expect(csv).toContain("'=cmd|");
@@ -149,7 +149,7 @@ describe('formula-injection guard (Apparatus + Model, #482)', () => {
 
   it('a legitimate value starting with an apostrophe (not guarding anything) survives untouched', () => {
     const payload: InventoryItem[] = [
-      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: "'Tis Engine 1", apparatusId: 'app-r2', quantity: 4, available: 4 },
+      { id: 's1', type: 'strut', model: 'LS 203', system: 'LongShore', apparatus: "'Tis Engine 1", apparatusId: 'app-r2', quantity: 4 },
     ];
     const csv = toCsv(payload);
     expect(csv).toContain("'Tis Engine 1"); // untouched — apostrophe isn't a trigger char
@@ -180,7 +180,6 @@ describe('formula-injection guard (Apparatus + Model, #482)', () => {
       apparatus: r.apparatus,
       apparatusId: r.apparatusId || 'x',
       quantity: r.quantity,
-      available: r.quantity,
     }));
     const csv2 = toCsv(reconstructed);
     expect(csv2).toEqual(csv1);

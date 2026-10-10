@@ -7,7 +7,7 @@ import { newId } from '@core/id';
 import { NO_DEDUCTIONS, type FieldShoreEvent, type ShorePoint } from '@core/schema';
 
 // readShorePointHistory — the Quick View timeline read (ADR-019). The load-bearing
-// logic is the filter: every event touching ONE shore point, in append order,
+// logic is the filter: every event touching ONE shore point, in canonical order,
 // including ShorePointAdded (which carries the id under shorePoint.id, not spId).
 
 const OP = 'op-1';
@@ -79,7 +79,6 @@ describe('operationStore.readShorePointHistory — group-fanned status changes (
     type: 'ShorePointStatusChanged',
     ...base(),
     by: 'device-trigger',
-    at: 4242,
     spId,
     from,
     to,
@@ -107,8 +106,12 @@ describe('operationStore.readShorePointHistory — group-fanned status changes (
     const history = await ops.readShorePointHistory('leg-b');
     expect(history.map((e) => e.type)).toEqual(['ShorePointAdded', 'ShorePointStatusChanged']);
     const change = history[1]!;
+    // ADR-041: a local commit re-stamps `at` from the device clock, so the trigger's time
+    // is whatever the store stamped — the mate's entry must be that very event.
+    const trigger = ops.sortedEvents().find((e) => e.type === 'ShorePointStatusChanged')!;
+    expect(change.id).toBe(trigger.id);
     expect(change.by).toBe('device-trigger');
-    expect(change.at).toBe(4242);
+    expect(change.at).toBe(trigger.at);
   });
 
   it('the mate that was AHEAD (never moved) does not get the entry', async () => {

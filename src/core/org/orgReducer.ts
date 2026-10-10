@@ -2,7 +2,7 @@ import type { FieldShoreEvent } from '../schema/event';
 import type { OrgPositions } from '../schema/org';
 import { subtreeIds, wouldCreateCycle, rootPosition } from './tree';
 import { sameResource } from './resource';
-import { canAccept, currentIC, type PendingTransfer } from './transfer';
+import { canAccept, currentIC, resolvesPending, type PendingTransfer } from './transfer';
 import { buildDefaultTree, defaultPositionId } from './defaultTree';
 
 // The org projection slices: the keyed position tree, the per-device My Role map,
@@ -49,7 +49,7 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
 
     case 'PositionRenamed': {
       const p = state.positions[event.positionId];
-      if (!p) return state;
+      if (!p || p.title === event.title) return state; // missing / same title → no-op
       return { ...state, positions: { ...state.positions, [p.id]: { ...p, title: event.title } } };
     }
 
@@ -57,13 +57,14 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       const p = state.positions[event.positionId];
       const parent = state.positions[event.newParentId];
       if (!p || p.parentId === null || !parent) return state; // root can't move; new parent must exist
+      if (p.parentId === event.newParentId) return state; // already there → no-op
       if (wouldCreateCycle(state.positions, event.positionId, event.newParentId)) return state; // fold-time guard
       return { ...state, positions: { ...state.positions, [p.id]: { ...p, parentId: event.newParentId } } };
     }
 
     case 'PositionReordered': {
       const p = state.positions[event.positionId];
-      if (!p) return state;
+      if (!p || p.order === event.order) return state; // missing / same rank → no-op
       return { ...state, positions: { ...state.positions, [p.id]: { ...p, order: event.order } } };
     }
 
@@ -85,12 +86,15 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       if (!p) return state;
       const target = event.resource;
       const next = target ? p.assignedResources.filter((r) => !sameResource(r, target)) : [];
+      if (next.length === p.assignedResources.length) return state; // nothing matched / already empty
       return { ...state, positions: { ...state.positions, [p.id]: { ...p, assignedResources: next } } };
     }
 
     case 'MyRoleSet': {
-      const myRoles = { ...state.myRoles };
       const key = event.account?.id ?? event.by; // member → account (follows devices); guest → device
+      // Same value → no-op (a clear of an absent role included).
+      if (event.positionId == null ? !(key in state.myRoles) : state.myRoles[key] === event.positionId) return state;
+      const myRoles = { ...state.myRoles };
       if (event.positionId == null) delete myRoles[key];
       else myRoles[key] = event.positionId;
       return { ...state, myRoles };
@@ -109,6 +113,7 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       return {
         ...state,
         commandTransfer: {
+          transferId: event.id, // ADR-041 — resolvers name the handshake by this id
           initiatedBy: event.by,
           toResource: event.toResource,
           at: event.at,
@@ -119,7 +124,8 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
 
     case 'CommandTransferAccepted': {
       const pending = state.commandTransfer;
-      if (!canAccept(pending, event.by, event.account?.id)) return state; // no pending, or not the target
+      // No pending, a different handshake (transferId mismatch), or not the target → no-op.
+      if (!canAccept(pending, event.by, event.account?.id, event.transferId)) return state;
       const ic = rootPosition(state.positions);
       if (!ic) return state;
       // Move command: incoming becomes the sole leader (replaces index 0 — the
@@ -135,9 +141,11 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
 
     // Decline (incoming) / Cancel (outgoing) — identical fold (clear pending; command
     // stays with the outgoing IC). They differ only in who emits + the role-history record.
+    // ADR-041: a tagged resolver clears ONLY the handshake it names; so whichever of a
+    // racing Accept and Cancel lands first in canonical order wins, and the other no-ops.
     case 'CommandTransferDeclined':
     case 'CommandTransferCancelled': {
-      if (!state.commandTransfer) return state;
+      if (!resolvesPending(state.commandTransfer, event.transferId)) return state;
       return { ...state, commandTransfer: null };
     }
 

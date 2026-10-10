@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { newId } from '@core/id';
 import { Button, Modal } from '@ui/primitives';
-import { useOperation, useCommit, useDeviceUid, usePermissions } from '@ui/hooks';
+import { useOperation, useCommit, useDeviceUid, usePermissions, useShorePoints } from '@ui/hooks';
+import { EndOperationHolds, useStillDeployed, stockReleasedExtra } from '../operations/EndOperationHolds';
 
 /** End Operation — the destructive OperationEnded path, gated on the back-office
  *  manageOperations capability (ADR-017 #3, #380 — "create & end operations"; distinct
@@ -13,6 +14,8 @@ export function EndOperationButton() {
   const getUid = useDeviceUid();
   const canManageOps = usePermissions().manageOperations;
   const [open, setOpen] = useState(false);
+  const [stockReleased, setStockReleased] = useState(false); // #499 — "All equipment is back on the rigs"
+  const stillDeployed = useStillDeployed(useShorePoints());
   if (!operation || !canManageOps) return null;
 
   const endOperation = async () => {
@@ -22,13 +25,17 @@ export function EndOperationButton() {
       opId: operation.id,
       at: Date.now(),
       by: await getUid(),
+      ...stockReleasedExtra(stillDeployed.total > 0 && stockReleased),
     });
     if (result.ok) setOpen(false);
   };
 
   return (
     <>
-      <Button variant="secondary" destructive fullWidth onPress={() => setOpen(true)}>
+      <Button variant="secondary" destructive fullWidth onPress={() => {
+          setStockReleased(false);
+          setOpen(true);
+        }}>
         End Operation
       </Button>
       <Modal
@@ -48,6 +55,12 @@ export function EndOperationButton() {
         }
       >
         <p>This archives every shore point and ends the active operation. You can start a new one afterward.</p>
+        <EndOperationHolds
+          total={stillDeployed.total}
+          byRig={stillDeployed.byRig}
+          released={stockReleased}
+          onReleasedChange={setStockReleased}
+        />
       </Modal>
     </>
   );

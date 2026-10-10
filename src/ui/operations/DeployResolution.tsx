@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Apparatus, Deductions, DeployedComponent, InventoryItem, ShorePoint } from '@core/schema';
+import type { Apparatus, Deductions, DeployedComponent, StockRow, ShorePoint } from '@core/schema';
 import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { assembleBom, componentLabel, findForShorePoint, strutLoadShare } from '@core/shorepoint';
@@ -7,6 +7,7 @@ import { Button, MeasurementValue } from '@ui/primitives';
 import { BottomSheetPicker } from '@ui/picker';
 import { useApparatus, useInventory, useInventoryActions } from '@ui/hooks';
 import { pieceIdentity, sameExtensions } from './pieceIdentity';
+import { sameValue } from './sameValue';
 
 /**
  * DeployResolution — the swaps-in-place "Review sources" step (#330 Phase 3b,
@@ -66,7 +67,7 @@ interface WorkPiece {
 }
 
 /** Inventory rows that physically match this component (by catalog identity). */
-function matchRows(c: DeployedComponent, inventory: InventoryItem[]): InventoryItem[] {
+function matchRows(c: DeployedComponent, inventory: StockRow[]): StockRow[] {
   if (c.role === 'strut') {
     return inventory.filter((i) => i.type === 'strut' && i.model === c.model);
   }
@@ -84,7 +85,7 @@ interface SourceOption {
 }
 
 /** The distinct trucks that stock this piece (available > 0), one entry per rig. */
-function sourceOptions(c: DeployedComponent, inventory: InventoryItem[]): SourceOption[] {
+function sourceOptions(c: DeployedComponent, inventory: StockRow[]): SourceOption[] {
   const byApp = new Map<string, SourceOption>();
   for (const r of matchRows(c, inventory)) {
     if (r.available <= 0) continue;
@@ -211,7 +212,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   // A dropped plate shrinks the deduction, so the strut must span MORE. The chosen
   // strut either still appears in the catalog results or it doesn't — a confirmed
   // determination, not a guess.
-  const stillReaches = deductions === sp.deductions || !!fit.match;
+  const stillReaches = sameValue(deductions, sp.deductions) || !!fit.match;
 
   // Per-strut over-capacity against the AMENDED deductions (2026-07-02 audit #9).
   // Dropping a plate shrinks the deduction → the strut spans MORE → a lower
@@ -233,7 +234,8 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   // assembly that was ALREADY over-capacity or unrated on the card carries the
   // card's ack (it gated Deploy before this step), so it isn't re-acked here; the
   // verdicts still record the true state on the event either way.
-  const dropped = deductions !== sp.deductions;
+  // Structural: a re-projection re-creates equal objects (#499).
+  const dropped = !sameValue(deductions, sp.deductions);
   const dropCrossedOverCapacity = dropped && overCapacity;
   const dropCrossedUnrated = dropped && unrated && !combo.unrated;
   const needsAck = !stillReaches || dropCrossedOverCapacity || dropCrossedUnrated;
@@ -274,7 +276,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   const groupTotal = sp.groupTotal ?? 1;
   const strutAvailable = inventory
     .filter((i) => i.type === 'strut' && i.model === combo.strut.model)
-    .reduce((n, i) => n + i.available, 0);
+    .reduce((n, i) => n + Math.max(0, i.available), 0); // #499: an over-allocated row adds 0, never subtracts
   const groupShort = groupTotal > 1 && strutAvailable < groupTotal;
 
   function setSource(id: string, apparatus: string, inventoryId: string) {

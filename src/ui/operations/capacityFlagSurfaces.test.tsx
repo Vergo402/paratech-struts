@@ -337,3 +337,33 @@ describe('#484 — unknown connector reaches every deployed surface', () => {
     expect(boardFlagOf(known)(known[0]!)).toBeNull();
   });
 });
+
+/**
+ * ADR-041 / plan D4 — a peer deploy committed without the in-app gate: the board chip
+ * (deployedCapacityFlag) and the Quick View verdict (shoreSafety) must BOTH read it as
+ * a red / warn verdict, on the REAL engine (not the mocked shoreSafety suite).
+ */
+describe('ADR-041 / D4 — an unverified peer deploy flags identically on the card and in Quick View', () => {
+  const bom = (model: string): ShorePoint['deployedBom'] => [
+    { role: 'strut', model, system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' },
+  ];
+
+  it('no catalog strut spans the opening → card "no-fit" + drawer warn', () => {
+    const p = leg('nf', { measurementEighths: 6 * 8, deployedBom: bom('LS 406') });
+    expect(deployedCapacityFlag(p, 1)).toBe('no-fit');
+    expect(shoreSafety(p, 1).kind).toBe('warn');
+  });
+
+  it('load beyond every ≤4-strut combo, on a model the catalog no longer matches → card over-capacity + drawer warn', () => {
+    const p = leg('ex', { measurementEighths: 468, estimatedLoad: 10_000_000, deployedBom: bom('LS 812') });
+    expect(deployedCapacityFlag(p, 1)).toBe('over-capacity');
+    expect(shoreSafety(p, 1).kind).toBe('warn');
+  });
+
+  it('the no-fit chip renders red with its words', () => {
+    render(<CapacityFlag flag="no-fit" />);
+    const chip = screen.getByRole('status');
+    expect(chip).toHaveTextContent('No matching strut');
+    expect(chip.className).toContain('fs-spc-flag--no-fit');
+  });
+});

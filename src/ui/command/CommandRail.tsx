@@ -135,7 +135,7 @@ export function CommandRail({
   const acceptTransfer = () => {
     if (!pending) return;
     setAnnounce(`Command transferred to ${pending.toResource.label}.`);
-    void emit({ type: 'CommandTransferAccepted' });
+    void emit({ type: 'CommandTransferAccepted', transferId: pending.transferId });
   };
 
   return (
@@ -227,7 +227,7 @@ export function CommandRail({
               <span className="fs-cmd-xfer-code-digits">{pending.claimCode}</span>
             </div>
           )}
-          <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled' })}>
+          <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferCancelled', transferId: pending.transferId })}>
             Cancel transfer
           </Button>
           {/* Hand-the-tablet accept (#401) — the single-device completion of ADR-021.
@@ -261,7 +261,7 @@ export function CommandRail({
             <Button variant="primary" size="standard" onPress={acceptTransfer}>
               Accept command
             </Button>
-            <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined' })}>
+            <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined', transferId: pending.transferId })}>
               Decline
             </Button>
           </div>
@@ -298,7 +298,7 @@ export function CommandRail({
                 <Button variant="primary" size="standard" onPress={acceptTransfer}>
                   Accept command
                 </Button>
-                <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined' })}>
+                <Button variant="tertiary" size="standard" onPress={() => void emit({ type: 'CommandTransferDeclined', transferId: pending.transferId })}>
                   Decline
                 </Button>
               </div>

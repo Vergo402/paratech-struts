@@ -16,7 +16,6 @@ const item = (id: string): InventoryItem => ({
   apparatus: 'Rescue 2',
   apparatusId: 'r2',
   quantity: 1,
-  available: 1,
 });
 
 describe('legacy DB migration (single-tenant → global + dept bucket)', () => {

@@ -13,7 +13,7 @@ vi.mock('@ui/hooks', () => ({
   useCommit: () => mockCommit,
   useDeviceUid: () => () => Promise.resolve('device-test'),
   useInventory: () => [],
-  useShorePointHistory: () => ({ events: [], deviceUid: 'device-test' }),
+  useShorePointHistory: () => ({ events: [], outcomes: new Map(), deviceUid: 'device-test' }),
 }));
 
 const op: Operation = {
@@ -85,5 +85,14 @@ describe('PastOperationView (#238)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Re-open this incident' }));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(mockCommit).not.toHaveBeenCalled();
+  });
+
+  it('a superseded incident is read-only and named "— superseded", and offers Re-open — the one path to release its stock (#499)', () => {
+    const base = mockArchived();
+    mockArchived.mockReturnValue({ data: { ...base.data!, operation: { ...op, status: 'active' } } });
+    render(<PastOperationView opId="op1" onClose={vi.fn()} />);
+    expect(screen.getByRole('heading', { name: 'Cascade Fire — superseded' })).toBeInTheDocument();
+    expect(screen.getByText(/Viewing a superseded incident — read-only/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Re-open this incident/ })).toBeInTheDocument();
   });
 });

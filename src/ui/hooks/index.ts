@@ -80,3 +80,5 @@ export { useRoleHistory, type RoleHistory } from './useRoleHistory';
 export { useChecklists, type ChecklistApi } from './useChecklists';
 export { useBriefing, type BriefingApi } from './useBriefing';
 export { useChecklistTemplate, useChecklistTemplates, type ChecklistTemplatesApi } from './useChecklistTemplates';
+export { useOverridden, type OverriddenApi } from './useOverridden';
+export { NO_OUTCOMES, type EventOutcome } from './outcomes';

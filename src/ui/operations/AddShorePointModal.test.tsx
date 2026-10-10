@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AddShorePointModal } from './AddShorePointModal';
-import type { InventoryItem, Operation, ShorePoint, FieldShoreEvent } from '@core/schema';
+import type { StockRow, Operation, ShorePoint, FieldShoreEvent } from '@core/schema';
 import { findForShorePoint } from '@core/shorepoint';
 
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
@@ -453,7 +453,7 @@ describe('AddShorePointModal — edit (#220 3-R)', () => {
 describe('AddShorePointModal — one-step inline deploy', () => {
   const INLINE_OP: Operation = { ...OP, inlineDeploy: true };
   const INV = [
-    { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, available: 2 },
+    { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, held: 0, available: 2 },
   ];
   const COMBO = { strut: { id: 's1', inventoryId: 'inv-1', model: 'LS 203' }, extensions: [] };
 
@@ -479,7 +479,7 @@ describe('AddShorePointModal — one-step inline deploy', () => {
   it('no available stock → a notice + "Add to Pending", no dead-end Find button', async () => {
     // every strut out (available 0) → one-step mode has nothing to deploy.
     mockInventory.mockReturnValue([
-      { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, available: 0 },
+      { id: 'inv-1', type: 'strut', model: 'LS 203', apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, held: 2, available: 0 },
     ] as never);
     const user = userEvent.setup();
     render(<AddShorePointModal open onClose={() => {}} />);
@@ -544,7 +544,7 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     const onDeployed = vi.fn();
     const onClose = vi.fn();
     // One LS 203 on scene, but a 3-Post needs three struts.
-    mockInventory.mockReturnValue([{ ...INV[0], quantity: 1, available: 1 }] as never);
+    mockInventory.mockReturnValue([{ ...INV[0], quantity: 1, held: 0, available: 1 }] as never);
     mockCommit.mockResolvedValueOnce({ ok: true }); // 1st strut deploys; there is no 2nd to draw
     render(<AddShorePointModal open onClose={onClose} onDeployed={onDeployed} />);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
@@ -667,7 +667,7 @@ describe('location capture (#441) — explicit in the form', () => {
 describe('AddShorePointModal — #452 per-member source resolution', () => {
   const INLINE_OP: Operation = { ...OP, inlineDeploy: true };
 
-  const strutRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+  const strutRow = (id: string, apparatus: string, available: number): StockRow => ({
     id,
     type: 'strut',
     model: 'LS 406', // 48–73″ collapsed/extended — fits the 5 ft opening below
@@ -675,21 +675,23 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
     apparatus,
     apparatusId: `ap-${id}`,
     quantity: available,
+    held: 0,
     available,
   });
 
-  const plateRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+  const plateRow = (id: string, apparatus: string, available: number): StockRow => ({
     id,
     type: 'plate',
     plateId: 'rigid6',
     apparatus,
     apparatusId: `ap-${id}`,
     quantity: available,
+    held: 0,
     available,
   });
 
   /** The real engine's LS 406 recommendation for a 5 ft opening over `inv`. */
-  function realCombo(inv: InventoryItem[], deductions?: ShorePoint['deductions']) {
+  function realCombo(inv: StockRow[], deductions?: ShorePoint['deductions']) {
     const sp = makeSP({
       shoreType: '3-post',
       measurementEighths: 480, // 5 ft
@@ -827,7 +829,7 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
   // deploy COUNT looks fine pre-fix; the distinct-extension-row assertion is the one
   // that catches it (in the real store the decrement would abort member 2).
   it('re-resolves EXTENSIONS per member: one 12″ per rig → both deploy on distinct rows', async () => {
-    const extRow = (id: string, apparatus: string, available: number): InventoryItem => ({
+    const extRow = (id: string, apparatus: string, available: number): StockRow => ({
       id,
       type: 'extension',
       length: 12,
@@ -835,6 +837,7 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
       apparatus,
       apparatusId: `ap-${id}`,
       quantity: available,
+      held: 0,
       available,
     });
     // 7 ft = 84″: bare LS 406 tops out at 73″; LS 406 + 12″ spans 60–85″ (LongShore

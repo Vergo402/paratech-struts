@@ -11,6 +11,15 @@ import { createRolesStore, type RolesStoreApi } from './rolesStore';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { syncService } from '../sync/syncService';
 import { inventoryPath, toCloudRow, tombstone } from '../sync/stateSync';
+import { createMonotonicClock } from '@core/clock';
+
+// Firebase-free at module load (the syncService pattern): the diagnostics ledger imports
+// the Firebase SDK, so it is pulled in lazily, only when a skew reset actually fires.
+function logClockSkew(aheadMs: number): void {
+  void import('../sync/diagnostics').then(({ logSyncEvent }) =>
+    logSyncEvent('clock-skew', { reason: `ahead ${aheadMs}ms` }),
+  );
+}
 
 // data/store/registry — per-department local bucketing (cloud-sync Increment 1).
 // Each department gets its OWN Dexie DB (`fieldshore-dept-<deptId>`); a guest /
@@ -73,10 +82,18 @@ function build(bucket: string): void {
   operationStore = createOperationStore({
     db: deptDb,
     inventory: inventoryStore,
+    // ADR-041 — the per-device monotonic clock stamps every local commit's `at`; it
+    // observes only this device's own events (deviceUid), never a peer's.
+    clock: createMonotonicClock(
+      () => Date.now(),
+      (d) => logClockSkew(d.aheadMs),
+    ),
+    deviceUid: () => sessionStore.store.getState().deviceUid,
     // Wire commits to the sync queue, then kick a best-effort upload. Fire-and-forget:
-    // flush() is guest-guarded + single-drain, and reconcile's fromRemote commits don't
-    // enqueue, so this never fires on a pulled-down event (no echo loop). Keeping the
-    // flush trigger HERE (not in operationStore) preserves the store's sync-ignorance.
+    // flush() is guest-guarded + single-drain, and peer events never enqueue (they come
+    // in through the peer path), so this never fires on a pulled-down event (no echo
+    // loop). Keeping the flush trigger HERE (not in operationStore) preserves the
+    // store's sync-ignorance.
     enqueue: (e) => {
       syncService.enqueue(e);
       void syncService.flush();

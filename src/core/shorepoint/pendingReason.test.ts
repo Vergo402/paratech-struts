@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { NO_DEDUCTIONS, type InventoryItem, type ShorePoint } from '../schema';
+import { NO_DEDUCTIONS, type StockRow, type ShorePoint } from '../schema';
 import { pendingReasonFor, pendingNeedModels } from './pendingReason';
 
 function sp(over: Partial<ShorePoint> = {}): ShorePoint {
@@ -15,7 +15,7 @@ function sp(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
-const strut = (id: string, model: string, system: InventoryItem['system'], available: number): InventoryItem => ({
+const strut = (id: string, model: string, system: StockRow['system'], available: number): StockRow => ({
   id,
   type: 'strut',
   model,
@@ -23,6 +23,7 @@ const strut = (id: string, model: string, system: InventoryItem['system'], avail
   apparatus: 'Rescue 2',
   apparatusId: 'app-rescue-2',
   quantity: Math.max(available, 1),
+  held: Math.max(available, 1) - available,
   available,
 });
 
@@ -44,8 +45,9 @@ describe('pendingReasonFor — live reason for a Pending point (#221)', () => {
         apparatus: 'Engine 1',
         apparatusId: 'app-engine-1',
         quantity: 1,
+        held: 0,
         available: 1,
-      } as InventoryItem,
+      } as StockRow,
     ];
     expect(pendingReasonFor(sp({ measurementEighths: 200 * 8 }), inv)).toBeUndefined();
   });

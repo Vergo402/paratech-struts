@@ -29,10 +29,11 @@ export interface ApparatusStoreApi {
   boot(): Promise<void>;
   /** Add or replace one rig (durable write THEN mirror). */
   addApparatus(a: Apparatus): Promise<void>;
-  /** Guarded remove: refuses if any item on the rig is deployed (q−a > 0); otherwise
-   *  cascade-deletes its available-only stock rows in the SAME transaction. Takes the
-   *  inventory store to resync its mirror after the bulk delete (cross-store, injected
-   *  to avoid a module cycle). */
+  /** Guarded remove: refuses if any row on the rig has units held by deployed equipment
+   *  (ADR-041: held comes from the folded event log, read via inventory.heldOf);
+   *  otherwise cascade-deletes the rig's stock rows in the SAME transaction. Takes the
+   *  inventory store for the held read and to resync its mirror after the bulk delete
+   *  (cross-store, injected to avoid a module cycle). */
   removeApparatus(id: string, inventory: InventoryStoreApi): Promise<void>;
   /** Replace one rig in the mirror after a durable write elsewhere (e.g. import). */
   applyLocal(a: Apparatus): void;
@@ -95,7 +96,7 @@ export function createApparatusStore(db: FieldShoreDB, hooks: ApparatusCloudHook
       // rolls back both the roster row and any cascade delete (L-8 discipline).
       await db.transaction('rw', db.meta, db.inventory, async () => {
         const items = await db.inventory.where('apparatusId').equals(id).toArray();
-        if (items.some((i) => i.quantity - i.available > 0)) {
+        if (items.some((i) => inventory.heldOf(i.id) > 0)) {
           throw new Error(`apparatus ${id} has deployed equipment (L-8 abort)`);
         }
         removedIds = items.map((i) => i.id);

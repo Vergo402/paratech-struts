@@ -157,7 +157,7 @@
           "$opId": {
             "$eventId": {
               ".write": "auth != null && root.child('orgs').child($deptId).child('members').child(auth.uid).exists() && root.child('orgs').child($deptId).child('members').child(auth.uid).child('active').val() != false && !data.exists()",
-              ".validate": "newData.hasChildren(['id','opId','type','at','by']) && newData.child('id').isString() && newData.child('opId').isString() && newData.child('type').isString() && newData.child('at').isNumber()"
+              ".validate": "newData.hasChildren(['id','opId','type','at','by']) && newData.child('id').isString() && newData.child('opId').isString() && newData.child('type').isString() && newData.child('at').isNumber() && newData.child('receivedAt').val() == now"
             }
           }
         },

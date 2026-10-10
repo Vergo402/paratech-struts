@@ -108,7 +108,7 @@ function eventLine(e: FieldShoreEvent): string | null {
 const SAFETY_WORD = { ok: 'Safe', warn: 'Check', unknown: 'Unverified' } as const;
 
 export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
-  const { events, deviceUid } = useShorePointHistory(sp.id);
+  const { events, outcomes, deviceUid } = useShorePointHistory(sp.id);
 
   const bom = sp.deployedBom ?? [];
   const rigs = deployedRigs(sp);
@@ -289,9 +289,13 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
               const label = eventLine(e);
               if (!label) return null;
               const who = deviceUid === undefined ? '—' : e.by === deviceUid ? 'this device' : 'another device';
+              // #499 — a change that lost a race stays in the trail, muted, "— no effect".
+              const noEffect = outcomes?.get(e.id) === 'no-effect';
               return (
                 <li key={e.id} className="fs-spd-event">
-                  <span className="fs-spd-event-label">{label}</span>
+                  <span className={noEffect ? 'fs-spd-event-label fs-spd-event-label--no-effect' : 'fs-spd-event-label'}>
+                    {noEffect ? `${label} — no effect` : label}
+                  </span>
                   <span className="fs-spd-event-meta">
                     {dateClock(e.at)} · {who}
                   </span>

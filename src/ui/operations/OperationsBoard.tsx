@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedRigs, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
+import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
 import {
   compareAreaValues,
   compareBuildingValues,
@@ -57,6 +57,7 @@ import { OpsFilterSheet } from './OpsFilterSheet';
 import { TaskLevelChecklist } from './TaskLevelChecklist';
 import { OrmBriefingModal } from './OrmBriefingModal';
 import { buildRailTree, type ScopePath } from './railTree';
+import { EndOperationHolds, useStillDeployed, stockReleasedExtra } from './EndOperationHolds';
 
 type ModalMode = null | 'create' | 'edit';
 
@@ -409,6 +410,8 @@ export function OperationsBoard() {
   const [viewArchiveOpId, setViewArchiveOpId] = useState<string | null>(null);
   const [view, setView] = useState<OpsView>('board');
   const [endOpOpen, setEndOpOpen] = useState(false);
+  const [stockReleased, setStockReleased] = useState(false); // #499 — "All equipment is back on the rigs"
+  const stillDeployed = useStillDeployed(shorePoints);
   const [collapsed, setCollapsed] = useState<Set<ShorePointStatus>>(new Set());
   const [spModal, setSpModal] = useState<SpModalState>(null);
   const [deleteSp, setDeleteSp] = useState<ShorePoint | null>(null);
@@ -834,11 +837,12 @@ export function OperationsBoard() {
       opId: operation.id,
       at: Date.now(),
       by: await getUid(),
+      ...stockReleasedExtra(stillDeployed.total > 0 && stockReleased),
     });
     // The Past-operations list re-fetches on its next mount (it only renders in
     // the empty state, which this end transition lands on) — no manual invalidate.
     if (result.ok) setEndOpOpen(false);
-  }, [commit, getUid, operation]);
+  }, [commit, getUid, operation, stockReleased, stillDeployed.total]);
 
   /** Group gate (#221 OQ2): a grouped point's advance waits until every mate has left Pending. */
   const advanceDisabledReasonFor = useCallback(
@@ -905,17 +909,6 @@ export function OperationsBoard() {
   // pulled from (deployedRigs — a deployed shore can now span multiple rigs) —
   // each such rig's available count stays short for the next call. Empty → no
   // warning. Non-blocking (the IC may close anyway).
-  const stillDeployedByRig = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const sp of shorePoints) {
-      if (sp.deletedAt != null || !sp.deployedBom || sp.status === 'returned') continue;
-      for (const rig of deployedRigs(sp)) {
-        m.set(rig, (m.get(rig) ?? 0) + 1);
-      }
-    }
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [shorePoints]);
-  const stillDeployedTotal = stillDeployedByRig.reduce((n, [, c]) => n + c, 0);
 
   // Cascade (#347): when division changes, drop filterArea if it's no longer
   // present in the new division's area list. Handled synchronously in the
@@ -1543,7 +1536,10 @@ export function OperationsBoard() {
             {canManageOps && (
               /* Bare red text, not the briefing's outline twin (#22) — ending the
                  incident is the screen-foot outlier, never a routine button. */
-              <Button variant="tertiary" destructive onPress={() => setEndOpOpen(true)}>
+              <Button variant="tertiary" destructive onPress={() => {
+                setStockReleased(false);
+                setEndOpOpen(true);
+              }}>
                 End Operation
               </Button>
             )}
@@ -1730,22 +1726,12 @@ export function OperationsBoard() {
         }
       >
         <p>This archives every shore point and ends the active operation. You can start a new one afterward.</p>
-        {stillDeployedTotal > 0 && (
-          <div className="fs-endop-warning" role="alert">
-            <p className="fs-endop-warning-lead">
-              ⚠ {stillDeployedTotal} shore {stillDeployedTotal === 1 ? 'point is' : 'points are'} still up — gear
-              hasn’t been returned to {stillDeployedByRig.length === 1 ? 'this rig' : 'these rigs'}, leaving{' '}
-              {stillDeployedByRig.length === 1 ? 'it' : 'them'} short for the next call:
-            </p>
-            <ul className="fs-endop-warning-rigs">
-              {stillDeployedByRig.map(([rig, count]) => (
-                <li key={rig}>
-                  {rig} <span className="fs-endop-warning-count">({count})</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <EndOperationHolds
+          total={stillDeployed.total}
+          byRig={stillDeployed.byRig}
+          released={stockReleased}
+          onReleasedChange={setStockReleased}
+        />
       </Modal>
     </div>
   );

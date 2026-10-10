@@ -32,4 +32,17 @@ describe('PastOperationsList (#238)', () => {
     await userEvent.click(screen.getByText('Cascade Fire'));
     expect(onOpen).toHaveBeenCalledWith('op2');
   });
+
+  it('a superseded incident (lost the active-op race) lists as "<name> — superseded" (#499)', () => {
+    mockArchive.mockReturnValue({
+      data: [
+        { id: 'op3', name: 'Oak St', endedAt: 1_700_000_000_000, shorePointCount: 2, superseded: true },
+        { id: 'op1', name: 'Mill Collapse', endedAt: 1_600_000_000_000, shorePointCount: 1 },
+      ],
+    });
+    render(<PastOperationsList onOpen={vi.fn()} />);
+    expect(screen.getByText('Oak St — superseded')).toBeInTheDocument();
+    expect(screen.getByText('Mill Collapse')).toBeInTheDocument();
+    expect(screen.queryByText('Mill Collapse — superseded')).toBeNull();
+  });
 });

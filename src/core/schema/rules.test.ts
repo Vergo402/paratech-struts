@@ -124,6 +124,9 @@ describe('database.rules.json — v4 /orgs block (L-11 drift gate)', () => {
     expect(event['.validate']).toContain("newData.hasChildren(['id','opId','type','at','by'])");
     expect(event['.validate']).toContain("newData.child('at').isNumber()");
     expect(event['.write']).not.toContain("child('by').val() === auth.uid"); // by = device uid, not account
+    // ADR-041 canonical order: receivedAt must be the SERVER timestamp (serverTimestamp()
+    // resolves to `now`); a client-literal number or an absent field is rejected
+    expect(event['.validate']).toContain("newData.child('receivedAt').val() == now");
     // reads cascade from the dept node's .read; no own .read, no $other (coarse — extras pass)
     expect(event['.read']).toBeUndefined();
     expect(event.$other).toBeUndefined();

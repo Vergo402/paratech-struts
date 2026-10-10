@@ -4,12 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
 import { OperationsBoard } from './OperationsBoard';
-import type { InventoryItem, Operation, ShorePoint, ShorePointStatus } from '@core/schema';
+import type { StockRow, Operation, ShorePoint, ShorePointStatus } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 
 const mockOperation = vi.fn((): Operation | null => null);
 const mockShorePoints = vi.fn((): ShorePoint[] => []);
-const mockInventory = vi.fn((): InventoryItem[] => []);
+const mockInventory = vi.fn((): StockRow[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
@@ -110,7 +110,7 @@ const COMBO: StrutCombination = {
   openingLength: 48.5,
 };
 
-const INV_ITEM: InventoryItem = {
+const INV_ITEM: StockRow = {
   id: 'inv-1',
   type: 'strut',
   model: 'LS 304',
@@ -118,6 +118,7 @@ const INV_ITEM: InventoryItem = {
   apparatus: 'Rescue 2',
   apparatusId: 'app-r2',
   quantity: 4,
+  held: 0,
   available: 4,
 };
 
@@ -920,12 +921,36 @@ describe('OperationsBoard', () => {
 
     await user.click(screen.getByRole('button', { name: 'End Operation' }));
     const dialog = screen.getByRole('dialog', { name: 'End Operation?' });
-    expect(dialog).toHaveTextContent(/3 shore points are still up/); // 2 Rescue 2 + 1 Engine 1
+    expect(dialog).toHaveTextContent(/3 shore points still hold equipment/); // 2 Rescue 2 + 1 Engine 1
     expect(dialog).toHaveTextContent(/Rescue 2\s*\(2\)/);
     expect(dialog).toHaveTextContent(/Engine 1\s*\(1\)/);
     expect(dialog).not.toHaveTextContent('Ladder 5'); // returned rig not listed
     // Non-blocking: the confirm is still there.
     expect(within(dialog).getByRole('button', { name: 'End Operation' })).toBeEnabled();
+  });
+
+  it('End Operation: the "back on the rigs" checkbox is unchecked by default and sets stockReleased (#499)', async () => {
+    const user = userEvent.setup();
+    const held = { ...makeSP('sp-1', 'process'), deployedBom: [{ role: 'strut' as const, model: 'LS 203', source: 'Rescue 2', inventoryId: 'i1' }] };
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([held]);
+    render(<OperationsBoard />);
+
+    // Unchecked → the field is omitted (RTDB rejects undefined).
+    await user.click(screen.getByRole('button', { name: 'End Operation' }));
+    let dialog = screen.getByRole('dialog', { name: 'End Operation?' });
+    expect(within(dialog).getByRole('checkbox', { name: 'All equipment is back on the rigs' })).not.toBeChecked();
+    mockCommit.mockClear();
+    await user.click(within(dialog).getByRole('button', { name: 'End Operation' }));
+    expect(mockCommit.mock.calls[0]![0]).not.toHaveProperty('stockReleased');
+
+    // Checked → stockReleased: true.
+    await user.click(screen.getByRole('button', { name: 'End Operation' }));
+    dialog = screen.getByRole('dialog', { name: 'End Operation?' });
+    await user.click(within(dialog).getByRole('checkbox', { name: 'All equipment is back on the rigs' }));
+    mockCommit.mockClear();
+    await user.click(within(dialog).getByRole('button', { name: 'End Operation' }));
+    expect(mockCommit).toHaveBeenCalledWith(expect.objectContaining({ type: 'OperationEnded', stockReleased: true }));
   });
 
   it('End Operation shows no warning when all equipment is returned', async () => {
@@ -938,7 +963,8 @@ describe('OperationsBoard', () => {
 
     await user.click(screen.getByRole('button', { name: 'End Operation' }));
     const dialog = screen.getByRole('dialog', { name: 'End Operation?' });
-    expect(dialog).not.toHaveTextContent(/still up/);
+    expect(dialog).not.toHaveTextContent(/still hold equipment/);
+    expect(within(dialog).queryByRole('checkbox')).toBeNull();
   });
 
   // ---- multi-building — group + filter by building ---------------------------

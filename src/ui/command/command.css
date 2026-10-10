@@ -1691,6 +1691,9 @@
   font: var(--type-caption);
   color: var(--text-primary);
 }
+.fs-node-hist-line--no-effect {
+  color: var(--text-secondary);
+}
 .fs-node-hist-time {
   flex: none;
   font: var(--type-caption);

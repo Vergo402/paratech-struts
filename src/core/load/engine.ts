@@ -1,4 +1,4 @@
-import type { InventoryItem, System } from '../schema';
+import type { InventoryItem, StockRow, System } from '../schema';
 import { ACME_LOAD_TABLE, LONGSHORE_LOAD_TABLE, type LoadRow } from './tables';
 import { STRUTS, EXTENSIONS, LOCKSTROKE_EXTENSIONS, type Strut } from './struts';
 
@@ -115,7 +115,7 @@ export function findStrutCombinations(
   requiredLength: number,
   estimatedLoad: number,
   sfIndex: number,
-  inventory?: InventoryItem[] | null,
+  inventory?: StockRow[] | null,
   systemFilter?: System[] | null,
   deductions?: EngineDeductions | null,
 ): StrutCombination[] {
@@ -213,7 +213,9 @@ export function findStrutCombinations(
           // only ever WIDENS availability, never over-rates capacity (audit W8).
           const avail = inv
             .filter((i) => extensionRowCompatible(i, parseInt(size), strut.system))
-            .reduce((sum, i) => sum + i.available, 0);
+            // #499 — a row's derived available is signed (negative = over-allocated); clamp at
+            // 0 so an over-allocated row never subtracts from a sibling row's pool.
+            .reduce((sum, i) => sum + Math.max(0, i.available), 0);
           if (avail < qty) {
             extAvailable = false;
             break;

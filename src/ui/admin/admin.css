@@ -325,6 +325,7 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 
 .fs-al-row-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
 .fs-al-row-text { font: var(--type-body); color: var(--text-primary); min-width: 0; }
+.fs-al-row-text--no-effect { color: var(--text-secondary); }
 .fs-al-row-meta { font: var(--type-caption); color: var(--text-secondary); }
 .fs-al-row-detail {
   display: flex;

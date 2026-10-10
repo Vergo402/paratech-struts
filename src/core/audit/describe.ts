@@ -22,6 +22,7 @@ export interface AuditRow {
   tone: AuditTone;
   text: string; //    the one-line action
   detail?: string; // optional second line, shown when the row is expanded
+  noEffect?: boolean; // #499 — the change lost a race and never took effect (text carries "— no effect")
 }
 
 // The governance audit entry written by departmentService.appendAudit — a coarse,
@@ -40,7 +41,7 @@ export interface AuditEntry {
 
 // ---- shared label resolution (built from the event list itself) ----------------
 
-function spLabelFromPoint(sp: ShorePoint): string {
+export function spLabelFromPoint(sp: ShorePoint): string {
   const grp = sp.groupIndex && sp.groupTotal ? ` (${sp.groupIndex}/${sp.groupTotal})` : '';
   if (sp.seq) return `Shore point ${sp.seq}${grp}`;
   const loc = [sp.building, divisionLabel(sp.division), sp.area].filter(Boolean).join(' ');
@@ -213,9 +214,17 @@ function describeOne(e: FieldShoreEvent, c: Ctx): Described {
 }
 
 /** The Incident view rows for ONE operation's event log, in the given (append) order. */
-export function describeEventLog(events: FieldShoreEvent[], opId: string): AuditRow[] {
+export function describeEventLog(
+  events: FieldShoreEvent[],
+  opId: string,
+  outcomes?: ReadonlyMap<string, 'applied' | 'no-effect'>,
+): AuditRow[] {
   const c = buildCtx(events, opId);
-  return events.map((e) => ({ id: e.id, at: e.at, by: e.by, actor: c.who(e.by), ...describeOne(e, c) }));
+  return events.map((e) => {
+    const row: AuditRow = { id: e.id, at: e.at, by: e.by, actor: c.who(e.by), ...describeOne(e, c) };
+    // #499 — a change that lost a race stays in the log, qualified: "<action> — no effect".
+    return outcomes?.get(e.id) === 'no-effect' ? { ...row, text: `${row.text} — no effect`, noEffect: true } : row;
+  });
 }
 
 // ---- governance (Administrative view) ------------------------------------------

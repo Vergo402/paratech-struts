@@ -1,5 +1,6 @@
 import type { FieldShoreEvent } from '../schema';
 import { operationReducer, statusFanTargets, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
+import { foldWithOutcomes, resolveLifecycle } from './eventLog';
 
 /** True when the event NAMES this shore point (Added carries the id under
  *  shorePoint.id; every other SP event under spId). */
@@ -8,7 +9,7 @@ function namesShorePoint(e: FieldShoreEvent, spId: string): boolean {
 }
 
 /**
- * Every logged event that TOUCHED one shore point, in append (chronological) order
+ * Every logged event that TOUCHED one shore point, in the order given (callers pass canonical order)
  * — the Quick View timeline (ADR-019). Not just the events naming the point: a
  * grouped `ShorePointStatusChanged` fans across every lockstep mate but carries only
  * the TRIGGER's spId, so a mate's audit trail silently lost those moves (#453).
@@ -47,71 +48,82 @@ export function shorePointHistory(events: readonly FieldShoreEvent[], spId: stri
 }
 
 /**
- * The opId of the operation that is active at the END of the log — the last
- * OperationCreated/OperationReopened whose op hasn't since been ended. Null = none
- * active (a fresh device, or every op archived). This is what scopes the active
- * projection to ONE incident so a second op never inherits the first's points,
- * and what lets a re-opened op be reconstructed from the retained log (ADR-036).
+ * The opId of the active operation — the EARLIEST un-ended OperationCreated/
+ * OperationReopened in canonical order (ADR-041: first received wins). A later
+ * create/reopen while another op is active lost the race and is ignored (it is not
+ * queued: when the winner ends, the loser does not become active). Null = none active.
+ * This scopes the active projection to ONE incident so a second op never inherits the
+ * first's points, and lets a re-opened op be reconstructed from the log (ADR-036).
+ *
+ * Every function in this file expects `events` in CANONICAL order (sortCanonical /
+ * EventLog.sortedEvents()) — append (Dexie seq) order is not chronological.
  */
 function activeOpId(events: readonly FieldShoreEvent[]): string | null {
-  let active: string | null = null;
-  for (const e of events) {
-    if (e.type === 'OperationCreated' || e.type === 'OperationReopened') active = e.opId;
-    else if (e.type === 'OperationEnded' && e.opId === active) active = null;
-  }
-  return active;
+  return resolveLifecycle(events).activeOpId;
 }
 
 /**
- * Project a single operation by id — fold ONLY its events, from empty. Works for
- * active, ended, and re-opened ops (an ended op folds to status:'ended'; a
- * re-opened one folds Ended-then-Reopened to status:'active'). The read-only
- * archive drill-in and the active path both lean on this.
+ * Project a single operation by id — fold ONLY its events, from empty, through the same
+ * kernel as the live EventLog (batch-atomic; a reopen that lost the active-op race is
+ * skipped so the op stays ended). Works for active, ended, re-opened and superseded ops.
+ * The read-only archive drill-in and the active path both lean on this.
  */
 export function projectOperationById(events: readonly FieldShoreEvent[], opId: string): OperationState {
-  return events.filter((e) => e.opId === opId).reduce(operationReducer, EMPTY_OPERATION_STATE);
+  return foldWithOutcomes(events, opId).state;
 }
 
 /**
  * Recompute the ACTIVE operation's state by folding its events (ADR-009: the log
- * is the device's source of truth; state is a projection). data/store calls this
- * on boot and on every lifecycle-boundary commit. Deterministic — same events in
- * the same order always yield the same state, which is what keeps devices in sync.
+ * is the device's source of truth; state is a projection). Deterministic — the same
+ * events in canonical order always yield the same state on every device (ADR-041).
  */
 export function projectOperation(events: readonly FieldShoreEvent[]): OperationState {
   const id = activeOpId(events);
   return id == null ? EMPTY_OPERATION_STATE : projectOperationById(events, id);
 }
 
-/** One finished-incident row for the Past-operations list. */
+/** One past-incident row for the Past-operations list. */
 export interface ArchivedOperationSummary {
   id: string;
   name: string;
-  endedAt: number; // epoch ms of the most recent OperationEnded for this op
+  /** epoch ms of the canonically LAST OperationEnded for this op; for a superseded op
+   *  (never ended) its OperationCreated.at, so it sorts by when it was started. */
+  endedAt: number;
   shorePointCount: number; // live (non-deleted) points
+  /** Present (true) only on an op that lost the active-op race: it has no OperationEnded
+   *  in the log and is not the active op (ADR-041). Read-only drill-in, no synthetic end. */
+  superseded?: true;
 }
 
 /**
- * Every operation whose current state is `ended`, newest-ended first — the
- * Past-operations list (#238). The log is retained, so each row is fully
- * re-projectable via projectOperationById for the read-only drill-in. A
- * re-opened op is active again, so it correctly drops out of this list.
+ * Every operation that is NOT the active one, newest first — the Past-operations list
+ * (#238). Listed regardless of folded status: an ended op, a superseded op (lost the
+ * active-op race — flagged `superseded`), and an op whose reopen lost the race (stays
+ * ended, since the losing reopen is skipped). The log is retained, so each row is fully
+ * re-projectable via projectOperationById for the read-only drill-in. A re-opened op that
+ * won is active, so it drops out of this list. `events` must be canonical order.
  */
 export function projectArchive(events: readonly FieldShoreEvent[]): ArchivedOperationSummary[] {
-  const opIds: string[] = [];
-  for (const e of events) if (e.type === 'OperationCreated' && !opIds.includes(e.opId)) opIds.push(e.opId);
+  const active = activeOpId(events);
+  const createdAt = new Map<string, number>();
+  const endedAt = new Map<string, number>();
+  for (const e of events) {
+    if (e.type === 'OperationCreated' && !createdAt.has(e.opId)) createdAt.set(e.opId, e.at);
+    else if (e.type === 'OperationEnded') endedAt.set(e.opId, e.at); // canonical last wins
+  }
 
   const out: ArchivedOperationSummary[] = [];
-  for (const id of opIds) {
+  for (const [id, created] of createdAt) {
+    if (id === active) continue;
     const { operation, shorePoints } = projectOperationById(events, id);
-    if (!operation || operation.status !== 'ended') continue;
-    let endedAt = 0;
-    for (const e of events) if (e.type === 'OperationEnded' && e.opId === id) endedAt = e.at;
+    if (!operation) continue;
+    const ended = endedAt.get(id);
     out.push({
       id,
       name: operation.name,
-      endedAt,
+      endedAt: ended ?? created,
       shorePointCount: shorePoints.filter((sp) => sp.deletedAt == null).length,
+      ...(ended === undefined ? { superseded: true as const } : {}),
     });
   }
   return out.sort((a, b) => b.endedAt - a.endedAt);

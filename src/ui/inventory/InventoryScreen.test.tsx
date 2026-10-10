@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InventoryScreen } from './InventoryScreen';
 import { ImportExport } from './ImportExport';
-import type { Apparatus, InventoryItem, Operation, Permissions } from '@core/schema';
+import type { Apparatus, StockRow, Operation, Permissions } from '@core/schema';
 import { ADMIN_PERMISSIONS, DEFAULT_PERMISSIONS } from '@core/schema';
 
-const mockInventory = vi.fn((): InventoryItem[] => []);
+const mockInventory = vi.fn((): StockRow[] => []);
 const mockApparatus = vi.fn(() => ({ roster: [] as Apparatus[], add: vi.fn(), remove: vi.fn() }));
 const mockOperation = vi.fn((): Operation | null => null);
 const mockPermissions = vi.fn((): Permissions => ADMIN_PERMISSIONS);
@@ -36,7 +36,7 @@ vi.mock('@ui/hooks', async () => ({
 }));
 
 const rig = (id: string, name: string): Apparatus => ({ id, name, type: 'Engine' });
-const item = (id: string, apparatusId: string, apparatus: string, model: string): InventoryItem => ({
+const item = (id: string, apparatusId: string, apparatus: string, model: string): StockRow => ({
   id,
   type: 'strut',
   model,
@@ -44,6 +44,7 @@ const item = (id: string, apparatusId: string, apparatus: string, model: string)
   apparatus,
   apparatusId,
   quantity: 1,
+  held: 0,
   available: 1,
 });
 
@@ -71,6 +72,18 @@ describe('InventoryScreen', () => {
     await user.click(screen.getByRole('tab', { name: /Rescue 2/ }));
     expect(screen.getByText('LS 203')).toBeInTheDocument();
     expect(screen.queryByText('AT 25-36')).toBeNull();
+  });
+
+  it('totals: "on hand" clamps an over-allocated row at 0; "deployed" sums what is held (#499)', () => {
+    mockApparatus.mockReturnValue({ roster: [rig('r1', 'Rescue 1')], add: vi.fn(), remove: vi.fn() });
+    mockInventory.mockReturnValue([
+      { ...item('i1', 'r1', 'Rescue 1', 'AT 56-88'), quantity: 2, held: 3, available: -1 }, // over-allocated
+      { ...item('i2', 'r1', 'Rescue 1', 'LS 203'), quantity: 4, held: 1, available: 3 },
+    ]);
+    render(<InventoryScreen />);
+    const stats = document.querySelector('.fs-inv-stats')!;
+    expect(stats).toHaveTextContent(/3\s*on hand/);
+    expect(stats).toHaveTextContent(/4\s*deployed/);
   });
 
   it('hides management controls for a member without manageInventory but keeps stock visible (#380)', () => {

@@ -13,6 +13,7 @@ import { RecommendationCard, comboModel } from './RecommendationCard';
 import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardParts';
+import { sameValue } from './sameValue';
 
 /**
  * Assign Equipment — the Pending card's primary action (#221 step 2). A
@@ -113,7 +114,9 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
     setDeploying(true);
     setError(null);
     const uid = await getUid();
-    const amended = !!deductions && deductions !== sp.deductions;
+    // Structural, not identity: a re-projection re-creates every object, so an identical
+    // re-measure must not append a spurious ShorePointEdited (#499).
+    const amended = !!deductions && !sameValue(deductions, sp.deductions);
     const priorDeductions = sp.deductions;
     if (amended) {
       const edit = await commit({

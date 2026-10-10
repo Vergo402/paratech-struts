@@ -1,5 +1,5 @@
 import { extensionRowCompatible, type StrutCombination } from '../load';
-import type { Deductions, DeployedComponent, InventoryItem, ShorePoint } from '../schema';
+import type { Deductions, DeployedComponent, StockRow, ShorePoint } from '../schema';
 import { UNTRACKED_SOURCE } from '../schema';
 
 // ADR-033 — small read helpers over a deployed shore's bill of materials. Pure;
@@ -63,7 +63,7 @@ export function assembleBom(
   // inventoryId absent ⟺ the strut itself is not drawn from stock (a not-in-stock
   // / off-book strut, resolved in the missing-piece chooser like a missing plate).
   strutSource: { apparatus: string; inventoryId?: string },
-  inventory: InventoryItem[],
+  inventory: StockRow[],
 ): DeployedComponent[] {
   // Units already claimed from each inventory row by THIS one assembly — so two
   // components that draw from the same row (the same plate at both ends, or two
@@ -99,7 +99,7 @@ export function assembleBom(
   //       and must never silently vanish from the deployed identity.
   // Every pick is recorded in `claimed`, so two same-length extensions take two
   // DISTINCT units, and inventoryId is set only when a row was actually found.
-  const unclaimed = (i: InventoryItem) => i.available - (claimed[i.id] ?? 0) > 0;
+  const unclaimed = (i: StockRow) => i.available - (claimed[i.id] ?? 0) > 0;
   const extSources = [...(combo.extensionSources ?? [])];
   for (const length of combo.extensions) {
     const idx = extSources.findIndex((s) => {
@@ -156,7 +156,7 @@ export function bomSourceStatus(
   deductions: Pick<Deductions, 'topPlate' | 'bottomPlate'>,
   // inventoryId absent ⟺ a not-in-stock strut → reports 'missing' ("Strut not on scene").
   strutSource: { apparatus: string; inventoryId?: string },
-  inventory: InventoryItem[],
+  inventory: StockRow[],
 ): BomSourceStatus {
   const bom = assembleBom(combo, deductions, strutSource, inventory);
   const more = (n: number) => (n > 1 ? ` (+${n - 1})` : '');
@@ -177,7 +177,7 @@ function pushPlate(
   role: 'top-plate' | 'bottom-plate',
   plateId: string,
   preferRig: string,
-  inventory: InventoryItem[],
+  inventory: StockRow[],
   claimed: Record<string, number>,
   claim: (id: string) => void,
 ): void {

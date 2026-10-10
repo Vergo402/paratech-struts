@@ -113,7 +113,13 @@ function cutEighths(sp: ShorePoint): number {
  */
 function heroFlagText(flag: Exclude<CapacityFlagValue, null>, standing: number | null, planned: number | null): string {
   const word =
-    flag === 'unrated' ? 'Unrated length' : flag === 'unknown-connector' ? 'Unknown connector' : 'Over capacity';
+    flag === 'unrated'
+      ? 'Unrated length'
+      : flag === 'unknown-connector'
+        ? 'Unknown connector'
+        : flag === 'no-fit'
+          ? 'No matching strut'
+          : 'Over capacity';
   if (standing == null || planned == null || planned < 2) return word;
   return `${word} — ${standing} of ${planned} struts standing`;
 }

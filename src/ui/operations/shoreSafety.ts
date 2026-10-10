@@ -18,8 +18,8 @@ import { sameExtensions } from './pieceIdentity';
  * CapacityFlag. The two are kept in step by hand: both run the same catalog-mode fit,
  * and both degrade on an unknown connector (#457 here, #484 there as the amber
  * "Unknown connector" chip), so a point never reads clean on the board while the
- * drawer calls it unverifiable. `warn` = over-capacity OR unrated (the thing
- * to physically check); `unknown` = no strut on record / not re-verifiable / no usable
+ * drawer calls it unverifiable. `warn` = over-capacity OR unrated OR no catalog fit
+ * (ADR-041 — the thing to physically check); `unknown` = no strut on record / not re-verifiable / no usable
  * load recorded (absent, or a schema-legal 0 — #455) / a connector outside this build's
  * catalog (#457) — reference, not an exception, and never asserted as a pass;
  * `ok` = within rated capacity.
@@ -56,7 +56,20 @@ export function shoreSafety(sp: ShorePoint, deployedCount?: number): ShoreSafety
     .filter((c) => c.role === 'extension' && c.length != null)
     .map((c) => c.length!);
   // Catalog mode — pass no live inventory (see header): rating is physics, not stock.
-  const match = findForShorePoint(sp, null).find(
+  const combos = findForShorePoint(sp, null);
+  // ADR-041 / plan D4 — the per-POINT verdicts, checked before model matching, in step
+  // with deployedCapacityFlag's 'no-fit' / 'over-capacity' branches. The fold never
+  // refuses a deploy, so a peer/replayed deploy that skipped the in-app gate lands here;
+  // without these it fell through to "not re-verifiable" while the board chip read red.
+  if (combos.length === 0) {
+    return {
+      kind: 'warn',
+      msg: 'No matching strut — no strut in the catalog spans this opening at these deductions. Re-measure and re-check this shore.',
+    };
+  }
+  const exceeds = combos.find((c) => c.exceedsCapacity);
+  if (exceeds) return { kind: 'warn', msg: exceeds.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
+  const match = combos.find(
     (c) => c.strut.model === strut.model && sameExtensions(c.extensions, exts),
   );
   if (!match) return { kind: 'unknown', msg: 'Capacity not re-verifiable for the deployed assembly.' };

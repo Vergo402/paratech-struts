@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RecommendationCard, comboModel } from './RecommendationCard';
 import { findStrutCombinations, type StrutCombination } from '@core/load';
-import { NO_DEDUCTIONS, type Deductions, type InventoryItem } from '@core/schema';
+import { NO_DEDUCTIONS, type Deductions, type StockRow } from '@core/schema';
 
 // Real-engine fixtures — the card is pinned against what the engine actually
 // returns, so the test fails if the anatomy and the math ever drift apart.
@@ -14,7 +14,7 @@ const SELECTIONS: Deductions = {
   bottomPlate: 'channel4x4',
   footerWood: 'none',
 };
-const INVENTORY: InventoryItem[] = [
+const INVENTORY: StockRow[] = [
   {
     id: 'inv-1',
     type: 'strut',
@@ -23,6 +23,7 @@ const INVENTORY: InventoryItem[] = [
     apparatus: 'Rescue 2',
     apparatusId: 'app-r2',
     quantity: 4,
+    held: 0,
     available: 4,
   },
 ];

@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
 import { STRUTS } from '@core/load';
-import type { InventoryItem } from '@core/schema';
+import type { StockRow } from '@core/schema';
 import type { Apparatus } from '@core/schema';
 import { itemLabel } from '../inventory/EquipmentRow';
 import { SYSTEM_LABELS } from '../inventory/systemLabels';
 import { EmptyState } from '@ui/primitives';
 
-type Tone = 'depleted' | 'low' | 'ok';
+type Tone = 'over-allocated' | 'depleted' | 'low' | 'ok';
 
 // The strut-family / category tag shown under each item name, mirroring v3's
 // "Grey / Gold / Plate" sub-label (common.ts: AcmeThread + LockStroke = Grey,
 // LongShore = Gold). Extensions carry a system too; plates are always "Plate".
-function systemLabel(item: InventoryItem): string {
+function systemLabel(item: StockRow): string {
   if (item.type === 'plate') return 'Plate';
   // The system name, never the v3 color code (§8). Extensions carry no system — the
   // old code mislabeled them "Grey"; a blank sublabel is honest (data has no system).
@@ -38,7 +38,7 @@ interface ApparatusGroup {
 }
 
 interface Props {
-  items: InventoryItem[];
+  items: StockRow[];
   roster: Apparatus[];
 }
 
@@ -64,7 +64,7 @@ export function InventorySummary({ items, roster }: Props) {
         map.set(item.apparatusId, group);
       }
 
-      const tone: Tone = item.available === 0 ? 'depleted' : item.available === 1 ? 'low' : 'ok';
+      const tone: Tone = item.available < 0 ? 'over-allocated' : item.available === 0 ? 'depleted' : item.available === 1 ? 'low' : 'ok';
       const { label } = itemLabel(item);
       const system = systemLabel(item);
       const base = { id: item.id, label, system, available: item.available, quantity: item.quantity, tone };
@@ -117,9 +117,13 @@ export function InventorySummary({ items, roster }: Props) {
               </div>
               <span
                 className="fs-inv-summary-count"
-                aria-label={`${row.available} of ${row.quantity} available`}
+                aria-label={
+                  row.available < 0
+                    ? `${-row.available} over-allocated of ${row.quantity}`
+                    : `${row.available} of ${row.quantity} available`
+                }
               >
-                {row.available}/{row.quantity}
+                {row.available < 0 ? `\u2212${-row.available}` : row.available}/{row.quantity}
               </span>
             </div>
           ))}

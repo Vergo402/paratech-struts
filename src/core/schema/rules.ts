@@ -186,10 +186,20 @@ const EVENT_WRITE = 'auth != null && ' + activeMemberRoot + ' && !data.exists()'
 // the client Zod parse on read. `at` is REQUIRED because reconcile sorts on it (causal
 // order). DO NOT bind `by` to auth.uid: `by` is the per-DEVICE uid (ADR-024), a different
 // identity than the Firebase account auth.uid — binding them would reject every write.
+// `receivedAt` (ADR-041, #499) is the CANONICAL-ORDER stamp: every device folds the log by
+// (receivedAt, at, id), so the stamp must come from the server, never a client clock.
+// `== now` admits only the `serverTimestamp()` sentinel (resolved server-side to the write
+// time); a client-literal number or an absent field is rejected. A multi-path update()
+// resolves every sentinel to the same `now`, so a batch shares one stamp. `at` stays the
+// audit/tiebreak clock. ROLLOUT: these rules deploy AFTER the client build that writes
+// receivedAt is live (`firebase deploy --only database --project fieldshore-database`) — a
+// pre-ADR-041 build cannot satisfy this and would wedge its upload queue until it refreshes.
+// The emulator always loads the committed database.rules.json.
 const EVENT_ENVELOPE_VALIDATE =
   "newData.hasChildren(['id','opId','type','at','by']) && " +
   "newData.child('id').isString() && newData.child('opId').isString() && " +
-  "newData.child('type').isString() && newData.child('at').isNumber()";
+  "newData.child('type').isString() && newData.child('at').isNumber() && " +
+  "newData.child('receivedAt').val() == now";
 
 // STATE (cloud-sync Increment 3) — non-event department state at /orgs/{deptId}/
 // {inventory|apparatus|titles|checklists}. Unlike the append-only event log, STATE is

@@ -16,9 +16,9 @@ export function PastOperationsList({ onOpen }: { onOpen: (opId: string) => void 
       <h2 className="fs-archive-list-title">Past operations</h2>
       {ops.map((op) => (
         <Card key={op.id} onPress={() => onOpen(op.id)} className="fs-archive-row">
-          <span className="fs-archive-row-name">{op.name}</span>
+          <span className="fs-archive-row-name">{op.superseded ? `${op.name} — superseded` : op.name}</span>
           <span className="fs-archive-row-meta">
-            Ended {dateClock(op.endedAt)} · {op.shorePointCount}{' '}
+            {op.superseded ? 'Started' : 'Ended'} {dateClock(op.endedAt)} · {op.shorePointCount}{' '}
             {op.shorePointCount === 1 ? 'shore point' : 'shore points'}
           </span>
         </Card>

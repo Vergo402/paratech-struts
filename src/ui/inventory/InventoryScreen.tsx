@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useInventory, useApparatus, useInventoryActions, useOperation, usePermissions, useDepartment } from '@ui/hooks';
 import { EmptyState, Button } from '@ui/primitives';
 import { STRUTS, BASE_PLATES } from '@core/load';
-import type { InventoryItem } from '@core/schema';
+import type { StockRow } from '@core/schema';
 import { ApparatusScopeTabs, type ScopeRig } from './ApparatusScopeTabs';
 import { EquipmentRow } from './EquipmentRow';
 import { AddEquipmentSheet } from './AddEquipmentSheet';
@@ -19,15 +19,15 @@ import { ImportExport } from './ImportExport';
 
 const collapsedOf = (model?: string) => STRUTS.find((s) => s.model === model)?.collapsed ?? 0;
 const plateNameOf = (id?: string) => BASE_PLATES.find((p) => p.id === id)?.name ?? '';
-const byCollapsed = (a: InventoryItem, b: InventoryItem) => collapsedOf(a.model) - collapsedOf(b.model);
-const byLength = (a: InventoryItem, b: InventoryItem) => (a.length ?? 0) - (b.length ?? 0);
-const byPlateName = (a: InventoryItem, b: InventoryItem) => plateNameOf(a.plateId).localeCompare(plateNameOf(b.plateId));
+const byCollapsed = (a: StockRow, b: StockRow) => collapsedOf(a.model) - collapsedOf(b.model);
+const byLength = (a: StockRow, b: StockRow) => (a.length ?? 0) - (b.length ?? 0);
+const byPlateName = (a: StockRow, b: StockRow) => plateNameOf(a.plateId).localeCompare(plateNameOf(b.plateId));
 
 const KIND_GROUPS: {
   key: string;
   label: string;
   countNoun: [singular: string, plural: string];
-  pick: (items: InventoryItem[]) => InventoryItem[];
+  pick: (items: StockRow[]) => StockRow[];
 }[] = [
   {
     key: 'struts',
@@ -78,8 +78,10 @@ export function InventoryScreen() {
     let onHand = 0;
     let deployed = 0;
     for (const i of items) {
-      onHand += i.available;
-      deployed += i.quantity - i.available;
+      // #499 — available is signed (negative = over-allocated); a negative row adds
+      // nothing to "on hand" rather than subtracting from the other rows.
+      onHand += Math.max(0, i.available);
+      deployed += i.held;
     }
     return { onHand, deployed, models: items.length };
   }, [items]);

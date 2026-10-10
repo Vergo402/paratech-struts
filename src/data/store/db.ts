@@ -7,11 +7,12 @@ import type { FieldShoreEvent, InventoryItem } from '@core/schema';
 // IndexedDB via Dexie, not localStorage — the 5 MB cap is real at task-force
 // scale (ADR-024).
 //
-// Primary key is an auto-increment `seq`, NOT the event id: projection must
-// fold in a total, stable append order, and event ids are UUIDs (random sort)
-// while `at` can collide within one millisecond (a grouped T-Shore add emits N
-// events in one commit). `seq` is true local append order; `id` stays a unique
-// index (duplicate appends — e.g. a peer event already merged — fail on it).
+// Primary key is an auto-increment `seq`; `id` is a unique index (a duplicate append —
+// e.g. a peer event another tab already stored — fails on it). `seq` was the fold order
+// before ADR-041; it is now ONLY the storage key. The canonical fold order
+// `(receivedAt ?? +∞, at, id)` lives in memory (core/operation/eventLog), so nothing may
+// treat `seq` as chronological. `receivedAt` (the cloud receipt stamp) rides on the row
+// as a plain, non-indexed property — no schema version bump.
 export type EventRow = FieldShoreEvent & { seq?: number };
 
 export interface MetaRow {
@@ -32,6 +33,12 @@ export class FieldShoreDB extends Dexie {
       meta: '&key',
     });
   }
+}
+
+/** Stamp the cloud receipt time onto a stored event row (by its unique `id`). A no-op
+ *  when no row has that id. */
+export async function stampReceivedAt(db: FieldShoreDB, id: string, receivedAt: number): Promise<void> {
+  await db.events.where('id').equals(id).modify({ receivedAt });
 }
 
 /** Fresh DB instance — tests pass a unique name for isolation. */

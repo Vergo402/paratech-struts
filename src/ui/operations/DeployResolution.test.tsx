@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { DeployResolution } from './DeployResolution';
-import type { Apparatus, Deductions, DeployedComponent, InventoryItem, ShorePoint } from '@core/schema';
+import type { Apparatus, Deductions, DeployedComponent, StockRow, ShorePoint } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 
-const mockInventory = vi.fn((): InventoryItem[] => []);
+const mockInventory = vi.fn((): StockRow[] => []);
 const mockAddOne = vi.fn(async (): Promise<string> => 'inv-new');
 const mockRoster = vi.fn((): Apparatus[] => []);
 
@@ -62,7 +62,7 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
   };
 }
 
-const STRUT_R2: InventoryItem = {
+const STRUT_R2: StockRow = {
   id: 'inv-strut',
   type: 'strut',
   model: 'LS 406',
@@ -70,11 +70,12 @@ const STRUT_R2: InventoryItem = {
   apparatus: 'Rescue 2',
   apparatusId: 'app-r2',
   quantity: 2,
+  held: 0,
   available: 2,
 };
 
-function plate(id: string, apparatus: string, apparatusId: string, available = 1): InventoryItem {
-  return { id, type: 'plate', plateId: 'swivel6', apparatus, apparatusId, quantity: available, available };
+function plate(id: string, apparatus: string, apparatusId: string, available = 1): StockRow {
+  return { id, type: 'plate', plateId: 'swivel6', apparatus, apparatusId, quantity: available, held: 0, available };
 }
 
 const COMBO: StrutCombination = {
@@ -158,8 +159,8 @@ describe('DeployResolution (#330 Phase 3b)', () => {
 
   // A quick-add mock that mutates a shared inventory array, mirroring the live
   // useInventory reactivity the real store provides after addOne.
-  function quickAddInventory(): InventoryItem[] {
-    const inv: InventoryItem[] = [STRUT_R2];
+  function quickAddInventory(): StockRow[] {
+    const inv: StockRow[] = [STRUT_R2];
     mockInventory.mockImplementation(() => inv);
     mockAddOne.mockImplementation(async () => {
       const existing = inv.find((i) => i.id === 'inv-new');
@@ -167,7 +168,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
         existing.quantity++;
         existing.available++;
       } else {
-        inv.push({ id: 'inv-new', type: 'plate', plateId: 'swivel6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, available: 1 });
+        inv.push({ id: 'inv-new', type: 'plate', plateId: 'swivel6', apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 1, held: 0, available: 1 });
       }
       return 'inv-new';
     });

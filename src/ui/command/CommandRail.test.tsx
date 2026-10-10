@@ -51,7 +51,7 @@ beforeEach(() => {
 
 describe('CommandRail — hand-the-tablet accept (#401)', () => {
   it('an individual-ref pending on the INITIATING device renders Cancel AND the hand-over accept', () => {
-    pending = { initiatedBy: 'dev-1', toResource: PERSON, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: PERSON, at: 1 };
     render(<CommandRail />);
     expect(screen.getByRole('button', { name: 'Cancel transfer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'BC Smith: Accept command' })).toBeInTheDocument();
@@ -60,31 +60,49 @@ describe('CommandRail — hand-the-tablet accept (#401)', () => {
   });
 
   it('pressing the hand-over accept emits CommandTransferAccepted', async () => {
-    pending = { initiatedBy: 'dev-1', toResource: PERSON, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: PERSON, at: 1 };
     const user = userEvent.setup();
     render(<CommandRail />);
     await user.click(screen.getByRole('button', { name: 'BC Smith: Accept command' }));
-    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
   });
 
   it('a device-ref target stays strict: no accept on the initiating device', () => {
-    pending = { initiatedBy: 'dev-1', toResource: DEVICE, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: DEVICE, at: 1 };
     render(<CommandRail />);
     expect(screen.getByRole('button', { name: 'Cancel transfer' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Accept command/ })).not.toBeInTheDocument();
   });
 
   it('the incoming-device card still accepts (regression on the shared handler)', async () => {
-    pending = { initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
     const user = userEvent.setup();
     render(<CommandRail />);
     await user.click(screen.getByRole('button', { name: 'Accept command' }));
-    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
+  });
+});
+
+describe('CommandRail — transferId on resolvers (#499)', () => {
+  it('Cancel transfer emits CommandTransferCancelled naming the pending transferId', async () => {
+    pending = { transferId: 't9', initiatedBy: 'dev-1', toResource: DEVICE, at: 1 };
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    await user.click(screen.getByRole('button', { name: 'Cancel transfer' }));
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferCancelled', transferId: 't9' });
+  });
+
+  it('Decline emits CommandTransferDeclined naming the pending transferId', async () => {
+    pending = { transferId: 't9', initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    await user.click(screen.getByRole('button', { name: 'Decline' }));
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferDeclined', transferId: 't9' });
   });
 });
 
 describe('CommandRail — 4-digit accept code (#425)', () => {
-  const coded = (): PendingTransfer => ({ initiatedBy: 'someone-else', toResource: PERSON, at: 1, claimCode: '4729' });
+  const coded = (): PendingTransfer => ({ transferId: 't1', initiatedBy: 'someone-else', toResource: PERSON, at: 1, claimCode: '4729' });
 
   it('a coded pending shows every other device only the quiet tappable line — no loud banner', () => {
     pending = coded();
@@ -103,7 +121,7 @@ describe('CommandRail — 4-digit accept code (#425)', () => {
     expect(screen.getByText('Enter the accept code')).toBeInTheDocument();
     await user.type(screen.getByLabelText('Accept code'), '4729');
     await user.click(screen.getByRole('button', { name: 'Accept command' }));
-    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
   });
 
   it('a WRONG code shows the mismatch error and never reveals Accept', async () => {
@@ -124,13 +142,13 @@ describe('CommandRail — 4-digit accept code (#425)', () => {
   });
 
   it('a LEGACY codeless individual pending keeps the loud banner (back-compat)', () => {
-    pending = { initiatedBy: 'someone-else', toResource: PERSON, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'someone-else', toResource: PERSON, at: 1 };
     render(<CommandRail />);
     expect(screen.getByText('You are being given command')).toBeInTheDocument();
   });
 
   it('a device-targeted pending stays loud on the named device only, codeless', () => {
-    pending = { initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
+    pending = { transferId: 't1', initiatedBy: 'someone-else', toResource: { ...DEVICE, value: 'dev-1' }, at: 1 };
     render(<CommandRail />);
     expect(screen.getByText('You are being given command')).toBeInTheDocument();
     expect(screen.queryByLabelText('Accept code')).not.toBeInTheDocument();
@@ -141,24 +159,24 @@ describe('CommandRail — 4-digit accept code (#425)', () => {
   // device has to display the code (else it can never be spoken and the transfer is
   // dead) and keep the #401 hand-the-tablet accept.
   it('an apparatus-targeted pending shows the code AND the hand-over accept on the initiating device', async () => {
-    pending = { initiatedBy: 'dev-1', toResource: RIG, at: 1, claimCode: '3810' };
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: RIG, at: 1, claimCode: '3810' };
     const user = userEvent.setup();
     render(<CommandRail />);
     expect(screen.getByText('3810')).toBeInTheDocument();
     expect(screen.getByText(/give to Battalion 1/i)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Battalion 1: Accept command' }));
-    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
   });
 
   it('an apparatus-targeted pending is coded, and the right code accepts', async () => {
-    pending = { initiatedBy: 'someone-else', toResource: RIG, at: 1, claimCode: '3810' };
+    pending = { transferId: 't1', initiatedBy: 'someone-else', toResource: RIG, at: 1, claimCode: '3810' };
     const user = userEvent.setup();
     render(<CommandRail />);
     expect(screen.queryByText('You are being given command')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Transfer pending → Battalion 1/ }));
     await user.type(screen.getByLabelText('Accept code'), '3810');
     await user.click(screen.getByRole('button', { name: 'Accept command' }));
-    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted' });
+    expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
   });
 
   it('"Not me — close" collapses the entry back to the quiet line', async () => {

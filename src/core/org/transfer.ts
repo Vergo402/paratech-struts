@@ -10,6 +10,10 @@ import { isSelf, type SelfIdentity, type ResolveDeviceOwner } from './self';
 // of record (and keeps End-Op authority) until the incoming accepts. This closes
 // v3's biggest gap: transfer had no recorded handoff.
 export interface PendingTransfer {
+  /** ADR-041 — the id of the CommandTransferInitiated event that opened this handshake.
+   *  A resolver (Accept/Decline/Cancel) that names a transferId resolves ONLY the pending
+   *  transfer with this id, so a stale resolver can never close a later re-initiate. */
+  transferId: string;
   initiatedBy: string; //        the outgoing IC's uid (event.by at initiate time)
   toResource: OrgResourceRef; //  the named incoming commander
   at: number; //                  epoch ms of the initiate
@@ -31,18 +35,32 @@ export function currentIC(positions: OrgPositions): OrgResourceRef | null {
 }
 
 /**
+ * Does a resolver event (Accept / Decline / Cancel) address THIS pending transfer?
+ * ADR-041: a resolver carrying a `transferId` resolves only the handshake it names;
+ * an untagged (pre-ADR-041) resolver keeps the legacy rule — it resolves whatever is
+ * pending. No pending → nothing to resolve.
+ */
+export function resolvesPending(pending: PendingTransfer | null, transferId?: string): pending is PendingTransfer {
+  if (!pending) return false;
+  return transferId === undefined || transferId === pending.transferId;
+}
+
+/**
  * Can this actor accept the pending transfer? An ACCOUNT target is uid-verified — the
  * accepting member's account must equal the target (so they accept from any of their
  * devices). A DEVICE target verifies by uid (by === value). An individual/apparatus
  * target carries no uid, so any device may accept on the named commander's behalf (the
  * UI shows Accept only to that person). Deterministic + replay-safe (event + projection).
+ * ADR-041: when the accept names a `transferId` it must be this pending's (see
+ * resolvesPending); absent = legacy (accepts whatever is pending).
  */
 export function canAccept(
   pending: PendingTransfer | null,
   by: string,
   accountId?: string | null,
+  transferId?: string,
 ): boolean {
-  if (!pending) return false;
+  if (!resolvesPending(pending, transferId)) return false;
   const t = pending.toResource;
   if (t.ref === 'account') return accountId != null && t.value === accountId;
   if (t.ref === 'device') return t.value === by;

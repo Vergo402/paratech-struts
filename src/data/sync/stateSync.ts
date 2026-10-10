@@ -23,11 +23,11 @@ export interface Tombstone {
   lastWriteAt: number;
 }
 
-// The cloud inventory row: identity + quantity, NEVER `available`. `available` is
-// owned by the event log (deploy/return replay on every device, operationStore
-// commit fromRemote path), so syncing it here would let a stale stock blob clobber
-// an event-driven decrement. Peers recompute available = quantity − deployed.
-export type CloudRow = Omit<InventoryItem, 'available'> & { lastWriteAt: number };
+// The cloud inventory row: identity + quantity + the LWW stamp. Stock out on scene is
+// not part of it: ADR-041 derives it on every device from the same event log
+// (available = quantity − held(log)), so there is no stored counter to sync and nothing
+// a stale stock blob could clobber.
+export type CloudRow = InventoryItem & { lastWriteAt: number };
 
 /** Relative cloud path (under /orgs/{deptId}) for one inventory row. */
 export const inventoryPath = (id: string): string => `inventory/${id}`;
@@ -35,11 +35,25 @@ export const inventoryPath = (id: string): string => `inventory/${id}`;
 export const BLOB_PATHS = ['apparatus', 'titles', 'checklists', 'apparatusTypes', 'deptPolicies'] as const;
 export type BlobPath = (typeof BLOB_PATHS)[number];
 
-/** Drop `available` (event-owned); carry the stamp (0 for never-stamped local rows). */
+/** The wire row: the persisted fields plus the stamp (0 for never-stamped local rows).
+ *  Built field by field, so a derived view field (`held`, `available`) on a StockRow
+ *  passed in by mistake — or a legacy row's vestigial `available` — never reaches the
+ *  cloud. */
 export function toCloudRow(item: InventoryItem): CloudRow {
-  const row: Partial<InventoryItem> = { ...item };
-  delete row.available;
-  return { ...(row as Omit<InventoryItem, 'available'>), lastWriteAt: item.lastWriteAt ?? 0 };
+  const row: CloudRow = {
+    id: item.id,
+    type: item.type,
+    model: item.model,
+    system: item.system,
+    length: item.length,
+    plateId: item.plateId,
+    apparatus: item.apparatus,
+    apparatusId: item.apparatusId,
+    quantity: item.quantity,
+    lastWriteAt: item.lastWriteAt ?? 0,
+  };
+  for (const k of Object.keys(row) as (keyof CloudRow)[]) if (row[k] === undefined) delete row[k];
+  return row;
 }
 
 export const tombstone = (id: string, lastWriteAt: number): Tombstone => ({ id, deleted: true, lastWriteAt });

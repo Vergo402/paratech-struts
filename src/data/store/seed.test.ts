@@ -4,7 +4,7 @@ import { createDB, type FieldShoreDB } from './db';
 import { getDeviceUid } from './auth';
 import { buildSeedInventory, seedIfEmpty } from './seed';
 import { newId } from '@core/id';
-import { Inventory } from '@core/schema';
+import { Inventory, type StockRow } from '@core/schema';
 import { STRUTS, findStrutCombinations } from '@core/load';
 
 describe('device uid (fieldshore_auth_uid)', () => {
@@ -75,7 +75,9 @@ describe('seed inventory', () => {
     const items = buildSeedInventory();
     expect(() => Inventory.parse(items)).not.toThrow();
     for (const i of items) {
-      expect(i.available).toBeLessThanOrEqual(i.quantity);
+      // ADR-041: a seed row carries quantity only — stock out on scene comes from events.
+      expect(i).not.toHaveProperty('available');
+      expect(i.quantity).toBeGreaterThan(0);
       if (i.type === 'strut') {
         expect(STRUTS.some((s) => s.model === i.model)).toBe(true);
       }
@@ -86,7 +88,8 @@ describe('seed inventory', () => {
   // Pin each promised path against the REAL engine so a future seed edit that
   // silently breaks one fails here, not in front of Alex at the gate.
   describe('drivable verification paths (#247)', () => {
-    const items = buildSeedInventory();
+    // The fresh-install view: nothing deployed yet, so held 0 and available = quantity.
+    const items: StockRow[] = buildSeedInventory().map((i) => ({ ...i, held: 0, available: i.quantity }));
     const SF_4TO1 = 2;
 
     it('30″ → real recommendations', () => {
@@ -104,10 +107,12 @@ describe('seed inventory', () => {
       expect(combos.every((c) => c.unrated)).toBe(true);
     });
 
-    it('includes a zero-available rig (the no-inventory empty state)', () => {
+    // ADR-041 removed the "stock on paper, none available" premise: a seed row cannot
+    // hold stock (held is derived from deploy events), so Squad 3 is a plain small rig.
+    it('Squad 3 is a plain rig whose stock is all on hand on a fresh install', () => {
       const squads = items.filter((i) => i.apparatusId === 'app-squad-3');
       expect(squads.length).toBeGreaterThan(0);
-      expect(squads.every((i) => i.available === 0)).toBe(true);
+      expect(squads.every((i) => i.available === i.quantity && i.quantity > 0)).toBe(true);
     });
   });
 });

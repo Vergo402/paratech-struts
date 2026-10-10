@@ -623,3 +623,118 @@ describe('H3 (#417 / D2) — grouped re-measure propagates sizing to deployed le
     expect(deployedCapacityFlag(legA, count)).toBeNull(); // 34,000 / 2 = 17,000 ≤ 22,000
   });
 });
+
+// ── ADR-041 — reference identity on no-op: the canonical log reads a fold outcome as
+// applied / no-effect by whether the reducer returned the same object.
+describe('shorePointReducer — a no-effect event returns the SAME point (ADR-041)', () => {
+  const edit = (patch: Record<string, unknown>, spId = 'sp1'): FieldShoreEvent =>
+    ({ type: 'ShorePointEdited', ...meta, spId, patch }) as FieldShoreEvent;
+
+  it('a patch whose values the point already has', () => {
+    const point = sp({ label: 'Alpha', building: 'B1', coords: { lat: 1, lng: 2 }, estimatedLoad: 5000 });
+    expect(
+      shorePointReducer(
+        point,
+        edit({
+          label: 'Alpha',
+          building: 'B1',
+          division: '1',
+          shoreType: 't-shore',
+          measurementEighths: 320,
+          deductions: { ...NO_DEDUCTIONS }, // a fresh object, equal by value
+          coords: { lat: 1, lng: 2 }, //       a fresh object, equal by value
+          estimatedLoad: 5000,
+        }),
+      ),
+    ).toBe(point);
+  });
+
+  it('clearing fields the point does not have', () => {
+    const point = sp();
+    expect(shorePointReducer(point, edit({ label: null, area: null, side: null, w3w: null, coords: null, estimatedLoad: null, cuttingDone: false }))).toBe(point);
+  });
+
+  it('an empty patch, or a patch for another point', () => {
+    const point = sp();
+    expect(shorePointReducer(point, edit({}))).toBe(point);
+    expect(shorePointReducer(point, edit({ label: 'x' }, 'other'))).toBe(point);
+  });
+
+  it('#220 lock: a patch carrying ONLY locked sizing fields on a post-Pending ungrouped point is no effect', () => {
+    const point = sp({ status: 'strutset' });
+    expect(shorePointReducer(point, edit({ measurementEighths: 999, shoreType: '3-post', estimatedLoad: 9000 }))).toBe(point);
+  });
+
+  it('#220 lock: the unlocked fields of a mixed patch still apply (and only they do)', () => {
+    const point = sp({ status: 'strutset' });
+    const next = shorePointReducer(point, edit({ label: 'Bravo', measurementEighths: 999 }));
+    expect(next).not.toBe(point);
+    expect(next.label).toBe('Bravo');
+    expect(next.measurementEighths).toBe(point.measurementEighths);
+  });
+
+  it('a real value change applies (deductions compared by value, not reference)', () => {
+    const point = sp();
+    const next = shorePointReducer(point, edit({ deductions: { ...NO_DEDUCTIONS, headerWood: '4x4' } }));
+    expect(next).not.toBe(point);
+    expect(next.deductions.headerWood).toBe('4x4');
+  });
+
+  it('ComponentResourced to the same source + inventoryId is no effect', () => {
+    const bom: DeployedBom = [{ role: 'strut', model: 'LS 406', source: 'Eng 1', inventoryId: 'i1' }];
+    const point = sp({ status: 'process', deployedBom: bom });
+    const resource = (source: string, inventoryId?: string): FieldShoreEvent =>
+      ({ type: 'ComponentResourced', ...meta, spId: 'sp1', componentIndex: 0, source, ...(inventoryId ? { inventoryId } : {}) }) as FieldShoreEvent;
+    expect(shorePointReducer(point, resource('Eng 1', 'i1'))).toBe(point);
+    expect(shorePointReducer(point, resource('Eng 1'))).not.toBe(point); // tracked → untracked is a change
+    expect(shorePointReducer(point, resource('Rescue 2', 'i2'))).not.toBe(point);
+  });
+
+  it('ComponentResourced on an untracked component re-pointed at the same untracked source', () => {
+    const bom: DeployedBom = [{ role: 'strut', model: 'LS 406', source: 'Mutual aid' }];
+    const point = sp({ status: 'process', deployedBom: bom });
+    const same = { type: 'ComponentResourced', ...meta, spId: 'sp1', componentIndex: 0, source: 'Mutual aid' } as FieldShoreEvent;
+    expect(shorePointReducer(point, same)).toBe(point);
+  });
+});
+
+// ADR-041 / plan D4 — no fold-time deploy verdict: a peer deploy committed without the
+// UI's acknowledgment still folds, and the READ-TIME flag carries the truth.
+describe('deployedCapacityFlag — per-point verdicts for an unverified peer deploy (ADR-041 / D4)', () => {
+  const strutBom = (model: string): DeployedBom => [{ role: 'strut', model, system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' }];
+
+  it('flags no-fit when no catalog strut spans the opening at all (too short)', () => {
+    const point = sp({ status: 'process', measurementEighths: 6 * 8, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('no-fit');
+  });
+
+  it('flags no-fit when the opening is beyond every strut', () => {
+    const point = sp({ status: 'process', measurementEighths: 600 * 8, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('no-fit');
+  });
+
+  it('flags over-capacity when the load exceeds every ≤4-strut combo — regardless of the deployed model', () => {
+    const huge = 10_000_000;
+    expect(deployedCapacityFlag(sp({ status: 'process', measurementEighths: 468, estimatedLoad: huge, deployedBom: strutBom('LS 406') }))).toBe('over-capacity');
+    // Even a model the catalog no longer lists (no model match) — the verdict is per point.
+    expect(deployedCapacityFlag(sp({ status: 'process', measurementEighths: 468, estimatedLoad: huge, deployedBom: strutBom('LS 812') }))).toBe('over-capacity');
+  });
+
+  it('no-fit outranks unknown-connector (#484 precedence)', () => {
+    const unknownTop = { headerWood: 'none', footerWood: 'none', topPlate: 'zz-future-plate', bottomPlate: 'none' } as const;
+    const point = sp({ status: 'process', measurementEighths: 6 * 8, deductions: unknownTop, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('no-fit');
+  });
+
+  it('a clean, fitting deploy is still unflagged', () => {
+    expect(deployedCapacityFlag(sp({ status: 'process', measurementEighths: 468, estimatedLoad: 5000, deployedBom: strutBom('LS 406') }))).toBeNull();
+  });
+
+  it('EquipmentDeployed folds an unverified deploy (no fold-time refusal)', () => {
+    const bom = strutBom('LS 406');
+    const point = sp({ measurementEighths: 6 * 8 });
+    const next = shorePointReducer(point, { type: 'EquipmentDeployed', ...meta, spId: 'sp1', deployedBom: bom } as FieldShoreEvent);
+    expect(next.status).toBe('process');
+    expect(deployedCapacityFlag(next)).toBe('no-fit');
+  });
+});

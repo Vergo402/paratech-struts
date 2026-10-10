@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { assembleBom, bomModelLabel, bomSourceStatus, deployedRigs, hasUntracked } from './bom';
 import type { StrutCombination } from '../load';
-import type { InventoryItem, ShorePoint } from '../schema';
+import type { StockRow, ShorePoint } from '../schema';
 
 // assembleBom only reads strut.model/system + extensions + extensionSources off the
 // combo, so a minimal cast keeps these tests focused on the sourcing logic.
 const combo = (over: Partial<StrutCombination>): StrutCombination =>
   ({ strut: { model: 'LS 203', system: 'LongShore' }, extensions: [], extensionSources: undefined, ...over }) as unknown as StrutCombination;
 
-const plateRow = (id: string, apparatus: string, available: number): InventoryItem => ({
-  id, type: 'plate', plateId: 'plate-x', apparatus, apparatusId: `app-${apparatus}`, quantity: available, available,
+const plateRow = (id: string, apparatus: string, available: number): StockRow => ({
+  id, type: 'plate', plateId: 'plate-x', apparatus, apparatusId: `app-${apparatus}`, quantity: available, held: 0, available,
 });
 const strutSrc = { apparatus: 'Rescue 2', inventoryId: 'inv-strut' };
 const sp = (bom: ShorePoint['deployedBom']): ShorePoint => ({ deployedBom: bom }) as unknown as ShorePoint;
@@ -66,7 +66,7 @@ describe('assembleBom — ADR-033 deploy assembly', () => {
       combo({ extensions: [12], extensionSources: [{ length: 12, inventoryId: 'inv-ext' }] }),
       { topPlate: 'none', bottomPlate: 'none' },
       strutSrc,
-      [{ id: 'inv-ext', type: 'extension', length: 12, system: 'LongShore', apparatus: 'Ladder 1', apparatusId: 'app-l1', quantity: 1, available: 1 }],
+      [{ id: 'inv-ext', type: 'extension', length: 12, system: 'LongShore', apparatus: 'Ladder 1', apparatusId: 'app-l1', quantity: 1, held: 0, available: 1 }],
     );
     const ext = bom.find((c) => c.role === 'extension')!;
     expect(ext.inventoryId).toBe('inv-ext');
@@ -84,8 +84,8 @@ describe('assembleBom — #486 per-member extension re-resolution', () => {
     apparatus: string,
     available: number,
     length = 12,
-    system: InventoryItem['system'] = 'LongShore',
-  ): InventoryItem => ({ id, type: 'extension', length, system, apparatus, apparatusId: `app-${apparatus}`, quantity: Math.max(available, 1), available });
+    system: StockRow['system'] = 'LongShore',
+  ): StockRow => ({ id, type: 'extension', length, system, apparatus, apparatusId: `app-${apparatus}`, quantity: Math.max(available, 1), held: Math.max(available, 1) - available, available });
   const exts = (bom: ReturnType<typeof assembleBom>) => bom.filter((c) => c.role === 'extension');
 
   it('engine row exhausted (member 2 of a group) → falls back to another rig’s compatible row', () => {

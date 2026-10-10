@@ -10,12 +10,15 @@
  * catalog); the danger kinds outrank it upstream.
  */
 
-export type CapacityFlagValue = 'unrated' | 'over-capacity' | 'unknown-connector' | null;
+export type CapacityFlagValue = 'unrated' | 'over-capacity' | 'no-fit' | 'unknown-connector' | null;
 
 /** The chip's one-line label per kind (the CuttingStation hero reuses these words). */
 export const CAPACITY_FLAG_LABEL = {
   unrated: 'Unrated',
   'over-capacity': 'Over capacity',
+  // ADR-041 — a deploy no catalog strut can span (peer/replayed, never the in-app gate).
+  // Red like the other load verdicts (the base .fs-spc-flag danger pair, no modifier CSS).
+  'no-fit': 'No matching strut',
   'unknown-connector': 'Unknown connector',
 } as const;
 

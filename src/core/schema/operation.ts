@@ -31,6 +31,10 @@ export const Operation = z.object({
   // free (no migration). Single-device for v4.0; cross-tablet live mirroring is #369.
   saws: z.array(z.string()),
   status: OperationStatus,
+  // ADR-041 — projected from the latest OperationEnded.stockReleased ("All equipment is
+  // back on the rigs"); OperationReopened sets it back to false. When true the held-stock
+  // projection stops counting this op's deployed BOMs. Absent on a never-ended op.
+  stockReleased: z.boolean().optional(),
   createdAt: z.number().int(), // epoch ms
   // Operational-period projection (#395). Period 1 is reducer-seeded on
   // OperationCreated (startedAt = createdAt), grown via OperationPeriodStarted —

@@ -103,7 +103,7 @@ describe('orgReducer MyRoleSet keying', () => {
 });
 
 describe('canAccept — account target', () => {
-  const pending = (to: OrgResourceRef): PendingTransfer => ({ initiatedBy: 'D0', toResource: to, at: 1 });
+  const pending = (to: OrgResourceRef): PendingTransfer => ({ transferId: 't1', initiatedBy: 'D0', toResource: to, at: 1 });
   it('an account target is uid-verified — the accepting account must match, from any device', () => {
     expect(canAccept(pending(acct('A2')), 'Dwhatever', 'A2')).toBe(true);
     expect(canAccept(pending(acct('A2')), 'Dwhatever', 'A1')).toBe(false);

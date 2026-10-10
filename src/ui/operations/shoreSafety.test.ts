@@ -88,3 +88,23 @@ describe('shoreSafety — verdicts (never a false pass)', () => {
     expect(shoreSafety(makeSp()).kind).toBe('unknown');
   });
 });
+
+// ADR-041 / plan D4 — the drawer must agree with the board chip (deployedCapacityFlag)
+// on the two per-point verdicts a peer deploy can arrive with.
+describe('shoreSafety — per-point verdicts for an unverified peer deploy (ADR-041 / D4)', () => {
+  it('warn (not unknown) when no catalog strut spans the opening at all', () => {
+    mockFind.mockReturnValue([]);
+    const v = shoreSafety(makeSp({ estimatedLoad: 5000 }));
+    expect(v.kind).toBe('warn');
+    expect(v.msg).toMatch(/No matching strut/);
+  });
+
+  it('warn when the load exceeds every ≤4-strut combo — even when the deployed model does not match', () => {
+    mockFind.mockReturnValue([
+      combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], exceedsCapacity: true, exceedsCapacityReason: 'Load exceeds 4-strut capacity.' }),
+    ]);
+    const v = shoreSafety(makeSp({ estimatedLoad: 10_000_000 }));
+    expect(v.kind).toBe('warn');
+    expect(v.msg).toBe('Load exceeds 4-strut capacity.');
+  });
+});

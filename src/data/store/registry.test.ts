@@ -24,7 +24,6 @@ const item = (id: string): InventoryItem => ({
   apparatus: 'Rescue 2',
   apparatusId: 'r2',
   quantity: 1,
-  available: 1,
 });
 
 const ids = () =>
@@ -112,9 +111,10 @@ describe('store registry — dev bucket guard wiring', () => {
 });
 
 // Proves the cloud-sync Increment 3 push hooks are WIRED into the dept-scoped stores:
-// a manual stock edit reaches syncService.setState at the right path, with `available`
-// stripped (event-owned). The store-level proof that deploy/return DON'T push lives in
-// inventoryStore.test.ts (applyDeploy/ReturnTxn take no hooks).
+// a manual stock edit reaches syncService.setState at the right path, carrying no derived
+// stock field (ADR-041: available = quantity − held is computed on every device from the
+// event log, never stored or synced). The store-level proof that a held change never
+// pushes lives in inventoryStore.test.ts.
 describe('store registry — non-event cloud-push wiring (Increment 3)', () => {
   afterEach(async () => {
     vi.restoreAllMocks();
@@ -131,7 +131,9 @@ describe('store registry — non-event cloud-push wiring (Increment 3)', () => {
 
     expect(spy).toHaveBeenCalledWith(`inventory/${id}`, expect.objectContaining({ id, quantity: 1, lastWriteAt: expect.any(Number) }));
     const payload = spy.mock.calls[0]![1] as Record<string, unknown>;
-    expect('available' in payload).toBe(false); // available is event-owned, never synced
+    // Regression pin: the derived view fields never reach the wire.
+    expect('available' in payload).toBe(false);
+    expect('held' in payload).toBe(false);
   });
 
   it('an apparatus edit pushes the whole roster blob to the apparatus path', async () => {

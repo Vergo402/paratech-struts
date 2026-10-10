@@ -1,6 +1,6 @@
 import { STRUTS, BASE_PLATES } from '@core/load';
 import { Badge } from '@ui/primitives';
-import type { InventoryItem } from '@core/schema';
+import type { StockRow } from '@core/schema';
 
 // One stock row (craft.md): identity + 3px depletion bar + one status chip, and the
 // hero-numeral count (available dominant, "/ total" as the quiet denominator). The
@@ -9,14 +9,14 @@ import type { InventoryItem } from '@core/schema';
 // §Accessibility, Principle 9). − is disabled when every unit is out.
 
 export interface EquipmentRowProps {
-  item: InventoryItem;
+  item: StockRow;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
   /** Hide the ± stepper for a member without manageInventory — the count stays visible (read info). */
   readOnly?: boolean;
 }
 
-export function itemLabel(item: InventoryItem): { label: string; sub?: string } {
+export function itemLabel(item: StockRow): { label: string; sub?: string } {
   if (item.type === 'strut') {
     const s = STRUTS.find((x) => x.model === item.model);
     return { label: item.model ?? 'Strut', sub: s ? `${s.collapsed}″–${s.extended}″` : undefined };
@@ -29,9 +29,13 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
   const { label, sub } = itemLabel(item);
   const deployed = item.quantity - item.available;
   const canDecrement = item.available > 0;
+  // #499 — `available` is signed: negative = over-allocated (two offline devices each took the
+  // last unit). Never rendered as a plain number; the row says so and asks for resolution.
+  const over = item.available < 0;
+  const overBy = -item.available;
   const out = item.quantity > 0 && item.available === 0;
-  const low = !out && item.available > 0 && item.available * 3 <= item.quantity;
-  const pct = item.quantity > 0 ? Math.round((item.available / item.quantity) * 100) : 0;
+  const low = !out && !over && item.available > 0 && item.available * 3 <= item.quantity;
+  const pct = item.quantity > 0 && !over ? Math.round((item.available / item.quantity) * 100) : 0;
   return (
     <div className="fs-inv-row">
       <div className="fs-inv-row-id">
@@ -43,7 +47,9 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
             style={{ width: `${pct}%` }}
           />
         </span>
-        {out ? (
+        {over ? (
+          <span className="fs-inv-chip-out">over-allocated — needs resolving</span>
+        ) : out ? (
           <span className="fs-inv-chip-out">all {item.quantity} deployed</span>
         ) : low ? (
           <Badge variant="dot" tone="warning" text="running low" />
@@ -67,11 +73,11 @@ export function EquipmentRow({ item, onIncrement, onDecrement, readOnly = false 
           </button>
         )}
         <span
-          className={out ? 'fs-inv-count fs-inv-count--out' : 'fs-inv-count'}
+          className={out || over ? 'fs-inv-count fs-inv-count--out' : 'fs-inv-count'}
           aria-live="polite"
-          aria-label={`${item.available} of ${item.quantity} available`}
+          aria-label={over ? `${overBy} over-allocated of ${item.quantity}` : `${item.available} of ${item.quantity} available`}
         >
-          <b>{item.available}</b>
+          <b>{over ? `\u2212${overBy}` : item.available}</b>
           <span className="fs-inv-count-of" aria-hidden="true">
             /{item.quantity}
           </span>

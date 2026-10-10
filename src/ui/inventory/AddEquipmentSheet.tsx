@@ -12,7 +12,7 @@ import { SYSTEM_LABELS } from './systemLabels';
 
 // Derived from the @core domain type — keeps this component free of any @data import
 // (lint invariant 3). Structurally identical to the store's AddSpec.
-type NewEquipment = Omit<InventoryItem, 'id' | 'quantity' | 'available'>;
+type NewEquipment = Omit<InventoryItem, 'id' | 'quantity'>;
 
 export interface AddEquipmentSheetProps {
   open: boolean;

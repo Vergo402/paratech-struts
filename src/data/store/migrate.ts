@@ -96,6 +96,9 @@ async function runMigration(): Promise<void> {
     try {
       const events = await legacy.events.toArray();
       if (events.length) await deptDb.events.bulkPut(events); // preserves seq order
+      // Rows are copied verbatim, including a pre-ADR-041 persisted `available`: that field
+      // is vestigial — inventoryStore.boot() parses it away and stock is derived from the
+      // event log (available = quantity − held).
       const inventory = await legacy.inventory.toArray();
       if (inventory.length) await deptDb.inventory.bulkPut(inventory);
       for (const key of DEPT_META_KEYS) {

@@ -11,7 +11,7 @@ const DEPT = 'dept-del-1';
 
 const item: InventoryItem = {
   id: 'inv-1', type: 'strut', model: 'LS 203', system: 'LongShore',
-  apparatus: 'Rescue 2', apparatusId: 'r2', quantity: 1, available: 1,
+  apparatus: 'Rescue 2', apparatusId: 'r2', quantity: 1,
 };
 
 afterEach(async () => {

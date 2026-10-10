@@ -7,3 +7,4 @@ export {
   type AuditNames,
 } from './describe';
 export { auditRowsToCsv } from './csv';
+export { describeOverridden, type OverriddenRow, type OverriddenCtx } from './overridden';

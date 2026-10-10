@@ -25,7 +25,7 @@ const ENTRIES: AuditEntry[] = [
 const MEMBERS: Record<string, Member> = { uX: { role: 'default', displayName: 'T. Okafor', joinedAt: 1 } };
 
 const mockAccess = vi.fn((): AuditAccess => ({ opId: 'op1', opName: 'Maple St', canIncident: true, canAdministrative: true, loading: false }));
-const mockEventLog = vi.fn(() => ({ events: EVENTS, deviceUid: 'dev1' }));
+const mockEventLog = vi.fn(() => ({ events: EVENTS, outcomes: new Map<string, 'applied' | 'no-effect'>(), deviceUid: 'dev1' }));
 const auditRefresh = vi.fn();
 const mockAuditTrail = vi.fn(() => ({ entries: ENTRIES as AuditEntry[] | null, error: false, refresh: auditRefresh }));
 const mockUserManager = vi.fn(() => ({ members: MEMBERS as Record<string, Member> | null, membersError: false, refresh: vi.fn() }));
@@ -44,7 +44,7 @@ vi.mock('@ui/util/download', () => ({ download: vi.fn() }));
 describe('AuditLogScreen', () => {
   beforeEach(() => {
     mockAccess.mockReturnValue({ opId: 'op1', opName: 'Maple St', canIncident: true, canAdministrative: true, loading: false });
-    mockEventLog.mockReturnValue({ events: EVENTS, deviceUid: 'dev1' });
+    mockEventLog.mockReturnValue({ events: EVENTS, outcomes: new Map<string, 'applied' | 'no-effect'>(), deviceUid: 'dev1' });
     mockAuditTrail.mockReturnValue({ entries: ENTRIES, error: false, refresh: auditRefresh });
     mockUserManager.mockReturnValue({ members: MEMBERS, membersError: false, refresh: vi.fn() });
     vi.mocked(download).mockClear();
@@ -65,6 +65,14 @@ describe('AuditLogScreen', () => {
     expect(screen.getByText(new RegExp(STATUS_LABELS.cutting))).toBeInTheDocument(); // status row
   });
 
+  it('Incident view: a change that lost a race reads muted as "<action> — no effect" (#499)', () => {
+    mockEventLog.mockReturnValue({ events: EVENTS, outcomes: new Map([['e2', 'no-effect']]), deviceUid: 'dev1' });
+    render(<AuditLogScreen />);
+    const lost = screen.getByText(new RegExp(`${STATUS_LABELS.cutting}.* — no effect$`));
+    expect(lost).toHaveClass('fs-al-row-text--no-effect');
+    expect(screen.getByText('Shore point 7 added')).not.toHaveClass('fs-al-row-text--no-effect');
+  });
+
   it('incident-only: no tab switcher, IC/Operations lock, event rows', () => {
     mockAccess.mockReturnValue({ opId: 'op1', opName: 'Maple St', canIncident: true, canAdministrative: false, loading: false });
     render(<AuditLogScreen />);
@@ -83,7 +91,7 @@ describe('AuditLogScreen', () => {
   });
 
   it('empty log shows the calm all-clear state', () => {
-    mockEventLog.mockReturnValue({ events: [], deviceUid: 'dev1' });
+    mockEventLog.mockReturnValue({ events: [], outcomes: new Map(), deviceUid: 'dev1' });
     mockAccess.mockReturnValue({ opId: 'op1', opName: 'Maple St', canIncident: true, canAdministrative: false, loading: false });
     render(<AuditLogScreen />);
     expect(screen.getByText('Nothing logged yet')).toBeInTheDocument();

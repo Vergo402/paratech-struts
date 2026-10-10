@@ -75,6 +75,10 @@ export function checklistReducer(state: ChecklistState, event: FieldShoreEvent):
     case 'ChecklistItemChecked': {
       const key = checklistInstanceKey(event.checklistId, event.instanceId);
       const inst = state.checklists[key] ?? {};
+      // Last-write-wins (a re-check re-attributes), but a check identical to the one on
+      // record moves nothing → no-op (ADR-041 reference identity; safe replay).
+      const prev = inst[event.itemId];
+      if (prev && prev.by === event.by && prev.role === event.role && prev.at === event.at) return state;
       return {
         ...state,
         checklists: {

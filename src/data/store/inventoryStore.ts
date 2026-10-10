@@ -1,30 +1,41 @@
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { newId } from '@core/id';
-import { InventoryItem } from '@core/schema';
+import { InventoryItem, type StockRow } from '@core/schema';
+import { heldOf as heldOfCounts, type HeldCounts } from '@core/operation';
 import type { ParsedImportRow } from '../inventory/excel';
 import { type FieldShoreDB } from './db';
 import { APPARATUS_ROSTER_KEY, type ApparatusStoreApi } from './apparatusStore';
 import { wrapBlob, type CloudRow } from '../sync/stateSync';
 
-// The in-memory mirror of the Dexie `inventory` table, plus the stock mutators the
-// Inventory screen drives and the L-8 transaction helpers operationStore.commit runs
-// for inventory-consequential events. The Dexie table is the durable truth for stock;
-// this store is the synchronous read path for the hooks (L-4 — UI never does a fresh
-// Dexie read per render).
+// The in-memory mirror of the Dexie `inventory` table plus the stock mutators the
+// Inventory screen drives. The Dexie table is the durable truth for what each rig
+// CARRIES (`quantity`); this store is the synchronous read path for the hooks (L-4 — UI
+// never does a fresh Dexie read per render).
 //
-// Stock-setting (quantity) is DIRECT-DEXIE, not event-sourced — inventory is pre-incident
-// mutable state, not an incident audit log. Every mutator that derives a new value from an
-// existing row reads AND writes inside one `rw` Dexie transaction via a fresh `get(id)`,
-// never from the mirror — because operationStore's deploy/return path writes the same
-// `available` field, and the mirror only updates AFTER the durable write. The transaction
-// is the serialization point that keeps the two write paths from clobbering each other.
+// ADR-041 — stock OUT ON SCENE is not stored here. operationStore folds the event log and
+// pushes `held` (units per row id held by deployed equipment, every op in the bucket) via
+// setHeld(); the view `items` is `rows` joined with it: `available = quantity − held`,
+// SIGNED (negative = over-allocated, two crews claimed one unit — the truthful rendering,
+// D2). Deploy/return never write a stock row, so the only writer of a Dexie row is a
+// manual edit (here) or a peer's manual edit (applyRemoteRow). Each mutator still reads
+// AND writes inside one `rw` transaction via a fresh `get(id)` — two quick taps must not
+// read the same stale quantity — and reads `held` from the in-memory fold, which is the
+// only place it exists.
+//
+// Quantity is DIRECT-DEXIE, not event-sourced — inventory is pre-incident mutable state,
+// last-write-wins across devices (cloud-sync Increment 3).
 
 export interface InventoryState {
-  items: InventoryItem[];
+  /** The persisted rows (Dexie mirror). No derived fields. */
+  rows: InventoryItem[];
+  /** Units held per row id, from the folded event log (absent id = 0). */
+  held: HeldCounts;
+  /** The derived view every reader uses: rows + held + signed available. */
+  items: StockRow[];
 }
 
-/** A new stock record minus the app-managed fields (id minted; quantity/available set). */
-export type AddSpec = Omit<InventoryItem, 'id' | 'quantity' | 'available'>;
+/** A new stock record minus the app-managed fields (id minted; quantity set). */
+export type AddSpec = Omit<InventoryItem, 'id' | 'quantity'>;
 
 export interface ImportResult {
   imported: number;
@@ -35,17 +46,22 @@ export interface InventoryStoreApi {
   store: StoreApi<InventoryState>;
   /** Read the whole table into memory (boot / after a bulk write). */
   boot(): Promise<void>;
-  /** Upsert one item into the mirror (replace if present, else append). */
+  /** Upsert one row into the mirror (replace if present, else append). */
   applyLocal(item: InventoryItem): void;
-  /** Drop one item from the mirror. */
+  /** Drop one row from the mirror. */
   removeLocal(id: string): void;
+  /** Replace the held counts (operationStore, after every fold). Skips — no state change,
+   *  no re-render — when the counts are equal to the current ones. */
+  setHeld(held: HeldCounts): void;
+  /** Units of one row held by deployed equipment (0 when none). */
+  heldOf(id: string): number;
   // ---- cloud-sync Increment 3 (LWW pull-down; the listener owns the newer-wins guard) ----
-  /** Apply a remote row: durable write THEN mirror. `available` is event-owned, so it's
-   *  recomputed locally (quantity − deployed, clamped at the deployed floor), never trusted
-   *  off the wire. Does NOT re-push (no echo). */
+  /** Apply a remote row: durable write THEN mirror. The peer's quantity is persisted
+   *  VERBATIM (ADR-041: a local floor clamp made quantity diverge per device; a quantity
+   *  below held reads as over-allocated instead). Does NOT re-push (no echo). */
   applyRemoteRow(row: CloudRow): Promise<void>;
-  /** Apply a remote tombstone: delete the row (unless units are locally deployed — never
-   *  strand a deployed unit). Does NOT re-push. */
+  /** Apply a remote tombstone: delete the row unless units are held (never strand a
+   *  deployed unit). Does NOT re-push. */
   applyRemoteDelete(id: string): Promise<void>;
   /** Push cloud tombstones for rows deleted OUTSIDE the stock mutators (the apparatus
    *  cascade bulk-deletes directly), so peers don't resurrect orphaned cloud rows. */
@@ -54,18 +70,18 @@ export interface InventoryStoreApi {
   /** Quick-add: increment the matching row on the rig, or create it at quantity 1.
    *  Resolves to the affected row's id. */
   addOne(spec: AddSpec): Promise<string>;
-  /** ± up: one more physical unit (q+1, a+1). */
+  /** ± up: one more physical unit. */
   incrementItem(id: string): Promise<void>;
-  /** ± down: one fewer unit (q−1, a−1); no-op if all are deployed; removes the row
-   *  when the last undeployed unit is dropped. */
+  /** ± down: one fewer unit; no-op when none is available (quantity − held ≤ 0); removes
+   *  the row when its last unit is dropped and nothing is held. */
   decrementItem(id: string): Promise<void>;
-  /** Set the physical count; clamped at the deployed floor; 0 removes the row. */
+  /** Set the physical count; floored at held; 0 removes the row. */
   setQuantity(id: string, quantity: number): Promise<void>;
-  /** Remove the row; refuses if any unit is deployed. */
+  /** Remove the row; refuses while any unit is held. */
   removeItem(id: string): Promise<void>;
   /** Merge stock from a parsed CSV: upsert by ID, provision new apparatus for blank
    *  Apparatus-ID rows (atomic with the items, via the roster store), and skip any row
-   *  that would drop a deployed item below its deployed count. */
+   *  whose quantity would fall below the units it holds. */
   upsertImport(rows: ParsedImportRow[], apparatus: ApparatusStoreApi): Promise<ImportResult>;
 }
 
@@ -87,36 +103,77 @@ function sameKind(a: InventoryItem, b: AddSpec): boolean {
 
 // Cloud-write hooks (cloud-sync Increment 3) — fired AFTER the durable write so the
 // registry can push the row/tombstone to /orgs/{deptId}/inventory. Injected (default
-// no-op) so the store stays sync-ignorant + unit tests stay firebase-free. Only MANUAL
-// mutators fire these; deploy/return (applyDeploy/ReturnTxn) do not — `available` is
-// event-owned and must not bump the LWW clock.
+// no-op) so the store stays sync-ignorant + unit tests stay firebase-free. Only manual
+// mutators fire these — deploy/return are events and never touch a stock row.
 export interface InventoryCloudHooks {
   onRow?: (item: InventoryItem) => void;
   onDelete?: (id: string, lastWriteAt: number) => void;
 }
 
-export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHooks = {}): InventoryStoreApi {
-  const store = createStore<InventoryState>(() => ({ items: [] }));
+/** The derived view: each row joined with its held count; available signed. */
+function deriveItems(rows: readonly InventoryItem[], held: HeldCounts): StockRow[] {
+  return rows.map((r) => {
+    const h = heldOfCounts(held, r.id);
+    return { ...r, held: h, available: r.quantity - h };
+  });
+}
 
-  // The single LWW stamp choke point for manual stock edits. Routed through every
-  // manual put/add below; NOT through applyDeployTxn/applyReturnTxn (those touch only
-  // `available`, which we don't sync).
-  const stamped = (item: InventoryItem): InventoryItem => ({ ...item, lastWriteAt: Date.now() });
+/** Shallow equality of two held maps (same keys, same counts). */
+function sameHeld(a: HeldCounts, b: HeldCounts): boolean {
+  if (a === b) return true;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => Object.hasOwn(b, k) && a[k] === b[k]);
+}
+
+export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHooks = {}): InventoryStoreApi {
+  const EMPTY_HELD: HeldCounts = {};
+  const store = createStore<InventoryState>(() => ({ rows: [], held: EMPTY_HELD, items: [] }));
+
+  const heldOf = (id: string): number => heldOfCounts(store.getState().held, id);
+
+  // The single write choke point for manual stock edits: stamps the LWW clock AND parses
+  // through the schema, which strips anything that isn't a persisted field — a legacy
+  // `available` spread from an old Dexie row, or a view row's `held`/`available` — so a
+  // derived value can never be written to Dexie or pushed to the cloud.
+  const stamped = (item: InventoryItem): InventoryItem => InventoryItem.parse({ ...item, lastWriteAt: Date.now() });
+
+  function setRows(rows: InventoryItem[]): void {
+    const { held } = store.getState();
+    store.setState({ rows, held, items: deriveItems(rows, held) }, true);
+  }
 
   function applyLocal(item: InventoryItem): void {
-    store.setState((s) => {
-      const exists = s.items.some((i) => i.id === item.id);
-      return { items: exists ? s.items.map((i) => (i.id === item.id ? item : i)) : [...s.items, item] };
-    }, true);
+    const { rows } = store.getState();
+    const exists = rows.some((i) => i.id === item.id);
+    setRows(exists ? rows.map((i) => (i.id === item.id ? item : i)) : [...rows, item]);
   }
 
   function removeLocal(id: string): void {
-    store.setState((s) => ({ items: s.items.filter((i) => i.id !== id) }), true);
+    setRows(store.getState().rows.filter((i) => i.id !== id));
+  }
+
+  function setHeld(held: HeldCounts): void {
+    const s = store.getState();
+    if (sameHeld(s.held, held)) return; // a fold that moved no stock → no re-render
+    store.setState({ rows: s.rows, held, items: deriveItems(s.rows, held) }, true);
   }
 
   async function boot(): Promise<void> {
-    const items = await db.inventory.toArray();
-    store.setState({ items }, true);
+    // Read trust boundary: parse every durable row. Parsing strips a legacy row's
+    // persisted `available` (pre-ADR-041) from the mirror; a corrupt row is dropped with a
+    // warning rather than crashing every stock read. Durable rows are left as they are —
+    // the vestigial field is harmless there and disappears on the row's next write.
+    const raw = await db.inventory.toArray();
+    const rows: InventoryItem[] = [];
+    let dropped = 0;
+    for (const r of raw) {
+      const parsed = InventoryItem.safeParse(r);
+      if (parsed.success) rows.push(parsed.data);
+      else dropped++;
+    }
+    if (dropped) console.warn(`FieldShore: skipped ${dropped} unreadable inventory row(s) on load.`);
+    setRows(rows);
   }
 
   // Each mutator RETURNS its outcome from the Dexie transaction (rather than mutating a
@@ -130,11 +187,11 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
       const rigItems = await db.inventory.where('apparatusId').equals(spec.apparatusId).toArray();
       const match = rigItems.find((i) => sameIdentity(i, spec));
       if (match) {
-        const updated = stamped({ ...match, quantity: match.quantity + 1, available: match.available + 1 });
+        const updated = stamped({ ...match, quantity: match.quantity + 1 });
         await db.inventory.put(updated);
         return updated;
       }
-      const created: InventoryItem = stamped({ id: `inv-${newId()}`, quantity: 1, available: 1, ...spec });
+      const created = stamped({ id: `inv-${newId()}`, quantity: 1, ...spec });
       await db.inventory.add(created);
       return created;
     });
@@ -147,7 +204,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     const result = await db.transaction('rw', db.inventory, async () => {
       const item = await db.inventory.get(id);
       if (!item) throw new Error(`inventory item ${id} not found`);
-      const updated = stamped({ ...item, quantity: item.quantity + 1, available: item.available + 1 });
+      const updated = stamped({ ...item, quantity: item.quantity + 1 });
       await db.inventory.put(updated);
       return updated;
     });
@@ -169,36 +226,36 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
   }
 
   async function decrementItem(id: string): Promise<void> {
-    const outcome = await db.transaction('rw', db.inventory, async () => {
+    const outcome = await db.transaction('rw', db.inventory, async (): Promise<MutateOutcome> => {
       const item = await db.inventory.get(id);
       // a concurrent removal (fast double-tap of −) is benign — no-op, don't throw
-      if (!item) return { kind: 'noop' as const };
-      if (item.available <= 0) return { kind: 'noop' as const }; // every unit is deployed
-      if (item.quantity - item.available === 0 && item.quantity === 1) {
-        await db.inventory.delete(id); // last undeployed unit dropped → remove the row
-        return { kind: 'removed' as const };
+      if (!item) return { kind: 'noop' };
+      const held = heldOf(id);
+      if (item.quantity - held <= 0) return { kind: 'noop' }; // every unit is out on scene
+      if (item.quantity === 1 && held === 0) {
+        await db.inventory.delete(id); // last unit dropped, nothing held → remove the row
+        return { kind: 'removed' };
       }
-      const updated = stamped({ ...item, quantity: item.quantity - 1, available: item.available - 1 });
+      const updated = stamped({ ...item, quantity: item.quantity - 1 });
       await db.inventory.put(updated);
-      return { kind: 'updated' as const, item: updated };
+      return { kind: 'updated', item: updated };
     });
     dispatchOutcome(id, outcome);
   }
 
   async function setQuantity(id: string, quantity: number): Promise<void> {
-    const outcome = await db.transaction('rw', db.inventory, async () => {
+    const outcome = await db.transaction('rw', db.inventory, async (): Promise<MutateOutcome> => {
       const item = await db.inventory.get(id);
       if (!item) throw new Error(`inventory item ${id} not found`);
-      if (!Number.isFinite(quantity)) return { kind: 'noop' as const }; // never persist NaN
-      const deployed = item.quantity - item.available;
-      const q = Math.max(Math.trunc(quantity), deployed); // never below the deployed floor
+      if (!Number.isFinite(quantity)) return { kind: 'noop' }; // never persist NaN
+      const q = Math.max(Math.trunc(quantity), heldOf(id)); // never below the units held
       if (q <= 0) {
-        await db.inventory.delete(id); // deployed is 0 here (clamped), so safe to remove
-        return { kind: 'removed' as const };
+        await db.inventory.delete(id); // held is 0 here (floored), so nothing is stranded
+        return { kind: 'removed' };
       }
-      const updated = stamped({ ...item, quantity: q, available: q - deployed });
+      const updated = stamped({ ...item, quantity: q });
       await db.inventory.put(updated);
-      return { kind: 'updated' as const, item: updated };
+      return { kind: 'updated', item: updated };
     });
     dispatchOutcome(id, outcome);
   }
@@ -207,9 +264,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     await db.transaction('rw', db.inventory, async () => {
       const item = await db.inventory.get(id);
       if (!item) throw new Error(`inventory item ${id} not found`);
-      if (item.quantity - item.available > 0) {
-        throw new Error(`inventory item ${id} has deployed units (cannot remove)`);
-      }
+      if (heldOf(id) > 0) throw new Error(`inventory item ${id} has deployed units (cannot remove)`);
       await db.inventory.delete(id);
     });
     removeLocal(id);
@@ -227,7 +282,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     const roster = apparatus.store.getState().roster;
     const nameToId = new Map<string, string>();
     for (const a of roster) if (!nameToId.has(a.name)) nameToId.set(a.name, a.id);
-    for (const i of store.getState().items) if (!nameToId.has(i.apparatus)) nameToId.set(i.apparatus, i.apparatusId);
+    for (const i of store.getState().rows) if (!nameToId.has(i.apparatus)) nameToId.set(i.apparatus, i.apparatusId);
 
     const newRigs = new Map<string, { id: string; name: string; type: 'Other' }>();
     for (const r of rows) {
@@ -266,20 +321,19 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
               skipped++;
               continue;
             }
-            const deployed = existing.quantity - existing.available;
-            if (r.quantity < deployed) {
-              skipped++; // would strand a deployed unit (the orphan guard)
-              continue;
-            }
-            id = r.id;
-            await db.inventory.put({ ...fields, id, quantity: r.quantity, available: r.quantity - deployed, lastWriteAt: now });
-          } else {
-            id = r.id;
-            await db.inventory.add({ ...fields, id, quantity: r.quantity, available: r.quantity, lastWriteAt: now });
           }
+          // The orphan guard: a quantity below the units held would strand a deployed
+          // unit. Checked for a new id too — a peer's deploy may hold an id this device
+          // has no row for yet.
+          if (r.quantity < heldOf(r.id)) {
+            skipped++;
+            continue;
+          }
+          id = r.id;
+          await db.inventory.put({ ...fields, id, quantity: r.quantity, lastWriteAt: now });
         } else {
           id = `inv-${newId()}`;
-          await db.inventory.add({ ...fields, id, quantity: r.quantity, available: r.quantity, lastWriteAt: now });
+          await db.inventory.add({ ...fields, id, quantity: r.quantity, lastWriteAt: now });
         }
         importedIds.push(id);
         imported++;
@@ -293,7 +347,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     // Push the imported rows + (if rigs were provisioned) the roster blob to the cloud.
     // After boot() the mirror holds the durable rows; push each by id (LWW, idempotent).
     if (hooks.onRow) {
-      const byId = new Map(store.getState().items.map((i) => [i.id, i]));
+      const byId = new Map(store.getState().rows.map((i) => [i.id, i]));
       for (const id of importedIds) {
         const it = byId.get(id);
         if (it) hooks.onRow(it);
@@ -305,30 +359,22 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
 
   // ---- cloud-sync Increment 3: LWW pull-down (listener decides newer-wins) ----
   async function applyRemoteRow(row: CloudRow): Promise<void> {
-    // `available` is event-owned — recompute it, never trust the wire. Preserve the
-    // local deployed count and clamp quantity UP to the deployed floor (mirrors
-    // setQuantity / the import orphan guard), so a peer's lower quantity can never
-    // strand a unit this device has deployed.
-    const result = await db.transaction('rw', db.inventory, async () => {
-      const local = await db.inventory.get(row.id);
-      const deployed = local ? local.quantity - local.available : 0;
-      const quantity = Math.max(row.quantity, deployed);
-      // Validate the wire row before it touches local state (the read-side integrity
-      // boundary — the cloud `.validate` is coarse, like the event envelope). A malformed
-      // peer write (missing quantity → NaN, wrong type) is DROPPED, never persisted.
-      const parsed = InventoryItem.safeParse({ ...row, quantity, available: quantity - deployed });
-      if (!parsed.success) return null;
-      await db.inventory.put(parsed.data);
-      return parsed.data;
-    });
-    if (result) applyLocal(result); // no onRow — pulled-down, never re-pushed (no echo)
+    // Validate the wire row before it touches local state (the read-side integrity
+    // boundary — the cloud `.validate` is coarse, like the event envelope). A malformed
+    // peer write (missing quantity, wrong type) is DROPPED, never persisted. The quantity
+    // is taken VERBATIM — no floor at the units held here (ADR-041): every device must
+    // persist the same quantity, and a quantity below held renders as over-allocated.
+    const parsed = InventoryItem.safeParse(row);
+    if (!parsed.success) return;
+    await db.inventory.put(parsed.data);
+    applyLocal(parsed.data); // no onRow — pulled-down, never re-pushed (no echo)
   }
 
   async function applyRemoteDelete(id: string): Promise<void> {
+    if (heldOf(id) > 0) return; // units are out on scene — never strand them
     const removed = await db.transaction('rw', db.inventory, async () => {
       const local = await db.inventory.get(id);
       if (!local) return false; // already gone
-      if (local.quantity - local.available > 0) return false; // deployed — never strand
       await db.inventory.delete(id);
       return true;
     });
@@ -345,6 +391,8 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     boot,
     applyLocal,
     removeLocal,
+    setHeld,
+    heldOf,
     applyRemoteRow,
     applyRemoteDelete,
     tombstoneCloud,
@@ -355,31 +403,6 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     removeItem,
     upsertImport,
   };
-}
-
-// ---- L-8 transaction helpers ----------------------------------------------
-// Both run INSIDE a caller-opened 'rw' Dexie transaction that also covers the
-// event append, so an abort (throw) rolls back the whole commit — stock and
-// log can never diverge. Both throw on a missing node (no phantom items,
-// v3.5.2 NEW-7) and the return clamps available ≤ quantity (no over-increment).
-
-/** Decrement one available unit for a deploy. Throws to abort the txn. */
-export async function applyDeployTxn(db: FieldShoreDB, inventoryId: string): Promise<InventoryItem> {
-  const item = await db.inventory.get(inventoryId);
-  if (!item) throw new Error(`inventory item ${inventoryId} not found (L-8 abort)`);
-  if (item.available <= 0) throw new Error(`inventory item ${inventoryId} has none available (L-8 abort)`);
-  const updated: InventoryItem = { ...item, available: item.available - 1 };
-  await db.inventory.put(updated);
-  return updated;
-}
-
-/** Return one unit, clamped to quantity. Throws to abort the txn. */
-export async function applyReturnTxn(db: FieldShoreDB, inventoryId: string): Promise<InventoryItem> {
-  const item = await db.inventory.get(inventoryId);
-  if (!item) throw new Error(`inventory item ${inventoryId} not found (L-8 abort)`);
-  const updated: InventoryItem = { ...item, available: Math.min(item.available + 1, item.quantity) };
-  await db.inventory.put(updated);
-  return updated;
 }
 
 /** The app's singleton inventory store, bound to the singleton DB. */

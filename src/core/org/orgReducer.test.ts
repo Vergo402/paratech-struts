@@ -111,3 +111,62 @@ describe('orgReducer (structural folds)', () => {
     expect(fwd.positions).toEqual(rev.positions);
   });
 });
+
+// ADR-041 — a no-effect fold returns the INPUT state reference (the canonical event log
+// reads outcome = applied / no-effect by reference identity).
+describe('orgReducer — no-op folds return the identical state (ADR-041)', () => {
+  const s = seedOrgState(OP, DEV);
+  const ic = id('ic');
+
+  it('ResourceCleared with no matching resource', () => {
+    const miss: FieldShoreEvent = {
+      type: 'ResourceCleared',
+      ...base(),
+      positionId: ic,
+      resource: { ref: 'individual', value: 'Nobody', label: 'Nobody' },
+    };
+    expect(orgReducer(s, miss)).toBe(s);
+  });
+
+  it('ResourceCleared (clear-all) on an already empty position', () => {
+    const empty = id('ops');
+    expect(s.positions[empty]!.assignedResources).toHaveLength(0);
+    expect(orgReducer(s, { type: 'ResourceCleared', ...base(), positionId: empty })).toBe(s);
+  });
+
+  it('ResourceCleared that does match still applies', () => {
+    const hit = orgReducer(s, {
+      type: 'ResourceCleared',
+      ...base(),
+      positionId: ic,
+      resource: { ref: 'device', value: DEV, label: 'This device' },
+    });
+    expect(hit).not.toBe(s);
+    expect(hit.positions[ic]!.assignedResources).toHaveLength(0);
+  });
+
+  it('PositionRenamed to the same title', () => {
+    const title = s.positions[ic]!.title;
+    expect(orgReducer(s, { type: 'PositionRenamed', ...base(), positionId: ic, title })).toBe(s);
+    expect(orgReducer(s, { type: 'PositionRenamed', ...base(), positionId: ic, title: 'Something new' })).not.toBe(s);
+  });
+
+  it('PositionReordered to the same order', () => {
+    const ops = id('ops');
+    const order = s.positions[ops]!.order;
+    expect(orgReducer(s, { type: 'PositionReordered', ...base(), positionId: ops, order })).toBe(s);
+    expect(orgReducer(s, { type: 'PositionReordered', ...base(), positionId: ops, order: order + 0.5 })).not.toBe(s);
+  });
+
+  it('PositionReparented to the parent it already has', () => {
+    const ops = id('ops');
+    const parentId = s.positions[ops]!.parentId!;
+    expect(orgReducer(s, { type: 'PositionReparented', ...base(), positionId: ops, newParentId: parentId })).toBe(s);
+  });
+
+  it('MyRoleSet to the value already held (and clearing an absent role)', () => {
+    expect(orgReducer(s, { type: 'MyRoleSet', ...base(), by: DEV, positionId: ic })).toBe(s);
+    expect(orgReducer(s, { type: 'MyRoleSet', ...base(), by: 'dev-other', positionId: null })).toBe(s);
+    expect(orgReducer(s, { type: 'MyRoleSet', ...base(), by: DEV, positionId: null })).not.toBe(s);
+  });
+});
