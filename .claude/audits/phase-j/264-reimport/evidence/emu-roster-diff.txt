@@ -1,0 +1,3 @@
+# R6 — emulator roster + types before vs after the import (jq -S)
+apparatus: IDENTICAL (lastWriteAt 1791737766432, 7 entries)
+apparatusTypes: IDENTICAL (lastWriteAt 1791737661118, 1 entries)

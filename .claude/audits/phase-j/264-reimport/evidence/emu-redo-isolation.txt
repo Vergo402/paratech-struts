@@ -1,0 +1,6 @@
+# R9b — original emulator department inventory before vs after the redo import (jq -S)
+IDENTICAL (32 rows)
+# redo roster + types before vs after its import
+apparatus: IDENTICAL
+apparatusTypes: IDENTICAL
+# org ids: 5acf033a-001e-46cd-bffd-0fa03baaf142 (original), 8a20b42b-4f60-4590-bcdd-bf18d1288407 (redo) — distinct buckets

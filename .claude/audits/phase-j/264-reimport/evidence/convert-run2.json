@@ -1,0 +1,55 @@
+{
+  "ok": true,
+  "generatedAt": "2026-10-11T17:20:05.355Z",
+  "dept": "hfd217",
+  "input": {
+    "path": "~/Documents/FieldShore-backups/paratech-c3ab4-2026-10-09.json",
+    "bytes": 1378446,
+    "mtime": "2026-10-09T11:34:45.036Z",
+    "sha256": "116954357cbbdf64320749b8d3008e860f8d993af9c53739c5d73a5d520ec297"
+  },
+  "lines": 32,
+  "units": 212,
+  "byType": {
+    "strut": {
+      "lines": 10,
+      "units": 58
+    },
+    "extension": {
+      "lines": 12,
+      "units": 78
+    },
+    "plate": {
+      "lines": 10,
+      "units": 76
+    }
+  },
+  "byRig": {
+    "Eng 169": {
+      "lines": 6,
+      "units": 12
+    },
+    "Eng 170": {
+      "lines": 5,
+      "units": 10
+    },
+    "Res 56": {
+      "lines": 21,
+      "units": 190
+    }
+  },
+  "skipped": [],
+  "lossless": true,
+  "notes": [
+    "4 units deployed on Res 56 plate 4\"x4\" Channel Base",
+    "1 unit deployed on Res 56 AT 56-88",
+    "1 unit deployed on Res 56 LS 610"
+  ],
+  "deployedUnits": 6,
+  "csv": {
+    "path": ".claude/audits/phase-j/264-reimport/hfd217-inventory.csv",
+    "bytes": 1391,
+    "rows": 32,
+    "sha256": "62864603ec4d6f5c4f60cbe583f9b253b16eb82607ac99b851bf90b49602d0e5"
+  }
+}

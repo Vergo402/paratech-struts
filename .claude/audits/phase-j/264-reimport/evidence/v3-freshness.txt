@@ -1,0 +1,8 @@
+# R1 — v3 live hfd217 vs 2026-10-09 dump (read-only; _meta stripped)
+# generated 2026-10-11T16:50:52Z via: firebase database:get /departments/hfd217/{inventory,apparatus,customApparatusTypes} --project paratech-c3ab4
+## inventory
+IDENTICAL (32 entries)
+## apparatus
+IDENTICAL (7 entries)
+## customApparatusTypes
+IDENTICAL (9 entries)

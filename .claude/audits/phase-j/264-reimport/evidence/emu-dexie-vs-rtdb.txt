@@ -1,0 +1,6 @@
+# R8 — Dexie rows vs emulator RTDB rows, keyed by id, every field compared
+dexie rows 32 rtdb live rows 32
+ids only in dexie 0 ids only in rtdb 0
+rows with any field difference 0
+distinct lastWriteAt dexie [1791739301047] rtdb [1791739301047]
+RESULT: IDENTICAL

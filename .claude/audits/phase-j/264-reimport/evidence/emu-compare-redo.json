@@ -1,0 +1,99 @@
+{
+  "diffCount": 0,
+  "diffs": {
+    "duplicatesMerged": [],
+    "emptyV3": [],
+    "expectations": [],
+    "extra": [],
+    "malformed": [],
+    "missing": [],
+    "quantity": [],
+    "roster": []
+  },
+  "inputs": {
+    "roster": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/emu-redo-before-apparatus.json",
+    "v3": "~/Documents/FieldShore-backups/paratech-c3ab4-2026-10-09.json",
+    "v3Apparatus": null,
+    "v4": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/emu-redo-after-inventory.json"
+  },
+  "ok": true,
+  "rosterSize": 7,
+  "v3": {
+    "byRig": {
+      "Eng 169": {
+        "lines": 6,
+        "units": 12
+      },
+      "Eng 170": {
+        "lines": 5,
+        "units": 10
+      },
+      "Res 56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 12,
+        "units": 78
+      },
+      "plate": {
+        "lines": 10,
+        "units": 76
+      },
+      "strut": {
+        "lines": 10,
+        "units": 58
+      }
+    },
+    "duplicatesMerged": 0,
+    "lines": 32,
+    "malformed": 0,
+    "rows": 32,
+    "shape": "full dump (departments/hfd217)",
+    "skippedZero": 0,
+    "units": 212
+  },
+  "v4": {
+    "byRig": {
+      "Eng 169": {
+        "lines": 6,
+        "units": 12
+      },
+      "Eng 170": {
+        "lines": 5,
+        "units": 10
+      },
+      "Res 56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 12,
+        "units": 78
+      },
+      "plate": {
+        "lines": 10,
+        "units": 76
+      },
+      "strut": {
+        "lines": 10,
+        "units": 58
+      }
+    },
+    "duplicatesMerged": 0,
+    "lastWriteAtDistinct": 1,
+    "lastWriteAtMissing": 0,
+    "lines": 32,
+    "malformed": 0,
+    "rows": 32,
+    "shape": "REST map",
+    "skippedZero": 0,
+    "tombstones": 0,
+    "units": 212
+  },
+  "warnings": []
+}
