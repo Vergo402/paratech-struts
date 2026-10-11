@@ -1,6 +1,7 @@
 import type { FieldShoreEvent } from '../schema/event';
 import type { Hazard, Hazards, HazardSeverity } from '../schema/hazard';
 import { parseDivisionNumber } from '../operation/division';
+import { resolveHazardDivision } from './location';
 
 // The hazard projection slice — the keyed ICS-208 register. Mirrors OrgState: a
 // thin slice the operationReducer delegates to (like shorePointReducer/orgReducer).
@@ -71,16 +72,17 @@ export function openHazardsBySeverity(hazards: Hazards): Hazard[] {
 /**
  * Open hazards whose free-text `location` resolves to the given shore-point
  * division — what badges an SP card (P9). Resolution is the conservative
- * exact-division-number match (division.ts): a location that does NOT resolve to a
- * division matches nothing, so an unresolvable hazard shows in the log + header
- * only, NEVER on the wrong card (the v4.0 rule, hazard-log §"Two things v4 adds").
- * Mitigated hazards drop off the cards. Structured per-area binding is deferred.
+ * one-Division match (`resolveHazardDivision`): a bare number ("2"), "Div N" /
+ * "Division N" / "DN", or "BN" / "Basement N" (sub-grade) that names exactly ONE
+ * Division. A location naming two Divisions, or none, matches nothing — it shows in
+ * the log + header only, NEVER on the wrong card (the v4.0 rule, hazard-log §Step 4;
+ * Alex 2026-10-11, #511). Mitigated hazards drop off the cards. Structured per-area binding is deferred.
  */
 export function hazardsForDivision(hazards: Hazards, division: string | undefined): Hazard[] {
   const target = parseDivisionNumber(division);
   if (target === null) return [];
   return openHazardsBySeverity(hazards).filter(
-    (h) => h.mitigatedAt == null && parseDivisionNumber(h.location) === target,
+    (h) => h.mitigatedAt == null && resolveHazardDivision(h.location) === target,
   );
 }
 
@@ -88,7 +90,8 @@ export function hazardsForDivision(hazards: Hazards, division: string | undefine
  * The worst OPEN hazard severity per shore-point division — the O(1)-per-card
  * companion to `hazardsForDivision`, built once per render so the board's per-card
  * selector (#501) is a Map lookup instead of a re-sort per card. Same conservative
- * Division rule: a `location` that does not resolve to a division number badges
+ * one-Division rule (`resolveHazardDivision`: "2", "Div 2", "Division 2", "D2",
+ * "B1" / "Basement 1" -> -1): a `location` naming two Divisions, or none, badges
  * nothing (log + header only, never the wrong card). Mitigated hazards are skipped.
  * `openHazardsBySeverity` sorts open-first then high→low, so the first hit per
  * division is the worst.
@@ -97,7 +100,7 @@ export function worstHazardByDivision(hazards: Hazards): Map<number, HazardSever
   const worst = new Map<number, HazardSeverity>();
   for (const h of openHazardsBySeverity(hazards)) {
     if (h.mitigatedAt != null) continue;
-    const n = parseDivisionNumber(h.location);
+    const n = resolveHazardDivision(h.location);
     if (n === null || worst.has(n)) continue;
     worst.set(n, h.severity);
   }

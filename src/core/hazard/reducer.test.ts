@@ -88,6 +88,13 @@ describe('hazardsForDivision (SP-card resolution — never the wrong card)', () 
     expect(hazardsForDivision(s.hazards, undefined)).toEqual([]);
   });
 
+  it('a location naming one Division ("NE corner, Div 2") matches that Division only (#511)', () => {
+    let s = EMPTY_HAZARD_STATE;
+    s = hazardReducer(s, logged(hz({ id: 'ne', location: 'NE corner, Div 2' })));
+    expect(hazardsForDivision(s.hazards, '2').map((h) => h.id)).toEqual(['ne']);
+    expect(hazardsForDivision(s.hazards, '1')).toEqual([]);
+  });
+
   it('a mitigated hazard drops off the card', () => {
     let s = hazardReducer(EMPTY_HAZARD_STATE, logged(hz({ id: 'd2', location: '2' })));
     expect(hazardsForDivision(s.hazards, '2')).toHaveLength(1);
@@ -125,10 +132,30 @@ describe('worstHazardByDivision (the board\'s per-card selector — O(1) lookups
     expect(worstHazardByDivision(s.hazards).get(2)).toBe('low');
   });
 
-  it('an unresolvable free-text location badges nothing (same conservative rule)', () => {
+  it('free text that clearly names ONE Division resolves to it ("Div 1 rear wall lean" -> Div 1, #511)', () => {
     const s = hazardReducer(
       EMPTY_HAZARD_STATE,
       logged(hz({ id: 'free', location: 'Div 1 rear wall lean', severity: 'high' })),
+    );
+    const map = worstHazardByDivision(s.hazards);
+    expect(map.get(1)).toBe('high');
+    expect(map.size).toBe(1);
+  });
+
+  it('free text naming two Divisions is ambiguous and badges nothing (log only)', () => {
+    const s = hazardReducer(
+      EMPTY_HAZARD_STATE,
+      logged(hz({ id: 'amb', location: 'between Div 1 and Div 2', severity: 'high' })),
+    );
+    expect(worstHazardByDivision(s.hazards).size).toBe(0);
+    expect(hazardsForDivision(s.hazards, '1')).toEqual([]);
+    expect(hazardsForDivision(s.hazards, '2')).toEqual([]);
+  });
+
+  it('free text naming no Division badges nothing (same conservative rule)', () => {
+    const s = hazardReducer(
+      EMPTY_HAZARD_STATE,
+      logged(hz({ id: 'none', location: 'rear wall lean', severity: 'high' })),
     );
     expect(worstHazardByDivision(s.hazards).size).toBe(0);
   });
@@ -138,9 +165,11 @@ describe('worstHazardByDivision (the board\'s per-card selector — O(1) lookups
     expect(worstHazardByDivision(s.hazards).get(-1)).toBe('medium');
   });
 
-  it('"B1" does NOT resolve to a division (no key)', () => {
+  it('"B1" resolves to the basement (Division -1, #511)', () => {
     const s = hazardReducer(EMPTY_HAZARD_STATE, logged(hz({ id: 'b1', location: 'B1', severity: 'high' })));
-    expect(worstHazardByDivision(s.hazards).size).toBe(0);
+    const map = worstHazardByDivision(s.hazards);
+    expect(map.get(-1)).toBe('high');
+    expect(map.size).toBe(1);
   });
 
   it('agrees with hazardsForDivision for every resolvable division', () => {

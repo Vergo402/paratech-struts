@@ -169,7 +169,7 @@ the Division tile. Cutting Station cards do not carry the badge (Alex's call, 20
 resolved to a **Division**; the badge then appears on **every shore-point card in that Division**. If the
 location **cannot** be resolved to a Division, the hazard shows **only** in the Hazard Log and the persistent
 header — it is **never** badged onto a shore-point card. The rule is deliberately conservative: **better to
-under-badge (visible in the log) than to badge the wrong card.** Precise per-area badging via a structured
+under-badge (visible in the log) than to badge the wrong card.** A location resolves when it clearly names exactly **one** Division: a bare number, "Div N" / "Division N" / "DN", or "BN" / "Basement N" for sub-grade (B1 = the first basement); a location naming two Divisions, or none, stays in the log only (Alex 2026-10-11, #511). Precise per-area badging via a structured
 building → division → area binding is a Phase H refinement; the v4.0 Division-level fallback is the stated
 default so the behavior is never silently chosen by whoever codes it.
 

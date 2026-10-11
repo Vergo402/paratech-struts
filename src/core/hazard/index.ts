@@ -4,3 +4,4 @@
 // that the reducer (P2) and the UI (P9) build on.
 export type { Hazard, Hazards, HazardType, HazardSeverity } from '../schema/hazard';
 export * from './reducer';
+export * from './location';

@@ -1220,8 +1220,9 @@ describe('OperationsBoard', () => {
     });
     mockHazards.mockReturnValue({
       h1: hz('h1', '1', 'high'),
-      // Free text that names no Division cannot be resolved — it must badge NOTHING.
-      h2: hz('h2', 'Div 2 rear wall lean', 'high'),
+      // Free text naming TWO Divisions is ambiguous — it must badge NOTHING (so the
+      // Div 2 negative below still holds; a lone "Div 2 ..." WOULD badge, #511).
+      h2: hz('h2', 'between Div 1 and Div 2 \u2014 rear wall lean', 'high'),
       // Mitigated hazards are closed — Div 2 stays clean.
       h3: hz('h3', '2', 'medium', { mitigatedBy: 'dev', mitigatedAt: 2 }),
     });
