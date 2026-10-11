@@ -912,12 +912,17 @@ button.fs-spc-head {
   white-space: nowrap;
 }
 
-/* Hazard pill (handoff Hazard) — danger pair at badge emphasis, after the
-   status badge. Sunlight resolves --danger-text→white on --danger-bg→solid red
-   (white-on-red banner, already correct — mirrors how the status badge reads). */
+/* Hazard badge (#394/#501, HazardBadge.tsx) — danger pair at badge emphasis, on its
+   OWN row under the card header, above the capacity flag. The sentence form wraps:
+   a 7-lane desktop board floors each lane at 160px and a nowrap 150px pill would be
+   clipped by the card's overflow:hidden. The compact word (List row + Division tile)
+   stays nowrap. Inline flow, not inline-flex: the aria-hidden ⚠ span and the text must
+   wrap as ONE sentence (a flex row would stack the glyph beside the middle line and keep
+   its own column). Sunlight resolves --danger-text→white on --danger-bg→solid red
+   (white-on-red banner, already correct). */
 .fs-spc-hazard {
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  max-width: 100%;
   font: var(--type-caption);
   font-weight: 600;
   color: var(--danger-text);
@@ -925,6 +930,10 @@ button.fs-spc-head {
   border: 1px solid var(--danger-text);
   border-radius: var(--radius-badge);
   padding: 4px 10px;
+  white-space: normal;
+  text-align: left;
+}
+.fs-spc-hazard--compact {
   white-space: nowrap;
 }
 
@@ -2611,6 +2620,10 @@ button.fs-spc-head {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+/* The hero's gap already spaces the hazard badge row (#501) — same reset as the Cutting hero. */
+.fs-spd-hero .fs-spc-flag-row {
+  margin-top: 0;
 }
 .fs-spd-hero-top {
   display: flex;

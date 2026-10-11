@@ -254,17 +254,43 @@ describe('ShorePointCard', () => {
     expect(screen.getByRole('button', { name: 'Assign Equipment' })).toBeInTheDocument();
   });
 
-  it('hazard: renders the hazard pill after the status badge', () => {
-    render(
+  it('hazard: renders the severity-typed badge on its own row, above the value shelf (#501)', () => {
+    const { container } = render(
       <ShorePointCard
         shorePoint={makeSP({
           status: 'process',
           deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
         })}
-        hazard
+        hazard="high"
       />,
     );
-    expect(screen.getByText('⚠ Hazard')).toBeInTheDocument();
+    const badge = container.querySelector('.fs-spc-hazard');
+    expect(badge).not.toBeNull();
+    // Severity carried by the WORD (one-tone red; Alex 2026-06-29) — the sentence form.
+    expect(badge?.textContent).toBe('⚠ HIGH hazard in area');
+    // Own row under the header, NOT a pill in the meta cluster.
+    expect(badge?.closest('.fs-spc-meta')).toBeNull();
+    // Document order: header → badge → value shelf (directly under the header).
+    const head = container.querySelector('.fs-spc-head');
+    const shelf = container.querySelector('.fs-spc-value');
+    expect(head).not.toBeNull();
+    expect(shelf).not.toBeNull();
+    expect(head!.compareDocumentPosition(badge!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      badge!.compareDocumentPosition(shelf!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('hazard: no badge when the prop is omitted', () => {
+    const { container } = render(
+      <ShorePointCard
+        shorePoint={makeSP({
+          status: 'process',
+          deployedBom: [{ role: 'strut', model: 'LS 203', source: 'Rescue 2', inventoryId: 'inv-1' }],
+        })}
+      />,
+    );
+    expect(container.querySelector('.fs-spc-hazard')).toBeNull();
   });
 
   it('removed: shows the slash chip, drops the slides and the Assign action', () => {

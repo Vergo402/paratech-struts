@@ -313,3 +313,17 @@ describe('location section (#441)', () => {
     expect(screen.queryByText('Location')).toBeNull();
   });
 });
+
+describe('ShorePointDetail — hazard badge (#501)', () => {
+  it('shows the Division hazard badge in the hero when a hazard severity is passed', () => {
+    const { container } = render(<ShorePointDetail sp={makeSp()} hazard="high" />);
+    const badge = container.querySelector('.fs-spd-hero .fs-spc-hazard');
+    expect(badge).not.toBeNull();
+    expect(badge!.textContent).toBe('\u26A0 HIGH hazard in area');
+  });
+
+  it('shows no badge when the host passes no hazard', () => {
+    const { container } = render(<ShorePointDetail sp={makeSp()} />);
+    expect(container.querySelector('.fs-spc-hazard')).toBeNull();
+  });
+});

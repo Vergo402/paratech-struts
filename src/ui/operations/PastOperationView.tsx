@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { STATUS_ORDER, STATUS_LABELS, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
 import { newId } from '@core/id';
+import { worstHazardByDivision, type HazardSeverity } from '@core/hazard';
+import { parseDivisionNumber } from '@core/operation';
 import { Badge, Button, EmptyState, Modal, SideDrawer } from '@ui/primitives';
 import { useArchivedOperation, useCommit, useDeviceUid } from '@ui/hooks';
 import { ShorePointCard, shorePointDrawerTitle } from './ShorePointCard';
@@ -51,6 +53,16 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
     return (sp: ShorePoint) => flags.get(sp.id) ?? null;
     // points is re-derived from `data` each render; key the memo on the source.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  // The same Division hazard badge the live board shows (OperationsBoard's hazardFor), read
+  // from THIS archive's own register snapshot — never useHazards (that is the ACTIVE op's).
+  const hazardFor = useMemo(() => {
+    const worst = worstHazardByDivision(data?.hazards ?? {});
+    return (sp: ShorePoint): HazardSeverity | undefined => {
+      const n = parseDivisionNumber(sp.division);
+      return n === null ? undefined : worst.get(n);
+    };
   }, [data]);
 
   const reopen = async () => {
@@ -107,6 +119,7 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
                     shorePoint={sp}
                     readOnly
                     capacityFlag={capacityFlagOf(sp)}
+                    hazard={hazardFor(sp)}
                     onOpenDetail={(s) => setDetailSpId(s.id)}
                   />
                 </div>
@@ -143,7 +156,7 @@ export function PastOperationView({ opId, onClose }: { opId: string; onClose: ()
         {/* Same honest denominator in the Quick View verdict as on the cards — the
             board threads this at OperationsBoard:1555/1583 and the archive must too,
             or the drawer falls back to the planned groupTotal (SME-1). */}
-        {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, points)} />}
+        {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, points)} hazard={hazardFor(detailSp)} />}
       </SideDrawer>
       </div>
 

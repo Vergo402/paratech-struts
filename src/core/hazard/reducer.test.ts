@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { FieldShoreEvent, Hazard } from '../schema';
 import { projectOperation } from '../operation/projection';
-import { hazardReducer, EMPTY_HAZARD_STATE, openHazardsBySeverity, hazardsForDivision } from './reducer';
+import {
+  hazardReducer,
+  EMPTY_HAZARD_STATE,
+  openHazardsBySeverity,
+  hazardsForDivision,
+  worstHazardByDivision,
+} from './reducer';
 
 const OP = 'op1';
 const DEV = 'dev1';
@@ -87,6 +93,65 @@ describe('hazardsForDivision (SP-card resolution — never the wrong card)', () 
     expect(hazardsForDivision(s.hazards, '2')).toHaveLength(1);
     s = hazardReducer(s, { type: 'HazardMitigated', ...base(), at: 9, hazardId: 'd2' });
     expect(hazardsForDivision(s.hazards, '2')).toEqual([]);
+  });
+});
+
+describe('worstHazardByDivision (the board\'s per-card selector — O(1) lookups, #501)', () => {
+  it('the worst open severity wins per division; separate divisions get separate keys', () => {
+    let s = EMPTY_HAZARD_STATE;
+    s = hazardReducer(s, logged(hz({ id: 'm1', location: '1', severity: 'medium' })));
+    s = hazardReducer(s, logged(hz({ id: 'h1', location: '1', severity: 'high' })));
+    s = hazardReducer(s, logged(hz({ id: 'l3', location: '3', severity: 'low' })));
+    const map = worstHazardByDivision(s.hazards);
+    expect(map.get(1)).toBe('high');
+    expect(map.get(3)).toBe('low');
+    expect(map.size).toBe(2);
+  });
+
+  it('mitigated hazards are ignored (a mitigated high alone leaves no key)', () => {
+    let s = EMPTY_HAZARD_STATE;
+    s = hazardReducer(s, logged(hz({ id: 'mit', location: '2', severity: 'high' })));
+    s = hazardReducer(s, { type: 'HazardMitigated', ...base(), at: 9, hazardId: 'mit' });
+    const map = worstHazardByDivision(s.hazards);
+    expect(map.has(2)).toBe(false);
+    expect(map.size).toBe(0);
+  });
+
+  it('a mitigated high does not mask the open lower severity at the same division', () => {
+    let s = EMPTY_HAZARD_STATE;
+    s = hazardReducer(s, logged(hz({ id: 'mit', location: '2', severity: 'high' })));
+    s = hazardReducer(s, logged(hz({ id: 'open', location: '2', severity: 'low' })));
+    s = hazardReducer(s, { type: 'HazardMitigated', ...base(), at: 9, hazardId: 'mit' });
+    expect(worstHazardByDivision(s.hazards).get(2)).toBe('low');
+  });
+
+  it('an unresolvable free-text location badges nothing (same conservative rule)', () => {
+    const s = hazardReducer(
+      EMPTY_HAZARD_STATE,
+      logged(hz({ id: 'free', location: 'Div 1 rear wall lean', severity: 'high' })),
+    );
+    expect(worstHazardByDivision(s.hazards).size).toBe(0);
+  });
+
+  it('a basement division resolves as a negative key', () => {
+    const s = hazardReducer(EMPTY_HAZARD_STATE, logged(hz({ id: 'b', location: '-1', severity: 'medium' })));
+    expect(worstHazardByDivision(s.hazards).get(-1)).toBe('medium');
+  });
+
+  it('"B1" does NOT resolve to a division (no key)', () => {
+    const s = hazardReducer(EMPTY_HAZARD_STATE, logged(hz({ id: 'b1', location: 'B1', severity: 'high' })));
+    expect(worstHazardByDivision(s.hazards).size).toBe(0);
+  });
+
+  it('agrees with hazardsForDivision for every resolvable division', () => {
+    let s = EMPTY_HAZARD_STATE;
+    s = hazardReducer(s, logged(hz({ id: 'a', location: '1', severity: 'low', reportedAt: 1 })));
+    s = hazardReducer(s, logged(hz({ id: 'b', location: '1', severity: 'medium', reportedAt: 2 })));
+    s = hazardReducer(s, logged(hz({ id: 'c', location: '2', severity: 'high', reportedAt: 3 })));
+    const map = worstHazardByDivision(s.hazards);
+    for (const [n, sev] of map) {
+      expect(hazardsForDivision(s.hazards, String(n))[0]?.severity).toBe(sev);
+    }
   });
 });
 

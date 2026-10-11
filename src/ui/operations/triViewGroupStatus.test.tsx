@@ -44,7 +44,7 @@ const band = (members: ShorePoint[]): DivisionBand[] => [
 ];
 
 const renderDivision = (members: ShorePoint[]) =>
-  render(<DivisionView bands={band(members)} onOpenDetail={vi.fn()} flagOf={() => null} />);
+  render(<DivisionView hazardFor={() => undefined} bands={band(members)} onOpenDetail={vi.fn()} flagOf={() => null} />);
 
 describe('fixture math is what it claims (real engine)', () => {
   it('12″ leaves no cuttable 3-Post length; 60″ does', () => {
@@ -67,7 +67,7 @@ describe('#454 — a split group reads at its least-advanced leg', () => {
 
   it('List row: the status edge comes from the slowest leg', () => {
     const { container } = render(
-      <ShorePointListRow sp={SPLIT[0]!} count={3} members={SPLIT} flag={null} onOpen={vi.fn()} />,
+      <ShorePointListRow hazard={undefined} sp={SPLIT[0]!} count={3} members={SPLIT} flag={null} onOpen={vi.fn()} />,
     );
     const row = container.querySelector('.fs-splist-row')!;
     expect(row.classList.contains('is-cutting')).toBe(true);
@@ -82,7 +82,7 @@ describe('#454 — a split group reads at its least-advanced leg', () => {
 
   it('an ungrouped row/tile still reads its own status', () => {
     const solo = leg('solo', { groupId: undefined, groupTotal: undefined, status: 'runner' });
-    const { container } = render(<ShorePointListRow sp={solo} count={1} flag={null} onOpen={vi.fn()} />);
+    const { container } = render(<ShorePointListRow hazard={undefined} sp={solo} count={1} flag={null} onOpen={vi.fn()} />);
     expect(container.querySelector('.fs-splist-row')!.classList.contains('is-runner')).toBe(true);
   });
 });
@@ -104,7 +104,7 @@ describe('#485 — value is the RAW opening until the group reaches cutting', ()
 
   it('List row: same split group reads raw "opening" at status strut set', () => {
     const { container } = render(
-      <ShorePointListRow sp={SPLIT_PRECUT[0]!} count={2} members={SPLIT_PRECUT} flag={null} onOpen={vi.fn()} />,
+      <ShorePointListRow hazard={undefined} sp={SPLIT_PRECUT[0]!} count={2} members={SPLIT_PRECUT} flag={null} onOpen={vi.fn()} />,
     );
     const row = container.querySelector('.fs-splist-row')!;
     expect(row.querySelector('.fs-splist-num')!.textContent).toBe(RAW_TEXT);
@@ -121,7 +121,7 @@ describe('#485 — value is the RAW opening until the group reaches cutting', ()
 
   it('List row: every live leg cutting-or-later reads the cut length', () => {
     const { container } = render(
-      <ShorePointListRow sp={ALL_CUTTING[0]!} count={3} members={ALL_CUTTING} flag={null} onOpen={vi.fn()} />,
+      <ShorePointListRow hazard={undefined} sp={ALL_CUTTING[0]!} count={3} members={ALL_CUTTING} flag={null} onOpen={vi.fn()} />,
     );
     const row = container.querySelector('.fs-splist-row')!;
     expect(row.querySelector('.fs-splist-num')!.textContent).toBe(CUT_TEXT);
@@ -130,7 +130,7 @@ describe('#485 — value is the RAW opening until the group reaches cutting', ()
 
   it('an ungrouped pre-cut point reads raw "opening" on both views', () => {
     const solo = leg('solo', { groupId: undefined, groupTotal: undefined, status: 'process' });
-    const { container } = render(<ShorePointListRow sp={solo} count={1} flag={null} onOpen={vi.fn()} />);
+    const { container } = render(<ShorePointListRow hazard={undefined} sp={solo} count={1} flag={null} onOpen={vi.fn()} />);
     expect(container.querySelector('.fs-splist-num')!.textContent).toBe(RAW_TEXT);
     expect(container.querySelector('.fs-splist-sfx')!.textContent).toBe('opening');
   });
@@ -152,7 +152,7 @@ describe('#483 — compact "Too small" chip on both dense views', () => {
   it('List row shows it when ANY live member is too small', () => {
     const members = [leg('a'), leg('b', { measurementEighths: TOO_SMALL_EIGHTHS })];
     const { container } = render(
-      <ShorePointListRow sp={members[0]!} count={2} members={members} flag={null} onOpen={vi.fn()} />,
+      <ShorePointListRow hazard={undefined} sp={members[0]!} count={2} members={members} flag={null} onOpen={vi.fn()} />,
     );
     expect(screen.getByText('⚠ Too small')).toBeInTheDocument();
     expect(container.querySelector('.fs-splist-row .fs-spc-flag-row')).toBeTruthy();
@@ -176,7 +176,7 @@ describe('#483 — compact "Too small" chip on both dense views', () => {
   it('the red capacity chip and the amber chip coexist in the same slot', () => {
     const members = [leg('a', { measurementEighths: TOO_SMALL_EIGHTHS })];
     const { container } = render(
-      <ShorePointListRow sp={members[0]!} count={1} members={members} flag="over-capacity" onOpen={vi.fn()} />,
+      <ShorePointListRow hazard={undefined} sp={members[0]!} count={1} members={members} flag="over-capacity" onOpen={vi.fn()} />,
     );
     const chips = container.querySelectorAll('.fs-spc-flag-row');
     expect(chips).toHaveLength(2);

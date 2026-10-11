@@ -4,13 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
 import { OperationsBoard } from './OperationsBoard';
-import type { StockRow, Operation, ShorePoint, ShorePointStatus } from '@core/schema';
+import type { StockRow, Operation, ShorePoint, ShorePointStatus, Hazards } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 
 const mockOperation = vi.fn((): Operation | null => null);
 const mockShorePoints = vi.fn((): ShorePoint[] => []);
 const mockInventory = vi.fn((): StockRow[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
+const mockHazards = vi.fn((): Hazards => ({}));
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
 const mockCommitMany = vi.fn().mockResolvedValue({ ok: true });
 // #380 — flips the back-office manageOperations capability per test (gates Start/Edit/End).
@@ -42,7 +43,7 @@ vi.mock('@ui/hooks', () => ({
   // IncidentChipStrip (#487/#490) reaches Safety Officer + open hazards through the
   // seam. No hazards by default — the Hazard chip stays hidden; Safety renders
   // "Unassigned" against the empty useOrg() above.
-  useHazards: () => ({}),
+  useHazards: () => mockHazards(),
   useChecklists: () => ({ attestations: {}, check: vi.fn(), uncheck: vi.fn() }),
   useChecklistTemplate: () => ({ id: 'orm-tcrm', title: 'T', source: 'fieldshore-baseline', autoCollapseCompleted: false, nodes: [] }),
   useBriefing: () => ({ active: null, begin: vi.fn(), end: vi.fn() }),
@@ -128,6 +129,7 @@ describe('OperationsBoard', () => {
     mockShorePoints.mockReturnValue([]);
     mockInventory.mockReturnValue([]);
     mockRecommendations.mockReturnValue([]);
+    mockHazards.mockReturnValue({});
     mockCommit.mockClear();
     mockCommit.mockResolvedValue({ ok: true });
     mockCommitMany.mockClear();
@@ -1195,6 +1197,72 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('radio', { name: 'Board view' }));
     expect(document.querySelector('.fs-ops-lanes')).not.toBeNull();
     expect(document.querySelector('.fs-div')).toBeNull();
+  });
+
+  it('#501: a HIGH hazard in Div 1 badges every Div 1 item on Board, List and Division; Div 2 stays clean; advance stays enabled', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue({ ...ACTIVE_OP, divisions: [1, 2] });
+    const bom = [{ role: 'strut' as const, model: 'LS 304', source: 'Rescue 2', inventoryId: 'inv-1' }];
+    const deployed = (id: string, division: string, over: Partial<ShorePoint> = {}): ShorePoint => ({
+      ...makeSP(id, 'process', division),
+      deployedBom: bom,
+      ...over,
+    });
+    mockShorePoints.mockReturnValue([
+      deployed('s1', '1'),
+      deployed('s2', '1'),
+      deployed('g1', '1', { groupId: 'grp', groupIndex: 1, groupTotal: 2 }),
+      deployed('g2', '1', { groupId: 'grp', groupIndex: 2, groupTotal: 2 }),
+      deployed('c2', '2'),
+    ]);
+    const hz = (id: string, location: string, severity: 'low' | 'medium' | 'high', over: object = {}) => ({
+      id, type: 'structural' as const, location, severity, reportedBy: 'dev', reportedAt: 1, ...over,
+    });
+    mockHazards.mockReturnValue({
+      h1: hz('h1', '1', 'high'),
+      // Free text that names no Division cannot be resolved — it must badge NOTHING.
+      h2: hz('h2', 'Div 2 rear wall lean', 'high'),
+      // Mitigated hazards are closed — Div 2 stays clean.
+      h3: hz('h3', '2', 'medium', { mitigatedBy: 'dev', mitigatedAt: 2 }),
+    });
+    render(<OperationsBoard />);
+
+    const BADGE = '.fs-spc-hazard';
+    // ---- Board: the cards (singles + the group's FRONT card; tabs hold no card) ----
+    const cardOf = (id: string) =>
+      document.querySelector(`[role="listitem"][data-sp-id="${id}"], .fs-gs-front[data-sp-id="${id}"]`) as HTMLElement;
+    for (const id of ['s1', 's2', 'g1']) {
+      const badge = cardOf(id).querySelector(BADGE);
+      expect(badge, `board card ${id}`).not.toBeNull();
+      expect(badge!.textContent).toBe('\u26A0 HIGH hazard in area');
+    }
+    expect(cardOf('c2').querySelector(BADGE)).toBeNull();
+    // Exactly the three Div 1 cards — nothing else on the Board carries the badge.
+    expect(document.querySelectorAll(BADGE)).toHaveLength(3);
+    // Informs, never gates: the advance control on a hazard card is live.
+    const slide = cardOf('s1').querySelector('.fs-slide') as HTMLElement;
+    expect(slide).not.toBeNull();
+    expect(slide).not.toHaveClass('fs-slide--disabled');
+
+    // ---- List: one compact row per item ----
+    await user.click(screen.getByRole('radio', { name: 'List view' }));
+    const row = (id: string) => document.querySelector(`.fs-splist-row[data-sp-id="${id}"]`) as HTMLElement;
+    for (const id of ['s1', 's2', 'g1']) {
+      expect(row(id), `list row ${id}`).not.toBeNull();
+      expect(row(id).querySelector(BADGE)!.textContent).toBe('\u26A0 HIGH hazard');
+    }
+    expect(row('c2')).not.toBeNull();
+    expect(row('c2').querySelector(BADGE)).toBeNull();
+
+    // ---- Division: one tile per item ----
+    await user.click(screen.getByRole('radio', { name: 'Division view' }));
+    const tile = (id: string) => document.querySelector(`.fs-divtile[data-sp-id="${id}"]`) as HTMLElement;
+    for (const id of ['s1', 's2', 'g1']) {
+      expect(tile(id), `division tile ${id}`).not.toBeNull();
+      expect(tile(id).querySelector(BADGE)!.textContent).toBe('\u26A0 HIGH hazard');
+    }
+    expect(tile('c2')).not.toBeNull();
+    expect(tile('c2').querySelector(BADGE)).toBeNull();
   });
 
   it('the view switcher is a three-option segmented (Division · Board · List)', () => {

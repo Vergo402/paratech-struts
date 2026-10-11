@@ -12,6 +12,7 @@ import {
   isGroupZoneEdge,
 } from '@core/operation';
 import { myApparatusKeys, currentIC } from '@core/org';
+import { worstHazardByDivision, type HazardSeverity } from '@core/hazard';
 import { newId } from '@core/id';
 import { Badge, Button, EmptyState, FloatingPanel, Modal, Segmented, SideDrawer, useIsDesktop } from '@ui/primitives';
 import {
@@ -21,6 +22,7 @@ import {
   useCommitMany,
   useDeviceUid,
   useCommandSelf,
+  useHazards,
   useInventory,
   useMyRole,
   useOperation,
@@ -174,6 +176,9 @@ interface ItemCallbacks {
   /** Over-capacity/unrated flag per point (H1/#415, H2/#416) — computed by the board
    *  from the full group, so a short-of-plan group flags on every surface. */
   capacityFlagOf: (sp: ShorePoint) => CapacityFlagValue;
+  /** Highest open-hazard severity in the point's Division (#394/#501) — ONE selector so the
+   *  badge cannot drift between Board, List, Division, Quick View. */
+  hazardFor: (sp: ShorePoint) => HazardSeverity | undefined;
 }
 
 // Short status labels for the List dividers, Board lane headers, and Division
@@ -220,6 +225,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReasonFor={cb.advanceDisabledReasonFor}
                 capacityFlagOf={cb.capacityFlagOf}
+                hazard={cb.hazardFor(item.members[0]!)}
                 onCaptureLocation={cb.onCaptureLocation}
               />
             </CardBoundary>
@@ -246,6 +252,7 @@ function LaneItems({ items, ...cb }: { items: LaneItem[] } & ItemCallbacks) {
                 onRemoveReturn={cb.onRemoveReturn}
                 advanceDisabledReason={cb.advanceDisabledReasonFor(item.sp)}
                 capacityFlag={cb.capacityFlagOf(item.sp)}
+                hazard={cb.hazardFor(item.sp)}
                 onCaptureLocation={cb.onCaptureLocation}
               />
             </CardBoundary>
@@ -1127,6 +1134,18 @@ export function OperationsBoard() {
     return (sp: ShorePoint): CapacityFlagValue => flags.get(sp.id) ?? null;
   }, [shorePoints]);
 
+  // The Division hazard badge's ONE selector (#394/#501): highest OPEN hazard severity per
+  // Division, looked up by the point's Division. Board card, List row, Division tile and
+  // Quick View all read this — a free-text location that names no Division badges nothing.
+  const hazards = useHazards();
+  const hazardFor = useMemo(() => {
+    const worst = worstHazardByDivision(hazards);
+    return (sp: ShorePoint): HazardSeverity | undefined => {
+      const n = parseDivisionNumber(sp.division);
+      return n === null ? undefined : worst.get(n);
+    };
+  }, [hazards]);
+
   // One <Lane> with its full prop set — rendered flat (desktop, STATUS_ORDER) or
   // wrapped in phase groups (phone, PHASE_GROUPS). DRYs the two lane layouts.
   const renderLane = (status: ShorePointStatus) => (
@@ -1150,6 +1169,7 @@ export function OperationsBoard() {
       advanceDisabledReasonFor={advanceDisabledReasonFor}
       activeStackId={scrollToId}
       capacityFlagOf={capacityFlagOf}
+      hazardFor={hazardFor}
       onCaptureLocation={handleCaptureLocation}
     />
   );
@@ -1465,7 +1485,7 @@ export function OperationsBoard() {
         divisionBands.length === 0 ? (
           boardEmpty
         ) : (
-          <DivisionView bands={divisionBands} onOpenDetail={openDetail} flagOf={capacityFlagOf} />
+          <DivisionView bands={divisionBands} onOpenDetail={openDetail} flagOf={capacityFlagOf} hazardFor={hazardFor} />
         )
       ) : layout === 'lanes' ? (
         <div className="fs-ops-lanes">
@@ -1501,14 +1521,14 @@ export function OperationsBoard() {
                 </div>,
                 ...inStatus.map((it) => {
                   const rep = laneItemRep(it);
-                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
+                  return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} hazard={hazardFor(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
                 }),
               ];
             })
           ) : (
             listItems.map((it) => {
               const rep = laneItemRep(it);
-              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
+              return <ShorePointListRow key={rep.sp.id} sp={rep.sp} count={rep.count} flag={capacityFlagOf(rep.sp)} hazard={hazardFor(rep.sp)} members={it.kind === 'group' ? it.members : undefined} onOpen={openDetail} />;
             })
           )}
         </div>
@@ -1566,7 +1586,7 @@ export function OperationsBoard() {
               cascadeIndex={0}
               boundsSelector=".fs-shell-main"
             >
-              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} />}
+              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} hazard={hazardFor(detailSp)} />}
             </FloatingPanel>
             <FloatingPanel
               open={inventoryOpen}
@@ -1594,7 +1614,7 @@ export function OperationsBoard() {
               onClose={() => setDetailSpId(null)}
               title={detailSp ? shorePointDrawerTitle(detailSp) : ''}
             >
-              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} />}
+              {detailSp && <ShorePointDetail sp={detailSp} deployedCount={deployedStrutCount(detailSp, shorePoints)} hazard={hazardFor(detailSp)} />}
             </SideDrawer>
             <SideDrawer
               open={inventoryOpen}

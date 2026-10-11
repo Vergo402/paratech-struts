@@ -9,7 +9,9 @@ import {
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
 import { SHORE_TYPE_LABELS, cardLocation, cardLabelType, cardValueEighths, cardValueLabel, isCutPhase } from './cardParts';
+import type { HazardSeverity } from '@core/hazard';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
+import { HazardBadge } from './HazardBadge';
 
 // Short display labels live in cardParts (shared by all three views); re-exported
 // here for the existing callers that import them from ShorePointCard.
@@ -192,10 +194,10 @@ export interface ShorePointCardProps {
    */
   removed?: boolean;
   /**
-   * Presentational only — no slice schema state yet. Surfaces a "⚠ Hazard" pill
-   * after the status badge (the gallery + future hazard-log workflow set it).
+   * Highest open-hazard severity in this point's Division (#394/#501) — fed by the
+   * board's hazardFor selector; informs the slide-to-advance, never gates it.
    */
-  hazard?: boolean;
+  hazard?: HazardSeverity;
   /** Focus/selected styling — accent border, no scale change (design-system
    *  ShorePointCard `active`; States doctrine in the styleguide README). */
   active?: boolean;
@@ -227,7 +229,7 @@ export function ShorePointCard({
   onCaptureLocation,
   capacityFlag: capacityFlagProp,
   removed = false,
-  hazard = false,
+  hazard,
   active = false,
   caption,
   readOnly = false,
@@ -295,7 +297,7 @@ export function ShorePointCard({
   // Anatomy v2 (#432, mess-map #13): ONE composed header — the #N tab rides
   // inline with the location line, the meta pills drop BELOW it and render only
   // when present (an empty row otherwise reserved ~22px of dead card space).
-  const hasMeta = !!sp.assignedResource || !!(sp.groupIndex && sp.groupTotal) || waiting || hazard;
+  const hasMeta = !!sp.assignedResource || !!(sp.groupIndex && sp.groupTotal) || waiting;
   const headContent = (
     <>
       {/* Location leads (the focus); label · type on the secondary line. */}
@@ -318,7 +320,6 @@ export function ShorePointCard({
           {/* Waiting stays an explicit amber badge — it's a pending SUB-state
               (equipment now available), not the plain status the stripe carries. */}
           {waiting ? <span className="fs-badge fs-badge--status is-waiting">Waiting</span> : null}
-          {hazard ? <span className="fs-spc-hazard">⚠ Hazard</span> : null}
         </span>
       )}
     </>
@@ -395,6 +396,10 @@ export function ShorePointCard({
       ) : (
         <div className="fs-spc-head">{headContent}</div>
       )}
+
+      {/* Division hazard badge (#394/#501) on its OWN line below the header, above the
+          capacity flag + value shelf — the SAME badge the List row + Division tile render. */}
+      <HazardBadge severity={hazard} />
 
       {/* Persistent unrated / over-capacity flag on its OWN line below the header
           (Alex's call) — the SAME badge the List row + Division tile render. */}

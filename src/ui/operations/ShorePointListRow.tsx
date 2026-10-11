@@ -1,9 +1,11 @@
 import type { ShorePoint } from '@core/schema';
+import type { HazardSeverity } from '@core/hazard';
 import { bomModelLabel } from '@core/shorepoint';
 import { MeasurementValue } from '@ui/primitives';
 import { cardLocation, cardLabelType, cardValueEighths, cardValueLabel, groupDisplayStatus } from './cardParts';
 import { CapacityFlag, type CapacityFlagValue } from './CapacityFlag';
 import { CutTooSmallFlag } from './CutTooSmallFlag';
+import { HazardBadge } from './HazardBadge';
 
 /**
  * ShorePointListRow — the List-view row, at the unified card anatomy (Alex
@@ -22,6 +24,7 @@ export function ShorePointListRow({
   count,
   members,
   flag,
+  hazard,
   onOpen,
 }: {
   sp: ShorePoint;
@@ -35,6 +38,8 @@ export function ShorePointListRow({
   members?: readonly ShorePoint[];
   /** Over-capacity / unrated flag, computed by the board (H1/#415); null = clean. */
   flag: CapacityFlagValue;
+  /** Highest open-hazard severity in the point's Division (#501) — the board's ONE hazardFor selector. */
+  hazard: HazardSeverity | undefined;
   onOpen: (sp: ShorePoint) => void;
 }) {
   const model = bomModelLabel(sp);
@@ -66,6 +71,7 @@ export function ShorePointListRow({
         {' '}
         <span className="fs-splist-sfx">{cardValueLabel(status)}</span>
       </span>
+      <HazardBadge severity={hazard} compact />
       <CapacityFlag flag={flag} />
       <CutTooSmallFlag members={legs} />
     </button>

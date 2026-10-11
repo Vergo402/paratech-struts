@@ -83,3 +83,23 @@ export function hazardsForDivision(hazards: Hazards, division: string | undefine
     (h) => h.mitigatedAt == null && parseDivisionNumber(h.location) === target,
   );
 }
+
+/**
+ * The worst OPEN hazard severity per shore-point division — the O(1)-per-card
+ * companion to `hazardsForDivision`, built once per render so the board's per-card
+ * selector (#501) is a Map lookup instead of a re-sort per card. Same conservative
+ * Division rule: a `location` that does not resolve to a division number badges
+ * nothing (log + header only, never the wrong card). Mitigated hazards are skipped.
+ * `openHazardsBySeverity` sorts open-first then high→low, so the first hit per
+ * division is the worst.
+ */
+export function worstHazardByDivision(hazards: Hazards): Map<number, HazardSeverity> {
+  const worst = new Map<number, HazardSeverity>();
+  for (const h of openHazardsBySeverity(hazards)) {
+    if (h.mitigatedAt != null) continue;
+    const n = parseDivisionNumber(h.location);
+    if (n === null || worst.has(n)) continue;
+    worst.set(n, h.severity);
+  }
+  return worst;
+}

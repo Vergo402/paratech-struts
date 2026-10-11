@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { FieldShoreEvent, ShorePoint, WoodSizeId } from '@core/schema';
 import { BASE_PLATES, WOOD_SIZES, isKnownPlateId } from '@core/load';
+import type { HazardSeverity } from '@core/hazard';
 import {
   componentLabel,
   deductionTotalInches,
@@ -18,6 +19,7 @@ import { cardLocation } from './cardParts';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { UnknownConnectorCaution } from './RecommendationCard';
 import { shoreSafety } from './shoreSafety';
+import { HazardBadge } from './HazardBadge';
 
 /**
  * ShorePointDetail — the read-only Quick View body for a DEPLOYED shore (ADR-019
@@ -33,6 +35,8 @@ export interface ShorePointDetailProps {
    *  from the full shore-point list so the verdict divides the load by the deployed
    *  count, not the planned groupTotal. Omit → planned fallback (shoreSafety's default). */
   deployedCount?: number;
+  /** Highest open-hazard severity in this point's Division — from the host's hazardFor. Informs, never gates. */
+  hazard?: HazardSeverity;
 }
 
 // ---- deduction ledger rows (mirror RecommendationCard's fs-rec-ledger) -------
@@ -107,7 +111,7 @@ function eventLine(e: FieldShoreEvent): string | null {
 // visually distinct from SAFE by word AND the absence of the green border.
 const SAFETY_WORD = { ok: 'Safe', warn: 'Check', unknown: 'Unverified' } as const;
 
-export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
+export function ShorePointDetail({ sp, deployedCount, hazard }: ShorePointDetailProps) {
   const { events, outcomes, deviceUid } = useShorePointHistory(sp.id);
 
   const bom = sp.deployedBom ?? [];
@@ -167,6 +171,7 @@ export function ShorePointDetail({ sp, deployedCount }: ShorePointDetailProps) {
             <span className="fs-spd-assigned-label">Assigned</span> {sp.assignedResource}
           </p>
         )}
+        <HazardBadge severity={hazard} />
         <div className="fs-spd-hero-figure">
           <span className="fs-spd-hero-cap">{lengthLabel}</span>
           <MeasurementValue eighths={effectiveEighths} className="fs-spd-hero-num" />

@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { OperationState } from '@core/operation';
-import type { Operation, ShorePoint } from '@core/schema';
+import type { Hazard, Operation, ShorePoint } from '@core/schema';
 import { PastOperationView } from './PastOperationView';
 
 const mockArchived = vi.fn<() => { data: OperationState | undefined }>();
@@ -94,5 +94,29 @@ describe('PastOperationView (#238)', () => {
     expect(screen.getByRole('heading', { name: 'Cascade Fire — superseded' })).toBeInTheDocument();
     expect(screen.getByText(/Viewing a superseded incident — read-only/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Re-open this incident/ })).toBeInTheDocument();
+  });
+
+  it('#501: an archived HIGH hazard in Div 1 badges the Div 1 card from the archive\'s own snapshot (not the live register)', () => {
+    const hazard: Hazard = {
+      id: 'h1', type: 'structural', location: '1', severity: 'high',
+      reportedBy: 'dev', reportedAt: 5,
+    };
+    mockArchived.mockReturnValue({
+      data: {
+        operation: { ...op, divisions: [1, 2] },
+        positions: {}, myRoles: {}, commandTransfer: null,
+        hazards: { h1: hazard },
+        checklists: {}, briefings: {},
+        shorePoints: [sp('d1', { division: '1', status: 'secured' }), sp('d2', { division: '2', status: 'returned' })],
+      },
+    });
+    render(<PastOperationView opId="op1" onClose={vi.fn()} />);
+    // Each status lane holds one card — the Div 1 point is Secured, the Div 2 control Returned.
+    const div1Card = document.querySelector('.fs-lane.is-secured')!;
+    const div2Card = document.querySelector('.fs-lane.is-returned')!;
+    const badge = div1Card.querySelector('.fs-spc-hazard');
+    expect(badge).not.toBeNull();
+    expect(badge!.textContent).toBe('\u26A0 HIGH hazard in area');
+    expect(div2Card.querySelector('.fs-spc-hazard')).toBeNull();
   });
 });

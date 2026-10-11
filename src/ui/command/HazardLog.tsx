@@ -14,7 +14,8 @@ import { clock } from '@ui/util/time';
 // VISIBLE to everyone, BLOCKING to no one (Principle 10): any role adds via a
 // sheet; the list sorts by severity (open first, mitigated to the bottom); Safety
 // mitigates/reopens; the record exports as an ICS-208. No safety-hold — the SP-card
-// badge (OperationsBoard) informs the slide-to-advance, it never gates it.
+// badge (OperationsBoard's hazardFor → HazardBadge, #501) informs the slide-to-advance, it
+// never gates it.
 // All data plumbing (schema/events/reducer/sort/attribution) is pre-built; this is
 // the UI. Renders both as the desktop Command-Deck pane and inside the phone Sheet.
 

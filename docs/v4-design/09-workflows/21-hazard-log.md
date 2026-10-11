@@ -159,6 +159,12 @@ This is the **no-safety-hold rule made concrete** (Principle 10): the badge surf
 team officer factors it into the slide-to-advance decision, but the app **never gates the advance** on it.
 There is no `safety-hold` status. The badge clears when the hazard is mitigated (sync-propagated).
 
+**Where the badge appears (#501).** The one shared `HazardBadge` renders the same severity word on every
+surface that shows a shore point's Division hazard. The **sentence** ("⚠ HIGH hazard in area",
+or MED / LOW) appears on the Board card, the Quick View drawer, and past-operation archive cards (each read from
+that archived operation's own hazard register). The **compact word** ("⚠ HIGH hazard") appears on the List row and
+the Division tile. Cutting Station cards do not carry the badge (Alex's call, 2026-10-11). (#501)
+
 **v4.0 matching rule — Division-level, conservative (gate review fix).** A hazard's free-text location is
 resolved to a **Division**; the badge then appears on **every shore-point card in that Division**. If the
 location **cannot** be resolved to a Division, the hazard shows **only** in the Hazard Log and the persistent

@@ -1,0 +1,75 @@
+<!doctype html><html><head><meta charset="utf-8"><title>#501 hazard badge mockup</title>
+<style>
+body{margin:0;background:#1C1F25;color:#F0EFEC;font-family:"Geist",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:24px 28px;width:844px}
+h1{font:600 18px/1.3 inherit;margin:0 0 4px}.sub{font:400 13px/1.4 inherit;color:#9B9A97;margin:0 0 20px}
+.sec{font:500 11px/1.3 inherit;letter-spacing:.08em;text-transform:uppercase;color:#8A8A86;margin:22px 0 10px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}.cap{font:400 12px/1.4 inherit;color:#9B9A97;margin:8px 0 0}
+.card{position:relative;overflow:hidden;background:#252930;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px 12px 24px;display:flex;flex-direction:column;gap:8px}
+.stripe{position:absolute;left:0;top:0;bottom:0;width:16px;background:rgba(96,165,250,.22);border-radius:12px 0 0 12px}
+.head{display:flex;flex-direction:column;gap:4px}.identity{display:flex;gap:8px;align-items:flex-start}
+.tab{flex:none;padding:2px 8px;border-radius:7px;font:600 12px/1.35 Inter,inherit;background:#D4A017;color:#1c1f23;font-variant-numeric:tabular-nums}
+.title{font:600 20px/1.2 inherit;color:#F0EFEC;display:block}.where{font:400 12px/1.35 inherit;color:#9B9A97;display:block;margin-top:2px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.hz{display:inline-flex;align-items:center;font:600 12px/1.35 inherit;color:#F87171;background:#2A1416;border:1px solid #F87171;border-radius:6px;padding:4px 10px;white-space:nowrap}
+.flagrow{display:flex;margin-top:8px}
+.value{display:flex;align-items:baseline;gap:8px;margin:8px 0 0}.num{font:600 28px/1.1 Inter,inherit;color:#F0EFEC;font-variant-numeric:tabular-nums}
+.k{font:500 11px/1.3 inherit;letter-spacing:.06em;text-transform:uppercase;color:#8A8A86}.model{font:400 12px/1.35 Inter,inherit;color:#8A8A86}
+.btn{display:block;width:100%;box-sizing:border-box;padding:13px;border-radius:10px;text-align:center;font:500 14px/1.3 inherit}
+.btn-p{background:#2B2545;color:#B4A7F5;border:1px solid #3A3260}.btn-s{background:transparent;color:#C9C8C4;border:1px solid rgba(255,255,255,.15);margin-top:8px}
+.row{display:flex;flex-direction:column;gap:2px;background:#2E333B;border:1px solid rgba(255,255,255,.07);border-left:3px solid #60A5FA;border-radius:12px;padding:12px 12px 12px 16px;text-align:left}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}.seq{font:400 13px/1.4 Inter,inherit;color:#8A8A86}.appar{font:500 12px/1.35 inherit;color:#9B9A97;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:1px 8px}
+.rloc{font:700 16px/1.45 inherit;color:#F0EFEC;letter-spacing:-.01em}.rsub{font:400 12px/1.35 inherit;color:#8A8A86}.rval{font:400 12px/1.35 Inter,inherit;color:#8A8A86;margin-top:2px}
+.tiles{display:flex;gap:12px;align-items:flex-start}
+.tile{width:176px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;background:#2E333B;border:1px solid rgba(255,255,255,.07);border-left:3px solid #60A5FA;border-radius:8px;padding:8px 12px}
+.tile.is-pending{border-left-color:#9CA3AF}
+.tseq{font:500 11px/1.3 Inter,inherit;color:#8A8A86}.tloc{font:600 14px/1.2 inherit;color:#F0EFEC;letter-spacing:-.01em}.tsub{font:400 12px/1.35 inherit;color:#8A8A86;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tval{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-top:2px}.tml{font:400 12px/1.35 Inter,inherit;color:#9B9A97}.tst{font:700 11px/1.3 inherit;letter-spacing:.03em;text-transform:uppercase;color:#60A5FA}
+.tile.is-pending .tst{color:#9CA3AF}
+.hz.full{white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.pill-note{display:inline-block;font:400 11px/1.3 inherit;color:#F87171;border:1px dashed #F87171;border-radius:6px;padding:2px 6px;margin-left:6px}
+</style></head><body>
+<h1>#501 — Shore-point hazard badge, restored</h1>
+<p class="sub">Dark theme, Operations tab. HIGH hazard logged at location “1” → every Div 1 card badges; Div 2 stays clean. One-tone red, severity carried by the word (Alex 2026-06-29). The badge informs — the advance control never gates.</p>
+
+<div class="sec">A · Board card — before / after</div>
+<div class="cols">
+ <div>
+  <div class="card"><span class="stripe"></span>
+   <div class="head"><span class="identity"><span class="tab">#4</span><span><span class="title">Div 1 · A side</span><span class="where">A-3 · T-Shore</span></span></span>
+    <span class="meta"><span class="hz">⚠ Hazard</span></span></div>
+   <p class="value"><span class="num">65 ½″</span><span class="k">opening</span><span class="model">LS 304</span></p>
+   <span class="btn btn-p">Set Strut Set</span><span class="btn btn-s">Back</span>
+  </div>
+  <p class="cap">BEFORE (current build): a bare “⚠ Hazard” pill in the meta cluster — and nothing ever passes it, so in the field this card is blank.</p>
+ </div>
+ <div>
+  <div class="card"><span class="stripe"></span>
+   <div class="head"><span class="identity"><span class="tab">#4</span><span><span class="title">Div 1 · A side</span><span class="where">A-3 · T-Shore</span></span></span></div>
+   <span class="flagrow"><span class="hz">⚠ HIGH hazard in area</span></span>
+   <p class="value"><span class="num">65 ½″</span><span class="k">opening</span><span class="model">LS 304</span></p>
+   <span class="btn btn-p">Set Strut Set</span><span class="btn btn-s">Back</span>
+  </div>
+  <p class="cap">AFTER: own row under the header (the CapacityFlag slot), “⚠ HIGH hazard in area” per the hazard-log workflow spec; MED / LOW read the same red with their word. Screen reader: “High hazard in area.”</p>
+ </div>
+</div>
+
+<div class="sec">B · List row — full copy vs compact copy</div>
+<div class="cols">
+ <div><div class="row"><span class="top"><span class="seq">#4</span><span class="appar">Rescue 1</span></span><span class="rloc">Div 1 · A side</span><span class="rsub">A-3 · T-Shore</span><span class="rval">LS 304 · 65 ½″ opening</span>
+  <span class="flagrow"><span class="hz">⚠ HIGH hazard in area</span></span></div><p class="cap">Full sentence (same words as the card).</p></div>
+ <div><div class="row"><span class="top"><span class="seq">#4</span><span class="appar">Rescue 1</span></span><span class="rloc">Div 1 · A side</span><span class="rsub">A-3 · T-Shore</span><span class="rval">LS 304 · 65 ½″ opening</span>
+  <span class="flagrow"><span class="hz">⚠ HIGH hazard</span></span></div><p class="cap">Compact (the #483 “⚠ Too small” precedent for dense views).</p></div>
+</div>
+
+<div class="sec">C · Division tiles (176 px) — Div 1 badged, Div 2 control clean</div>
+<div class="cols">
+ <div><div class="tiles">
+  <div class="tile"><span class="tseq">#4</span><span class="tloc">A side</span><span class="tsub">A-3 · T-Shore</span><span class="tval"><span class="tml">LS 304 · 65 ½″</span><span class="tst">Proc</span></span><span class="flagrow"><span class="hz full">⚠ HIGH hazard in area</span></span></div>
+  <div class="tile is-pending"><span class="tseq">#7</span><span class="tloc">B side</span><span class="tsub">B-1 · Vertical</span><span class="tval"><span class="tml">— · 71″</span><span class="tst">Pend</span></span></div>
+ </div><p class="cap">Full copy at tile width — clips/ellipsizes at 12 px (the overflow risk).</p></div>
+ <div><div class="tiles">
+  <div class="tile"><span class="tseq">#4</span><span class="tloc">A side</span><span class="tsub">A-3 · T-Shore</span><span class="tval"><span class="tml">LS 304 · 65 ½″</span><span class="tst">Proc</span></span><span class="flagrow"><span class="hz">⚠ HIGH hazard</span></span></div>
+  <div class="tile is-pending"><span class="tseq">#7</span><span class="tloc">B side</span><span class="tsub">B-1 · Vertical</span><span class="tval"><span class="tml">— · 71″</span><span class="tst">Pend</span></span></div>
+ </div><p class="cap">Compact copy fits the tile; the Div 2 tile (right) shows no badge — Division-level match, never the wrong card.</p></div>
+</div>
+</body></html>
