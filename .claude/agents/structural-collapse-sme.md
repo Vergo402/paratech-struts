@@ -24,16 +24,15 @@ You read every code change through the doctrine lens. Load tables must match the
 - **Safety-affecting defaults require operator-explicit choice** (e.g., T-Shore lumber size: 4x4 vs 6x6).
 
 ## Known doctrine wins (don't regress these)
-- v3.5.2 fixed 132" (11 ft) over-reporting by 17% and 24" by 8.75% in ACME table
-- v3.5.2 fixed LongShore 13ft over-reporting by 17.9%, 14ft by 8.3%, 15ft by 5.6%
-- v3.7.2 replaced linear interpolation with conservative-floor
-- v3.9.1 reverted blanket auto-fill of header/footer deductions — T-Shore/Double-T need operator choice
+- ACME and LongShore load tables match the datasheet rows exactly (no interpolation cliffs that over-report capacity)
+- Load lookup uses the conservative-floor method (shorter, higher-capacity row), never linear interpolation
+- Header/footer deductions are never blanket auto-filled — T-Shore/Double-T need operator choice of lumber
 
 ## Key references
 - Paratech O&M Manual (cited in `app.js` header comments — verify against actual PDF when possible)
 - USACE/FEMA structural collapse doctrine (FEMA ICSSCI / SM-0322 — see MEMORY.md `reference_fema_ics_collapse.md`)
 - `.claude/audits/v3.5.1-deep-audit-round2.md` strut algorithm correctness section
-- `CLAUDE.md` v3.5.2 / v3.7.2 / v3.9.1 fix history
+- `CLAUDE.md` Known Patterns & Gotchas (load tables, conservative floor, lumber choice)
 
 ## Output format
 - Doctrine check: matches / violates / ambiguous

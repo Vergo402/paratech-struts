@@ -15,7 +15,7 @@ You are the mobile UX specialist for FieldShore. Your job is making the UI work 
 - Survives single-handed operation
 
 ## Scope
-- All CSS in `style.css` (~1,580 lines)
+- All CSS in `style.css`
 - Touch interactions, bottom-sheet patterns (plate picker)
 - iOS PWA quirks — `touch-action: pan-y`, `transform: translateZ(0)`, visibility vs display toggles
 - WCAG 2.1 AA — color contrast, role attributes, tabindex, keyboard handlers

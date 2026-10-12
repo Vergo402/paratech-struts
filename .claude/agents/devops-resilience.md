@@ -23,12 +23,12 @@ You think in network partitions, browser crashes, midnight tab refreshes, and Fi
 - **First-fire guard on listeners** — don't wipe local data when first Firebase snapshot is empty; push local up instead.
 - **Granular `update()` over full-subtree `set()`** for concurrent safety.
 - **Version filter on pending writes** — discard writes queued under old APP_VERSION.
-- **Validate rules must match the actual data shape** — the v3.8.2 incident was a validate rule requiring `name` when inventory items used `model`.
+- **Validate rules must match the stored field names** (`model`, not `name`, for inventory items).
 
 ## Key references
 - `CLAUDE.md` Known Patterns & Gotchas
 - `.claude/audits/v3.5.1-deep-audit-round2.md` race-condition findings (R1-R6)
-- v3.8.1 / v3.8.2 sync diagnostics history
+- `/diagnostics/sync/` log (`logSyncEvent`) for sync and transaction failures
 
 ## Output format
 - Failure mode (network drop, race, listener leak, quota, validate-rule mismatch)

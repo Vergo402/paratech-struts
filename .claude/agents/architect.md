@@ -12,7 +12,7 @@ You think in modules, data flows, and migration paths. You weigh trade-offs and 
 ## Scope
 - v4.0 NIMS doctrine overhaul (terminology, ICS structure, per-device UID auth)
 - v5.0 React Native + monorepo migration (shared TS core boundary, web vs. mobile split)
-- `app.js` modularization (~5,200 lines — when/how to split without churning git history)
+- `app.js` modularization (when/how to split without churning git history)
 - Data-model migrations (e.g., `customRoles` array → keyed object, `group` → `assignedResource`)
 - Paradigm shifts queued for v4.0 (Roster tab move, SP recommendation dedup, activity feed)
 

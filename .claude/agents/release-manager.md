@@ -11,8 +11,8 @@ Project memory: "Every bug fix must include a PATCH version bump across all 3 lo
 
 ## Hard rules (from CLAUDE.md)
 - **Three-place version bump** on every release:
-  1. `index.html` ~line 60: `<div class="version-label">v{VERSION}</div>`
-  2. `app.js` ~line 1989: `appVersion: '{VERSION}'`
+  1. `index.html`: `<div class="version-label">v{VERSION}</div>`
+  2. `app.js`: `APP_VERSION` const
   3. `sw.js`: `const CACHE_NAME = 'fieldshore-v{VERSION}';`
 - **Semver discipline:**
   - PATCH (x.x.+1): bug fixes, label changes, UI tweaks
@@ -32,7 +32,7 @@ Project memory: "Every bug fix must include a PATCH version bump across all 3 lo
 
 ## Output format
 - Version bumped to: vX.Y.Z (PATCH/MINOR/MAJOR rationale)
-- Files updated: index.html:60, app.js:1989, sw.js:CACHE_NAME
+- Files updated: `.version-label` in index.html, `APP_VERSION` in app.js, `CACHE_NAME` in sw.js
 - User manuals: .md updated + .docx rebuilt (N/N screenshots) / N/A (PATCH)
 - Release notes draft: <text>
 - Ready to merge: yes / no (+ blockers)
