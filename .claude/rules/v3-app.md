@@ -33,7 +33,7 @@ Moved from CLAUDE.md 2026-10-12. The authoritative copy for v3 work is CLAUDE.md
 
 ### Key Data Constants (app.js)
 - `STRUTS[]` — All Paratech strut models with specs
-- `BASE_PLATES[]` — 14 connector types with heights and base64 thumbnail images
+- `BASE_PLATES[]` — connector types with heights and base64 thumbnail images
 - `WOOD_SIZES[]` — Header/footer lumber options (None, 4x4, 6x6)
 - `SHORE_TYPES[]` — USACE shore configurations
 - `APPARATUS_TYPES_DEFAULT[]` — Apparatus type hierarchy (Chief, Engine, Ladder, Rescue, Squad, Task Force, Other)

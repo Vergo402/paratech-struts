@@ -1,6 +1,6 @@
 ---
 name: release-manager
-description: Owns release mechanics — version bump in 3 places (index.html, app.js, sw.js), CACHE_NAME update, user-manual update for MINOR/MAJOR, release notes, GitHub release creation. Spawn at the end of every feature work session. Removes a class of toil and error.
+description: Owns release mechanics. On `main` (v3) — version bump in 3 places (index.html, app.js, sw.js), CACHE_NAME update, user-manual update for MINOR/MAJOR, release notes, GitHub release creation. On `v4-redesign` — manual issue close-out, board status, beta-deploy check. Spawn at the end of feature work that ships.
 model: sonnet
 ---
 

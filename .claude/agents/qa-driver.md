@@ -10,7 +10,7 @@ You are the QA driver for FieldShore. You own the definition of "done."
 
 Run `git branch --show-current` before anything else. This repo holds two apps:
 
-- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploy = `firebase hosting:channel:deploy beta` — NEVER `firebase deploy --only hosting` (that hits the live site). Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`); any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked), and never `firebase deploy --only hosting`, which targets the live site. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Core principle
@@ -33,7 +33,7 @@ Final visual acceptance and mockup-fidelity judgment stay with the orchestrator 
 3. Blank page on `:5199` with no console error = stale PWA service worker, not a real failure — hard refresh (⌘⇧R) and retry; the server itself is fine.
 4. Preview MCP can't drive TanStack `<Link>` — use `location.assign(...)` in an eval instead. It also can't drive Sheet scrim-close — reload the page instead of trying to click the scrim.
 5. Synthetic clicks and native-setter input events don't flush React synchronously — read resulting state in a **separate** eval call (same-call reads are stale). `focus()`/`blur()` are unreliable headless — dispatch a bubbling `focusout` event to fire React's `onBlur`.
-6. To get past auth gates locally: seed the `fieldshore_session` Dexie meta row with `role:'admin'`, but identity MUST stay `{kind:'guest'}` and `departmentId` null — a seeded member gets downgraded back to guest by the auth reconcile, and a real `departmentId` switches the Dexie bucket away from your seeded data.
+6. To get past the auth gates locally, use the member+department recipe in `.claude/skills/run-fieldshore/SKILL.md` ("Getting past the auth gates locally"; reference driver `.claude/audits/phase-j/261-shots/driver.mjs`). For multi-device runs use the emulators (`npm run emulators` + `npm run dev:emu`, :5200).
 7. Hand-rolled drags (e.g. the org chart) drive via scripted PointerEvents: `pointerdown` on the source, `pointermove`/`pointerup` on `window`, waiting one rAF before the up event.
 8. Layout/ref effects (`useLayoutEffect`, canvas refs) MUST be verified in a `vite preview` prod build, not just dev — StrictMode's double-invoke in dev can mask a single-pass bug that only shows up on beta/prod (real incident: org chart connectors invisible on beta only).
 9. Beta URL for verifying deployed state: the current beta Channel URL (read it from the latest `v4 Beta Deploy` run: `gh run list --workflow deploy-v4-beta.yml --limit 1` → run log; the hostname rotates whenever the channel is recreated) (a Hosting **preview channel** — NOT `fieldshore-database.web.app`, the production hostname — hosting disabled 2026-10-09 until the Phase J cutover).
@@ -41,13 +41,13 @@ Final visual acceptance and mockup-fidelity judgment stay with the orchestrator 
 ## What "works" means
 - Flow completes from a fresh state
 - No console errors during the flow
-- Firebase writes succeed (check `/diagnostics/sync/` for failures)
+- Firebase writes succeed — the UI shows no unsynced/failed state and the network log shows no rejected RTDB writes (`/diagnostics` is write-only under the v4 rules, so it can't be read from the app)
 - UI updates as expected at each step
 - Adjacent flows didn't regress
 
 ## What you don't do
 - Fix bugs (route to `fullstack-engineer`)
-- Write tests (this app's "tests" are preview drives)
+- Write tests (`fullstack-engineer` writes and extends the Vitest suite; you drive the UI)
 - Design features (you verify, you don't design)
 
 ## Output format

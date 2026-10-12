@@ -18,13 +18,9 @@ Read `docs/v4-design/98-design-docket.md` and show Alex a compact summary: per-s
 2. **Tighten the item to one line.** Keep Alex's meaning and vocabulary; trim filler. Do NOT redesign or expand it — capture, don't solve.
 
 3. **Pick the section** (default, don't interrogate):
-   - cards / badges / recommendation or shore-point card visuals → **Riding S12**
-   - desktop / breakpoints / laptop-tablet layout → **Riding S11**
-   - measurement entry / keypad → **Riding S10**
-   - a named Phase I screen (Cutting Station, Command/SitStat, Inventory, Accountability, Quick Find results) → **Phase I design items**
+   - cards / badges / shore-point or recommendation card visuals, desktop / breakpoints / laptop-tablet layout, measurement entry / keypad, or a named Phase I screen (Cutting Station, Command/SitStat, Inventory, Accountability, Quick Find results) → **Phase I design items**
    - cosmetic / visual-only nit explicitly deferred — phrasing like "polish", "post-build", "after the build", "defer", "cosmetic" → **Post-build polish**
    - anything else, or genuinely unclear → **Unscheduled / watch**
-   If a riding session (S10/S11/S12) has already landed, its items go to **Phase I design items** instead.
 
 4. **Canonical home.**
    - If it's a **gate-drive observation** (something Alex saw using the app): post a one-paragraph comment on [#248](https://github.com/Vergo402/paratech-struts/issues/248) (`gh issue comment 248 --repo Vergo402/paratech-struts`) and cite `#248 (YYYY-MM-DD)` as the home.

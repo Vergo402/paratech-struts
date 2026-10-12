@@ -231,7 +231,7 @@ Key stress moments:
 AAR from all 13 participants + 5 moderator findings. Synthesize Pearls & Pitfalls + Gap Analysis.
 
 ### Phase 5b — Issue Posting
-`[SIM-II]` prefix. `/feedbackreview` sweep.
+`[SIM-II]` prefix. `feedback-review` sweep.
 
 ---
 
@@ -425,4 +425,4 @@ AAR from all 13 participants + 5 moderator findings. Synthesize Pearls & Pitfall
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
 - **Runtime output:** `.claude/simulations/level-ii-sim/runtime/`
 - **Key stress targets:** 60-SP rendering, IP-001 multi-tenancy, 3 OP periods, 2 command transfers, full General Staff org chart, State TF multi-agency integration, demob workflow absence, PSC/LSC capability gaps
-- **Related simulations:** `/level-iii-sim` (smaller), `/level-i-sim` (larger — Surfside scale)
+- **Related simulations:** `/sim-level-iii` (smaller), `/sim-level-i` (larger — Surfside scale)

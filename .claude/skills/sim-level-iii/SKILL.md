@@ -197,7 +197,7 @@ Key stress moments:
 AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls + Gap Analysis.
 
 ### Phase 5b — Issue Posting
-`[SIM-III]` prefix. `/feedbackreview` sweep.
+`[SIM-III]` prefix. `feedback-review` sweep.
 
 ---
 
@@ -364,4 +364,4 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
 - **Runtime output:** `.claude/simulations/level-iii-sim/runtime/`
 - **Key stress targets:** Command transfer + role history, OP period transition, concurrent writes, LongShore struts + unrated zone, 25-SP card density
-- **Related simulations:** `/level-iv-sim` (smaller), `/level-ii-sim` (larger)
+- **Related simulations:** `/sim-level-iv` (smaller), `/sim-level-ii` (larger)

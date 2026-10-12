@@ -21,17 +21,17 @@ Node ≥ 18 and npm — nothing else. No system packages, no browser binary need
 ```bash
 bash .claude/skills/run-fieldshore/smoke.sh
 ```
-Runs from anywhere in the repo (it `cd`s to the git root). Self-assigns a **free port**, so it never collides with a dev server already on :5199. Ends in `ALL GREEN ✅` (~11s); on failure it prints the tail of `/tmp/fieldshore-dev.log`. The three gated commands, individually runnable:
+Runs from anywhere in the repo (it `cd`s to the git root). Self-assigns a **free port**, so it never collides with a dev server already on :5199. Ends in `ALL GREEN ✅` (~11s); if the dev-server step fails it prints the tail of `/tmp/fieldshore-dev.log` (typecheck/test failures stop with their own output). The gated steps, individually runnable:
 
 ```bash
 npm run typecheck   # tsc --noEmit
 npm test            # vitest run — the current suite (smoke.sh prints the real count)
-npm run build       # tsc --noEmit && vite build → dist/ + PWA service worker
+# `npm run build` (tsc --noEmit && vite build → dist/ + PWA service worker) is NOT part of smoke.sh — run it when a change touches build or PWA output
 ```
 
 **Commit gate:** any commit that intentionally changes component behavior runs `npx vitest run` + `npx tsc --noEmit` first — and when changing a contract, grep tests for assertions pinning the old behavior and move them in the SAME commit (a red test left behind reads as a regression to the next session). Gate commands run bare — never piped (`| tail` etc. eats the exit code); filter a saved output file afterward.
 
-**Parallel agents in a shared tree: no git, ever.** Every parallel implementation agent brief must say *"run NO git commands at all — no stash, checkout, restore, reset, clean, or commit; use only file tools + test commands."* A sibling's `git stash pop` / `git checkout HEAD <file>` is as destructive as a commit: it silently reverts other agents' uncommitted work, and the agent cannot judge what is "unrelated" — only the orchestrator sees the whole tree (a 2026-08-17 agent popped a months-old stash, `checkout HEAD`-ed the ~25 conflicted files, reverted four siblings' finished work, and reported "Nothing was lost"). If agents must use git, dispatch them into separate worktrees. The orchestrator snapshots `git status --short | sort` before dispatch and diffs it against each completion notification, so cross-agent damage surfaces immediately instead of at commit time.
+**Parallel agents in a shared tree: no git, ever.** Every parallel implementation agent brief must say *"run NO git commands at all — no stash, checkout, restore, reset, clean, or commit; use only file tools + test commands."* A sibling's `git stash pop` / `git checkout HEAD <file>` is as destructive as a commit: it silently reverts other agents' uncommitted work, and the agent cannot judge what is "unrelated" — only the orchestrator sees the whole tree. If agents must use git, dispatch them into separate worktrees. The orchestrator snapshots `git status --short | sort` before dispatch and diffs it against each completion notification, so cross-agent damage surfaces immediately instead of at commit time.
 
 ## Interactive driving — preview MCP (clicks + screenshots)
 
@@ -44,7 +44,7 @@ npm run build       # tsc --noEmit && vite build → dist/ + PWA service worker
 
 All five routes are live, drivable screens (Phase I shipped Quick Find, Operations, Inventory, Command, Settings). Local data is **IndexedDB** (Dexie); cloud sync + auth exist.
 
-**Getting past the auth gates locally** — recipe proven 2026-08-05 against `34c0822`, where `RequireDepartment` began requiring `identity.kind === 'member'` **and** a department. The old `role:'admin'` + guest-identity seed is dead: it now lands on "Sign in to continue" and every scene-building step times out. The working recipe:
+**Getting past the auth gates locally** — `RequireDepartment` admits only `identity.kind === 'member'` **and** a department; a guest seed (the old `role:'admin'` recipe) lands on "Sign in to continue" and every scene-building step times out. The working recipe:
 
 1. Block all Firebase hosts at the driver level.
 2. Plant a fake persisted Firebase-auth user in `firebaseLocalStorageDb` whose uid matches the seeded member session — the authSession reconcile then no-ops instead of downgrading you.
@@ -94,8 +94,8 @@ Ctrl-C to stop. Useless headless — for automated checks use the gate or the pr
 - **Installed an npm dep and the dev server doesn't see it?** Restart `npm run dev` — Vite won't re-optimize deps on HMR.
 - **`localStorage is not available` during `npm test`** — harmless jsdom/node noise; the suite still passes.
 - **`npm run build` warns "chunks larger than 500 kB"** — a hint, not an error; build succeeds and emits the PWA `sw.js`.
-- **Deploying a point whose plate is untracked opens the missing-piece chooser.** A plate with no available inventory row gets no `inventoryId`, so the deploy review shows the chooser and holds Confirm until you resolve it: pick a truck, or **Deploy off-book (untracked)**, then **Confirm & deploy**. (`src/core/shorepoint/bom.ts:186-194`; `src/ui/operations/DeployResolution.tsx:154`, `:245`, `:270`, `:352`, `:393`, `:455-456`)
-- **The Board / List / Division layout is a per-operation localStorage pref**: key `fs-board-prefs-<opId>`, JSON with `layout: 'lanes' | 'list' | 'division'` (`'lanes'` is the Board view). Read at `src/ui/operations/OperationsBoard.tsx:498-502`, written at `:518`; type at `src/ui/operations/ViewToggle.tsx:9`. The minibatch driver writes it directly (`.claude/audits/phase-j/minibatch-shots/driver.mjs:218-222`).
+- **Deploying a point whose plate is untracked opens the missing-piece chooser.** A plate with no available inventory row gets no `inventoryId`, so the deploy review shows the chooser and holds Confirm until you resolve it: pick a truck, or **Deploy off-book (untracked)**, then **Confirm & deploy**. (`src/core/shorepoint/bom.ts:186-194`; `src/ui/operations/DeployResolution.tsx` — grep `const unresolved`, `confirmDisabled`, `<MissingPieceChooser`)
+- **The Board / List / Division layout is a per-operation localStorage pref**: key `fs-board-prefs-<opId>`, JSON with `layout: 'lanes' | 'list' | 'division'` (`'lanes'` is the Board view). Read and written in `src/ui/operations/OperationsBoard.tsx` (grep `fs-board-prefs`); type at `src/ui/operations/ViewToggle.tsx:9`. The minibatch driver writes it directly (`.claude/audits/phase-j/minibatch-shots/driver.mjs:218-222`).
 - **A strut-set/cutting straddle inside a group needs a detour.** A transition whose both ends are in `GROUP_ZONE` (`process`, `strutset`, `cutting`) fans out to every lockstep member (same status); an edge that leaves the zone (cutting→runner, runner→cutting) moves only the trigger (`src/core/operation/reducer.ts:41`, `:50-51`, `:100-103`). Each leg is one status step (`src/core/shorepoint/status.ts:32-33`): leg 1 strutset→cutting (fans out), leg 1 cutting→runner, leg 2 cutting→strutset (fans the rest), leg 1 runner→cutting.
 
 ## Troubleshooting

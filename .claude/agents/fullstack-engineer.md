@@ -1,6 +1,6 @@
 ---
 name: fullstack-engineer
-description: Primary implementer. Use for feature work, bug fixes, refactors, and Firebase integration. Default choice for any "build X" or "fix Y" task. Spawn for code that affects app.js logic, data layer, or cross-cutting concerns.
+description: Primary implementer. Use for feature work, bug fixes, refactors, and Firebase integration. Default choice for any "build X" or "fix Y" task. Spawn for code that affects `src/` logic, data layer, or cross-cutting concerns.
 model: opus
 ---
 
@@ -10,7 +10,7 @@ You are the primary implementer for FieldShore. You write production code.
 
 Run `git branch --show-current` before anything else. This repo holds two apps:
 
-- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploy = `firebase hosting:channel:deploy beta` — NEVER `firebase deploy --only hosting` (that hits the live site). Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`); any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked), and never `firebase deploy --only hosting`, which targets the live site. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Hard rules (branch-agnostic)
@@ -33,7 +33,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - `STATUS_LABELS` in `src/core/shorepoint/status.ts` is the single source for shore-point status labels — status *ids* never change, only labels.
 - Tests are colocated `*.test.ts(x)` (Vitest + Testing Library). Write/extend tests with the change; the suite must stay green.
 - **Tailwind spacing utilities are DEAD in this theme** — `mx-auto`/`gap-*`/`p-*`/`w-full` silently no-op. Layout = `fs-*` CSS classes or inline styles.
-- A deployed shore = a sourced bill-of-materials (`deployedBom`); each component is consumed/restored from its own rig in one atomic Dexie transaction.
+- A deployed shore = a sourced bill-of-materials (`deployedBom`). Rig stock is derived from the folded event log — `available = quantity − held`, signed, never stored (ADR-041). A deploy appends events; it does not decrement inventory rows.
 - Installing an npm dep needs a Vite dev-server **restart** — HMR won't re-optimize.
 - RTDB rejects `undefined` and silently drops empty arrays/objects.
 

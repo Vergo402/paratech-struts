@@ -75,10 +75,10 @@ EOF
 )")
 ```
 
-### Add every new issue to the roadmap board (REQUIRED — do not skip)
+### Add every new issue to the roadmap board
 
 Creating the issue is not enough — it must be logged on the **FieldShore Roadmap** board (#1)
-or it goes untracked. (This step's absence is exactly what let #285 slip through in May 2026.)
+or it goes untracked.
 For each issue created above, using the captured `$url`:
 
 ```bash
@@ -90,8 +90,8 @@ gh project item-edit --id "$item" --project-id $PROJ \
   --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c --single-select-option-id f75ad846   # Status = Todo
 ```
 
-Set **Status = Todo** here; `/plan` flips it to In Progress at scope-in and Status → Done auto-syncs on
-close. Component/Severity/Effort/**Release** are assigned later during `/plan` — and remember new Release
+Set **Status = Todo** here; `/plan-release` flips it to In Progress at scope-in and Status → Done auto-syncs on
+close. Component/Severity/Effort/**Release** are assigned later during `/plan-release` — and remember new Release
 options (e.g. a new `vX.Y.Z`) are added via the **web UI only**, never the GraphQL field mutation (it
 set-and-replaces the entire option list). See the `feedback_project_field_mutations` memory.
 
@@ -180,7 +180,7 @@ Save the plan to `.claude/plans/` with a descriptive filename:
 ## Release Checklist
 - [ ] Version bump in 3 places (index.html header, app.js appVersion, sw.js cache name)
 - [ ] Test each fix
-- [ ] Push to main
+- [ ] Merge the feature branch to `main` (release process)
 - [ ] Create GitHub release v{VERSION}
 - [ ] Close resolved issues
 ```
@@ -190,7 +190,6 @@ Save the plan to `.claude/plans/` with a descriptive filename:
 - **Name the functions** involved. Read `app.js` to find relevant code.
 - **Give line number ranges** (these shift, so include function names too).
 - **Separate quick fixes from larger work.** Bugs and small features go in the immediate release. Major features get deferred.
-- **Consider dependencies** between items.
 
 ### Severity-based ordering
 

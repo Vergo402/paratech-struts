@@ -11,9 +11,9 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 ## Architecture
 
 - **3-file split** (refactored from single-file in v2.0.1):
-  - `index.html` (~770 lines) — HTML shell, modals, forms
-  - `app.js` (~8,800 lines) — All application logic, constants, Firebase integration
-  - `style.css` (~2,200 lines) — All styles
+  - `index.html` — HTML shell, modals, forms
+  - `app.js` — All application logic, constants, Firebase integration
+  - `style.css` — All styles
 - **Service worker:** `sw.js` — offline caching with stale-while-revalidate
 - **Backend:** Firebase Realtime Database (compat SDK v9.23.0) — project `paratech-c3ab4`
 - **Hosting:** GitHub Pages (auto-deploys on push to `main`)
@@ -81,7 +81,7 @@ The board Status updates to Done automatically when the issue closes.
 Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
 
 On every change:
-0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan-release` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics). See `feedback_project_field_mutations.md` memory.
+0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan-release` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics).
 1. Update version in **3 places:**
    - `index.html` header label: `<div class="version-label">v{VERSION}</div>` 
    - `app.js`: `const APP_VERSION = '{VERSION}'` (near the top of the file)
@@ -133,10 +133,7 @@ skepticism, because nothing ever is — stop and tell Alex what happened plus yo
 recommendations; **never silently ship a build that diverges from the accepted mockup.**
 Before calling it done, **verify the built UI against the accepted mockup yourself**
 (drive the preview / screenshot) — do not rely on a sub-agent's self-reported
-screenshots. (Companion to the mockup-first rule in the global CLAUDE.md; the
-regression that prompted this: a Cutting Station hero shipped as a card-in-a-card with
-the cut length doubled, nothing like the approved mockup, because a sub-agent's
-screenshot was trusted without an independent check.)
+screenshots. (Companion to the mockup-first rule in the global CLAUDE.md.)
 
 ## How We Talk — Plain Language for Alex (standing rule, 2026-06-08)
 
@@ -175,9 +172,9 @@ back-and-forth at the right altitude, not to dumb anything down.
 
 ## History & status
 
-### v3.5.2 → v3.17.2 — see `.claude/plans/CONSOLIDATED-STATUS.md`
+### v3.5.2 → v3.22.0 — see `.claude/plans/CONSOLIDATED-STATUS.md`
 
-The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0. Per-release detail for v3.5.2 → v3.9.1 is in its Appendix A.
+The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes, v3.18.x hfd217 field feedback + Quick View inventory filter + org-chart title fix, v3.19.x default ICS org-chart restructure, v3.20.0–v3.21.2 external-department equipment plumbing, v3.22.0 inventory integrity + measurement safety. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0. Per-release detail for v3.5.2 → v3.9.1 is in its Appendix A.
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 

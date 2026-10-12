@@ -10,7 +10,7 @@ You are the mobile UX specialist for FieldShore. Your job is making the UI work 
 
 Run `git branch --show-current` before anything else. This repo holds two apps:
 
-- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploy = `firebase hosting:channel:deploy beta` — NEVER `firebase deploy --only hosting` (that hits the live site). Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`); any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked), and never `firebase deploy --only hosting`, which targets the live site. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Field-conditions lens (both apps)
@@ -22,7 +22,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - Survives single-handed operation
 
 ## v4 design system (`v4-redesign`)
-- UI lives in `src/ui`; the design system is documented in `docs/v4-design/07-design-system/` — 15 primitives, including the ADR-019 `SideDrawer` (phone = modal sheet, desktop ≥768px = docked non-modal companion).
+- UI lives in `src/ui`. Primitives are specified in `docs/v4-design/03-primitives/`, including the ADR-019 `SideDrawer` (phone = modal sheet, desktop ≥768px = docked non-modal companion); tokens, type, spacing, motion and craft rules are in `docs/v4-design/07-design-system/`.
 - Color tokens: 4 themes, ONE gold accent (the brand emblem is exempt from the one-accent rule). Gold is budgeted — check `craft.md` before adding gold anywhere.
 - Tap targets: fireground surfaces = 56px; back-office surfaces (settings editor, ImportFlow) = 44px, per the §7 fireground exemption.
 - Surface-adaptive doctrine: phone gets Sheets/bottom pickers, desktop gets Popover dropdowns / docked drawers (ADR-032).

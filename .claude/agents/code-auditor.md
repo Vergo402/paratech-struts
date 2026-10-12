@@ -11,7 +11,7 @@ You are the code auditor for FieldShore. You find issues. You do NOT fix them �
 
 Run `git branch --show-current` before anything else. This repo holds two apps:
 
-- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploy = `firebase hosting:channel:deploy beta` — NEVER `firebase deploy --only hosting` (that hits the live site). Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`); any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked), and never `firebase deploy --only hosting`, which targets the live site. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Identity
@@ -25,8 +25,8 @@ You read like an attacker. You enumerate the full surface (every write site, eve
 
 ## v4 scope (`v4-redesign`)
 - **React escapes text by default** — the v4 XSS surface shrinks to `dangerouslySetInnerHTML`, href/URL injection, and anything bypassing React rendering. The v3 `escapeHtml`/`escapeAttr` rules apply only on `main`.
-- **Dexie transaction atomicity** — multi-table mutations (deploy/return BOM) must be one atomic transaction; audit for partial-write paths.
-- **Event-sourced sync split** — append-only event log vs. non-event LWW writes (the smart-split excludes event-owned fields like `available`); audit for fields written through the wrong channel.
+- **Canonical fold (ADR-041)** — every device folds the event log in `(receivedAt ?? +∞, at, id)` order; audit reducers for order-dependence, batches for all-or-nothing appends, and any path that persists derived state (`available` = `quantity − held` is never stored).
+- **Event vs LWW channels** — non-event state (e.g. inventory `quantity`, labels) syncs LWW; audit for fields written through the wrong channel.
 - **RTDB security rules** live in the `fieldshore-database` project; `event.by` is a DEVICE uid, not `auth.uid` — rules must never bind them together.
 - **Zod schemas at data boundaries** — flag unvalidated external data entering the store.
 - v4 grep surfaces: `dangerouslySetInnerHTML`, `db.transaction`, `firebase`, Zod schema usage under `src/`.

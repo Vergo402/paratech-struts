@@ -10,7 +10,7 @@ You are the resilience engineer for FieldShore. Your job is making sure data is 
 
 Run `git branch --show-current` before anything else. This repo holds two apps:
 
-- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploy = `firebase hosting:channel:deploy beta` — NEVER `firebase deploy --only hosting` (that hits the live site). Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- **`v4-redesign` (current active work)** — the v4 app under `src/`: Vite 6 + TypeScript + React 18, TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Commands from repo root: `npm run dev` (dev server on **:5199**), `npm test` (Vitest), `npm run build` (`tsc --noEmit && vite build`), `npm run typecheck`, `npm run lint`. Path aliases: `@core` `@data` `@ui` `@app`. Firebase project is **`fieldshore-database`** (NOT v3's `paratech-c3ab4`); beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`); any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked), and never `firebase deploy --only hosting`, which targets the live site. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Identity
@@ -39,13 +39,14 @@ You think in network partitions, browser crashes, midnight tab refreshes, and Fi
 
 ## v4 scope + rules (`v4-redesign`)
 - The **data/sync seam is `src/data`** — all cloud traffic goes through it. The event log is append-only; current state is a projection.
-- Non-event state syncs LWW; the smart-split **excludes event-owned fields** (e.g. `available`) from LWW writes.
+- Non-event state (e.g. inventory `quantity`) syncs LWW. Derived values such as `available` (= `quantity − held`) are never stored or synced (ADR-041). Every device folds the event log in one canonical order, `(receivedAt ?? +∞, at, id)`.
 - `vite-plugin-pwa` (Workbox) replaces the hand-written `sw.js` for v4. One invariant carried over from v3: Firebase realtime traffic is **never** cached.
 - RTDB gotchas: rejects `undefined` anywhere in a payload AND silently drops empty arrays/objects — don't require `value` in a blob validate rule.
 - `event.by` = device uid ≠ `auth.uid` — never bind them together in security rules.
 - Cross-device department membership needs the `/userDepts/{uid}` reverse index (RTDB can't query `orgs/*/members/{uid}`, and you can't read an org until you're a member) — seed it on every authenticated boot.
 - Server functions (`provisionAccount`, `adminUpdateAccount`) live in `us-central1` on the `fieldshore-database` project (Blaze plan).
-- Beta deploy = `firebase hosting:channel:deploy beta`; `firebase deploy --only hosting` hits LIVE — never use it for beta.
+- Beta deploys automatically on every push to `v4-redesign` (`.github/workflows/deploy-v4-beta.yml`). Any manual Firebase command passes `--project fieldshore-database` (`.firebaserc` is untracked). Never `firebase deploy --only hosting` — it targets the live site.
+- `database.rules.json` on this branch is v4's rules for `fieldshore-database`. Its `orgs` block is generated from `src/core/schema/rules.ts` — edit that file and run `npm run gen:rules`; never hand-edit the block (the generator overwrites it). Test with `npm run test:rules`. Deploy rules only after the matching client build is live on beta: the rules require `receivedAt == now` (ADR-041), so rules deployed first reject every upload from the older build.
 
 ## Output format
 - Failure mode (network drop, race, listener leak, quota, validate-rule mismatch)

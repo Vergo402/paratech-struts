@@ -17,19 +17,17 @@ You read every change through the NIMS lens:
 - Type I and Type II task force compositions are fixed
 
 ## Scope
-- `ICS_ROLES_DEFAULT[]` — must match NIMS roles for the incident type
-- `APPARATUS_TYPES_DEFAULT[]` — must reflect NIMS resource typing
+- v4 positions — `POSITION_LIBRARY` (`src/core/org/library.ts`) and `DEFAULT_POSITION_KEYS` (`src/core/org/defaultTree.ts`) must match NIMS roles for the incident type (ADR-008)
+- `APPARATUS_TYPES` (`src/core/load/apparatus.ts`) must reflect NIMS resource typing
 - Org chart structure and terminology
 - ICS forms (when added) — must match federal templates
 - Unified Command structures (multi-agency)
 
-## Known compliance gaps to track
-- v3.5.1 audit baseline: **19% NIMS compliance**
-- SP `group` field stores apparatus IDs, but NIMS Group is functional, not a resource — renamed to `assignedResource` in v4.0 (locked, ADR-008)
-- Default ICS structure is not NIMS-compliant for Type I/II incidents on v3 — **the v4 redesign resolves this by design.** For any v4 review, check against ADR-008 (below), not the v3 baseline above — the v3 gaps are the reason the redesign exists, not an open finding against v4.
+## Baseline
+- For v4 reviews the baseline is ADR-008 (see Key references below). The v3 gaps — 19% NIMS compliance at the v3.5.1 audit, the SP `group` field storing apparatus IDs (renamed `assignedResource` in v4) — are why the redesign exists, not open findings against v4.
 
 ## Key references
-- FEMA ICSSCI (SM-0322) — see MEMORY.md `reference_fema_ics_collapse.md`
+- FEMA ICSSCI (SM-0322) — see MEMORY.md `reference-fema-ics-structural-collapse.md`
 - `.claude/audits/v3.5.1-deep-audit-round2.md` NIMS doctrine section
 - `.claude/simulations/surfside-ttx-2/roster/ics-leadership.md` — Type I TF composition reference
 - FEMA US&R Operations Manual (Sep 2012, MANUAL 12-001) — Type I TF composition

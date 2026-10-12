@@ -1,6 +1,6 @@
 ---
 name: plan-release
-description: "Unified release workflow: ship open bugs as a PATCH, or plan the next MINOR/MAJOR release. Reads the FieldShore Roadmap GitHub Project as the single source of truth for tracked items. Use this skill whenever Alex says 'plan the next release', 'start planning', 'what should we work on next', 'fix the bugs', 'ship the open bugs', 'triage issues', 'patch the bugs', 'what issues are open', '/plan', '/issue-triage', or '/work'."
+description: "v3 release workflow (branch `main`, run from the `fieldshore-main/` worktree): ship open v3 bugs as a PATCH, or plan the next v3 MINOR/MAJOR release. Reads the FieldShore Roadmap GitHub Project (board #1) as the single source of truth for tracked items. Use whenever Alex says 'plan the next v3 release', 'ship the v3 bugs', 'patch the bugs', 'what v3 issues are open', '/plan-release', '/plan', '/issue-triage', or '/work'. v4 work goes to plan-v4."
 ---
 
 # Release Workflow — Plan or Ship
@@ -53,11 +53,10 @@ This is the source of truth for tracked items. Returns items with fields: `Statu
 ### Read behavioral context (both modes)
 
 ```bash
-cat CLAUDE.md .claude/rules/v3-app.md 2>/dev/null
+cat .claude/rules/v3-app.md 2>/dev/null   # CLAUDE.md is already in context
 # Derive the per-project memory dir from the repo's current absolute path —
 # Claude Code names it by replacing every "/" in the repo path with "-".
-# This keeps working if the repo is moved/renamed (see the May-2026 path
-# migration that broke a hardcoded slug). Do NOT hardcode the slug.
+# Keeps working if the repo is moved or renamed. Do NOT hardcode the slug.
 REPO="$(git rev-parse --show-toplevel)"
 MEM="$HOME/.claude/projects/$(echo "$REPO" | sed 's#/#-#g')/memory"
 cat "$MEM/MEMORY.md" 2>/dev/null || echo "(no MEMORY.md at $MEM — check repo path)"
@@ -69,7 +68,7 @@ slug changed — list `~/.claude/projects/` for the directory whose name matches
 the current repo path, or re-point/re-create it there.
 
 Extract for the rest of the session:
-- **Release checklist** (CLAUDE.md; manual-update steps in .claude/rules/user-manual.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
+- **Release checklist** (CLAUDE.md; manual-update steps in .claude/rules/user-manual.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldShore-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
 - **Architecture gotchas** (.claude/rules/v3-app.md) — CSS stacking, plate picker, Firebase + SW, local-first writes, escapeHtml/escapeAttr
 - **Terminology rules** (.claude/rules/v3-app.md) — Footer/Sole Plate/Header/Group conventions
 - **Code-quality** (`feedback_code_quality.md`) — lead with structural fix, not patch
@@ -82,6 +81,8 @@ Extract for the rest of the session:
 - **Current version** (MEMORY.md) — cross-check against version sources
 
 ### Version drift check (both modes)
+
+Run this skill from the `fieldshore-main/` worktree (branch `main`). In `fieldshore/` the v3 root files lag `main`, so version reads are stale, and `git checkout main` fails because `main` is checked out in `fieldshore-main/`.
 
 ```bash
 grep "CACHE_NAME" sw.js
@@ -270,7 +271,7 @@ git commit -m "v{VERSION} — {summary}
 
 {per-bug one-liners with Closes #N}
 
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+{Co-Authored-By trailer from the session's attribution reminder}"
 
 git checkout main
 git merge --no-ff bugfix/v{VERSION} -m "Merge v{VERSION} — {summary}"
@@ -333,20 +334,20 @@ Deferred to next release: #N3 (reason)
 
 ### Mode B: Plan release
 
-#### B1. Run `/feedbackreview` (always)
+#### B1. Run `feedback-review` (always)
 
-Invoke `/feedbackreview` via the Skill tool. No recency check, no soft-gate — every plan-release run starts by draining the Firebase feedback queue. If the queue is empty, the skill returns "No new feedback" in seconds and the cost is negligible. If the queue has items, they get triaged into the unified open-items matrix in B2 instead of being missed.
+Invoke `feedback-review` via the Skill tool. No recency check, no soft-gate — every plan-release run starts by draining the Firebase feedback queue. If the queue is empty, the skill returns "No new feedback" in seconds and the cost is negligible. If the queue has items, they get triaged into the unified open-items matrix in B2 instead of being missed.
 
 Capture from the skill output: new issues created, plan filename, theme summary. The skill also pushes new items to the Project.
 
-If `/feedbackreview` errors (Firebase auth, etc.), surface verbatim and offer to continue without.
+If `feedback-review` errors (Firebase auth, etc.), surface verbatim and offer to continue without.
 
 #### B2. Reconcile open items
 
 Build a unified open-items matrix from:
 - Project items (already gathered in Phase 1)
 - Audit findings still marked open in `findings-ledger.md` (synthesize Project items if missing)
-- `/feedbackreview` output from B1
+- `feedback-review` output from B1
 
 Dedupe: same item across sources keeps highest priority (audit > feedback > issue > prior plan).
 
@@ -453,7 +454,7 @@ Default owner is `Vergo402` unless Alex specifies otherwise during B4. For pre-a
 
 Also set `Severity` + `Component` + `Source` if missing. Status is set to In Progress at scope-in (step b above) — items are committed to this release, so they're in progress.
 
-**This is the critical step the user explicitly flagged: items don't drift back to Backlog because the Release field is set HERE, at scope-in, not after ship. Agent / Model / Effort / Assignee follow the same rule — set them at scope-in so the Project shows a complete assignment view, not after execution.**
+Set Release, Agent, Model, Effort and Assignee here at scope-in, not after ship — that is what keeps items from drifting back to Backlog and gives the Project a complete assignment view.
 
 Save plan to `.claude/plans/v{VERSION}-{theme}.md` (theme is 2-3 word kebab-case slug).
 
@@ -666,8 +667,8 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - **Don't re-investigate findings.** The skill composes from the Project + ledger; it doesn't re-audit.
 - **Don't write the plan file before GATE 1** (plan-release mode). Hold in memory until GATE 1 approval.
 - **Don't auto-archive on every invocation.** Only in Phase B7 after GATE 2.
-- **Don't dispatch all 15 agents.** Auto-detect ≤ 5.
-- **Don't fail silently on `/feedbackreview` errors.** Surface and offer to continue.
+- **Don't dispatch every persona.** B6's always-on set plus scope-detected additions, capped at about 7.
+- **Don't fail silently on `feedback-review` errors.** Surface and offer to continue.
 - **Don't trust a single version source.** Always reconcile all four; flag drift.
 - **Don't fold non-canonical plans.** Respect canonical declarations.
 - **Don't let agent recommendations recurse infinitely.** Cap at depth 1.
@@ -698,8 +699,7 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - 3-file split: `index.html`, `app.js`, `style.css` + `sw.js`.
 - Version bumped in 3 places every release (CLAUDE.md).
 - Work on feature branches, not directly on `main`.
-- Alex is a firefighter, not a developer — explanations clear, jargon-free.
 - Verification: drive the real preview UI per `feedback_verification_standard`.
 - v4.0 reframe (2026-05-17): scope pulled back from federal/USAR to local Type IV-V. Federal scope deferred to v5.x.
-- Plan template reference: `.claude/plans/v3.12.0-feedback-command-tab.md` (most complete recent example).
+- Plan template reference: `.claude/plans/archive/v3.12.0-feedback-command-tab.md` (most complete recent example).
 - Backfill script: `.claude/scripts/backfill-project.sh` (rerunnable; idempotent for already-added items).

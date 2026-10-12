@@ -148,7 +148,7 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
 
 ## Disposition walks over visible UI
 
-When walking a triage/disposition list where items change what Alex would *see*, present the decision **with an inline `show_widget` mockup in the same turn as the question** — or batch the mockups first and walk the list against them. A ruling made on a text description of a visible surface is **provisional**: re-confirm it at the mockup checkpoint before anything gets built. For a visual decision the mockup *is* the question; a text description is a lossy proxy. (Proven in the #491 walk: one text-option ruling reversed the moment the mockup showed it, and three other text-option questions bounced back asking for visuals instead of answering.)
+When walking a triage/disposition list where items change what Alex would *see*, present the decision **with an inline `show_widget` mockup in the same turn as the question** — or batch the mockups first and walk the list against them. A ruling made on a text description of a visible surface is **provisional**: re-confirm it at the mockup checkpoint before anything gets built. For a visual decision the mockup *is* the question; a text description is a lossy proxy.
 
 ## Whole-product review scoping
 
@@ -157,8 +157,6 @@ Any gate that claims to review the *product* (#256 parity, #257–#260 audits, #
 1. **Coverage matrix first.** Enumerate routes × features × themes × auth-states and publish the matrix in the review artifact, each cell marked exercised / not-exercised per track. The matrix is the denominator; findings are the numerator. An unexercised cell is a stated gap, never a silent pass.
 2. **Probe every external dependency live.** List every env key and every remote API the app calls (what3words, Google Places, Firebase callables), hit each one, and record the status in the artifact. Quota-dead and referrer-locked keys degrade gracefully in the UI, so they survive screenshot review indefinitely.
 3. **Grep memory for known-broken items.** Search the session-memory directory for `QuotaExceeded`, `broken`, `dead`, `degrades`, `WON'T-FIX` before declaring coverage. Memory is a review input, not just a session-start briefing.
-
-(Proven the hard way in #261: three independent review tracks plus main-loop verification all missed that what3words was returning HTTP 402 in production — a failure recorded in memory since 2026-07-11 — because every track scoped itself to the surfaces the gate findings named.)
 
 ## Never
 

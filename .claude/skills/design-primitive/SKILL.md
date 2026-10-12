@@ -7,12 +7,12 @@ description: "Author a single v4 design-system primitive doc end-to-end for one 
 
 > Narrow executor for the single most common unit of the v4 arc: author **one** primitive
 > design doc for **one** GitHub issue, update the shared registries, commit, and close.
-> `/v4-plan` orchestrates the whole multi-phase arc; this skill does the leaf task with a
-> built-in plan gate. They coexist — don't run the full `/v4-plan` session-start ritual here.
+> `/plan-v4` orchestrates the whole multi-phase arc; this skill does the leaf task with a
+> built-in plan gate. They coexist — don't run the full `/plan-v4` session-start ritual here.
 
 **Repo:** `/Users/alex/Developer/paratech-struts/fieldshore` · **branch:** `v4-redesign` · **remote:** `Vergo402/paratech-struts`
 
-The issue number arrives as the argument (`/primitive 280` → issue #280). If no number was given, ask which issue before doing anything.
+The issue number arrives as the argument (`/design-primitive 280` → issue #280). If no number was given, ask which issue before doing anything.
 
 **This skill ALWAYS runs in plan mode.** Stages 0–2 are research-only. Stage 3 is a hard stop for Alex's approval via `ExitPlanMode`. Nothing is written, committed, or closed before that approval. Stages 4–6 run only after it.
 
@@ -21,7 +21,7 @@ The issue number arrives as the argument (`/primitive 280` → issue #280). If n
 ## Stage 0 — Guardrails (assert before anything)
 
 1. **Branch check:** `git rev-parse --abbrev-ref HEAD` must be `v4-redesign`. If on `main` or anything else, **stop** and tell Alex — never author v4 work off-branch.
-2. **Issue is real and in scope:** `gh issue view <#> --repo Vergo402/paratech-struts`. If the issue is not a primitive-doc issue (it's a gate, a screen/IA issue, a bug, an out-of-scope item), say so plainly and **stop**. Do **not** act on adjacent or related issues — only the one named (this is the #197-overstep failure mode the skill exists to prevent).
+2. **Issue is real and in scope:** `gh issue view <#> --repo Vergo402/paratech-struts`. If the issue is not a primitive-doc issue (it's a gate, a screen/IA issue, a bug, an out-of-scope item), say so plainly and **stop**. Do **not** act on adjacent or related issues — only the one named (acting on adjacent issues is the failure this skill exists to prevent).
 
 ## Stage 1 — Load context fresh (read-only)
 
@@ -68,7 +68,7 @@ Call **`ExitPlanMode`** with the plan above. Stop. Author nothing until Alex app
   ```
   [#<N>] <slug>.md (#<N>) — <one-line essence; "mints no tokens" or which tokens flagged>
 
-  Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
+  {Co-Authored-By trailer from the session's attribution reminder}
   ```
   **Never use `Closes #<N>`.** That keyword only fires on merge to `main`; `v4-redesign` won't merge for a long time, so it silently fails to close the issue.
 - **Push to `v4-redesign` in the same step** (push-on-commit is a standing rule). Never push to `main`.
@@ -95,4 +95,4 @@ Call **`ExitPlanMode`** with the plan above. Stop. Author nothing until Alex app
 - Don't use `Closes #N`, and don't `git add -A`.
 - Don't copy token values into the primitive doc — cite the owner, or flag a new token for it to mint.
 - Don't dumb down the spec voice; plain-language is a chat rule, not a doc rule.
-- Don't run the full `/v4-plan` session-start ritual (plan-constitution read, essay dispatch, gate protocol) — that's the orchestrator's job, not this leaf task's.
+- Don't run the full `/plan-v4` session-start ritual (plan-constitution read, essay dispatch, gate protocol) — that's the orchestrator's job, not this leaf task's.

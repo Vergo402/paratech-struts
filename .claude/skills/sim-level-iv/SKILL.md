@@ -17,7 +17,7 @@ This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.
 
 **Launch (replaces Phase 1 §2):** v4 dev server at **`http://localhost:5199`** via the preview MCP (`preview_start`) — NOT `npx serve -l 8095 .`. Blank page on first load = stale PWA service worker → hard-refresh (⌘⇧R). Baseline = **v4.0 early Phase I**, not v3.17.2.
 
-**Inventory import (replaces Phase 2):** import **`.claude/skills/shared/millbrook-inventory.csv`** (CSV, not the `.xlsx`; xlsx import is deferred). The CSV is validated against the v4 catalog on import — it uses v4 model/plate names (see the rewritten Inventory Baseline below). It is git-ignored (`*.csv`); `git add -f` to commit it. **Import is DISABLED while an operation is active** — the button shows "Finish the operation to import". So **import BEFORE creating the Hamden operation** (Phase 2 precedes Phase 3); if a scratch op from a prior sim is still active, end it first.
+**Inventory import (replaces Phase 2):** import **`.claude/skills/shared/millbrook-inventory.csv`** (CSV, not the `.xlsx`; xlsx import is deferred). The CSV is validated against the v4 catalog on import — it uses v4 model/plate names (see the rewritten Inventory Baseline below). Import works during an active operation (the store guards deployed gear and the flow warns), but **import BEFORE creating the Hamden operation** (Phase 2 precedes Phase 3) so the Phase 2 counts are a clean baseline; if a scratch op from a prior sim is still active, end it first.
 
 **Status labels (7, renamed in v4).** The lifecycle ids are unchanged; the field-visible labels are not. Drive/observe by these:
 
@@ -35,7 +35,7 @@ This skill was authored against **v3** (root `app.js`, `npx serve`, Firebase, `.
 
 **Checks that are N/A in v4 — do NOT log these as findings (the feature is deliberately deferred):**
 - ~~**D-6** (Firebase security-rule validation) — N/A: v4 writes to local Dexie event log, not Firebase.~~ **Corrected 2026-10-09:** v4 syncs the local event log to Realtime Database under `database.rules.json` (generated `/orgs` block; `npm run test:rules`), and the local emulators load the same file (`npm run emulators`). **D-6 is a live check.**
-- ~~**D-7** (real-time concurrent multi-user views) — N/A: cloud sync `flush()` is a no-op stub. Tracked by **#369**.~~ **Corrected 2026-10-09:** `flush()` is not a stub. It writes each queued event to Realtime Database (`src/data/sync/syncService.ts:157-159`), and cloud sync has been live since 2026-06-23. **D-7 is now a live check.**
+- ~~**D-7** (real-time concurrent multi-user views) — N/A: cloud sync `flush()` is a no-op stub. Tracked by **#369**.~~ **Corrected 2026-10-09:** `flush()` is not a stub. It writes each queued event to Realtime Database (`src/data/sync/syncService.ts`, the `flush()` implementation), and cloud sync has been live since 2026-06-23. **D-7 is now a live check.**
 - ~~**N-1** (command-transfer recorded) and the **E+0:12 transfer** — N/A: transfer *core* exists but has **no UI**. Workaround: simulate manually — add a Division Alpha Supervisor under IC → assign Torres → clear Torres from IC → assign Whitfield to IC (tests reparent + reassign, skips the atomic handshake).~~ **Corrected 2026-10-09:** the transfer UI has shipped (`src/ui/command/TransferCommand.tsx`, `CommandRail.tsx`, ADR-021 + Addendum 2 4-digit code). **N-1 and the E+0:12 transfer are now live checks.**
 - **U-9 attribution half** (Quick Find shows which rig has the strut) — N/A by design (catalog-only Quick Find). Keep the lookup half (does it return matching struts?).
 - ~~**Safety hazard logging** (Safety persona, E+2:30) — N/A: the Hazard Log is a placeholder ("ICS-208 register builds next"); display-only. Safety communicates verbally. *(This is its own future ICS-208 workflow, not #369.)*~~ **Corrected 2026-10-09:** the hazard log has shipped (ICS-208 register in `src/ui/command/HazardLog.tsx`, reducer in `src/core/hazard/reducer.ts`; the #490 hazard chip is in `src/ui/command/IncidentChips.tsx`). **Safety hazard logging is now a live check.**
@@ -233,7 +233,7 @@ Conductor drives timeline per Event Clock section. Key stress moments:
 4. Gap analysis
 
 ### Phase 5b — Issue Posting
-Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `simulation` label. Run `/feedbackreview` to sweep Firebase feedback.
+Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `simulation` label. Run `feedback-review` to sweep Firebase feedback.
 
 ---
 
@@ -365,9 +365,9 @@ Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `
 ## Notes
 
 - **Sandbox department:** `sim-millbrook-fd`
-- **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx`
+- **Inventory source:** `.claude/skills/shared/millbrook-inventory.csv`
 - **App version baseline:** v4.0 (early Phase I, `v4-redesign` branch) — NOT v3.17.2
 - **Design reference:** `docs/v4-design/00-INDEX.md` + the v4 board (GitHub Project #2). The v3 `MASTER-PLAN.md` Release-3 phase labels are stale for v4.
 - **Runtime output:** `.claude/simulations/level-iv-sim/runtime/`
 - **Key stress targets:** T-Shore grouped SP phase-split, command transfer, multi-apparatus inventory deduction, rain-condition UX
-- **Related simulations:** `/level-v-sim` (smaller), `/level-iii-sim` (larger)
+- **Related simulations:** `/sim-level-v` (smaller), `/sim-level-iii` (larger)

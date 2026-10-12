@@ -5,7 +5,7 @@ description: "Capture a design-exploration idea straight onto the v4 GitHub boar
 
 # Design Idea — capture straight to the board
 
-One job, fast: turn a design idea into a **tracked GitHub issue on the v4 board** the instant Alex flags it, so it can never be lost in a local file. Each idea becomes a child of epic **#383 `[Design] Exploration backlog`**, parked in **Todo**, ready for `/ship-design-ideas` to send to Claude Design.
+One job, fast: turn a design idea into a **tracked GitHub issue on the v4 board** the instant Alex flags it, so it can never be lost in a local file. Each idea becomes a child of epic **#383 `[Design] Exploration backlog`**, parked in **Todo**, ready for `/design-ship-ideas` to send to Claude Design.
 
 **Branch guard:** run `git branch --show-current`; if it is not `v4-redesign`, stop and say so. This skill only operates on the v4 board (Project #2).
 
@@ -82,5 +82,5 @@ One line: `📌 #<NEW> "[Design] <title>" — on the board (Todo), under #383, d
 
 ## Notes
 - **Board is the ledger** — the issue exists before anything else; if any later step fails, the idea is already tracked.
-- **Closing:** v4 issues do NOT auto-close from commits — when an idea is resolved, close it manually (`gh issue close <N> --repo Vergo402/paratech-struts`); the board flips to Done and it drops off the next `/ship-design-ideas`.
+- **Closing:** v4 issues do NOT auto-close from commits — when an idea is resolved, close it manually (`gh issue close <N> --repo Vergo402/paratech-struts`); the board flips to Done and it drops off the next `/design-ship-ideas`.
 - Never `gh api graphql ... updateProjectV2Field` to change board options (set-and-replace wipes the list — CLAUDE.md).

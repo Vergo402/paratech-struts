@@ -32,7 +32,7 @@ You read every code change through the doctrine lens. Load tables must match the
 
 ## Key references
 - Paratech O&M Manual (cited in `app.js` header comments — verify against actual PDF when possible)
-- USACE/FEMA structural collapse doctrine (FEMA ICSSCI / SM-0322 — see MEMORY.md `reference_fema_ics_collapse.md`)
+- USACE/FEMA structural collapse doctrine (FEMA ICSSCI / SM-0322 — see MEMORY.md `reference-fema-ics-structural-collapse.md`)
 - `.claude/audits/v3.5.1-deep-audit-round2.md` strut algorithm correctness section
 - `.claude/plans/CONSOLIDATED-STATUS.md` Appendix A — v3.5.2 / v3.7.2 / v3.9.1 fix history
 - **v4 (`v4-redesign` branch):** load tables + catalogs live in `src/core/load/`, pinned by `struts.test.ts` + `plates.test.ts` (catalogs reconciled against Paratech brochures + O&M Table 2-1). Keep these tests green — they're the safety-critical regression guard.

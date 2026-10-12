@@ -45,7 +45,7 @@ This skill does NOT duplicate the scenario data — it references the existing S
 | Filled IAPs | `.claude/simulations/surfside-ttx-2/iaps/iap-op{1-4}.md` |
 | Event log | `.claude/simulations/surfside-ttx-2/runtime/event-log.jsonl` |
 | Conductor state | `.claude/simulations/surfside-ttx-2/runtime/conductor-state.json` |
-| Moderator notes | `.claude/simulations/surfside-ttx-2/runtime/moderator-mod-*-notes.jsonl` |
+| Moderator notes | `.claude/simulations/surfside-ttx-2/notes/moderator-mod-*-notes.jsonl` |
 | Firebase snapshots | `.claude/simulations/surfside-ttx-2/runtime/firebase-snapshots/` |
 | Final report | `.claude/simulations/surfside-ttx-2/hotwash/final-report.md` |
 | Improvement plan | `.claude/simulations/surfside-ttx-2/hotwash/improvement-plan.md` (63 findings) |
@@ -119,7 +119,7 @@ Two modes:
 Ask Alex which mode. Default: First run.
 
 ### Phase 1 — Pre-flight
-1. Read CLAUDE.md → confirm app version
+1. Read `APP_VERSION` in `app.js` → confirm app version
 2. Read all scenario files from `.claude/simulations/surfside-ttx-2/scenario/`
 3. Read roster files from `.claude/simulations/surfside-ttx-2/roster/`
 4. Start preview server: `npx serve -l 8095 .`
@@ -165,7 +165,7 @@ Key milestones:
 5. **Delta report:** Compare this run's findings against the prior run's 63 IP items. Which are fixed? Which persist? Which are new?
 
 ### Phase 5b — Issue Posting
-Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-I]` prefix and `simulation` label. Run `/feedbackreview` to sweep Firebase feedback.
+Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-I]` prefix and `simulation` label. Run `feedback-review` to sweep Firebase feedback.
 
 ---
 
@@ -266,6 +266,6 @@ Note the additional **Prior IP** column — links each finding to its predecesso
 - **App version baseline:** v3.17.2 for first run; update when v4.0 ships
 - **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
 - **Runtime output:** `.claude/simulations/surfside-ttx-2/runtime-v2/` (separate from prior run's `runtime/`)
-- **Prior run reference:** `.claude/simulations/surfside-ttx-2/hotwash/` — 63 findings, 4 IAPs, 6 moderator note files
+- **Prior run reference:** `.claude/simulations/surfside-ttx-2/hotwash/` — 63 findings, 4 IAPs, 7 moderator note files
 - **Key stress targets:** 250-SP rendering, 36-hour continuous operation, federal USAR TF multi-agency, unified command, IST workflow, full ICS forms gap, concurrent 14-agent writes, IP regression testing
-- **Related simulations:** `/level-ii-sim` (smaller — 60 SPs, 24 hrs), and Levels III/IV/V for escalating scale below this
+- **Related simulations:** `/sim-level-ii` (smaller — 60 SPs, 24 hrs), and Levels III/IV/V for escalating scale below this
