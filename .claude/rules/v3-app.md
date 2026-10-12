@@ -28,8 +28,9 @@ Moved from CLAUDE.md 2026-10-12. The authoritative copy for v3 work is CLAUDE.md
 ### Tabs (Bottom Nav)
 1. **Quick Find** — Enter measurement + load, get matching struts
 2. **Operations** — Create shoring operations, add shore points, deploy struts
-3. **Inventory** — Manage apparatus and strut inventory (Excel import/export)
-4. **Settings** — Department connection, data management, feedback
+3. **Command** — ICS org chart, hazard log
+4. **Inventory** — Manage apparatus and strut inventory (Excel import/export)
+5. **Settings** — Department connection, data management, feedback
 
 ### Key Data Constants (app.js)
 - `STRUTS[]` — All Paratech strut models with specs
@@ -78,6 +79,8 @@ Moved from CLAUDE.md 2026-10-12. The authoritative copy for v3 work is CLAUDE.md
 - **Grouped shore points — phase-based split (v3.8.0):** Shore types with qty > 1 share a `groupId`. Behavior depends on phase: **pre-cutting** (pending → process → strutplaced → cutting) transitions apply to all group members at once via `getGroupMembers()`. **Cutting workflow** (cutting → runner → secured → returned) transitions operate on individual points only. Controlled by `individualPhase = ['cutting', 'runner', 'secured']` check in `updateShoreStatus()`. `markCutDone()`, `sendToRunner()`, and `returnEquipment()` always operate individually.
 - **Git auth:** SSH key (configured 2026-05-09). Single repo, no staging remote.
 - **Terminology:** "Footer" = wood sole plate at bottom. "Sole Plate" = metal connector at bottom of strut. "Header" = wood at top. "Group" = NIMS term (not "Team"). **CAVEAT:** v3.5.0 made the SP `group` field a dropdown of apparatus IDs — this is NIMS-terminology-incorrect (NIMS Group is a functional command unit, not a resource). To be renamed `assignedResource` in v4.0.0 (locked in ADR-008; see `docs/v4-design/11-decisions/`).
+- **Load interpolation is conservative-floor:** when a measurement falls between two datasheet rows, always use the shorter (higher-capacity) row — never interpolate linearly. ACME and LongShore load tables match the datasheet rows exactly; lengths beyond the LongShore datasheet surface an "unrated zone" warning requiring explicit team acknowledgment.
+- **T-Shore / Double-T lumber is operator-chosen:** these can be built with 4x4 or 6x6 lumber depending on load and span, so never auto-fill header/footer wood deductions for them. 3-Post auto-fills 6x6 (USACE/FEMA spec).
 
 ## Local Development
 

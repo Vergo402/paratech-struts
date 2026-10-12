@@ -3,6 +3,7 @@ paths:
   - "docs/USER-MANUAL.md"
   - "docs/manual-assets/**"
   - "docs/FieldShore-User-Manual.docx"
+  - ".claude/scripts/build-user-manual-docx.py"
 ---
 
 # User manual — update procedure (path-scoped rule)

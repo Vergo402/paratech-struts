@@ -141,9 +141,9 @@ Alex is a USAR/FEMA firefighter and a tech-savvy power user of decades — from 
 
 ## History & status
 
-### v3.5.2 → v3.22.0 — see `.claude/plans/CONSOLIDATED-STATUS.md`
+### v3.5.2 → v3.22.3 — see `.claude/plans/CONSOLIDATED-STATUS.md`
 
-The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes, v3.18.x hfd217 field feedback + Quick View inventory filter + org-chart title fix, v3.19.x default ICS org-chart restructure, v3.20.0–v3.21.2 external-department equipment plumbing, v3.22.0 inventory integrity + measurement safety. The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0. Per-release detail for v3.5.2 → v3.9.1 is in its Appendix A.
+The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes, v3.18.x hfd217 field feedback + Quick View inventory filter + org-chart title fix, v3.19.x default ICS org-chart restructure, v3.20.0–v3.21.2 external-department equipment plumbing, v3.22.0 inventory integrity + measurement safety, v3.22.1–v3.22.3 strut/base-plate catalog fixes (LockStroke 36–57, Multi-Base plates, phantom LS 812 removed). The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0. Per-release detail for v3.5.2 → v3.9.1 is in its Appendix A.
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 

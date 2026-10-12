@@ -64,6 +64,10 @@ These extensions attach to the solid shaft end of any AcmeThread or LockStroke s
 | LS 610 | 22-796360 | 72" | 116" | 44" |
 | LS 1016 | 22-796390 | 114" | 198" | 84" |
 
+> **No LS 812.** An older fire-trade article listed a sixth 92"–147" size, but Paratech's
+> live site and Product Catalog v.19 both confirm the LongShore line is exactly these five
+> models. The phantom LS 812 was removed from the app catalog in v3.22.3 — do not re-add.
+
 > **Model naming:** The numbers (e.g. "610") represent the approximate range in feet (6-10 ft).
 
 > **LS 812 (92"–147") is NOT a stocked size — do not re-add it to this table.**
