@@ -7,7 +7,7 @@ description: "FieldShore v4 long-design workflow. Loads the v4 redesign plan, th
 
 > Sibling skill to `/plan-release` (which is for v3 release work). This skill is shaped for the months-long v4 redesign with its 10-phase arc, multi-agent dispatch, and gate notification protocol.
 
-The constitution lives at `~/.claude/plans/v4-master-plan.md` — read it first every session. The folder `docs/v4-design/` (on the `v4-redesign` branch) is its execution.
+The constitution is now in-repo (the old `~/.claude/plans/v4-master-plan.md` was purged): context in `docs/v4-design/01-context.md`, principles in `docs/v4-design/02-principles.md`, phase table in `docs/v4-design/00-INDEX.md`, locked decisions as ADRs in `docs/v4-design/11-decisions/`. Read those first every session; the folder `docs/v4-design/` (on the `v4-redesign` branch) is the execution.
 
 ---
 
@@ -15,7 +15,7 @@ The constitution lives at `~/.claude/plans/v4-master-plan.md` — read it first 
 
 Run these in parallel at the very start of every v4 session:
 
-1. **Read the plan:** `~/.claude/plans/v4-master-plan.md` (the constitution).
+1. **Read the constitution:** `docs/v4-design/01-context.md` (context) and `docs/v4-design/02-principles.md` (the principles).
 2. **Read the INDEX:** `docs/v4-design/00-INDEX.md` (current phase status).
 3. **Read the open questions:** `docs/v4-design/99-open-questions.md`.
 4. **Check the branch:** `git rev-parse --abbrev-ref HEAD` — must be `v4-redesign`. If on `main`, switch.
@@ -79,7 +79,7 @@ Alex is never waiting on a gate without knowing it's ready.
 - **Every state-changing session updates the INDEX.** The INDEX is the truth.
 - **Every open question gets resolved or deferred before its phase gate.** No leaks across phases.
 - **Merge v3 patches** (`origin/main`) into `v4-redesign` at session start — never rebase; the branch is published and every push deploys the beta. ~5 min cost; keeps v4 from drifting from v3 reality.
-- **Rename this session's plan file before finishing.** Harness plan-mode files in `~/.claude/plans/` get random names. At session end, rename yours to the descriptive convention (`v4-phase-…`, `v4-issue-…`, `v4-adr-…`), update any references, and append the old→new pair to `.claude/plans/GLOBAL-PLAN-INDEX.md`. Master plan = `v4-master-plan.md`; there is no harness setting for this.
+- **Rename this session's plan file before finishing.** Harness plan-mode files in `~/.claude/plans/` get random names. At session end, rename yours to the descriptive convention (`v4-phase-…`, `v4-issue-…`, `v4-adr-…`), update any references, and append the old→new pair to `.claude/plans/GLOBAL-PLAN-INDEX.md`. The old master plan `v4-master-plan.md` was purged; its in-repo successors are `docs/v4-design/01-context.md`, `02-principles.md` and `00-INDEX.md`. There is no harness setting for plan-file naming.
 
 ---
 

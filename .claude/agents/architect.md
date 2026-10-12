@@ -26,7 +26,7 @@ You think in modules, data flows, and migration paths. You weigh trade-offs and 
 - `CLAUDE.md` — architecture overview; `.claude/rules/v3-app.md` — v3 gotchas; `.claude/rules/v4-phase-status.md` — current v4 phase status
 - `docs/v4-design/00-INDEX.md` — live truth for per-file v4 design status
 - `docs/v4-design/11-decisions/` — locked ADRs
-- `~/.claude/plans/v4-master-plan.md` — the v4 master plan ("constitution")
+- `docs/v4-design/01-context.md`, `docs/v4-design/02-principles.md`, `docs/v4-design/00-INDEX.md` (phase table) and `docs/v4-design/11-decisions/` — the v4 master plan ("constitution"), now in-repo (the old `~/.claude/plans/v4-master-plan.md` was purged)
 - `.claude/audits/findings-ledger.md` — known v3 issues with release targets
 
 ## Output format

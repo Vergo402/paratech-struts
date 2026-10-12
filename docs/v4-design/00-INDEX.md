@@ -1,6 +1,6 @@
 # FieldShore v4 Design Folder Index
 
-> Scannable table of contents. Updated by every commit. The full plan lives at `/Users/alex/.claude/plans/v4-master-plan.md` (outside the repo, so it survives branch churn).
+> Scannable table of contents. Updated by every commit. The master plan ("constitution") now lives in-repo (the old `~/.claude/plans/v4-master-plan.md` was purged): context in `01-context.md`, principles in `02-principles.md`, phases in this file, locked decisions as ADRs in `11-decisions/`.
 
 ---
 
@@ -222,6 +222,7 @@ Text based wireframes initially, optionally Figma later.
 ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 
 - `11-decisions/ADR-041-canonical-event-order-and-derived-inventory.md` 🟢 — **Canonical event order and derived inventory** (#499): every device folds the log in one order keyed by cloud receipt time; peer events append unconditionally and the losing branch is surfaced, never dropped; held stock is derived from the log. Accepted, 2026-10-10.
+- `11-decisions/ADR-042-threat-model-and-tamper-controls.md` 🟡 — **Threat model and tamper controls** (#512, v4.1 track): rules that prevent a Default member from ending the op or seizing command, upload quarantine (amends ADR-041), generated type whitelist and length caps, deviceOwners owner-or-admin, STATE clock clamp, 7-day invite-code expiry, App Check monitor-first. Proposed 2026-10-11; Alex ruled post-v4.0.
 
 ---
 
@@ -240,4 +241,4 @@ ADRs for every committed choice. Template at `11-decisions/ADR-template.md`.
 1. **Real names are allowed under nominative fair use** (the legal doctrine that lets you name a competitor's product when comparing truthfully)**.** Describe behavior, not brand. Never disparage. Cite truth. No trademarked taglines presented as endorsements. See ADR-001. (Previous rule: codenames only, relaxed 2026-05-21.)
 2. **Nothing in here is committed to `main`.** Everything stays on the `v4-redesign` branch until Phase J cutover.
 3. **Every committed decision becomes an ADR.** No silent design changes.
-4. **The plan file (`v4-master-plan.md`) is the constitution.** This folder is its execution.
+4. **The constitution is in-repo** (the old `v4-master-plan.md` was purged): `01-context.md`, `02-principles.md`, this INDEX's phase table, and the ADRs in `11-decisions/`. This folder is its execution.

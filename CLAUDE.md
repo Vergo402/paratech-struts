@@ -71,7 +71,7 @@ When starting work on any GitHub issue (whether via `/plan-release`, `/plan-v4`,
 
 ### Closing issues
 
-- **v4 issues (`v4-redesign` branch):** Close manually with `gh issue close NUMBER --repo Vergo402/paratech-struts` as soon as the work is done. Do NOT rely on `Closes #N` in commit messages — that keyword only fires on merge to the default branch (`main`), and v4 won't merge for a long time.
+- **v4 issues (`v4-redesign` branch):** Close manually with `gh issue close NUMBER --repo Vergo402/paratech-struts` as soon as the work is done. Do NOT rely on `Closes #N` in commit messages — that keyword only fires on merge to the default branch (`main`), and v4 merges to `main` only at the Phase J cutover (#267).
 - **v3 issues (`main` branch):** `Closes #N` in the commit message works correctly on merge to main. Manual close is also fine.
 
 The board Status updates to Done automatically when the issue closes.
@@ -124,51 +124,20 @@ The v4 redesign (`v4-redesign` branch) forked at **v3.19.1**, so every v3 featur
 
 **On every v3 MINOR or MAJOR release**, add/refresh that feature's row in the parity matrix — what shipped, its v4 coverage (Covered / Deferred / Gap / Decided-drop), and the v4 design-doc reference. Same discipline as the user-manual rule above: the release isn't "done" until the matrix reflects it. (PATCH releases: only if they change user-facing behavior the matrix tracks.) This is the concrete instrument behind the Phase J parity gate, [#256](https://github.com/Vergo402/paratech-struts/issues/256).
 
-## Mockup Fidelity in Development (standing rule, 2026-06-22)
+## Conversation style
 
-When Alex accepts a `show_widget` mockup, the built implementation **must match it as
-closely as possible.** If you can't match it directly, find another way to accomplish
-the same design. If something is *genuinely* impossible — treat "impossible" with deep
-skepticism, because nothing ever is — stop and tell Alex what happened plus your
-recommendations; **never silently ship a build that diverges from the accepted mockup.**
-Before calling it done, **verify the built UI against the accepted mockup yourself**
-(drive the preview / screenshot) — do not rely on a sub-agent's self-reported
-screenshots. (Companion to the mockup-first rule in the global CLAUDE.md.)
+The mockup-first rule and the `Alex,` reply opener live in the user-scope `~/.claude/CLAUDE.md`; the plain-language rules live here, in "How We Talk" below.
 
 ## How We Talk — Plain Language for Alex (standing rule, 2026-06-08)
 
-Alex is a firefighter (USAR/FEMA) **and a tech-savvy power user of decades — but from
-the user side, not the engineering/IT-internals side.** Assume full fluency with
-*using* software: apps, phones, files, accounts, syncing, offline, settings. The wall
-is the **under-the-hood engineering jargon** — architecture, data structures, the
-plumbing. Translate only that. Do not explain user-level concepts, do not condescend,
-do not pad. Calibrate the altitude; never dumb it down.
+Alex is a USAR/FEMA firefighter and a tech-savvy power user of decades — from the user side, not the engineering side. He is fluent with *using* software; the wall is under-the-hood engineering jargon (architecture, data structures, plumbing). Translate only that: no condescension, no padding, never dumb it down.
 
-In **conversation** — chat replies, planning discussions, triage and gate write-ups,
-code-review explanations, summaries of what an agent found:
-
-- **Plain first, term in parentheses.** Lead with the meaning, then tuck the
-  engineering term in parens so it's available but never in the way. E.g. "all the
-  cloud-saving code lives in one swappable spot (a 'data/sync seam')."
-- **Give the "so what," not a tutorial.** Say what the thing is and why it matters to
-  the app. Skip the walk-through of concepts he already owns.
-- **Analogies only when they truly fit — and as a one-liner, not a lecture.** Use
-  ICS / shoring / fireground comparisons when the mapping is genuinely strong; skip
-  them when forced. (Strong: a data/sync seam ≈ Operations going through one liaison
-  instead of calling vendors directly — swap the vendor, Ops never knows.)
-- **The glossary is the bridge.** `docs/PLAIN-LANGUAGE-GLOSSARY.md` translates the
-  recurring engineering terms. Point Alex there; add new ones as they come up.
-- **This applies to `AskUserQuestion` too — the question AND every option's label and
-  description (reinforced 2026-06-16).** A multiple-choice question is conversation: if
-  Alex can't decide from the option text because it's full of jargon ("headless auth
-  core", "RBAC", "the seam"), the question failed. Frame each option in plain language —
-  what he'd see or do and why — before offering the choice.
-
-**Scope — conversation only.** This does NOT change how design docs, plans, specs,
-ADRs, commit messages, or code comments are written — those keep their precise
-vocabulary (v4 doc voice is governed by
-`docs/v4-design/07-design-system/voice-and-tone.md`). The job is to pitch our
-back-and-forth at the right altitude, not to dumb anything down.
+- **Plain first, term in parentheses.** Lead with the meaning, then tuck the engineering term in parens (e.g. "all the cloud-saving code lives in one swappable spot (a 'data/sync seam')").
+- **Give the "so what," not a tutorial.** Say what the thing is and why it matters to the app; skip concepts he already owns.
+- **Analogies only when the ICS / shoring / fireground mapping is exact** — one line, not a lecture; skip forced ones.
+- **The glossary is the bridge.** Point Alex to `docs/PLAIN-LANGUAGE-GLOSSARY.md` and add new terms as they come up.
+- **`AskUserQuestion` counts as conversation (2026-06-16).** The question and every option's label and description must be plain language — what he'd see or do and why. If he can't decide from the option text, the question failed.
+- **Scope: conversation only** — chat replies, planning, triage and gate write-ups, review explanations, summaries of agent findings. Design docs, plans, specs, ADRs, commit messages and code comments keep their precise vocabulary (v4 doc voice: `docs/v4-design/07-design-system/voice-and-tone.md`).
 
 ## History & status
 
@@ -179,6 +148,6 @@ The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
 v4 phase status, the locked-ADR summary, the scope/interaction decisions and the original v4.0.0 backlog notes live in `.claude/rules/v4-phase-status.md` — a path-scoped rule that loads itself when you touch `src/`, `docs/v4-design/` or `.claude/audits/phase-j/`; open it first in any v4 planning session.
-Current state: Phase J Stage B — gates #262 and #264 closed; next #265 rollback plan → #263 manual → Stage C #267 → #268.
+Current state (2026-10-12): Phase J — gates #262 and #264 and Stage C #266 closed; open: #265 rollback plan, #263 manual, #267 merge to `main`, #268 tag v4.0.0.
 
 ## Audits — see .claude/audits/AUDIT-INDEX.md (findings ledger, round-2 deep audit, the v3.3.0 audit team roster).
