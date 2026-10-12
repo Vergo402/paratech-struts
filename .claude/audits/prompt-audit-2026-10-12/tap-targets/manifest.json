@@ -1,0 +1,466 @@
+{
+  "shots": [
+    {
+      "id": "1-settings",
+      "title": "Settings (back-office list)",
+      "route": "/settings",
+      "file": "1-settings.png",
+      "counts": {
+        "lt44": 1,
+        "b44": 4,
+        "ge56": 13,
+        "rows": [
+          {
+            "h": 78,
+            "w": 350,
+            "name": "TATap AuditTap Audit FD · Admin",
+            "cls": "ge56"
+          },
+          {
+            "h": 46,
+            "w": 79,
+            "name": "System",
+            "cls": "b44"
+          },
+          {
+            "h": 46,
+            "w": 79,
+            "name": "Light",
+            "cls": "b44"
+          },
+          {
+            "h": 46,
+            "w": 79,
+            "name": "Dark",
+            "cls": "b44"
+          },
+          {
+            "h": 46,
+            "w": 79,
+            "name": "Sunlight",
+            "cls": "b44"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "More appearance settingsNative controls",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "DepartmentProfile, join code, and roster",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "Apparatus typesThe rig types your depart",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "AdministrationUsers, roles, audit log, c",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "Data managementExport, import, and the C",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "Aboutv4.0.0-slice.1 · Updates",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 348,
+            "name": "Help & referenceGuided tours and referen",
+            "cls": "ge56"
+          },
+          {
+            "h": 20,
+            "w": 64,
+            "name": "Hide navigation",
+            "cls": "lt44"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Quick Find",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Operations",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Inventory",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Command",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Settings",
+            "cls": "ge56"
+          }
+        ]
+      }
+    },
+    {
+      "id": "2-settings-administration",
+      "title": "Settings › Administration (checklist editor — the 44px rows)",
+      "route": "/settings/administration",
+      "file": "2-settings-administration.png",
+      "counts": {
+        "lt44": 1,
+        "b44": 4,
+        "ge56": 8,
+        "rows": [
+          {
+            "h": 44,
+            "w": 374,
+            "name": "‹ Settings",
+            "cls": "b44"
+          },
+          {
+            "h": 56,
+            "w": 372,
+            "name": "Users & rolesInvite members, set what ea",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 372,
+            "name": "Audit logIncident and governance record",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 372,
+            "name": "Add custom title",
+            "cls": "ge56"
+          },
+          {
+            "h": 48,
+            "w": 57,
+            "name": "Edit",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 57,
+            "name": "Edit",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 57,
+            "name": "Edit",
+            "cls": "b44"
+          },
+          {
+            "h": 20,
+            "w": 64,
+            "name": "Hide navigation",
+            "cls": "lt44"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Quick Find",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Operations",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Inventory",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Command",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Settings",
+            "cls": "ge56"
+          }
+        ]
+      }
+    },
+    {
+      "id": "3-inventory-import",
+      "title": "Inventory › Import flow (back-office — the 44px \"Change file\")",
+      "route": "/settings/data → Import inventory",
+      "file": "3-inventory-import.png",
+      "counts": {
+        "lt44": 1,
+        "b44": 3,
+        "ge56": 9,
+        "rows": [
+          {
+            "h": 44,
+            "w": 374,
+            "name": "‹ Settings",
+            "cls": "b44"
+          },
+          {
+            "h": 62,
+            "w": 372,
+            "name": "Export inventoryCSV, round-trip safe",
+            "cls": "ge56"
+          },
+          {
+            "h": 63,
+            "w": 372,
+            "name": "Download templateBlank CSV with the expe",
+            "cls": "ge56"
+          },
+          {
+            "h": 63,
+            "w": 372,
+            "name": "Import inventoryFrom CSV or the template",
+            "cls": "ge56"
+          },
+          {
+            "h": 20,
+            "w": 64,
+            "name": "Hide navigation",
+            "cls": "lt44"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Quick Find",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Operations",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Inventory",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Command",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Settings",
+            "cls": "ge56"
+          },
+          {
+            "h": 48,
+            "w": 62,
+            "name": "Cancel",
+            "cls": "b44"
+          },
+          {
+            "h": 44,
+            "w": 66,
+            "name": "Change",
+            "cls": "b44"
+          },
+          {
+            "h": 56,
+            "w": 358,
+            "name": "Continue",
+            "cls": "ge56"
+          }
+        ]
+      }
+    },
+    {
+      "id": "4-operations",
+      "title": "Operations board (fireground — 56px floor)",
+      "route": "/operations",
+      "file": "4-operations.png",
+      "counts": {
+        "lt44": 1,
+        "b44": 13,
+        "ge56": 8,
+        "rows": [
+          {
+            "h": 44,
+            "w": 44,
+            "name": "Edit operation",
+            "cls": "b44"
+          },
+          {
+            "h": 56,
+            "w": 137,
+            "name": "Safety Officer: unassigned — opens Comma",
+            "cls": "ge56"
+          },
+          {
+            "h": 46,
+            "w": 182,
+            "name": "Board",
+            "cls": "b44"
+          },
+          {
+            "h": 46,
+            "w": 182,
+            "name": "Cutting Station",
+            "cls": "b44"
+          },
+          {
+            "h": 52,
+            "w": 159,
+            "name": "+ Add Shore Point",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Pendingskipped — one-step deploy0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Assigned0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Strut Set0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Cutting0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Runner0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Secured0",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 374,
+            "name": "Returned0",
+            "cls": "b44"
+          },
+          {
+            "h": 56,
+            "w": 126,
+            "name": "Begin Briefing",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 125,
+            "name": "End Operation",
+            "cls": "ge56"
+          },
+          {
+            "h": 48,
+            "w": 48,
+            "name": "Open inventory summary",
+            "cls": "b44"
+          },
+          {
+            "h": 48,
+            "w": 48,
+            "name": "Task Level Checklist",
+            "cls": "b44"
+          },
+          {
+            "h": 20,
+            "w": 64,
+            "name": "Hide navigation",
+            "cls": "lt44"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Quick Find",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Operations",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Inventory",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Command",
+            "cls": "ge56"
+          },
+          {
+            "h": 56,
+            "w": 78,
+            "name": "Settings",
+            "cls": "ge56"
+          }
+        ]
+      }
+    }
+  ],
+  "log": [
+    "OK   auth: open",
+    "OK   auth: create account",
+    "OK   dept: create",
+    "OK   dismiss first-run tour",
+    "SHOT 1-settings: <44=1 44–55=4 ≥56=13",
+    "OK   settings index",
+    "SHOT 2-settings-administration: <44=1 44–55=4 ≥56=8",
+    "OK   settings administration (checklist editor)",
+    "SHOT 3-inventory-import: <44=1 44–55=3 ≥56=9",
+    "OK   inventory import flow",
+    "SHOT 4-operations: <44=1 44–55=13 ≥56=8",
+    "OK   operations board"
+  ]
+}

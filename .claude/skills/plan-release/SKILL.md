@@ -336,9 +336,9 @@ Deferred to next release: #N3 (reason)
 
 #### B1. Run `feedback-review` (always)
 
-Invoke `feedback-review` via the Skill tool. No recency check, no soft-gate — every plan-release run starts by draining the Firebase feedback queue. If the queue is empty, the skill returns "No new feedback" in seconds and the cost is negligible. If the queue has items, they get triaged into the unified open-items matrix in B2 instead of being missed.
+Invoke the `feedback-review` skill with the argument `intake-only` via the Skill tool. In that mode it pulls the queue, files issues (Status = Todo) and clears the queue, but writes NO plan file — plan-release's own plan after GATE 1 is the only plan. No recency check, no soft-gate — every plan-release run starts by draining the Firebase feedback queue. If the queue is empty, the skill returns "No new feedback" in seconds and the cost is negligible. If the queue has items, they get triaged into the unified open-items matrix in B2 instead of being missed.
 
-Capture from the skill output: new issues created, plan filename, theme summary. The skill also pushes new items to the Project.
+Capture from the skill output: new issues created, theme summary. The skill also pushes new items to the Project.
 
 If `feedback-review` errors (Firebase auth, etc.), surface verbatim and offer to continue without.
 
@@ -379,10 +379,10 @@ For each in-scope item, the table must show its **current Release field value** 
 ### In scope (N items)
 | # | Issue | Title | Source | Current Release | Agent | Model | Effort | Owner | Action |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | #79 | assignedApparatus keyed object | audit | Backlog | migration-specialist | Opus 4.7 | Extra high | Vergo402 | scope into v{X.Y.Z} |
-| 2 | #107 | external eq return path | audit | v3.17.0 | fullstack-engineer | Sonnet 4.6 | Medium | Vergo402 | already scoped (no change) |
-| 3 | #200 | newly-discovered listener leak | audit | (none — new) | devops-resilience | Sonnet 4.6 | Low | Vergo402 | create issue + scope |
-| 4 | #150 | NIMS cutover prep | feedback | v3.18.0 | nims-compliance + fullstack-engineer | Opus 4.7 1M | Max | Vergo402 | **MOVE FROM v3.18.0** — confirm? |
+| 1 | #79 | assignedApparatus keyed object | audit | Backlog | migration-specialist | Opus | Extra high | Vergo402 | scope into v{X.Y.Z} |
+| 2 | #107 | external eq return path | audit | v3.17.0 | fullstack-engineer | Sonnet | Medium | Vergo402 | already scoped (no change) |
+| 3 | #200 | newly-discovered listener leak | audit | (none — new) | devops-resilience | Sonnet | Low | Vergo402 | create issue + scope |
+| 4 | #150 | NIMS cutover prep | feedback | v3.18.0 | nims-compliance + fullstack-engineer | Opus 1M | Max | Vergo402 | **MOVE FROM v3.18.0** — confirm? |
 
 ### Deferred (M items → v{X.Y+1.0})
 
@@ -519,7 +519,7 @@ Order matters (each step independently reversible until the next runs):
    Plan: .claude/plans/v{VERSION}-{theme}.md
    In scope: {N} items (see Project filter: Release=v{VERSION})
    Assignment: {X} owned by Vergo402, {Y} by …
-   Model mix: {N1} Opus 4.7 1M · {N2} Opus 4.7 · {N3} Sonnet 4.6 · {N4} Haiku 4.5
+   Model mix: {N1} Opus 1M · {N2} Opus · {N3} Sonnet · {N4} Haiku
    Effort mix: {N1} Max · {N2} Extra high · {N3} High · {N4} Medium · {N5} Low
    Review agents (B6): {N} approve, {M} concerns, {K} block
    New agents drafted: {0 or list}
@@ -586,11 +586,13 @@ Option IDs are listed in `.claude/scripts/backfill-project.sh` (or query via `gh
 
 | Model | Option ID |
 |---|---|
-| Opus 4.7 | `3050dd5b` |
-| Opus 4.7 1M | `17993ea2` |
-| Sonnet 4.6 | `1e38b345` |
-| Haiku 4.5 | `1aacd747` |
-| Opus 4.6 Legacy | `1622589c` |
+| Opus | `3050dd5b` |
+| Opus 1M | `17993ea2` |
+| Sonnet | `1e38b345` |
+| Haiku | `1aacd747` |
+| Fable | `37a7ca34` |
+
+Option labels renamed to tier names and `Fable` added on 2026-10-12 (web UI; the four original option IDs are unchanged).
 
 **Effort** (`PVTSSF_lAHODy7CN84BYNd6zhTVXl4`) — mirrors the Claude Code effort picker (Effort menu, ⇧⌘E):
 
@@ -628,11 +630,11 @@ If a review-only persona owns the item (e.g., `nims-compliance` for a doctrine c
 
 | Work shape | Model |
 |---|---|
-| Trivial copy/label/style change, single-line fix, mechanical | `Haiku 4.5` |
-| Standard feature work, well-understood, single-file or small multi-file | `Sonnet 4.6` |
-| Architecture work, multi-file refactor, doctrine cutover, safety-critical math, migrations | `Opus 4.7` |
-| Whole-codebase audits, planning sessions spanning many large files, anything that needs to hold the entire app.js + audits + plans in context | `Opus 4.7 1M` |
-| Avoid by default — only when reproducing pre-4.7 behavior matters | `Opus 4.6 Legacy` |
+| Trivial copy/label/style change, single-line fix, mechanical | `Haiku` |
+| Standard feature work, well-understood, single-file or small multi-file | `Sonnet` |
+| Architecture work, multi-file refactor, doctrine cutover, safety-critical math, migrations | `Opus` |
+| Whole-codebase audits, planning sessions spanning many large files, anything that needs to hold the entire app.js + audits + plans in context | `Opus 1M` |
+| Main-loop work that is never delegated — architecture decisions, gate verification, anything credentials-adjacent (per the global CLAUDE.md "Fable is the architect") | `Fable` |
 
 **Effort** — reasoning-effort tier, matching the Claude Code picker. Pick by the depth of reasoning the work needs, not wall-clock time:
 
@@ -644,7 +646,7 @@ If a review-only persona owns the item (e.g., `nims-compliance` for a doctrine c
 | Paradigm shift, doctrine work, safety-critical math, large surface area | `Extra high` |
 | Release-defining or novel work where depth-of-reasoning trumps cost | `Max` |
 
-Effort doesn't have to match Model. A `Haiku 4.5 · Max` item is a mechanical change where every detail matters; an `Opus 4.7 · Medium` item is a complex domain but routine for that domain.
+Effort doesn't have to match Model. A `Haiku · Max` item is a mechanical change where every detail matters; an `Opus · Medium` item is a complex domain but routine for that domain.
 
 **Assignees (dev team member)** — set via the GitHub Issue, not the Project field directly:
 
@@ -674,7 +676,7 @@ Returns the item ID needed for subsequent `item-edit` calls.
 - **Don't let agent recommendations recurse infinitely.** Cap at depth 1.
 - **Don't duplicate Project state in CONSOLIDATED-STATUS.** Item-level details live in the Project; status doc is narrative only.
 - **Don't ship a Mode-A bug fix without a preview UI driver flow.** Per `feedback_verification_standard`.
-- **Don't leave Agent / Model / Effort / Assignee blank.** Set all four at scope-in (B5 or A5). Blank fields make the Project's filter-by-owner / filter-by-model views useless. If genuinely unknown, default to `fullstack-engineer` / `Sonnet 4.6` / `Medium` / `Vergo402` and revise in B6.
+- **Don't leave Agent / Model / Effort / Assignee blank.** Set all four at scope-in (B5 or A5). Blank fields make the Project's filter-by-owner / filter-by-model views useless. If genuinely unknown, default to `fullstack-engineer` / `Sonnet` / `Medium` / `Vergo402` and revise in B6.
 - **Don't leave Status as Todo once work begins.** Set to In Progress at scope-in (plan mode B5) or execution start (ship-bugs mode A3). Items sitting at Todo while being actively worked look stale on the board.
 
 ---

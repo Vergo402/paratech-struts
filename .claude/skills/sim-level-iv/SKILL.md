@@ -353,7 +353,7 @@ Post Critical/High/Medium Pitfalls as GitHub issues with `[SIM-IV]` prefix and `
 ## Anti-patterns
 
 - **DO NOT** write directly to Firebase, localStorage, or sessionStorage.
-- **DO NOT** use `preview_eval` to execute app functions. Participants use `preview_click` and `preview_fill` only.
+- **DO NOT** use `preview_eval` to execute app functions or touch storage. Participants use `preview_click` and `preview_fill` only — with exactly one page-level exception: `location.assign('/<tab>')` to switch tabs, because the tab bar is a router link the preview tools can't click (see the moderator gotchas above).
 - **DO NOT** skip the command transfer at E+0:12. Testing role transition is a primary goal.
 - **DO NOT** skip the T-Shore group creation. Testing grouped shore types is a primary goal.
 - **DO NOT** force all T-Shore group members through cutting phase together. Individual advancement is the expected behavior; if the app does it differently, that's a finding.

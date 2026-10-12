@@ -5,6 +5,8 @@ description: "Run the FEMA Level I structural collapse simulation — Surfside-s
 
 # Level I Simulation — Surfside TTX-2 (Federal-Scale Collapse)
 
+> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263. Level I additionally needs a v4-format CSV built from the Surfside inventory data.
+
 Wraps the existing `.claude/simulations/surfside-ttx-2/` pre-event package as an invokable skill. This is the maximum-stress test: 250 shore points, 494 personnel at peak, 4 operational periods across 36 hours, 3 federal USAR task forces, unified command, full ICS General Staff with all sections, and the complete IST workflow. Targets every app surface simultaneously — rendering, sync, auth, NIMS compliance, command structure, inventory management, and operational workflow at a scale that breaks everything that can break.
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. Based on general structural collapse response patterns. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.

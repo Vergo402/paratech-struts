@@ -1,11 +1,43 @@
 ---
 name: feedback-review
-description: "Pull feedback from Firebase, create GitHub issues, clear transferred entries, and draft a fix plan. Use this skill whenever Alex says 'review feedback', 'feedback review', 'check feedback', 'triage feedback', or '/feedbackreview'."
+description: "Pull feedback from Firebase, create GitHub issues, clear transferred entries, and draft a fix plan. Use this skill whenever Alex says 'review feedback', 'feedback review', 'check feedback', 'triage feedback', or '/feedbackreview'. Branch-aware: v3 project + board on main, v4 project + board on v4-redesign."
 ---
 
 # Feedback Review Pipeline
 
 Pull feedback from Firebase, transfer each entry to a GitHub issue, delete transferred entries from Firebase, and draft a versioned fix plan.
+
+> **Intake-only mode:** when invoked with the argument `intake-only` (`/plan-release` step B1 passes it), run Phases 1, 2, 3 and 5 and skip Phase 4 entirely — no plan file is written, and the Phase 5 report omits the "Plan saved to", "Target version" and "What's in the plan" lines.
+
+---
+
+## Branch selection (follow the branch)
+
+The first step of Phase 1 is to read the current branch:
+
+```bash
+git branch --show-current
+```
+
+Set these variables from the result; every Firebase and board command below uses them:
+
+| Branch | `$FB_PROJECT` | Board (`$BOARD`) | `$PROJECT_ID` | `$STATUS_FIELD` | `$TODO_OPT` |
+|---|---|---|---|---|---|
+| `main` (the `fieldshore-main/` worktree) | `paratech-c3ab4` | FieldShore Roadmap (`1`) | `PVT_kwHODy7CN84BYNd6` | `PVTSSF_lAHODy7CN84BYNd6zhTU44c` | `f75ad846` |
+| `v4-redesign` | `fieldshore-database` | v4 Redesign Roadmap (`2`) | `PVT_kwHODy7CN84BYV37` | `PVTSSF_lAHODy7CN84BYV37zhTcaGE` | `f75ad846` |
+
+```bash
+# main
+FB_PROJECT=paratech-c3ab4; BOARD=1; PROJECT_ID=PVT_kwHODy7CN84BYNd6
+STATUS_FIELD=PVTSSF_lAHODy7CN84BYNd6zhTU44c; TODO_OPT=f75ad846
+# v4-redesign
+FB_PROJECT=fieldshore-database; BOARD=2; PROJECT_ID=PVT_kwHODy7CN84BYV37
+STATUS_FIELD=PVTSSF_lAHODy7CN84BYV37zhTcaGE; TODO_OPT=f75ad846
+PARENT=<number of the current Phase J parent issue on board #2 — ask Alex if unclear>
+```
+
+- On `v4-redesign`, v4 writes `/feedback` to the `fieldshore-database` project (`src/data/feedback/feedbackService.ts`), and every new issue is also added as a sub-issue of the current Phase J parent (`$PARENT`) — never left standalone (CLAUDE.md).
+- On any other branch, stop and ask Alex which app's feedback queue to review.
 
 ---
 
@@ -14,7 +46,7 @@ Pull feedback from Firebase, transfer each entry to a GitHub issue, delete trans
 ### Fetch from Firebase (authenticated)
 
 ```bash
-firebase database:get /feedback --project paratech-c3ab4
+firebase database:get /feedback --project $FB_PROJECT
 ```
 
 The REST endpoint requires auth — always use the Firebase CLI (logged in locally).
@@ -77,17 +109,26 @@ EOF
 
 ### Add every new issue to the roadmap board
 
-Creating the issue is not enough — it must be logged on the **FieldShore Roadmap** board (#1)
-or it goes untracked.
+Creating the issue is not enough — it must be logged on the branch's board (`$BOARD`: FieldShore Roadmap #1 on
+`main`, v4 Redesign Roadmap #2 on `v4-redesign`) or it goes untracked.
 For each issue created above, using the captured `$url`:
 
 ```bash
-item=$(gh project item-add 1 --owner Vergo402 --url "$url" --format json | jq -r '.id')
-PROJ=PVT_kwHODy7CN84BYNd6
-gh project item-edit --id "$item" --project-id $PROJ \
-  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5G0 --single-select-option-id a3d8760a   # Source = feedback
-gh project item-edit --id "$item" --project-id $PROJ \
-  --field-id PVTSSF_lAHODy7CN84BYNd6zhTU44c --single-select-option-id f75ad846   # Status = Todo
+item=$(gh project item-add $BOARD --owner Vergo402 --url "$url" --format json | jq -r '.id')
+if [ "$BOARD" = 1 ]; then   # Source field exists on board #1 (main) only
+  gh project item-edit --id "$item" --project-id $PROJECT_ID \
+    --field-id PVTSSF_lAHODy7CN84BYNd6zhTU5G0 --single-select-option-id a3d8760a   # Source = feedback
+fi
+gh project item-edit --id "$item" --project-id $PROJECT_ID \
+  --field-id $STATUS_FIELD --single-select-option-id $TODO_OPT   # Status = Todo
+
+# v4-redesign only: nest under the current Phase J parent (native sub-issue link — required by CLAUDE.md)
+if [ "$BOARD" = 2 ]; then
+  NEW=$(echo "$url" | grep -oE '[0-9]+$')
+  PID=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){id}}}' -F o=Vergo402 -F r=paratech-struts -F n=$PARENT --jq '.data.repository.issue.id')
+  CID=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){id}}}' -F o=Vergo402 -F r=paratech-struts -F n=$NEW --jq '.data.repository.issue.id')
+  gh api graphql -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p, subIssueId:$c}){issue{number}}}' -F p=$PID -F c=$CID >/dev/null
+fi
 ```
 
 Set **Status = Todo** here; `/plan-release` flips it to In Progress at scope-in and Status → Done auto-syncs on
@@ -112,7 +153,7 @@ After creating issues, show what was created:
 Delete all transferred entries from Firebase in a single batch update. Keep any entries that failed to create as issues.
 
 ```bash
-firebase database:update --force --project paratech-c3ab4 /feedback \
+firebase database:update --force --project $FB_PROJECT /feedback \
   --data '{ "-entryKey1": null, "-entryKey2": null }'
 ```
 
@@ -124,7 +165,11 @@ Confirm to Alex: "Cleared X entries from Firebase feedback queue."
 
 ## Phase 4: Draft Fix Plan
 
+> **Intake-only mode:** if the skill was invoked with `intake-only`, skip this phase entirely — write no plan file and go straight to Phase 5.
+
 ### Determine the version number
+
+On `main` only — on `v4-redesign` there is no version bump: the plan targets `src/` and says so.
 
 - Read the current version from `sw.js` (the `CACHE_NAME` line)
 - **PATCH** bump (x.x.+1) if all items are bug fixes

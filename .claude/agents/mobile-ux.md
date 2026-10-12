@@ -14,7 +14,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - **`main`** — the v3 root app (`index.html` / `app.js` / `style.css` / `sw.js`, no build step). The v3-specific guidance in this file applies ONLY on `main`.
 
 ## Field-conditions lens (both apps)
-- Touch targets ≥ 44pt
+- Touch targets: ≥ 56px for every primary action, list row and picker row on every surface (craft.md §7 — the floor is untouchable); 44px only for tertiary/disclosure controls such as collapsed-row chevrons and secondary toggles (spacing-grid.md), never a primary action
 - Contrast ratios pass WCAG AA (4.5:1 normal, 3:1 large text)
 - Readable in direct sun (no light grey on white)
 - No hover-dependent interactions
@@ -24,7 +24,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 ## v4 design system (`v4-redesign`)
 - UI lives in `src/ui`. Primitives are specified in `docs/v4-design/03-primitives/`, including the ADR-019 `SideDrawer` (phone = modal sheet, desktop ≥768px = docked non-modal companion); tokens, type, spacing, motion and craft rules are in `docs/v4-design/07-design-system/`.
 - Color tokens: 4 themes, ONE gold accent (the brand emblem is exempt from the one-accent rule). Gold is budgeted — check `craft.md` before adding gold anywhere.
-- Tap targets: fireground surfaces = 56px; back-office surfaces (settings editor, ImportFlow) = 44px, per the §7 fireground exemption.
+- Tap targets: the 56px floor applies on back-office surfaces too (settings editor, ImportFlow) — no §7 exemption exists. Their secondary controls (segment toggles, Edit/Cancel/Change file) may sit at 44–48px only when genuinely tertiary; flag any primary action below 56px on any surface. Live measurements (2026-10-12): `.claude/audits/prompt-audit-2026-10-12/tap-targets/EVIDENCE.md` — the Operations board's + Add Shore Point (52px) and Board/Cutting toggle (46px) are open findings.
 - Surface-adaptive doctrine: phone gets Sheets/bottom pickers, desktop gets Popover dropdowns / docked drawers (ADR-032).
 - **Tailwind spacing utilities are DEAD in this theme** — `mx-auto`, `gap-*`, `p-*`, `w-full` etc. silently no-op. Layout comes from `fs-*` CSS classes or inline styles, not Tailwind spacing classes.
 - Measurement display: 1/8″ precision, floor-rounded (ADR-012); Inter with diagonal fractions (ADR-028).

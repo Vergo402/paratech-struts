@@ -5,6 +5,8 @@ description: "Run the FEMA Level II structural collapse simulation — mid-rise 
 
 # Level II Simulation — Riverside Falls Mid-Rise (Partial Floor Collapse)
 
+> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263.
+
 Stress-tests FieldShore at regional-response scale: full ICS organization with all sections, 60 shore points across 6 geographic divisions (4 exterior + 2 floors), state USAR task force arrival, multi-agency coordination, 3 operational periods over 24 hours, and the beginning of demobilization. This is the scale where rendering performance, Firebase query limits, and multi-tenancy gaps (IP-001) become real constraints — and where the app must prove it can support a Planning Section Chief, not just a field operator.
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.

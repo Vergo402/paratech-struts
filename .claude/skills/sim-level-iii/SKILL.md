@@ -5,6 +5,8 @@ description: "Run the FEMA Level III structural collapse simulation — warehous
 
 # Level III Simulation — Meadowville Warehouse (Roof Pancake)
 
+> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263.
+
 Stress-tests FieldShore at extended-attack scale: command transfer, OP period transition, concurrent multi-agent writes, LongShore struts with unrated-zone warnings, and 25 shore points across 3 geographic divisions. This is where the app must prove it can handle a real multi-hour collapse operation with rotating leadership and mutual aid — the threshold between "working fire" and "campaign incident."
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.

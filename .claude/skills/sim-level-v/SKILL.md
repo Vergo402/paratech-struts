@@ -5,6 +5,8 @@ description: "Run the FEMA Level V structural collapse simulation — car into r
 
 # Level V Simulation — Verplanck Residential (Car Into Building)
 
+> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263.
+
 Stress-tests FieldShore at the smallest operational scale: one engine company, one IC, 3 shore points, single operational period. This is the baseline — if the app can't handle a single-company response cleanly, nothing else matters. Targets: basic SP creation/lifecycle, Quick Find → deploy flow, empty state handling, offline resilience, and inventory deduction at minimal scale.
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.
