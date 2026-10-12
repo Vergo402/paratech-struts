@@ -25,7 +25,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - **Firebase listener first-fire guard** — don't wipe local on empty snapshot.
 - **Bottom-sheet / plate picker** — moves to `document.body` to escape modal stacking context.
 - **Group transitions** — pre-cutting transitions apply group-wide via `getGroupMembers()`; cutting workflow (cutting → runner → secured → returned) is per-card.
-- Key references: `CLAUDE.md` Known Patterns & Gotchas · `.claude/audits/findings-ledger.md` · `.claude/plans/MASTER-PLAN.md`
+- Key references: `.claude/rules/v3-app.md` (Known Patterns & Gotchas; loads when you touch the v3 root files) · `.claude/audits/findings-ledger.md` · `.claude/plans/MASTER-PLAN.md`
 
 ## v4 patterns (`v4-redesign`)
 - Layout: `src/core` = pure logic (load tables, reducers, schema) · `src/data` = store + data/sync seam · `src/ui` = components by feature · `src/app` = shell + routes.

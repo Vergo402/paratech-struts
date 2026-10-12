@@ -136,3 +136,112 @@ Plan: [v4.0.0-plan.md](v4.0.0-plan.md) (canonical for v4.0 scope per MASTER-PLAN
 - `_review-to-delete/` — nuke once Alex confirms
 - `git worktree prune` — clean stale refs locally
 - CLAUDE.md line-number drift — version label says `~line 60`; actual is line 74. Refresh on next docs pass
+
+---
+
+## Appendix A — v3.5.2 → v3.9.1 per-release detail (moved from CLAUDE.md 2026-10-12)
+
+## v3.5.2 hotfix (2026-05-14) — what shipped
+
+The Round 2 audit identified ~100 unique issues catalogued in `.claude/audits/`. The v3.5.2 hotfix shipped 17 commits addressing safety-critical, data-integrity, security, and accessibility findings. Remaining items are staged for v3.5.3 / v3.6.0 / v4.0.0.
+
+### ✅ Fixed in v3.5.2
+
+| ID | Area | Notes |
+|---|---|---|
+| **S2/S3** | ACME load table | All 11 rows now match Paratech O&M Manual Table 2-7 exactly. 132" (11 ft) was over-reporting by 17% via interpolation cliff; 24" was over-reporting by 8.75%. See header comment on `ACME_LOAD_TABLE`. |
+| **S1** | Double-deduction in pending re-validation | `findStrutCombinations` now receives `sp.requiredLength` (raw) instead of `sp.effectiveLength` (already deducted). Cache key includes deduction hash. |
+| **S4** | sessionStorage parse guard | Top-level `JSON.parse(orgCollapsed)` is now try/catch wrapped and `Array.isArray()` validated. Corrupt or non-array values no longer halt module init. |
+| **S5** | endOperation online localStorage cleanup | Online branch now mirrors offline: `activeOperation = null` + localStorage removal + render. |
+| **S7** | Firebase listener first-fire guard | inventory/apparatus/customApparatusTypes listeners no longer wipe local data when the first snapshot is empty. Pushes local up to Firebase instead. |
+| **S8** (partial) | confirmAddApparatus + updateShoreStatus optimistic | Both now apply local-first then Firebase. `deployShorePoint` + `returnEquipment` family still pending for v3.5.3 (complex multi-resource transactions). |
+| **X1** | Drilldown XSS | Building, division, area, group fields all `escapeAttr()` in onclick + `escapeHtml()` in label. |
+| **X2** | Inventory model XSS | renderInventory + Quick View + external equipment list all escape user-controlled fields. |
+| **X3** | Command Layout onclick XSS | Inline JS construction replaced with data-attribute handler (`commandLayoutClick(this)`). |
+| **A2** | Cutting/Runner badge contrast (light mode) | `--cutting-text` 6.76:1 and `--runner-text` 5.56:1 — both pass WCAG AA. Dark mode contrast already passes (no change needed). |
+| **NEW-2** | LongShore load table | All 11 rows now match the Paratech LongShore datasheet (Dec 2019) exactly. 13 ft was over-reporting by 17.9%; 14 ft by 8.3%; 15 ft by 5.6%. Lengths < 6 ft (72") removed (not in datasheet). Lengths > 16 ft surface a deployable "unrated zone" warning that requires explicit team acknowledgment. |
+| **NEW-3** | qty>4 sentinel | Instead of silent rejection, surface an explicit informational warning when load exceeds 4-strut capacity at the given length. |
+| **NEW-6** | Excel ID preservation | Export now includes an `ID` column; import reads it through so round-trips don't orphan deployed-strut references. |
+| **NEW-7** | Inventory return transaction sanity | Transaction handlers now abort on missing nodes (no phantom-item creation) and clamp `available` to `quantity` (no over-increment). |
+
+### ✅ Fixed in v3.5.3
+
+| ID | Area | Notes |
+|---|---|---|
+| **S6 / NEW-8** | Local-first write architecture | Eliminated the `if (db) { firebase } else { localStorage }` fork across all 44 mutation sites. Every write is now local-first + conditional Firebase sync. |
+| **S8 family** | deployShorePoint + returnEquipment | Local inventory decrements/increments now unconditional for all item types (struts, extensions, plates, external equipment). |
+| — | persistOperation / persistInventory | Centralized 24 operation and 10 inventory `safeSetItem` copy-pastes into two functions. |
+
+### ✅ Fixed in v3.6.0
+
+| ID | Area | Notes |
+|---|---|---|
+| **R1** | Listener leak | `teardownListeners()` detaches all `.on()` listeners before `setupListeners()` reattaches. Stored query refs (`activeOpsQuery`, `archivedOpsQuery`) and promoted `customTypesRef` to module scope. |
+| **R3** | orgSwapRoles concurrent safety | Uses granular `update()` on changed keys instead of full-subtree `set()` on `roles` object. |
+| — | Accessibility | 23 interactive `<div onclick>` / `<span onclick>` patterns now have `role="button"` + `tabindex="0"`. Delegated keyboard handler for Enter/Space. Section toggles gained `tabindex="0"`. |
+| — | Performance | `getApparatusName()` builds a `Map` on first call per render cycle — O(1) lookups instead of O(n) `find()` in loops. |
+| — | Wedge deduction | Verified correct — two formulas are intentionally different. Strut search deducts plates (part of strut assembly); cut length deducts wedge (wood replaces strut+plates). Not a bug. |
+
+### ✅ Fixed in v3.7.0
+
+| Feature | Notes |
+|---|---|
+| **Firebase Anonymous Auth** | Added `firebase-auth-compat.js` SDK + `signInAnonymously()` on init. Auth-aware `setupListeners()` waits for `onAuthStateChanged` + `getIdToken` before attaching realtime listeners. |
+| **Database security rules** | All reads/writes require `auth != null`. Data validation on departments, inventory, apparatus, operations, feedback. `.indexOn` for operations status queries. Rules deployed via Firebase CLI (`database.rules.json`). |
+| **Feedback photo attachment (#60)** | Camera/gallery file picker in feedback modal. Client-side compression (800×600 max, JPEG 0.6, base64). 5MB input limit, 500KB output limit enforced by database rules. |
+| **Status dot key** | Green/amber legend below ICS Organization header showing Active vs Staged meaning. |
+
+### ✅ Fixed in v3.7.2
+
+| Feature | Notes |
+|---|---|
+| **Safety-critical load interpolation** | Replaced linear interpolation with conservative-floor method — always uses the shorter (higher-capacity) datasheet row when a measurement falls between two rows. Prevents over-reporting safe load. |
+| **Liability disclaimer** | Added disclaimer on strut results: capacity figures are planning aids, not engineering certifications. |
+
+### ✅ Fixed in v3.7.3
+
+| Feature | Notes |
+|---|---|
+| **Empty state clarity** | When inventory lacks a fitting strut, the results area now shows a clear "No matching struts found" message with guidance, instead of a blank screen. |
+
+### ✅ Fixed in v3.8.0
+
+| Feature | Notes |
+|---|---|
+| **Inventory display refresh (#64)** | Added `renderInventory()` after `persistInventory()` in `deployShorePoint()` and `returnEquipment()`. Inventory tab now updates immediately after deploying or returning equipment. |
+| **Individual wood cut tracking (#65)** | Phase-based group/individual split. Pre-cutting transitions remain group-wide; cutting workflow (cutting → runner → secured → returned) operates per-card. `markCutDone()`, `sendToRunner()`, `returnEquipment()` all rewritten from group to individual. |
+
+### ✅ Fixed in v3.8.1
+
+| Feature | Notes |
+|---|---|
+| **Sync diagnostics — error capture** | `flushPendingWrites()` now captures `err.message` on failed writes and includes up to 5 error details in `logSyncEvent('flush')`. `firebaseSave()` queued writes also store `lastError`. Deployed `/diagnostics/sync/` security rules. |
+
+### ✅ Fixed in v3.8.2
+
+| Feature | Notes |
+|---|---|
+| **Firebase inventory validate rule field mismatch** | `database.rules.json` validate rule required `name` field but inventory items use `model`. Every inventory write since v3.7.0 had silently failed validation with `PERMISSION_DENIED`. Rule corrected and deployed. `APP_VERSION` promoted to module-level constant. Pending writes from older versions now discarded via version filter. Transaction failures logged to `/diagnostics/sync/` via `logSyncEvent('transaction_failed')`. |
+
+### ✅ Fixed in v3.8.3
+
+| Feature | Notes |
+|---|---|
+| **Audit v3.8.2 quick wins** | 13 quick wins from the v3.8.2 full audit action plan. XSS attribute escaping (3 sites in apparatus rename + group dropdown), `g.type` escape in group label, `sessionStorage.setItem` in try/catch, case-insensitive `normalizeStatus`, `\|\| 0` guard on external equipment available decrement, missing `renderInventory()` calls after deploy/return/end, empty-name error toast in `confirmStartOp`, random suffix on deploy `groupId`, clear `myRoleName` on role-clear, read `deptName` from settings on feedback submission, close feedback modal in no-db branch, reset `opMultiBuilding` checkbox in `confirmStartOp`, guard undefined interpolations in `renderShorePointCards`. |
+
+### ✅ Fixed in v3.9.0
+
+| Feature | Notes |
+|---|---|
+| **Status-progression guard (F-1C-1)** | `updateShoreStatus()` uses `STATUS_ORDER` to skip group members already past the target status. Pre-cutting transitions (Send Back / Strut Placed / Cutting) no longer regress group-mates that have already advanced into cutting/runner/secured. |
+| **Excel import — extensions and plates (F-1D-2)** | Extension items now include `model: ''` to pass the v3.8.2 validate rule. Added plate import via new `Plate ID` column. Excel imports no longer silently lose extension and plate rows. |
+| **Orphan role assignment sync (F-1D-1)** | `removeCustomRole()` syncs cleared role assignments to Firebase via granular `update({ targetId: null })`. Listener no longer re-hydrates stale assignments to deleted roles. |
+| **Apparatus group ID hardening (F-1C-9b)** | `confirmCreateGroup()` `gid` now `'grp-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)` — prevents same-ms collisions across devices. |
+| **Subresource Integrity (F-5A-6)** | Firebase SDK (3 scripts) and SheetJS pinned with SHA-384 `integrity` + `crossorigin="anonymous"`. Compromised CDN can no longer substitute malicious JS. SheetJS SRI added to dynamic loader in `loadXLSX()`. |
+| **Shore-point peer-XSS hardening (F-1C-19)** | `renderShorePointCards()` and `viewArchivedOp()` now `escapeHtml()` `sp.deployedStrut.model` and coerce `ext.length` via `Number()`. Closes stored-XSS from peer write to Firebase shore-point data. |
+
+### ✅ Fixed in v3.9.1
+
+| Feature | Notes |
+|---|---|
+| **Revert F-1A-11 deduction auto-fill** | v3.9.0 auto-populated header/footer wood deductions for all shore types, defaulting T-Shore and Double-T to 4x4 (3.5"). That was wrong — T-Shore and Double-T can be built with either 4x4 or 6x6 lumber depending on load and span; operator must make explicit choice. 3-Post still auto-fills 6x6 (USACE/FEMA spec). |

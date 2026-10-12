@@ -132,3 +132,38 @@ Everything else.
 3. **Reference individual specialty audits** (in `v3.5.1-deep-audit-round2.md`) for deep technical analysis on a specific topic.
 
 When in doubt: severity ratings drive priority, but **the strut algorithm fix is the only one with a direct line from "app says it's OK" to "rescuer dies."** That fix ships first, period.
+
+---
+
+## Moved from CLAUDE.md (2026-10-12)
+
+## Audit references
+
+Comprehensive audit complete on v3.5.1. See:
+- `.claude/audits/AUDIT-INDEX.md` — Top-level entry point
+- `.claude/audits/findings-ledger.md` — Every finding catalogued (~100 unique issues)
+- `.claude/audits/v3.5.1-deep-audit-round2.md` — Round 2 deep findings
+- `.claude/audits/v3.5.1-comprehensive-audit.md` — Round 1 (with caveats — see Round 2 corrections)
+- `.claude/audits/interactive-findings.md` — Live findings from driving app at Surfside scale
+
+Implementation:
+- `.claude/plans/MASTER-PLAN.md` — Comprehensive multi-release plan covering all findings
+- `.claude/plans/v3.5.2-safety-hotfix.md` — Minimum-viable safety hotfix
+- `.claude/plans/v3.6.0-comprehensive-audit-fixes.md` — Round 1 plan (superseded by MASTER-PLAN)
+
+---
+
+## Production Audit Team (v3.3.0)
+
+Role-based Claude sessions for the 6-pass production-readiness audit:
+
+| Role | Model | Passes |
+|------|-------|--------|
+| Senior Full-Stack Engineer | Opus | 1 (Function & Logic), 2 (Architecture), 5 (Perf & Security) |
+| Skeptical Senior Engineer | Opus | Adversarial review — pushes back on necessity, complexity, hidden costs, scope creep across all passes |
+| Mobile/Frontend Engineer | Sonnet | 3 (UX Polish) |
+| UX/Product Person | Sonnet | 4 (Accessibility) |
+| Structural Collapse SME | Haiku | QA review — domain logic across all passes |
+| DevOps/Backend Engineer | Opus | 5 (Perf & Security), 6 (Resilience) |
+
+Passes execute sequentially (1→2→3→4→5→6). Each pass produces refactored code + changelog entry. Skeptical Senior Engineer runs cross-cutting across all passes as an adversarial counterweight.

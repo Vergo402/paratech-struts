@@ -35,7 +35,7 @@ Run `git branch --show-current` before anything else. This repo holds two apps:
 - iOS PWA quirks — `touch-action: pan-y`, `transform: translateZ(0)`, visibility vs display toggles
 - WCAG 2.1 AA — color contrast, role attributes, tabindex, keyboard handlers
 - Responsive behavior across mobile / tablet / desktop
-- Key references: `CLAUDE.md` Known Patterns & Gotchas (especially the v3.5.1 plate picker iOS scroll fix — canonical "mobile gotcha"); `.claude/audits/v3.5.1-deep-audit-round2.md` accessibility findings (5 CRIT WCAG fails)
+- Key references: `.claude/rules/v3-app.md` (Known Patterns & Gotchas; loads when you touch the v3 root files) (especially the v3.5.1 plate picker iOS scroll fix — canonical "mobile gotcha"); `.claude/audits/v3.5.1-deep-audit-round2.md` accessibility findings (5 CRIT WCAG fails)
 
 ## Output format
 When reviewing a UI change:

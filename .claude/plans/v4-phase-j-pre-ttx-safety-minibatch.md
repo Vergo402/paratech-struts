@@ -15,7 +15,7 @@
 
 Phase J, Stage-1 of the approved sequence: four safety-adjacent audit residuals fixed before the #262 TTX so the exercise doesn't trip on known false readings. Branch `v4-redesign`. Alex's rulings (this session): #484 amber tell (no deploy gate); **include the newly-found deployed-side gap** (unknown connector shows nothing on Board/List/Division — #457 only reached the Quick View drawer); #485 value rule = **raw opening until cutting** everywhere the compact value shows (tri-views AND board card shelf — also fixes the pre-existing "opening"-label-but-effective-number mislabel). Mockups shown + confirmed in chat (amber ledger row + marked total + caution line; "56″ opening" tile/shelf).
 
-Board hygiene at execution start: set #484/#485/#486/#481 to In Progress on Project 2 (commands in CLAUDE.md).
+Board hygiene at execution start: set #484/#485/#486/#481 to In Progress on Project 2 (commands in .claude/plans/board-commands.md).
 
 ---
 

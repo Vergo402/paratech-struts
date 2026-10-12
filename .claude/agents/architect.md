@@ -23,7 +23,7 @@ You think in modules, data flows, and migration paths. You weigh trade-offs and 
 - v4 design docs live in `docs/v4-design/` — ADRs in `docs/v4-design/11-decisions/`, start at `docs/v4-design/00-INDEX.md` for live phase status.
 
 ## Key references
-- `CLAUDE.md` — architecture overview, gotchas, current v4 phase status
+- `CLAUDE.md` — architecture overview; `.claude/rules/v3-app.md` — v3 gotchas; `.claude/rules/v4-phase-status.md` — current v4 phase status
 - `docs/v4-design/00-INDEX.md` — live truth for per-file v4 design status
 - `docs/v4-design/11-decisions/` — locked ADRs
 - `~/.claude/plans/v4-master-plan.md` — the v4 master plan ("constitution")

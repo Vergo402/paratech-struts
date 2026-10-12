@@ -53,7 +53,7 @@ This is the source of truth for tracked items. Returns items with fields: `Statu
 ### Read behavioral context (both modes)
 
 ```bash
-cat CLAUDE.md
+cat CLAUDE.md .claude/rules/v3-app.md 2>/dev/null
 # Derive the per-project memory dir from the repo's current absolute path —
 # Claude Code names it by replacing every "/" in the repo path with "-".
 # This keeps working if the repo is moved/renamed (see the May-2026 path
@@ -69,9 +69,9 @@ slug changed — list `~/.claude/projects/` for the directory whose name matches
 the current repo path, or re-point/re-create it there.
 
 Extract for the rest of the session:
-- **Release checklist** (CLAUDE.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
-- **Architecture gotchas** (CLAUDE.md) — CSS stacking, plate picker, Firebase + SW, local-first writes, escapeHtml/escapeAttr
-- **Terminology rules** (CLAUDE.md) — Footer/Sole Plate/Header/Group conventions
+- **Release checklist** (CLAUDE.md; manual-update steps in .claude/rules/user-manual.md) — 3-place version bump; user-manual rule for MINOR/MAJOR updates **both** `docs/USER-MANUAL.md` AND `docs/FieldStruts-User-Manual.docx` (rebuild via `.claude/scripts/build-user-manual-docx.py` + refresh `docs/manual-assets/` screenshots), covering the whole release not just the headline feature; NO manual update for PATCH
+- **Architecture gotchas** (.claude/rules/v3-app.md) — CSS stacking, plate picker, Firebase + SW, local-first writes, escapeHtml/escapeAttr
+- **Terminology rules** (.claude/rules/v3-app.md) — Footer/Sole Plate/Header/Group conventions
 - **Code-quality** (`feedback_code_quality.md`) — lead with structural fix, not patch
 - **Safety defaults** (`feedback_safety_defaults.md`) — ask before changing auto-fills
 - **Verification standard** (`feedback_verification_standard.md`) — drive real preview UI
