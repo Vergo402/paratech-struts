@@ -1,0 +1,4 @@
+# Stepper-to-zero test on the emulator redo department (8a20b42b-4f60-4590-bcdd-bf18d1288407): Eng 169 AT 25-36 stepped 2 → 1 → 0 in the UI
+keys 32 live 31 units 210 tombstones 1
+tombstone: inv-88348203-8ac9-4553-aec8-41c283cb928b {'deleted': True, 'id': 'inv-88348203-8ac9-4553-aec8-41c283cb928b', 'lastWriteAt': 1791769935552}
+Eng 169 AT 25-36 live rows: []

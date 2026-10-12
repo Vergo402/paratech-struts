@@ -1,0 +1,2 @@
+# R0b — deployed rules on fieldshore-database vs database.rules.json (key-sorted), captured 2026-10-11T23:27:41Z before the import
+IDENTICAL — sha256(key-sorted) live d04d1dcb582d7c7b… == repo d04d1dcb582d7c7b…; database.rules.json last touched in 3005e74 (2026-10-10); the emulator loads this same file (firebase.json)

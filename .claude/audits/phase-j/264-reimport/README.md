@@ -45,7 +45,8 @@ The emulators are in memory. Do the emulator run in one sitting.
 | `README.md`, `REPORT.md` | This runbook and the gate report. | Yes |
 | `evidence/*.json`, `evidence/v3-freshness.txt` | Convert counts, emulator snapshots and rollback rehearsal, beta snapshots, and the R1 freshness diff. No PII: the v3 live reads stay in `fixtures/`; only the diff result is committed. | Yes |
 | `NN-<step>.jpg` | Screenshots in run order. Alex's result-line screenshot starts with `10-`. | Yes |
-| `hfd217-inventory.csv` | The v4 import file. The root `*.csv` ignore rule keeps it out of git; `evidence/convert.json` records its counts and sha256. | No (ignored) |
+| `hfd217-inventory.csv` | The v4 import file with v3's rig names (Eng 169 / Eng 170 / Res 56) — the emulator-proven artifact. The root `*.csv` ignore rule keeps it out of git; `evidence/convert.json` records its counts and sha256. | No (ignored) |
+| `hfd217-inventory-hfdnames.csv` | The same 32 lines with the department's own rig names (E169 / E170 / R56), produced with `--apparatus fixtures/v3-apparatus-hfdnames.json` (a copy of the v3 apparatus map with the names changed). This is the file Alex imported on the beta; `evidence/convert-hfdnames.json` records its counts and sha256. | No (ignored) |
 | `fixtures/` | The v3 live reads (`/inventory`, `/apparatus`, `/customApparatusTypes`), `accounts.json` (emulator test credentials) and the emulator department ids. Folder `.gitignore` covers `fixtures/`, `*.csv` and `*.csv.refused`. | No (ignored) |
 
 ## Order of play
@@ -83,19 +84,12 @@ Then Alex follows the checklist below. Claude takes the before-snapshot (R10) on
 **Alex's checklist (on this Mac):**
 1. Open the beta address from the newest `deploy-v4-beta` run (Claude can read it for you). Sign in, and make sure you are online.
 2. Make sure no shoring operation is active.
-3. Create a department named **Hartsdale Fire**. This also makes it your active department.
+3. Create a department named **Hartsdale Fire**. If you are already inside a department (the account `avergo@hartsdalefire.org` belongs to "Beta Department 1" from the June beta), Settings › Department shows no Create button; open the create screen by address instead: `<beta URL>/create-department`. Creating makes the new department your active one; the old one stays behind untouched.
 4. Go to Settings → Apparatus types and add a custom type named **Deputy Chief**.
-5. Go to Inventory and add seven apparatus, using these exact names and types:
-   - Eng 169 — Engine
-   - Eng 170 — Engine
-   - Res 56 — Rescue
-   - TL 15 — Ladder
-   - C2171 — Chief
-   - C2173 — Chief
-   - C2172 — Deputy Chief
-   Type each name exactly. The import matches rig names byte for byte. A mismatch quietly creates an extra rig typed "Other".
-6. Tell Claude "rigs are in", and wait for Claude to confirm the before-snapshot.
-7. Go to Inventory → Import and pick `.claude/audits/phase-j/264-reimport/hfd217-inventory.csv`.
+5. Go to Inventory and add your apparatus with their types. The three rigs that carry the imported stock must exist by name; everything else is your call. In the real run Alex built his actual roster (E169, E170, E171, TL15, R56, C2171, C2172, U-156, U-160) instead of v3's test names.
+   The import matches rig names byte for byte. A name that is not on the roster quietly creates an extra rig typed "Other" — so if your rig names differ from v3's (Eng 169 / Eng 170 / Res 56), tell Claude the names and Claude regenerates the CSV with them (`--apparatus` override, no code change; the self-check runs again).
+6. Tell Claude "rigs are in", and wait for Claude to confirm the before-snapshot (and the regenerated CSV, if names differ).
+7. Go to Inventory → Import and pick the file Claude names (the real run used `.claude/audits/phase-j/264-reimport/hfd217-inventory-hfdnames.csv`).
 8. Step 2 should show 10 of 10 columns mapped.
 9. Step 3 should show 32 rows ready and 0 flagged.
 10. Press Import. **Do this once, on this one device.** Do not run it again, and do not run it on another phone. Each run gives every line a new ID, so a second run doubles the inventory.

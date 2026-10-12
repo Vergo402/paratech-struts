@@ -1,0 +1,109 @@
+{
+  "diffCount": 1,
+  "diffs": {
+    "duplicatesMerged": [],
+    "emptyV3": [],
+    "expectations": [],
+    "extra": [],
+    "malformed": [],
+    "missing": [
+      {
+        "key": "\"E169\" | plate | swivel12",
+        "parts": [
+          "E169",
+          "plate",
+          "swivel12"
+        ],
+        "v3": 2
+      }
+    ],
+    "quantity": [],
+    "roster": []
+  },
+  "inputs": {
+    "roster": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-before-apparatus.json",
+    "v3": "~/Documents/FieldShore-backups/paratech-c3ab4-2026-10-09.json",
+    "v3Apparatus": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/fixtures/v3-apparatus-hfdnames.json",
+    "v4": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-inventory-import-stamp.json"
+  },
+  "ok": false,
+  "rosterSize": 9,
+  "v3": {
+    "byRig": {
+      "E169": {
+        "lines": 6,
+        "units": 12
+      },
+      "E170": {
+        "lines": 5,
+        "units": 10
+      },
+      "R56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 12,
+        "units": 78
+      },
+      "plate": {
+        "lines": 10,
+        "units": 76
+      },
+      "strut": {
+        "lines": 10,
+        "units": 58
+      }
+    },
+    "duplicatesMerged": 0,
+    "lines": 32,
+    "malformed": 0,
+    "rows": 32,
+    "shape": "full dump (departments/hfd217)",
+    "skippedZero": 0,
+    "units": 212
+  },
+  "v4": {
+    "byRig": {
+      "E169": {
+        "lines": 5,
+        "units": 10
+      },
+      "E170": {
+        "lines": 5,
+        "units": 10
+      },
+      "R56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 12,
+        "units": 78
+      },
+      "plate": {
+        "lines": 9,
+        "units": 74
+      },
+      "strut": {
+        "lines": 10,
+        "units": 58
+      }
+    },
+    "duplicatesMerged": 0,
+    "lastWriteAtDistinct": 1,
+    "lastWriteAtMissing": 0,
+    "lines": 31,
+    "malformed": 0,
+    "rows": 31,
+    "shape": "REST map",
+    "skippedZero": 0,
+    "tombstones": 0,
+    "units": 210
+  },
+  "warnings": []
+}

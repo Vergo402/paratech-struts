@@ -1,0 +1,168 @@
+{
+  "diffCount": 8,
+  "diffs": {
+    "duplicatesMerged": [],
+    "emptyV3": [],
+    "expectations": [
+      {
+        "actual": 35,
+        "expected": 32,
+        "name": "lines"
+      },
+      {
+        "actual": 218,
+        "expected": 212,
+        "name": "units"
+      },
+      {
+        "actual": 35,
+        "expected": 32,
+        "name": "rows"
+      }
+    ],
+    "extra": [
+      {
+        "key": "\"E171\" | extension | LongShore | 12in",
+        "parts": [
+          "E171",
+          "extension",
+          "LongShore",
+          "12"
+        ],
+        "v4": 2
+      },
+      {
+        "key": "\"E171\" | extension | LongShore | 24in",
+        "parts": [
+          "E171",
+          "extension",
+          "LongShore",
+          "24"
+        ],
+        "v4": 2
+      },
+      {
+        "key": "\"E171\" | plate | hinged12ring",
+        "parts": [
+          "E171",
+          "plate",
+          "hinged12ring"
+        ],
+        "v4": 2
+      },
+      {
+        "key": "\"E171\" | strut | AT 25-36",
+        "parts": [
+          "E171",
+          "strut",
+          "AT 25-36"
+        ],
+        "v4": 2
+      }
+    ],
+    "malformed": [],
+    "missing": [
+      {
+        "key": "\"E169\" | plate | swivel12",
+        "parts": [
+          "E169",
+          "plate",
+          "swivel12"
+        ],
+        "v3": 2
+      }
+    ],
+    "quantity": [],
+    "roster": []
+  },
+  "inputs": {
+    "roster": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-before-apparatus.json",
+    "v3": "~/Documents/FieldShore-backups/paratech-c3ab4-2026-10-09.json",
+    "v3Apparatus": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/fixtures/v3-apparatus-hfdnames.json",
+    "v4": "~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-inventory.json"
+  },
+  "ok": false,
+  "rosterSize": 9,
+  "v3": {
+    "byRig": {
+      "E169": {
+        "lines": 6,
+        "units": 12
+      },
+      "E170": {
+        "lines": 5,
+        "units": 10
+      },
+      "R56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 12,
+        "units": 78
+      },
+      "plate": {
+        "lines": 10,
+        "units": 76
+      },
+      "strut": {
+        "lines": 10,
+        "units": 58
+      }
+    },
+    "duplicatesMerged": 0,
+    "lines": 32,
+    "malformed": 0,
+    "rows": 32,
+    "shape": "full dump (departments/hfd217)",
+    "skippedZero": 0,
+    "units": 212
+  },
+  "v4": {
+    "byRig": {
+      "E169": {
+        "lines": 5,
+        "units": 10
+      },
+      "E170": {
+        "lines": 5,
+        "units": 10
+      },
+      "E171": {
+        "lines": 4,
+        "units": 8
+      },
+      "R56": {
+        "lines": 21,
+        "units": 190
+      }
+    },
+    "byType": {
+      "extension": {
+        "lines": 14,
+        "units": 82
+      },
+      "plate": {
+        "lines": 10,
+        "units": 76
+      },
+      "strut": {
+        "lines": 11,
+        "units": 60
+      }
+    },
+    "duplicatesMerged": 0,
+    "lastWriteAtDistinct": 5,
+    "lastWriteAtMissing": 0,
+    "lines": 35,
+    "malformed": 0,
+    "rows": 35,
+    "shape": "REST map",
+    "skippedZero": 0,
+    "tombstones": 1,
+    "units": 218
+  },
+  "warnings": []
+}

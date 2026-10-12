@@ -1,0 +1,45 @@
+v3 file: ~/Documents/FieldShore-backups/paratech-c3ab4-2026-10-09.json
+v3 apparatus file: ~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/fixtures/v3-apparatus-hfdnames.json
+v4 file: ~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-inventory-import-stamp.json
+roster: ~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-before-apparatus.json  (9 rigs)
+json: ~/Developer/paratech-struts/fieldshore/.claude/audits/phase-j/264-reimport/evidence/beta-compare-import-stamp.json
+
+v3  shape: full dump (departments/hfd217)
+  lines=32  units=212  rows=32  duplicatesMerged=0  skippedZero=0  malformed=0
+  type extension  lines=12  units=78
+  type plate      lines=10  units=76
+  type strut      lines=10  units=58
+  rig  "E169"       lines=6  units=12
+  rig  "E170"       lines=5  units=10
+  rig  "R56"        lines=21  units=190
+
+v4  shape: REST map
+  lines=31  units=210  rows=31  duplicatesMerged=0  skippedZero=0  malformed=0
+  type extension  lines=12  units=78
+  type plate      lines=9  units=74
+  type strut      lines=10  units=58
+  rig  "E169"       lines=5  units=10
+  rig  "E170"       lines=5  units=10
+  rig  "R56"        lines=21  units=190
+  tombstones skipped=0
+  distinct lastWriteAt values=1 (live rows without one: 0)
+
+MISSING IN V4 (1)
+  "E169" | plate | swivel12: v3 2
+
+EXTRA IN V4 (0)
+  (none)
+
+QUANTITY DIFFERS (0)
+  (none)
+
+MALFORMED ROWS (kept out of the join) (0)
+  (none)
+
+DUPLICATES MERGED DIFFER (split or double import) (0)
+  (none)
+
+ROSTER (rig minted by import / name mismatch) (0)
+  (none)
+
+DIFFS: 1

@@ -1,0 +1,4 @@
+# R0a — beta build provenance, captured 2026-10-11T23:27:17Z before the import
+run 38179192836 completed/success 2026-10-11T22:10:59Z sha 01197c46510b63f95895556d1d476deaad17a12f — chore(v4-264): v3→v4 inventory converter, compare tool, runbook + emu…
+HEAD 01197c46510b63f95895556d1d476deaad17a12f (01197c4 chore(v4-264): v3→v4 inventory converter, compare tool, runbook + emul)
+channel https://fieldshore-database--beta-2rs8x80s.web.app → HTTP 200

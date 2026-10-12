@@ -1,0 +1,303 @@
+{
+  "inv-06a5af0c-d1be-4988-9974-a30ac6aa619e": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-06a5af0c-d1be-4988-9974-a30ac6aa619e",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 37-58",
+    "quantity": 6,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-072f1d07-d962-4219-ba95-d6ff34d32bcf": {
+    "apparatus": "E169",
+    "apparatusId": "app-1947eaf8-5b81-4871-9236-5f9d5407a848",
+    "id": "inv-072f1d07-d962-4219-ba95-d6ff34d32bcf",
+    "lastWriteAt": 1791769503854,
+    "plateId": "multi",
+    "quantity": 2,
+    "type": "plate"
+  },
+  "inv-18af3551-c41c-441b-b41e-861372d9bd92": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-18af3551-c41c-441b-b41e-861372d9bd92",
+    "lastWriteAt": 1791769503854,
+    "length": 6,
+    "quantity": 10,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-1cae065b-6f01-4736-9d2e-883117801cd1": {
+    "apparatus": "E169",
+    "apparatusId": "app-1947eaf8-5b81-4871-9236-5f9d5407a848",
+    "id": "inv-1cae065b-6f01-4736-9d2e-883117801cd1",
+    "lastWriteAt": 1791769503854,
+    "length": 12,
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-1d1adbf0-c2b8-4425-8eab-9ec546a2c9b7": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-1d1adbf0-c2b8-4425-8eab-9ec546a2c9b7",
+    "lastWriteAt": 1791769503854,
+    "plateId": "swivel6",
+    "quantity": 20,
+    "type": "plate"
+  },
+  "inv-237a4af1-01c4-4025-9b86-d60789b8a449": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-237a4af1-01c4-4025-9b86-d60789b8a449",
+    "lastWriteAt": 1791769503854,
+    "length": 12,
+    "quantity": 6,
+    "system": "LongShore",
+    "type": "extension"
+  },
+  "inv-33e5299d-e20d-471e-abc6-a0b1f0f262cb": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-33e5299d-e20d-471e-abc6-a0b1f0f262cb",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 25-36",
+    "quantity": 8,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-3a79b941-78d7-49e9-b78c-7cb559c5a05a": {
+    "apparatus": "E169",
+    "apparatusId": "app-1947eaf8-5b81-4871-9236-5f9d5407a848",
+    "id": "inv-3a79b941-78d7-49e9-b78c-7cb559c5a05a",
+    "lastWriteAt": 1791769503854,
+    "plateId": "hinged12ring",
+    "quantity": 2,
+    "type": "plate"
+  },
+  "inv-4b1d8250-7ac7-4dc6-ae64-6c91d8f736c1": {
+    "apparatus": "E170",
+    "apparatusId": "app-9fc4e34f-42ed-4c61-984d-178ab4689508",
+    "id": "inv-4b1d8250-7ac7-4dc6-ae64-6c91d8f736c1",
+    "lastWriteAt": 1791769503854,
+    "length": 24,
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-58c68960-ba23-48c5-aad9-b2a501a35655": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-58c68960-ba23-48c5-aad9-b2a501a35655",
+    "lastWriteAt": 1791769503854,
+    "plateId": "hinged12ring",
+    "quantity": 10,
+    "type": "plate"
+  },
+  "inv-591e98b8-37c1-4e4f-931f-7113c555ac04": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-591e98b8-37c1-4e4f-931f-7113c555ac04",
+    "lastWriteAt": 1791769503854,
+    "plateId": "channel6x6",
+    "quantity": 8,
+    "type": "plate"
+  },
+  "inv-59920de0-ee2d-4061-b422-daed80dd243f": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-59920de0-ee2d-4061-b422-daed80dd243f",
+    "lastWriteAt": 1791769503854,
+    "model": "LS 610",
+    "quantity": 14,
+    "system": "LongShore",
+    "type": "strut"
+  },
+  "inv-64efc252-92d3-4afc-a733-9294f2432a31": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-64efc252-92d3-4afc-a733-9294f2432a31",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 12-15",
+    "quantity": 4,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-6eef9533-4de7-4a38-b291-def2f79a959f": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-6eef9533-4de7-4a38-b291-def2f79a959f",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 56-88",
+    "quantity": 6,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-963a120c-4249-43f7-8602-e1c79f106018": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-963a120c-4249-43f7-8602-e1c79f106018",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 19-25",
+    "quantity": 10,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-99add034-234a-4ffa-81da-4ae2227af050": {
+    "apparatus": "E170",
+    "apparatusId": "app-9fc4e34f-42ed-4c61-984d-178ab4689508",
+    "id": "inv-99add034-234a-4ffa-81da-4ae2227af050",
+    "lastWriteAt": 1791769503854,
+    "plateId": "hinged12ring",
+    "quantity": 2,
+    "type": "plate"
+  },
+  "inv-a0487903-227e-499f-a467-532cae5e0a9d": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-a0487903-227e-499f-a467-532cae5e0a9d",
+    "lastWriteAt": 1791769503854,
+    "length": 36,
+    "quantity": 10,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-a6eb6fcf-d98e-424d-a0f3-7446791401c3": {
+    "apparatus": "E169",
+    "apparatusId": "app-1947eaf8-5b81-4871-9236-5f9d5407a848",
+    "id": "inv-a6eb6fcf-d98e-424d-a0f3-7446791401c3",
+    "lastWriteAt": 1791769503854,
+    "length": 24,
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-ab061b1f-146e-4fed-a8ee-743024f22925": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-ab061b1f-146e-4fed-a8ee-743024f22925",
+    "lastWriteAt": 1791769503854,
+    "length": 24,
+    "quantity": 6,
+    "system": "LongShore",
+    "type": "extension"
+  },
+  "inv-b5dccbaa-29bc-4b10-b74e-6894013eb325": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-b5dccbaa-29bc-4b10-b74e-6894013eb325",
+    "lastWriteAt": 1791769503854,
+    "plateId": "rigid6",
+    "quantity": 20,
+    "type": "plate"
+  },
+  "inv-bda73558-f5b7-49b0-bcbd-1eb334cee1a7": {
+    "apparatus": "E169",
+    "apparatusId": "app-1947eaf8-5b81-4871-9236-5f9d5407a848",
+    "id": "inv-bda73558-f5b7-49b0-bcbd-1eb334cee1a7",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 25-36",
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-d07a199b-be64-4ebe-a826-820146731283": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-d07a199b-be64-4ebe-a826-820146731283",
+    "lastWriteAt": 1791769503854,
+    "length": 12,
+    "quantity": 12,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-db04df03-e7ce-4e56-aa83-a3540fc3fa8f": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-db04df03-e7ce-4e56-aa83-a3540fc3fa8f",
+    "lastWriteAt": 1791769503854,
+    "model": "LS 203",
+    "quantity": 4,
+    "system": "LongShore",
+    "type": "strut"
+  },
+  "inv-e50eb2f0-5982-4d76-a905-e759c56d560a": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-e50eb2f0-5982-4d76-a905-e759c56d560a",
+    "lastWriteAt": 1791769503854,
+    "model": "LK 25-36",
+    "quantity": 2,
+    "system": "LockStroke",
+    "type": "strut"
+  },
+  "inv-ebca1f9a-4dea-40f0-a22e-354c4d4ad511": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-ebca1f9a-4dea-40f0-a22e-354c4d4ad511",
+    "lastWriteAt": 1791769503854,
+    "length": 48,
+    "quantity": 6,
+    "system": "LongShore",
+    "type": "extension"
+  },
+  "inv-ef50d3fb-c375-4012-914f-303a4ed7f513": {
+    "apparatus": "E170",
+    "apparatusId": "app-9fc4e34f-42ed-4c61-984d-178ab4689508",
+    "id": "inv-ef50d3fb-c375-4012-914f-303a4ed7f513",
+    "lastWriteAt": 1791769503854,
+    "length": 12,
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-f0d64710-d497-4348-aa54-5c9a4863e2cf": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-f0d64710-d497-4348-aa54-5c9a4863e2cf",
+    "lastWriteAt": 1791769503854,
+    "length": 24,
+    "quantity": 12,
+    "system": "AcmeThread",
+    "type": "extension"
+  },
+  "inv-f4b05478-dbdd-4b22-bf0d-41bd4feacf0e": {
+    "apparatus": "E170",
+    "apparatusId": "app-9fc4e34f-42ed-4c61-984d-178ab4689508",
+    "id": "inv-f4b05478-dbdd-4b22-bf0d-41bd4feacf0e",
+    "lastWriteAt": 1791769503854,
+    "plateId": "multi",
+    "quantity": 2,
+    "type": "plate"
+  },
+  "inv-f6bad8fd-e843-4f60-ba76-af49b716a673": {
+    "apparatus": "E170",
+    "apparatusId": "app-9fc4e34f-42ed-4c61-984d-178ab4689508",
+    "id": "inv-f6bad8fd-e843-4f60-ba76-af49b716a673",
+    "lastWriteAt": 1791769503854,
+    "model": "AT 25-36",
+    "quantity": 2,
+    "system": "AcmeThread",
+    "type": "strut"
+  },
+  "inv-f8eb073b-59ff-4fa2-8cb8-9b3402bc4366": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-f8eb073b-59ff-4fa2-8cb8-9b3402bc4366",
+    "lastWriteAt": 1791769503854,
+    "length": 67,
+    "quantity": 8,
+    "system": "LongShore",
+    "type": "extension"
+  },
+  "inv-fb61cdc0-ffb8-458f-a549-61fdedd555a8": {
+    "apparatus": "R56",
+    "apparatusId": "app-0d4528ef-4068-4187-a6ea-cbc3b1934b2a",
+    "id": "inv-fb61cdc0-ffb8-458f-a549-61fdedd555a8",
+    "lastWriteAt": 1791769503854,
+    "plateId": "channel4x4",
+    "quantity": 8,
+    "type": "plate"
+  }
+}

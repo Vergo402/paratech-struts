@@ -74,7 +74,7 @@ One job: read the four living sources of Phase J work — the pre-Phase-J audit 
    | 6 | battalion-chief field review approval | #261 | Todo | medium | Gate (waits on blockers + other audits) |
    | 7 | Two real incidents OR one TTX run end-to-end on v4 | #262 | Todo | large | Gate (waits on field review approval) |
    | 8 | Rewrite docs/USER-MANUAL.md for v4 | #263 | Todo | large | Parallel with field work |
-   | 9 | Validate v3 → v4 data migration on prod fork | #264 | Todo | large | Parallel with field work |
+   | 9 | Fresh-start re-import of Alex's inventory via the CSV import (no v3 → v4 migration) — RAN 2026-10-11, PASS recommended (Alex closes #264), runbook `.claude/audits/phase-j/264-reimport/README.md` | #264 | Done | large | Parallel with field work |
    | 10 | Document rollback plan | #265 | Todo | medium | Parallel with field work |
    | 11 | Archive v3 at v3-legacy deploy URL (6mo minimum) | #266 | Todo | small | Final step (after merge) |
    | 12 | Merge v4-redesign → main | #267 | Todo | small | Gate (waits on all above) |
