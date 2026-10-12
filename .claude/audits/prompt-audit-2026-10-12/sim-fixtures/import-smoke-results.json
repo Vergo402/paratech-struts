@@ -1,0 +1,87 @@
+[
+  {
+    "csv": ".claude/skills/shared/sim-level-i-inventory.csv",
+    "expectedRows": 243,
+    "expectedRigs": 13,
+    "imported": 243,
+    "skipped": 0,
+    "rigTabs": [
+      "Engine 1 6 items",
+      "Engine 3 4 items",
+      "Rescue 1 42 items",
+      "Rescue 2 26 items",
+      "Rescue 3 16 items",
+      "Squad 1 36 items",
+      "TF-Fed-Alpha Cache 438 items",
+      "TF-Fed-Bravo Cache 438 items",
+      "TF-Fed-Charlie Cache 438 items",
+      "TF-State Cache 334 items",
+      "Tower 1 4 items",
+      "USAR-Alpha 50 items",
+      "USAR-Bravo 34 items"
+    ],
+    "steps": [
+      "account+department ok",
+      "step1 file picked",
+      "continue 1",
+      "continue 2",
+      "continue 3",
+      "Import 243 rows"
+    ],
+    "error": null
+  },
+  {
+    "csv": ".claude/skills/shared/sim-level-ii-inventory.csv",
+    "expectedRows": 65,
+    "expectedRigs": 10,
+    "imported": 65,
+    "skipped": 0,
+    "rigTabs": [
+      "County Engine 4 6 items",
+      "County Rescue 2 26 items",
+      "Engine 1 8 items",
+      "Engine 2 8 items",
+      "Engine 3 10 items",
+      "Heavy Rescue 1 52 items",
+      "Ladder 1 2 items",
+      "Rescue 1 24 items",
+      "Squad 1 14 items",
+      "State USAR Alpha Rescue 1 58 items"
+    ],
+    "steps": [
+      "account+department ok",
+      "step1 file picked",
+      "continue 1",
+      "continue 2",
+      "continue 3",
+      "Import 65 rows"
+    ],
+    "error": null
+  },
+  {
+    "csv": ".claude/skills/shared/sim-level-iii-inventory.csv",
+    "expectedRows": 35,
+    "expectedRigs": 8,
+    "imported": 35,
+    "skipped": 0,
+    "rigTabs": [
+      "County Engine 4 6 items",
+      "Engine 1 8 items",
+      "Engine 2 8 items",
+      "Engine 3 10 items",
+      "Heavy Rescue 1 48 items",
+      "Ladder 1 2 items",
+      "Rescue 1 24 items",
+      "Squad 1 12 items"
+    ],
+    "steps": [
+      "account+department ok",
+      "step1 file picked",
+      "continue 1",
+      "continue 2",
+      "continue 3",
+      "Import 35 rows"
+    ],
+    "error": null
+  }
+]

@@ -1,0 +1,66 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+,County Engine 4,,Strut,AT 37-58,Grey,,,,2
+,County Engine 4,,Plate,,,rigid6,"6"" Rigid Base",,4
+,County Rescue 2,,Strut,AT 37-58,Grey,,,,4
+,County Rescue 2,,Strut,AT 56-88,Grey,,,,4
+,County Rescue 2,,Extension,,Grey,,,24,2
+,County Rescue 2,,Plate,,,chainwedge,"3/8"" Chain Wedge",,4
+,County Rescue 2,,Plate,,,channel4x4,"4""x4"" Channel Base",,4
+,County Rescue 2,,Plate,,,rigid6,"6"" Rigid Base",,8
+,Engine 1,,Strut,AT 37-58,Grey,,,,2
+,Engine 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Engine 1,,Plate,,,rigid6,"6"" Rigid Base",,4
+,Engine 2,,Strut,AT 37-58,Grey,,,,2
+,Engine 2,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Engine 2,,Plate,,,rigid6,"6"" Rigid Base",,4
+,Engine 3,,Strut,AT 25-36,Grey,,,,2
+,Engine 3,,Strut,AT 56-88,Grey,,,,2
+,Engine 3,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Engine 3,,Plate,,,rigid6,"6"" Rigid Base",,4
+,Heavy Rescue 1,,Strut,LS 610,Gold,,,,2
+,Heavy Rescue 1,,Strut,AT 19-25,Grey,,,,4
+,Heavy Rescue 1,,Strut,AT 37-58,Grey,,,,4
+,Heavy Rescue 1,,Strut,AT 56-88,Grey,,,,4
+,Heavy Rescue 1,,Extension,,Gold,,,24,2
+,Heavy Rescue 1,,Extension,,Grey,,,12,2
+,Heavy Rescue 1,,Extension,,Grey,,,24,2
+,Heavy Rescue 1,,Plate,,,rigid12,"12"" Rigid Base",,4
+,Heavy Rescue 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,6
+,Heavy Rescue 1,,Plate,,,channel4x4,"4""x4"" Channel Base",,4
+,Heavy Rescue 1,,Plate,,,hinged6,"6"" Hinged Base",,2
+,Heavy Rescue 1,,Plate,,,rigid6,"6"" Rigid Base",,8
+,Heavy Rescue 1,,Plate,,,channel6x6,"6""x6"" Channel Base",,4
+,Heavy Rescue 1,,Plate,,,contour,Contour Base,,4
+,Ladder 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Rescue 1,,Strut,AT 25-36,Grey,,,,4
+,Rescue 1,,Strut,AT 56-88,Grey,,,,4
+,Rescue 1,,Extension,,Grey,,,24,2
+,Rescue 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,4
+,Rescue 1,,Plate,,,rigid6,"6"" Rigid Base",,8
+,Rescue 1,,Plate,,,contour,Contour Base,,2
+,Squad 1,,Strut,AT 25-36,Grey,,,,2
+,Squad 1,,Strut,AT 56-88,Grey,,,,2
+,Squad 1,,Extension,,Grey,,,12,2
+,Squad 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,2
+,Squad 1,,Plate,,,channel4x4,"4""x4"" Channel Base",,2
+,Squad 1,,Plate,,,rigid6,"6"" Rigid Base",,4
+,State USAR Alpha Rescue 1,,Strut,LS 610,Gold,,,,2
+,State USAR Alpha Rescue 1,,Strut,LS 1016,Gold,,,,2
+,State USAR Alpha Rescue 1,,Strut,AT 25-36,Grey,,,,2
+,State USAR Alpha Rescue 1,,Strut,AT 37-58,Grey,,,,2
+,State USAR Alpha Rescue 1,,Strut,AT 56-88,Grey,,,,4
+,State USAR Alpha Rescue 1,,Extension,,Gold,,,24,2
+,State USAR Alpha Rescue 1,,Extension,,Gold,,,48,2
+,State USAR Alpha Rescue 1,,Extension,,Grey,,,12,2
+,State USAR Alpha Rescue 1,,Extension,,Grey,,,24,2
+,State USAR Alpha Rescue 1,,Extension,,Grey,,,36,2
+,State USAR Alpha Rescue 1,,Plate,,,hinged12,"12"" Hinged Base",,2
+,State USAR Alpha Rescue 1,,Plate,,,rigid12,"12"" Rigid Base",,2
+,State USAR Alpha Rescue 1,,Plate,,,chainwedge,"3/8"" Chain Wedge",,4
+,State USAR Alpha Rescue 1,,Plate,,,channel4x4,"4""x4"" Channel Base",,8
+,State USAR Alpha Rescue 1,,Plate,,,hinged6,"6"" Hinged Base",,2
+,State USAR Alpha Rescue 1,,Plate,,,rigid6,"6"" Rigid Base",,4
+,State USAR Alpha Rescue 1,,Plate,,,swivel6,"6"" Swivel Base",,2
+,State USAR Alpha Rescue 1,,Plate,,,channel6x6,"6""x6"" Channel Base",,8
+,State USAR Alpha Rescue 1,,Plate,,,contour,Contour Base,,2
+,State USAR Alpha Rescue 1,,Plate,,,vbase,V-Base,,2

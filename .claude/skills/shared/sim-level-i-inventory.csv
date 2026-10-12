@@ -1,0 +1,244 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+,Engine 1,,Strut,AT 19-25,Grey,,,,2
+,Engine 1,,Strut,AT 25-36,Grey,,,,2
+,Engine 1,,Plate,,,hinged6,"6"" Hinged Base",,2
+,Engine 3,,Strut,AT 19-25,Grey,,,,2
+,Engine 3,,Strut,AT 25-36,Grey,,,,2
+,Rescue 1,,Strut,AT 12-15,Grey,,,,2
+,Rescue 1,,Strut,AT 19-25,Grey,,,,4
+,Rescue 1,,Strut,AT 25-36,Grey,,,,4
+,Rescue 1,,Strut,AT 37-58,Grey,,,,2
+,Rescue 1,,Strut,AT 56-88,Grey,,,,2
+,Rescue 1,,Extension,,Grey,,,12,6
+,Rescue 1,,Extension,,Grey,,,24,4
+,Rescue 1,,Plate,,,hinged12,"12"" Hinged Base",,4
+,Rescue 1,,Plate,,,base45,45° Base,,4
+,Rescue 1,,Plate,,,hinged6,"6"" Hinged Base",,6
+,Rescue 1,,Plate,,,rigid6,"6"" Rigid Base",,4
+,Rescue 2,,Strut,AT 19-25,Grey,,,,4
+,Rescue 2,,Strut,AT 25-36,Grey,,,,4
+,Rescue 2,,Strut,AT 37-58,Grey,,,,2
+,Rescue 2,,Extension,,Grey,,,12,6
+,Rescue 2,,Plate,,,base45,45° Base,,4
+,Rescue 2,,Plate,,,hinged6,"6"" Hinged Base",,6
+,Rescue 3,,Strut,AT 19-25,Grey,,,,4
+,Rescue 3,,Strut,AT 25-36,Grey,,,,4
+,Rescue 3,,Extension,,Grey,,,12,4
+,Rescue 3,,Plate,,,hinged6,"6"" Hinged Base",,4
+,Squad 1,,Strut,LK 19-25,LockStroke,,,,2
+,Squad 1,,Strut,LK 25-36,LockStroke,,,,4
+,Squad 1,,Strut,LK 36-57,LockStroke,,,,4
+,Squad 1,,Strut,LK 55-89,LockStroke,,,,2
+,Squad 1,,Extension,,LockStroke,,,12,6
+,Squad 1,,Extension,,LockStroke,,,24,4
+,Squad 1,,Plate,,,rigid12,"12"" Rigid Base",,4
+,Squad 1,,Plate,,,hinged6,"6"" Hinged Base",,6
+,Squad 1,,Plate,,,vbase,V-Base,,4
+,TF-Fed-Alpha Cache,,Strut,LS 203,Gold,,,,4
+,TF-Fed-Alpha Cache,,Strut,LS 304,Gold,,,,6
+,TF-Fed-Alpha Cache,,Strut,LS 406,Gold,,,,8
+,TF-Fed-Alpha Cache,,Strut,LS 610,Gold,,,,8
+,TF-Fed-Alpha Cache,,Strut,LS 1016,Gold,,,,4
+,TF-Fed-Alpha Cache,,Strut,AT 12-15,Grey,,,,8
+,TF-Fed-Alpha Cache,,Strut,AT 19-25,Grey,,,,12
+,TF-Fed-Alpha Cache,,Strut,AT 25-36,Grey,,,,16
+,TF-Fed-Alpha Cache,,Strut,AT 37-58,Grey,,,,12
+,TF-Fed-Alpha Cache,,Strut,AT 56-88,Grey,,,,8
+,TF-Fed-Alpha Cache,,Strut,LK 19-25,LockStroke,,,,6
+,TF-Fed-Alpha Cache,,Strut,LK 25-36,LockStroke,,,,8
+,TF-Fed-Alpha Cache,,Strut,LK 36-57,LockStroke,,,,8
+,TF-Fed-Alpha Cache,,Strut,LK 55-89,LockStroke,,,,6
+,TF-Fed-Alpha Cache,,Extension,,Gold,,,12,14
+,TF-Fed-Alpha Cache,,Extension,,Gold,,,24,12
+,TF-Fed-Alpha Cache,,Extension,,Gold,,,48,8
+,TF-Fed-Alpha Cache,,Extension,,Gold,,,67,6
+,TF-Fed-Alpha Cache,,Extension,,Grey,,,6,16
+,TF-Fed-Alpha Cache,,Extension,,Grey,,,12,20
+,TF-Fed-Alpha Cache,,Extension,,Grey,,,24,14
+,TF-Fed-Alpha Cache,,Extension,,Grey,,,36,8
+,TF-Fed-Alpha Cache,,Extension,,LockStroke,,,12,14
+,TF-Fed-Alpha Cache,,Extension,,LockStroke,,,24,10
+,TF-Fed-Alpha Cache,,Extension,,LockStroke,,,36,6
+,TF-Fed-Alpha Cache,,Plate,,,hinged12,"12"" Hinged Base",,16
+,TF-Fed-Alpha Cache,,Plate,,,hinged12ring,"12"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Alpha Cache,,Plate,,,rigid12,"12"" Rigid Base",,12
+,TF-Fed-Alpha Cache,,Plate,,,swivel12,"12"" Swivel Base",,10
+,TF-Fed-Alpha Cache,,Plate,,,angle3x4,"3""x4"" Angle Base",,6
+,TF-Fed-Alpha Cache,,Plate,,,chainwedge,"3/8"" Chain Wedge",,6
+,TF-Fed-Alpha Cache,,Plate,,,rubber4,"4"" Rubber Base",,6
+,TF-Fed-Alpha Cache,,Plate,,,channel4x4,"4""x4"" Channel Base",,8
+,TF-Fed-Alpha Cache,,Plate,,,base45,45° Base,,10
+,TF-Fed-Alpha Cache,,Plate,,,hinged6,"6"" Hinged Base",,20
+,TF-Fed-Alpha Cache,,Plate,,,hinged6ring,"6"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Alpha Cache,,Plate,,,rigid6,"6"" Rigid Base",,12
+,TF-Fed-Alpha Cache,,Plate,,,swivel6,"6"" Swivel Base",,10
+,TF-Fed-Alpha Cache,,Plate,,,channel6x6,"6""x6"" Channel Base",,8
+,TF-Fed-Alpha Cache,,Plate,,,threadedconn,Adjustable Threaded Connector,,6
+,TF-Fed-Alpha Cache,,Plate,,,rubberangle,Angled Rubber Base (ESU),,6
+,TF-Fed-Alpha Cache,,Plate,,,contour,Contour Base,,6
+,TF-Fed-Alpha Cache,,Plate,,,elevatorsupport,Elevator Support L&R Arm,,4
+,TF-Fed-Alpha Cache,,Plate,,,multi,Multi-Base,,10
+,TF-Fed-Alpha Cache,,Plate,,,offsetcone,Offset Cone Base,,6
+,TF-Fed-Alpha Cache,,Plate,,,springloaded,Spring Loaded Connector,,4
+,TF-Fed-Alpha Cache,,Plate,,,vbase,V-Base,,10
+,TF-Fed-Bravo Cache,,Strut,LS 203,Gold,,,,4
+,TF-Fed-Bravo Cache,,Strut,LS 304,Gold,,,,6
+,TF-Fed-Bravo Cache,,Strut,LS 406,Gold,,,,8
+,TF-Fed-Bravo Cache,,Strut,LS 610,Gold,,,,8
+,TF-Fed-Bravo Cache,,Strut,LS 1016,Gold,,,,4
+,TF-Fed-Bravo Cache,,Strut,AT 12-15,Grey,,,,8
+,TF-Fed-Bravo Cache,,Strut,AT 19-25,Grey,,,,12
+,TF-Fed-Bravo Cache,,Strut,AT 25-36,Grey,,,,16
+,TF-Fed-Bravo Cache,,Strut,AT 37-58,Grey,,,,12
+,TF-Fed-Bravo Cache,,Strut,AT 56-88,Grey,,,,8
+,TF-Fed-Bravo Cache,,Strut,LK 19-25,LockStroke,,,,6
+,TF-Fed-Bravo Cache,,Strut,LK 25-36,LockStroke,,,,8
+,TF-Fed-Bravo Cache,,Strut,LK 36-57,LockStroke,,,,8
+,TF-Fed-Bravo Cache,,Strut,LK 55-89,LockStroke,,,,6
+,TF-Fed-Bravo Cache,,Extension,,Gold,,,12,14
+,TF-Fed-Bravo Cache,,Extension,,Gold,,,24,12
+,TF-Fed-Bravo Cache,,Extension,,Gold,,,48,8
+,TF-Fed-Bravo Cache,,Extension,,Gold,,,67,6
+,TF-Fed-Bravo Cache,,Extension,,Grey,,,6,16
+,TF-Fed-Bravo Cache,,Extension,,Grey,,,12,20
+,TF-Fed-Bravo Cache,,Extension,,Grey,,,24,14
+,TF-Fed-Bravo Cache,,Extension,,Grey,,,36,8
+,TF-Fed-Bravo Cache,,Extension,,LockStroke,,,12,14
+,TF-Fed-Bravo Cache,,Extension,,LockStroke,,,24,10
+,TF-Fed-Bravo Cache,,Extension,,LockStroke,,,36,6
+,TF-Fed-Bravo Cache,,Plate,,,hinged12,"12"" Hinged Base",,16
+,TF-Fed-Bravo Cache,,Plate,,,hinged12ring,"12"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Bravo Cache,,Plate,,,rigid12,"12"" Rigid Base",,12
+,TF-Fed-Bravo Cache,,Plate,,,swivel12,"12"" Swivel Base",,10
+,TF-Fed-Bravo Cache,,Plate,,,angle3x4,"3""x4"" Angle Base",,6
+,TF-Fed-Bravo Cache,,Plate,,,chainwedge,"3/8"" Chain Wedge",,6
+,TF-Fed-Bravo Cache,,Plate,,,rubber4,"4"" Rubber Base",,6
+,TF-Fed-Bravo Cache,,Plate,,,channel4x4,"4""x4"" Channel Base",,8
+,TF-Fed-Bravo Cache,,Plate,,,base45,45° Base,,10
+,TF-Fed-Bravo Cache,,Plate,,,hinged6,"6"" Hinged Base",,20
+,TF-Fed-Bravo Cache,,Plate,,,hinged6ring,"6"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Bravo Cache,,Plate,,,rigid6,"6"" Rigid Base",,12
+,TF-Fed-Bravo Cache,,Plate,,,swivel6,"6"" Swivel Base",,10
+,TF-Fed-Bravo Cache,,Plate,,,channel6x6,"6""x6"" Channel Base",,8
+,TF-Fed-Bravo Cache,,Plate,,,threadedconn,Adjustable Threaded Connector,,6
+,TF-Fed-Bravo Cache,,Plate,,,rubberangle,Angled Rubber Base (ESU),,6
+,TF-Fed-Bravo Cache,,Plate,,,contour,Contour Base,,6
+,TF-Fed-Bravo Cache,,Plate,,,elevatorsupport,Elevator Support L&R Arm,,4
+,TF-Fed-Bravo Cache,,Plate,,,multi,Multi-Base,,10
+,TF-Fed-Bravo Cache,,Plate,,,offsetcone,Offset Cone Base,,6
+,TF-Fed-Bravo Cache,,Plate,,,springloaded,Spring Loaded Connector,,4
+,TF-Fed-Bravo Cache,,Plate,,,vbase,V-Base,,10
+,TF-Fed-Charlie Cache,,Strut,LS 203,Gold,,,,4
+,TF-Fed-Charlie Cache,,Strut,LS 304,Gold,,,,6
+,TF-Fed-Charlie Cache,,Strut,LS 406,Gold,,,,8
+,TF-Fed-Charlie Cache,,Strut,LS 610,Gold,,,,8
+,TF-Fed-Charlie Cache,,Strut,LS 1016,Gold,,,,4
+,TF-Fed-Charlie Cache,,Strut,AT 12-15,Grey,,,,8
+,TF-Fed-Charlie Cache,,Strut,AT 19-25,Grey,,,,12
+,TF-Fed-Charlie Cache,,Strut,AT 25-36,Grey,,,,16
+,TF-Fed-Charlie Cache,,Strut,AT 37-58,Grey,,,,12
+,TF-Fed-Charlie Cache,,Strut,AT 56-88,Grey,,,,8
+,TF-Fed-Charlie Cache,,Strut,LK 19-25,LockStroke,,,,6
+,TF-Fed-Charlie Cache,,Strut,LK 25-36,LockStroke,,,,8
+,TF-Fed-Charlie Cache,,Strut,LK 36-57,LockStroke,,,,8
+,TF-Fed-Charlie Cache,,Strut,LK 55-89,LockStroke,,,,6
+,TF-Fed-Charlie Cache,,Extension,,Gold,,,12,14
+,TF-Fed-Charlie Cache,,Extension,,Gold,,,24,12
+,TF-Fed-Charlie Cache,,Extension,,Gold,,,48,8
+,TF-Fed-Charlie Cache,,Extension,,Gold,,,67,6
+,TF-Fed-Charlie Cache,,Extension,,Grey,,,6,16
+,TF-Fed-Charlie Cache,,Extension,,Grey,,,12,20
+,TF-Fed-Charlie Cache,,Extension,,Grey,,,24,14
+,TF-Fed-Charlie Cache,,Extension,,Grey,,,36,8
+,TF-Fed-Charlie Cache,,Extension,,LockStroke,,,12,14
+,TF-Fed-Charlie Cache,,Extension,,LockStroke,,,24,10
+,TF-Fed-Charlie Cache,,Extension,,LockStroke,,,36,6
+,TF-Fed-Charlie Cache,,Plate,,,hinged12,"12"" Hinged Base",,16
+,TF-Fed-Charlie Cache,,Plate,,,hinged12ring,"12"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Charlie Cache,,Plate,,,rigid12,"12"" Rigid Base",,12
+,TF-Fed-Charlie Cache,,Plate,,,swivel12,"12"" Swivel Base",,10
+,TF-Fed-Charlie Cache,,Plate,,,angle3x4,"3""x4"" Angle Base",,6
+,TF-Fed-Charlie Cache,,Plate,,,chainwedge,"3/8"" Chain Wedge",,6
+,TF-Fed-Charlie Cache,,Plate,,,rubber4,"4"" Rubber Base",,6
+,TF-Fed-Charlie Cache,,Plate,,,channel4x4,"4""x4"" Channel Base",,8
+,TF-Fed-Charlie Cache,,Plate,,,base45,45° Base,,10
+,TF-Fed-Charlie Cache,,Plate,,,hinged6,"6"" Hinged Base",,20
+,TF-Fed-Charlie Cache,,Plate,,,hinged6ring,"6"" Hinged Base w/Anchor Ring",,10
+,TF-Fed-Charlie Cache,,Plate,,,rigid6,"6"" Rigid Base",,12
+,TF-Fed-Charlie Cache,,Plate,,,swivel6,"6"" Swivel Base",,10
+,TF-Fed-Charlie Cache,,Plate,,,channel6x6,"6""x6"" Channel Base",,8
+,TF-Fed-Charlie Cache,,Plate,,,threadedconn,Adjustable Threaded Connector,,6
+,TF-Fed-Charlie Cache,,Plate,,,rubberangle,Angled Rubber Base (ESU),,6
+,TF-Fed-Charlie Cache,,Plate,,,contour,Contour Base,,6
+,TF-Fed-Charlie Cache,,Plate,,,elevatorsupport,Elevator Support L&R Arm,,4
+,TF-Fed-Charlie Cache,,Plate,,,multi,Multi-Base,,10
+,TF-Fed-Charlie Cache,,Plate,,,offsetcone,Offset Cone Base,,6
+,TF-Fed-Charlie Cache,,Plate,,,springloaded,Spring Loaded Connector,,4
+,TF-Fed-Charlie Cache,,Plate,,,vbase,V-Base,,10
+,TF-State Cache,,Strut,LS 203,Gold,,,,2
+,TF-State Cache,,Strut,LS 304,Gold,,,,4
+,TF-State Cache,,Strut,LS 406,Gold,,,,6
+,TF-State Cache,,Strut,LS 610,Gold,,,,6
+,TF-State Cache,,Strut,LS 1016,Gold,,,,2
+,TF-State Cache,,Strut,AT 12-15,Grey,,,,6
+,TF-State Cache,,Strut,AT 19-25,Grey,,,,10
+,TF-State Cache,,Strut,AT 25-36,Grey,,,,12
+,TF-State Cache,,Strut,AT 37-58,Grey,,,,8
+,TF-State Cache,,Strut,AT 56-88,Grey,,,,6
+,TF-State Cache,,Strut,LK 19-25,LockStroke,,,,4
+,TF-State Cache,,Strut,LK 25-36,LockStroke,,,,6
+,TF-State Cache,,Strut,LK 36-57,LockStroke,,,,6
+,TF-State Cache,,Strut,LK 55-89,LockStroke,,,,4
+,TF-State Cache,,Extension,,Gold,,,12,12
+,TF-State Cache,,Extension,,Gold,,,24,10
+,TF-State Cache,,Extension,,Gold,,,48,6
+,TF-State Cache,,Extension,,Gold,,,67,4
+,TF-State Cache,,Extension,,Grey,,,6,12
+,TF-State Cache,,Extension,,Grey,,,12,16
+,TF-State Cache,,Extension,,Grey,,,24,10
+,TF-State Cache,,Extension,,Grey,,,36,6
+,TF-State Cache,,Extension,,LockStroke,,,6,8
+,TF-State Cache,,Extension,,LockStroke,,,12,12
+,TF-State Cache,,Extension,,LockStroke,,,24,8
+,TF-State Cache,,Extension,,LockStroke,,,36,4
+,TF-State Cache,,Plate,,,hinged12,"12"" Hinged Base",,12
+,TF-State Cache,,Plate,,,hinged12ring,"12"" Hinged Base w/Anchor Ring",,8
+,TF-State Cache,,Plate,,,rigid12,"12"" Rigid Base",,12
+,TF-State Cache,,Plate,,,swivel12,"12"" Swivel Base",,8
+,TF-State Cache,,Plate,,,angle3x4,"3""x4"" Angle Base",,4
+,TF-State Cache,,Plate,,,chainwedge,"3/8"" Chain Wedge",,4
+,TF-State Cache,,Plate,,,rubber4,"4"" Rubber Base",,4
+,TF-State Cache,,Plate,,,channel4x4,"4""x4"" Channel Base",,6
+,TF-State Cache,,Plate,,,base45,45° Base,,8
+,TF-State Cache,,Plate,,,hinged6,"6"" Hinged Base",,16
+,TF-State Cache,,Plate,,,hinged6ring,"6"" Hinged Base w/Anchor Ring",,8
+,TF-State Cache,,Plate,,,rigid6,"6"" Rigid Base",,12
+,TF-State Cache,,Plate,,,swivel6,"6"" Swivel Base",,8
+,TF-State Cache,,Plate,,,channel6x6,"6""x6"" Channel Base",,6
+,TF-State Cache,,Plate,,,rubberangle,Angled Rubber Base (ESU),,4
+,TF-State Cache,,Plate,,,contour,Contour Base,,4
+,TF-State Cache,,Plate,,,multi,Multi-Base,,8
+,TF-State Cache,,Plate,,,offsetcone,Offset Cone Base,,4
+,TF-State Cache,,Plate,,,vbase,V-Base,,8
+,Tower 1,,Plate,,,channel6x6,"6""x6"" Channel Base",,2
+,Tower 1,,Plate,,,vbase,V-Base,,2
+,USAR-Alpha,,Strut,LS 304,Gold,,,,2
+,USAR-Alpha,,Strut,LS 406,Gold,,,,4
+,USAR-Alpha,,Strut,LS 610,Gold,,,,4
+,USAR-Alpha,,Strut,LS 1016,Gold,,,,2
+,USAR-Alpha,,Extension,,Gold,,,12,6
+,USAR-Alpha,,Extension,,Gold,,,24,6
+,USAR-Alpha,,Extension,,Gold,,,48,4
+,USAR-Alpha,,Extension,,Gold,,,67,2
+,USAR-Alpha,,Plate,,,hinged12,"12"" Hinged Base",,8
+,USAR-Alpha,,Plate,,,swivel12,"12"" Swivel Base",,4
+,USAR-Alpha,,Plate,,,channel6x6,"6""x6"" Channel Base",,4
+,USAR-Alpha,,Plate,,,multi,Multi-Base,,4
+,USAR-Bravo,,Strut,LS 304,Gold,,,,2
+,USAR-Bravo,,Strut,LS 406,Gold,,,,4
+,USAR-Bravo,,Strut,LS 610,Gold,,,,4
+,USAR-Bravo,,Extension,,Gold,,,24,6
+,USAR-Bravo,,Extension,,Gold,,,48,4
+,USAR-Bravo,,Plate,,,hinged12,"12"" Hinged Base",,6
+,USAR-Bravo,,Plate,,,swivel12,"12"" Swivel Base",,4
+,USAR-Bravo,,Plate,,,multi,Multi-Base,,4

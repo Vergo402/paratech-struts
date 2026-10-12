@@ -5,8 +5,6 @@ description: "Run the FEMA Level V structural collapse simulation — car into r
 
 # Level V Simulation — Verplanck Residential (Car Into Building)
 
-> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263.
-
 Stress-tests FieldShore at the smallest operational scale: one engine company, one IC, 3 shore points, single operational period. This is the baseline — if the app can't handle a single-company response cleanly, nothing else matters. Targets: basic SP creation/lifecycle, Quick Find → deploy flow, empty state handling, offline resilience, and inventory deduction at minimal scale.
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.
@@ -40,9 +38,21 @@ Stress-tests FieldShore at the smallest operational scale: one engine company, o
 | 5 | Inventory scale | Engine 1 only: 2 ACME 60" struts, 4 universal plates, 2 wedge plates |
 | 6 | Sandbox department | `sim-millbrook-fd` |
 | 7 | Hotwash format | Pearls & Pitfalls table + Gap Analysis |
-| 8 | App interaction | UI only — no direct Firebase writes, no JS eval, no localStorage manipulation |
+| 8 | App interaction | UI only — see the Run rules under Anti-patterns |
 | 9 | Conductor mode | Emergent — stages arrivals on schedule but doesn't force participant actions |
 | 10 | Ethics | Training-only fictional scenario; no real persons or addresses |
+
+**Shore-point status labels (7-status lifecycle).** Drive and observe by the v4 field labels:
+
+| lifecycle id | v4 label |
+|---|---|
+| pending | **Pending Equipment** |
+| process | **Equipment Assigned** |
+| strutset | **Strut Set** |
+| cutting | **Cutting Station** |
+| runner | **Runner** |
+| secured | **Wood Shore Secured** |
+| returned | **Strut Equipment Returned** |
 
 ---
 
@@ -72,7 +82,9 @@ Engine 1 carries a minimal shoring kit. This is intentional — tests whether th
 | Engine 1 | Universal Base Plate | 4 | 4 | — | plate |
 | Engine 1 | Wedge Plate | 2 | 2 | — | plate |
 
-**Import method:** IC participant navigates to **Settings → Department Code** (`sim-millbrook-fd`), then **Inventory tab → Import** using `.claude/skills/shared/millbrook-inventory.xlsx`. The full Millbrook fleet imports, but only Engine 1 is dispatched.
+**Import method:** on the IC's device (the department Admin — only Admin can import), **Settings › Data management › Import inventory** with `.claude/skills/shared/millbrook-inventory.csv` (Phase 2). The full Millbrook fleet imports, but only Engine 1 is dispatched.
+
+**Fixture:** `.claude/skills/shared/millbrook-inventory.csv` — 12 rows across 3 rigs: Engine 1, Engine 2, Rescue 1. Provenance: the existing Millbrook fleet CSV. Assumptions: none. The CSV uses v4 catalog names, so the app shows Engine 1's kit as 2 × AT 56-88 struts, 4 × 6" Swivel Base and 2 × 3/8" Chain Wedge rather than the table's names.
 
 ---
 
@@ -96,7 +108,7 @@ Manages the E+ event clock. Announces arrivals, triggers paper events, signals e
 **Mod-Data** — Data Integrity Observer
 - SP creation: does `groupId` generate correctly for single SPs?
 - Inventory deduction: when a strut deploys, does `available` decrement in real time?
-- localStorage persistence: if the preview reloads mid-operation, does state survive?
+- Local persistence (IndexedDB): if a device reloads mid-operation, does state survive?
 - Firebase sync: are writes queued if briefly offline?
 - Return equipment: does `available` re-increment after return? Does it clamp to `quantity`?
 - Console errors: any unhandled exceptions during the full SP lifecycle?
@@ -108,7 +120,7 @@ Manages the E+ event clock. Announces arrivals, triggers paper events, signals e
 - Sets incident name, building info, multi-building = no
 - Assigns roles in org chart
 - Monitors overall progress
-- Ends the operation when all SPs are secured/returned
+- Ends the operation when all SPs are Wood Shore Secured / Strut Equipment Returned
 - Posts Firebase feedback (in-app feedback form) for any dead-ends encountered
 
 **Participant-Shoring (FF-1)**
@@ -116,7 +128,7 @@ Manages the E+ event clock. Announces arrivals, triggers paper events, signals e
 - Opens Quick Find → enters measurement (e.g., 58") → selects header/footer deductions → reviews results
 - Creates shore points from Quick Find results
 - Deploys struts from inventory (selects apparatus, strut model, connectors)
-- Advances SP status: pending → in process → strut placed → cutting
+- Advances SP status: Pending Equipment → Equipment Assigned → Strut Set → Cutting Station
 - Reports any missing UI affordances or confusing labels
 
 **Participant-Entry (FF-2)**
@@ -127,8 +139,8 @@ Manages the E+ event clock. Announces arrivals, triggers paper events, signals e
 
 **Participant-Runner (FF-3)**
 - Receives cutting assignment from Shoring
-- Advances SP status: cutting → runner → secured
-- Returns equipment at end of operation (secured → returned)
+- Advances SP status: Cutting Station → Runner → Wood Shore Secured
+- Returns equipment at end of operation (Wood Shore Secured → Strut Equipment Returned)
 - Tests the return-equipment inventory transaction flow
 - Posts Firebase feedback for any friction in the runner workflow
 
@@ -140,20 +152,26 @@ Manages the E+ event clock. Announces arrivals, triggers paper events, signals e
 Ask Alex: start from the beginning, or resume from a specific phase? Default: Phase 1.
 
 ### Phase 1 — Pre-flight
-1. Read `APP_VERSION` in `app.js` → confirm current app version
-2. Start preview server: `npx serve -l 8095 .`
-3. Verify app loads via `preview_snapshot` — check version label in header
-4. Verify Firebase connection — Settings tab should show connection status
-5. **Success:** App loads, correct version displayed, no console errors
+1. Record `git rev-parse --short HEAD` (conductor). The baseline is the current v4-redesign build; the hash goes in the hotwash.
+2. Start the local Firebase emulators: `npm run emulators` (Auth :9099 + Realtime Database :9000; needs Java at `/opt/homebrew/opt/openjdk/bin`). Sim runs never touch the live `fieldshore-database` project.
+3. Start the emulator build: `npm run dev:emu` (Vite on **:5200** with `VITE_USE_EMULATORS=true`). The :5199 `fieldshore-v4-dev` preview config talks to the real project and is for single-device UI work only — not for sims.
+4. Open one device per participant: four separate Playwright browser contexts against `http://localhost:5200` (channel `'chrome'`). Phone contexts (`isMobile` + `hasTouch`) get the status slider; mouse contexts get the status buttons. Use phone contexts for the IC and the Runner (radio in hand / gloves on). Reference driver: `.claude/audits/phase-j/262-ttx/driver.mjs` (the #262 TTX, 3 devices).
+5. **IC device — the conductor sets it up, then hands it to Participant-IC.** `/auth` → "Create Account" segment → Display name `Capt. Maria Torres`, a throwaway email, a password of 6+ characters → **Create Account**. With no department the account lands on `/create-department`: enter `sim-millbrook-fd` as the department name → **Create department**. Record the invite code from the success panel, then **Done**. The creator is the department **Admin** — the only built-in role that can start and end an operation, import inventory and assign the org chart. Accounts that join by code get the **Default** role (read + field work), which is why the IC's account must be the one that creates the department.
+6. **Crew devices (FF-1 Connors, FF-2 Okafor, FF-3 Marsh):** Create Account the same way with the persona's display name, then `/join-department` → enter the invite code → **Join department** → **Continue**.
+7. A first-run tour ("Measure the opening", Skip/Next) appears after setup — dismiss it with **Skip** on every device where it shows.
+8. The sandbox department is created fresh on the emulator every run. Emulator data is ephemeral, so nothing carries over from a previous run and there is nothing to reset.
+9. **Success:** four devices signed in to `sim-millbrook-fd` (IC = Admin, crew = Default), no console errors on any device.
 
 ### Phase 2 — Inventory Import (UI only)
-1. Navigate to **Settings tab**
-2. Enter department code: `sim-millbrook-fd`
-3. Navigate to **Inventory tab → Import**
-4. Import `.claude/skills/shared/millbrook-inventory.xlsx`
-5. Verify via `preview_snapshot`: Engine 1 appears with 2 ACME 60" struts, 4 universal plates, 2 wedge plates
-6. Check `preview_console_logs` for any import errors
-7. **Success:** Inventory tab shows correct Engine 1 inventory; no console errors
+1. On the IC device (Admin): `location.assign('/settings')` → **Data management** → **Import inventory**. Import before Phase 4 creates the operation so the counts are a clean baseline.
+2. Run the 4-step flow with `.claude/skills/shared/millbrook-inventory.csv`: pick the file → columns auto-map → row validation (12 rows, none rejected) → review + commit.
+3. `location.assign('/inventory')` and read the accessibility tree. The rig scope tabs are exactly **Engine 1**, **Engine 2** and **Rescue 1**, and each rig's counts match the fixture:
+   - Engine 1: 2 × AT 56-88 strut, 4 × 6" Swivel Base, 2 × 3/8" Chain Wedge
+   - Engine 2: 2 × AT 56-88 strut, 4 × 6" Swivel Base, 2 × 3/8" Chain Wedge
+   - Rescue 1: 4 × AT 37-58 strut, 2 × AT 56-88 strut, 2 × 24" extension, 8 × 6" Swivel Base, 4 × 6" Rigid Base, 4 × 3/8" Chain Wedge
+4. On one crew device, open `/inventory` and confirm the same three rigs and counts arrived through cloud sync.
+5. Check console errors on every device.
+6. **Success:** the three rigs show the fixture counts on the IC and crew devices; no console errors.
 
 ### Phase 3 — Spawn Agents
 Spawn all 7 agents in a **single message with 7 parallel Agent tool calls**:
@@ -162,15 +180,16 @@ Each agent receives:
 - Scenario overview (building, collapse, victim, hazards)
 - Their specific persona brief (from Participant Personas section)
 - Event clock (from Event Clock section)
-- App URL: `http://localhost:8095`
-- **UI-only constraint**: participants use ONLY `preview_click`, `preview_fill`, `preview_snapshot`, `preview_console_logs`. No direct Firebase, no JS eval, no localStorage. If the app can't do something through its UI, that's a finding.
+- App URL: `http://localhost:5200` (the emulator build from Phase 1)
+- Their device: each participant gets the browser context signed in as their persona (Phase 1); moderators get read access to the participants' devices
+- The Run rules (under Anti-patterns)
 
 **Success:** All 7 agents acknowledge; conductor announces "E+0:00 — dispatch received, Engine 1 responding."
 
 ### Phase 4 — Event Clock
 Conductor drives the timeline per the Event Clock section below. Participants interact with the app in-character. Moderators observe silently and log to JSONL.
 
-**Success:** All 3 SPs reach terminal status (secured or returned). Operation ended via UI. Moderator notes ≥ 5 entries each.
+**Success:** All 3 SPs reach terminal status (Wood Shore Secured or Strut Equipment Returned). Operation ended via UI. Moderator notes ≥ 5 entries each.
 
 ### Phase 5 — Hotwash
 1. Each participant submits AAR (4 questions):
@@ -178,9 +197,9 @@ Conductor drives the timeline per the Event Clock section below. Participants in
    - Q2: What actually happened when you used it?
    - Q3: Why was there a difference (if any)?
    - Q4: What should the app do differently?
-2. Each moderator submits findings summary (top 3 observations, each with severity + v4.0 phase tag)
+2. Each moderator submits findings summary (top 3 observations, each with severity + v4 design ref)
 3. Synthesize into Pearls & Pitfalls table
-4. Write gap analysis mapping each Pitfall to MASTER-PLAN.md Phase 3
+4. Write gap analysis mapping each Pitfall to its v4 design ref (a `docs/v4-design/` file or ADR, or —), and record the Phase 1 commit hash as the build baseline
 
 **Success:** Pearls & Pitfalls table complete; gap analysis written.
 
@@ -208,7 +227,7 @@ Surface: {app surface}
 {Critical / High / Medium}
 
 ## v4.0 Coverage
-MASTER-PLAN Phase: {phase or —}
+v4 design ref: {docs/v4-design file or ADR, or —}
 Status: {Covered / Gap / New idea}
 
 Generated by FieldShore simulation skill sim-level-v
@@ -216,7 +235,7 @@ EOF
 )"
 ```
 
-After posting, run `feedback-review` to sweep any in-app feedback entries posted by participants.
+After posting, sweep the in-app feedback participants posted. On an emulator run it lands in the emulator's root `/feedback` node, not the live project, so `feedback-review` won't see it: before stopping the emulators the conductor reads it with `curl -s -H 'Authorization: Bearer owner' 'http://127.0.0.1:9000/feedback.json?ns=fieldshore-database-default-rtdb'` and files any Critical/High/Medium entry as above.
 
 **Success:** All Critical/High/Medium pitfalls have GitHub issue numbers.
 
@@ -226,28 +245,28 @@ After posting, run `feedback-review` to sweep any in-app feedback entries posted
 
 ### Mod-UX Checklist
 
-| # | Item | v4.0 Phase | Surface |
+| # | Item | v4 design ref | Surface |
 |---|------|------------|---------|
-| U-1 | Quick Find: can IC enter 58" and get a usable result with only 2 ACME 60" struts available? | 3E | Quick Find |
-| U-2 | Add SP modal: is the Save button visible without scrolling? (IP-007 regression) | 3C | SP modal |
-| U-3 | Empty state: what does Operations tab show before any operation is created? | 3C | Operations |
-| U-4 | SP card: is the status badge readable at a glance on mobile? | 3C | SP cards |
-| U-5 | Deploy flow: can a strut be deployed from inventory to SP in < 5 taps? | 3C | Deploy |
-| U-6 | Return equipment: is the flow obvious when all SPs are secured? | 3C | Return |
-| U-7 | Org chart: can IC assign roles with 4 personnel and only 1 apparatus? | 3B | Org chart |
-| U-8 | Offline: if preview goes offline mid-operation, does the UI indicate it? | 3F | Offline |
+| U-1 | Quick Find: can IC enter 58" and get a usable result with only 2 ACME 60" struts available? | ADR-031 | Quick Find |
+| U-2 | Add SP modal: is the Save button visible without scrolling? (IP-007 regression) | 09-workflows/11-adding-a-shore-point.md | SP modal |
+| U-3 | Empty state: what does Operations tab show before any operation is created? | 09-workflows/10-starting-an-operation.md | Operations |
+| U-4 | SP card: is the status badge readable at a glance on mobile? | ADR-010 / ADR-011 | SP cards |
+| U-5 | Deploy flow: can a strut be deployed from inventory to SP in < 5 taps? | 09-workflows/12-deploying-a-strut.md / ADR-033 | Deploy |
+| U-6 | Return equipment: is the flow obvious when all SPs are Wood Shore Secured? | 09-workflows/15-secured-returned.md | Return |
+| U-7 | Org chart: can IC assign roles with 4 personnel and only 1 apparatus? | ADR-008 | Org chart |
+| U-8 | Offline: if a device goes offline mid-operation, does the UI indicate it? | ADR-041 | Offline |
 
 ### Mod-Data Checklist
 
-| # | Item | v4.0 Phase | Surface |
+| # | Item | v4 design ref | Surface |
 |---|------|------------|---------|
-| D-1 | SP creation: `groupId` and `groupIndex` correct for single (non-grouped) SPs? | 3C | Firebase |
-| D-2 | Inventory deduction: `available` decrements on deploy, increments on return? | 3B | Inventory |
-| D-3 | localStorage: operation state persists across preview reload? | 3F | Persistence |
-| D-4 | Firebase sync: write completes within 2 seconds of UI action? | 3F | Sync |
+| D-1 | SP creation: `groupId` and `groupIndex` correct for single (non-grouped) SPs? | 09-workflows/11-adding-a-shore-point.md | Firebase |
+| D-2 | Inventory deduction: `available` decrements on deploy, increments on return? | ADR-041 | Inventory |
+| D-3 | Local store (IndexedDB): operation state persists across a device reload? | ADR-041 | Persistence |
+| D-4 | Firebase sync: write completes within 2 seconds of UI action? | ADR-041 | Sync |
 | D-5 | Console errors: any unhandled exceptions during full SP lifecycle? | — | Console |
-| D-6 | End operation: does `activeOperation` clear from localStorage and Firebase? | 3C | Cleanup |
-| D-7 | Inventory validate rule: do all writes pass Firebase security rules? | 3A | Security |
+| D-6 | End operation: does the operation status move to `ended` in the local store (IndexedDB) and in Realtime Database? | 09-workflows/16-end-of-operation.md | Cleanup |
+| D-7 | Inventory validate rule: do all writes pass Firebase security rules? | ADR-009 | Security |
 
 ---
 
@@ -263,7 +282,7 @@ After posting, run `feedback-review` to sweep any in-app feedback entries posted
 > You are Firefighter Priya Okafor, Engine 1. You're assisting with entry and shoring. You're relatively new to FieldShore — you opened it once in training but never used it on a real call. You'll try to use Quick Find to look up a measurement independently. If the app confuses you, that's a finding — say what you expected vs what you see.
 
 ### Runner — FF-3
-> You are Firefighter Danny Marsh, Engine 1. You're the runner — cutting wood, delivering materials, marking status updates. You're working from your phone with work gloves on. You need to advance shore point statuses through cutting → runner → secured, then return equipment at the end. You interact with the app ONLY through its UI. Report any touch target that's too small for gloved fingers.
+> You are Firefighter Danny Marsh, Engine 1. You're the runner — cutting wood, delivering materials, marking status updates. You're working from your phone with work gloves on. You need to advance shore point statuses through Cutting Station → Runner → Wood Shore Secured, then return equipment at the end. You interact with the app ONLY through its UI. Report any touch target that's too small for gloved fingers.
 
 ---
 
@@ -281,11 +300,11 @@ After posting, run `feedback-review` to sweep any in-app feedback entries posted
 | E+0:30 | SP #2 deployed | — | Shoring: deploy 2nd strut → SP #2. **Note: Engine 1 is now at 0 available struts.** |
 | E+0:32 | SP #3 needed | — | Shoring: Quick Find → 44" raker. **Stress test: no struts left in inventory. What does the app show?** |
 | E+0:35 | Raker improvised | Paper event: "Crew advises using cribbing and lumber for raker shore. No strut needed." | IC: create SP #3 as manual entry (no strut deployed) |
-| E+0:40 | Cutting begins | — | Shoring: advance SP #1 and #2 to "cutting" status |
-| E+0:45 | Victim contact | Paper event: "Entry crew has victim contact. Victim ambulatory with assistance. Beginning removal." | Runner: advance SP #1 to "runner" |
-| E+0:50 | Victim removed | Announce: "Victim removed and transferred to EMS. All clear." | Runner: advance SP #2 to "runner" |
+| E+0:40 | Cutting begins | — | Shoring: advance SP #1 and #2 to "Cutting Station" status |
+| E+0:45 | Victim contact | Paper event: "Entry crew has victim contact. Victim ambulatory with assistance. Beginning removal." | Runner: advance SP #1 to "Runner" |
+| E+0:50 | Victim removed | Announce: "Victim removed and transferred to EMS. All clear." | Runner: advance SP #2 to "Runner" |
 | E+1:00 | Gas secured | Paper event: "Gas company on scene. Service shut off at meter." | — |
-| E+1:15 | SPs secured | — | Runner: advance SP #1 and #2 to "secured" |
+| E+1:15 | SPs secured | — | Runner: advance SP #1 and #2 to "Wood Shore Secured" |
 | E+1:30 | Demob begins | Announce: "Building and Codes en route. Begin equipment return." | Runner: return equipment on SP #1 and #2 |
 | E+1:45 | Equipment returned | — | IC: verify inventory shows 2/2 available again |
 | E+2:00 | Operation ends | Announce: "Command terminated. Engine 1 available." | IC: end operation via UI |
@@ -296,34 +315,40 @@ After posting, run `feedback-review` to sweep any in-app feedback entries posted
 
 ### Pearls & Pitfalls Table
 
-| # | Type | Surface | Finding | Severity | MASTER-PLAN Phase | Issue |
+| # | Type | Surface | Finding | Severity | v4 design ref | Issue |
 |---|------|---------|---------|----------|-------------------|-------|
-| _P-01_ | _Pearl/Pitfall_ | _area_ | _description_ | _Crit/High/Med/Low_ | _3X.Y or —_ | _#NNN_ |
+| _P-01_ | _Pearl/Pitfall_ | _area_ | _description_ | _Crit/High/Med/Low_ | _ADR-0NN / docs/v4-design file, or —_ | _#NNN_ |
 
 ### Gap Analysis
 
-| Finding | Covered by v4.0? | MASTER-PLAN Phase | Action |
+| Finding | Covered by v4.0? | v4 design ref | Action |
 |---------|-------------------|-------------------|--------|
-| _description_ | _Covered / Gap / New idea_ | _3X.Y or —_ | _action_ |
+| _description_ | _Covered / Gap / New idea_ | _ADR-0NN / docs/v4-design file, or —_ | _action_ |
 
 ---
 
 ## Anti-patterns
 
-- **DO NOT** write directly to Firebase, localStorage, or sessionStorage. If the UI can't do it, log it as a finding.
-- **DO NOT** use `preview_eval` to execute app functions. Participants use `preview_click` and `preview_fill` only.
-- **DO NOT** skip Phase 2 (inventory import). The app's behavior with empty inventory is a separate test within Phase 4.
-- **DO NOT** create more than 3 shore points. This is a Level V — the scenario is deliberately small.
-- **DO NOT** advance the event clock faster than participants can interact. Wait for acknowledgment before moving on.
-- **DO NOT** let moderators interrupt participants. Moderators observe and log silently.
+**Run rules.** These apply to every agent in the run.
+
+- Participants act only through the app's UI — if the UI can't do something, that's a finding. Log it; don't work around it.
+- The one allowed page-level command is `location.assign('/<tab>')` to switch tabs (`/quickfind`, `/operations`, `/inventory`, `/command`, `/settings`), because the bottom tab bar is a router link that synthetic clicks can't drive. There is no other page evaluation: no calling app functions, no storage writes, no database writes.
+- Participants use click, fill, the accessibility tree, screenshots and console errors. Moderators only read: accessibility tree, screenshots and console errors.
+- Synthetic clicks don't flush React synchronously, so read the resulting state in a separate call.
+- The run uses the local emulators and the :5200 build only, never the live project.
+- Phase 2 (inventory import) always runs before Phase 4. The app's behavior with an empty inventory is a separate test within Phase 4.
+- Create no more than 3 shore points. Level V is deliberately small.
+- The conductor advances the event clock only after participants acknowledge, never faster than they can interact.
+- Moderators observe and log silently and never interrupt participants.
+- Only the conductor runs git (the Phase 1 commit hash); participants and moderators never do.
 
 ---
 
 ## Notes
 
-- **Sandbox department:** `sim-millbrook-fd` — shared by Levels II–V (Level I uses `sim-surfside-ttx-2-v4`). Reset by ending/archiving the operation between runs.
-- **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx` — full Millbrook fleet. Only Engine 1 is dispatched in this scenario.
-- **App version baseline:** v3.17.2. Update the version check in Phase 1 when running against v4.0+.
-- **MASTER-PLAN reference:** Phase tags reference `.claude/plans/MASTER-PLAN.md` Release 3 phases (3A–3F).
+- **Sandbox department:** `sim-millbrook-fd` — the department name Levels II–V use (Level I uses `sim-surfside-ttx-2-v4`). The conductor creates it fresh on the local emulator every run (Phase 1); emulator data is ephemeral, so there is nothing to reset between runs.
+- **Inventory source:** `.claude/skills/shared/millbrook-inventory.csv` — full Millbrook fleet (12 rows: Engine 1, Engine 2, Rescue 1). Only Engine 1 is dispatched in this scenario.
+- **App version baseline:** current v4-redesign build (record the commit hash in the hotwash).
+- **v4 design ref:** checklist and hotwash refs point at the best-matching v4 design doc, relative to `docs/v4-design/` (start at `00-INDEX.md`). ADRs live in `11-decisions/` — ADR-008 NIMS org, ADR-010–013 status model / colour / measurement, ADR-017 roles, ADR-041 sync and event fold — and workflows in `09-workflows/`.
 - **Runtime output:** Write hotwash artifacts to `.claude/simulations/level-v-sim/runtime/`.
 - **Prior simulation:** This is the smallest of 5 escalating simulations. See also: `/sim-level-iv`, `/sim-level-iii`, `/sim-level-ii`, `/sim-level-i`.

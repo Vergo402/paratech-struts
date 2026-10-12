@@ -5,8 +5,6 @@ description: "Run the FEMA Level III structural collapse simulation — warehous
 
 # Level III Simulation — Meadowville Warehouse (Roof Pancake)
 
-> **v3-era scenario — re-point before running.** This sim's launch steps, login flow and storage reads target the v3 root app (`npx serve -l 8095 .`, Settings → Department Code, localStorage). v4 has no Department Code screen and imports CSV, so running it against v4 as written produces false findings. Re-point it using `sim-level-iv`'s Phase 1–2 setup (local Firebase emulators + real sign-up) before any v4 run — scheduled after Stage B gates #265/#263.
-
 Stress-tests FieldShore at extended-attack scale: command transfer, OP period transition, concurrent multi-agent writes, LongShore struts with unrated-zone warnings, and 25 shore points across 3 geographic divisions. This is where the app must prove it can handle a real multi-hour collapse operation with rotating leadership and mutual aid — the threshold between "working fire" and "campaign incident."
 
 > **TRAINING DISCLAIMER:** This is a fictional scenario for software testing purposes only. All persons, addresses, units, and events are fabricated. No real incident is depicted or referenced.
@@ -45,11 +43,25 @@ Stress-tests FieldShore at extended-attack scale: command transfer, OP period tr
 | 3 | Shore point target | 25 (20 single verticals/rakers + 1 LongShore group of 3 + 1 Double-T group of 2) |
 | 4 | Roster granularity | Individual role assignment with named ICS leadership |
 | 5 | Inventory scale | 9 Millbrook apparatus + County Engine 4 (mutual aid): ~30 ACME, 2 LongShore, 10 extensions |
-| 6 | Sandbox department | `sim-millbrook-fd` |
+| 6 | Sandbox department | `sim-millbrook-fd` — created fresh on the local emulators each run (Phase 1); other devices join with its invite code |
 | 7 | Hotwash format | Pearls & Pitfalls table + Gap Analysis |
 | 8 | App interaction | UI only |
 | 9 | Command transfer | E+2:00 IC #1 (Torres) → IC #2 (Whitfield) — tests role history preservation (IP-006) |
 | 10 | OP2 boundary | E+6:00 — new IAP, OSC rotation, resource redeployment |
+
+**Shore-point status lifecycle (7 statuses).** Event-clock and checklist status words use these field labels:
+
+| lifecycle id | v4 label |
+|---|---|
+| pending | **Pending Equipment** |
+| process | **Equipment Assigned** |
+| strutset | **Strut Set** |
+| cutting | **Cutting Station** |
+| runner | **Runner** |
+| secured | **Wood Shore Secured** |
+| returned | **Strut Equipment Returned** |
+
+**Grouped shores.** The shore type sets the group: a Vertical T-Shore takes 1 strut, a Double-T Vertical Shore 2, a 3-Post Vertical Shore 3. A Double-T's or 3-Post's struts share one group that moves lock-step before Cutting Station and individually from Cutting Station on. The Add form's "Number of Shore Sets" makes that many separate shores, not a group. The scenario's "LongShore group of 3" is one 3-Post Vertical Shore built with LongShore struts; the "Double-T group of 2" is one Double-T Vertical Shore. Those three are the only shore types, so the Division Charlie rakers (Shoring-C, S-7) are expected findings.
 
 ---
 
@@ -109,7 +121,7 @@ Dispatched apparatus from Millbrook fleet + County mutual aid:
 
 **Total on scene:** ~30 ACME struts, 2 LongShore, 10 extensions, full plate/lumber complement.
 
-**Import:** `.claude/skills/shared/millbrook-inventory.xlsx` via Inventory → Import.
+**Fixture:** `.claude/skills/shared/sim-level-iii-inventory.csv` — 35 rows across 8 stocked rigs (County Engine 4, Engine 1, Engine 2, Engine 3, Heavy Rescue 1, Ladder 1, Rescue 1, Squad 1), imported in Phase 2. It carries the per-rig table above in v4 catalog names; the per-rig table is the authority over the "~30 ACME" total, so the fixture holds 38 AcmeThread struts, 2 LongShore struts, 10 extensions and 68 plates. Names follow `millbrook-inventory.csv` first and the v3 Millbrook spreadsheet second: ACME 36" = AT 25-36, 48" = AT 37-58, 60/72/84/96/120" = AT 56-88 (no AcmeThread strut reaches 96"/120" without an extension; Heavy Rescue 1's three sizes merge into one row of 12); LongShore 96" = LS 610 (72–116"; LS 812 is not in the catalog); universal = `swivel6`, wedge = `chainwedge`, chimney = `contour`, ACME foot = `rigid12`, ACME head = `hinged6`. Lumber has no rows — inventory holds struts, extensions and plates, and wood is chosen per shore point. Extension systems and lengths are chosen: Grey 24" ×2 on Rescue 1, Grey 12" ×2 on Squad 1, and Grey 12" ×2 + Grey 36" ×2 + Gold 24" ×2 on Heavy Rescue 1, so not every 96"/120" shore can be extended at once. The CSV can't carry apparatus Type and the importer types any unknown name as Other, so Phase 2 builds the 10-rig roster with types first (BC-1 and EMS-1 carry no stock and have no rows). Expected findings from this fixture: the LongShore 3-Post needs 3 LongShore struts but 2 are on scene; LS 610 stock can't reach the over-16-ft unrated zone; and County Engine 4 is an ordinary rig in the sim department because the outside-department equipment surface is deferred (parity matrix, ADR-022), which U-11 records.
 
 ---
 
@@ -156,33 +168,36 @@ Focus: LongShore strut selection (unrated-zone warning for lengths > 16 ft), woo
 
 **Participant-Entry (Engine 1 FF)** — Entry team member. Uses Quick Find independently. Tests whether the app handles multiple simultaneous Quick Find sessions (different measurements from different users).
 
-**Participant-Runner (Engine 3 FF)** — Advances SPs through cutting → runner → secured. Tests individual advancement on grouped SPs (LongShore group of 3, Double-T group of 2).
+**Participant-Runner (Engine 3 FF)** — Advances SPs through Cutting Station → Runner → Wood Shore Secured. Tests individual advancement on grouped SPs (LongShore group of 3, Double-T group of 2).
 
 ---
 
 ## Execution Phases
 
 ### Phase 0 — Intent
-Start fresh or resume from OP2? Default: OP1.
+Start fresh or resume from OP2? Default: OP1. Resuming needs the same emulator session still running (emulator data does not survive a restart); otherwise start fresh.
 
 ### Phase 1 — Pre-flight
-1. Confirm app version (v3.17.2+)
-2. Start preview: `npx serve -l 8095 .`
-3. Verify load + Firebase connection
-4. **Success:** App loads, version confirmed
+1. Conductor records the baseline, the current `v4-redesign` build: `git rev-parse --short HEAD` (conductor only; the hash goes in the hotwash).
+2. Start the local Firebase emulators fresh for each run: `npm run emulators` (Auth :9099 + Realtime Database :9000; needs Java at `/opt/homebrew/opt/openjdk/bin`). Stop any instance left from a prior run first — a still-running emulator keeps that run's accounts, and the same emails then fail at sign-up. Sim runs never touch the live `fieldshore-database` project.
+3. Start the app against them: `npm run dev:emu` (Vite on :5200 with `VITE_USE_EMULATORS=true`). The :5199 `fieldshore-v4-dev` preview config talks to the real project and is not for sims.
+4. Devices: one Playwright browser context per participant against `http://localhost:5200` (channel `'chrome'`). Phone contexts (`isMobile` + `hasTouch`) get the status slider; mouse contexts get buttons. Reference driver: `.claude/audits/phase-j/262-ttx/driver.mjs` (the #262 TTX, 3 devices).
+5. The conductor's device creates the sandbox department: `/auth` → "Create Account" segment → Display name, Email, Password (≥6 characters) → **Create Account**. A new account with no department lands on `/create-department`: name it `sim-millbrook-fd` → **Create department**. Record the invite code from the success panel, then tap **Done**. This account is the department's Admin. Dismiss the first-run tour ("Measure the opening") with **Skip**.
+6. A fresh emulator start is empty, so the sandbox department is new every run and nothing needs resetting afterward.
+7. **Success:** App loads on :5200 against the emulators, `sim-millbrook-fd` exists, invite code recorded, console clean.
 
 ### Phase 2 — Inventory Import (UI only)
-1. Settings → Department Code: `sim-millbrook-fd`
-2. Inventory → Import: `.claude/skills/shared/millbrook-inventory.xlsx`
-3. Verify all dispatched apparatus inventories visible
-4. **Success:** ~30 ACME + 2 LongShore + extensions + plates visible across apparatus
+1. On the conductor's (Admin) device, build the roster on `/inventory` with **Add apparatus** (Apparatus name + Type). Names must match the fixture byte for byte: Engine 1, Engine 2, Engine 3, County Engine 4 = Engine · Ladder 1 = Ladder · Rescue 1, Heavy Rescue 1 = Rescue · Squad 1 = Squad · BC-1 = Chief · EMS-1 = Other (10 rigs).
+2. Settings › Data management › **Import inventory** (or the import/export button in the Inventory header) → pick `.claude/skills/shared/sim-level-iii-inventory.csv` → columns auto-map → row validation (35 rows, none rejected) → review + commit. Import before creating the Meadowville operation so the counts are a clean baseline.
+3. On `/inventory`, check every rig scope tab and its per-rig counts against the fixture (see Inventory Baseline). Console clean.
+4. **Success:** 10 rigs on the roster, 8 stocked; 38 AcmeThread + 2 LongShore struts, 10 extensions and 68 plates, each rig matching its fixture rows.
 
 ### Phase 3 — Spawn Agents
-14 agents in a **single message**. Each receives scenario, persona, event clock, UI-only constraint.
+14 agents in a **single message**. Each receives the scenario, its persona, the event clock and the run rules (Anti-patterns section). Each participant's first step is device setup in its own browser context: sign up at `/auth` ("Create Account"); on `/create-department` tap **Join an existing department**, type the Phase 1 invite code into "Enter it by hand" → **Join department**, wait for "Joined sim-millbrook-fd" → **Continue**; dismiss the first-run tour with **Skip** if it appears. Joined accounts get the Default role (read + field work), which can't create or end an operation, so once the OSC (Torres) and IC (Whitfield) participants have joined, the conductor gives both the Admin role: Settings › Administration › **Users & roles** → tap the member → pick Admin in the Member sheet. Everyone else stays Default; record any other action Default blocks in the hotwash.
 
 ### Phase 4 — Event Clock
 Key stress moments:
-- E+0:22: Heavy Rescue 1 arrives with primary strut kit — large inventory import test
+- E+0:22: Heavy Rescue 1 arrives with primary strut kit — the largest rig in the Phase 2 import
 - E+2:00: **Command transfer** Torres → Whitfield. Torres becomes OSC. Tests IP-006 role history.
 - E+3:00: HazMat paper event — LN2 dewar intact but inaccessible. Tests hazard recording.
 - E+4:00–5:00: Peak SP creation — Shoring-A and Shoring-C both creating/deploying simultaneously (concurrent write stress)
@@ -190,7 +205,7 @@ Key stress moments:
 - E+6:00: **OP2 boundary** — OSC rotation (Torres → Vega), crew rotation, new IAP
 - E+8:00: Victim #2 located
 - E+9:30: Victim #2 recovery (deceased)
-- E+10:00–11:00: All SPs secured
+- E+10:00–11:00: All SPs Wood Shore Secured
 - E+11:00–12:00: Equipment return + operation end
 
 **Success:** All 25 SPs at terminal status. OP transition completed. Role history preserved. Moderator notes >= 10 entries each.
@@ -199,7 +214,7 @@ Key stress moments:
 AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls + Gap Analysis.
 
 ### Phase 5b — Issue Posting
-`[SIM-III]` prefix. `feedback-review` sweep.
+`[SIM-III]` prefix. After posting, sweep the in-app feedback participants posted. On an emulator run it lands in the emulator's root `/feedback` node, not the live project, so `feedback-review` won't see it: before stopping the emulators the conductor reads it with `curl -s -H 'Authorization: Bearer owner' 'http://127.0.0.1:9000/feedback.json?ns=fieldshore-database-default-rtdb'` and files any Critical/High/Medium entry as above.
 
 ---
 
@@ -207,67 +222,67 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 
 ### Mod-UX Checklist
 
-| # | Item | v4.0 Phase | Surface |
-|---|------|------------|---------|
-| U-1 | SP card density: are 25 cards navigable without performance degradation? | 3C | SP cards |
-| U-2 | Division filter/sort: can OSC see only Division Alpha SPs? Division Charlie? | 3C | Operations |
-| U-3 | OP transition: how does the UI signal "new operational period"? Any workflow? | 3C | Operations |
-| U-4 | Command transfer UI: does it guide the user through ICS-201 brief steps? | 3B | Org chart |
-| U-5 | LongShore in Quick Find: when user enters 96" measurement, does LongShore appear as an option? | 3E | Quick Find |
-| U-6 | Unrated zone warning: for LongShore > 16 ft, does the warning appear? Is it dismissible? | 3E | Quick Find |
+| # | Item | v4 design ref | Surface |
+|---|------|---------------|---------|
+| U-1 | SP card density: are 25 cards navigable without performance degradation? | — | SP cards |
+| U-2 | Division filter/sort: can OSC see only Division Alpha SPs? Division Charlie? | ADR-008 | Operations |
+| U-3 | OP transition: how does the UI signal "new operational period"? Any workflow? | ADR-039 | Operations |
+| U-4 | Command transfer UI: does it guide the user through ICS-201 brief steps? | ADR-021 | Org chart |
+| U-5 | LongShore in Quick Find: when user enters 96" measurement, does LongShore appear as an option? | ADR-031 | Quick Find |
+| U-6 | Unrated zone warning: for LongShore > 16 ft, does the warning appear? Is it dismissible? | ADR-031 | Quick Find |
 | U-7 | Gloved use: at 25 SPs, can a user scroll + tap a specific card with heavy winter gloves? | — | Global |
-| U-8 | Dawn transition: app usable in both dark and light conditions during the same operation? | — | Theme |
-| U-9 | Multi-apparatus deploy picker: with 10 apparatus on scene, is the picker overwhelming? | 3C | Deploy |
-| U-10 | Crew rotation: when OSC hands off to new person, how is this reflected in the app? | 3B | Org chart |
-| U-11 | Mutual aid apparatus: is County Engine 4 distinguishable from Millbrook apparatus? | 3B | Inventory |
+| U-8 | Dawn transition: app usable in both dark and light conditions during the same operation? | ADR-011 | Theme |
+| U-9 | Multi-apparatus deploy picker: with 10 apparatus on scene, is the picker overwhelming? | ADR-033 | Deploy |
+| U-10 | Crew rotation: when OSC hands off to new person, how is this reflected in the app? | ADR-008 | Org chart |
+| U-11 | Mutual aid apparatus: is County Engine 4 distinguishable from Millbrook apparatus? | ADR-022 | Inventory |
 
 ### Mod-Data Checklist
 
-| # | Item | v4.0 Phase | Surface |
-|---|------|------------|---------|
-| D-1 | Concurrent writes: do Shoring-A and Shoring-C both write SPs without overwriting each other? | 3F | Firebase |
-| D-2 | Role history: after command transfer at E+2:00, is Torres's previous IC assignment preserved? (IP-006) | 3B | Roles |
-| D-3 | OP snapshot: is OP1 state captured/accessible after OP2 begins? | 3C | Operations |
-| D-4 | LongShore group: `groupId` correct for 3-member group? `groupTotal`=3? | 3C | Firebase |
-| D-5 | Double-T group: `groupId` correct for 2-member group? `groupTotal`=2? | 3C | Firebase |
-| D-6 | Inventory deduction across apparatus: struts from Heavy Rescue 1, Engine 1, Squad 1 all tracked? | 3B | Inventory |
-| D-7 | Firebase under sustained load: any 429s or timeouts during peak SP creation (E+4:00–5:00)? | 3F | Network |
+| # | Item | v4 design ref | Surface |
+|---|------|---------------|---------|
+| D-1 | Concurrent writes: do Shoring-A and Shoring-C both write SPs without overwriting each other? | ADR-041 | Firebase |
+| D-2 | Role history: after command transfer at E+2:00, is Torres's previous IC assignment preserved? (IP-006) | ADR-008, ADR-021 | Roles |
+| D-3 | OP snapshot: is OP1 state captured/accessible after OP2 begins? | ADR-039 | Operations |
+| D-4 | LongShore group: `groupId` correct for 3-member group? `groupTotal`=3? | — | Firebase |
+| D-5 | Double-T group: `groupId` correct for 2-member group? `groupTotal`=2? | — | Firebase |
+| D-6 | Inventory deduction across apparatus: struts from Heavy Rescue 1, Engine 1, Squad 1 all tracked? | ADR-033, ADR-041 | Inventory |
+| D-7 | Firebase under sustained load: any 429s or timeouts during peak SP creation (E+4:00–5:00)? | ADR-041 | Network |
 | D-8 | Console errors: tally all exceptions during 12-hour sim | — | Console |
-| D-9 | OSC rotation: when Torres→Vega, does the role assignment update atomically? | 3B | Roles |
+| D-9 | OSC rotation: when Torres→Vega, does the role assignment update atomically? | ADR-008 | Roles |
 
 ### Mod-NIMS Checklist
 
-| # | Item | v4.0 Phase | Surface |
-|---|------|------------|---------|
-| N-1 | Level III org: IC + Safety + OSC + Division/Group Sups. No PSC/LSC at this level. Correct? | 3B | Org chart |
-| N-2 | Division naming: Alpha (west/access), Bravo (north/dock), Charlie (east/collapse). Matches FEMA? | 3C | SP fields |
-| N-3 | Shoring Group vs Division: Shoring is functional (Group), not geographic (Division). App models this? | 3B | Org chart |
-| N-4 | Command transfer: ICS-201 brief — does the app support/guide this? | 3B | Command |
-| N-5 | Staging: mutual aid crew (County Engine 4) stages before assignment. App has staging concept? | 3B | Operations |
-| N-6 | Span of control: OSC has 4 direct reports (Div Alpha, Div Charlie, Shoring Group, Cutting). Within 3–7? | 3B | Org chart |
-| N-7 | OP periods: does the app formalize OP1 vs OP2 boundaries? Or is it free-form? | 3C | Operations |
+| # | Item | v4 design ref | Surface |
+|---|------|---------------|---------|
+| N-1 | Level III org: IC + Safety + OSC + Division/Group Sups. No PSC/LSC at this level. Correct? | ADR-008 | Org chart |
+| N-2 | Division naming: Alpha (west/access), Bravo (north/dock), Charlie (east/collapse). Matches FEMA? | ADR-008 | SP fields |
+| N-3 | Shoring Group vs Division: Shoring is functional (Group), not geographic (Division). App models this? | ADR-008 | Org chart |
+| N-4 | Command transfer: ICS-201 brief — does the app support/guide this? | ADR-021 | Command |
+| N-5 | Staging: mutual aid crew (County Engine 4) stages before assignment. App has staging concept? | ADR-008 | Operations |
+| N-6 | Span of control: OSC has 4 direct reports (Div Alpha, Div Charlie, Shoring Group, Cutting). Within 3–7? | ADR-008 | Org chart |
+| N-7 | OP periods: does the app formalize OP1 vs OP2 boundaries? Or is it free-form? | ADR-039 | Operations |
 
 ### Mod-Structural Checklist
 
-| # | Item | v4.0 Phase | Surface |
-|---|------|------------|---------|
-| S-1 | LongShore 96": load table returns correct capacity for this length? Match Paratech datasheet? | 3E | Load table |
-| S-2 | Unrated zone: if user enters >16 ft (192") for LongShore, warning surfaces? Requires acknowledgment? | 3E | Quick Find |
-| S-3 | ACME 36"–120" range: all lengths in the dispatched inventory return valid load table values? | 3E | Load table |
-| S-4 | Wood deduction: Double-T with 6x6 header/footer — deduction math correct? | 3E | Deductions |
-| S-5 | Base plate pairing: LongShore struts use correct connector types (not ACME plates)? | 3E | Deploy |
-| S-6 | Extension math: ACME 60" + extension — does Quick Find show extended range? | 3E | Quick Find |
-| S-7 | Raker shore: for Division Charlie exterior rakers, does the app handle raker-specific deductions? | 3E | Shore types |
+| # | Item | v4 design ref | Surface |
+|---|------|---------------|---------|
+| S-1 | LongShore 96": load table returns correct capacity for this length? Match Paratech datasheet? | — | Load table |
+| S-2 | Unrated zone: if user enters >16 ft (192") for LongShore, warning surfaces? Requires acknowledgment? | ADR-031 | Quick Find |
+| S-3 | ACME 36"–120" range: all lengths in the dispatched inventory return valid load table values? | — | Load table |
+| S-4 | Wood deduction: Double-T with 6x6 header/footer — deduction math correct? | ADR-012 | Deductions |
+| S-5 | Base plate pairing: LongShore struts use correct connector types (not ACME plates)? | ADR-033 | Deploy |
+| S-6 | Extension math: ACME 60" + extension — does Quick Find show extended range? | ADR-031 | Quick Find |
+| S-7 | Raker shore: for Division Charlie exterior rakers, does the app handle raker-specific deductions? | — | Shore types |
 
 ---
 
 ## Participant Personas
 
 ### IC — BC Whitfield
-> You are Battalion Chief Jim Whitfield, Millbrook FD. You arrive at E+2:00 to a well-established operation — Torres has been running it for 2 hours with 8 SPs already in progress. Torres briefs you: "One-story PEMB warehouse, east bay roof pancake. Two confirmed workers inside. We have 10 apparatus, Divisions Alpha and Charlie established, Shoring Group working interior. I'll stay as your OSC." You take the app from Torres and need to orient yourself to 8+ existing shore points, current role assignments, and resource status. Can the app give you a command picture fast? You interact ONLY through the UI.
+> You are Battalion Chief Jim Whitfield, Millbrook FD. You arrive at E+2:00 to a well-established operation — Torres has been running it for 2 hours with 8 SPs already in progress. Torres briefs you: "One-story PEMB warehouse, east bay roof pancake. Two confirmed workers inside. We have 10 apparatus, Divisions Alpha and Charlie established, Shoring Group working interior. I'll stay as your OSC." You take the app from Torres and need to orient yourself to 8+ existing shore points, current role assignments, and resource status. Can the app give you a command picture fast?
 
 ### Safety — BC-1
-> You are Battalion Chief Pat Donovan. You're the Safety Officer for this operation. You arrived at E+0:30 and have been monitoring hazards: west bay roof deflection (100-ft exclusion zone), LN2 dewar (northeast corner, HazMat consulted), cold stress (30-min work cycles). At E+3:00, the conductor will announce a HazMat update on the LN2 dewar. You want to record evolving hazard conditions in the app. You also need to ensure 30-min rehab cycles are tracked. You interact ONLY through the UI.
+> You are Battalion Chief Pat Donovan. You're the Safety Officer for this operation. You arrived at E+0:30 and have been monitoring hazards: west bay roof deflection (100-ft exclusion zone), LN2 dewar (northeast corner, HazMat consulted), cold stress (30-min work cycles). At E+3:00, the conductor will announce a HazMat update on the LN2 dewar. You want to record evolving hazard conditions in the app. You also need to ensure 30-min rehab cycles are tracked.
 
 ### OSC — Capt. Torres (OP1) / Lt. Vega (OP2)
 > OP1: You are Captain Maria Torres, acting as OSC after handing command to Whitfield at E+2:00. You direct tactical operations: telling Division Sups where to focus, prioritizing shoring locations, coordinating entry with shoring readiness. At E+6:00, you're relieved by Lt. Vega for OP2 — you've been on scene 6 hours and need rehab. How does the app handle the OSC handoff?
@@ -280,16 +295,16 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 > You are Lieutenant Kenji Hashimoto, Engine 3, Division Charlie Supervisor. You manage exterior operations on the east (collapse) side. Your crew is placing raker shores against the exterior wall. You coordinate with Shoring-C. You have ~10 SPs. You set Division to "Charlie" on each SP.
 
 ### Shoring-A — Heavy Rescue 1 FF-1
-> You are Firefighter Leo Marchetti, Heavy Rescue 1. You're the lead shoring specialist for interior operations (Division Alpha). You create ~15 SPs: single verticals (various measurements from 28" to 120") and a LongShore group of 3 (96" measurement). You deploy struts primarily from Heavy Rescue 1's inventory — it has the biggest kit. When Heavy Rescue runs out of a specific length, you pull from Engine inventories. You select appropriate connectors for each strut type. For the LongShore group, you verify the app handles LongShore-specific plates. You interact ONLY through the UI.
+> You are Firefighter Leo Marchetti, Heavy Rescue 1. You're the lead shoring specialist for interior operations (Division Alpha). You create ~15 SPs: single verticals (various measurements from 28" to 120") and a LongShore group of 3 (96" measurement). You deploy struts primarily from Heavy Rescue 1's inventory — it has the biggest kit. When Heavy Rescue runs out of a specific length, you pull from Engine inventories. You select appropriate connectors for each strut type. For the LongShore group, you verify the app handles LongShore-specific plates.
 
 ### Shoring-C — Squad 1 FF
 > You are Firefighter Dana Krug, Squad 1. You're handling exterior raker shores for Division Charlie. You create ~10 SPs: rakers at various angles against the east wall. You deploy from Squad 1 and Engine 3 inventories. You're working at the same time as Shoring-A (interior) — both of you are creating and deploying SPs simultaneously. If the app gets confused by concurrent writes, say what you see.
 
 ### Entry — Engine 1 FF
-> You are Firefighter Priya Okafor, Engine 1. You're on the interior entry team, Division Alpha. You assist Shoring-A by relaying measurements. You open Quick Find to verify strut selections independently — entering measurements like 96" (should show LongShore options) and 48" (ACME options). You interact ONLY through the UI.
+> You are Firefighter Priya Okafor, Engine 1. You're on the interior entry team, Division Alpha. You assist Shoring-A by relaying measurements. You open Quick Find to verify strut selections independently — entering measurements like 96" (should show LongShore options) and 48" (ACME options).
 
 ### Runner — Engine 3 FF
-> You are Firefighter Carlos Medina, Engine 3. You're the runner for Division Charlie. You cut wood, deliver materials, and update SP statuses. You advance SPs from cutting → runner → secured individually. For the LongShore group (3 members), you advance each one separately — if the app forces group advancement during the cutting phase, that's a finding. At end of operation, you return equipment. You interact ONLY through the UI.
+> You are Firefighter Carlos Medina, Engine 3. You're the runner for Division Charlie. You cut wood, deliver materials, and update SP statuses. You advance SPs from Cutting Station → Runner → Wood Shore Secured individually. For the LongShore group (3 members), you advance each one separately — if the app forces group advancement during the cutting phase, that's a finding. At end of operation, you return equipment.
 
 ---
 
@@ -319,9 +334,9 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 | E+6:00 | **OP2 BOUNDARY** | Announce: "OP2 is now in effect. Lt. Vega is OSC. Torres released to rehab. County Engine 4 crew rotating to Entry Alpha." | **OSC handoff. Crew rotation. New OP in app?** |
 | E+7:00 | SP creation continues | — | Shoring-A + Shoring-C: 25 SPs total by now |
 | E+8:00 | Victim #2 located | Paper event: "Entry Team Alpha reports second victim located, row 7, under collapsed roof section. No signs of life." | IC: notes in app |
-| E+9:00 | All SPs cutting+ | — | Runner: advancing all SPs through individual cutting workflow |
+| E+9:00 | All SPs at Cutting Station or later | — | Runner: advancing all SPs through individual cutting workflow |
 | E+9:30 | Victim #2 recovery | Paper event: "Victim 2 confirmed deceased. Recovery operation complete." | — |
-| E+10:00 | All SPs secured | — | All 25 SPs at "secured" status |
+| E+10:00 | All SPs Wood Shore Secured | — | All 25 SPs at "Wood Shore Secured" status |
 | E+10:30 | Demob planning | Announce: "Structural engineer on scene. Building condemned. Begin equipment return." | — |
 | E+11:00 | Equipment return | — | Runner: returns all equipment across all apparatus |
 | E+11:30 | Inventory verification | — | IC: verify inventory counts restored |
@@ -333,37 +348,42 @@ AAR from all 9 participants + 4 moderator findings. Synthesize Pearls & Pitfalls
 
 ### Pearls & Pitfalls Table
 
-| # | Type | Surface | Finding | Severity | MASTER-PLAN Phase | Issue |
-|---|------|---------|---------|----------|-------------------|-------|
+| # | Type | Surface | Finding | Severity | v4 design ref | Issue |
+|---|------|---------|---------|----------|---------------|-------|
 | _fill during Phase 5_ | | | | | | |
 
 ### Gap Analysis
 
-| Finding | Covered by v4.0? | MASTER-PLAN Phase | Action |
-|---------|-------------------|-------------------|--------|
+| Finding | Covered by v4.0? | v4 design ref | Action |
+|---------|-------------------|---------------|--------|
 | _fill during Phase 5_ | | | |
 
 ---
 
 ## Anti-patterns
 
-- **DO NOT** write directly to Firebase, localStorage, or sessionStorage.
-- **DO NOT** use `preview_eval` to execute app functions.
-- **DO NOT** skip the command transfer at E+2:00. Role history preservation (IP-006) is a primary stress target.
-- **DO NOT** skip the OP2 boundary at E+6:00. Testing OP transitions is critical at this scale.
-- **DO NOT** have Shoring-A and Shoring-C take turns. They must work **simultaneously** to test concurrent write behavior.
-- **DO NOT** advance past victim paper events without observing IC/Safety response.
-- **DO NOT** let moderators interrupt participants.
-- **DO NOT** create SPs beyond the 25-target. This is Level III — controlled scale.
+**Run rules.** Every agent gets these in Phase 3.
+
+- Participants act only through the app's UI — if the UI can't do something, that's a finding. Nobody writes to Firebase (emulators included), IndexedDB, localStorage or sessionStorage, and nobody calls app functions from the page.
+- The one allowed page command is `location.assign('/<tab>')` to switch tabs (`/quickfind`, `/operations`, `/inventory`, `/command`, `/settings`), because the bottom tab bar is a router link that synthetic clicks can't drive. Send it on its own, one per switch.
+- Act with click and fill; observe with the accessibility tree, screenshots and console errors. Synthetic clicks don't update the screen right away, so read the result in a separate call.
+- Only the conductor runs git, and only `git rev-parse --short HEAD` for the hotwash.
+- Run the command transfer at E+2:00. Role history preservation (IP-006) is a primary stress target.
+- Run the OP2 boundary at E+6:00. OP transitions are a primary test at this scale.
+- Shoring-A and Shoring-C work at the same time, not in turns, so concurrent writes get tested.
+- Hold the clock at each victim paper event until the IC and Safety responses have been observed.
+- Moderators observe silently and never interrupt participants.
+- Stop at 25 SPs. Level III is controlled scale.
 
 ---
 
 ## Notes
 
-- **Sandbox department:** `sim-millbrook-fd`
-- **Inventory source:** `.claude/skills/shared/millbrook-inventory.xlsx`
-- **App version baseline:** v3.17.2
-- **MASTER-PLAN reference:** `.claude/plans/MASTER-PLAN.md` Release 3 phases 3A–3F
+- **Sandbox department:** `sim-millbrook-fd`, created fresh on the local emulators each run (Phase 1)
+- **Run environment:** `npm run emulators` + `npm run dev:emu` (:5200); one Playwright browser context per device (reference: `.claude/audits/phase-j/262-ttx/driver.mjs`)
+- **Inventory source:** `.claude/skills/shared/sim-level-iii-inventory.csv`
+- **App version baseline:** current v4-redesign build (record the commit hash in the hotwash)
+- **v4 design reference:** `docs/v4-design/00-INDEX.md`; ADRs in `docs/v4-design/11-decisions/` (ADR-008 NIMS org, ADR-010 status commit, ADR-017 roles, ADR-021 command transfer, ADR-039 operational periods, ADR-041 event order + derived inventory)
 - **Runtime output:** `.claude/simulations/level-iii-sim/runtime/`
 - **Key stress targets:** Command transfer + role history, OP period transition, concurrent writes, LongShore struts + unrated zone, 25-SP card density
 - **Related simulations:** `/sim-level-iv` (smaller), `/sim-level-ii` (larger)
