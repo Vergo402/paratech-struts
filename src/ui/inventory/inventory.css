@@ -662,6 +662,5 @@
 /* The cloud line when rows didn't reach the cloud: amber (--status-waiting-text reads on
    the card in all four themes). */
 .fs-import-result p.fs-import-result-warn { color: var(--status-waiting-text); }
-.fs-import-h--failed { color: var(--danger-text); }
-/* Sunlight: --danger-text is white (on-banner) — the standalone heading takes the solid red. */
-[data-theme='sunlight'] .fs-import-h--failed { color: var(--danger-bg); }
+/* The heading sits on the sheet surface, so it takes --danger-ink (clears 7:1 in Sunlight). */
+.fs-import-h--failed { color: var(--danger-ink); }

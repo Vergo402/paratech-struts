@@ -64,6 +64,7 @@ const ON_SURFACE: [file: string, selector: string][] = [
   ['../admin/admin.css', '.fs-modal-error'],
   ['../operations/operations.css', '.fs-modal-error'],
   ['../inventory/inventory.css', '.fs-modal-error'],
+  ['../inventory/inventory.css', '.fs-import-h--failed'],
   ['../../app/styles.css', '.fs-set-row--danger .fs-set-row-label'],
 ];
 
@@ -83,6 +84,14 @@ describe('danger text/borders on a page surface use --danger-ink (Sunlight white
     const [body] = rulesFor('./primitives.css', '.fs-gate-ack-box');
     expect(body).toMatch(/border:\s*2px solid var\(--danger-ink\)/);
     expect(body).toMatch(/[^-]color:\s*var\(--danger-text\)/);
+  });
+
+  it('the "Import failed" heading has no theme override repainting it off --danger-ink (#513 x #514)', () => {
+    // --danger-bg on white is 6.47:1 in Sunlight, under its 7:1 floor; --danger-ink clears it.
+    const scoped = [...read('../inventory/inventory.css').matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(
+      (m) => m[1]!.includes('.fs-import-h--failed') && m[1]!.trim() !== '.fs-import-h--failed',
+    );
+    for (const m of scoped) expect(m[2]).not.toMatch(/--danger-(text|bg)/);
   });
 
   it('no .fs-modal-error / .fs-field-msg--error rule anywhere still uses --danger-text', () => {

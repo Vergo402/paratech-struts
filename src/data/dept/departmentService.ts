@@ -379,6 +379,17 @@ export function createDepartmentService(deps: {
       // the rules deploy). The cloud push follows via the durable outbox below. The
       // invite code is persisted with it so Settings can show it after the sheet closes.
       await session.setDepartment({ id, name, role: ADMIN_ROLE_ID, inviteCode });
+      // The account now HAS a department — a join it queued offline is superseded. Left in
+      // place, the next online boot would join it to that other dept and reboot into it,
+      // with no in-app way back (dept switch is won't-fix). Clears row + banner (#466).
+      // The department already exists at this point, so a storage failure here must never
+      // fail the create: swallow it, still clear the banner, and leave a diagnostic trail.
+      try {
+        await clearIntent();
+      } catch (err) {
+        syncStatusStore.setPendingJoin(null);
+        void logSyncEvent('pending_join_clear_failed', { deptId: id, error: String(err) });
+      }
 
       // One atomic set at the dept node: the create-only .write grant cascades to
       // the whole subtree, so members/roles need no per-child .write (rules.ts).

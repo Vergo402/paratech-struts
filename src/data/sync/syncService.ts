@@ -36,7 +36,10 @@ import type { SyncDiagnosticDetail } from './diagnostics';
 // one-shot read confirms the cloud does not hold it, it leaves the queue for the store's
 // quarantine table, the local fold converges to the cloud, the user is told once in the "had
 // no effect" list, and the pass continues with the next event (the backoff is NOT reset).
-// Transient failures keep the strict-order stop + backoff.
+// Transient failures keep the strict-order stop + backoff. A terminal refusal while the auth
+// layer reports no signed-in user (the boot window before Auth restores the user) is treated as
+// transient too, and leaves the strike count untouched (deps.isSignedIn; a failed token
+// refresh is NOT covered — currentUser stays set — see #520).
 //
 // MERGE (reconcile) — the listener hands over the ENTIRE department snapshot each time.
 // Unknown ids go to ops.ingestRemote (appended unconditionally; the pure reducers no-op a
@@ -78,6 +81,8 @@ export const TERMINAL_REJECTIONS_BEFORE_QUARANTINE = 3;
  */
 export function isTerminalRejection(err: unknown): boolean {
   const msg = String(err);
+  // A `.validate` failure also surfaces as PERMISSION_DENIED — a client ahead of the deployed
+  // rules (or behind them) reads as terminal, hence the deploy-order rule (ADR-041/042).
   return /permission[_ ]denied/i.test(msg) || /first argument contains/i.test(msg) || /exceeds the maximum size|too large/i.test(msg);
 }
 
@@ -100,6 +105,13 @@ async function firebaseUpdate(path: string, values: Record<string, unknown>): Pr
 async function firebaseGet(path: string): Promise<unknown> {
   const { rtdb, ref, get } = await import('./firebase');
   return (await get(ref(rtdb, path))).val();
+}
+
+/** Default auth probe (#471) — is the auth layer signed in right now? Lazy for the same
+ *  reason; only consulted after a terminal rejection, so Firebase is already loaded then. */
+async function firebaseSignedIn(): Promise<boolean> {
+  const { firebaseAuth } = await import('../auth/firebase');
+  return firebaseAuth.currentUser != null;
 }
 
 /** Default failure ledger — lazy for the same reason (L-8, never throws). */
@@ -226,6 +238,13 @@ export function createSyncService(deps: {
   /** Reactive PAR/pending-sync count sink (#352 Command chrome). Injected so unit tests
    *  stay store-free; defaults to the syncStatus singleton. */
   notifyPendingResources?: (count: number) => void;
+  /** #471 — does the auth layer report a signed-in user? RTDB answers PERMISSION_DENIED to an
+   *  UNAUTHENTICATED connection; such a refusal says nothing about the write, so it never counts
+   *  as a strike. This covers the BOOT window — the local session already says member+dept
+   *  before Firebase Auth has restored the user. It does NOT cover a failed token refresh:
+   *  `currentUser` stays set until sign-out, so that case needs #520's `getIdToken()` probe.
+   *  Injected; defaults to Firebase Auth's currentUser. */
+  isSignedIn?: () => boolean | Promise<boolean>;
   /** Timer seam for the failure backoff retry (default: the global timers). */
   timers?: { setTimeout: (fn: () => void, ms: number) => unknown; clearTimeout: (handle: unknown) => void };
 }): SyncServiceApi {
@@ -236,6 +255,16 @@ export function createSyncService(deps: {
   const get = deps.get ?? firebaseGet;
   const cloud = deps.cloud ?? cloudIndex;
   const log = deps.log ?? firebaseLog;
+  const isSignedIn = deps.isSignedIn ?? firebaseSignedIn;
+  /** A terminal refusal counts only while the auth layer is signed in (#471). A probe that
+   *  fails is "not known to be signed in" — the safe side (no strike, no quarantine). */
+  async function signedIn(): Promise<boolean> {
+    try {
+      return await isSignedIn();
+    } catch {
+      return false;
+    }
+  }
   const deviceUid = deps.deviceUid ?? (() => sessionStore.store.getState().deviceUid);
   const notifyPending = deps.notifyPending ?? ((count) => syncStatusStore.setPending(count));
   const notifyError = deps.notifyError ?? ((stuck) => syncStatusStore.setSyncError(stuck));
@@ -402,7 +431,8 @@ export function createSyncService(deps: {
     try {
       return (await get(path)) ? 'held' : 'absent';
     } catch (err) {
-      return isTerminalRejection(err) ? 'absent' : 'unknown';
+      // Refused while signed out says nothing about the device's standing → could not confirm.
+      return isTerminalRejection(err) && (await signedIn()) ? 'absent' : 'unknown';
     }
   }
 
@@ -453,6 +483,9 @@ export function createSyncService(deps: {
       const reason = String(err);
       log('flush-failed', { path: pathOf(head), id: head.id, reason });
       if (isTerminalRejection(err)) {
+        // Signed out at the auth layer: the refusal is about the connection, not the write —
+        // transient, and the strike count is left exactly as it was (no strike, no reset).
+        if (!(await signedIn())) return 'stopped';
         if (group.length > 1) {
           // Never quarantine a batch wholesale: single out the refused event (no strike).
           splitBatch = head.batchId;

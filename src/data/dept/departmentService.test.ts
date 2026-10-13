@@ -559,6 +559,38 @@ describe('departmentService — offline join queue (Increment 4)', () => {
     expect(await intent()).toBeDefined(); // kept for A
   });
 
+  it('creating your own department drops a join queued offline — the next boot cannot join you elsewhere', async () => {
+    // Queued offline, then the same account creates its own dept instead. Leaving the
+    // intent would let the next online boot join them to the OTHER dept and reboot into it.
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    const r = await svc.createDepartment('Hartsdale Fire Department');
+    expect(r.ok).toBe(true);
+    expect(await intent()).toBeUndefined();
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    getMock.mockClear();
+    setMock.mockClear();
+    getMock.mockResolvedValue(okSnap(liveCode));
+    expect(await svc.retryPendingJoin()).toBe(false);
+    expect(getMock).not.toHaveBeenCalledWith({ path: `orgs/inviteCodes/${CODE}` });
+    expect(setMock).not.toHaveBeenCalled();
+    expect(session.store.getState().departmentId).toBe(r.ok ? r.department.id : null);
+  });
+
+  it('a failing intent cleanup never fails the create — the department already exists, the banner still clears', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    const del = vi.spyOn(db.meta, 'delete').mockRejectedValue(new Error('Dexie: QuotaExceededError'));
+    try {
+      const r = await svc.createDepartment('Hartsdale Fire Department');
+      expect(r.ok).toBe(true);
+      expect(session.store.getState().departmentId).toBe(r.ok ? r.department.id : null);
+      expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    } finally {
+      del.mockRestore();
+    }
+  });
+
   it('retryPendingJoin with no intent is a no-op', async () => {
     expect(await svc.retryPendingJoin()).toBe(false);
     expect(getMock).not.toHaveBeenCalled();

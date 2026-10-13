@@ -81,6 +81,7 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
   let failWith: string; //         the rejection message for failId (default: a transient 'upload boom')
   let denied: Set<string>; //     these ids are refused with PERMISSION_DENIED
   let lostAckId: string | null; // this id's write LANDS, then the promise rejects
+  let signedIn: boolean; //        what the auth layer reports (#471: strikes count only while signed in)
   let publishOnWrite: boolean; //  false = the listener is not attached (index stays stale)
   let beforeLand: ((id: string, value: Record<string, unknown>) => Promise<void>) | null;
   let getSpy: ReturnType<typeof vi.fn>;
@@ -175,6 +176,7 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
       notifyError: (e) => errors.push(e),
       notifyRemoteCuts: (n) => cuts.push(n),
       timers: fakeTimers,
+      isSignedIn: () => signedIn,
       ...over,
     });
 
@@ -191,6 +193,7 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
     failWith = 'upload boom';
     denied = new Set();
     lostAckId = null;
+    signedIn = true;
     failUpdates = false;
     publishOnWrite = true;
     beforeLand = null;
@@ -428,6 +431,59 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
       ['write_rejected', { path: `orgs/dept-1/events/op-1/${b.id}`, id: b.id, reason: expect.stringMatching(/PERMISSION_DENIED/) }],
     ]);
     expect(ops.rejected.getState().events.map((e) => e.id)).toEqual([b.id]); // told once, in the "had no effect" list
+  });
+
+  it('signed out at the auth layer, PERMISSION_DENIED is transient: three timer passes do NOT quarantine, the backoff continues', async () => {
+    // RTDB answers PERMISSION_DENIED to an unauthenticated connection (the boot window before
+    // Firebase Auth restores the user) while the local session already says member+dept.
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    signedIn = false;
+    await sync.flush();
+    await retry();
+    await retry();
+    await retry();
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(ops.has(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(rejectedLogs()).toEqual([]);
+    expect(getSpy).not.toHaveBeenCalledWith(`orgs/dept-1/events/op-1/${b.id}`); // no confirmation read
+    expect(scheduled.map((t) => t.ms)).toEqual([60_000]); // backoff kept growing
+    expect(errors.at(-1)).toBe(true);
+  });
+
+  it('a signed-out refusal leaves the strike count untouched: strikes taken while signed in still count after sign-in returns', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    await sync.flush(); // strike 1 (signed in)
+    await retry(); //       strike 2 (signed in)
+    signedIn = false;
+    await retry(); //       refused while signed out — not a strike, not a reset
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    signedIn = true;
+    await retry(); //       strike 3 — quarantined
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(await db.quarantine.count()).toBe(1);
+  });
+
+  it('a confirmation read refused while signed out is "could not confirm", not "absent": no quarantine', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    getSpy.mockImplementation(async () => {
+      signedIn = false; // the session dropped between the third refusal and the read
+      throw new Error(DENIED);
+    });
+    await strikeOut();
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(rejectedLogs()).toEqual([]);
   });
 
   it('commit / online / first-merge triggers never add a strike: back-to-back refusals between retries do not count', async () => {
