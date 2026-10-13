@@ -1,0 +1,5 @@
+SUPERSEDED - not authoritative.
+These files record the first pass, taken against build A (dist/sw.js sha256 f396caba..., icons rendered from favicon.svg,
+precache 62 entries / 3,347,815 B). dist/ was rebuilt at 02:12 local while that pass was running (build B, sw.js sha256 72647bf7...,
+icons from app-icon.svg, 62 entries / 3,357,687 B), so the whole run was redone against build B. The authoritative evidence is
+../captured-text/ and the numbered PNGs in ../ . Kept only because build A shows the same Workbox revision-key behaviour.

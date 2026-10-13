@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'node:url';
+import { includeManifestIcons, manifest, workboxPrecache } from './src/app/pwa.config';
 
 // ADR-005/007 — single-package PWA. Vite's root is the field-PWA entry (src/app);
 // the v3 app at the repo root (index.html / app.js / sw.js) is never seen by Vite
@@ -57,11 +58,16 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Manifest + precache scope live in src/app/pwa.config.ts (unit-tested).
+      manifest,
+      includeManifestIcons,
       // ADR-007 — vite-plugin-pwa (Workbox) retires the hand-maintained sw.js.
       // The one behavior that survives from v3's sw.js: Firebase realtime traffic
       // is NEVER cached. (Inert in this slice — data/sync is a local stub — but the
       // route is written now so the rule is not forgotten when real Firebase lands.)
       workbox: {
+        globPatterns: workboxPrecache.globPatterns,
+        globIgnores: workboxPrecache.globIgnores,
         // The public welcome page is its own entry — without this, offline
         // navigations to /welcome.html get the app shell instead, and the app
         // router 404s a page that is sitting right there in the precache.

@@ -1,0 +1,32 @@
+{
+  "_note": "Three separate evals on tab-3 at http://localhost:5198/favicon.svg (no app JS running). 1) state left by preview_start (it opened tab-3 at / before the wipe), 2) the wipe, 3) fresh-state proof.",
+  "1_before_wipe": {
+    "controller": "http://localhost:5198/sw.js",
+    "registrations": [{"scope": "http://localhost:5198/", "active": "activated", "waiting": null, "installing": null, "script": "http://localhost:5198/sw.js"}],
+    "cacheNames": ["workbox-precache-v2-http://localhost:5198/"],
+    "cacheDetail": {"workbox-precache-v2-http://localhost:5198/": 62},
+    "indexedDB": [],
+    "localStorageKeys": [],
+    "sessionStorageKeys": [],
+    "storageEstimate": {"usage": 3427048, "quota": 153966746344},
+    "isSecureContext": true,
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Claude/2.31226.1 Chrome/152.0.7977.130 Safari/537.36"
+  },
+  "2_wipe_result": {
+    "unregistered": [{"scope": "http://localhost:5198/", "result": true}],
+    "cachesDeleted": [{"name": "workbox-precache-v2-http://localhost:5198/", "result": true}],
+    "idbDeleted": [],
+    "localStorage_sessionStorage": "cleared"
+  },
+  "3_after_wipe_fresh_state_proof": {
+    "registrations": 0,
+    "cacheNames": [],
+    "indexedDBCount": 0,
+    "localStorageLength": 0,
+    "sessionStorageLength": 0,
+    "storageEstimateUsageBytes": 3406336,
+    "storageEstimateNote": "navigator.storage.estimate() lags cache deletion; registrations/caches/IDB/localStorage counts above are the proof",
+    "controllerStillAttached": true,
+    "controllerNote": "old SW stays attached to the already-open favicon.svg document until it navigates; its registration is gone"
+  }
+}

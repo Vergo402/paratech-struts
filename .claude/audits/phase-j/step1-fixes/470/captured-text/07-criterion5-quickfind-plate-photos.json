@@ -1,0 +1,27 @@
+{
+  "phase": "BUILD B CRITERION 5 - Quick Find Top plate grid open (pure read in a fresh navigation to /quickfind; no QA fetches in this document)",
+  "steps_driven": ["navigate http://localhost:5198/quickfind (SW-controlled)", "click the Deductions toggle button (ref_28) - expands the ledger", "click the Top plate button (ref_40) - opens the VisualGridPicker popover", "screenshot 15-quickfind-top-plate-grid-photos-loaded.png", "read DOM + performance entries (this file)"],
+  "controller": true,
+  "photoImgCount": 48,
+  "photoImgsLoaded_complete_and_naturalWidth_gt0": 48,
+  "photoImgsBroken": [],
+  "photoImgsNote": "48 = 24 plate photos x 2 mounted pickers (Top plate + Bottom plate grids)",
+  "fallbackInitialsSwatches_expected_for_None_only": ["N", "N"],
+  "naturalSizes_sample": {"/plates/angle3x4.jpg": "256x225", "/plates/chainwedge.jpg": "213x151", "/plates/rigid6.jpg": "136x134", "/plates/swivel6.jpg": "136x134", "/plates/contour.jpg": "213x201", "/plates/vbase.jpg": "213x208", "/plates/base45.jpg": "144x163"},
+  "plates_resource_timing": {
+    "count": 24,
+    "allWorkerStartGt0": true,
+    "allTransferSizeZero": true,
+    "initiator": "img",
+    "workerStart_ms": "7887-7888",
+    "rowsFormat": "[path, encodedBodySize]  (all with transferSize 0)",
+    "rows": [
+      ["/plates/angle3x4.jpg",8833],["/plates/chainwedge.jpg",5683],["/plates/rubber4.jpg",7632],["/plates/channelmetric4x6.jpg",10306],["/plates/channel4x4.jpg",10306],["/plates/channelmetric6x7.jpg",9691],
+      ["/plates/hinged6.jpg",10162],["/plates/hinged6ring.jpg",9249],["/plates/rigid6.jpg",5200],["/plates/swivel6.jpg",5432],["/plates/channel6x6.jpg",9691],["/plates/hinged12.jpg",10537],
+      ["/plates/hinged12ring.jpg",9982],["/plates/rigid12.jpg",10390],["/plates/swivel12.jpg",10516],["/plates/base45.jpg",6010],["/plates/threadedconn.jpg",10206],["/plates/rubberangle.jpg",13168],
+      ["/plates/contour.jpg",13053],["/plates/multi.jpg",6794],["/plates/elevatorsupport.jpg",7963],["/plates/vbase.jpg",6453],["/plates/offsetcone.jpg",8158],["/plates/springloaded.jpg",9790]
+    ]
+  },
+  "pickerHeadings_in_DOM": ["Available", "Not in inventory"],
+  "reading": "Every plate photo the Quick Find picker asked for was answered by the service worker with transferSize 0 and byte-for-byte the cached size (compare 03-criterion1-precache-inventory.json); none fell back to the initials swatch except 'None' by design."
+}

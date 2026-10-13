@@ -1,0 +1,24 @@
+{
+  "_note": "BUILD B re-run. Three separate evals on tab-3 at http://localhost:5198/favicon.svg (no app JS running). Eval 1 = state + wipe, eval 2 = fresh-state proof (separate eval).",
+  "1_before_wipe": {
+    "registrations": 1,
+    "cacheDetail": {"workbox-precache-v2-http://localhost:5198/": 62},
+    "localStorageKeys": ["fieldshore_entered"],
+    "indexedDB": ["fieldshore-dept-guest", "fieldshore-global", "firebase-heartbeat-database", "firebaseLocalStorageDb"]
+  },
+  "1_wipe_result": {
+    "unregistered": [{"scope": "http://localhost:5198/", "result": true}],
+    "cachesDeleted": [{"name": "workbox-precache-v2-http://localhost:5198/", "result": true}],
+    "idbDeleted": ["fieldshore-dept-guest", "fieldshore-global", "firebase-heartbeat-database", "firebaseLocalStorageDb"],
+    "localStorage_sessionStorage": "cleared"
+  },
+  "2_after_wipe_fresh_state_proof": {
+    "href": "http://localhost:5198/favicon.svg",
+    "registrations": 0,
+    "cacheNames": [],
+    "indexedDBCount": 0,
+    "indexedDBNames": [],
+    "localStorageLength": 0,
+    "sessionStorageLength": 0
+  }
+}

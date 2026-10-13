@@ -1,0 +1,66 @@
+QA #470 - criterion 7: console + network, tab-3 (http://localhost:5198), whole run
+===============================================================================
+Source: mcp__Claude_Browser__read_console_messages (limit 200, read at the end of the run, before the final cleanup)
+and read_network_requests (last 80 of 358 same-origin requests) and preview_logs for the server.
+The tool buffer spans navigations, so it includes the build A part of the run (superseded) and all of build B.
+
+Verbatim console lines, in order (21 total: 13 error, 8 warn), with attribution
+-------------------------------------------------------------------------------
+ 1 [warn]  Canvas2D: Multiple readback operations using getImageData ... willReadFrequently     <- QA pixel probe on the icons (build A criterion 2)
+ 2 [warn]  (same)                                                                               <- QA
+ 3 [warn]  (same)                                                                               <- QA
+ 4 [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)    <- QA's deliberate Firebase control GET (build A, criterion 4); RTDB denies an unauthenticated root read
+ 5 [warn]  A preload for 'http://localhost:5198/assets/preload-helper-B8tWKQ1F.js' is found, but is not used because it is a cross-world service worker resource mismatch.
+ 6 [warn]  The resource .../assets/preload-helper-B8tWKQ1F.js was preloaded using link preload but not used within a few seconds from the window's load event ...
+ 7 [error] Failed to load resource: net::ERR_CACHE_MISS                                          <- QA's fetch(ops-loop.mp4, {cache:'only-if-cached'}) probe (build B criterion 4)
+ 8 [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)    <- QA's Firebase control GET (build B criterion 4)
+ 9 [error] Failed to load resource: net::ERR_CONNECTION_REFUSED   \
+10 [error] (same)                                                  |  <- server STOPPED phase, in-page fetches: sw.js?dead, manifest.webmanifest?dead (controls) and
+11 [error] (same)                                                  |     poster.jpg, ops-loop.mp4 HEAD, shot-quickfind.png (negative controls) = 5 expected refusals
+12 [error] (same)                                                  |
+13 [error] (same)                                                 /
+14 [error] Failed to load resource: the server responded with a status of 401 (Unauthorized)    <- QA's Firebase fetch while the server was stopped (network up; answered by Firebase, not by a cache)
+15 [error] Failed to load resource: net::ERR_CONNECTION_REFUSED  \  <- offline /welcome.html: poster.jpg, shot-strutfit.png, shot-operations.png, ops-loop.mp4
+16 [error] (same)                                                 |     (welcome media is not precached, so it cannot load with the server dead; expected, see 08-offline-server-stopped.json)
+17 [error] (same)                                                 |
+18 [error] (same)                                                /
+19 [warn]  A preload for '.../preload-helper-B8tWKQ1F.js' is found, but is not used because it is a cross-world service worker resource mismatch.
+20 [warn]  The resource .../preload-helper-B8tWKQ1F.js was preloaded using link preload but not used within a few seconds ...
+21 [warn]  (same as 20)
+
+Tally: 13 errors = 3x 401 (QA's Firebase controls) + 1x ERR_CACHE_MISS (QA probe) + 9x ERR_CONNECTION_REFUSED (all inside the server-stopped phase, all expected).
+       8 warns = 3x Canvas2D (QA probe) + 2x "cross-world" preload mismatch + 3x "preloaded but not used" (lines 5/6 and 19/20/21).
+Nothing in the log is an unexpected app error: no 404/500, no uncaught exception, no "ServiceWorker script evaluation failed", no manifest/icon warning.
+
+The only app/SW-attributable lines are the preload-helper warnings (5, 6, 19, 20, 21). They are Chrome notices, not errors: Chrome says the early <link rel=modulepreload> fetch of preload-helper could not be reused for the request the page
+later makes (a "cross-world service worker resource mismatch"), so the file is requested a second time (the network log shows two GETs for it per controlled load;
+mechanism inferred from the message, not confirmed);
+the duplicate is answered from the precache as well (the server-stopped cold boot in 08-offline-server-stopped.json only worked because the SW answered every request), so there is no network cost.
+Attribution run (added after the 21 lines above were read): one more plain navigation to /quickfind with the SW already controlling, then a 6 s wait,
+added exactly one more pair (a "cross-world" line plus a "preloaded but not used" line): totals are now 3x cross-world and 4x not-used, 23 lines (13 error, 10 warn).
+So the pair recurs on SW-controlled loads (it arrives a few seconds after load; my earlier "no new lines after a reload" reads were taken too soon to see it).
+It is a Chrome notice, not an error, and it costs no network (the SW answers the duplicate request from the precache; see the offline cold boot).
+Likely pre-existing (the SW already precached the JS chunks before #470, so any controlled load would do this) but NOT verified against a pre-#470 build;
+cause not confirmed.
+
+Service worker context
+----------------------
+The page console cannot show the service worker's own console output (a separate worker context). Evidence that the worker itself is healthy instead:
+install -> activated in every run (never 'redundant', never stuck 'waiting'/'installing'), precache = 62 entries = the manifest in sw.js, no entry missing or extra,
+the SW answered every precached request (transferSize 0) including a full cold boot with the server process stopped, and an A->B update replaced the precache cleanly.
+Workbox fails the install if any single precache fetch fails, so 'activated' with 62 entries means all 62 fetched.
+
+Network (same-origin, last 80 of 358)
+-------------------------------------
+All 200 except the entries that were deliberately failed while the server was stopped:
+ GET sw.js?dead=<ts>, GET manifest.webmanifest?dead=<ts>, GET poster.jpg, HEAD ops-loop.mp4, GET shot-quickfind.png,
+ and the offline welcome.html media: poster.jpg, shot-strutfit.png, shot-operations.png, ops-loop.mp4  -> net::ERR_CONNECTION_REFUSED.
+After preview_start (new server) everything recovered: poster.jpg 200, sw.js 200 (sha256 = build B), same registration, still 62 cache entries.
+Firebase traffic seen: only QA's own control GETs to fieldshore-database-default-rtdb.firebaseio.com (401 Permission denied); the app itself made no Firebase
+request in guest Quick Find (read_network_requests filter 'firebase' / 'googleapis' returned none before the controls were issued).
+
+Server (preview_logs, both servers)
+-----------------------------------
+> vite preview --port 5198 --strictPort
+(node) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.   <- pre-existing Node notice
+Local: http://localhost:5198/  - no errors.

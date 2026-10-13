@@ -1,0 +1,19 @@
+{
+  "phase": "BUILD B CLEAN RESOURCE TIMING of the reloaded app document (pure read, taken before any QA fetch)",
+  "href": "http://localhost:5198/quickfind",
+  "controller": "http://localhost:5198/sw.js",
+  "navigation": {"type": "navigate", "name": "http://localhost:5198/", "workerStart_ms": 2, "transferSize": 0, "encodedBodySize": 2242},
+  "resourceCount": 6,
+  "allWorkerStartGt0": true,
+  "allTransferSizeZero": true,
+  "rowsFormat": "[path, initiator, workerStart_ms, transferSize, encodedBodySize]",
+  "rows": [
+    ["/assets/main-C8DWJljd.js", "script", 7, 0, 1771366],
+    ["/assets/main-DI4C_xeW.css", "link", 7, 0, 190441],
+    ["/registerSW.js", "script", 7, 0, 134],
+    ["/assets/preload-helper-B8tWKQ1F.js", "other", 7, 0, 1852],
+    ["/assets/geist-latin-wght-normal-BgDaEnEv.woff2", "css", 49, 0, 29400],
+    ["/assets/inter-latin-wght-normal-Dx4kXJAl.woff2", "css", 552, 0, 48256]
+  ],
+  "reading": "The reloaded document itself (index.html, 2,242 B) and all five subresources including the two app woff2 fonts were answered by the service worker with transferSize 0: no network bytes. index.html size matches the cached /index.html entry; the others match the byte sizes in 03-criterion1-precache-inventory.json."
+}

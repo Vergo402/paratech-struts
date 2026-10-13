@@ -1,0 +1,56 @@
+{
+  "phase": "BUILD B OFFLINE PROOF - the preview server process was STOPPED (preview_stop serverId 39a8ee71-9b81-46e9-8dff-7666ef44d4bc) while the SW-controlled tab-3 stayed open. The pane has no network toggle; a dead origin server is the offline.",
+  "preconditions_before_stop": {"controller": "http://localhost:5198/sw.js", "active": "activated", "cacheDetail": {"workbox-precache-v2-http://localhost:5198/": 62}, "servedSwJsSha256": "72647bf71ed4e55b1dbc861cf01da93ec745db8c8f012f35c21492ad960a30d0 (= dist/sw.js, build B)"},
+  "step1_inpage_fetches_with_server_dead": {
+    "controls_that_MUST_fail (URLs the precache does not hold, so they go to the dead server)": [
+      ["sw.js?dead=<ts> no-store", "REJECTED", "TypeError: Failed to fetch"],
+      ["manifest.webmanifest?dead=<ts> no-store", "REJECTED", "TypeError: Failed to fetch"]
+    ],
+    "NEGATIVE_welcome_media_MUST_fail": [
+      ["GET /media/welcome/poster.jpg no-store", "REJECTED", "TypeError: Failed to fetch"],
+      ["HEAD /media/welcome/ops-loop.mp4", "REJECTED", "TypeError: Failed to fetch"],
+      ["GET /media/welcome/shot-quickfind.png no-store", "REJECTED", "TypeError: Failed to fetch"]
+    ],
+    "PRECACHED_MUST_work_answered_by_the_SW": [
+      ["/plates/rigid6.jpg", 200, 5200, "image/jpeg"], ["/plates/contour.jpg", 200, 13053, "image/jpeg"], ["/plates/vbase.jpg", 200, 6453, "image/jpeg"], ["/plates/angle3x4.jpg", 200, 8833, "image/jpeg"],
+      ["/icon-192.png", 200, 4772, "image/png"], ["/icon-512.png", 200, 12494, "image/png"], ["/icon-512-maskable.png", 200, 9719, "image/png"], ["/apple-touch-icon.png", 200, 3845, "image/png"],
+      ["/favicon.svg", 200, 862, "image/svg+xml"], ["/manifest.webmanifest", 200, 522, "application/manifest+json"], ["/index.html", 200, 2242, "text/html;charset=utf-8"],
+      ["/assets/geist-latin-wght-normal-BgDaEnEv.woff2", 200, 29400, "font/woff2"]
+    ],
+    "firebase_host_with_the_internet_up": ["GET https://fieldshore-database-default-rtdb.firebaseio.com/.json?shallow=true no-store", 401, "answered by the live network (Permission denied), not by any cache"]
+  },
+  "step2_cold_navigation_to_quickfind_with_server_dead": {
+    "href": "http://localhost:5198/quickfind", "title": "FieldShore", "heading": "Quick Find", "readyState": "complete",
+    "controller": "http://localhost:5198/sw.js",
+    "navigation": {"workerStart_ms": 4, "transferSize": 0, "encodedBodySize": 2242, "responseStatus": 200, "servedAs": "index.html from the precache (NavigationRoute)"},
+    "resources_rowsFormat": "[path, initiator, workerStart_ms, transferSize, encodedBodySize, responseStatus]",
+    "resources": [
+      ["/assets/preload-helper-B8tWKQ1F.js", "other", 10, 0, 1852, 200],
+      ["/assets/main-C8DWJljd.js", "script", 10, 0, 1771366, 200],
+      ["/assets/main-DI4C_xeW.css", "link", 10, 0, 190441, 200],
+      ["/registerSW.js", "script", 10, 0, 134, 200],
+      ["/assets/geist-latin-wght-normal-BgDaEnEv.woff2", "css", 60, 0, 29400, 200],
+      ["/assets/inter-latin-wght-normal-Dx4kXJAl.woff2", "css", 563, 0, 48256, 200]
+    ],
+    "themeColorMeta": "#101214", "manifestHref": "http://localhost:5198/manifest.webmanifest",
+    "screenshot": "16-OFFLINE-server-stopped-quickfind-cold-boot.png"
+  },
+  "step3_top_plate_grid_with_server_dead": {
+    "clicks": ["Deductions toggle (ref_28)", "Top plate button (ref_40)"],
+    "photoImgCount": 48, "photoImgsLoaded": 48, "photoImgsBroken": [], "fallbackInitialsSwatches": ["N", "N"],
+    "platesResourceTimingCount": 24, "platesAllWorkerStartGt0": true, "platesAllTransferSizeZero": true, "platesAllStatus200": true,
+    "platesSample_rowsFormat": "[path, initiator, workerStart_ms, transferSize, encodedBodySize, responseStatus]",
+    "platesSample": [["/plates/chainwedge.jpg", "img", 11442, 0, 5683, 200], ["/plates/angle3x4.jpg", "img", 11442, 0, 8833, 200], ["/plates/channelmetric4x6.jpg", "img", 11442, 0, 10306, 200], ["/plates/rubber4.jpg", "img", 11442, 0, 7632, 200], ["/plates/channel4x4.jpg", "img", 11442, 0, 10306, 200]],
+    "thisDocumentFailedResources": [],
+    "screenshot": "17-OFFLINE-server-stopped-top-plate-grid-photos-loaded.png"
+  },
+  "step4_welcome_html_with_server_dead (expected trade-off, not a failure)": {
+    "href": "http://localhost:5198/welcome.html", "title": "FieldShore — Rescue shoring, tracked end to end",
+    "navigation": {"workerStart_ms": 2, "transferSize": 0, "encodedBodySize": 21680, "responseStatus": 200},
+    "servedBySwNoNetwork": ["/assets/welcome-CfKtVWVe.js", "/assets/welcome-BHO2JQlR.css", "/assets/preload-helper-B8tWKQ1F.js", "/registerSW.js", "/favicon.svg", "/assets/welcome-show-DoxBml_a.js", "/assets/fraunces-latin-wght-normal-ukD16Tqj.woff2", "/assets/public-sans-latin-wght-normal-DdeTHZLK.woff2"],
+    "failedOrZeroStatus": [["/media/welcome/poster.jpg", "img", 0], ["/media/welcome/shot-strutfit.png", "img", 0], ["/media/welcome/shot-operations.png", "img", 0]],
+    "videoElement": {"src": "http://localhost:5198/media/welcome/ops-loop.mp4", "poster": "/media/welcome/poster.jpg", "readyState": 0, "networkState": 1, "error": null},
+    "reading": "The welcome page shell, headline, CTA, fonts and scripts load offline from the precache; the footage (poster, loop video, product screenshots) is absent, exactly because media/welcome/** is excluded from the precache. Screenshot shows the text-only hero.",
+    "screenshot": "18-OFFLINE-server-stopped-welcome-html-text-only-no-footage.png"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "phase": "CRITERION 2 - manifest + head tags (eval on tab-3, http://localhost:5198/quickfind, SW-controlled)",
+  "manifestServed": {
+    "statusViaSW": 200,
+    "statusNetwork": 200,
+    "contentTypeViaSW": "application/manifest+json",
+    "contentTypeNetwork": "application/manifest+json",
+    "identicalViaSwAndNetwork": true,
+    "rawText": "{\"name\":\"FieldShore\",\"short_name\":\"FieldShore\",\"description\":\"Paratech rescue-strut selection, inventory, and shoring operations for USAR/FEMA teams\",\"start_url\":\"/\",\"display\":\"standalone\",\"background_color\":\"#101214\",\"theme_color\":\"#101214\",\"lang\":\"en\",\"scope\":\"/\",\"icons\":[{\"src\":\"/icon-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\",\"purpose\":\"any\"},{\"src\":\"/icon-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\",\"purpose\":\"any\"},{\"src\":\"/icon-512-maskable.png\",\"sizes\":\"512x512\",\"type\":\"image/png\",\"purpose\":\"maskable\"}]}\n"
+  },
+  "checks": {
+    "name": "FieldShore", "short_name": "FieldShore", "start_url": "/", "scope": "/", "display": "standalone", "lang": "en",
+    "theme_color": "#101214", "background_color": "#101214",
+    "description": "Paratech rescue-strut selection, inventory, and shoring operations for USAR/FEMA teams",
+    "iconCount": 3
+  },
+  "head": {
+    "linkManifest": {"hrefAttr": "/manifest.webmanifest", "resolved": "http://localhost:5198/manifest.webmanifest"},
+    "metaThemeColor": ["#101214"],
+    "appleTouchIcon": [{"href": "/apple-touch-icon.png", "resolved": "http://localhost:5198/apple-touch-icon.png", "httpStatus": 200, "decoded": "180x180", "bytes": 3845}],
+    "iconLinks": [{"rel": "icon", "type": "image/svg+xml", "href": "/favicon.svg"}],
+    "titleTag": "FieldShore"
+  },
+  "icons": [
+    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any", "httpStatus": 200, "contentType": "image/png", "bytes": 3070, "decodedWidth": 192, "decodedHeight": 192, "sizeMatchesDeclared": true, "pixelRGBA": {"topLeftCorner": [0,0,0,0], "centre": [28,31,35,255], "nearEdgeMid": [28,31,35,255]}},
+    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any", "httpStatus": 200, "contentType": "image/png", "bytes": 8547, "decodedWidth": 512, "decodedHeight": 512, "sizeMatchesDeclared": true, "pixelRGBA": {"topLeftCorner": [0,0,0,0], "centre": [28,31,35,255], "nearEdgeMid": [28,31,35,255]}},
+    {"src": "/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable", "httpStatus": 200, "contentType": "image/png", "bytes": 5496, "decodedWidth": 512, "decodedHeight": 512, "sizeMatchesDeclared": true, "pixelRGBA": {"topLeftCorner": [28,31,35,255], "centre": [28,31,35,255], "nearEdgeMid": [28,31,35,255]}}
+  ],
+  "_reading": "any icons are transparent at the corner (rounded tile); the maskable icon is opaque full-bleed #1C1F23 (28,31,35). All three decode to their declared size."
+}

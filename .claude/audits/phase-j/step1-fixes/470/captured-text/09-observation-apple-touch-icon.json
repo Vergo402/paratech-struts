@@ -1,0 +1,9 @@
+{
+  "phase": "OBSERVATION (not a brief criterion) - apple-touch-icon vs the manifest icons, build B, server up",
+  "rows": [
+    {"path": "/apple-touch-icon.png", "size": "180x180", "bytes": 3845, "topLeftPixelRGBA": [255,255,255,255], "centreRGBA": [28,31,35,255], "transparentPixelPct": 0, "mtimeOnDisk_public": "Jul 13 03:53 (pre-dates #470; unchanged between build A and build B, sha256 f98f9748eeea2a0b3da613de706a5415e543829b7f3b490c17695cb622fa576e)"},
+    {"path": "/favicon-32.png", "size": "32x32", "bytes": 1663, "topLeftPixelRGBA": [255,255,255,255], "centreRGBA": [13,19,30,255], "transparentPixelPct": 0}
+  ],
+  "screenshot": "19-apple-touch-icon-older-flat-lettermark-not-the-new-emblem.png",
+  "reading": "apple-touch-icon.png is a flat gold 'FS' lettermark on a slate tile baked onto an opaque WHITE square (no transparency). The three manifest icons (icon-192, icon-512, icon-512-maskable) show the new full-colour emblem (strut-built F, timber-and-gusset S). On iOS the home-screen icon comes from apple-touch-icon, so iOS and Android/desktop installs would show different artwork. Not part of the #470 PASS criteria; flagged for the orchestrator."
+}

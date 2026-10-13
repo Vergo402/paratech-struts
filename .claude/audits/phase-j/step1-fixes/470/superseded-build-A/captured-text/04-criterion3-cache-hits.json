@@ -1,0 +1,40 @@
+{
+  "phase": "CRITERION 3 - cache hits (eval on tab-3, http://localhost:5198/quickfind, SW-controlled)",
+  "precacheName": "workbox-precache-v2-http://localhost:5198/",
+  "HOW_TO_READ": "Workbox stores every entry that has a revision under a key with ?__WB_REVISION__=<md5> appended (34 of 62 entries: plates, icons, favicon, apple-touch-icon, index.html, welcome.html, registerSW.js, manifest). Only hashed assets/* entries (revision null, 28 of 62) are stored under the plain URL. So a plain caches.match('/plates/rigid6.jpg') returns undefined BY DESIGN; the hit is proven with caches.match(url, {ignoreSearch:true}) and with the exact revisioned cache key (both columns below). This is a harness nuance, not a product defect: the SW's own precache route resolves the revisioned key itself (see 05-sw-served-fetches.json).",
+  "summary_34_targets": {
+    "total": 34,
+    "plainCachesMatch_200": 1,
+    "plainCachesMatch_undefined": "33 (every revisioned target)",
+    "ignoreSearch_200": 33,
+    "ignoreSearch_undefined": ["/"],
+    "exactRevisionedKey_200": 33,
+    "exactRevisionedKey_undefined": ["/"],
+    "slashNote": "'/' has no cache entry of its own - navigations to / are answered by Workbox NavigationRoute with the precached index.html (registered with createHandlerBoundToURL('index.html')); /index.html itself is a hit."
+  },
+  "rows_ignoreSearch_and_exact_key": [
+    {"path": "/plates/rigid6.jpg", "plain": "undefined", "ignoreSearch": 200, "bytes": 5200, "contentType": "image/jpeg", "exactCacheKey": "/plates/rigid6.jpg?__WB_REVISION__=102c2989f6394138fe5d0057435b661d", "exactKey": 200},
+    {"path": "/plates/vbase.jpg", "plain": "undefined", "ignoreSearch": 200, "bytes": 6453, "contentType": "image/jpeg", "exactCacheKey": "/plates/vbase.jpg?__WB_REVISION__=d1e03e4785aeea2215b7a641979d4e83", "exactKey": 200},
+    {"path": "/plates/contour.jpg", "plain": "undefined", "ignoreSearch": 200, "bytes": 13053, "contentType": "image/jpeg", "exactCacheKey": "/plates/contour.jpg?__WB_REVISION__=feb263a2352745542ca2710687a26a2d", "exactKey": 200},
+    {"path": "/plates/base45.jpg", "plain": "undefined", "ignoreSearch": 200, "bytes": 6010, "contentType": "image/jpeg", "exactCacheKey": "/plates/base45.jpg?__WB_REVISION__=65c370906ff8c7f22fd9c584e2e1a6b3", "exactKey": 200},
+    {"path": "/icon-192.png", "plain": "undefined", "ignoreSearch": 200, "bytes": 3070, "contentType": "image/png", "exactCacheKey": "/icon-192.png?__WB_REVISION__=92e1e0dffb9fe782c7e1c5fab5b3af41", "exactKey": 200},
+    {"path": "/icon-512.png", "plain": "undefined", "ignoreSearch": 200, "bytes": 8547, "contentType": "image/png", "exactCacheKey": "/icon-512.png?__WB_REVISION__=1f17e55fed048ba9330072ae99de57f7", "exactKey": 200},
+    {"path": "/icon-512-maskable.png", "plain": "undefined", "ignoreSearch": 200, "bytes": 5496, "contentType": "image/png", "exactCacheKey": "/icon-512-maskable.png?__WB_REVISION__=48bd62de9acbf4c720cafd28978df6a3", "exactKey": 200},
+    {"path": "/favicon.svg", "plain": "undefined", "ignoreSearch": 200, "bytes": 862, "contentType": "image/svg+xml", "exactCacheKey": "/favicon.svg?__WB_REVISION__=8e59587732bda4cf419d63b34a8bd5b9", "exactKey": 200},
+    {"path": "/apple-touch-icon.png", "plain": "undefined", "ignoreSearch": 200, "bytes": 3845, "contentType": "image/png", "exactCacheKey": "/apple-touch-icon.png?__WB_REVISION__=6ccb9c29ec3e772aa5d085b95e16945d", "exactKey": 200},
+    {"path": "/favicon-32.png", "plain": "undefined", "ignoreSearch": 200, "bytes": 1663, "contentType": "image/png", "exactCacheKey": "/favicon-32.png?__WB_REVISION__=2416d0452e339b86c94ef9263d432cb2", "exactKey": 200},
+    {"path": "/index.html", "plain": "undefined", "ignoreSearch": 200, "bytes": 2242, "contentType": "text/html;charset=utf-8", "exactCacheKey": "/index.html?__WB_REVISION__=cc7e97b445685aee855d83cb51a8a6c2", "exactKey": 200},
+    {"path": "/", "plain": "undefined", "ignoreSearch": "undefined", "exactCacheKey": null, "exactKey": "undefined"},
+    {"path": "/manifest.webmanifest", "plain": "undefined", "ignoreSearch": 200, "bytes": 522, "contentType": "application/manifest+json", "exactCacheKey": "/manifest.webmanifest?__WB_REVISION__=06ba4c09f38777916987400f556d9e58", "exactKey": 200},
+    {"path": "/assets/geist-latin-wght-normal-BgDaEnEv.woff2", "plain": 200, "ignoreSearch": 200, "bytes": 29400, "contentType": "font/woff2", "exactCacheKey": "/assets/geist-latin-wght-normal-BgDaEnEv.woff2", "exactKey": 200}
+  ],
+  "all_24_plates": "[path, plain caches.match, ignoreSearch status, ignoreSearch bytes, exact-key status]; every plate: plain undefined, ignoreSearch 200, exact 200",
+  "platesAll": [
+    ["/plates/rigid6.jpg","undefined",200,5200,200],["/plates/vbase.jpg","undefined",200,6453,200],["/plates/threadedconn.jpg","undefined",200,10206,200],["/plates/swivel6.jpg","undefined",200,5432,200],["/plates/swivel12.jpg","undefined",200,10516,200],["/plates/springloaded.jpg","undefined",200,9790,200],["/plates/rubberangle.jpg","undefined",200,13168,200],["/plates/rubber4.jpg","undefined",200,7632,200],["/plates/rigid12.jpg","undefined",200,10390,200],["/plates/offsetcone.jpg","undefined",200,8158,200],["/plates/multi.jpg","undefined",200,6794,200],["/plates/hinged6ring.jpg","undefined",200,9249,200],["/plates/hinged6.jpg","undefined",200,10162,200],["/plates/hinged12ring.jpg","undefined",200,9982,200],["/plates/hinged12.jpg","undefined",200,10537,200],["/plates/elevatorsupport.jpg","undefined",200,7963,200],["/plates/contour.jpg","undefined",200,13053,200],["/plates/channelmetric6x7.jpg","undefined",200,9691,200],["/plates/channelmetric4x6.jpg","undefined",200,10306,200],["/plates/channel6x6.jpg","undefined",200,9691,200],["/plates/channel4x4.jpg","undefined",200,10306,200],["/plates/chainwedge.jpg","undefined",200,5683,200],["/plates/base45.jpg","undefined",200,6010,200],["/plates/angle3x4.jpg","undefined",200,8833,200]
+  ],
+  "woff2_used_by_the_app_on_this_page": [
+    {"path": "/assets/geist-latin-wght-normal-BgDaEnEv.woff2", "initiator": "css", "workerStart_ms": 61, "transferSize": 0, "encodedBodySize": 29400},
+    {"path": "/assets/inter-latin-wght-normal-Dx4kXJAl.woff2", "initiator": "css", "workerStart_ms": 565, "transferSize": 0, "encodedBodySize": 48256}
+  ],
+  "ANNOTATION_resource_timing": "The raw eval also listed 'fetch'-initiator entries with workerStart ~32,850-33,230 ms and transferSize>0 for every precached path: those are NOT app traffic, they are this QA driver's own criterion-1 verification fetches (each precached path fetched with a cache-busting ?qa470net=<ts> query and cache:'no-store' to compare cache bytes with the server's bytes). The entries at workerStart ~89,100+ ms (manifest + 3 icons + apple-touch-icon, transferSize 0 for the plain URL, 822 for the cache-busted manifest) are the criterion-2 eval. The app's own document-initiated loads are the first six entries: preload-helper, main.js, main.css, registerSW.js (all workerStart 11 ms, transferSize 0) and the two css-initiated woff2 files above (transferSize 0): served by the SW from Cache Storage, no network bytes. (For a clean resource-timing capture see ../../captured-text/02-fresh-load-resource-timing.json, which belongs to build B.)"
+}

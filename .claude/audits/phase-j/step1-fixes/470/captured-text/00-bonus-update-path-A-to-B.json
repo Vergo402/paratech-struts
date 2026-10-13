@@ -1,0 +1,29 @@
+{
+  "_note": "BONUS (not a brief criterion). tab-3 held build A's SW + precache when dist/ was rebuilt as build B (02:12 local). Navigating to / made the browser re-check sw.js; the new worker (skipWaiting + clientsClaim) took over and re-precached. Shows an already-installed device gets the new icons and the old revisions are pruned.",
+  "step1_before_navigation": {
+    "names": ["workbox-precache-v2-http://localhost:5198/"],
+    "entries": 62,
+    "totalBytes": 3347815,
+    "iconKeysInCache": [
+      "/icon-512.png?__WB_REVISION__=1f17e55fed048ba9330072ae99de57f7",
+      "/icon-512-maskable.png?__WB_REVISION__=48bd62de9acbf4c720cafd28978df6a3",
+      "/icon-192.png?__WB_REVISION__=92e1e0dffb9fe782c7e1c5fab5b3af41"
+    ],
+    "serverNowAdvertisesIcon192Revision": "970601e0844f472e0e01359422dfc906",
+    "registration": {"active": "activated", "waiting": null, "installing": null}
+  },
+  "step2_after_navigating_to_slash_poll1": {
+    "href": "http://localhost:5198/quickfind",
+    "names": ["workbox-precache-v2-http://localhost:5198/"],
+    "entries": 62,
+    "totalBytes": 3357687,
+    "iconKeysInCache": [
+      "/icon-512.png?__WB_REVISION__=9a23624a39b542380dfbd2765955f1ef",
+      "/icon-512-maskable.png?__WB_REVISION__=e7e71bc7fcbf803a294f67ab768986ea",
+      "/icon-192.png?__WB_REVISION__=970601e0844f472e0e01359422dfc906"
+    ],
+    "registration": {"active": "activated", "waiting": null, "installing": null},
+    "controller": true
+  },
+  "reading": "Still exactly one cache, 62 entries, one key per icon; totalBytes moved from 3,347,815 (build A) to 3,357,687 (build B = disk sum of dist/ now); the three old icon revisions are gone, the three new ones are present."
+}
