@@ -157,6 +157,166 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
     expect(inv.store.getState().items.find((i) => i.type === 'plate')).toMatchObject({ apparatusId: 'app-rescue-2', quantity: 3 });
   });
 
+  // ---- #469: blank-ID rows merge with identical existing stock -----------------
+  describe('upsertImport — blank-ID rows (#469)', () => {
+    const R2 = { apparatus: 'Rescue 2', apparatusId: 'app-rescue-2' };
+    const blankStrut = (quantity: number, over: Partial<ParsedImportRow> = {}): ParsedImportRow => ({
+      id: '', ...R2, type: 'strut', model: 'LS 203', system: 'LongShore', quantity, ...over,
+    });
+
+    it('a blank-ID strut matching stock on the same rig sets its quantity (no new row)', async () => {
+      await seed([strut({ id: 'a', quantity: 2 })]);
+      await app.boot();
+      const res = await inv.upsertImport([blankStrut(5)], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('a'))!.quantity).toBe(5);
+    });
+
+    it('a blank-ID extension matches on length + system', async () => {
+      await seed([strut({ id: 'x', type: 'extension', model: undefined, system: 'LongShore', length: 24, quantity: 1 })]);
+      await app.boot();
+      const res = await inv.upsertImport(
+        [{ id: '', ...R2, type: 'extension', system: 'LongShore', length: 24, quantity: 3 }],
+        app,
+      );
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('x'))!.quantity).toBe(3);
+    });
+
+    it('a blank-ID plate matches on plateId', async () => {
+      await seed([strut({ id: 'p', type: 'plate', model: undefined, system: undefined, plateId: 'rigid6', quantity: 2 })]);
+      await app.boot();
+      const res = await inv.upsertImport([{ id: '', ...R2, type: 'plate', plateId: 'rigid6', quantity: 4 }], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('p'))!.quantity).toBe(4);
+    });
+
+    it('the same model on a different rig is a separate row', async () => {
+      await seed([strut({ id: 'a', quantity: 2 })]);
+      await app.boot();
+      const res = await inv.upsertImport([blankStrut(1, { apparatus: 'Engine 1', apparatusId: 'app-engine-1' })], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(2);
+      expect((await db.inventory.get('a'))!.quantity).toBe(2); // untouched
+    });
+
+    it('the held guard applies on the merge path: skipped, quantity untouched', async () => {
+      await seed([strut({ id: 'a', quantity: 4 })], { a: 3 });
+      await app.boot();
+      const res = await inv.upsertImport([blankStrut(2)], app);
+      expect(res).toEqual({ imported: 0, skipped: 1 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('a'))!.quantity).toBe(4);
+    });
+
+    it('identical blank rows within one file SUM into one row', async () => {
+      await app.boot();
+      await inv.boot();
+      const res = await inv.upsertImport([blankStrut(2), blankStrut(3)], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      const all = await db.inventory.toArray();
+      expect(all).toHaveLength(1);
+      expect(all[0]!.quantity).toBe(5);
+    });
+
+    it('an id row and a blank row of one identity SUM into one file total (id first)', async () => {
+      await seed([strut({ id: 'a', quantity: 9 })]);
+      await app.boot();
+      const idRow: ParsedImportRow = { ...blankStrut(2), id: 'a' };
+      const res = await inv.upsertImport([idRow, blankStrut(3)], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('a'))!.quantity).toBe(5);
+    });
+
+    it('an id row and a blank row of one identity SUM into one file total (blank first)', async () => {
+      await seed([strut({ id: 'a', quantity: 9 })]);
+      await app.boot();
+      const idRow: ParsedImportRow = { ...blankStrut(2), id: 'a' };
+      const res = await inv.upsertImport([blankStrut(3), idRow], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('a'))!.quantity).toBe(5);
+    });
+
+    it('re-importing an id + blank mixed file keeps the same total and row count', async () => {
+      await seed([strut({ id: 'a', quantity: 9 })]);
+      await app.boot();
+      const file: ParsedImportRow[] = [{ ...blankStrut(2), id: 'a' }, blankStrut(3)];
+      await inv.upsertImport(file, app);
+      await inv.upsertImport(file, app);
+      expect(await db.inventory.count()).toBe(1);
+      expect((await db.inventory.get('a'))!.quantity).toBe(5);
+    });
+
+    it('an id row with no blank sibling keeps plain SET semantics', async () => {
+      await seed([strut({ id: 'a', quantity: 4 })]);
+      await app.boot();
+      const res = await inv.upsertImport([{ ...blankStrut(2), id: 'a' }], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect((await db.inventory.get('a'))!.quantity).toBe(2);
+    });
+
+    it('in-file aggregation uses the same per-type identity as stock matching (a stray field does not split rows)', async () => {
+      await app.boot();
+      const res = await inv.upsertImport([blankStrut(2), blankStrut(3, { length: 12 })], app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      const all = await db.inventory.toArray();
+      expect(all).toHaveLength(1);
+      expect(all[0]!.quantity).toBe(5);
+    });
+
+    it('a blank-Apparatus-ID rig that does not exist yet: one rig minted, identical rows summed into one line', async () => {
+      await app.boot();
+      const rows: ParsedImportRow[] = [
+        { id: '', apparatus: 'Rescue 9', apparatusId: '', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 2 },
+        { id: '', apparatus: 'Rescue 9', apparatusId: '', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 3 },
+      ];
+      const res = await inv.upsertImport(rows, app);
+      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(app.store.getState().roster.filter((r) => r.name === 'Rescue 9')).toHaveLength(1);
+      const all = await db.inventory.toArray();
+      expect(all).toHaveLength(1);
+      expect(all[0]).toMatchObject({ apparatus: 'Rescue 9', quantity: 5 });
+    });
+
+    it('a held-guard skip on the merge path never pushes to the cloud', async () => {
+      const pushed: InventoryItem[] = [];
+      const hooked = createInventoryStore(db, { onRow: (i) => pushed.push(i) });
+      await db.inventory.add(strut({ id: 'a', quantity: 4 }));
+      await hooked.boot();
+      hooked.setHeld({ a: 3 });
+      await app.boot();
+      const res = await hooked.upsertImport([blankStrut(2)], app);
+      expect(res).toEqual({ imported: 0, skipped: 1 });
+      expect(pushed).toEqual([]);
+    });
+
+    it('re-importing the same blank-ID file is idempotent (full table unchanged)', async () => {
+      await seed([strut({ id: 'a', quantity: 2 })]);
+      await app.boot();
+      const file: ParsedImportRow[] = [
+        blankStrut(4), // matches stock 'a'
+        blankStrut(1, { model: 'LS 305' }),
+        blankStrut(1, { model: 'LS 305' }), // identical pair → sums to 2
+        { id: '', ...R2, type: 'plate', plateId: 'rigid6', quantity: 3 },
+      ];
+      await inv.upsertImport(file, app);
+      const strip = async () =>
+        (await db.inventory.toArray())
+          .map((r) => ({ ...r, lastWriteAt: undefined }))
+          .sort((x, y) => x.id.localeCompare(y.id));
+      const first = await strip();
+      expect(first).toHaveLength(3);
+      const res = await inv.upsertImport(file, app);
+      expect(res).toEqual({ imported: 3, skipped: 0 });
+      expect(await strip()).toEqual(first);
+    });
+  });
+
   it('decrement double-tap at the removal boundary: one removes, the other no-ops (no throw)', async () => {
     await seed([strut({ id: 'a', type: 'plate', model: undefined, system: undefined, plateId: 'rigid6', quantity: 1 })]);
     const results = await Promise.allSettled([inv.decrementItem('a'), inv.decrementItem('a')]);
@@ -256,6 +416,21 @@ describe('inventory store — LWW stamp + remote apply', () => {
     await inv.incrementItem('a');
     expect(rows.at(-1)).not.toHaveProperty('available');
     expect(rows.at(-1)).not.toHaveProperty('held');
+  });
+
+  it('a blank-ID import row that merges into existing stock pushes to the cloud like an id row (#469)', async () => {
+    await db.inventory.add(strut({ id: 'a', quantity: 2 }));
+    await inv.boot();
+    const ap = createApparatusStore(db);
+    await ap.boot();
+    rows.length = 0;
+    await inv.upsertImport(
+      [{ id: '', apparatus: 'Rescue 2', apparatusId: 'app-rescue-2', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 6 }],
+      ap,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 'a', quantity: 6 });
+    expect(rows[0]!.lastWriteAt).toBeGreaterThan(0);
   });
 
   it('removeItem fires the delete hook with a stamp', async () => {

@@ -79,17 +79,25 @@ export interface InventoryStoreApi {
   setQuantity(id: string, quantity: number): Promise<void>;
   /** Remove the row; refuses while any unit is held. */
   removeItem(id: string): Promise<void>;
-  /** Merge stock from a parsed CSV: upsert by ID, provision new apparatus for blank
+  /** Merge stock from a parsed CSV: upsert by ID (blank-ID rows merge into identical
+   *  stock on the same rig, else add), provision new apparatus for blank
    *  Apparatus-ID rows (atomic with the items, via the roster store), and skip any row
    *  whose quantity would fall below the units it holds. */
   upsertImport(rows: ParsedImportRow[], apparatus: ApparatusStoreApi): Promise<ImportResult>;
 }
 
+// The identity of a stock record on a rig: resolved rig + type + the per-type descriptor
+// (strut -> model; extension -> length + system; plate -> plateId). ONE key shared by
+// stock matching (sameIdentity) and the import's in-file aggregation so they cannot drift.
+type IdentityFields = Pick<AddSpec, 'apparatusId' | 'type' | 'model' | 'length' | 'system' | 'plateId'>;
+function identityKey(s: IdentityFields): string {
+  const descriptor =
+    s.type === 'strut' ? [s.model] : s.type === 'extension' ? [s.length, s.system] : [s.plateId];
+  return JSON.stringify([s.apparatusId, s.type, ...descriptor]);
+}
+
 function sameIdentity(i: InventoryItem, s: AddSpec): boolean {
-  if (i.apparatusId !== s.apparatusId || i.type !== s.type) return false;
-  if (s.type === 'strut') return i.model === s.model;
-  if (s.type === 'extension') return i.length === s.length && i.system === s.system;
-  return i.plateId === s.plateId; // plate
+  return identityKey(i) === identityKey(s);
 }
 
 // Like sameIdentity but rig-agnostic — the KIND of a stock record (type + descriptor).
@@ -272,9 +280,6 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
   }
 
   async function upsertImport(rows: ParsedImportRow[], apparatus: ApparatusStoreApi): Promise<ImportResult> {
-    // Provision a new apparatus per unique blank-Apparatus-ID rig name (type unknown
-    // from a 10-column file → 'Other'). Re-importing a blank-ID template mints fresh
-    // rigs+rows each time; operators round-trip via export (which carries IDs).
     // Resolve a blank-Apparatus-ID row's rig by NAME against the existing roster and
     // stock first, so a row named like an existing rig reuses it instead of minting a
     // duplicate; only a genuinely new name creates a rig (type unknown from a 10-col
@@ -299,8 +304,41 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     let skipped = 0;
     const now = Date.now(); // one LWW stamp for the whole import batch
     const importedIds: string[] = [];
+    // Blank-ID rows (a hand-kept / template CSV) carry no identity of their own, so the
+    // file is aggregated first, per RESOLVED rig + kind (identityKey).
+    // SUM vs SET (the rule): the file lists physical units, so WITHIN one file every row
+    // of one identity SUMs into a single file total — identical blank rows (2 + 3 = 5),
+    // and an id row plus blank rows of the same identity (the total lands on the id row,
+    // the blank rows fold in; order-independent, counted once). AGAINST existing stock
+    // that file total SETs the quantity (as the id path always did), so re-importing the
+    // same file is idempotent rather than doubling the stock. An id row with no blank
+    // sibling is plain SET, exactly as before.
+    const keyOf = (r: ParsedImportRow) => identityKey({ ...r, apparatusId: apparatusIdFor(r) });
+    const blankSums = new Map<string, number>();
+    const idKeys = new Set<string>();
+    for (const r of rows) {
+      const k = keyOf(r);
+      if (r.id) idKeys.add(k);
+      else blankSums.set(k, (blankSums.get(k) ?? 0) + r.quantity);
+    }
+    const work: { r: ParsedImportRow; quantity: number }[] = [];
+    const carried = new Set<string>(); // keys whose blank total already has a carrier row
+    for (const r of rows) {
+      const k = keyOf(r);
+      if (r.id) {
+        // the first id row of a key carries its blank siblings' total; any further id
+        // rows of that key stay plain SET
+        const blank = carried.has(k) ? undefined : blankSums.get(k);
+        if (blank !== undefined) carried.add(k);
+        work.push({ r, quantity: r.quantity + (blank ?? 0) });
+      } else if (!idKeys.has(k) && !carried.has(k)) {
+        carried.add(k); // first blank row of an id-less key stands for the aggregate
+        work.push({ r, quantity: blankSums.get(k)! });
+      }
+      // else: a blank row whose identity an id row carries — folded into that row's total
+    }
     await db.transaction('rw', db.meta, db.inventory, async () => {
-      for (const r of rows) {
+      for (const { r, quantity } of work) {
         const apparatusId = apparatusIdFor(r);
         const fields: AddSpec = {
           type: r.type,
@@ -325,15 +363,31 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
           // The orphan guard: a quantity below the units held would strand a deployed
           // unit. Checked for a new id too — a peer's deploy may hold an id this device
           // has no row for yet.
-          if (r.quantity < heldOf(r.id)) {
+          if (quantity < heldOf(r.id)) {
             skipped++;
             continue;
           }
           id = r.id;
-          await db.inventory.put({ ...fields, id, quantity: r.quantity, lastWriteAt: now });
+          await db.inventory.put({ ...fields, id, quantity, lastWriteAt: now });
         } else {
-          id = `inv-${newId()}`;
-          await db.inventory.add({ ...fields, id, quantity: r.quantity, lastWriteAt: now });
+          // Merge into identical existing stock on the resolved rig (first match), with
+          // the same SET semantics + held guard as the id path; otherwise a new row.
+          const match = await db.inventory
+            .where('apparatusId')
+            .equals(apparatusId)
+            .filter((i) => sameIdentity(i, fields))
+            .first();
+          if (match) {
+            if (quantity < heldOf(match.id)) {
+              skipped++;
+              continue;
+            }
+            id = match.id;
+            await db.inventory.put({ ...match, quantity, lastWriteAt: now });
+          } else {
+            id = `inv-${newId()}`;
+            await db.inventory.add({ ...fields, id, quantity, lastWriteAt: now });
+          }
         }
         importedIds.push(id);
         imported++;

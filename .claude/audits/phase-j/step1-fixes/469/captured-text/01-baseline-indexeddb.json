@@ -1,0 +1,11 @@
+{
+  "capturedAt": "after hand-adding rig Rescue 9 + LS 304 x1, before any import",
+  "deptDb": "fieldshore-dept-b3df77df-5b42-485e-9ce1-82f8e57dfe1b",
+  "stores": ["events", "inventory", "meta", "quarantine"],
+  "metaKeys": ["fieldshore_apparatus_roster"],
+  "roster": [{ "id": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "name": "Rescue 9", "type": "Engine" }],
+  "inventoryCount": 1,
+  "inventory": [
+    { "id": "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd", "type": "strut", "model": "LS 304", "system": "LongShore", "length": null, "plateId": null, "apparatus": "Rescue 9", "apparatusId": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "quantity": 1, "lastWriteAt": 1791864287004 }
+  ]
+}

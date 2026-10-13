@@ -1,0 +1,19 @@
+{
+  "moment": "after negative-control import (LS 406 x2, blank ID, Rescue 9)",
+  "deptDb": "fieldshore-dept-b3df77df-5b42-485e-9ce1-82f8e57dfe1b",
+  "rosterCount": 1,
+  "inventoryCountBefore": 3,
+  "inventoryCountAfter": 4,
+  "totalQuantityAfter": 17,
+  "preexistingThreeRowsUnchanged": true,
+  "newRows": [
+    { "id": "inv-3ad29e6b-c85c-4efa-b1ea-227e7238590a", "type": "strut", "model": "LS 406", "system": "LongShore", "apparatus": "Rescue 9", "apparatusId": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "quantity": 2, "lastWriteAt": 1791864545432 }
+  ],
+  "tuples (id | type | model/plateId | apparatusId | quantity)": [
+    "inv-3ad29e6b-c85c-4efa-b1ea-227e7238590a | strut | LS 406 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 2",
+    "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd | strut | LS 304 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 4",
+    "inv-90776be2-5033-4178-9bb1-8db9ba5da34a | plate | rigid6 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 6",
+    "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744 | strut | LS 203 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 5"
+  ],
+  "note": "The three pre-existing rows kept their ids, quantities AND lastWriteAt (1791864474295) -- the different-model row did not touch them."
+}

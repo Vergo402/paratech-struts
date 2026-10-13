@@ -1,0 +1,10 @@
+# EXTRA control (not in the brief): negctl2-same-model-different-rig.csv = blank ID, Engine 12 (a name that does not exist yet), Strut, LS 304, qty 3. sha256 09f6f40a41a2934527c928f002ac67129857739791fa6f71a9c65f7a531b0ab7
+result_dialog: "Import inventory\nDone\nStep 4 of 4\nImport complete\n\n1 row imported.\n\nDone"
+screen_after (get_page_text, Rescue 9 tab selected): header "2 apparatus"; strip 20 on hand / 0 deployed / 5 models; tabs "Engine 12 - 3 items", "Rescue 9 - 17 items"; Rescue 9 still LS 203 5/5, LS 304 4/4, LS 406 2/2, 6" Rigid Base 6/6
+screen_after (Engine 12 tab): STRUTS 1 model: LS 304 3/3
+indexeddb_after: roster = [Rescue 9 (Engine, app-156f3b66-...), Engine 12 (type Other, minted by the import, app-ca47ca7d-3e81-4685-b7b3-289f45922dde)]; inventoryCount 5; totalQuantity 20
+  inv-4c63d5a0-6b88-43ed-9a97-b5b34acc0dba | Engine 12 | strut | LS 304 | 3 | lastWriteAt 1791864600255     (NEW row on the new rig)
+  inv-90776be2-5033-4178-9bb1-8db9ba5da34a | Rescue 9 | plate | rigid6 | 6 | 1791864474295   (untouched)
+  inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744 | Rescue 9 | strut | LS 203 | 5 | 1791864474295   (untouched)
+  inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd | Rescue 9 | strut | LS 304 | 4 | 1791864474295   (untouched: same id, qty 4, same lastWriteAt -- NOT merged with the other rig's LS 304)
+  inv-3ad29e6b-c85c-4efa-b1ea-227e7238590a | Rescue 9 | strut | LS 406 | 2 | 1791864545432   (untouched)

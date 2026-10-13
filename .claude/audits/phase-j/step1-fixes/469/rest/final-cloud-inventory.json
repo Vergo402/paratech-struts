@@ -1,0 +1,51 @@
+{
+  "inv-3ad29e6b-c85c-4efa-b1ea-227e7238590a" : {
+    "apparatus" : "Rescue 9",
+    "apparatusId" : "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5",
+    "id" : "inv-3ad29e6b-c85c-4efa-b1ea-227e7238590a",
+    "lastWriteAt" : 1791864545432,
+    "model" : "LS 406",
+    "quantity" : 2,
+    "system" : "LongShore",
+    "type" : "strut"
+  },
+  "inv-4c63d5a0-6b88-43ed-9a97-b5b34acc0dba" : {
+    "apparatus" : "Engine 12",
+    "apparatusId" : "app-ca47ca7d-3e81-4685-b7b3-289f45922dde",
+    "id" : "inv-4c63d5a0-6b88-43ed-9a97-b5b34acc0dba",
+    "lastWriteAt" : 1791864600255,
+    "model" : "LS 304",
+    "quantity" : 3,
+    "system" : "LongShore",
+    "type" : "strut"
+  },
+  "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd" : {
+    "apparatus" : "Rescue 9",
+    "apparatusId" : "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5",
+    "id" : "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd",
+    "lastWriteAt" : 1791864474295,
+    "model" : "LS 304",
+    "quantity" : 4,
+    "system" : "LongShore",
+    "type" : "strut"
+  },
+  "inv-90776be2-5033-4178-9bb1-8db9ba5da34a" : {
+    "apparatus" : "Rescue 9",
+    "apparatusId" : "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5",
+    "id" : "inv-90776be2-5033-4178-9bb1-8db9ba5da34a",
+    "lastWriteAt" : 1791864474295,
+    "plateId" : "rigid6",
+    "quantity" : 6,
+    "type" : "plate"
+  },
+  "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744" : {
+    "apparatus" : "Rescue 9",
+    "apparatusId" : "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5",
+    "id" : "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744",
+    "lastWriteAt" : 1791864474295,
+    "model" : "LS 203",
+    "quantity" : 5,
+    "system" : "LongShore",
+    "type" : "strut"
+  }
+}

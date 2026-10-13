@@ -1,0 +1,13 @@
+{
+  "capturedAt": "after import 1 (blank-ids.csv), before import 2",
+  "deptDb": "fieldshore-dept-b3df77df-5b42-485e-9ce1-82f8e57dfe1b",
+  "roster": [{ "id": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "name": "Rescue 9", "type": "Engine" }],
+  "inventoryCount": 3,
+  "totalQuantity": 15,
+  "inventory": [
+    { "id": "inv-90776be2-5033-4178-9bb1-8db9ba5da34a", "type": "plate", "model": null, "plateId": "rigid6", "length": null, "system": null, "apparatus": "Rescue 9", "apparatusId": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "quantity": 6, "lastWriteAt": 1791864383653 },
+    { "id": "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744", "type": "strut", "model": "LS 203", "plateId": null, "length": null, "system": "LongShore", "apparatus": "Rescue 9", "apparatusId": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "quantity": 5, "lastWriteAt": 1791864383653 },
+    { "id": "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd", "type": "strut", "model": "LS 304", "plateId": null, "length": null, "system": "LongShore", "apparatus": "Rescue 9", "apparatusId": "app-156f3b66-4bfa-40f0-9dca-1285a3eebec5", "quantity": 4, "lastWriteAt": 1791864383653 }
+  ],
+  "note": "LS 304 row keeps the BASELINE id inv-5eb3c742-... (SET 1 -> 4 in place; not a second row). LS 203 = 2+3 summed into one new row. Roster unchanged: one rig 'Rescue 9' (no duplicate rig minted)."
+}

@@ -1,0 +1,22 @@
+main [ref_24]
+ banner [ref_25]
+  generic "QA Dept 469" [ref_26]
+  generic "1 apparatus" [ref_27]
+  button "Import and export inventory" [ref_28] type="button"
+  button "Add equipment" [ref_29] type="button"
+ generic "on hand" [ref_30]
+ generic "deployed" [ref_31]
+ generic "models" [ref_32]
+ tablist "Apparatus" [ref_33]
+  tab [ref_34] type="button"
+   generic "Rescue 9" [ref_35]
+   generic "1 item" [ref_36]
+ button "Add apparatus" [ref_37] type="button"
+ region [ref_38]
+  heading "Struts" [ref_39]
+  generic "1 model" [ref_40]
+  generic "LS 304" [ref_41]
+  generic "36″–50″" [ref_42]
+  button "Decrease LS 304 quantity" [ref_43] type="button"
+  generic "1 of 1 available" [ref_44]
+  button "Increase LS 304 quantity" [ref_45] type="button"

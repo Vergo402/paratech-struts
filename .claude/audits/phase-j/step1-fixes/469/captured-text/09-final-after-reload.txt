@@ -1,0 +1,29 @@
+# After a full reload (location.assign('/inventory'), 3 s wait): cold boot + cloud pull-down; get_page_text VERBATIM (Engine 12 tab is selected by default after reload)
+Title: FieldShore
+URL: http://localhost:5200/inventory
+Source element: <main>
+---
+QA Dept 469
+2 apparatus
+Add equipment
+20
+on hand
+0
+deployed
+5
+models
+Engine 12
+3 items
+Rescue 9
+17 items
++
+STRUTS
+1 model
+LS 304
+36″–50″
+−
+3
+/3
++
+# console (onlyErrors) after the reload: 1x 'Failed to load resource: ... 400 (Bad Request)' (already present BEFORE the first import), 3x 'Uncaught (in promise) AbortError: Transition was skipped' (one per location.assign page load I issued; View Transitions API, unrelated to import)
+# cloud (RTDB emulator REST): rest/final-cloud-inventory.json = 5 rows / total qty 20, matches IndexedDB; rest/final-cloud-apparatus.json = 2 rigs

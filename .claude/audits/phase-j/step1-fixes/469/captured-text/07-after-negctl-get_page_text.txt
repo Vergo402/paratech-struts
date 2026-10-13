@@ -1,0 +1,43 @@
+Title: FieldShore
+URL: http://localhost:5200/inventory
+Source element: <main>
+---
+QA Dept 469
+1 apparatus
+Add equipment
+17
+on hand
+0
+deployed
+4
+models
+Rescue 9
+17 items
++
+STRUTS
+3 models
+LS 203
+26″–36″
+−
+5
+/5
++
+LS 304
+36″–50″
+−
+4
+/4
++
+LS 406
+48″–73″
+−
+2
+/2
++
+BASE PLATES
+1 type
+6" Rigid Base
+−
+6
+/6
++

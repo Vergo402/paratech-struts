@@ -1,0 +1,2 @@
+# Import 2 (same blank-ids.csv, re-imported) -- result dialog innerText, VERBATIM (JSON-escaped)
+step4_result: "Import inventory\nDone\nStep 4 of 4\nImport complete\n\n3 rows imported.\n\nDone"

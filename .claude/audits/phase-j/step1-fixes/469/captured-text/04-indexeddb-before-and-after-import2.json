@@ -1,0 +1,25 @@
+{
+  "deptDb": "fieldshore-dept-b3df77df-5b42-485e-9ce1-82f8e57dfe1b",
+  "before_import2": {
+    "moment": "dialog on step 4, Import button not yet pressed (== state after import 1)",
+    "inventoryCount": 3, "totalQuantity": 15, "rosterCount": 1,
+    "tuples (id | type | model/plateId | apparatusId | quantity)": [
+      "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd | strut | LS 304 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 4",
+      "inv-90776be2-5033-4178-9bb1-8db9ba5da34a | plate | rigid6 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 6",
+      "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744 | strut | LS 203 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 5"
+    ],
+    "lastWriteAt (all 3 rows)": 1791864383653
+  },
+  "after_import2": {
+    "moment": "after pressing Import 4 rows a second time and Done",
+    "inventoryCount": 3, "totalQuantity": 15, "rosterCount": 1,
+    "tuples (id | type | model/plateId | apparatusId | quantity)": [
+      "inv-5eb3c742-67e1-45c2-923e-1f04b9ae40fd | strut | LS 304 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 4",
+      "inv-90776be2-5033-4178-9bb1-8db9ba5da34a | plate | rigid6 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 6",
+      "inv-f280e3f7-3dea-4a9b-a412-90fdf99eb744 | strut | LS 203 | app-156f3b66-4bfa-40f0-9dca-1285a3eebec5 | 5"
+    ],
+    "lastWriteAt (all 3 rows)": 1791864474295
+  },
+  "in_page_comparison": { "countsEqual": true, "tuplesIdentical": true, "identicalExceptLastWriteAt": true, "totalQuantityBefore": 15, "totalQuantityAfter": 15 },
+  "note": "Only lastWriteAt moved (1791864383653 -> 1791864474295): a matched row is re-stamped and re-pushed (SET semantics, same as the id path). Content, ids and counts are unchanged."
+}

@@ -1,0 +1,34 @@
+main [ref_24]
+ banner [ref_25]
+  generic "QA Dept 469" [ref_26]
+  generic "1 apparatus" [ref_27]
+  button "Import and export inventory" [ref_28] type="button"
+  button "Add equipment" [ref_29] type="button"
+ generic "on hand" [ref_30]
+ generic "deployed" [ref_31]
+ generic "models" [ref_32]
+ tablist "Apparatus" [ref_33]
+  tab [ref_34] type="button"
+   generic "Rescue 9" [ref_35]
+   generic "15 items" [ref_36]
+ button "Add apparatus" [ref_37] type="button"
+ region [ref_38]
+  heading "Struts" [ref_39]
+  generic "2 models" [ref_40]
+  generic "LS 203" [ref_96]
+  generic "26″–36″" [ref_97]
+  button "Decrease LS 203 quantity" [ref_98] type="button"
+  generic "5 of 5 available" [ref_99]
+  button "Increase LS 203 quantity" [ref_100] type="button"
+  generic "LS 304" [ref_41]
+  generic "36″–50″" [ref_42]
+  button "Decrease LS 304 quantity" [ref_43] type="button"
+  generic "4 of 4 available" [ref_44]
+  button "Increase LS 304 quantity" [ref_45] type="button"
+ region [ref_101]
+  heading "Base plates" [ref_102]
+  generic "1 type" [ref_103]
+  generic "6\" Rigid Base" [ref_104]
+  button "Decrease 6\" Rigid Base quantity" [ref_105] type="button"
+  generic "6 of 6 available" [ref_106]
+  button "Increase 6\" Rigid Base quantity" [ref_107] type="button"
