@@ -1,0 +1,13 @@
+{
+ "_note": "Captured via javascript_tool at 2026-10-13T01:43:41 Z, after change 2 (negative control) was quarantined; change 1's row had been acknowledged with Got it and the page reloaded in between.",
+ "when": "after change 2 quarantined",
+ "quarantineCount": 2,
+ "quarantineRows": [
+  {"id": "08413b0a-fba7-41a9-8fa1-d81a25fe4945", "type": "ShorePointStatusChanged", "to": "strutset", "reason": "Error: PERMISSION_DENIED: Permission denied", "quarantinedAtISO": "2026-10-13T01:43:19.793Z"},
+  {"id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16", "type": "ShorePointStatusChanged", "to": "strutset", "reason": "Error: PERMISSION_DENIED: Permission denied", "quarantinedAtISO": "2026-10-13T01:39:51.555Z"}
+ ],
+ "eventsCount": 3,
+ "eventTypes": ["OperationCreated", "ShorePointAdded", "EquipmentDeployed"],
+ "quarantinedIdsInEvents": [false, false],
+ "metaRejected": ["{\"key\":\"fieldshore_rejected\",\"value\":\"[\\\"08413b0a-fba7-41a9-8fa1-d81a25fe4945\\\"]\"}"]
+}

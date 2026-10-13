@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type FieldShoreEvent, type ShorePoint } from '@core/schema';
 import { seedOrgState } from '@core/org';
-import { describeOverridden } from './overridden';
+import { describeOverridden, describeRejected, REJECTED_LINE } from './overridden';
 
 const sp: ShorePoint = {
   id: 'sp1', opId: 'op1', label: 'Alpha', division: '1', shoreType: 't-shore', measurementEighths: 320,
@@ -45,5 +45,37 @@ describe('describeOverridden (#499)', () => {
     const rows = describeOverridden([a, b], { shorePoints: [], positions, events: [a, b], outcomes: new Map() });
     expect(rows.map((r) => r.id)).toEqual(['b', 'a']);
     expect(rows[0]!.line).toBe('Your change had no effect.');
+  });
+});
+
+describe('describeRejected (#471) — own changes the department server refused', () => {
+  it('same title as an overridden row, the fixed rejection line, the change\'s own time + this device (never a peer "winner")', () => {
+    const rejected = e({ type: 'ShorePointStatusChanged', id: 'r1', at: 100, by: 'A', spId: 'sp1', from: 'process', to: 'strutset' });
+    const peerWin = e({ type: 'EquipmentReturned', id: 'w1', at: 200, by: 'B', spId: 'sp1' });
+    const [row] = describeRejected([rejected], { shorePoints: [sp], positions, events: [peerWin], outcomes: new Map([['w1', 'applied']]) });
+    expect(REJECTED_LINE).toBe('Rejected by the department server — not shared with the team.');
+    expect(row).toEqual({
+      id: 'r1',
+      title: 'Alpha — now Pending Equipment',
+      line: 'Rejected by the department server — not shared with the team.',
+      at: 100,
+      who: 'this device',
+    });
+  });
+
+  it('a rejected shore-point ADD (the point never reached the board) names the point from the event and says it is not on the board', () => {
+    const added = e({ type: 'ShorePointAdded', id: 'r2', at: 100, by: 'A', shorePoint: { ...sp, id: 'sp9', seq: 3, label: 'Stairwell' } });
+    const [row] = describeRejected([added], { shorePoints: [sp], positions, events: [], outcomes: new Map() });
+    expect(row!.title).toBe('#3 · Stairwell — not on the board');
+    const unnamed = e({ type: 'ShorePointAdded', id: 'r3', at: 100, by: 'A', shorePoint: { ...sp, id: 'sp8', label: undefined, seq: 4 } });
+    expect(describeRejected([unnamed], { shorePoints: [], positions, events: [], outcomes: new Map() })[0]!.title).toBe('Shore point 4 — not on the board');
+  });
+
+  it('lists every rejected change (no tell-worthiness filter), newest first', () => {
+    const a = e({ type: 'PositionRenamed', id: 'a', at: 1, by: 'A', positionId: 'p', title: 'Ops' });
+    const b = e({ type: 'PositionRenamed', id: 'b', at: 2, by: 'A', positionId: 'p', title: 'Ops 2' });
+    const rows = describeRejected([a, b], { shorePoints: [], positions, events: [], outcomes: new Map() });
+    expect(rows.map((r) => r.id)).toEqual(['b', 'a']);
+    expect(rows.every((r) => r.line === REJECTED_LINE)).toBe(true);
   });
 });

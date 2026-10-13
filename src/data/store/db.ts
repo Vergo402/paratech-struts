@@ -15,6 +15,12 @@ import type { FieldShoreEvent, InventoryItem } from '@core/schema';
 // as a plain, non-indexed property — no schema version bump.
 export type EventRow = FieldShoreEvent & { seq?: number };
 
+/** An own event the department server refused for good (#471, ADR-042 P1 "upload
+ *  quarantine"): taken out of `events` (and the fold) in the same transaction it lands here,
+ *  so no boot re-enqueues it. Kept, not deleted — the v4.1 Settings → Sync discard / re-send
+ *  surface reads this table. */
+export type QuarantineRow = FieldShoreEvent & { reason: string; quarantinedAt: number };
+
 export interface MetaRow {
   key: string;
   value: string;
@@ -24,6 +30,7 @@ export class FieldShoreDB extends Dexie {
   events!: Table<EventRow, number>;
   inventory!: Table<InventoryItem, string>;
   meta!: Table<MetaRow, string>;
+  quarantine!: Table<QuarantineRow, string>;
 
   constructor(name = 'fieldshore') {
     super(name);
@@ -32,6 +39,8 @@ export class FieldShoreDB extends Dexie {
       inventory: '&id, apparatusId',
       meta: '&key',
     });
+    // v2 (#471) — additive: the upload quarantine. No data migration.
+    this.version(2).stores({ quarantine: '&id, opId' });
   }
 }
 

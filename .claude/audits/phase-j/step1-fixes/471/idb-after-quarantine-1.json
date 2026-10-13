@@ -1,0 +1,28 @@
+{
+ "_note": "Captured via javascript_tool in the pane at 2026-10-13T01:40:5x Z (after change 1 was quarantined, BEFORE any reload). indexedDB.open(name) with no version; connection closed after.",
+ "dbName": "fieldshore-dept-a1109487-1a15-4688-8f0e-54ce6cce16c3",
+ "dbVersion": 20,
+ "stores": ["events", "inventory", "meta", "quarantine"],
+ "quarantineCount": 1,
+ "quarantineRows": [
+  {
+   "id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+   "type": "ShorePointStatusChanged",
+   "opId": "8bd2633d-f789-4f70-9465-c8c3c8d1e33f",
+   "reason": "Error: PERMISSION_DENIED: Permission denied",
+   "quarantinedAt": 1791855591555,
+   "quarantinedAtISO": "2026-10-13T01:39:51.555Z",
+   "to": "strutset",
+   "spId": "64d169e5-0a1c-4975-a709-4db8a4a3755e",
+   "at": 1791855571417
+  }
+ ],
+ "eventsCount": 3,
+ "eventsList": [
+  {"id": "272f5b42-00ff-4e45-8d73-e0f773e436ee", "type": "OperationCreated", "receivedAt": 1791855241513},
+  {"id": "c23d73ca-b5bc-43ce-a60d-d51e7a3bfb96", "type": "ShorePointAdded", "receivedAt": 1791855260602},
+  {"id": "0339efce-878b-4462-8578-a2860575507a", "type": "EquipmentDeployed", "receivedAt": 1791855342184}
+ ],
+ "quarantinedIdInEvents": [false],
+ "metaKeys": ["fieldshore_rejected:[\"45418fbb-715a-4a9a-98bb-7cfe3eaaba16\"]"]
+}

@@ -3,7 +3,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createInventoryStore, type InventoryStoreApi } from '../store/inventoryStore';
 import { createOperationStore, type OperationStoreApi } from '../store/operationStore';
-import { createSyncService, SERVER_TIMESTAMP, type ReconcileOptions, type SyncServiceApi } from './syncService';
+import {
+  createSyncService,
+  isTerminalRejection,
+  SERVER_TIMESTAMP,
+  TERMINAL_REJECTIONS_BEFORE_QUARANTINE,
+  type ReconcileOptions,
+  type SyncServiceApi,
+} from './syncService';
 import { createEventListenerSync } from './eventListener';
 import { createCloudIndex, type CloudIndex, type CloudIndexEntry } from './cloudIndex';
 import { newId } from '@core/id';
@@ -71,6 +78,8 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
   let cloud: CloudIndex;
   let writes: Write[];
   let failId: string | null; //    this id's write is rejected and never lands
+  let failWith: string; //         the rejection message for failId (default: a transient 'upload boom')
+  let denied: Set<string>; //     these ids are refused with PERMISSION_DENIED
   let lostAckId: string | null; // this id's write LANDS, then the promise rejects
   let publishOnWrite: boolean; //  false = the listener is not attached (index stays stale)
   let beforeLand: ((id: string, value: Record<string, unknown>) => Promise<void>) | null;
@@ -113,7 +122,8 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
       writes.push({ kind: 'set', path, value }); // a state record (setState)
       return;
     }
-    if (failId === id) throw new Error('upload boom');
+    if (failId === id) throw new Error(failWith);
+    if (denied.has(id)) throw new Error('Error: PERMISSION_DENIED: Permission denied');
     writes.push({ kind: 'set', path, value });
     if (beforeLand) await beforeLand(id, value as Record<string, unknown>);
     landWrite(id, value as Record<string, unknown>, serverNow++);
@@ -124,7 +134,9 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
   let failUpdates = false; // reject every multi-path write (forces the head-group fallback)
   const fakeUpdate = async (path: string, values: Record<string, unknown>) => {
     const ids = Object.keys(values).map(lastSeg);
-    if (failUpdates || (failId && ids.includes(failId))) throw new Error('upload boom');
+    if (failUpdates) throw new Error('upload boom');
+    if (failId && ids.includes(failId)) throw new Error(failWith);
+    if (ids.some((x) => denied.has(x))) throw new Error('Error: PERMISSION_DENIED: Permission denied');
     writes.push({ kind: 'update', path, value: values });
     const t = serverNow++; // one atomic write → one server stamp
     for (const [k, v] of Object.entries(values)) landWrite(lastSeg(k), v as Record<string, unknown>, t);
@@ -176,6 +188,8 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
     cloud = createCloudIndex();
     writes = [];
     failId = null;
+    failWith = 'upload boom';
+    denied = new Set();
     lostAckId = null;
     failUpdates = false;
     publishOnWrite = true;
@@ -352,6 +366,329 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
     expect(writtenIds()).toEqual([]);
     expect(sync.pendingCount()).toBe(2);
     expect(errors.at(-1)).toBe(true);
+  });
+
+  // ── terminal rejections: the upload quarantine (#471, ADR-042 P1) ───────────────────
+  // A strike = one terminal refusal of the head: the FIRST refusal (any trigger) opens the
+  // count; after that only a timer-driven backoff retry adds one, so taps, 'online' events and
+  // the first merge can never race the backoff to a quarantine.
+
+  const DENIED = 'Error: PERMISSION_DENIED: Permission denied';
+  const rejectedLogs = () => logSpy.mock.calls.filter(([ev]) => ev === 'write_rejected');
+  /** Fire the pending backoff retry and wait until its pass has finished (it always ends by
+   *  reporting the stuck flag). Deterministic, unlike a fixed number of ticks. */
+  const retry = async () => {
+    const before = errors.length;
+    const t = scheduled.shift()!;
+    t.fn();
+    for (let i = 0; i < 500 && errors.length === before; i++) await new Promise((r) => setTimeout(r, 0));
+    expect(errors.length).toBeGreaterThan(before);
+  };
+  /** First refusal + the timer-driven retries up to the quarantine threshold. */
+  const strikeOut = async () => {
+    await sync.flush();
+    for (let i = 1; i < TERMINAL_REJECTIONS_BEFORE_QUARANTINE; i++) await retry();
+  };
+
+  it('the threshold is three terminal refusals', () => {
+    expect(TERMINAL_REJECTIONS_BEFORE_QUARANTINE).toBe(3);
+  });
+
+  it('three timer-spaced PERMISSION_DENIED refusals quarantine the head: out of the queue, the log and db.events, kept in db.quarantine; the next event uploads in the same pass', async () => {
+    const a = statusChanged('sp-1', 'cutting', 'runner');
+    const b = statusChanged('sp-1', 'runner', 'secured');
+    const c = resourceAssigned('pos-rescue');
+    await ops.commit(a);
+    await ops.commit(b);
+    await ops.commit(c);
+    writes = [];
+    failId = b.id;
+    failWith = DENIED;
+
+    await sync.flush(); // strike 1 — strict order still holds
+    expect(writtenIds()).toEqual([a.id]);
+    await retry(); // strike 2 (the 5 s retry)
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(errors.at(-1)).toBe(true);
+
+    await retry(); // strike 3 (the 15 s retry) — quarantined; c goes up in the same pass
+    expect(writtenIds()).toEqual([a.id, c.id]);
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(sync.pendingCount()).toBe(0);
+    expect(await dexieRow(b.id)).toBeUndefined();
+    expect(ops.has(b.id)).toBe(false);
+    const q = await db.quarantine.get(b.id);
+    expect(q).toMatchObject({ id: b.id, type: 'ShorePointStatusChanged', reason: expect.stringMatching(/PERMISSION_DENIED/) });
+    expect(typeof q!.quarantinedAt).toBe('number');
+    expect(status()).toBe('runner'); // the device converges to the cloud — b never happened there
+    expect(errors.at(-1)).toBe(false); // the banner un-wedges
+    expect(scheduled).toEqual([]); // drained: no retry pending
+    expect(rejectedLogs()).toEqual([
+      ['write_rejected', { path: `orgs/dept-1/events/op-1/${b.id}`, id: b.id, reason: expect.stringMatching(/PERMISSION_DENIED/) }],
+    ]);
+    expect(ops.rejected.getState().events.map((e) => e.id)).toEqual([b.id]); // told once, in the "had no effect" list
+  });
+
+  it('commit / online / first-merge triggers never add a strike: back-to-back refusals between retries do not count', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    await sync.flush(); // strike 1
+    await sync.flush(); // a tap one second later — no strike
+    await ops.commit(resourceAssigned('pos-rescue'));
+    await sync.flush(); // a commit-triggered pass — no strike
+    await sync.flush(); // an 'online' / first-merge pass — no strike
+    expect(sync.isPending(b.id)).toBe(true);
+    await retry(); // strike 2 — still below the threshold
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    await retry(); // strike 3
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(await db.quarantine.count()).toBe(1);
+  });
+
+  it('a quarantine does NOT reset the backoff: a refused next head waits on the longer delay', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    const c = resourceAssigned('pos-rescue');
+    await ops.commit(b);
+    await ops.commit(c);
+    denied = new Set([b.id, c.id]);
+    await sync.flush(); // b strike 1 → 5 s
+    await retry(); //       b strike 2 → 15 s
+    await retry(); //       b strike 3 → quarantined; c refused (its strike 1)
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(sync.isPending(c.id)).toBe(true);
+    expect(scheduled.map((t) => t.ms)).toEqual([60_000]);
+    expect(await db.quarantine.count()).toBe(1);
+  });
+
+  it('a later own change that only made sense after the quarantined one now reads no effect — and is listed with it', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    const c = statusChanged('sp-1', 'runner', 'secured'); // premised on b
+    await ops.commit(b);
+    await ops.commit(c);
+    failId = b.id;
+    failWith = DENIED;
+    await strikeOut();
+    expect(sync.pendingCount()).toBe(0); // c went up (peers fold it as no effect too)
+    expect(status()).toBe('cutting');
+    expect(ops.outcomes().get(c.id)).toBe('no-effect');
+    expect(ops.overridden.getState().events.map((e) => e.id)).toEqual([c.id]);
+    expect(ops.rejected.getState().events.map((e) => e.id)).toEqual([b.id]);
+  });
+
+  it('ONE terminal rejection is not enough: the head stays queued, nothing is quarantined, the pass reports stuck', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = 'permission_denied';
+    await sync.flush();
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(ops.has(b.id)).toBe(true);
+    expect(rejectedLogs()).toEqual([]);
+    expect(errors.at(-1)).toBe(true);
+  });
+
+  it('the strikes must be CONSECUTIVE: a transient failure between terminal ones resets the count', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    await sync.flush(); // terminal 1
+    await retry(); //       terminal 2
+    failWith = 'Error: network error';
+    await retry(); // transient — reset
+    failWith = DENIED;
+    await retry(); // terminal 1 again
+    await retry(); // terminal 2
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(errors.at(-1)).toBe(true);
+  });
+
+  it('a terminally refused batch group is never quarantined whole: its events re-upload one at a time, only the refused one is quarantined', async () => {
+    const ma = spAdded(makeSp('sp-a'));
+    const mb = spAdded(makeSp('sp-b'));
+    const mc = spAdded(makeSp('sp-c'));
+    expect(await ops.commitMany([ma, mb, mc])).toEqual({ ok: true });
+    writes = [];
+    failId = mb.id;
+    failWith = DENIED;
+    await sync.flush(); // the group write is refused → split; a lands alone; b strike 1
+    expect(server.has(ma.id)).toBe(true);
+    expect(sync.isPending(ma.id)).toBe(false);
+    expect(sync.isPending(mb.id)).toBe(true);
+    expect(sync.isPending(mc.id)).toBe(true);
+    await retry();
+    await retry(); // b strike 3 — quarantined; c lands
+    expect(server.has(mc.id)).toBe(true);
+    expect(server.has(mb.id)).toBe(false);
+    expect(sync.pendingCount()).toBe(0);
+    expect((await db.quarantine.toArray()).map((r) => r.id)).toEqual([mb.id]);
+    expect(rejectedLogs().map(([, d]) => (d as { id: string }).id)).toEqual([mb.id]);
+    expect(ops.store.getState().shorePoints.map((s) => s.id).sort()).toEqual(['sp-1', 'sp-a', 'sp-c']);
+    expect(errors.at(-1)).toBe(false);
+  });
+
+  it('a create-only re-upload of a write that DID land (lost ack, stale index) is settled from a one-shot read, never quarantined', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    publishOnWrite = false; // the index never hears of the landed write
+    lostAckId = b.id;
+    await sync.flush(); // lands, the ack is lost (transient)
+    lostAckId = null;
+    failId = b.id; // the rules now refuse the re-upload (create-only)
+    failWith = DENIED;
+    for (let i = 0; i < TERMINAL_REJECTIONS_BEFORE_QUARANTINE; i++) await retry();
+    expect(sync.pendingCount()).toBe(0);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(ops.get(b.id)!.receivedAt).toBe(server.get(b.id)!.receivedAt);
+    expect(rejectedLogs()).toEqual([]);
+    expect(ops.rejected.getState().events).toEqual([]);
+    expect(errors.at(-1)).toBe(false);
+  });
+
+  it('write denied + confirmation read DENIED (no standing on the path, e.g. membership revoked) → quarantined on the third timer strike', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    getSpy.mockImplementation(async () => {
+      throw new Error('Error: PERMISSION_DENIED: Permission denied (read)');
+    });
+    await strikeOut();
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(await db.quarantine.count()).toBe(1);
+    expect(rejectedLogs().map(([, d]) => (d as { id: string }).id)).toEqual([b.id]);
+    expect(errors.at(-1)).toBe(false);
+  });
+
+  it('write denied + confirmation read fails TRANSIENTLY (network) → not quarantined, still queued, strikes kept for the next timer pass', async () => {
+    const b = statusChanged('sp-1', 'cutting', 'runner');
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    getSpy.mockImplementationOnce(async () => {
+      throw new Error('Error: network error');
+    });
+    await strikeOut(); // at the threshold, but the read could not confirm
+    expect(sync.isPending(b.id)).toBe(true);
+    expect(await db.quarantine.count()).toBe(0);
+    expect(rejectedLogs()).toEqual([]);
+    expect(errors.at(-1)).toBe(true);
+    await retry(); // the very next timer retry re-checks (strikes kept) — the read now answers "absent"
+    expect(sync.isPending(b.id)).toBe(false);
+    expect(await db.quarantine.count()).toBe(1);
+  });
+
+  it('a quarantine whose local write fails keeps the head queued and logs quarantine-failed', async () => {
+    const s = mk({ ops: () => ({ ...ops, quarantine: async () => Promise.reject(new Error('dexie boom')) }) });
+    const e1 = rawEvents(1, 'qf')[0]!;
+    s.enqueue(e1);
+    failId = e1.id;
+    failWith = DENIED;
+    await s.flush();
+    for (let i = 1; i < TERMINAL_REJECTIONS_BEFORE_QUARANTINE; i++) await retry();
+    expect(s.isPending(e1.id)).toBe(true);
+    expect(logSpy).toHaveBeenCalledWith('quarantine-failed', expect.objectContaining({ id: e1.id, reason: expect.stringMatching(/dexie boom/) }));
+    expect(rejectedLogs()).toEqual([]);
+    expect(errors.at(-1)).toBe(true);
+  });
+
+  it('"Got it" tapped while a quarantine is being written never resurrects the rows it cleared', async () => {
+    const w = statusChanged('sp-1', 'cutting', 'runner');
+    const x = resourceAssigned('pos-rescue');
+    await ops.commit(w);
+    await ops.commit(x);
+    await ops.quarantine([w], DENIED);
+    expect(ops.rejected.getState().events.map((e) => e.id)).toEqual([w.id]);
+    // The tap lands mid-transaction (inside the quarantine table write).
+    const tap = () => ops.acknowledgeOverridden();
+    db.quarantine.hook('creating', tap);
+    await ops.quarantine([x], DENIED);
+    db.quarantine.hook('creating').unsubscribe(tap);
+    expect(ops.rejected.getState().events.map((e) => e.id)).toEqual([x.id]); // w stays cleared
+    for (let i = 0; i < 50 && (await db.meta.get('fieldshore_rejected'))?.value !== JSON.stringify([x.id]); i++) {
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    const inv2 = createInventoryStore(db);
+    await inv2.boot();
+    const ops2 = createOperationStore({ db, inventory: inv2, deviceUid: () => ME });
+    await ops2.boot();
+    expect(ops2.rejected.getState().events.map((e) => e.id)).toEqual([x.id]); // and after a reload
+  });
+
+  it('after a quarantine, a reload + first merge does NOT re-enqueue the rejected event; the unacknowledged row survives the reload, Got it clears it for good', async () => {
+    const a = statusChanged('sp-1', 'cutting', 'runner');
+    const b = statusChanged('sp-1', 'runner', 'secured');
+    await ops.commit(a);
+    await ops.commit(b);
+    failId = b.id;
+    failWith = DENIED;
+    await strikeOut();
+    expect(await db.quarantine.count()).toBe(1);
+    // Positive control: an own change made while signed out of the cloud stays un-synced, so
+    // the first merge after the reload MUST re-enqueue it (proves the listener really ran).
+    dept = null;
+    const d = resourceAssigned('pos-rescue');
+    await ops.commit(d);
+    await sync.flush(); // guest: a no-op
+    expect(ops.get(d.id)!.receivedAt).toBeUndefined();
+
+    // RELOAD: a fresh store over the same Dexie, a fresh (empty) upload queue and listener.
+    const reboot = async () => {
+      const inv2 = createInventoryStore(db);
+      await inv2.boot();
+      const ops2 = createOperationStore({ db, inventory: inv2, deviceUid: () => ME });
+      await ops2.boot();
+      return ops2;
+    };
+    const ops2 = await reboot();
+    expect(ops2.has(b.id)).toBe(false);
+    expect(ops2.store.getState().shorePoints.find((x) => x.id === 'sp-1')!.status).toBe('runner');
+    expect(ops2.rejected.getState().events.map((e) => e.id)).toEqual([b.id]);
+
+    const s2 = mk({ ops: () => ops2 });
+    const enqueued: string[] = [];
+    let onSnap!: (snap: unknown) => void;
+    const listener = createEventListenerSync({
+      deptId: () => 'dept-1',
+      localEvents: () => ops2.sortedEvents(),
+      reconcile: (c, o) => s2.reconcile(c, o),
+      enqueue: (e) => {
+        enqueued.push(e.id);
+        s2.enqueue(e);
+      },
+      flush: () => s2.flush(),
+      cloud,
+      subscribe: (_path, cb) => {
+        onSnap = cb;
+        return () => {};
+      },
+    });
+    listener.start();
+    const tree: Record<string, Record<string, unknown>> = {};
+    for (const e of server.values()) (tree[e.opId as string] ??= {})[e.id as string] = e;
+    onSnap(tree);
+    for (let i = 0; i < 50 && (s2.pendingCount() > 0 || ops2.get(d.id)?.receivedAt === undefined); i++) {
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    expect(enqueued).toEqual([d.id]); // the real backlog went up — and never the quarantined b
+    expect(ops2.get(d.id)!.receivedAt).toBeDefined();
+    expect(s2.pendingCount()).toBe(0);
+    listener.stop();
+
+    ops2.acknowledgeOverridden(); // "Got it"
+    expect(ops2.rejected.getState().events).toEqual([]);
+    for (let i = 0; i < 50 && (await db.meta.get('fieldshore_rejected'))?.value !== '[]'; i++) {
+      await new Promise((r) => setTimeout(r, 0)); // the best-effort persist settles
+    }
+    const ops3 = await reboot();
+    expect(ops3.rejected.getState().events).toEqual([]);
+    expect(await db.quarantine.count()).toBe(1); // the row itself stays (v4.1 discard / re-send)
   });
 
   // ── throughput: chunked multi-path upload ─────────────────────────────────────────
@@ -961,5 +1298,20 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
     const w = writes.find((x) => x.path === 'orgs/dept-1/inventory/inv-1')!.value as Record<string, unknown>;
     expect('model' in w).toBe(false);
     expect(w).toMatchObject({ id: 'inv-1', quantity: 2, lastWriteAt: 1 });
+  });
+});
+
+describe('isTerminalRejection (#471) — a rejection retrying can never fix', () => {
+  it.each([
+    ['Error: PERMISSION_DENIED: Permission denied', true],
+    ['permission_denied', true],
+    ['Error: set failed: permission denied', true],
+    ['Error: set failed: First argument contains undefined in property', true],
+    ['Error: Data to write exceeds the maximum size that can be modified with a single request', true],
+    ['Error: network error', false],
+    ['Error: timeout', false],
+    ['Error: boom', false],
+  ])('%s → %s', (msg, terminal) => {
+    expect(isTerminalRejection(new Error(msg))).toBe(terminal);
   });
 });

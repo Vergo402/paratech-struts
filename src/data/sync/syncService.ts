@@ -27,6 +27,16 @@ import type { SyncDiagnosticDetail } from './diagnostics';
 // schedules ONE backoff retry (5 s → 15 s → 60 s); the next trigger resumes from the head, so
 // upload order = commit order. A rejected write whose ids the snapshot index already holds
 // landed earlier and lost its ack (create-only rules reject the re-upload) — it is synced.
+// QUARANTINE (#471, ADR-042 P1): a TERMINAL rejection (isTerminalRejection — the rules or the
+// SDK refusing the write itself) can never succeed on retry. A refused multi-event group is
+// first split (its events re-upload one at a time) so only the refused event is singled out.
+// That event collects strikes: its first refusal on any trigger, then one per TIMER-driven
+// backoff retry only (a tap, 'online' or first-merge pass never adds one, so nothing can race
+// the backoff). At TERMINAL_REJECTIONS_BEFORE_QUARANTINE consecutive strikes, and once a
+// one-shot read confirms the cloud does not hold it, it leaves the queue for the store's
+// quarantine table, the local fold converges to the cloud, the user is told once in the "had
+// no effect" list, and the pass continues with the next event (the backoff is NOT reset).
+// Transient failures keep the strict-order stop + backoff.
 //
 // MERGE (reconcile) — the listener hands over the ENTIRE department snapshot each time.
 // Unknown ids go to ops.ingestRemote (appended unconditionally; the pure reducers no-op a
@@ -57,6 +67,19 @@ const ACK_TRACKING = { trackOverridden: true } as const;
 export const CHUNK_SIZE = 100;
 /** Backoff before the single scheduled retry after a failed pass (the last value repeats). */
 export const RETRY_DELAYS_MS = [5_000, 15_000, 60_000] as const;
+
+/** Consecutive terminal rejections of one head group before it is quarantined (#471). */
+export const TERMINAL_REJECTIONS_BEFORE_QUARANTINE = 3;
+
+/**
+ * #471 — a rejection that retrying can never fix: the security rules refused the write
+ * (PERMISSION_DENIED), the SDK refused its argument ("first argument contains …"), or the
+ * payload is over RTDB's size limit. Everything else (network, timeout, unknown) is transient.
+ */
+export function isTerminalRejection(err: unknown): boolean {
+  const msg = String(err);
+  return /permission[_ ]denied/i.test(msg) || /first argument contains/i.test(msg) || /exceeds the maximum size|too large/i.test(msg);
+}
 
 /** RTDB's server-timestamp placeholder — the value `serverTimestamp()` returns. */
 export const SERVER_TIMESTAMP: Readonly<{ '.sv': 'timestamp' }> = Object.freeze({ '.sv': 'timestamp' });
@@ -121,6 +144,9 @@ function pendingResourceKeyOf(event: FieldShoreEvent): string | null {
 }
 
 export type RowSyncState = 'queued' | 'synced';
+
+/** How one head-group upload ended (see uploadGroup). */
+type GroupResult = 'uploaded' | 'quarantined' | 'split' | 'stopped';
 
 export interface ReconcileOptions {
   /** Record this device's own events that flip applied → no-effect in the store's
@@ -230,20 +256,28 @@ export function createSyncService(deps: {
   // Failure backoff: after a pass that stops on a rejected write, ONE delayed retry is
   // scheduled (5 s → 15 s → 60 s, capped), reset after any successful upload and cleared on
   // a full drain. Commits and the window 'online' event keep triggering flush() as well. The
-  // head is never skipped or reordered — upload order = commit order is the invariant.
+  // head is never skipped or reordered — upload order = commit order is the invariant. The one
+  // exception is a quarantined head (#471): it leaves the queue for good, never to upload.
   const timers = deps.timers ?? {
     setTimeout: (fn: () => void, ms: number): unknown => globalThis.setTimeout(fn, ms),
     clearTimeout: (h: unknown) => globalThis.clearTimeout(h as ReturnType<typeof globalThis.setTimeout>),
   };
   let retryHandle: unknown = null;
   let backoffStep = 0;
+  // #471 — consecutive terminal rejections of the current head (by head id): the first refusal
+  // opens the count, then only a timer-driven retry pass adds to it. Reset when the head
+  // uploads, settles, is quarantined, or fails transiently.
+  let strike: { id: string; count: number } | null = null;
+  // #471 — the batch whose events upload one at a time because its group write was refused
+  // terminally (only the head batch matters; batch ids are unique).
+  let splitBatch: string | undefined;
   function scheduleRetry(): void {
     if (retryHandle !== null) return;
     const ms = RETRY_DELAYS_MS[Math.min(backoffStep, RETRY_DELAYS_MS.length - 1)]!;
     backoffStep++;
     retryHandle = timers.setTimeout(() => {
       retryHandle = null;
-      void api.flush();
+      void runFlush(true);
     }, ms);
   }
   function clearRetry(): void {
@@ -256,7 +290,7 @@ export function createSyncService(deps: {
   function headGroup(): FieldShoreEvent[] {
     const head = queue[0]!;
     const group = [head];
-    if (head.batchId === undefined) return group;
+    if (head.batchId === undefined || head.batchId === splitBatch) return group;
     for (let i = 1; i < queue.length; i++) {
       const e = queue[i]!;
       if (e.batchId !== head.batchId || e.opId !== head.opId) break;
@@ -353,8 +387,49 @@ export function createSyncService(deps: {
     return true;
   }
 
-  /** Upload one head group. True = synced and dequeued; false = stop this pass. */
-  async function uploadGroup(dept: string, group: readonly FieldShoreEvent[]): Promise<boolean> {
+  /** One-shot read of the refused event — the last check before a quarantine (a create-only
+   *  rule also answers PERMISSION_DENIED to the re-upload of a write that landed and lost its
+   *  ack while the snapshot index was stale). A read refused TERMINALLY means the device has no
+   *  standing on the path at all (write AND read denied — e.g. membership revoked): the write
+   *  can never land, so it counts as absent. Any other read failure is "could not confirm". */
+  async function cloudHolds(path: string): Promise<'held' | 'absent' | 'unknown'> {
+    try {
+      return (await get(path)) ? 'held' : 'absent';
+    } catch (err) {
+      return isTerminalRejection(err) ? 'absent' : 'unknown';
+    }
+  }
+
+  /** A terminal refusal of a SINGLE head event: count the strike (see `strike`); at the
+   *  threshold, confirm the cloud lacks it, then quarantine it. */
+  async function onTerminalRejection(dept: string, head: FieldShoreEvent, path: string, reason: string, timerPass: boolean): Promise<GroupResult> {
+    if (strike?.id !== head.id) strike = { id: head.id, count: 1 };
+    else if (timerPass) strike = { id: head.id, count: strike.count + 1 };
+    else return 'stopped'; // a tap / 'online' / first-merge pass never counts — or acts
+    if (strike.count < TERMINAL_REJECTIONS_BEFORE_QUARANTINE) return 'stopped';
+    const held = await cloudHolds(path);
+    if (held === 'unknown') return 'stopped'; // could not confirm: keep the strikes, re-check next retry
+    strike = null;
+    if (held === 'held') {
+      await stampAndDequeue(dept, [head]); // landed earlier, lost its ack — synced
+      return 'uploaded';
+    }
+    try {
+      await deps.ops().quarantine([head], reason);
+    } catch (err) {
+      log('quarantine-failed', { path, id: head.id, reason: String(err) });
+      strike = { id: head.id, count: TERMINAL_REJECTIONS_BEFORE_QUARANTINE }; // try again next retry
+      return 'stopped';
+    }
+    log('write_rejected', { path, id: head.id, reason });
+    dequeue([head]);
+    return 'quarantined';
+  }
+
+  /** Upload one head group: 'uploaded' (synced + dequeued), 'quarantined' (refused for good,
+   *  dequeued), 'split' (a refused batch now goes one event at a time — retry at once), or
+   *  'stopped' (keep it and everything after it for the next trigger). */
+  async function uploadGroup(dept: string, group: readonly FieldShoreEvent[], timerPass: boolean): Promise<GroupResult> {
     const head = group[0]!;
     const opPath = `orgs/${dept}/events/${head.opId}`;
     const pathOf = (e: FieldShoreEvent) => `${opPath}/${e.id}`;
@@ -365,12 +440,76 @@ export function createSyncService(deps: {
         await update(opPath, Object.fromEntries(group.map((e) => [e.id, toWire(e)])));
       }
     } catch (err) {
-      if (await settleLostAck(group)) return true;
-      log('flush-failed', { path: pathOf(head), id: head.id, reason: String(err) });
-      return false; // keep it (and everything after it) for the next trigger
+      if (await settleLostAck(group)) {
+        strike = null;
+        return 'uploaded';
+      }
+      const reason = String(err);
+      log('flush-failed', { path: pathOf(head), id: head.id, reason });
+      if (isTerminalRejection(err)) {
+        if (group.length > 1) {
+          // Never quarantine a batch wholesale: single out the refused event (no strike).
+          splitBatch = head.batchId;
+          return 'split';
+        }
+        return onTerminalRejection(dept, head, pathOf(head), reason, timerPass);
+      }
+      strike = null; // strikes must be consecutive
+      return 'stopped';
     }
+    strike = null;
     await stampAndDequeue(dept, group);
-    return true;
+    return 'uploaded';
+  }
+
+  /** One drain (see `flush`); `timerPass` = run by the backoff retry timer. */
+  async function runFlush(timerPass: boolean): Promise<void> {
+    if (flushing) return;
+    const dept = deps.deptId();
+    if (!dept) return; // guest / no department → nothing to sync
+    flushing = true;
+    let failed = false;
+    try {
+      // Strictly from the head. Throughput path: a chunk of up to CHUNK_SIZE events goes
+      // up as ONE multi-path update (one server stamp; `at` is strictly increasing per
+      // device, so `(at, id)` keeps commit order inside it). If a chunk is rejected, the
+      // rest of the pass falls back to one head group at a time, which isolates the first
+      // genuinely bad write and stops there — nothing ever uploads ahead of an earlier
+      // commit. Events enqueued during a pass's awaits are picked up by the same loop.
+      let chunked = true;
+      while (queue.length > 0) {
+        if (chunked) {
+          const chunk = nextChunk();
+          if (chunk.length > headGroup().length) {
+            if (await uploadChunk(dept, chunk)) {
+              backoffStep = 0;
+              continue;
+            }
+            chunked = false; // isolate the bad write below
+          }
+        }
+        const result = await uploadGroup(dept, headGroup(), timerPass);
+        if (result === 'stopped') {
+          failed = true;
+          break;
+        }
+        // A quarantine or a split is not progress: the backoff keeps growing (#471).
+        if (result === 'uploaded') backoffStep = 0;
+      }
+      // Stuck iff changes remain after the drain (writes are failing, not progressing) —
+      // the banner shows "couldn't sync, retrying" instead of a forever-"Syncing…". A
+      // terminally rejected head leaves the queue (quarantine), so only transient failures
+      // keep this true for long.
+      notifyError(queue.length > 0);
+      if (queue.length === 0) {
+        clearRetry();
+        backoffStep = 0;
+      } else if (failed) {
+        scheduleRetry();
+      }
+    } finally {
+      flushing = false;
+    }
   }
 
   const api: SyncServiceApi = {
@@ -385,49 +524,8 @@ export function createSyncService(deps: {
       emitPending();
     },
 
-    async flush() {
-      if (flushing) return;
-      const dept = deps.deptId();
-      if (!dept) return; // guest / no department → nothing to sync
-      flushing = true;
-      let failed = false;
-      try {
-        // Strictly from the head. Throughput path: a chunk of up to CHUNK_SIZE events goes
-        // up as ONE multi-path update (one server stamp; `at` is strictly increasing per
-        // device, so `(at, id)` keeps commit order inside it). If a chunk is rejected, the
-        // rest of the pass falls back to one head group at a time, which isolates the first
-        // genuinely bad write and stops there — nothing ever uploads ahead of an earlier
-        // commit. Events enqueued during a pass's awaits are picked up by the same loop.
-        let chunked = true;
-        while (queue.length > 0) {
-          if (chunked) {
-            const chunk = nextChunk();
-            if (chunk.length > headGroup().length) {
-              if (await uploadChunk(dept, chunk)) {
-                backoffStep = 0;
-                continue;
-              }
-              chunked = false; // isolate the bad write below
-            }
-          }
-          if (!(await uploadGroup(dept, headGroup()))) {
-            failed = true;
-            break;
-          }
-          backoffStep = 0;
-        }
-        // Stuck iff changes remain after the drain (writes are failing, not progressing) —
-        // the banner shows "couldn't sync, retrying" instead of a forever-"Syncing…".
-        notifyError(queue.length > 0);
-        if (queue.length === 0) {
-          clearRetry();
-          backoffStep = 0;
-        } else if (failed) {
-          scheduleRetry();
-        }
-      } finally {
-        flushing = false;
-      }
+    flush() {
+      return runFlush(false);
     },
 
     async reconcile(snapshot, opts) {

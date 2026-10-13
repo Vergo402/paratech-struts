@@ -130,6 +130,20 @@ describe('SyncBanner — losing-branch line (#499)', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('a rejected (quarantined, #471) change renders its row with the exact rejection line under the toggle', async () => {
+    const ROW_R = { id: 'r1', title: '#3 · Stairwell — now Cutting Station', line: 'Rejected by the department server — not shared with the team.', at: new Date(2026, 9, 10, 14, 22).getTime(), who: 'this device' };
+    mockUseOverridden.mockReturnValue({ rows: [ROW_R], acknowledge: mockAck });
+    const user = userEvent.setup();
+    render(<SyncBanner />);
+    expect(screen.getByRole('status')).toHaveTextContent('Synced — 1 of your changes had no effect');
+    await user.click(screen.getByRole('button', { name: /Synced/ }));
+    expect(screen.getByText('#3 · Stairwell — now Cutting Station').tagName).toBe('STRONG');
+    expect(screen.getByText('Rejected by the department server — not shared with the team.')).toBeInTheDocument();
+    expect(screen.getByText('14:22 · this device')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(mockAck).toHaveBeenCalledTimes(1);
+  });
+
   it('queued/offline status keeps priority over the line', () => {
     mockUseOverridden.mockReturnValue({ rows: [ROW_A], acknowledge: mockAck });
     mockUseSyncStatus.mockReturnValue({ online: false, pendingCount: 1, pendingJoin: null, syncError: false });

@@ -1,0 +1,194 @@
+# 2026-10-13T01:39:10Z  (local 21:39:10) — REVOKE membership (owner auth, emulator RTDB)
+$ curl -s -X DELETE "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' -w ' [HTTP %{http_code}]'
+null [HTTP 200]
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'   # confirm gone
+null [HTTP 200]
+21:39:10.807523000
+
+# 2026-10-13T01:39:31Z — CHANGE 1 (browser): click "Set Strut Set" on shore point #1 (Equipment Assigned -> Strut Set), recorder = MutationObserver on .fs-sync-banner
+# recorder log (page clock, UTC):
+#   01:39:31.470  Syncing 1 change…                                   lane=Strut Set   (optimistic local fold)
+#   01:39:31.508  1 change haven’t synced yet — retrying              lane=Strut Set   (strike 1)
+#   01:39:51.568  (banner unchanged for 1 ms)                         lane=Equipment Assigned  (snap-back)
+#   01:39:51.569  Synced — 1 of your changes had no effect            lane=Equipment Assigned
+#   click at 01:39:31.378 -> quarantine at +20.19 s ; visibilityState stayed "visible" ; recorder errs=[] ; no visibilitychange events
+
+# 21:41:18 — owner REST: is the quarantined event id in the cloud op event list? (expect: absent)
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f/45418fbb-715a-4a9a-98bb-7cfe3eaaba16.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'
+null
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f.json?ns=fieldshore-database-default-rtdb&shallow=true" -H 'Authorization: Bearer owner'
+{"0339efce-878b-4462-8578-a2860575507a":true,"272f5b42-00ff-4e45-8d73-e0f773e436ee":true,"c23d73ca-b5bc-43ce-a60d-d51e7a3bfb96":true}
+$ curl -s "http://127.0.0.1:9000/.json?ns=fieldshore-database-default-rtdb&shallow=true" -H 'Authorization: Bearer owner'  # top-level keys
+{"diagnostics":true,"orgs":true,"userDepts":true}
+# 21:41:22 — owner REST: /diagnostics (the app cannot read it; owner can) — expect one write_rejected for the quarantined event
+$ curl -s "http://127.0.0.1:9000/diagnostics.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'
+{
+    "sync": {
+        "699bf143-3a6f-46eb-b591-22f84af2bb05": {
+            "event": "flush-failed",
+            "id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "path": "orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f/45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791855571508
+        },
+        "81d415c3-170d-44e9-ac20-e7815dab2f76": {
+            "event": "flush-failed",
+            "id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "path": "orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f/45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791855591550
+        },
+        "bfccfac4-3a21-4b56-949d-d089fefa4e84": {
+            "event": "flush-failed",
+            "id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "path": "orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f/45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791855576534
+        },
+        "dd331eed-4534-4b2c-83ce-88b4cfde2e6a": {
+            "event": "write_rejected",
+            "id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "path": "orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f/45418fbb-715a-4a9a-98bb-7cfe3eaaba16",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791855591570
+        }
+    }
+}
+
+# 2026-10-13T01:41:37Z — location.assign('/command') (full reload, BEFORE "Got it"): banner "Synced — 1 of your changes had no effect" still present; expanded row identical; NO "pending sync" cell in the rail (DOM text search: false); Equipment Assigned = 1, Strut Set = 0.
+# 2026-10-13T01:42:04Z — click "Got it": banner gone (rows=0). IDB after Got it (before reload): quarantine=1 (id kept), events=3, meta fieldshore_rejected="[]".
+# 2026-10-13T01:42:15Z — location.assign('/operations') (full reload, AFTER "Got it"): no banner; shore point ASSIGNED.
+
+# 2026-10-13T01:42:59Z — CHANGE 2 / NEGATIVE CONTROL (after "Got it" + reload, membership still revoked): click "Set Strut Set" again
+# recorder log (page clock, UTC):
+#   01:42:59.735  Syncing 1 change…                              lane=Strut Set
+#   01:42:59.756  1 change haven’t synced yet — retrying         lane=Strut Set   (strike 1)
+#   01:43:19.803  snap-back lane=Equipment Assigned, banner "Synced — 1 of your changes had no effect"   (click at 01:42:59.643 -> +20.16 s)
+#   visibilityState "visible" throughout; recorder errs=[]
+
+# 21:44:01 — owner REST after change 2: diagnostics ledger (sorted by ts) + cloud event ids
+$ curl -s "http://127.0.0.1:9000/diagnostics/sync.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' | <sort by ts>
+01:39:31.508 flush-failed   45418fbb Error: PERMISSION_DENIED: Permission denied
+01:39:36.534 flush-failed   45418fbb Error: PERMISSION_DENIED: Permission denied
+01:39:51.550 flush-failed   45418fbb Error: PERMISSION_DENIED: Permission denied
+01:39:51.570 write_rejected 45418fbb Error: PERMISSION_DENIED: Permission denied
+01:42:59.756 flush-failed   08413b0a Error: PERMISSION_DENIED: Permission denied
+01:43:04.773 flush-failed   08413b0a Error: PERMISSION_DENIED: Permission denied
+01:43:19.790 flush-failed   08413b0a Error: PERMISSION_DENIED: Permission denied
+01:43:19.803 write_rejected 08413b0a Error: PERMISSION_DENIED: Permission denied
+entries: 8 | write_rejected: 2 | flush-failed: 6
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f.json?ns=fieldshore-database-default-rtdb&shallow=true" -H 'Authorization: Bearer owner'   # cloud still has only the 3 setup events
+{"0339efce-878b-4462-8578-a2860575507a":true,"272f5b42-00ff-4e45-8d73-e0f773e436ee":true,"c23d73ca-b5bc-43ce-a60d-d51e7a3bfb96":true}
+
+# 2026-10-13T01:44:23Z (local 21:44:23) — RESTORE membership (PUT the saved original node)
+$ curl -s -X PUT "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' --data-binary @member-node-original.json -w ' [HTTP %{http_code}]'
+{"displayName":"QA Driver","joinedAt":1791855213608,"role":"admin"} [HTTP 200]
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'
+{"nqqhIJewhFypCWuacZai5YoT1vb8":{"displayName":"QA Driver","joinedAt":1791855213608,"role":"admin"}}
+
+# 2026-10-13T01:44:27Z — reload after RESTORE: the UNACKNOWLEDGED row (change 2) still shown (by design); 01:44:48Z Got it -> banner quiet (rows=0)
+# 2026-10-13T01:45:01Z — CHANGE 3 (membership restored): click Set Strut Set; recorder: 01:45:01.549 'Syncing 1 change…' -> 01:45:01.602 (no banner) ; lane=Strut Set stays
+# 21:45:17 — owner REST: cloud events after change 3 (expect the 3 setup events + 1 new ShorePointStatusChanged; NOT the quarantined ids 45418fbb / 08413b0a)
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/events/8bd2633d-f789-4f70-9465-c8c3c8d1e33f.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' | <summarise>
+272f5b42 OperationCreated to= None recv= 1791855241513
+c23d73ca ShorePointAdded to= None recv= 1791855260602
+0339efce EquipmentDeployed to= None recv= 1791855342184
+7767240c ShorePointStatusChanged to= strutset recv= 1791855901584
+count 4 | contains 45418fbb: False | contains 08413b0a: False
+$ curl -s "http://127.0.0.1:9000/diagnostics/sync.json?ns=fieldshore-database-default-rtdb&shallow=true" -H 'Authorization: Bearer owner'   # ledger entries unchanged by the successful change (8)
+ledger entries: 8
+
+# ===== EXTRA RUN (positive control for the Command-rail 'pending sync' cell) =====
+# Why: CommandRail's pending-sync cell counts ONLY queued ResourceAssigned/ResourceCleared events (syncService.ts pendingResourceKeyOf), never ShorePointStatusChanged — so the brief's rail check cannot light for a status change. Re-run with a ResourceAssigned change.
+# 2026-10-13T01:46:54Z (local 21:46:54) — REVOKE membership again
+$ curl -s -X DELETE "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' -w ' [HTTP %{http_code}]'
+null [HTTP 200]
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'
+null [HTTP 200]
+
+# 2026-10-13T01:47:20Z — CHANGE 4 (ResourceAssigned: add individual 'FF Lopez' to Operations Section Chief) with membership revoked
+# recorder log (page clock, UTC):
+#   01:47:20.160  Syncing 1 change…                         || rail '1 pending sync' (LIT)
+#   01:47:20.180  1 change haven’t synced yet — retrying    || rail '1 pending sync' (LIT)   (click at 01:47:20.086)
+#   01:47:40.240  Synced — 1 of your changes had no effect  || rail pending-sync cell GONE  (+20.15 s)
+# expanded row: title 'FF Lopez assigned to Operations Section Chief' / line 'Rejected by the department server — not shared with the team.' / meta '21:47 · this device'
+# 21:48:17 — ledger after change 4:
+01:47:20.180 flush-failed   a7e91914 Error: PERMISSION_DENIED: Permission denied
+01:47:25.184 flush-failed   a7e91914 Error: PERMISSION_DENIED: Permission denied
+01:47:40.222 flush-failed   a7e91914 Error: PERMISSION_DENIED: Permission denied
+01:47:40.244 write_rejected a7e91914 Error: PERMISSION_DENIED: Permission denied
+entries: 12 | write_rejected: 3
+
+# ===== EXTRA RUN B (two queued changes behind a refused head, membership still revoked) =====
+# 2026-10-13T01:49:51Z — change A: Add Shore Point #2 'QA Window 2' (ShorePointAdded, real click on submit); 01:49:53Z — change B: 'Send to Cutting Station' on #1 (ShorePointStatusChanged; clicked via DOM .click() on the real button)
+# recorder log (page clock, UTC):
+#   01:49:51.139  Syncing 1 change…  (cards=2)
+#   01:49:51.173  1 change haven’t synced yet — retrying
+#   01:49:53.079  2 changes haven’t synced yet — retrying
+#   01:50:11.246  card #2 gone, banner -> 1 change haven’t synced yet — retrying   (A quarantined at +20.1 s; B now head)
+#   01:52:11.353  card #1 snapped back (Strut Set), banner -> Synced — 2 of your changes had no effect   (B quarantined at +140.3 s: strikes at +20 s, +80 s, +140 s on the capped 60 s backoff)
+# expanded rows: '#1 · QA Window — now Strut Set' and '#2 · QA Window 2 — not on the board', each with 'Rejected by the department server — not shared with the team.' and '21:49 · this device'
+# 21:52:57 — ledger after the backlog run (last 8):
+01:49:53.116 flush-failed   ddd74dc5 Error: PERMISSION_DENIED: Permission denied
+01:49:56.200 flush-failed   ddd74dc5 Error: PERMISSION_DENIED: Permission denied
+01:50:11.227 flush-failed   ddd74dc5 Error: PERMISSION_DENIED: Permission denied
+01:50:11.247 write_rejected ddd74dc5 Error: PERMISSION_DENIED: Permission denied
+01:50:11.250 flush-failed   da26608c Error: PERMISSION_DENIED: Permission denied
+01:51:11.311 flush-failed   da26608c Error: PERMISSION_DENIED: Permission denied
+01:52:11.339 flush-failed   da26608c Error: PERMISSION_DENIED: Permission denied
+01:52:11.354 write_rejected da26608c Error: PERMISSION_DENIED: Permission denied
+entries: 21 | write_rejected: 5
+$ cloud events (shallow) — expect 4 (3 setup + change 3)
+{"0339efce-878b-4462-8578-a2860575507a":true,"272f5b42-00ff-4e45-8d73-e0f773e436ee":true,"7767240c-18cd-4035-bb01-bb88c7e2e7c7":true,"c23d73ca-b5bc-43ce-a60d-d51e7a3bfb96":true}
+
+# 2026-10-13T01:53:23Z (local 21:53:23) — FINAL RESTORE membership (PUT the saved original node)
+$ curl -s -X PUT "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' --data-binary @member-node-original.json -w ' [HTTP %{http_code}]'
+{"displayName":"QA Driver","joinedAt":1791855213608,"role":"admin"} [HTTP 200]
+$ curl -s "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner'
+{"nqqhIJewhFypCWuacZai5YoT1vb8":{"displayName":"QA Driver","joinedAt":1791855213608,"role":"admin"}}
+
+# 2026-10-13T01:53:27Z — reload after FINAL restore: banner quiet (Got it had cleared both rows), card #1 in Strut Set (cloud status); '#2' gone (its ShorePointAdded is quarantined, not in cloud).
+# 2026-10-13T01:53:43Z — CHANGE 5 (membership restored): click 'Send to Cutting Station'; recorder: 01:53:43.999 'Syncing 1 change…' -> 01:53:44.038 (no banner); lane=Cutting Station
+# 21:53:58 — owner REST: cloud events after change 5 (expect 5 = 3 setup + change 3 + change 5; none of the 5 quarantined ids)
+272f5b42 OperationCreated to= None recv= 1791855241513
+c23d73ca ShorePointAdded to= None recv= 1791855260602
+0339efce EquipmentDeployed to= None recv= 1791855342184
+7767240c ShorePointStatusChanged to= strutset recv= 1791855901584
+01d89f03 ShorePointStatusChanged to= cutting recv= 1791856424021
+count 5 | any quarantined id present: False
+$ ledger entries now:
+21
+
+# ===== EXTRA RUN C (recovery inside the strike window: refusal is TRANSIENT — membership restored ~12 s after the change) =====
+# 2026-10-13T01:55:14Z (local 21:55:14) — REVOKE membership
+$ curl -s -X DELETE "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' -w ' [HTTP %{http_code}]'
+null [HTTP 200]
+null [HTTP 200] (members after revoke)
+# 2026-10-13T01:55:39Z (local 21:55:39.133) — RESTORE membership 12 s after the change (transient-refusal test)
+$ curl -s -X PUT "http://127.0.0.1:9000/orgs/a1109487-1a15-4688-8f0e-54ce6cce16c3/members/nqqhIJewhFypCWuacZai5YoT1vb8.json?ns=fieldshore-database-default-rtdb" -H 'Authorization: Bearer owner' --data-binary @member-node-original.json -w ' [HTTP %{http_code}]'
+{"displayName":"QA Driver","joinedAt":1791855213608,"role":"admin"} [HTTP 200]
+# recorder log for EXTRA RUN C (page clock, UTC; click at 01:55:27.165):
+#   01:55:27.241  Syncing 1 change…                       || rail 1 pending sync || opsChief=FF Lopez
+#   01:55:27.272  1 change haven’t synced yet — retrying   || rail 1 pending sync (strike 1)
+#   01:55:47.305  (no banner)                              || rail none || opsChief=FF Lopez   (+20.14 s: the 3rd timer pass UPLOADED — membership had been restored at ~01:55:39)
+# 21:56:04 — owner REST: cloud events + ledger tail
+272f5b42 OperationCreated recv= 1791855241513
+c23d73ca ShorePointAdded recv= 1791855260602
+0339efce EquipmentDeployed recv= 1791855342184
+7767240c ShorePointStatusChanged recv= 1791855901584
+01d89f03 ShorePointStatusChanged recv= 1791856424021
+310dce34 ResourceAssigned recv= 1791856547286
+count 6
+01:52:11.354 write_rejected da26608c
+01:55:27.272 flush-failed   310dce34
+01:55:32.280 flush-failed   310dce34
+entries: 23 | write_rejected: 5 (unchanged = 5: nothing was quarantined this time)
+
+# ===== TEARDOWN 2026-10-13T02:00:02Z (local 22:00:02) =====
+# preview_stop b769dd53-4cf7-40d3-90b7-f5e9d7e43769 (fieldshore-v4-emu) -> 'stopped'; preview_stop c19b5e4c-26cf-48d2-9878-1ec51b8b4885 (fieldshore-emulators) -> 'stopped'
+$ lsof -nP -iTCP:9000 -iTCP:9099 -iTCP:5200 -iTCP:4400 -iTCP:4500 -sTCP:LISTEN   # exit 1 (1 = nothing listening)
+$ curl probes (000 = connection refused = port free)
+port 9000 -> HTTP 000
+port 9099 -> HTTP 000
+port 5200 -> HTTP 000
+$ ps -ax | grep -E 'firebase|java|vite'  -> 0 matching processes

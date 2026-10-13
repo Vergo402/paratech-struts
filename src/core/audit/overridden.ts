@@ -102,6 +102,13 @@ function yours(e: FieldShoreEvent): string {
   }
 }
 
+/** Name a point the way its Quick View header does ("#1 · Alpha"); fall back to the
+ *  audit-log label when it has no name. */
+function pointName(sp: ShorePoint): string {
+  const name = sp.label?.trim();
+  return name && sp.seq ? `#${sp.seq} · ${name}` : name || spLabelFromPoint(sp);
+}
+
 function titleFor(e: FieldShoreEvent, ctx: OverriddenCtx): string {
   switch (e.type) {
     case 'ShorePointStatusChanged':
@@ -109,11 +116,13 @@ function titleFor(e: FieldShoreEvent, ctx: OverriddenCtx): string {
     case 'EquipmentReturned': {
       const sp = ctx.shorePoints.find((p) => p.id === e.spId);
       if (!sp) return 'Shore point — no longer on the board';
-      // Name the point the way its Quick View header does ("#1 · Alpha"); fall back to the
-      // audit-log label when it has no name.
-      const name = sp.label?.trim();
-      const who = name && sp.seq ? `#${sp.seq} · ${name}` : name || spLabelFromPoint(sp);
-      return `${who} — now ${STATUS_LABELS[sp.status]}`;
+      return `${pointName(sp)} — now ${STATUS_LABELS[sp.status]}`;
+    }
+    case 'ShorePointAdded': {
+      // The point may never have reached the board (a rejected / lost add): name it from the
+      // event itself rather than "<label> added", which would read as if it had.
+      const sp = ctx.shorePoints.find((p) => p.id === e.shorePoint.id);
+      return sp ? `${pointName(sp)} — now ${STATUS_LABELS[sp.status]}` : `${pointName(e.shorePoint)} — not on the board`;
     }
     case 'CommandTransferAccepted':
     case 'CommandTransferDeclined':
@@ -138,5 +147,17 @@ export function describeOverridden(lost: readonly FieldShoreEvent[], ctx: Overri
         who: w ? 'another device' : 'this device',
       };
     })
+    .reverse();
+}
+
+/** #471 — the line for an own change the department server refused (quarantined). */
+export const REJECTED_LINE = 'Rejected by the department server — not shared with the team.';
+
+/** One row per quarantined own change, newest first: the same title as an overridden row,
+ *  the fixed rejection line, and the change's OWN time + this device — no peer "won" it, the
+ *  server refused it, so there is no winner lookup and no tell-worthiness filter. */
+export function describeRejected(rejected: readonly FieldShoreEvent[], ctx: OverriddenCtx): OverriddenRow[] {
+  return rejected
+    .map((e): OverriddenRow => ({ id: e.id, title: titleFor(e, ctx), line: REJECTED_LINE, at: e.at, who: 'this device' }))
     .reverse();
 }

@@ -1,0 +1,14 @@
+{
+ "_note": "Captured via javascript_tool at 2026-10-13T01:48 Z, after change 4 (ResourceAssigned 'FF Lopez' -> Operations Section Chief) was quarantined. Change 3 (restored membership) had synced, so events holds 4 rows.",
+ "when": "after change 4 (ResourceAssigned) quarantined",
+ "quarantineCount": 3,
+ "quarantineRows": [
+  {"id": "08413b0a-fba7-41a9-8fa1-d81a25fe4945", "type": "ShorePointStatusChanged", "reason": "Error: PERMISSION_DENIED: Permission denied", "quarantinedAtISO": "2026-10-13T01:43:19.793Z"},
+  {"id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16", "type": "ShorePointStatusChanged", "reason": "Error: PERMISSION_DENIED: Permission denied", "quarantinedAtISO": "2026-10-13T01:39:51.555Z"},
+  {"id": "a7e91914-7744-46a0-b922-b08a1908a642", "type": "ResourceAssigned", "reason": "Error: PERMISSION_DENIED: Permission denied", "quarantinedAtISO": "2026-10-13T01:47:40.227Z"}
+ ],
+ "eventsCount": 4,
+ "eventTypes": ["OperationCreated", "ShorePointAdded", "EquipmentDeployed", "ShorePointStatusChanged"],
+ "quarantinedIdsInEvents": [false, false, false],
+ "metaRejected": ["{\"key\":\"fieldshore_rejected\",\"value\":\"[\\\"a7e91914-7744-46a0-b922-b08a1908a642\\\"]\"}"]
+}

@@ -16,7 +16,7 @@ import {
   type ArchivedOperationSummary,
   type Outcome,
 } from '@core/operation';
-import { stampReceivedAt, type FieldShoreDB } from './db';
+import { stampReceivedAt, type FieldShoreDB, type QuarantineRow } from './db';
 import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 
 // The only legal mutation entry (module-boundaries.md, data/store). ADR-041:
@@ -92,8 +92,18 @@ export interface OperationStoreApi {
   markReceived(id: string, receivedAt: number, opts?: IngestOptions): Promise<boolean>;
   /** This device's own events that ended up with no effect (the losing branch). */
   overridden: StoreApi<OverriddenState>;
-  /** Clear the overridden list ("Got it"). */
+  /** This device's own events the department server refused for good and the sync layer
+   *  quarantined (#471) — listed beside `overridden` until "Got it". Newest last. */
+  rejected: StoreApi<OverriddenState>;
+  /** Clear the overridden AND rejected lists ("Got it"). */
   acknowledgeOverridden(): void;
+  /**
+   * #471 / ADR-042 P1 — the upload quarantine. Move these own, never-received events out of
+   * the log into the `quarantine` table (one transaction, so no later boot re-enqueues them),
+   * re-fold without them (the device converges to the cloud, which never had them), and list
+   * them as rejected. Own events that flip to no effect as a result join `overridden`.
+   */
+  quarantine(events: readonly FieldShoreEvent[], reason: string): Promise<void>;
   /** Every event's fold outcome (snapshot; replaced, never mutated). */
   outcomes(): ReadonlyMap<string, Outcome>;
   /** Units held per inventory row id across every op in the bucket. */
@@ -137,6 +147,18 @@ const HOLDER_DELETE_REASON = 'cannot delete a shore point holding deployed equip
  *  lost a race and have not been acknowledged yet — the "had no effect" list is a persistent
  *  quiet state (Principle 10), so it must survive a reload / PWA relaunch until "Got it". */
 export const OVERRIDDEN_KEY = 'fieldshore_overridden';
+/** Dexie `meta` row (per department bucket): the ids of quarantined events not yet
+ *  acknowledged (#471) — restored from the `quarantine` table on boot, same lifetime as
+ *  OVERRIDDEN_KEY. */
+export const REJECTED_KEY = 'fieldshore_rejected';
+
+/** The event inside a quarantine row (its bookkeeping fields dropped). */
+function eventOfQuarantineRow(row: QuarantineRow): FieldShoreEvent {
+  const e: Partial<QuarantineRow> = { ...row };
+  delete e.reason;
+  delete e.quarantinedAt;
+  return e as FieldShoreEvent;
+}
 
 /**
  * The LOCAL commit pre-flight — user-error prevention, read-only, pure. Returns the
@@ -290,6 +312,7 @@ export function createOperationStore(opts: {
   const log = createEventLog();
   const store = createStore<OperationState>(() => log.active());
   const overridden = createStore<OverriddenState>(() => ({ events: [] }));
+  const rejected = createStore<OverriddenState>(() => ({ events: [] }));
 
   // Serialize every mutation (local commits, peer ingests, receipt stamps) through one
   // promise chain, so each local pre-flight reads the PRIOR mutation's folded result —
@@ -339,6 +362,11 @@ export function createOperationStore(opts: {
     void db.meta.put({ key: OVERRIDDEN_KEY, value: JSON.stringify(events.map((e) => e.id)) }).catch(() => {});
   }
 
+  /** Durable copy of the unacknowledged rejected ids (#471; best-effort, like the above). */
+  function persistRejected(events: readonly FieldShoreEvent[]): void {
+    void db.meta.put({ key: REJECTED_KEY, value: JSON.stringify(events.map((e) => e.id)) }).catch(() => {});
+  }
+
   /** Maintain `overridden` from the ids whose outcome just flipped. */
   function track(flipped: readonly string[], o?: IngestOptions): void {
     if (o?.trackOverridden === false || flipped.length === 0) return;
@@ -366,6 +394,39 @@ export function createOperationStore(opts: {
     const next = [...kept, ...lost];
     overridden.setState({ events: next }, true);
     persistOverridden(next);
+  }
+
+  async function doQuarantine(events: readonly FieldShoreEvent[], reason: string): Promise<void> {
+    const ids = new Set(events.map((e) => e.id));
+    if (ids.size === 0) return;
+    const withThese = () => [...rejected.getState().events.filter((e) => !ids.has(e.id)), ...events];
+    const quarantinedAt = Date.now();
+    // Durable first, one transaction: the rows move tables together, so a crash can never
+    // leave the event both gone and un-quarantined, or still in `events` (re-enqueued on boot).
+    await db.transaction('rw', [db.events, db.quarantine, db.meta], async () => {
+      await db.quarantine.bulkPut(events.map((e) => ({ ...e, reason, quarantinedAt })));
+      await db.events.where('id').anyOf([...ids]).delete();
+      await db.meta.put({ key: REJECTED_KEY, value: JSON.stringify(withThese().map((e) => e.id)) });
+    });
+    // Re-fold without them. The log has no remove, so this is boot's full rebuild over the
+    // remaining events — same semantics as a lost race: the cloud never had them.
+    const before = log.outcomes();
+    log.rebuild(log.sortedEvents().filter((e) => !ids.has(e.id)));
+    publish();
+    // Recomputed AFTER the commit: a "Got it" tapped while the transaction ran (acknowledge
+    // is not serialized) cleared the earlier rows — they must stay cleared, in memory and on
+    // disk (this put lands after the in-transaction one and any acknowledge put).
+    const nextRejected = withThese();
+    rejected.setState({ events: nextRejected }, true);
+    persistRejected(nextRejected);
+    const stale = overridden.getState().events;
+    if (stale.some((e) => ids.has(e.id))) {
+      const kept = stale.filter((e) => !ids.has(e.id));
+      overridden.setState({ events: kept }, true);
+      persistOverridden(kept);
+    }
+    const after = log.outcomes();
+    track([...after.keys()].filter((id) => before.has(id) && before.get(id) !== after.get(id)));
   }
 
   async function doCommit(raw: FieldShoreEvent): Promise<CommitResult> {
@@ -521,11 +582,18 @@ export function createOperationStore(opts: {
     commitMany: (raws: FieldShoreEvent[]) => serialize(() => doCommitMany(raws)),
     ingestRemote: (events, o) => serialize(() => doIngestRemote(events, o)),
     markReceived: (id, receivedAt, o) => serialize(() => doMarkReceived(id, receivedAt, o)),
+    quarantine: (events, reason) => serialize(() => doQuarantine(events, reason)),
     overridden,
+    rejected,
     acknowledgeOverridden() {
-      if (overridden.getState().events.length === 0) return;
-      overridden.setState({ events: [] }, true);
-      persistOverridden([]);
+      if (overridden.getState().events.length > 0) {
+        overridden.setState({ events: [] }, true);
+        persistOverridden([]);
+      }
+      if (rejected.getState().events.length > 0) {
+        rejected.setState({ events: [] }, true);
+        persistRejected([]);
+      }
     },
     outcomes: () => log.outcomes(),
     held: () => log.held(),
@@ -551,6 +619,18 @@ export function createOperationStore(opts: {
             .map((id) => log.get(id))
             .filter((e): e is FieldShoreEvent => e !== undefined && outcomes.get(e.id) === 'no-effect');
           if (events.length > 0) overridden.setState({ events }, true);
+        }
+      } catch {
+        // a corrupt row only loses the list — never the boot
+      }
+      // Same for the unacknowledged rejected list (#471): the events live in `quarantine`.
+      try {
+        const row = await db.meta.get(REJECTED_KEY);
+        const ids: unknown = row ? JSON.parse(row.value) : [];
+        if (Array.isArray(ids)) {
+          const rows = await db.quarantine.bulkGet(ids.filter((id): id is string => typeof id === 'string'));
+          const events = rows.filter((r): r is QuarantineRow => r !== undefined).map(eventOfQuarantineRow);
+          if (events.length > 0) rejected.setState({ events }, true);
         }
       } catch {
         // a corrupt row only loses the list — never the boot

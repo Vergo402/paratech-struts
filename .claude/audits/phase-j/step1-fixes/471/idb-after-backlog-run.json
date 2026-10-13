@@ -1,0 +1,15 @@
+{
+ "_note": "Captured via javascript_tool at 2026-10-13T01:52:5x Z, after the two-change backlog (A=ShorePointAdded #2, B=ShorePointStatusChanged #1) drained into quarantine. quarantine now holds all 5 refused events across the whole session; events holds the 3 setup events + change 3 (synced after the first restore).",
+ "quarantineCount": 5,
+ "quarantineRows": [
+  {"id": "45418fbb-715a-4a9a-98bb-7cfe3eaaba16", "type": "ShorePointStatusChanged", "quarantinedAtISO": "2026-10-13T01:39:51.555Z"},
+  {"id": "08413b0a-fba7-41a9-8fa1-d81a25fe4945", "type": "ShorePointStatusChanged", "quarantinedAtISO": "2026-10-13T01:43:19.793Z"},
+  {"id": "a7e91914-7744-46a0-b922-b08a1908a642", "type": "ResourceAssigned", "quarantinedAtISO": "2026-10-13T01:47:40.227Z"},
+  {"id": "ddd74dc5-c11c-4de8-b6ca-1af5345c57dc", "type": "ShorePointAdded", "quarantinedAtISO": "2026-10-13T01:50:11.230Z"},
+  {"id": "da26608c-d1de-4c0f-842b-263a2bac647b", "type": "ShorePointStatusChanged", "quarantinedAtISO": "2026-10-13T01:52:11.344Z"}
+ ],
+ "eventsCount": 4,
+ "eventTypes": ["OperationCreated", "ShorePointAdded", "EquipmentDeployed", "ShorePointStatusChanged"],
+ "quarantinedIdsInEvents": [false, false, false, false, false],
+ "metaRejected": ["{\"key\":\"fieldshore_rejected\",\"value\":\"[\\\"ddd74dc5-c11c-4de8-b6ca-1af5345c57dc\\\",\\\"da26608c-d1de-4c0f-842b-263a2bac647b\\\"]\"}"]
+}
