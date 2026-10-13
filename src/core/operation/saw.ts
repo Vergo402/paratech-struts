@@ -12,6 +12,9 @@ import type { ShorePoint } from '../schema';
 // finishes before Saw B, A claims the next unclaimed cut and NEVER steals the cut B
 // is mid-way through — claims do not reshuffle on out-of-order completion. The
 // persisted `sp.sawId` is what carries this across re-derivations.
+// A cut stepped BACK from Runner re-enters the queue untagged (the reducer drops its
+// sawId, #475), so it is an ordinary unclaimed cut: it never collides with the cut
+// its old saw is now on, and a free saw may claim it.
 
 /** The default roster for an op with no saws recorded (legacy safety, #354). */
 export const DEFAULT_SAWS: readonly string[] = ['A'];
@@ -38,7 +41,8 @@ export interface SawAssignment {
   /** sawId → the cut that saw is currently on, or null when the saw is free and no
    *  unclaimed cut remains. Order matches the roster. */
   heroBySaw: Record<string, ShorePoint | null>;
-  /** The cuts no saw has claimed, in queue order — the shared "up next" list. */
+  /** Every queue cut that is not a saw's hero, in queue order — the shared "up next" list
+   *  (includes a further cut still tagged with an on-roster saw, e.g. from an old log). */
   unclaimed: ShorePoint[];
   /** sawId → the cut a free saw should CLAIM now (a CuttingClaimed must be emitted).
    *  Empty when every saw is already busy or the queue has no unclaimed cuts. */
@@ -54,11 +58,11 @@ export interface SawAssignment {
  *
  * `queue` must be the cutting points already FIFO-sorted (by cuttingStartedAt); a
  * cut whose `sawId` names a saw NOT on the roster is treated as unclaimed (the saw
- * was never really there — defensive against stale data).
+ * was never really there — defensive against stale data), as is any further cut
+ * carrying a roster saw's id beyond that saw's hero (#475).
  */
 export function assignSaws(queue: readonly ShorePoint[], saws: readonly string[]): SawAssignment {
   const roster = rosterOf(saws);
-  const onRoster = new Set(roster);
 
   // 1) Honor existing claims: the first queued cut each saw already owns is its hero.
   const heroBySaw: Record<string, ShorePoint | null> = {};
@@ -69,8 +73,11 @@ export function assignSaws(queue: readonly ShorePoint[], saws: readonly string[]
     if (owned) claimedSpIds.add(owned.id);
   }
 
-  // 2) The shared up-next list: every cut not owned by a roster saw, in queue order.
-  const unclaimed = queue.filter((sp) => !claimedSpIds.has(sp.id) && !(sp.sawId != null && onRoster.has(sp.sawId)));
+  // 2) The shared up-next list: every cut that is not a saw's hero, in queue order.
+  //    That includes a SECOND cut tagged with an on-roster sawId (e.g. a runner→cutting
+  //    step-back re-entered the queue still tagged, #475) — a free saw may claim it, and
+  //    the reducer re-tags it. So every queue entry lands in exactly one hero or here.
+  const unclaimed = queue.filter((sp) => !claimedSpIds.has(sp.id));
 
   // 3) Hand each still-free saw the next top-unclaimed cut. Walk the roster in order
   //    so Saw A claims ahead of Saw B (deterministic); consume from `unclaimed` as we go.

@@ -1,0 +1,30 @@
+{
+  "step": "3 - SP1 stepped BACK from Runner to Cutting on the Board (Back button in the Runner lane; announcement 'Shore point — back to Cutting Station.'), then station opened",
+  "at": "2026-10-13T06:57:07Z (02:57:07 local)   [AFTER the coordinator's follow-on hot-reload]",
+  "expectation_source": "coordinator mid-task correction: SP2 stays hero tagged A; bounced SP1 untagged under Up next badge 1; count 2",
+  "station": {
+    "count": { "n": 2, "text": "2 cuts in queue" },
+    "upNextHeader": "Up next 1",
+    "heroes": [ { "spId": "3b301b1c-4cc7-4690-bdaf-425118255898 (SP2)", "badge": "Cut this now", "cut": "33 1/2in", "where": "Div 1 · SP2 · T-Shore", "buttons": ["Mark Cut Done", "Back"] } ],
+    "upNextRows": [ { "pos": "1", "spId": "4b8734fb-d2c2-4375-a500-55033ee2bc11 (SP1)", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore" } ],
+    "nothingWaitingCopy": [],
+    "hscroll": { "scrollWidth": 1024, "clientWidth": 1024 },
+    "innerText": "Cutting Station\n+ Add saw\n\n2 cuts in queue\n\nCut this now\n\n33 1/2in\n\nCUT LENGTH\n\nOpening 42in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP2 · T-Shore\n\nMark Cut Done\nBack\n\nUP NEXT\n1\n\n1\n51 1/2in\nDiv 1 · SP1 · T-Shore   (inch marks ASCII-fied here)"
+  },
+  "store": {
+    "operation": { "name": "QA Op 475", "saws": ["A"] },
+    "points": [
+      { "seq": 1, "area": "SP1", "status": "cutting", "sawId": "(absent - reducer deleted it on runner->cutting)", "cuttingDone": true, "cuttingStartedAt": 1791874436871 },
+      { "seq": 2, "area": "SP2", "status": "cutting", "sawId": "A", "cuttingDone": null, "cuttingStartedAt": 1791874446244 }
+    ]
+  },
+  "stepBackEvent": { "type": "ShorePointStatusChanged", "spId": "SP1", "from": "runner", "to": "cutting", "at": 1791874605599, "receivedAt": 1791874605674, "id": "335cb64e-9fe8-454c-a715-85782f1a632c" },
+  "claimEventsAfterStepBack": "none (Saw A is busy with SP2; the only CuttingClaimed events in the log are SP1->A x2 (step 1), SP2->A (step 2))",
+  "reconcile": {
+    "storeCuttingIds": ["SP1 4b8734fb-...", "SP2 3b301b1c-..."],
+    "onScreenIds": ["SP2 (hero)", "SP1 (Up next row 1)"],
+    "everyQueueCutShownExactlyOnce": true,
+    "countN": 2, "countEqualsOnScreen": true
+  },
+  "sync": { "eventsRows": 15, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

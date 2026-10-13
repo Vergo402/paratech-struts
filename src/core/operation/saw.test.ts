@@ -124,6 +124,72 @@ describe('assignSaws', () => {
     expect(r.heroBySaw['A']?.id).toBe('a'); // A re-claims the orphaned cut
     expect(r.unclaimed.map((s) => s.id)).toEqual(['b']);
   });
+
+  it('#475: a still-tagged duplicate (e.g. from an old log) is listed up-next, not hidden', () => {
+    // The reducer no longer lets a step-back re-enter tagged, but logs written before
+    // that fix may. The first match stays the hero; the later one must stay visible.
+    const queue = [cut('x', { sawId: 'A' }), cut('y', { sawId: 'A' })];
+    const r = assignSaws(queue, ['A']);
+    expect(r.heroBySaw['A']?.id).toBe('x');
+    expect(r.unclaimed.map((s) => s.id)).toEqual(['y']);
+    expect(r.pendingClaims).toEqual({});
+  });
+
+  it('#475: after a runner step-back the bounced cut is untagged — A keeps its mid-way cut, B takes the bounced one', () => {
+    // sp1 was bounced runner→cutting (sawId cleared, FIFO place kept → sorts first);
+    // sp2 is the cut Saw A is actually working on.
+    const queue = [cut('sp1', { cuttingStartedAt: 10 }), cut('sp2', { cuttingStartedAt: 20, sawId: 'A' })];
+    const one = assignSaws(queue, ['A']);
+    expect(one.heroBySaw['A']?.id).toBe('sp2');
+    expect(one.unclaimed.map((s) => s.id)).toEqual(['sp1']);
+    expect(one.pendingClaims).toEqual({});
+
+    const two = assignSaws(queue, ['A', 'B']);
+    expect(two.heroBySaw['A']?.id).toBe('sp2'); // never stolen
+    expect(two.heroBySaw['B']?.id).toBe('sp1');
+    expect(two.pendingClaims['B']?.id).toBe('sp1');
+    expect(two.pendingClaims['A']).toBeUndefined();
+    expect(two.unclaimed).toEqual([]);
+  });
+
+  it('#475: a free saw can claim the duplicate-tagged cut; the rest stay up-next in queue order', () => {
+    const queue = [cut('x', { sawId: 'A' }), cut('y', { sawId: 'A' }), cut('z', { sawId: 'A' })];
+    const r = assignSaws(queue, ['A', 'B']);
+    expect(r.heroBySaw['A']?.id).toBe('x');
+    expect(r.heroBySaw['B']?.id).toBe('y');
+    expect(r.pendingClaims['B']?.id).toBe('y');
+    expect(r.pendingClaims['A']).toBeUndefined();
+    expect(r.unclaimed.map((s) => s.id)).toEqual(['z']);
+
+    // Persist B's claim (the reducer re-tags y) and re-derive: stable, nothing new to claim.
+    const again = assignSaws(applyClaims(queue, r.pendingClaims), ['A', 'B']);
+    expect(again.heroBySaw['A']?.id).toBe('x');
+    expect(again.heroBySaw['B']?.id).toBe('y');
+    expect(again.pendingClaims).toEqual({});
+    expect(again.unclaimed.map((s) => s.id)).toEqual(['z']);
+  });
+
+  it('#475 invariant: every queue entry lands in exactly one hero slot or up-next', () => {
+    const queues: Array<[ShorePoint[], string[]]> = [
+      [[cut('a'), cut('b'), cut('c')], ['A']],
+      [[cut('a', { sawId: 'A' }), cut('b'), cut('c')], ['A', 'B']],
+      [[cut('b', { sawId: 'B' }), cut('c'), cut('d')], ['A', 'B']],
+      [[cut('a', { sawId: 'Z' }), cut('b')], ['A']],
+      [[cut('x', { sawId: 'A' }), cut('y', { sawId: 'A' })], ['A']],
+      [[cut('x', { sawId: 'A' }), cut('y', { sawId: 'A' }), cut('z', { sawId: 'B' }), cut('w', { sawId: 'B' })], ['A', 'B']],
+      [[cut('x', { sawId: 'A' }), cut('y', { sawId: 'A' }), cut('z')], ['A', 'B', 'C']],
+      [[cut('a')], ['A', 'B', 'C']],
+      [[], ['A']],
+    ];
+    for (const [queue, saws] of queues) {
+      const r = assignSaws(queue, saws);
+      const placed = [
+        ...Object.values(r.heroBySaw).flatMap((h) => (h ? [h.id] : [])),
+        ...r.unclaimed.map((s) => s.id),
+      ].sort();
+      expect(placed).toEqual(queue.map((s) => s.id).sort());
+    }
+  });
 });
 
 describe('nextSawId', () => {

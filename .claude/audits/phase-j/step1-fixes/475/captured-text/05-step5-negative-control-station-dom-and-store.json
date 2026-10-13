@@ -1,0 +1,29 @@
+{
+  "step": "5 (negative control, part b) - untagged cuts behave as before. Saw A's cut (SP2) finished: Mark Cut Done + Send to Runner (Saw A's hero buttons).",
+  "at": "2026-10-13T07:02:07Z (03:02:07 local)   [AFTER the follow-on hot-reload]",
+  "can_this_fail": "Yes. If the reducer/claim logic mis-tagged or A stole B's cut, the store would show SP1 sawId != B or P untagged, and the screen would show a different hero/Up-next. Matched positive control = the same station in step 1 (untagged SP2 under Up next badge 1 behind Saw A's hero).",
+  "station": {
+    "count": { "n": 3, "text": "3 cuts in queue" },
+    "upNextHeader": "Up next 1",
+    "heroes": [
+      { "saw": "A", "spId": "eddc6073-668d-4965-8081-b60edf607933 (P)",   "badge": "Saw A · cut this now", "cut": "45 1/2in", "where": "Div 1 · P · T-Shore", "buttons": ["Mark Cut Done", "Back"] },
+      { "saw": "B", "spId": "4b8734fb-d2c2-4375-a500-55033ee2bc11 (SP1)", "badge": "Saw B · cut this now", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore", "cutDoneMark": true, "buttons": ["Send to Runner", "Clear Cut Done"] }
+    ],
+    "upNextRows": [ { "pos": "1", "spId": "b4135531-472e-437d-b64c-7de9f1a1cc52 (Q)", "cut": "36 1/2in", "where": "Div 1 · Q · T-Shore" } ],
+    "nothingWaitingCopy": [],
+    "sentToRunnerCards": 1,
+    "hscroll": { "documentScrollWidth": 1024, "documentClientWidth": 1024 }
+  },
+  "store": { "saws": ["A", "B"], "points": [
+    { "seq": 1, "area": "SP1", "status": "cutting", "sawId": "B",  "cuttingDone": true },
+    { "seq": 2, "area": "SP2", "status": "runner",  "sawId": "A",  "cuttingDone": true },
+    { "seq": 3, "area": "P",   "status": "cutting", "sawId": "A" },
+    { "seq": 4, "area": "Q",   "status": "cutting", "sawId": null } ] },
+  "newEvents": [
+    { "type": "ShorePointEdited cuttingDone:true", "spId": "SP2", "at": 1791874892379 },
+    { "type": "ShorePointStatusChanged cutting->runner", "spId": "SP2", "at": 1791874917800 },
+    { "type": "CuttingClaimed", "spId": "P", "sawId": "A", "at": 1791874917857, "receivedAt": 1791874917900, "id": "d117d79d-59f0-49fa-8a0a-260fca5a231a" }
+  ],
+  "reconcile": { "storeCuttingIds": ["SP1", "P", "Q"], "onScreenIds": ["P (hero A)", "SP1 (hero B)", "Q (Up next 1)"], "everyQueueCutShownExactlyOnce": true, "countN": 3, "countEqualsOnScreen": true },
+  "sync": { "eventsRows": 28, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

@@ -109,6 +109,25 @@ describe('CuttingStation', () => {
     expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('1 cut in queue');
   });
 
+  it('#475: a second cut carrying the same sawId is listed under Up next, not hidden', () => {
+    render(
+      <CuttingStation
+        queue={[makeSP('x', { sawId: 'A' }), makeSP('y', { sawId: 'A' })]}
+        sent={[]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+      />,
+    );
+    expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('2 cuts in queue');
+    const upNext = document.querySelector('.fs-cutstation-upnext') as HTMLElement;
+    expect(within(upNext).getByText(/Up next/)).toBeInTheDocument();
+    expect(upNext.querySelector('.fs-cutstation-upnext-head')).toHaveTextContent(/Up next\s*1/);
+    expect(Array.from(upNext.querySelectorAll('[data-sp-id]')).map((el) => el.getAttribute('data-sp-id'))).toEqual(['y']);
+    expect(document.querySelector('.fs-cutstation-heroside [data-sp-id="x"]')).not.toBeNull();
+  });
+
   it('Mark Cut Done fires onMarkCutDone for that card', async () => {
     const onMarkCutDone = vi.fn();
     const sp = makeSP('a');

@@ -1,0 +1,20 @@
+{
+  "step": "probe recovery - Saw B finished SP1 (Send to Runner on Saw B's hero), the only 'Send to Runner' button on screen",
+  "at": "2026-10-13T07:03:47Z (03:03:47 local)",
+  "station": {
+    "count": { "n": 2, "text": "2 cuts in queue" },
+    "upNextHeader": "Up next 0",
+    "heroes": [ { "saw": "A", "cut": "45 1/2in", "where": "Div 1 · P · T-Shore" }, { "saw": "B", "cut": "36 1/2in", "where": "Div 1 · Q · T-Shore" } ],
+    "nothingWaitingCopy": ["Nothing waiting — every cut is claimed."],
+    "sentToRunnerCards": 1
+  },
+  "tags": [["SP1","runner","B"],["SP2","runner","A"],["P","cutting","A"],["Q","cutting","B"]],
+  "eventsTail": [
+    { "type": "CuttingClaimed (injected probe)", "spId": "Q", "sawId": "A", "at": 1791874969278, "receivedAt": 1791874969316 },
+    { "type": "ShorePointStatusChanged cutting->runner", "spId": "SP1", "at": 1791875017593, "receivedAt": 1791875017648 },
+    { "type": "CuttingClaimed (auto, by the station)", "spId": "Q", "sawId": "B", "at": 1791875017610, "receivedAt": 1791875017670 }
+  ],
+  "meaning": "A free saw claims the duplicate-tagged cut out of Up next; the reducer re-tags A->B (CuttingClaimed guard sp.sawId !== event.sawId). No cut is stranded.",
+  "reconcile": { "everyQueueCutShownExactlyOnce": true, "countN": 2, "countEqualsOnScreen": true },
+  "sync": { "eventsRows": 31, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

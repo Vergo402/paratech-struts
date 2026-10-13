@@ -1,0 +1,16 @@
+{
+  "note": "Store read (operationStore.store.getState(), the app's own module instance) after moving SP1 then SP2 to Cutting from the Board view, BEFORE the Cutting Station was opened. Ran AFTER the coordinator's follow-on hot-reload had settled and the tab was reloaded.",
+  "at": "2026-10-13T06:54:56Z (02:54:56 local)",
+  "operation": { "name": "QA Op 475", "saws": ["A"], "status": "active" },
+  "points": [
+    { "seq": 1, "area": "SP1", "id": "4b8734fb-d2c2-4375-a500-55033ee2bc11", "status": "cutting", "sawId": null, "cuttingDone": null, "cuttingStartedAt": 1791874436871, "shoreType": "t-shore", "openingEighths": 480 },
+    { "seq": 2, "area": "SP2", "id": "3b301b1c-4cc7-4690-bdaf-425118255898", "status": "cutting", "sawId": null, "cuttingDone": null, "cuttingStartedAt": 1791874446244, "shoreType": "t-shore", "openingEighths": 336 }
+  ],
+  "events": [
+    { "type": "ShorePointStatusChanged", "spId": "SP1", "from": "process", "to": "strutset",  "at": 1791874427630, "receivedAt": 1791874427717 },
+    { "type": "ShorePointStatusChanged", "spId": "SP1", "from": "strutset", "to": "cutting",  "at": 1791874436871, "receivedAt": 1791874437035 },
+    { "type": "ShorePointStatusChanged", "spId": "SP2", "from": "process", "to": "strutset",  "at": 1791874441532, "receivedAt": 1791874441611 },
+    { "type": "ShorePointStatusChanged", "spId": "SP2", "from": "strutset", "to": "cutting",  "at": 1791874446244, "receivedAt": 1791874446310 }
+  ],
+  "sync": { "bucket": "6a157e7d-f0a2-42df-8cfe-5f3ae23dfb68", "eventsRows": 9, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

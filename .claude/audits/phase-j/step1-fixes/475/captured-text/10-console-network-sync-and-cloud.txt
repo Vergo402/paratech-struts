@@ -1,0 +1,27 @@
+#475 QA run - console, network and sync health (tab-4 was created fresh for this run, so its console buffer holds only this run)
+
+A. Console errors (read_console_messages onlyErrors; 13 entries, none truncated)
+   All 13 are React/HMR artifacts clustered inside the coordinator's follow-on edit landing, none after my clean reload at ~02:53:
+   - 3x "Warning: You are calling ReactDOMClient.createRoot() on a container that has already been passed to createRoot() before"
+   - 4x "Uncaught NotFoundError: Failed to execute 'removeChild' on 'Node'" (each followed by "The above error occurred in the <MatchImpl|CatchBoundaryImpl|AuthRoute> component")
+   - 1x "FieldShore crashed: NotFoundError ..." (the app's own ErrorBoundary caught it and re-rendered; the create-department dialog and every later flow worked)
+   - 1x "Uncaught (in promise) AbortError: Transition was skipped" (View Transition interrupted by the reload)
+   - plus 1 warn "Error in route match: /create-department/create-department" and 2 warns "error wasn't caught by any route" / "Failed to execute 'removeChild'"
+   Attribution: the component stacks name main.tsx with HMR stamps t=1791874044696, t=1791874051838 and t=1791874199653, which are the Vite hot-update stamps of the coordinator's edits (02:47:24, 02:47:31, 02:49:59). The vite log shows "[vite] invalidate /main.tsx: Could not Fast Refresh" then "hot updated: /main.tsx" (main.tsx re-executed => createRoot called twice). This is a DEV-server hot-reload artifact of editing core/shorepoint/reducer.ts mid-session; it does not reproduce on a clean load.
+   After the 02:53 reload and through step 8 the buffer contains ONLY "[vite] connecting/connected" and the React DevTools info line (4 reload groups = my 4 later navigations: desktop reload, phone reload, desktop restore reload, phone multi-saw reload). Zero errors, warnings or logs from the numbered steps.
+
+B. Other console entries
+   - 4x [log] Dexie BulkError "events.bulkAdd(): 1 of 1 operations failed ... key does not satisfy the uniqueness requirements" (the unique `id` index rejecting an event row that already exists; db.ts documents this as the expected result of a duplicate append). They sit in the buffer BEFORE the 02:53 reload (during the HMR flux while SP1/SP2 were being created), not during steps 1-8. Probable cause: a store instance re-created by HMR re-ingesting cloud echoes of events already on disk. Harmless (rows protected by the unique index; local log 36 = cloud 36 at the end).
+   - Sync-substring probes over the whole buffer: "ermission" none, "FIREBASE" none, "uarantin" none, "sync" none, "rejected" none, "WebSocket" none.
+
+C. Network (read_network_requests)
+   - Sign-up POST went to http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp -> 200 (emulator). Every Firebase request seen in the buffer targets 127.0.0.1:9099; no real-Google host was ever contacted.
+   - The pane keeps only the most recent requests (1650 dropped) and RTDB traffic rides a WebSocket, so a full request audit is not possible from the buffer; sync success is proven by the store/cloud comparison below instead.
+
+D. Sync health at end of run (page-side, operationStore + Dexie)
+   localEventRows 36, unsentOwnEvents 0, quarantineRows 0, rejected list 0, overridden list 0, no sync/offline banner text on screen.
+   Cloud side (emulator REST with admin bearer, read-only): orgs/6a157e7d-f0a2-42df-8cfe-5f3ae23dfb68/events/<op> holds 36 events, every one carries receivedAt (none missing): ShorePointStatusChanged 14, CuttingClaimed 8, EquipmentDeployed 5, ShorePointAdded 5, ShorePointEdited 2, SawAdded 1, OperationCreated 1.
+   The 8 CuttingClaimed: SP1->A (x2, StrictMode dev double-effect, 61 ms apart), SP2->A, SP1->B, P->A, Q->A (PROBE injection), Q->B (auto, after SP1 left), R->A (PROBE injection).
+
+E. Small facts worth knowing
+   - Namespace note: my first "RTDB pristine" curl used ns=fieldshore-database (wrong namespace for this app, which is fieldshore-database-default-rtdb); the emulator process was brand new, so it was empty regardless, and the later REST reads use the right namespace.

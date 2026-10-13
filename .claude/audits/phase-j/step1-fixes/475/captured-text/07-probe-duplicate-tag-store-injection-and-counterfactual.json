@@ -1,0 +1,22 @@
+{
+  "step": "SUPPLEMENTARY PROBE (NOT a UI-driven step): store-level injection of one real event type, because the follow-on fix made the duplicate-tag state unreachable from the UI",
+  "why": "With the coordinator's follow-on (runner->cutting drops sawId) no click sequence tags two cuts to one saw, so steps 3-5 cannot discriminate the saw.ts change by themselves (they would also pass with the old saw.ts). A second DEVICE claiming a different cut for the same saw writes exactly this event, so it is a legitimate real-world state.",
+  "method": "page-side: operationStore.commit({type:'CuttingClaimed', id:<uuid>, opId:<Q.opId>, at:Date.now(), by:<getDeviceUid()>, spId:<Q id>, sawId:'A'}) using the app's own store module instance (same URL the UI loaded, ?t=1791874199653). Result {ok:true}; event id 9678e9f4-7627-4685-aabb-aca78085bbfc, receivedAt 1791874969316 (accepted by the emulator rules, uploaded; quarantine 0).",
+  "at": "2026-10-13T07:02:59Z (03:02:59 local)",
+  "state_before_injection": { "P": { "status": "cutting", "sawId": "A" }, "Q": { "status": "cutting", "sawId": null } },
+  "duplicateTagState": { "queueTags": [["SP1","B"],["P","A"],["Q","A"]], "sawsWithMoreThanOneTaggedCut": [["A", ["P","Q"]]] },
+  "station_after": {
+    "count": { "n": 3, "text": "3 cuts in queue" },
+    "upNextHeader": "Up next 1",
+    "heroes": [ { "saw": "A", "cut": "45 1/2in", "where": "Div 1 · P · T-Shore" }, { "saw": "B", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore" } ],
+    "upNextRows": [ { "pos": "1", "spId": "b4135531-472e-437d-b64c-7de9f1a1cc52 (Q)", "cut": "36 1/2in", "where": "Div 1 · Q · T-Shore" } ],
+    "nothingWaitingCopy": []
+  },
+  "reconcile": { "storeCuttingIds": ["SP1","P","Q"], "onScreenIds": ["P (hero A)","SP1 (hero B)","Q (Up next row 1)"], "everyQueueCutShownExactlyOnce": true, "countN": 3, "countEqualsOnScreen": true },
+  "counterfactual_on_the_same_live_queue": {
+    "queueOrder": [["SP1","B"],["P","A"],["Q","A"]], "roster": ["A","B"],
+    "current_assignSaws (loaded by the app, /@fs/.../src/core/operation/saw.ts?t=1791874051838)": { "heroBySaw": { "A": "P", "B": "SP1" }, "upNext": ["Q"], "pendingClaims": [] },
+    "pre_fix_filter RECONSTRUCTED from the implementer's description (not a real old build)": { "heroBySaw": { "A": "P", "B": "SP1" }, "upNext": [], "consequence": "Q listed nowhere: Up next 0, copy 'Nothing waiting — every cut is claimed.' while the count says 3" }
+  },
+  "sync": { "eventsRows": 29, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

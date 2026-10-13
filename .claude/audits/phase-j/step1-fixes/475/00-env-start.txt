@@ -1,0 +1,14 @@
+# #475 QA run - environment at start
+started_local: 2026-10-13 02:45:26 EDT
+repo: /Users/alex/Developer/paratech-struts/fieldshore   branch (given in brief): v4-redesign   (no git commands run, per brief)
+node: v26.10.0   npm: 11.19.1
+servers: dev:emu (Vite --mode emulators) on :5200 via preview_start; emulators (Auth :9099, RTDB :9000) via preview_start
+build under test: DEV server (source served live; no dist/). Fingerprints below are of the sources under test, to prove no sibling edit landed mid-run (HMR would pick it up silently).
+
+sha256 at start:
+6e5456723426d5bac430b9198dd78ca5157be7103852cd33dffd75ee3ed48d0b  src/core/operation/saw.ts
+dd1f21867165c3411d682a1b19be859429c559491c4874631a619e436a4785dc  src/ui/operations/CuttingStation.tsx
+3c5ccddd32ad7a9c757ab59ed70d400c4f155cc11e9aff23a4355451f0295832  src/ui/operations/OperationsBoard.tsx
+6f60ee7061c19733d629456893247cb7e709984528fa43fb221799eb06c1e0a7  src/core/operation/reducer.ts
+
+roster is append-only: only SawAdded exists (src/core/schema/event.ts:92); no remove-saw event or handler anywhere in src

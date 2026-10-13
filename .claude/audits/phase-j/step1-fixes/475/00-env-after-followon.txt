@@ -1,0 +1,14 @@
+# #475 QA run - source fingerprints AFTER the coordinator's follow-on hot-reload settled
+stability evidence: CHECK-1 02:51:27 and CHECK-2 02:52:29 (62s apart) showed identical mtimes + hashes for the files below; reducer.ts last written 02:49:59, saw.ts and CuttingStation.tsx 02:47:31.
+(00-env-start.txt holds the pre-follow-on hashes: saw.ts 6e545672..., CuttingStation.tsx dd1f2186..., shorepoint/reducer.ts was not fingerprinted at start.)
+
+b90da5122a517fae6a3f92672d9bec92d17c04e861189174d8e34f74e7dfb7a5  src/core/operation/saw.ts
+56b488120247d413c819132a91f3867316c7f6f995d06bd24b289f1e02ef4b02  src/ui/operations/CuttingStation.tsx
+3c5ccddd32ad7a9c757ab59ed70d400c4f155cc11e9aff23a4355451f0295832  src/ui/operations/OperationsBoard.tsx
+6f60ee7061c19733d629456893247cb7e709984528fa43fb221799eb06c1e0a7  src/core/operation/reducer.ts
+900c08dd5bb76acb80600261f5eaeff376606d5f3f0fe1c1e3c620141aed9eb8  src/core/shorepoint/reducer.ts
+
+follow-on semantics read from src/core/shorepoint/reducer.ts applyCuttingFields (lines ~395-430):
+  strutset->cutting: stamps cuttingStartedAt;  cutting->strutset: clears cuttingStartedAt, cuttingDone, sawId;
+  cutting->runner: preserves all three;  runner->cutting: keeps cuttingDone + cuttingStartedAt, DROPS sawId (new, #475 follow-on).
+src/core/operation/saw.ts: unchanged logic from the first #475 fix (unclaimed = every queue cut that is not a saw's hero); comment block gained the 'steps back untagged' note.

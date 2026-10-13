@@ -355,6 +355,32 @@ describe('saws — the Cutting Station roster + claim (#354)', () => {
     expect(stepped.shorePoints[0]!.sawId).toBeUndefined();
   });
 
+  it('#475: [SP1 claimed by A → done → runner → SP2 claimed by A → SP1 stepped back] folds to SP1 untagged, SP2 on A', () => {
+    const cutting = (id: string, at: number): ShorePoint => ({
+      id, opId: 'op1', division: '1', shoreType: 't-shore', measurementEighths: 388,
+      deductions: NO_DEDUCTIONS, status: 'cutting', cuttingStartedAt: at,
+    });
+    const base: OperationState = { ...EMPTY_OPERATION_STATE, shorePoints: [cutting('sp1', 10), cutting('sp2', 20)] };
+    const claim = (id: string, spId: string): FieldShoreEvent => ({
+      type: 'CuttingClaimed', id, opId: 'op1', at: 30, by: 'lead', spId, sawId: 'A',
+    });
+    const events: FieldShoreEvent[] = [
+      claim('c1', 'sp1'),
+      { type: 'ShorePointEdited', id: 'ed', opId: 'op1', at: 31, by: 'lead', spId: 'sp1', patch: { cuttingDone: true } },
+      statusAt('sp1', 'cutting', 'runner', 32),
+      claim('c2', 'sp2'),
+      statusAt('sp1', 'runner', 'cutting', 33),
+    ];
+    const end = events.reduce(operationReducer, base);
+    const sp1 = end.shorePoints.find((p) => p.id === 'sp1')!;
+    const sp2 = end.shorePoints.find((p) => p.id === 'sp2')!;
+    expect(sp1.status).toBe('cutting');
+    expect(sp1.sawId).toBeUndefined(); // bounced back into the shared queue, unclaimed
+    expect(sp1.cuttingDone).toBe(true); // #223: a step-back is "runner not ready", not "re-cut"
+    expect(sp1.cuttingStartedAt).toBe(10); // keeps its FIFO place (ahead of sp2)
+    expect(sp2.sawId).toBe('A'); // A is still mid-way through sp2
+  });
+
   it('CuttingClaimed against a non-cutting point no-ops (stale-claim replay safety)', () => {
     const sp: ShorePoint = {
       id: 'a', opId: 'op1', division: '1', shoreType: 't-shore', measurementEighths: 388,

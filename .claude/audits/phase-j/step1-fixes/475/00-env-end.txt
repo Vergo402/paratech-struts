@@ -1,0 +1,22 @@
+# #475 QA run - source fingerprints at END of run
+taken: 2026-10-13 03:07:43 EDT
+
+b90da5122a517fae6a3f92672d9bec92d17c04e861189174d8e34f74e7dfb7a5  src/core/operation/saw.ts
+56b488120247d413c819132a91f3867316c7f6f995d06bd24b289f1e02ef4b02  src/ui/operations/CuttingStation.tsx
+3c5ccddd32ad7a9c757ab59ed70d400c4f155cc11e9aff23a4355451f0295832  src/ui/operations/OperationsBoard.tsx
+6f60ee7061c19733d629456893247cb7e709984528fa43fb221799eb06c1e0a7  src/core/operation/reducer.ts
+900c08dd5bb76acb80600261f5eaeff376606d5f3f0fe1c1e3c620141aed9eb8  src/core/shorepoint/reducer.ts
+
+compare with 00-env-after-followon.txt (taken after the coordinator's follow-on settled, before steps 1-8):
+  UNCHANGED  src/core/operation/saw.ts
+  UNCHANGED  src/ui/operations/CuttingStation.tsx
+  UNCHANGED  src/ui/operations/OperationsBoard.tsx
+  UNCHANGED  src/core/operation/reducer.ts
+  UNCHANGED  src/core/shorepoint/reducer.ts
+
+src files modified since 00-env-after-followon.txt was written:
+(empty list above = nothing under src/ was touched during steps 1-8)
+mtimes now:
+  02:49:59  src/core/shorepoint/reducer.ts
+  02:47:31  src/core/operation/saw.ts
+  02:47:31  src/ui/operations/CuttingStation.tsx

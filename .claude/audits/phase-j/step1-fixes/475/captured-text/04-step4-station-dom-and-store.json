@@ -1,0 +1,30 @@
+{
+  "step": "4 - + Add saw (Saw B) from the step-3 state",
+  "at": "2026-10-13T06:59:17Z (02:59:17 local)   [AFTER the follow-on hot-reload]",
+  "expectation_source": "coordinator mid-task correction: B claims SP1 (the bounced one), never SP2",
+  "station": {
+    "count": { "n": 2, "text": "2 cuts in queue" },
+    "upNextHeader": "Up next 0",
+    "heroes": [
+      { "saw": "A", "spId": "3b301b1c-4cc7-4690-bdaf-425118255898 (SP2)", "badge": "Saw A · cut this now", "cut": "33 1/2in", "where": "Div 1 · SP2 · T-Shore", "buttons": ["Mark Cut Done", "Back"] },
+      { "saw": "B", "spId": "4b8734fb-d2c2-4375-a500-55033ee2bc11 (SP1)", "badge": "Saw B · cut this now", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore", "cutDoneMark": true, "buttons": ["Send to Runner", "Clear Cut Done"] }
+    ],
+    "upNextRows": [],
+    "nothingWaitingCopy": ["Nothing waiting — every cut is claimed."],
+    "hscroll": { "documentScrollWidth": 1024, "documentClientWidth": 1024, "stationScrollWidth": 708, "stationClientWidth": 708 },
+    "innerText": "Cutting Station\nSaw A\nSaw B\n+ Add saw\n\n2 cuts in queue\n\nSaw A · cut this now\n\n33 1/2in\n\nCUT LENGTH\n\nOpening 42in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP2 · T-Shore\n\nMark Cut Done\nBack\nSaw B · cut this now\n\n51 1/2in\n\nCUT LENGTH\n\nOpening 60in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP1 · T-Shore\n\n✓ Cut done\n\nSend to Runner\nClear Cut Done\n\nUP NEXT\n0\n\nNothing waiting — every cut is claimed.   (inch marks ASCII-fied here)"
+  },
+  "store": {
+    "operation": { "name": "QA Op 475", "saws": ["A", "B"] },
+    "points": [
+      { "seq": 1, "area": "SP1", "status": "cutting", "sawId": "B", "cuttingDone": true, "cuttingStartedAt": 1791874436871 },
+      { "seq": 2, "area": "SP2", "status": "cutting", "sawId": "A", "cuttingDone": null, "cuttingStartedAt": 1791874446244 }
+    ]
+  },
+  "newEvents": [
+    { "type": "SawAdded", "sawId": "B", "at": 1791874747212, "receivedAt": 1791874747301 },
+    { "type": "CuttingClaimed", "spId": "SP1", "sawId": "B", "at": 1791874747273, "receivedAt": 1791874747320, "id": "11499f61-db3d-4338-8098-3751c6ae1e59" }
+  ],
+  "reconcile": { "storeCuttingIds": ["SP1", "SP2"], "onScreenIds": ["SP2 (hero A)", "SP1 (hero B)"], "everyQueueCutShownExactlyOnce": true, "countN": 2, "countEqualsOnScreen": true },
+  "sync": { "eventsRows": 17, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 }
+}

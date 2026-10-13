@@ -1,0 +1,31 @@
+{
+  "step": "1 - baseline: SP1 then SP2 moved to Cutting; station opened",
+  "at": "2026-10-13T06:55:30Z (02:55:30 local)",
+  "viewport": { "w": 1024, "h": 768 },
+  "station": {
+    "count": { "n": 2, "text": "2 cuts in queue" },
+    "upNextHeader": "Up next 1",
+    "heroes": [
+      { "spId": "4b8734fb-d2c2-4375-a500-55033ee2bc11 (SP1, #1)", "badge": "Cut this now", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore", "buttons": ["Mark Cut Done", "Back"], "saw": null, "idle": false }
+    ],
+    "upNextRows": [
+      { "pos": "1", "spId": "3b301b1c-4cc7-4690-bdaf-425118255898 (SP2, #2)", "cut": "33 1/2in", "where": "Div 1 · SP2 · T-Shore" }
+    ],
+    "nothingWaitingCopy": [],
+    "sentToRunnerIds": [],
+    "hscroll": { "scrollWidth": 1024, "clientWidth": 1024 },
+    "innerText": "Cutting Station\n+ Add saw\n\n2 cuts in queue\n\nCut this now\n\n51 1/2in\n\nCUT LENGTH\n\nOpening 60in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP1 · T-Shore\n\nMark Cut Done\nBack\n\nUP NEXT\n1\n\n1\n33 1/2in\nDiv 1 · SP2 · T-Shore   (inch marks transliterated to ASCII here; the live text used the real inch sign)"
+  },
+  "store": {
+    "operation": { "name": "QA Op 475", "saws": ["A"], "status": "active" },
+    "points": [
+      { "seq": 1, "area": "SP1", "status": "cutting", "sawId": "A",  "cuttingDone": null, "cuttingStartedAt": 1791874436871 },
+      { "seq": 2, "area": "SP2", "status": "cutting", "sawId": null, "cuttingDone": null, "cuttingStartedAt": 1791874446244 }
+    ]
+  },
+  "claimEvents": [
+    { "type": "CuttingClaimed", "spId": "SP1", "sawId": "A", "at": 1791874521175, "receivedAt": 1791874521251, "id": "448301f7-1a25-4b47-bac5-8b8984b50426" },
+    { "type": "CuttingClaimed", "spId": "SP1", "sawId": "A", "at": 1791874521236, "receivedAt": 1791874521262, "id": "be4f8678-0178-4591-b471-dd616daa725e" }
+  ],
+  "observation": "Two CuttingClaimed events for the SAME cut/saw, 61 ms apart: the station's claim effect fired twice (React StrictMode double-invoke in the dev server). Idempotent in the fold (reducer guard sp.sawId !== event.sawId); both uploaded with receivedAt. Not related to #475."
+}

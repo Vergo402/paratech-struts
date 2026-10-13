@@ -149,6 +149,33 @@ describe('L-7 — single-SP status transitions', () => {
     expect(next).toBe(point); // unchanged reference
   });
 
+  it('#475: runner → cutting (step-back) drops sawId; cuttingDone + cuttingStartedAt survive (#223)', () => {
+    const point = sp({ status: 'runner', cuttingStartedAt: 100, cuttingDone: true, sawId: 'A' });
+    const next = shorePointReducer(point, {
+      type: 'ShorePointStatusChanged',
+      ...meta,
+      spId: 'sp1',
+      from: 'runner',
+      to: 'cutting',
+    } satisfies FieldShoreEvent);
+    expect(next.status).toBe('cutting');
+    expect(next.cuttingStartedAt).toBe(100); // keeps its FIFO place
+    expect('sawId' in next).toBe(false); // back in the shared queue, unclaimed
+    expect(next.cuttingDone).toBe(true); // #223: "runner not ready", not "re-cut" — the flag survives
+  });
+
+  it('cutting → runner (Send to Runner) still preserves sawId + cuttingDone + cuttingStartedAt', () => {
+    const point = sp({ status: 'cutting', cuttingStartedAt: 100, cuttingDone: true, sawId: 'A' });
+    const next = shorePointReducer(point, {
+      type: 'ShorePointStatusChanged',
+      ...meta,
+      spId: 'sp1',
+      from: 'cutting',
+      to: 'runner',
+    } satisfies FieldShoreEvent);
+    expect(next).toMatchObject({ status: 'runner', cuttingStartedAt: 100, cuttingDone: true, sawId: 'A' });
+  });
+
   it('rejects a stale transition whose `from` does not match current status', () => {
     const point = sp({ status: 'strutset' });
     const next = shorePointReducer(point, {

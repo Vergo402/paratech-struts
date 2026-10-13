@@ -1,0 +1,27 @@
+{
+  "step": "2 - Mark SP1 Cut Done, Send to Runner; Saw A auto-claims SP2",
+  "at": "2026-10-13T06:56:08Z (02:56:08 local)",
+  "station": {
+    "count": { "n": 1, "text": "1 cut in queue" },
+    "upNextHeader": "Up next 0",
+    "heroes": [ { "spId": "3b301b1c-4cc7-4690-bdaf-425118255898 (SP2)", "badge": "Cut this now", "cut": "33 1/2in", "where": "Div 1 · SP2 · T-Shore", "buttons": ["Mark Cut Done", "Back"] } ],
+    "upNextRows": [],
+    "nothingWaitingCopy": ["Nothing waiting — this is the last cut."],
+    "hscroll": { "scrollWidth": 1024, "clientWidth": 1024 },
+    "innerText": "Cutting Station\n+ Add saw\n\n1 cut in queue\n\nCut this now\n\n33 1/2in\n\nCUT LENGTH\n\nOpening 42in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP2 · T-Shore\n\nMark Cut Done\nBack\n\nUP NEXT\n0\n\nNothing waiting — this is the last cut.\n\nSent to runner\n#1\nDiv 1 · SP1\nSP1 · T-Shore\n\n51 1/2in\nCUT\nLS 406   (inch marks ASCII-fied here)"
+  },
+  "store": {
+    "operation": { "name": "QA Op 475", "saws": ["A"] },
+    "points": [
+      { "seq": 1, "area": "SP1", "status": "runner",  "sawId": "A", "cuttingDone": true, "cuttingStartedAt": 1791874436871 },
+      { "seq": 2, "area": "SP2", "status": "cutting", "sawId": "A", "cuttingDone": null, "cuttingStartedAt": 1791874446244 }
+    ]
+  },
+  "newEventsThisStep": [
+    { "type": "ShorePointEdited (patch cuttingDone:true)", "spId": "SP1", "at": 1791874554013, "receivedAt": 1791874554091 },
+    { "type": "ShorePointStatusChanged cutting->runner", "spId": "SP1", "at": 1791874559699, "receivedAt": 1791874559763 },
+    { "type": "CuttingClaimed", "spId": "SP2", "sawId": "A", "at": 1791874559754, "receivedAt": 1791874559770, "id": "b1618777-f961-41f7-9e86-1bde5e321d0b" }
+  ],
+  "sync": { "eventsRows": 14, "unsentOwnEvents": 0, "quarantineRows": 0, "rejected": 0, "overridden": 0 },
+  "crux": "SP1 sawId is STILL 'A' while at status runner (cutting->runner preserves the tag), so a pre-follow-on step-back would have re-entered the queue tagged A; the follow-on now drops it on runner->cutting."
+}

@@ -1,0 +1,18 @@
+{
+  "step": "SUPPLEMENTARY - phone (375x812, touch emulation) multi-saw layout with a duplicate-tagged cut. R (untagged) was created, moved to Cutting from the Board, then tagged to Saw A by the same labelled store-level probe event (CuttingClaimed(R,A), id ba666ec3-669c-48ac-ab81-e8bef23a7757, ok:true) while P holds Saw A. Reload, Cutting radio, picked Saw A on the select screen.",
+  "at": "2026-10-13T07:05:51Z (03:05:51 local)   [code stamp t=1791874199653 = same as all numbered steps]",
+  "store": { "roster": ["A","B"], "tags": [["SP1","runner","B"],["SP2","runner","A"],["P","cutting","A"],["Q","cutting","B"],["R","cutting","A"]] },
+  "select_screen_text": "Cutting Station / You’re assigned to a saw. Pick it — you’ll see only your cut and the shared pending list. / Saw A: Cutting 45 1/2in · SP-3, '1 waiting in the shared queue' / Saw B: Cutting 36 1/2in · SP-4, '1 waiting in the shared queue' / + Add saw   (screenshot 09a)",
+  "scoped_view": {
+    "title": "Saw A", "back": "‹ Stations", "count": "3 cuts in queue",
+    "heroes": [ { "saw": "A", "badge": "Saw A · cut this now", "cut": "45 1/2in", "where": "Div 1 · P · T-Shore", "sliders": ["Slide to mark Cut Done", "Slide back to Strut Set"] } ],
+    "upNextHeader": "Up next 1",
+    "upNextRows": [ { "pos": "1", "spId": "ede9fce4... (R)", "cut": "57 1/2in", "where": "Div 1 · R · T-Shore" } ],
+    "mutedLine": "Saw B is on its own cut (SP-4) — not in your queue.",
+    "nothingWaiting": [],
+    "accounting": "count 3 = hero P + Up next row R + Saw B's own cut Q (shown as the muted sentence by design on phone, #390) - nothing stranded",
+    "innerText": "‹ Stations\nSaw A\n\n3 cuts in queue\n\nSaw A · cut this now\n\n45 1/2in\n\nCUT LENGTH\n\nOpening 54in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · P · T-Shore\n\n>\nSlide to mark Cut Done\n<\nSlide back to Strut Set\n\nUP NEXT\n1\n\n1\n57 1/2in\nDiv 1 · R · T-Shore\n\nSaw B is on its own cut (SP-4) — not in your queue.\n\nSent to runner\n#1\nDiv 1 · SP1\nSP1 · T-Shore\n\n51 1/2in\nCUT\nLS 406\n\n#2\nDiv 1 · SP2\nSP2 · T-Shore\n\n33 1/2in\nCUT\nLS 304   (inch marks ASCII-fied here)"
+  },
+  "hscroll": { "documentScrollWidth": 375, "documentClientWidth": 375, "bodyScrollWidth": 375, "stationScrollWidth": 359, "stationClientWidth": 359 },
+  "viewport": { "w": 375, "h": 812 }, "touchPoints": 5
+}

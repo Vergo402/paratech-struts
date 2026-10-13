@@ -1,0 +1,16 @@
+{
+  "step": "6 - phone-width repeat of step 3 (done IN the step-3 state, single-saw roster [A]; roster is append-only so this is the only single-saw phone moment)",
+  "at": "2026-10-13T06:58:18Z (02:58:18 local)   [AFTER the follow-on hot-reload]",
+  "emulation": { "preset": "mobile 375x812", "ua": "Android 14 Pixel 8 Chrome", "maxTouchPoints": 5, "hover:hover and pointer:fine": false, "consequence": "status controls render as sliders, not buttons" },
+  "station": {
+    "viewport": { "w": 375, "h": 812 },
+    "count": { "n": 2, "text": "2 cuts in queue" },
+    "upNextHeader": "Up next 1",
+    "heroes": [ { "spId": "3b301b1c-4cc7-4690-bdaf-425118255898 (SP2)", "data-saw": "A", "badge": "Cut this now", "cut": "33 1/2in", "where": "Div 1 · SP2 · T-Shore", "sliderLabels": ["Slide to mark Cut Done", "Slide back to Strut Set"] } ],
+    "upNextRows": [ { "pos": "1", "spId": "4b8734fb-d2c2-4375-a500-55033ee2bc11 (SP1)", "cut": "51 1/2in", "where": "Div 1 · SP1 · T-Shore" } ],
+    "nothingWaitingCopy": [],
+    "hscroll": { "documentScrollWidth": 375, "documentClientWidth": 375, "bodyScrollWidth": 375, "stationScrollWidth": 359, "stationClientWidth": 359 },
+    "innerText": "Cutting Station\n+ Add saw\n\n2 cuts in queue\n\nCut this now\n\n33 1/2in\n\nCUT LENGTH\n\nOpening 42in - 4x4 header + footer - 1 1/2in wedge\n\nDiv 1 · SP2 · T-Shore\n\n>\nSlide to mark Cut Done\n<\nSlide back to Strut Set\n\nUP NEXT\n1\n\n1\n51 1/2in\nDiv 1 · SP1 · T-Shore   (inch marks and arrows ASCII-fied here)"
+  },
+  "store": { "SP1": { "status": "cutting", "sawId": "(absent)", "cuttingDone": true }, "SP2": { "status": "cutting", "sawId": "A" } }
+}

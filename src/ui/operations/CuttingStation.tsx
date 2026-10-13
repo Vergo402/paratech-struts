@@ -283,8 +283,8 @@ export function CuttingStation({
     </div>
   );
 
-  /** A read-only up-next row — an unclaimed cut in the shared queue. (Other saws'
-   *  claimed cuts are never rows: #390 reduces each to one muted sentence.) */
+  /** A read-only up-next row — a cut in the shared queue that no saw is on. (Another
+   *  saw's own hero is never a row: #390 reduces each to one muted sentence.) */
   const upNextRow = (sp: ShorePoint, i: number) => (
     <div key={sp.id} role="listitem" data-sp-id={sp.id} className="fs-cutstation-row">
       {/* Queue position (#20) — an honest numeral until reorder actually lands;
