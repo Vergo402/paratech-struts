@@ -19,6 +19,9 @@ step() { printf '\n\033[1m=== %s ===\033[0m\n' "$1"; }
 step "typecheck (tsc --noEmit)"
 npm run typecheck
 
+step "lint (eslint) — CI runs it too; a prefer-const slip failed six beta deploys on 2026-10-13"
+npm run lint
+
 step "unit tests (vitest run)"
 npm test
 
@@ -33,7 +36,7 @@ for _ in $(seq 1 40); do  # up to ~20s for Vite cold-start + dep optimize
   if curl -fsS "http://127.0.0.1:$PORT/" 2>/dev/null | grep -q '<title>FieldShore</title>'; then
     echo "OK — http://127.0.0.1:$PORT/ served <title>FieldShore</title> (HTTP 200)"
     echo
-    echo "ALL GREEN ✅  (types · tests · dev server)"
+    echo "ALL GREEN ✅  (types · lint · tests · dev server)"
     exit 0
   fi
   sleep 0.5

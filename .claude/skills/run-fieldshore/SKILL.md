@@ -21,7 +21,7 @@ Node ≥ 18 and npm — nothing else. No system packages, no browser binary need
 ```bash
 bash .claude/skills/run-fieldshore/smoke.sh
 ```
-Runs from anywhere in the repo (it `cd`s to the git root). Self-assigns a **free port**, so it never collides with a dev server already on :5199. Ends in `ALL GREEN ✅` (~11s); if the dev-server step fails it prints the tail of `/tmp/fieldshore-dev.log` (typecheck/test failures stop with their own output). The gated steps, individually runnable:
+Runs typecheck, lint, the unit suite and a dev-server boot (the same checks CI runs before the beta deploy, minus build). Runs from anywhere in the repo (it `cd`s to the git root). Self-assigns a **free port**, so it never collides with a dev server already on :5199. Ends in `ALL GREEN ✅` (~11s); if the dev-server step fails it prints the tail of `/tmp/fieldshore-dev.log` (typecheck/test failures stop with their own output). The gated steps, individually runnable:
 
 ```bash
 npm run typecheck   # tsc --noEmit

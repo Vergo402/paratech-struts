@@ -567,8 +567,7 @@ describe('upsertImport — skip accounting + cloud outcome (#514)', () => {
   // rejects the write; the state listener's LWW pull-down then overwrites Dexie. That row
   // is no longer "saved on this device" — the device shows the cloud's value.
   it("a refused push whose row the cloud's newer value overwrote → 'reverted', not 'failed'", async () => {
-    let inv!: InventoryStoreApi;
-    inv = createInventoryStore(db, {
+    const inv: InventoryStoreApi = createInventoryStore(db, {
       onRow: (i) => {
         if (i.id !== 'b') return Promise.resolve<Push>('ok');
         // As the SDK does: the reverted snapshot is raised (the listener's pull-down write
@@ -590,8 +589,7 @@ describe('upsertImport — skip accounting + cloud outcome (#514)', () => {
   });
 
   it('a removed row counts as reverted too (a newer cloud tombstone)', async () => {
-    let inv!: InventoryStoreApi;
-    inv = createInventoryStore(db, {
+    const inv: InventoryStoreApi = createInventoryStore(db, {
       onRow: (i) => {
         if (i.id === 'c') void inv.applyRemoteDelete('c');
         return Promise.resolve<Push>(i.id === 'c' ? 'failed' : 'ok');
