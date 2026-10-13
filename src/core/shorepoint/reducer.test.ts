@@ -202,6 +202,17 @@ describe('deploy / return — the inventory-consequential boundary', () => {
     expect(next).toBe(point);
   });
 
+  it('LEGACY deploy onto a soft-deleted Pending point is no effect (same object — #464)', () => {
+    const point = sp({ status: 'pending', deletedAt: 100 });
+    const next = shorePointReducer(point, {
+      type: 'StrutDeployed',
+      ...meta,
+      spId: 'sp1',
+      deployedStrut: deployed,
+    } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
   it('LEGACY return (step-back) moves Equipment Assigned → Pending Equipment and clears the BOM', () => {
     const point = sp({ status: 'process', deployedBom: [deployedComponent] });
     const next = shorePointReducer(point, { type: 'StrutReturned', ...meta, spId: 'sp1' } satisfies FieldShoreEvent);
@@ -229,6 +240,17 @@ describe('deploy / return — the inventory-consequential boundary', () => {
 
   it('EquipmentDeployed is rejected if the point is not Pending Equipment', () => {
     const point = sp({ status: 'strutset' });
+    const next = shorePointReducer(point, {
+      type: 'EquipmentDeployed',
+      ...meta,
+      spId: 'sp1',
+      deployedBom: bom,
+    } satisfies FieldShoreEvent);
+    expect(next).toBe(point);
+  });
+
+  it('EquipmentDeployed onto a soft-deleted Pending point is no effect (same object — #464)', () => {
+    const point = sp({ status: 'pending', deletedAt: 100 });
     const next = shorePointReducer(point, {
       type: 'EquipmentDeployed',
       ...meta,

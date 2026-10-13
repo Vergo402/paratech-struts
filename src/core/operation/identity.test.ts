@@ -50,6 +50,9 @@ const rich = fold([
   { type: 'ShorePointAdded', ...meta(4), shorePoint: point('proc', { status: 'process', deployedBom: BOM }) },
   { type: 'ShorePointAdded', ...meta(5), shorePoint: point('cut', { status: 'cutting', sawId: 'A', deployedBom: BOM }) },
   { type: 'ShorePointAdded', ...meta(6), shorePoint: point('sec', { status: 'secured', deployedBom: BOM }) },
+  // #464 — a soft-deleted Pending point: a deploy racing the delete must not land on it.
+  { type: 'ShorePointAdded', ...meta(6), shorePoint: point('gone') },
+  { type: 'ShorePointDeleted', ...meta(6), spId: 'gone' },
   {
     type: 'HazardLogged',
     ...meta(7),
@@ -110,9 +113,15 @@ const WITNESSES: Record<FieldShoreEvent['type'], Witness[]> = {
     { why: 'same saw already holds the claim', event: { type: 'CuttingClaimed', ...meta(), spId: 'cut', sawId: 'A' } },
     { why: 'point is not cutting', event: { type: 'CuttingClaimed', ...meta(), spId: 'pend', sawId: 'B' } },
   ],
-  StrutDeployed: [{ why: 'point is not pending', event: { type: 'StrutDeployed', ...meta(), spId: 'proc', deployedStrut: { model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' } } }],
+  StrutDeployed: [
+    { why: 'point is not pending', event: { type: 'StrutDeployed', ...meta(), spId: 'proc', deployedStrut: { model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' } } },
+    { why: 'point is soft-deleted', event: { type: 'StrutDeployed', ...meta(), spId: 'gone', deployedStrut: { model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' } } },
+  ],
   StrutReturned: [{ why: 'point is not in process', event: { type: 'StrutReturned', ...meta(), spId: 'pend' } }],
-  EquipmentDeployed: [{ why: 'point is not pending', event: { type: 'EquipmentDeployed', ...meta(), spId: 'sec', deployedBom: BOM } }],
+  EquipmentDeployed: [
+    { why: 'point is not pending', event: { type: 'EquipmentDeployed', ...meta(), spId: 'sec', deployedBom: BOM } },
+    { why: 'point is soft-deleted', event: { type: 'EquipmentDeployed', ...meta(), spId: 'gone', deployedBom: BOM } },
+  ],
   EquipmentReturned: [{ why: 'point is not in process', event: { type: 'EquipmentReturned', ...meta(), spId: 'cut' } }],
   EquipmentReclaimed: [{ why: 'point is not secured', event: { type: 'EquipmentReclaimed', ...meta(), spId: 'proc' } }],
   ComponentResourced: [
@@ -171,7 +180,10 @@ describe('reference-identity sweep — every event type has a no-effect fold (AD
     expect(rich.operation?.status).toBe('active');
     expect(ended.operation?.status).toBe('ended');
     expect(pending.commandTransfer?.transferId).toBe(INIT_ID);
-    expect(rich.shorePoints.map((p) => p.id)).toEqual(['pend', 'proc', 'cut', 'sec']);
+    expect(rich.shorePoints.map((p) => p.id)).toEqual(['pend', 'proc', 'cut', 'sec', 'gone']);
+    const gone = rich.shorePoints.find((p) => p.id === 'gone')!;
+    expect(gone.deletedAt).toBe(6);
+    expect(gone.status).toBe('pending');
   });
 
   for (const [type, witnesses] of Object.entries(WITNESSES)) {

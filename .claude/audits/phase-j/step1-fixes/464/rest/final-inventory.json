@@ -1,0 +1,22 @@
+{
+  "inv-5826b843-86c2-427a-b57e-091e160acf72" : {
+    "apparatus" : "Rescue 464",
+    "apparatusId" : "app-56acd4f6-b3e4-4f61-96a2-133bc8c120fc",
+    "id" : "inv-5826b843-86c2-427a-b57e-091e160acf72",
+    "lastWriteAt" : 1791861236817,
+    "model" : "LS 304",
+    "quantity" : 2,
+    "system" : "LongShore",
+    "type" : "strut"
+  },
+  "inv-63bbb066-c3e6-45f6-9976-6328be228575" : {
+    "apparatus" : "Rescue 464",
+    "apparatusId" : "app-56acd4f6-b3e4-4f61-96a2-133bc8c120fc",
+    "id" : "inv-63bbb066-c3e6-45f6-9976-6328be228575",
+    "lastWriteAt" : 1791861236784,
+    "model" : "LS 406",
+    "quantity" : 2,
+    "system" : "LongShore",
+    "type" : "strut"
+  }
+}

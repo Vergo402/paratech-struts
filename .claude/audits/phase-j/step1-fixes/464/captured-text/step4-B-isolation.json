@@ -1,0 +1,15 @@
+{
+  "step": "4 (isolation proof) - device B read AFTER A's delete uploaded, while B is still offline",
+  "t": "2026-10-13T03:20:50.865Z",
+  "infoConnected": false,
+  "syncStatusStore": { "online": false, "pendingCount": 0, "syncError": false },
+  "banner": "Offline — will sync when you reconnect",
+  "cardsOnBoard": ["#1"],
+  "hasDeletedRegion": false,
+  "idbEvents": [
+    { "seq": 1, "type": "ShorePointAdded", "id": "00c029cc", "receivedAt": 1791861287074 },
+    { "seq": 2, "type": "OperationCreated", "id": "77057a0f", "receivedAt": 1791861267738 }
+  ],
+  "idbQuarantineRows": 0,
+  "note": "B has NOT received ShorePointDeleted (cloud id c4268ac0, receivedAt 1791861627253, see rest/step4-after-A-delete-events.json)"
+}

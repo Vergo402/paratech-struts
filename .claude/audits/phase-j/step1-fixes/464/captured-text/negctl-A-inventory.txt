@@ -1,0 +1,4 @@
+Negative control, device A (after a full page load) /inventory:
+main.innerText: QA Dept 464 | 1 apparatus | Add equipment | 3 | on hand | 1 | deployed | 2 | models | Rescue 464 | 4 items | + | STRUTS | 2 models | LS 304 | 36″–50″ | 1 deployed | − | 1 | /2 | + | LS 406 | 48″–73″ | − | 2 | /2 | +
+=> B's live deploy (online) landed on A too: LS 304 1/2 "1 deployed"; LS 406 2/2.
+End state left in the emulator: op "QA Op 464" ACTIVE; #1 West Wall Window in Deleted; #2 North Door in Assigned (LS 304 deployed); B's "had no effect" row still unacknowledged (Got it never clicked).

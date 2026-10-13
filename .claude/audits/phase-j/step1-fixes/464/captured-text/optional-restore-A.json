@@ -1,0 +1,9 @@
+{
+  "step": "optional - Restore on A (Deleted section > Restore)",
+  "t": "2026-10-13T03:25:50.040Z",
+  "announcement (aria-live polite status region)": "Shore point #1 restored — Pending Equipment.",
+  "lanesWithCards": [ { "title": "Pending", "cards": ["#1"] } ],
+  "deletedRows": 0,
+  "banner": null,
+  "reading": "The underlying point stayed Pending (not Equipment Assigned): B's deploy never landed on it. Had the deploy folded onto the deleted point, the restore would have announced 'restored — Equipment Assigned' and put #1 in the Assigned lane."
+}

@@ -1,0 +1,18 @@
+{
+  "device": "A (localhost:5200)",
+  "t": "2026-10-13T03:23:29.647Z",
+  "infoConnected": true,
+  "syncStatusStore": { "online": true, "pendingCount": 0, "syncError": false },
+  "bannerPresent": false,
+  "banner": null,
+  "lanesWithCards": [],
+  "deletedRowsInDom": ["#1 | West Wall Window · T-Shore | Div 1 | Restore"],
+  "idbQuarantineRows": 0,
+  "idbEvents (Dexie rows keyed by seq = local arrival order, not fold order)": [
+    { "seq": 1, "type": "OperationCreated",  "id": "77057a0f", "receivedAt": 1791861267738 },
+    { "seq": 2, "type": "ShorePointAdded",   "id": "00c029cc", "receivedAt": 1791861287074 },
+    { "seq": 3, "type": "ShorePointDeleted", "id": "c4268ac0", "receivedAt": 1791861627253 },
+    { "seq": 4, "type": "EquipmentDeployed", "id": "13e1228d", "receivedAt": 1791861755804 }
+  ],
+  "note": "A received B's EquipmentDeployed (13e1228d) via the cloud log; it folded to no effect (no lane card, no banner on A)."
+}

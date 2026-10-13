@@ -1,0 +1,4 @@
+Device A (localhost:5200) /inventory after a full page load, after B's reconnect (screenshot 17-A-step6-inventory-0-deployed-LS406-2of2.png):
+main.innerText: QA Dept 464 | 1 apparatus | Add equipment | 4 | on hand | 0 | deployed | 2 | models | Rescue 464 | 4 items | + | STRUTS | 2 models | LS 304 | 36″–50″ | − | 2 | /2 | + | LS 406 | 48″–73″ | − | 2 | /2 | +
+Reading: the strip says "0 deployed"; neither strut row carries a "{n} deployed" line (compare the negative control, where the LS 304 row's innerText reads "... LS 304 | 36″–50″ | 1 deployed | − | 1 | /2 ...").
+NOTE (correction): an earlier draft of this file cited a DOM leaf-node filter for the word "deployed". That filter was non-functional (it also returned [] in the negative control while "1 deployed" was on screen), so it is NOT evidence. The innerText above and the screenshot are the evidence.

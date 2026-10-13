@@ -1,0 +1,8 @@
+{
+  "step": "3 - device B (127.0.0.1:5200) taken offline",
+  "method": "m = await import('/@fs/Users/alex/Developer/paratech-struts/fieldshore/src/data/sync/firebase.ts'); m.goOffline(m.rtdb); window.dispatchEvent(new Event('offline'))  (RTDB disconnect + the browser 'offline' event the app's connectivity layer listens to, i.e. what DevTools Network>Offline fires)",
+  "t": "2026-10-13T03:19:49.956Z",
+  "before": { "infoConnected": true, "syncStatusStore": { "online": true, "pendingCount": 0, "syncError": false } },
+  "after":  { "infoConnected": false, "syncStatusStore": { "online": false, "pendingCount": 0, "syncError": false }, "navigatorOnLine": true },
+  "bannerTextSeen": "Offline — will sync when you reconnect"
+}

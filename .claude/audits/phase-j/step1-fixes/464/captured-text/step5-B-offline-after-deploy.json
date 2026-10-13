@@ -1,0 +1,11 @@
+{
+  "step": "5 - device B (offline) Assign Equipment > Deploy LS 406 on point #1 (single 'Deploy' tap; no review step appeared)",
+  "t": "2026-10-13T03:21:22.555Z",
+  "infoConnected": false,
+  "syncStatusStore": { "online": false, "pendingCount": 1, "syncError": false },
+  "banner": "Offline — 1 change saved on this device — will sync when you reconnect",
+  "lanes": { "Pending": [], "Assigned": ["#1"], "Strut Set": [], "Cutting": [], "Runner": [], "Secured": [], "Returned": [] },
+  "queuedDeployEvent": { "type": "EquipmentDeployed", "id": "13e1228d-3e1e-40fb-ade6-aae1d970699f", "at": 1791861672790, "receivedAt": null, "seq": 3, "spId": "50192746-cfaf-4402-94de-f02444e349fc", "opId": "f2b1851a-29f0-4727-929f-1d59dcf32b3a" },
+  "idbQuarantineRows": 0,
+  "ordering note": "A's ShorePointDeleted: at 1791861627172, cloud receivedAt 1791861627253. B's deploy: at 1791861672790 (later by client clock) and not yet uploaded (will get a later server receivedAt). Delete-first by both orderings."
+}

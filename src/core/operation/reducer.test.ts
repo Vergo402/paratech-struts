@@ -562,6 +562,32 @@ describe('ShorePointDeleted — the holder rule is a fold-time guard (ADR-041)',
   });
 });
 
+describe('a deploy racing a soft delete never lands on the deleted point (#464)', () => {
+  const BOM = [{ role: 'strut' as const, model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' }];
+  const deletePoint: FieldShoreEvent = { type: 'ShorePointDeleted', id: 'd', opId: 'op1', at: 300, by: 'devA', spId: 'a' };
+  const deploys: FieldShoreEvent[] = [
+    { type: 'EquipmentDeployed', id: 'x', opId: 'op1', at: 301, by: 'devB', spId: 'a', deployedBom: BOM },
+    {
+      type: 'StrutDeployed', id: 'y', opId: 'op1', at: 301, by: 'devB', spId: 'a',
+      deployedStrut: { model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' },
+    },
+  ];
+
+  for (const deploy of deploys) {
+    it(`delete → ${deploy.type}: the point stays deleted, Pending, with no BOM (identical state)`, () => {
+      const afterDelete = operationReducer(stateWith([sp('a'), sp('b')]), deletePoint);
+      expect(byId(afterDelete, 'a').deletedAt).toBe(300);
+
+      const next = operationReducer(afterDelete, deploy);
+      expect(next).toBe(afterDelete);
+      const point = byId(next, 'a');
+      expect(point.deletedAt).toBe(300);
+      expect(point.status).toBe('pending');
+      expect(point.deployedBom).toBeUndefined();
+    });
+  }
+});
+
 describe('the Edited / Equipment* family returns the identical state when nothing changed (ADR-041)', () => {
   const BOM = [{ role: 'strut' as const, model: 'LS 406', source: 'Rescue 2', inventoryId: 'i1' }];
   const ev = (e: Record<string, unknown>) => ({ id: 'x', opId: 'op1', at: 5, by: 't', ...e }) as FieldShoreEvent;

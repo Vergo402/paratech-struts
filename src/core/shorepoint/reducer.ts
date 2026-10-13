@@ -453,6 +453,7 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
       // so every downstream reader works off deployedBom uniformly.
       if (event.spId !== sp.id) return sp;
       if (sp.status !== 'pending') return sp;
+      if (sp.deletedAt != null) return sp; // #464 — never land a deploy on a soft-deleted point
       return {
         ...sp,
         status: 'process',
@@ -469,6 +470,9 @@ export function shorePointReducer(sp: ShorePoint, event: FieldShoreEvent): Shore
     case 'EquipmentDeployed':
       if (event.spId !== sp.id) return sp;
       if (sp.status !== 'pending') return sp;
+      // #464 — a deploy racing a soft delete (delete folded first) is no effect: landing it
+      // would hide live deployed stock under a deleted card. Same object → ADR-041 "no effect".
+      if (sp.deletedAt != null) return sp;
       return { ...sp, status: 'process', deployedBom: event.deployedBom };
 
     case 'StrutReturned':

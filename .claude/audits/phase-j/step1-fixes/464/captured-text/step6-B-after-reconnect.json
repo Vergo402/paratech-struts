@@ -1,0 +1,17 @@
+{
+  "step": "6 - device B reconnected (m.goOnline(m.rtdb), .info/connected true after 250 ms, then window 'online' event at ~03:22:36Z); read ~10 s later",
+  "t": "2026-10-13T03:22:46.228Z",
+  "infoConnected": true,
+  "syncStatusStore": { "online": true, "pendingCount": 0, "syncError": false },
+  "banner": "Synced — 1 of your changes had no effect",
+  "lanesWithCards": [],
+  "deletedRegion": "Deleted / Deleted / 1",
+  "idbQuarantineRows": 0,
+  "idbEvents (Dexie rows keyed by seq = LOCAL ARRIVAL order, NOT fold order: OperationCreated is seq 2 yet has an earlier receivedAt than ShorePointAdded seq 1; the canonical fold sorts by (receivedAt ?? +inf, at, id), see src/data/store/operationStore.ts:24-27)": [
+    { "seq": 1, "type": "ShorePointAdded",   "id": "00c029cc", "at": 1791861286970, "receivedAt": 1791861287074 },
+    { "seq": 2, "type": "OperationCreated",  "id": "77057a0f", "at": 1791861267666, "receivedAt": 1791861267738 },
+    { "seq": 3, "type": "EquipmentDeployed", "id": "13e1228d", "at": 1791861672790, "receivedAt": 1791861755804 },
+    { "seq": 4, "type": "ShorePointDeleted", "id": "c4268ac0", "at": 1791861627172, "receivedAt": 1791861627253 }
+  ],
+  "ordering": "ShorePointDeleted receivedAt 1791861627253 < EquipmentDeployed receivedAt 1791861755804 (deploy arrived 128.551 s after the delete)"
+}

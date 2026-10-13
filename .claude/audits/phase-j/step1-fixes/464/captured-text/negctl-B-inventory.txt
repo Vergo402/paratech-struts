@@ -1,0 +1,3 @@
+Negative control, device B (online) /inventory after deploying LS 304 to live point #2 (SPA nav, no reload):
+main.innerText: QA Dept 464 | 1 apparatus | 3 | on hand | 1 | deployed | 2 | models | Rescue 464 | 4 items | STRUTS | 2 models | LS 304 | 36″–50″ | 1 deployed | 1 | /2 | LS 406 | 48″–73″ | 2 | /2
+=> the live deploy DID land (LS 304 1/2 + "1 deployed"); LS 406 (the strut B tried to deploy onto the deleted point earlier) remains 2/2.

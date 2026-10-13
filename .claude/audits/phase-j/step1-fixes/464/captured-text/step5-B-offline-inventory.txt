@@ -1,0 +1,5 @@
+Device B (127.0.0.1:5200), OFFLINE, after the local deploy, read via in-app SPA navigation (history.pushState + popstate; no page reload; a window marker survived both hops):
+main.innerText of /inventory:
+  QA Dept 464 / 1 apparatus / 3 on hand / 1 deployed / 2 models / Rescue 464 4 items / STRUTS 2 models /
+  LS 304 36″–50″ 2 /2 / LS 406 48″–73″ "1 deployed" 1 /2
+After returning to /operations (still no reload): infoConnected=false, banner="Offline — 1 change saved on this device — will sync when you reconnect", board card: #1

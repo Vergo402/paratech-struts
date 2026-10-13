@@ -1,0 +1,5 @@
+Device B (127.0.0.1:5200) /inventory after reconnect (SPA navigation via history.pushState + popstate; the window marker set before going offline was still present, i.e. no page reload) (screenshot 18-B-step6-inventory-0-deployed-banner-row-visible.png):
+main.innerText: QA Dept 464 | 1 apparatus | 4 | on hand | 0 | deployed | 2 | models | Rescue 464 | 4 items | STRUTS | 2 models | LS 304 | 36″–50″ | 2 | /2 | LS 406 | 48″–73″ | 2 | /2
+Reading: the strip says "0 deployed"; neither strut row carries a "{n} deployed" line (compare the negative control: "... LS 304 | 36″–50″ | 1 deployed | 1 | /2 ..."). B's Default role gets no +/- steppers.
+Banner still showing: "Synced — 1 of your changes had no effect | #1 · West Wall Window — now Pending Equipment | Your deploy had no effect. | 23:21 · this device | Got it"
+NOTE (correction): an earlier draft cited a DOM leaf-node filter for the word "deployed"; it was non-functional (returned [] in the negative control while "1 deployed" was on screen), so it is NOT evidence. innerText + screenshot are.

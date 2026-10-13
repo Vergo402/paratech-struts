@@ -1,0 +1,9 @@
+Device A (Admin, localhost:5200) End Operation dialog text (opened to read, then Cancel; NOT confirmed):
+  "End Operation? |  | This archives every shore point and ends the active operation. You can start a new one afterward. |  | Cancel | End Operation"
+  regex /still hold|hold equipment|still deployed|deployed/i on dialog text => false  (no "still hold equipment" warning)
+Device B (Default role, 127.0.0.1:5200) /operations buttons: Board, Cutting Station, + Shore Point, Safety Officer..., All shore points 0, view toggles, Filters, lane headers (Pending0 Assigned0 Strut Set0 Cutting0 Runner0 Secured0 Returned0 Deleted1), Begin Briefing, Open inventory summary, Task Level Checklist
+  hasEndOperation => false  (End Operation is a back-office manageOperations permission; B's half of this criterion is N/A, not FAIL)
+
+POSITIVE CONTROL for the End Operation warning (device A, after the negative control put LS 304 on live point #2):
+  "End Operation? |  | This archives every shore point and ends the active operation. You can start a new one afterward. |  | 1 shore point still hold equipment — Rescue 464 (1) |  | All equipment is back on the rigs | Cancel | End Operation"
+  => the warning DOES appear when a live point holds stock, so its absence during the race state (above) is a real result, not a dead check. Dialog cancelled, operation NOT ended.

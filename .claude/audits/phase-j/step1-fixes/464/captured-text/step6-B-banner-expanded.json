@@ -1,0 +1,9 @@
+{
+  "device": "B (127.0.0.1:5200)",
+  "bannerText": "Synced — 1 of your changes had no effect\n#1 · West Wall Window — now Pending Equipment\nYour deploy had no effect.\n23:21 · this device\nGot it",
+  "aria-expanded": "true",
+  "rows": [
+    { "title": "#1 · West Wall Window — now Pending Equipment", "line": "Your deploy had no effect.", "meta": "23:21 · this device" }
+  ],
+  "note": "'Got it' NOT clicked yet (kept until all #464 evidence captured)."
+}
