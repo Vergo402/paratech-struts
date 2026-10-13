@@ -1,0 +1,11 @@
+# snapshot 'step6b-B-before-plant' at 2026-10-13T02:44:15Z  (emulator REST, owner auth, ns=fieldshore-database-default-rtdb)
+GET orgs/d90feeda-c313-4c3a-b6f0-d52a206e4921/members            (dept A, QA Dept 466 A)
+{"0epa2KmMkSZ80rFG8kIjd8xWtMor":{"displayName":"QA466 Member B","joinedAt":1791859054781,"role":"default","viaCode":"Y47T-QGKF"},"YR8RtoG5xHXRxip1PFtjmlYXuhjj":{"displayName":"QA466 Admin A","joinedAt":1791858925438,"role":"admin"}}
+GET orgs/5a17b03e-e6aa-4c15-9536-66d7979d29ca/members            (dept C, QA Dept 466 C = decoy)
+{"74PXgMFQ8GrYEMtwZN3O94aRoKxe":{"displayName":"QA466 Decoy C","joinedAt":1791859325274,"role":"admin"}}
+GET userDepts/YR8RtoG5xHXRxip1PFtjmlYXuhjj  (A)
+{"deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A","inviteCode":"Y47T-QGKF"}
+GET userDepts/0epa2KmMkSZ80rFG8kIjd8xWtMor  (B)
+{"deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A","inviteCode":"Y47T-QGKF"}
+GET userDepts/74PXgMFQ8GrYEMtwZN3O94aRoKxe  (C)
+{"deptId":"5a17b03e-e6aa-4c15-9536-66d7979d29ca","deptName":"QA Dept 466 C","inviteCode":"QGFQ-DS4V"}

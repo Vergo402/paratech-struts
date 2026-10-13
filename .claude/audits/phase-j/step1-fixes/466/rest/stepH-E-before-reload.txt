@@ -1,0 +1,5 @@
+# snapshot 'stepH-E-before-reload' at 2026-10-13T02:51:52Z  (emulator REST, owner auth, ns=fieldshore-database-default-rtdb)
+GET orgs/d90feeda-c313-4c3a-b6f0-d52a206e4921/members            (dept A, QA Dept 466 A)
+{"0epa2KmMkSZ80rFG8kIjd8xWtMor":{"displayName":"QA466 Member B","joinedAt":1791859054781,"role":"default","viaCode":"Y47T-QGKF"},"YR8RtoG5xHXRxip1PFtjmlYXuhjj":{"displayName":"QA466 Admin A","joinedAt":1791858925438,"role":"admin"},"tVHCTptDaGjSsPb1RgnN542V70oL":{"displayName":"QA466 Owner D","joinedAt":1791859548184,"role":"default","viaCode":"Y47T-QGKF"}}
+GET orgs/5a17b03e-e6aa-4c15-9536-66d7979d29ca/members            (dept C, QA Dept 466 C = decoy)
+{"74PXgMFQ8GrYEMtwZN3O94aRoKxe":{"displayName":"QA466 Decoy C","joinedAt":1791859325274,"role":"admin"},"tVHCTptDaGjSsPb1RgnN542V70oL":{"displayName":"QA466 Owner D","joinedAt":1791859619461,"role":"default","viaCode":"QGFQ-DS4V"}}

@@ -29,12 +29,23 @@ export interface AuthSessionSync {
 
 export function createAuthSessionSync(deps: {
   session: () => SessionStoreApi;
-  /** Reboot onto the active department's bucket. Injected so tests don't navigate;
-   *  defaults to a full reload (mirrors ui/dept/switchBucket — @data can't import @ui). */
+  /** Reboot onto the active department's bucket (also after a queued join completes).
+   *  Injected so tests don't navigate; defaults to a full reload (mirrors
+   *  ui/dept/switchBucket — @data can't import @ui). */
   reload?: () => void;
+  /** Browser connectivity at boot (default navigator.onLine, as connectivity.ts). Read
+   *  directly — authSession starts before connectivity seeds syncStatusStore.online. */
+  isOnline?: () => boolean;
+  /** Retry a join queued offline (#466); true when it completed. Defaults to the
+   *  SINGLETON departmentService so its single-flight also covers the 'online' path. */
+  retryPendingJoin?: () => Promise<boolean>;
 }): AuthSessionSync {
   let unsub: (() => void) | null = null;
   const reload = deps.reload ?? (() => window.location.assign('/operations'));
+  const isOnline = deps.isOnline ?? (() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const retryPendingJoin =
+    deps.retryPendingJoin ??
+    (() => import('../dept/departmentService').then(({ departmentService }) => departmentService.retryPendingJoin()));
   return {
     start() {
       if (unsub) return;
@@ -42,6 +53,7 @@ export function createAuthSessionSync(deps: {
         const session = deps.session();
         const identity = session.store.getState().identity;
         if (user) {
+          let rebooting = false;
           // Align local → Firebase only when they differ (skip redundant writes
           // right after signIn/createAccount, which already set the member).
           if (identity.kind !== 'member' || identity.accountId !== user.uid) {
@@ -56,7 +68,10 @@ export function createAuthSessionSync(deps: {
             // Gated to the setMember branch so sign-out / account-delete — the setGuest
             // path, which drives its own navigation — is never hijacked here.)
             const departmentId = session.store.getState().departmentId;
-            if ((departmentId || GUEST_BUCKET) !== currentBucket()) reload();
+            if ((departmentId || GUEST_BUCKET) !== currentBucket()) {
+              reload();
+              rebooting = true;
+            }
           }
           // Seed the cloud reverse index (/userDepts/{uid}) on every authenticated
           // boot — not just a fresh sign-in — so an account created BEFORE the index
@@ -70,9 +85,22 @@ export function createAuthSessionSync(deps: {
           // created through a connectivity hiccup re-pushes until its orgs node +
           // invite code land. Lazy import keeps this module's graph firebase-db-free;
           // fire-and-forget + single-flight inside the service.
-          void import('../dept/departmentService').then(({ departmentService }) =>
-            departmentService.retryPendingDeptPush(),
-          );
+          void import('../dept/departmentService')
+            .then(({ departmentService }) => departmentService.retryPendingDeptPush())
+            .catch(() => undefined); // best-effort: the next boot / reconnect retries
+          // Complete a join queued offline (#466) — the DOM 'online' event never fires when
+          // the app reopens already online, so without this the join waits for a network
+          // flap. Auth is restored here (the member write needs auth.uid). Skipped offline
+          // (an offline get() never settles and would hold the single-flight) and when this
+          // boot is already rebooting (a join torn by the unload would re-fail as an existing
+          // member row); the next boot retries. A completed join reboots onto its bucket.
+          if (!rebooting && isOnline()) {
+            void retryPendingJoin()
+              .then((joined) => {
+                if (joined) reload();
+              })
+              .catch(() => undefined); // best-effort: the intent stays; next boot / reconnect retries
+          }
         } else if (identity.kind === 'member') {
           // No authenticated Firebase user → can't act as a member for cloud
           // work. Drop to guest; setGuest never touches local events/inventory.

@@ -1,0 +1,24 @@
+# Step 3 REST reads, copied verbatim from the terminal at the time (emulator RTDB, owner auth, ns=fieldshore-database-default-rtdb)
+# Command shape:  curl -s -H 'Authorization: Bearer owner' "http://127.0.0.1:9000/<path>.json?ns=fieldshore-database-default-rtdb"
+
+## After A created QA Dept 466 A  (22:35 EDT)
+GET orgs/inviteCodes
+{"Y47T-QGKF":{"active":true,"createdAt":1791858925438,"createdBy":"YR8RtoG5xHXRxip1PFtjmlYXuhjj","deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A"}}
+GET userDepts   (the "nqqh..." QA Dept 471 row was NOT created by this run: it was written by the stale pre-existing localhost:5200 tab before I created anything)
+{"YR8RtoG5xHXRxip1PFtjmlYXuhjj":{"deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A","inviteCode":"Y47T-QGKF"},"nqqhIJewhFypCWuacZai5YoT1vb8":{"deptId":"a1109487-1a15-4688-8f0e-54ce6cce16c3","deptName":"QA Dept 471","inviteCode":"6GNV-NE3U"}}
+
+## BEFORE the step-3 plant+reload  (22:37:29 EDT = 02:37:29Z)
+GET orgs/d90feeda-c313-4c3a-b6f0-d52a206e4921/members
+{"YR8RtoG5xHXRxip1PFtjmlYXuhjj":{"displayName":"QA466 Admin A","joinedAt":1791858925438,"role":"admin"}}
+
+## plant at 2026-10-13T02:37:34.323Z (JS: put {uid:B, code:Y47T-QGKF, deptName:null}, then location.reload() 50 ms later, navigator.onLine === true)
+
+## AFTER  (22:37:50 EDT = 02:37:50Z; member row joinedAt 1791859054781 = 2026-10-13T02:37:34.781Z, i.e. +458 ms after the plant)
+GET orgs/d90feeda-c313-4c3a-b6f0-d52a206e4921/members
+{"0epa2KmMkSZ80rFG8kIjd8xWtMor":{"displayName":"QA466 Member B","joinedAt":1791859054781,"role":"default","viaCode":"Y47T-QGKF"},"YR8RtoG5xHXRxip1PFtjmlYXuhjj":{"displayName":"QA466 Admin A","joinedAt":1791858925438,"role":"admin"}}
+GET userDepts/0epa2KmMkSZ80rFG8kIjd8xWtMor
+{"deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A","inviteCode":"Y47T-QGKF"}
+
+## Decoy dept C created by account C (22:42 EDT)
+GET orgs/inviteCodes
+{"QGFQ-DS4V":{"active":true,"createdAt":1791859325274,"createdBy":"74PXgMFQ8GrYEMtwZN3O94aRoKxe","deptId":"5a17b03e-e6aa-4c15-9536-66d7979d29ca","deptName":"QA Dept 466 C"},"Y47T-QGKF":{"active":true,"createdAt":1791858925438,"createdBy":"YR8RtoG5xHXRxip1PFtjmlYXuhjj","deptId":"d90feeda-c313-4c3a-b6f0-d52a206e4921","deptName":"QA Dept 466 A"}}

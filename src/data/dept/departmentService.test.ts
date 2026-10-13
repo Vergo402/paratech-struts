@@ -395,7 +395,7 @@ describe('departmentService — offline join queue (Increment 4)', () => {
     const r = await svc.joinByCode(CODE);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.queued).toBe(true);
-    expect(JSON.parse((await intent())!.value)).toEqual({ code: CODE, deptName: null });
+    expect(JSON.parse((await intent())!.value)).toEqual({ uid: FB_UID, code: CODE, deptName: null });
     expect(syncStatusStore.store.getState().pendingJoin).toEqual({ code: CODE, deptName: null });
   });
 
@@ -404,13 +404,13 @@ describe('departmentService — offline join queue (Increment 4)', () => {
     setMock.mockRejectedValueOnce(new Error('network unreachable'));
     const r = await svc.joinByCode(CODE);
     if (!r.ok) expect(r.queued).toBe(true);
-    expect(JSON.parse((await intent())!.value)).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    expect(JSON.parse((await intent())!.value)).toEqual({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' });
   });
 
   it('PERMISSION_DENIED at member-write clears any pending intent — the retry loop cannot wedge (#420)', async () => {
     // The infinite-loop shape: an intent is queued, reconnect retries, the write is
     // DENIED (revoked member / existing row). Pre-#420 the deny re-queued forever.
-    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
     syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
     getMock.mockResolvedValue(okSnap(liveCode));
     setMock.mockRejectedValue(new Error('PERMISSION_DENIED: rules'));
@@ -421,7 +421,7 @@ describe('departmentService — offline join queue (Increment 4)', () => {
   });
 
   it('retryPendingJoin completes the join on reconnect → true, intent cleared', async () => {
-    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
     getMock.mockResolvedValue(okSnap(liveCode));
     setMock.mockResolvedValue(undefined);
     const completed = await svc.retryPendingJoin();
@@ -432,7 +432,7 @@ describe('departmentService — offline join queue (Increment 4)', () => {
   });
 
   it('retryPendingJoin still offline → false, intent kept', async () => {
-    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: null }) });
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: null }) });
     getMock.mockRejectedValue(new Error('network'));
     const completed = await svc.retryPendingJoin();
     expect(completed).toBe(false);
@@ -440,11 +440,123 @@ describe('departmentService — offline join queue (Increment 4)', () => {
   });
 
   it('retryPendingJoin drops the intent on a definitive failure (invalid code)', async () => {
-    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: null }) });
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: null }) });
     getMock.mockResolvedValue(okSnap(null)); // code no longer resolves
     const completed = await svc.retryPendingJoin();
     expect(completed).toBe(false);
     expect(await intent()).toBeUndefined(); // stop retrying a dead code
+  });
+
+  it('retryPendingJoin before the account is signed in keeps the intent and the banner (#466)', async () => {
+    // A boot-time retry can run before the session holds a member (auth not yet restored).
+    // "Sign in before joining" is NOT a definitive outcome — the code is still good.
+    await session.setGuest();
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    const completed = await svc.retryPendingJoin();
+    expect(completed).toBe(false);
+    expect(JSON.parse((await intent())!.value)).toEqual({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' });
+    expect(syncStatusStore.store.getState().pendingJoin).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
+  });
+
+  it('a failed re-resolve keeps the stored deptName instead of nulling it (#466)', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    getMock.mockRejectedValue(new Error('network')); // resolve fails again (offline / auth not ready)
+    expect(await svc.retryPendingJoin()).toBe(false);
+    expect(JSON.parse((await intent())!.value)).toEqual({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' });
+    expect(syncStatusStore.store.getState().pendingJoin).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
+  });
+
+  it('a different code failing to resolve does not inherit the stored deptName', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    getMock.mockRejectedValue(new Error('network'));
+    await svc.joinByCode('WXYZ-2345');
+    expect(JSON.parse((await intent())!.value)).toEqual({ uid: FB_UID, code: 'WXYZ-2345', deptName: null });
+  });
+
+  it('two overlapping retries run one join (single-flight — boot + online can coincide)', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    getMock.mockResolvedValue(okSnap(liveCode));
+    let releaseSet!: () => void;
+    setMock.mockImplementationOnce(() => new Promise<void>((r) => (releaseSet = r)));
+    const memberWrites = () =>
+      setMock.mock.calls.filter(([r]) => (r as { path: string }).path === `orgs/dept-1/members/${FB_UID}`);
+    const first = svc.retryPendingJoin();
+    const second = await svc.retryPendingJoin(); // overlaps the in-flight first retry
+    expect(second).toBe(false);
+    await vi.waitFor(() => expect(memberWrites()).toHaveLength(1));
+    releaseSet();
+    expect(await first).toBe(true);
+    expect(memberWrites()).toHaveLength(1); // exactly one member write across both triggers
+  });
+
+  it('an overlapping retry is not lost: when the in-flight run ends queued, it runs once more and owns the result', async () => {
+    // Boot (auth-ready) and the DOM 'online' event can overlap. If the in-flight run ends
+    // `queued`, the caller that found it busy must not be dropped until the next flap.
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    getMock.mockResolvedValue(okSnap(liveCode));
+    const memberWrites = () =>
+      setMock.mock.calls.filter(([r]) => (r as { path: string }).path === `orgs/dept-1/members/${FB_UID}`);
+    let failFirst!: (e: Error) => void;
+    setMock.mockImplementationOnce(() => new Promise<void>((_, rej) => (failFirst = rej)));
+    const owner = svc.retryPendingJoin();
+    await vi.waitFor(() => expect(memberWrites()).toHaveLength(1));
+    expect(await svc.retryPendingJoin()).toBe(false); // busy → requests a rerun, returns at once
+    failFirst(new Error('network unreachable')); // first run ends queued
+    expect(await owner).toBe(true); // the rerun joined; the in-flight caller reloads
+    expect(memberWrites()).toHaveLength(2);
+    expect(await intent()).toBeUndefined();
+    expect(session.store.getState().departmentId).toBe('dept-1');
+  });
+
+  it('retryPendingJoin under a DIFFERENT account does not join — it drops the other account\'s intent (#466)', async () => {
+    // Shared tablet: account A queued, signed out; account B is signed in now.
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: 'fb-uid-A', code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    syncStatusStore.setPendingJoin({ code: CODE, deptName: 'Hamden Fire Rescue' });
+    getMock.mockResolvedValue(okSnap(liveCode));
+    expect(await svc.retryPendingJoin()).toBe(false);
+    expect(getMock).not.toHaveBeenCalled(); // never even resolved A's code under B
+    expect(setMock).not.toHaveBeenCalled();
+    expect(await intent()).toBeUndefined();
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    expect(session.store.getState().departmentId).toBeNull();
+  });
+
+  it('a legacy intent row without a uid is treated as stale: retry clears it without joining', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    getMock.mockResolvedValue(okSnap(liveCode));
+    expect(await svc.retryPendingJoin()).toBe(false);
+    expect(setMock).not.toHaveBeenCalled();
+    expect(await intent()).toBeUndefined();
+  });
+
+  it('joinByCode records the signed-in account on the queued intent', async () => {
+    getMock.mockRejectedValue(new Error('network'));
+    await svc.joinByCode(CODE);
+    expect(JSON.parse((await intent())!.value).uid).toBe(FB_UID);
+  });
+
+  it('restorePendingJoin hides and clears another account\'s intent (no banner for B)', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: 'fb-uid-A', code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await svc.restorePendingJoin();
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    expect(await intent()).toBeUndefined();
+  });
+
+  it('restorePendingJoin clears a legacy row without a uid (no banner, no throw)', async () => {
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await expect(svc.restorePendingJoin()).resolves.toBeUndefined();
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    expect(await intent()).toBeUndefined();
+  });
+
+  it('restorePendingJoin while signed out keeps the intent for its account (A can still finish after signing back in)', async () => {
+    await session.setGuest();
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await svc.restorePendingJoin();
+    expect(syncStatusStore.store.getState().pendingJoin).toBeNull(); // no banner for a guest
+    expect(await intent()).toBeDefined(); // kept for A
   });
 
   it('retryPendingJoin with no intent is a no-op', async () => {
@@ -453,7 +565,7 @@ describe('departmentService — offline join queue (Increment 4)', () => {
   });
 
   it('restorePendingJoin surfaces a persisted intent into the sync-status store', async () => {
-    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ code: CODE, deptName: 'Hamden Fire Rescue' }) });
+    await db.meta.put({ key: PENDING_KEY, value: JSON.stringify({ uid: FB_UID, code: CODE, deptName: 'Hamden Fire Rescue' }) });
     await svc.restorePendingJoin();
     expect(syncStatusStore.store.getState().pendingJoin).toEqual({ code: CODE, deptName: 'Hamden Fire Rescue' });
   });

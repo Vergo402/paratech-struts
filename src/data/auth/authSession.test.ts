@@ -19,6 +19,9 @@ vi.mock('firebase/auth', () => ({
 }));
 
 import { onAuthStateChanged } from 'firebase/auth';
+import { get, set } from '../sync/firebase';
+import { createDepartmentService } from '../dept/departmentService';
+import { syncStatusStore } from '../sync/syncStatus';
 import { createDB, type FieldShoreDB } from '../store/db';
 import { createSessionStore, type SessionStoreApi } from '../store/session';
 import { createAuthSessionSync, type AuthSessionSync } from './authSession';
@@ -43,10 +46,20 @@ describe('authSessionSync — reconcile the session with Firebase Auth', () => {
     vi.mocked(onAuthStateChanged).mockClear();
     unsubSpy.mockClear();
     reloadSpy.mockClear();
+    vi.mocked(get).mockReset().mockResolvedValue({ exists: () => false } as never);
+    vi.mocked(set).mockClear();
+    syncStatusStore.setPendingJoin(null);
     db = createDB(`test-authsession-${newId()}`);
     session = createSessionStore(db);
     await session.boot(UID);
-    sync = createAuthSessionSync({ session: () => session, reload: reloadSpy });
+    // Non-join tests get a no-op join retry so they never reach the singleton
+    // departmentService / shared globalDb; the #466 tests inject their own.
+    sync = createAuthSessionSync({
+      session: () => session,
+      reload: reloadSpy,
+      isOnline: () => true,
+      retryPendingJoin: () => Promise.resolve(false),
+    });
   });
 
   afterEach(async () => {
@@ -116,5 +129,112 @@ describe('authSessionSync — reconcile the session with Firebase Auth', () => {
     sync.start();
     sync.stop();
     expect(unsubSpy).toHaveBeenCalledTimes(1);
+  });
+
+  describe('queued-join retry on authenticated boot (#466)', () => {
+    const CODE = 'HAMD-4F2K';
+    const PENDING_KEY = 'fieldshore_pending_join';
+    const queued = { code: CODE, deptName: 'Hamden Fire Rescue' };
+    const row = (extra: object) => ({ key: PENDING_KEY, value: JSON.stringify({ ...queued, ...extra }) });
+    const memberWrite = () =>
+      vi.mocked(set).mock.calls.filter(([r]) => (r as unknown as { path: string }).path === 'orgs/dept-1/members/fb-1');
+
+    async function arrange(online: boolean, opts: { signedIn?: string; stored?: object } = {}) {
+      // A member who queued a join offline, then killed the app; it reopens with auth restored.
+      await session.setMember({ accountId: opts.signedIn ?? 'fb-1', displayName: 'Capt. Marchetti' });
+      await db.meta.put(row(opts.stored ?? { uid: 'fb-1' }));
+      syncStatusStore.setPendingJoin(queued);
+      vi.mocked(get).mockImplementation((async (r: { path: string }) =>
+        r.path === `orgs/inviteCodes/${CODE}`
+          ? {
+              exists: () => true,
+              val: () => ({ deptId: 'dept-1', deptName: 'Hamden Fire Rescue', createdBy: 'f', createdAt: 1, active: true }),
+            }
+          : { exists: () => false }) as never);
+      const svc = createDepartmentService({ session: () => session, db });
+      const retrySpy = vi.fn(() => svc.retryPendingJoin());
+      sync.stop();
+      sync = createAuthSessionSync({
+        session: () => session,
+        reload: reloadSpy,
+        isOnline: () => online,
+        retryPendingJoin: retrySpy,
+      });
+      sync.start();
+      return retrySpy;
+    }
+
+    it('reopened already online → completes the queued join and reboots onto the new department', async () => {
+      await arrange(true);
+      fireAuthState({ uid: 'fb-1', displayName: 'Capt. Marchetti', email: 'm@dept14.gov' });
+      await vi.waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
+      expect(memberWrite()).toHaveLength(1);
+      expect(session.store.getState().departmentId).toBe('dept-1');
+      expect(await db.meta.get(PENDING_KEY)).toBeUndefined();
+      expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    });
+
+    it('reopened offline → does not attempt the join; the intent and banner stay', async () => {
+      const retrySpy = await arrange(false);
+      fireAuthState({ uid: 'fb-1', displayName: 'Capt. Marchetti', email: 'm@dept14.gov' });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(retrySpy).not.toHaveBeenCalled();
+      expect(memberWrite()).toHaveLength(0);
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(JSON.parse((await db.meta.get(PENDING_KEY))!.value)).toEqual({ ...queued, uid: 'fb-1' });
+      expect(syncStatusStore.store.getState().pendingJoin).toEqual(queued);
+    });
+
+    it('shared device: account B boots online over account A\'s queued join → no join, intent + banner cleared', async () => {
+      await arrange(true, { signedIn: 'fb-B' });
+      fireAuthState({ uid: 'fb-B', displayName: 'FF Okafor', email: 'o@dept14.gov' });
+      await vi.waitFor(async () => expect(await db.meta.get(PENDING_KEY)).toBeUndefined());
+      expect(vi.mocked(set).mock.calls.filter(([r]) => (r as unknown as { path: string }).path.startsWith('orgs/dept-1/members/'))).toHaveLength(0);
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+      expect(session.store.getState().departmentId).toBeNull();
+    });
+
+    it('a legacy intent row without a uid is cleared on boot without a join', async () => {
+      await arrange(true, { stored: {} });
+      fireAuthState({ uid: 'fb-1', displayName: 'Capt. Marchetti', email: 'm@dept14.gov' });
+      await vi.waitFor(async () => expect(await db.meta.get(PENDING_KEY)).toBeUndefined());
+      expect(memberWrite()).toHaveLength(0);
+      expect(reloadSpy).not.toHaveBeenCalled();
+      expect(syncStatusStore.store.getState().pendingJoin).toBeNull();
+    });
+
+    it('a rejecting join retry is swallowed: no unhandled rejection, no reload', async () => {
+      await session.setMember({ accountId: 'fb-1', displayName: 'Capt. Marchetti' });
+      const unhandled = vi.fn();
+      process.on('unhandledRejection', unhandled);
+      try {
+        sync.stop();
+        sync = createAuthSessionSync({
+          session: () => session,
+          reload: reloadSpy,
+          isOnline: () => true,
+          retryPendingJoin: () => Promise.reject(new Error('IndexedDB blew up')),
+        });
+        sync.start();
+        fireAuthState({ uid: 'fb-1', displayName: 'Capt. Marchetti', email: 'm@dept14.gov' });
+        await new Promise((r) => setTimeout(r, 20));
+        expect(unhandled).not.toHaveBeenCalled();
+        expect(reloadSpy).not.toHaveBeenCalled();
+      } finally {
+        process.off('unhandledRejection', unhandled);
+      }
+    });
+
+    it('defers the join to the next boot when this boot is already rebooting onto another bucket', async () => {
+      const retrySpy = await arrange(true);
+      // A DIFFERENT uid → setMember → bucket mismatch → reload. Joining now could tear
+      // (member row lands, page unloads before the local projection + intent clear).
+      fireAuthState({ uid: 'fb-9', displayName: 'Cap', email: 'c@d.gov' });
+      await vi.waitFor(() => expect(reloadSpy).toHaveBeenCalledTimes(1));
+      expect(retrySpy).not.toHaveBeenCalled();
+      expect(await db.meta.get(PENDING_KEY)).toBeDefined();
+    });
   });
 });

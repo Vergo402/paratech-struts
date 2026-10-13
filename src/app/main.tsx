@@ -54,7 +54,8 @@ function App() {
         rolesListenerSync.start();
         connectivity.start();
         // Cloud-sync Increment 4: surface a join that was queued offline (banner reflects
-        // it across the reload); connectivity auto-completes it on reconnect. Fire-and-forget.
+        // it across the reload). authSession auto-completes it on an authenticated boot
+        // while online (#466); connectivity on reconnect. Fire-and-forget.
         void departmentService.restorePendingJoin();
         // #419: surface a dept whose cloud push is still owed (created offline, reloaded).
         // authSession/connectivity retry it; this only re-seeds the banner state.

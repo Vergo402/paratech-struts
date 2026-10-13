@@ -79,8 +79,10 @@ export interface DepartmentServiceApi {
   /** Join an existing department by invite code → Default role (workflow #232).
    *  Offline: holds the intent and returns `queued` (auto-completes on reconnect). */
   joinByCode(rawCode: string): Promise<JoinDepartmentResult>;
-  /** Retry a queued offline join (called on reconnect). Returns true if it completed,
-   *  so the caller reloads onto the new bucket. */
+  /** Retry a queued offline join (called on reconnect AND on every authenticated boot
+   *  while online, #466). Returns true if it completed, so the caller reloads onto the
+   *  new bucket. Keeps the intent when not signed in yet; drops it only on a definitive
+   *  outcome (success, already a member, invalid/expired code, PERMISSION_DENIED). */
   retryPendingJoin(): Promise<boolean>;
   /** Restore a queued join into the sync-status store on boot, so the banner reflects it
    *  across a reload that happened while still offline. */
@@ -170,8 +172,12 @@ export interface AdminMutationResult {
 
 // The offline join intent lives in global meta (survives the page reload), alongside the
 // session row. code-only when the resolve itself failed offline (deptName unknown then).
+// Bound to the account that queued it (`uid`, the Firebase uid) — global meta is shared by
+// every account on the device, so another account must never complete (or see) it (#466).
+// A row without a uid (pre-#466 shape) reads as uid null and is dropped as stale.
 const PENDING_JOIN_KEY = 'fieldshore_pending_join';
 interface PendingJoinIntent {
+  uid: string | null;
   code: string;
   deptName: string | null;
 }
@@ -220,6 +226,7 @@ export function createDepartmentService(deps: {
   const createWaitMs = deps.timeouts?.createWait ?? CREATE_WAIT_MS;
   const readMs = deps.timeouts?.read ?? READ_TIMEOUT_MS;
   let retrying = false; // one retry at a time — a rapid double 'online' must not race two joins
+  let rerun = false; // a retry arrived while one was in flight → run once more after it (#466)
 
   async function readIntent(): Promise<PendingJoinIntent | null> {
     const row = await db.meta.get(PENDING_JOIN_KEY);
@@ -227,17 +234,37 @@ export function createDepartmentService(deps: {
     try {
       const p = JSON.parse(row.value);
       if (p && typeof p.code === 'string') {
-        return { code: p.code, deptName: typeof p.deptName === 'string' ? p.deptName : null };
+        return {
+          uid: typeof p.uid === 'string' ? p.uid : null,
+          code: p.code,
+          deptName: typeof p.deptName === 'string' ? p.deptName : null,
+        };
       }
     } catch {
       /* corrupt row → no intent */
     }
     return null;
   }
-  async function queueJoin(code: string, deptName: string | null): Promise<void> {
-    const intent: PendingJoinIntent = { code, deptName };
+  async function queueJoin(uid: string, code: string, deptName: string | null): Promise<void> {
+    // A code-only re-queue (the resolve failed again — offline, or auth not yet restored)
+    // must not erase the dept name an earlier attempt learned for the SAME account + code (#466).
+    const stored = deptName === null ? await readIntent() : null;
+    const keep = stored?.uid === uid && stored.code === code;
+    const intent: PendingJoinIntent = { uid, code, deptName: keep ? stored.deptName : deptName };
     await db.meta.put({ key: PENDING_JOIN_KEY, value: JSON.stringify(intent) });
-    syncStatusStore.setPendingJoin(intent);
+    syncStatusStore.setPendingJoin({ code, deptName: intent.deptName });
+  }
+  /** The stored intent IF it belongs to the signed-in member. Drops a stale one — a legacy
+   *  row with no uid, or another account's (shared device) — so it never joins or shows the
+   *  banner. Signed out: null, but the row is KEPT so its owner can finish after signing in. */
+  async function ownIntent(): Promise<PendingJoinIntent | null> {
+    const intent = await readIntent();
+    if (!intent) return null;
+    const identity = deps.session().store.getState().identity;
+    if (intent.uid !== null && identity.kind !== 'member') return null; // not signed in yet → keep
+    if (identity.kind === 'member' && intent.uid === identity.accountId) return intent;
+    await clearIntent();
+    return null;
   }
   async function clearIntent(): Promise<void> {
     await db.meta.delete(PENDING_JOIN_KEY);
@@ -418,9 +445,10 @@ export function createDepartmentService(deps: {
         }
         resolved = snap.val();
       } catch {
-        // Offline at the resolve step — deptName unknown (code-only). Hold the intent;
-        // connectivity.retryPendingJoin completes it on reconnect.
-        await queueJoin(code, null);
+        // Offline at the resolve step — deptName unknown (code-only; queueJoin keeps a name
+        // already stored for this code). Hold the intent; retryPendingJoin completes it on
+        // reconnect or the next authenticated boot.
+        await queueJoin(uid, code, null);
         return {
           ok: false,
           queued: true,
@@ -484,7 +512,7 @@ export function createDepartmentService(deps: {
         }
         // A genuine network failure at the member-write step — deptName IS known now.
         // Hold + auto-complete on reconnect.
-        await queueJoin(code, deptName);
+        await queueJoin(uid, code, deptName);
         return {
           ok: false,
           queued: true,
@@ -498,26 +526,47 @@ export function createDepartmentService(deps: {
       return { ok: true, department: { id: deptId, name: deptName, role: DEFAULT_ROLE_ID } };
   }
 
+  // Single-flight with a rerun request: a caller that finds a retry in flight (boot auth-ready
+  // vs the DOM 'online' event can overlap) marks `rerun` and returns false at once; the
+  // in-flight caller then runs again until no rerun is pending, and ITS promise resolves with
+  // the final outcome — so the in-flight caller is the one that reloads on `true`.
   async function retryPendingJoin(): Promise<boolean> {
-    if (retrying) return false; // a rapid double 'online' must not run two joins concurrently
+    if (retrying) {
+      rerun = true;
+      return false;
+    }
     retrying = true;
     try {
-      const intent = await readIntent();
-      if (!intent) return false;
-      const result = await joinByCode(intent.code);
-      if (result.ok) return true; // joinByCode cleared the intent → caller reloads
-      // Still offline → joinByCode re-queued it (leave it). A DEFINITIVE failure (invalid /
-      // expired / malformed code) is not `queued` → drop the stale intent so we stop retrying.
-      if (!result.queued) await clearIntent();
-      return false;
+      let joined: boolean;
+      do {
+        rerun = false;
+        joined = await attemptPendingJoin();
+      } while (rerun && !joined);
+      return joined;
     } finally {
       retrying = false;
+      rerun = false;
     }
   }
 
+  async function attemptPendingJoin(): Promise<boolean> {
+    // Not signed in yet (a boot retry racing Firebase Auth's restore) is NOT definitive —
+    // the code is still good: ownIntent keeps the row; the next auth-ready / reconnect retries.
+    // Another account's (or a legacy uid-less) intent is dropped there, never joined.
+    const intent = await ownIntent();
+    if (!intent) return false;
+    const result = await joinByCode(intent.code);
+    if (result.ok) return true; // joinByCode cleared the intent → caller reloads
+    // Still offline → joinByCode re-queued it (leave it). A DEFINITIVE failure (invalid /
+    // expired / malformed code; PERMISSION_DENIED already cleared it) is not `queued` →
+    // drop the stale intent so we stop retrying.
+    if (!result.queued) await clearIntent();
+    return false;
+  }
+
   async function restorePendingJoin(): Promise<void> {
-    const intent = await readIntent();
-    if (intent) syncStatusStore.setPendingJoin(intent);
+    const intent = await ownIntent();
+    if (intent) syncStatusStore.setPendingJoin({ code: intent.code, deptName: intent.deptName });
   }
 
   // ---- User Manager (#381) ------------------------------------------------------
