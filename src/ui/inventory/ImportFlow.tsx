@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { STRUTS, BASE_PLATES } from '@core/load';
 import { Button, Modal, TextField, useNativeControls } from '@ui/primitives';
 import { BottomSheetPicker, FullScreenList, PowerSelect, type SheetPickerOption } from '@ui/picker';
@@ -13,6 +13,7 @@ import {
   type FieldKey,
   type RowOutcome,
   type ParsedImportRow,
+  type ImportResult,
 } from '@ui/hooks';
 
 // The 4-step validated import (40-inventory.md §"Validated import flow"; ADR-038 —
@@ -29,10 +30,70 @@ export interface ImportFlowProps {
   /** Surfaces the Step-3 active-operation banner. Import is allowed during an op —
    *  the store preserves deployed counts and skips any row that would strand gear. */
   opActive: boolean;
-  importRows: (rows: ParsedImportRow[]) => Promise<{ imported: number; skipped: number }>;
+  importRows: (rows: ParsedImportRow[]) => Promise<ImportResult>;
 }
 
 type Step = 1 | 2 | 3 | 4;
+
+// What the result block reports (#514/#474): the store's outcome plus the rows that never
+// reached the store — counted in the flow at the moment Import is tapped — or, when the
+// store rejected (its transaction rolled back), the failure.
+type FlowResult =
+  | { kind: 'done'; res: ImportResult; sent: number; flagged: number; userSkipped: number; blank: number }
+  | { kind: 'failed'; message: string };
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+/** The accounting lines, in order (the cloud line follows them, always last). */
+function resultLines(r: Extract<FlowResult, { kind: 'done' }>): string[] {
+  const { imported, skipped } = r.res;
+  const lines = [imported === 0 ? 'No rows imported.' : `${imported} ${plural(imported, 'row', 'rows')} imported.`];
+  // Rows sent that the store neither wrote nor refused were folded into an identical row
+  // (#469 in-file aggregation) — counted here so every row sent is accounted for (#474).
+  const merged = r.sent - (imported + skipped.strand + skipped.retype);
+  if (merged > 0) lines.push(`${merged} ${plural(merged, 'row merged with an identical row', 'rows merged with identical rows')}.`);
+  if (skipped.strand > 0) lines.push(`${skipped.strand} skipped — would strand deployed stock.`);
+  if (skipped.retype > 0) lines.push(`${skipped.retype} skipped — type doesn't match the item already on the rig.`);
+  if (r.flagged > 0) lines.push(`${r.flagged} ${plural(r.flagged, 'row', 'rows')} not imported — still flagged to fix.`);
+  if (r.userSkipped > 0) lines.push(`${r.userSkipped} ${plural(r.userSkipped, 'row', 'rows')} skipped by you.`);
+  if (r.blank > 0) lines.push(`${r.blank} ${plural(r.blank, 'blank row', 'blank rows')} ignored.`);
+  return lines;
+}
+
+/** The cloud lines, always last; `warn` lines are amber. A refused row is either still
+ *  on this device (`failed`) or was overwritten by the cloud's newer value (`reverted`,
+ *  fix round 2) — never call a reverted row "saved on this device". */
+function cloudLines(cloud: ImportResult['cloud'], imported: number): { text: string; warn: boolean }[] {
+  switch (cloud.status) {
+    case 'synced':
+      return [{ text: 'Saved on this device and in the cloud.', warn: false }];
+    case 'pending':
+      return [{ text: 'Saved on this device — will sync to the cloud when you reconnect.', warn: false }];
+    case 'local':
+      return [{ text: 'Saved on this device.', warn: false }];
+    case 'failed': {
+      const { failed, reverted } = cloud;
+      const lines: { text: string; warn: boolean }[] = [];
+      if (failed > 0) {
+        lines.push({ text: `Saved on this device — ${failed} ${plural(failed, "row didn't", "rows didn't")} reach the cloud.`, warn: true });
+      }
+      if (reverted > 0) {
+        lines.push({
+          text:
+            reverted === 1
+              ? "1 row didn't reach the cloud — this device now shows the cloud's value for it."
+              : `${reverted} rows didn't reach the cloud — this device now shows the cloud's values for them.`,
+          warn: true,
+        });
+      }
+      // Rows that landed are never left unmentioned beside a failure line (fix round 3).
+      if (imported - failed - reverted > 0) {
+        lines.push({ text: 'Other rows were saved on this device and in the cloud.', warn: false });
+      }
+      return lines;
+    }
+  }
+}
 // A file column's assignment in Step 2: a FieldShore field, an explicit "ignore",
 // or "unset" (auto-map found no match — the operator must map or ignore it).
 type ColAssign = FieldKey | 'ignore' | 'unset';
@@ -142,12 +203,17 @@ export function ImportFlow({ open, onClose, opActive, importRows }: ImportFlowPr
   const [parseError, setParseError] = useState<string | null>(null);
   const [showReady, setShowReady] = useState(false);
   const [committing, setCommitting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<FlowResult | null>(null);
+
+  // The current import run. A close/reopen bumps it, so a result that settles after
+  // the flow was reset is dropped instead of landing on a fresh flow (#514 fix round 1).
+  const runRef = useRef(0);
 
   const header = records[0] ?? [];
   const width = header.length;
 
-  function reset() {
+  const reset = useCallback(() => {
+    runRef.current++;
     setStep(1);
     setFileName('');
     setRecords([]);
@@ -159,9 +225,15 @@ export function ImportFlow({ open, onClose, opActive, importRows }: ImportFlowPr
     setShowReady(false);
     setCommitting(false);
     setResult(null);
-  }
+  }, []);
+
+  // Every open starts clean at Step 1 — never a previous run's result block.
+  useEffect(() => {
+    if (open) reset();
+  }, [open, reset]);
 
   function close() {
+    if (committing) return; // the rows are being saved — closing now would hide that
     reset();
     onClose();
   }
@@ -235,10 +307,28 @@ export function ImportFlow({ open, onClose, opActive, importRows }: ImportFlowPr
   const liveFlagged = flaggedOutcomes.filter((o) => !skipped.has(o.line));
 
   async function doImport() {
+    // Count what never reaches the store NOW, as the operator commits: flagged rows still
+    // unfixed, rows they chose to skip, and blank/template rows the parser dropped (data
+    // records with no outcome).
+    const counts = {
+      sent: importable.length,
+      flagged: liveFlagged.length,
+      userSkipped: outcomes.filter((o) => skipped.has(o.line)).length,
+      blank: records.length - 1 - outcomes.length,
+    };
+    const run = runRef.current;
     setCommitting(true);
-    const res = await importRows(importable.map((o) => o.row as ParsedImportRow));
+    let next: FlowResult;
+    try {
+      const res = await importRows(importable.map((o) => o.row as ParsedImportRow));
+      next = { kind: 'done', res, ...counts };
+    } catch (err) {
+      // The store only rejects when its transaction rolled back — nothing was written.
+      next = { kind: 'failed', message: err instanceof Error ? err.message : String(err) };
+    }
+    if (run !== runRef.current) return; // the flow was reset meanwhile — drop the late result
+    setResult(next);
     setCommitting(false);
-    setResult(res);
   }
 
   function StepBar() {
@@ -257,9 +347,22 @@ export function ImportFlow({ open, onClose, opActive, importRows }: ImportFlowPr
         <Dialog.Content className="fs-fullscreen fs-import" aria-describedby={undefined}>
           <header className="fs-fullscreen-head">
             <Dialog.Title className="fs-fullscreen-title">Import inventory</Dialog.Title>
-            <button type="button" className="fs-fullscreen-cancel" onClick={close}>
-              {result ? 'Done' : 'Cancel'}
-            </button>
+            <span className="fs-import-cancel">
+              {committing && (
+                <span className="fs-import-cancel-reason" id="fs-import-cancel-reason">
+                  Importing…
+                </span>
+              )}
+              <button
+                type="button"
+                className="fs-fullscreen-cancel"
+                onClick={close}
+                disabled={committing}
+                aria-describedby={committing ? 'fs-import-cancel-reason' : undefined}
+              >
+                {result ? 'Done' : 'Cancel'}
+              </button>
+            </span>
           </header>
           <div className="fs-import-progress">
             <span className="fs-import-stepnum" aria-live="polite">
@@ -271,11 +374,28 @@ export function ImportFlow({ open, onClose, opActive, importRows }: ImportFlowPr
           <div className="fs-fullscreen-body fs-import-body">
             {result ? (
               <div className="fs-import-done">
-                <h2 className="fs-import-h">Import complete</h2>
-                <p className="fs-import-sub">
-                  {result.imported} row{result.imported === 1 ? '' : 's'} imported
-                  {result.skipped > 0 ? ` · ${result.skipped} skipped (would strand deployed stock)` : ''}.
-                </p>
+                {result.kind === 'failed' ? (
+                  <>
+                    <h2 className="fs-import-h fs-import-h--failed">Import failed</h2>
+                    <div className="fs-import-result">
+                      <p>{result.message ? `Nothing was saved. ${result.message}` : 'Nothing was saved.'}</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="fs-import-h">Import complete</h2>
+                    <div className="fs-import-result">
+                      {resultLines(result).map((line) => (
+                        <p key={line}>{line}</p>
+                      ))}
+                      {cloudLines(result.res.cloud, result.res.imported).map(({ text, warn }) => (
+                        <p key={text} className={warn ? 'fs-import-result-warn' : undefined}>
+                          {text}
+                        </p>
+                      ))}
+                    </div>
+                  </>
+                )}
                 <Button variant="primary" onPress={close}>
                   Done
                 </Button>

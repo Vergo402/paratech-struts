@@ -1,0 +1,13 @@
+# Variant B (stale-clock rejection). csv/variant-B-stale-clock.csv: row 1 = N (LS 304, id inv-95e758d2-…, qty 2 -> 5), row 2 = new Plate rubber4 qty 1. 283 bytes, sha256 59b707ca...93be
+# Setup: owner REST PATCH of the cloud row's lastWriteAt -> 9999999999999; the device's listener pulled it down (IDB N: qty 2, lastWriteAt 9999999999999 BEFORE the import). online=true, .info/connected=true.
+# Step 4 button 'Import 2 rows'.
+heading: "Import complete"
+lines (each its own <p>):
+  1. 2 rows imported.                                           [color rgb(240,239,236), class ""]
+  2. Saved on this device — 1 row didn't reach the cloud.      [class "fs-import-result-warn", computed color rgb(230,190,85) = AMBER]
+timing: click t=0; caption t=12 ms; result t=67 ms (the rejection is fast; no 4 s wait).
+CLOUD (REST) after: N unchanged {quantity 2, lastWriteAt 9999999999999}; the new rubber4 row LANDED {quantity 1, lastWriteAt 1791867660827}.
+diagnostics/sync/13d00d54-6c2d-42ea-81f9-6cdaa32631f8 = {event:"state-write-failed", path:"orgs/c84e6901-…/inventory/inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc", reason:"Error: PERMISSION_DENIED: Permission denied", ts:1791867660887}   (rest/B-diagnostics-full.json)
+!! IndexedDB for N read at t=+2.06 s: {quantity 2, lastWriteAt 9999999999999} -- i.e. the CLOUD's value, NOT the imported 5. The row EXISTS locally (not deleted) but the import's value did not survive:
+   the rejected optimistic write was rolled back by the RTDB client, the listener re-delivered the cloud row, and the LWW pull-down (newer-wins; remote stamp 9999999999999 > local `now`) overwrote Dexie.
+   The new rubber4 row (accepted by the cloud) is in IDB and cloud. See REPORT for the criterion-3 consequence.

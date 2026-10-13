@@ -1,0 +1,4 @@
+# read_console_messages (tab-1, limit 200) taken BEFORE the first import, after setup (sign-up, dept, inventory, op, deploy)
+# Error-level entries (everything else is [debug] vite connecting/connected + [info] React DevTools hint):
+[error] Failed to load resource: the server responded with a status of 400 (Bad Request)     x1   (pre-dates all imports; same as the #469 run baseline)
+[error] Uncaught (in promise) AbortError: Transition was skipped                            x3   (view-transition skipped on full-page navigations)

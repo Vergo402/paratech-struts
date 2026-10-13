@@ -1,0 +1,23 @@
+# Variant A (online, full accounting) -- result block captured from the DOM (.fs-import-result p), via window.__qa.snap()
+heading (h2.fs-import-h): "Import complete"   [text-align center, color rgb(240,239,236)]
+lines (each its own <p>, in order; === comparison against the expected ordered list: TRUE):
+  1. 1 row imported.
+  2. 1 skipped — would strand deployed stock.
+  3. 1 skipped — type doesn't match the item already on the rig.
+  4. 1 row not imported — still flagged to fix.
+  5. 1 row skipped by you.
+  6. 1 blank row ignored.
+  7. Saved on this device and in the cloud.
+non-ASCII characters in the lines: 3 x EM DASH U+2014 only; the apostrophe in "doesn't" is ASCII 0x27.
+line style: every <p> text-align left, color rgb(240,239,236) (--text-primary), class "" (no fs-import-result-warn on the cloud line -> synced)
+block (.fs-import-result): display flex, text-align left
+header: Cancel button text "Done", disabled=false, no caption; footer (.fs-import-foot) absent; Done button (.fs-import-done button) enabled
+timing recorder (MutationObserver, t0 = capture-phase click on "Import 3 rows"):
+  t=0ms   click Import
+  t=10ms  caption "Importing…" present, header button text "Cancel", disabled=true, footer present   (the online healthy case is ~49 ms wide -- too short to screenshot)
+  t=59ms  caption gone, header button "Done" enabled, .fs-import-done present, footer gone
+IndexedDB (raw, dept bucket fieldshore-dept-c84e6901-...) AFTER: 3 inventory rows
+  inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc  strut LS 304  qty 2  Engine 1  lastWriteAt 1791867230445   <- NEW (the imported row)
+  inv-b11878ba-6b09-4885-9330-2ac46a074e74  plate rigid6  qty 2  Engine 1  lastWriteAt 1791867018627   <- P unchanged (retype skip)
+  inv-f0bd2e08-1441-412a-b723-dd1586500b89  strut LS 203  qty 2  Engine 1  lastWriteAt 1791867006019   <- S unchanged (strand skip; held 2)
+IndexedDB BEFORE: the two rows P and S only (same values).

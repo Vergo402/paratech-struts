@@ -1,0 +1,14 @@
+# Variant A (regression spot-check, online, full accounting) -- result block captured from the DOM (.fs-import-result p) via window.__qa.snap()
+# file: csv/variant-A-full-accounting.csv (564 bytes, in-page SHA-256 == shasum 430e22b7...70d3a; ids differ from run 1 because the emulator is fresh, shape identical)
+heading (h2.fs-import-h): "Import complete"
+lines (each its own <p>, in order; every <p> class "" = no warn class; color rgb(240, 239, 236); text-align left):
+  1. 1 row imported.
+  2. 1 skipped — would strand deployed stock.
+  3. 1 skipped — type doesn't match the item already on the rig.
+  4. 1 row not imported — still flagged to fix.
+  5. 1 row skipped by you.
+  6. 1 blank row ignored.
+  7. Saved on this device and in the cloud.
+footer (.fs-import-foot) absent; body Done (.fs-import-done) present.
+timing recorder (capture-phase click on "Import 3 rows" = t0): idb S/P unchanged at t=20 ms; result rendered at t=68 ms; idb at result: S [2, 1791869426204], P [2, 1791869433259] (unchanged).
+cloud (REST): new LS 304 row inv-1c1a85b0-a185-4c61-bdd4-ab621ef88a85 qty 2 @ 1791869657064; S and P byte-identical to baseline (rest/baseline-inventory.json vs rest/A-after-inventory.json); diagnostics node still null.

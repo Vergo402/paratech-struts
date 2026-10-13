@@ -1,0 +1,15 @@
+# Variant A3 = criterion 12 + plural "imported" (online; csv/variant-A3-merged-three-identical-rows.csv, 9 data rows incl. 1 blank, 792 bytes, sha256 69b2b4ff...a95)
+# Rows: S strand-skip, P(as Strut LS 304) retype-skip, blank LS 406 qty 4 (new line), THREE identical blank-ID rows LS 1016 qty 1 (fresh item), 1 blank, "two" (flagged), "x" (skipped by me).
+# Step 3 '6 will import - 2 to fix'; Step 4 skipped Row 10 (x), left Row 9 (two) flagged; button 'Import 6 rows'.
+heading: "Import complete"
+lines (each its own <p>, in order; === against the expected ordered list: TRUE):
+  1. 2 rows imported.
+  2. 2 rows merged with identical rows.        <-- criterion 12 line, positioned right after the imported line
+  3. 1 skipped — would strand deployed stock.
+  4. 1 skipped — type doesn't match the item already on the rig.
+  5. 1 row not imported — still flagged to fix.
+  6. 1 row skipped by you.
+  7. 1 blank row ignored.
+  8. Saved on this device and in the cloud.
+timing: click t=0, caption 'Importing…' + Cancel disabled t=2ms, result t=57ms.
+IndexedDB after (raw): LS 1016 qty 3 (ONE row; 1+1+1 summed, inv-3a3f0eb8-…), LS 406 qty 4 NEW (inv-d6633a17-…), LS 610 2, LS 304 2, plate rigid6 2, LS 203 2 (unchanged: S + P untouched)

@@ -1,0 +1,10 @@
+{
+    "apparatus": "Engine 1",
+    "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+    "id": "inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc",
+    "lastWriteAt": 9999999999999,
+    "model": "LS 304",
+    "quantity": 2,
+    "system": "LongShore",
+    "type": "strut"
+}

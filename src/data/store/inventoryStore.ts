@@ -37,9 +37,24 @@ export interface InventoryState {
 /** A new stock record minus the app-managed fields (id minted; quantity set). */
 export type AddSpec = Omit<InventoryItem, 'id' | 'quantity'>;
 
+/** Did the imported rows reach the cloud (#514)? 'synced' every push landed; 'pending'
+ *  offline, or a push unacknowledged within the settle bound (RTDB keeps retrying);
+ *  'failed' one or more pushes were refused (`failed` + `reverted` = how many); 'local'
+ *  nothing to push — no cloud for this bucket (guest) or no row imported. */
+export type ImportCloudStatus = 'synced' | 'pending' | 'failed' | 'local';
+
 export interface ImportResult {
+  /** Rows written — blank-ID rows of one identity aggregate into ONE (#469). */
   imported: number;
-  skipped: number;
+  /** Rows the store refused, by the guard that refused them: `strand` = the quantity
+   *  would fall below the units deployed; `retype` = an id reused with a different kind.
+   *  A refused row counts the blank-ID rows folded into it (#469) — they were dropped
+   *  with it — so `sent − (imported + strand + retype)` = rows merged into APPLIED rows. */
+  skipped: { strand: number; retype: number };
+  /** Of the refused pushes: `failed` = the import's value is still on this device;
+   *  `reverted` = the cloud held a newer row, which the LWW pull-down applied over it
+   *  (ADR-041) — this device now shows the cloud's value for it. */
+  cloud: { status: ImportCloudStatus; failed: number; reverted: number };
 }
 
 export interface InventoryStoreApi {
@@ -114,8 +129,56 @@ function sameKind(a: InventoryItem, b: AddSpec): boolean {
 // no-op) so the store stays sync-ignorant + unit tests stay firebase-free. Only manual
 // mutators fire these — deploy/return are events and never touch a stock row.
 export interface InventoryCloudHooks {
-  onRow?: (item: InventoryItem) => void;
+  /** May return the push's outcome (the registry returns syncService.setState's, which
+   *  never rejects); the import awaits it to report what reached the cloud (#514). */
+  onRow?: (item: InventoryItem) => Promise<CloudPushOutcome> | void;
   onDelete?: (id: string, lastWriteAt: number) => void;
+}
+
+/** One cloud push's outcome — structurally syncService's StateWriteOutcome (the store
+ *  stays sync-ignorant, so it names its own copy). */
+export type CloudPushOutcome = 'ok' | 'failed' | 'skipped';
+
+/** How long an online import waits for its cloud pushes to settle before calling the
+ *  unacknowledged ones 'pending' (#514). Bounded so a dead socket never hangs the UI. */
+export const CLOUD_SETTLE_MS = 4000;
+
+/** Injected cloud context for the import's outcome report (#514) — kept apart from the
+ *  write hooks. Defaults: online, CLOUD_SETTLE_MS. */
+export interface InventoryStoreOptions {
+  /** The connectivity flag the sync layer already tracks (syncStatusStore.online). */
+  isOnline?: () => boolean;
+  cloudSettleMs?: number;
+}
+
+/** Fold the per-row push outcomes into the import's cloud verdict. Offline, a dept push
+ *  buffers in RTDB and never settles, so only an immediate (same-tick) answer — a
+ *  guest's 'skipped' — is taken; online, wait up to `settleMs`. Never rejects. */
+async function settleCloud(
+  pushes: Promise<CloudPushOutcome>[],
+  online: boolean,
+  settleMs: number,
+): Promise<(CloudPushOutcome | undefined)[]> {
+  const settled: (CloudPushOutcome | undefined)[] = pushes.map(() => undefined);
+  if (pushes.length === 0) return settled;
+  const tracked = pushes.map((p, i) => p.then((o) => void (settled[i] = o)));
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const bound = new Promise<void>((resolve) => {
+    timer = setTimeout(resolve, online ? settleMs : 0);
+  });
+  await Promise.race([Promise.all(tracked), bound]);
+  clearTimeout(timer);
+  return settled; // undefined = still unsettled at the bound
+}
+
+/** The import's cloud verdict from the settled pushes and how many refused rows were
+ *  overwritten by the cloud's newer value. */
+function cloudVerdict(settled: (CloudPushOutcome | undefined)[], reverted: number): ImportResult['cloud'] {
+  const refused = settled.filter((o) => o === 'failed').length;
+  if (refused > 0) return { status: 'failed', failed: refused - reverted, reverted };
+  if (settled.length === 0 || settled.every((o) => o === 'skipped')) return { status: 'local', failed: 0, reverted: 0 };
+  if (settled.some((o) => o === undefined)) return { status: 'pending', failed: 0, reverted: 0 };
+  return { status: 'synced', failed: 0, reverted: 0 };
 }
 
 /** The derived view: each row joined with its held count; available signed. */
@@ -134,7 +197,13 @@ function sameHeld(a: HeldCounts, b: HeldCounts): boolean {
   return ka.every((k) => Object.hasOwn(b, k) && a[k] === b[k]);
 }
 
-export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHooks = {}): InventoryStoreApi {
+export function createInventoryStore(
+  db: FieldShoreDB,
+  hooks: InventoryCloudHooks = {},
+  opts: InventoryStoreOptions = {},
+): InventoryStoreApi {
+  const isOnline = opts.isOnline ?? (() => true);
+  const cloudSettleMs = opts.cloudSettleMs ?? CLOUD_SETTLE_MS;
   const EMPTY_HELD: HeldCounts = {};
   const store = createStore<InventoryState>(() => ({ rows: [], held: EMPTY_HELD, items: [] }));
 
@@ -301,9 +370,10 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
     const nextRoster = [...roster, ...newRigs.values()];
 
     let imported = 0;
-    let skipped = 0;
+    const skipped = { strand: 0, retype: 0 };
     const now = Date.now(); // one LWW stamp for the whole import batch
     const importedIds: string[] = [];
+    const written = new Map<string, number>(); // id → the quantity this import wrote (stamp `now`)
     // Blank-ID rows (a hand-kept / template CSV) carry no identity of their own, so the
     // file is aggregated first, per RESOLVED rig + kind (identityKey).
     // SUM vs SET (the rule): the file lists physical units, so WITHIN one file every row
@@ -321,7 +391,11 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
       if (r.id) idKeys.add(k);
       else blankSums.set(k, (blankSums.get(k) ?? 0) + r.quantity);
     }
-    const work: { r: ParsedImportRow; quantity: number }[] = [];
+    const blankCounts = new Map<string, number>();
+    for (const r of rows) if (!r.id) blankCounts.set(keyOf(r), (blankCounts.get(keyOf(r)) ?? 0) + 1);
+    // `rows` = how many file rows this work item stands for (itself + the blank rows folded
+    // into it), so a skip drops — and counts — all of them.
+    const work: { r: ParsedImportRow; quantity: number; rows: number }[] = [];
     const carried = new Set<string>(); // keys whose blank total already has a carrier row
     for (const r of rows) {
       const k = keyOf(r);
@@ -330,15 +404,15 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
         // rows of that key stay plain SET
         const blank = carried.has(k) ? undefined : blankSums.get(k);
         if (blank !== undefined) carried.add(k);
-        work.push({ r, quantity: r.quantity + (blank ?? 0) });
+        work.push({ r, quantity: r.quantity + (blank ?? 0), rows: 1 + (blank !== undefined ? blankCounts.get(k)! : 0) });
       } else if (!idKeys.has(k) && !carried.has(k)) {
         carried.add(k); // first blank row of an id-less key stands for the aggregate
-        work.push({ r, quantity: blankSums.get(k)! });
+        work.push({ r, quantity: blankSums.get(k)!, rows: blankCounts.get(k)! });
       }
       // else: a blank row whose identity an id row carries — folded into that row's total
     }
     await db.transaction('rw', db.meta, db.inventory, async () => {
-      for (const { r, quantity } of work) {
+      for (const { r, quantity, rows: represented } of work) {
         const apparatusId = apparatusIdFor(r);
         const fields: AddSpec = {
           type: r.type,
@@ -356,7 +430,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
             // never re-TYPE a record by reusing its id — return resolves by id only,
             // so a transmuted row would restore the wrong item.
             if (!sameKind(existing, fields)) {
-              skipped++;
+              skipped.retype += represented;
               continue;
             }
           }
@@ -364,7 +438,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
           // unit. Checked for a new id too — a peer's deploy may hold an id this device
           // has no row for yet.
           if (quantity < heldOf(r.id)) {
-            skipped++;
+            skipped.strand += represented;
             continue;
           }
           id = r.id;
@@ -379,7 +453,7 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
             .first();
           if (match) {
             if (quantity < heldOf(match.id)) {
-              skipped++;
+              skipped.strand += represented;
               continue;
             }
             id = match.id;
@@ -390,25 +464,71 @@ export function createInventoryStore(db: FieldShoreDB, hooks: InventoryCloudHook
           }
         }
         importedIds.push(id);
+        written.set(id, quantity);
         imported++;
       }
       if (newRigs.size > 0) {
         await db.meta.put({ key: APPARATUS_ROSTER_KEY, value: JSON.stringify(wrapBlob(nextRoster, now)) });
       }
     });
-    await boot();
-    if (newRigs.size > 0) await apparatus.boot();
+    // The transaction committed: from here on NOTHING may throw (#514) — a rejection of
+    // upsertImport must mean the transaction rolled back, so the UI can truthfully say
+    // "Nothing was saved". Each post-commit step degrades instead of throwing.
+    const revertedSinceImport = async (id: string): Promise<boolean> => {
+      try {
+        const row = await db.inventory.get(id);
+        return !row || row.quantity !== written.get(id) || row.lastWriteAt !== now;
+      } catch {
+        return false; // unreadable → can't prove a revert; report it as failed (still local)
+      }
+    };
+    const postCommit = async (step: string, fn: () => unknown): Promise<boolean> => {
+      try {
+        await fn();
+        return true;
+      } catch (err) {
+        console.warn(`FieldShore: import saved, but ${step} failed:`, err);
+        return false;
+      }
+    };
+    const reloaded = await postCommit('reloading inventory', boot);
+    const rosterReloaded = newRigs.size > 0 && (await postCommit('reloading apparatus', () => apparatus.boot()));
     // Push the imported rows + (if rigs were provisioned) the roster blob to the cloud.
     // After boot() the mirror holds the durable rows; push each by id (LWW, idempotent).
+    // A FAILED reload leaves the mirror stale (an existing id would push its OLD quantity),
+    // so push nothing and count every imported row as not reaching the cloud; the next
+    // boot's first-merge re-pushes them from Dexie.
+    const pushes: { id: string; outcome: Promise<CloudPushOutcome> }[] = [];
     if (hooks.onRow) {
       const byId = new Map(store.getState().rows.map((i) => [i.id, i]));
       for (const id of importedIds) {
-        const it = byId.get(id);
-        if (it) hooks.onRow(it);
+        const it = reloaded ? byId.get(id) : undefined;
+        let push: Promise<CloudPushOutcome> | void;
+        try {
+          push = it ? hooks.onRow(it) : Promise.resolve('failed');
+        } catch {
+          push = Promise.resolve('failed');
+        }
+        if (push) pushes.push({ id, outcome: Promise.resolve(push).catch((): CloudPushOutcome => 'failed') });
       }
     }
-    if (newRigs.size > 0) apparatus.pushRoster();
-    return { imported, skipped };
+    // Same for the roster: a stale blob would overwrite the cloud without the new rigs.
+    if (rosterReloaded) await postCommit('pushing the apparatus roster', () => apparatus.pushRoster());
+    const settled = await settleCloud(
+      pushes.map((p) => p.outcome),
+      isOnline(),
+      cloudSettleMs,
+    );
+    // A refused push is rolled back by the RTDB client, which re-raises the cloud row
+    // BEFORE rejecting the write (subscribe.ts); when the cloud's row is newer, the state
+    // listener's LWW pull-down (applyRemoteRow/-Delete) has therefore already ISSUED its
+    // Dexie write, and IndexedDB orders this later read after it. A row no longer holding
+    // this import's write was reverted to the cloud's value — not "saved on this device".
+    let reverted = 0;
+    for (let i = 0; i < pushes.length; i++) {
+      if (settled[i] === 'failed' && (await revertedSinceImport(pushes[i]!.id))) reverted++;
+    }
+    return { imported, skipped, cloud: cloudVerdict(settled, reverted) };
   }
 
   // ---- cloud-sync Increment 3: LWW pull-down (listener decides newer-wins) ----

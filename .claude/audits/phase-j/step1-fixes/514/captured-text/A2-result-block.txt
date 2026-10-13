@@ -1,0 +1,22 @@
+# Variant A2 (online, "plural" run; csv/variant-A2-plural.csv, 12 data rows incl. 2 blank, 1034 bytes, sha256 e669fee5...5b52)
+# Step 3 showed '6 will import - 4 to fix' (rows 10,11,12,13 = "two","three","x","y"); Step 4: skipped rows 12 + 13, left 10 + 11 flagged; button 'Import 6 rows'.
+heading: "Import complete"
+lines (each its own <p>, in order):
+  1. 1 row imported.
+  2. 1 row merged with an identical row.
+  3. 2 skipped — would strand deployed stock.
+  4. 2 skipped — type doesn't match the item already on the rig.
+  5. 2 rows not imported — still flagged to fix.
+  6. 2 rows skipped by you.
+  7. 2 blank rows ignored.
+  8. Saved on this device and in the cloud.
+PLURAL forms proven for: "2 skipped — ...strand", "2 skipped — ...type", "2 rows not imported", "2 rows skipped by you", "2 blank rows ignored".
+timing: click t=0, caption 'Importing…' + Cancel disabled at t=2ms, result at t=49ms.
+
+!! SURPRISE (my file design, but a real accounting caveat): I expected "2 rows imported." (new LS 406 qty 4 + new LS 610 qty 2) and got "1 row imported." + "1 row merged with an identical row.".
+   Cause (inventoryStore.upsertImport): the blank-ID `LS 406` row has the SAME identity as the two id rows `<P>,...,Strut,LS 406` (P is the PLATE's id, so those rows are retype-skipped).
+   "an id row carries its blank siblings' total" -> the blank LS 406 qty 4 was folded into the first P row (total 3+4) and that carrier was then retype-skipped.
+   IndexedDB after: LS 304 2, rigid6 plate 2, LS 203 2, LS 610 2 (NEW) -- NO LS 406 row: the blank row's 4 units were NOT saved and NOT merged into anything,
+   yet the result block says "1 row merged with an identical row." (the merged = sent - (imported+strand+retype) arithmetic cannot tell "folded into an applied row" from "folded into a SKIPPED carrier").
+   The carrier itself IS reported on its own skip line, so the user can infer it, but the word "merged" over-claims for that row.
+IndexedDB after A2 (raw):  LS 304 qty 2 (inv-95e758d2…), plate rigid6 qty 2 (inv-b11878ba…, unchanged), LS 203 qty 2 (inv-f0bd2e08…, unchanged), LS 610 qty 2 NEW (inv-f286bb5e-eac7-452c-a712-cb016a22325b, lastWriteAt 1791867358932)

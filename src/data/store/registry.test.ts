@@ -10,6 +10,7 @@ import {
 import { createDB, deptDbName, GUEST_BUCKET } from './db';
 import { sessionStore } from './session';
 import { syncService } from '../sync/syncService';
+import { syncStatusStore } from '../sync/syncStatus';
 import type { InventoryItem, FieldShoreEvent } from '@core/schema';
 
 // The anti-bleed proof for per-department bucketing: switching A→B→A keeps each
@@ -118,12 +119,16 @@ describe('store registry — dev bucket guard wiring', () => {
 describe('store registry — non-event cloud-push wiring (Increment 3)', () => {
   afterEach(async () => {
     vi.restoreAllMocks();
+    // Switch away first: activateBucket closes the prior bucket's handle, so the delete
+    // below never runs under an open connection (Dexie's "Another connection wants to
+    // delete database…" notice).
+    await activateBucket('dept-sync-teardown');
     await createDB(deptDbName('dept-sync')).delete();
   });
 
   it('a manual inventory edit pushes to orgs-relative inventory/{id} without available', async () => {
     await activateBucket('dept-sync');
-    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue();
+    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue('ok');
 
     const id = await inventoryStore.addOne({
       apparatus: 'Rescue 2', apparatusId: 'app-r2', type: 'strut', model: 'LS 203', system: 'LongShore',
@@ -136,9 +141,37 @@ describe('store registry — non-event cloud-push wiring (Increment 3)', () => {
     expect('held' in payload).toBe(false);
   });
 
+  // #514 — the import's cloud line is fed by setState's outcome and the sync layer's
+  // online flag, through the registry wiring.
+  it("an import reports setState's refusal as rows that didn't reach the cloud", async () => {
+    await activateBucket('dept-sync');
+    syncStatusStore.setOnline(true);
+    vi.spyOn(syncService, 'setState').mockResolvedValue('failed');
+    const res = await inventoryStore.upsertImport(
+      [{ id: '', apparatus: 'Rescue 2', apparatusId: 'app-r2', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 2 }],
+      apparatusStore,
+    );
+    expect(res.cloud).toEqual({ status: 'failed', failed: 1, reverted: 0 });
+  });
+
+  it("an import while the sync layer reports offline is 'pending' (will sync on reconnect)", async () => {
+    await activateBucket('dept-sync');
+    syncStatusStore.setOnline(false);
+    try {
+      vi.spyOn(syncService, 'setState').mockReturnValue(new Promise(() => {})); // RTDB buffers offline
+      const res = await inventoryStore.upsertImport(
+        [{ id: '', apparatus: 'Rescue 2', apparatusId: 'app-r2', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 2 }],
+        apparatusStore,
+      );
+      expect(res.cloud).toEqual({ status: 'pending', failed: 0, reverted: 0 });
+    } finally {
+      syncStatusStore.setOnline(true);
+    }
+  });
+
   it('an apparatus edit pushes the whole roster blob to the apparatus path', async () => {
     await activateBucket('dept-sync');
-    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue();
+    const spy = vi.spyOn(syncService, 'setState').mockResolvedValue('ok');
 
     await apparatusStore.addApparatus({ id: 'app-1', name: 'Engine 1', type: 'Engine' });
 

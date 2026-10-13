@@ -1,0 +1,6 @@
+# ids read from the app store (inventoryStore.store.getState().rows), NOT via the Export download (a download needs Alex's permission)
+DEPT=c84e6901-2681-4a30-8729-50e958e625bb
+RIG=Engine 1
+RID=app-1bc72ee0-13e4-4903-993d-338446a4c517
+S=inv-f0bd2e08-1441-412a-b723-dd1586500b89   (strut LS 203, quantity 2, held 2 by the Double-T shore point #1 posts 1/2 + 2/2)
+P=inv-b11878ba-6b09-4885-9330-2ac46a074e74   (plate rigid6, quantity 2, held 0)

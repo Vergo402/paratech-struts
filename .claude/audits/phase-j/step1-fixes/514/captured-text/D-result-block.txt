@@ -1,0 +1,8 @@
+# Variant D (nothing pushed; csv/variant-D-strand-only.csv: ONE data row = the S id row at quantity 1 while 2 are held; 211 bytes, sha256 e9ac35c7...20f7)
+# Step 3 'Every row checks out'; Step 4 button 'Import 1 row'.
+heading: "Import complete"
+lines (=== against expected ordered list: TRUE):
+  1. No rows imported.
+  2. 1 skipped — would strand deployed stock.
+  3. Saved on this device.
+no fs-import-result-warn class on any line. timing: click t=0, caption t=2ms, result t=23ms. IndexedDB inventory count unchanged (6).

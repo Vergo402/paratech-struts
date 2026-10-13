@@ -1,0 +1,17 @@
+# Variant A2 literal (EXTRA observation -- NOT a graded criterion; the exact run-1 'variant-A2-plural.csv' shape = the F2 repro) [fix rounds 2+3 build]
+# file: csv/variant-A2-plural-literal-run1-shape.csv (1034 bytes, same size as run 1's; in-page SHA-256 == shasum 6f2e138c...e4224; ids differ because the emulator is fresh)
+#   rows: S,LS 203,1 (x2) | P(plate id),Strut LS 406,3 (x2) | blank LS 406,4 | blank LS 610,2 | 2 blank rows | blank LS 203 'two','three','x','y'
+# Step 3: '6 will import - 4 to fix' (rows 10-13); Step 4: skipped rows 12 + 13, left 10 + 11 flagged; 'Import 6 rows' (real pointer click).
+heading (h2.fs-import-h): "Import complete"
+lines (each its own <p>, in order; none carry the warn class):
+  1. 1 row imported.
+  2. 2 skipped — would strand deployed stock.
+  3. 3 skipped — type doesn't match the item already on the rig.
+  4. 2 rows not imported — still flagged to fix.
+  5. 2 rows skipped by you.
+  6. 2 blank rows ignored.
+  7. Saved on this device and in the cloud.
+NO "merged" line. (Run 1 on the same shape read: '1 row imported.' + '1 row merged with an identical row.' + '2 skipped — ...type' -- the blank LS 406 qty 4 was dropped but called 'merged'. Now the first P carrier counts itself + its folded blank sibling = 2, the second P row 1 => '3 skipped'.)
+IndexedDB AFTER: LS 610 qty 2 NEW (inv-6a5717d7-ea87-49b5-8cb6-d5ff9483df05 @ 1791869972388); NO LS 406 row; S [2, 1791869426204] and P [2, 1791869433259] unchanged.
+Cloud (REST rest/A2-after-inventory.json): LS 610 qty 2 landed; no LS 406 row.
+timing recorder: result rendered t=83 ms.

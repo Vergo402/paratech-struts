@@ -1,0 +1,21 @@
+{
+    "inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33",
+        "lastWriteAt": 1791869433259,
+        "plateId": "rigid6",
+        "quantity": 2,
+        "type": "plate"
+    },
+    "inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612",
+        "lastWriteAt": 1791869426204,
+        "model": "LS 203",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    }
+}

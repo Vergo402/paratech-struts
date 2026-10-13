@@ -1,0 +1,19 @@
+# Variant B3 (criterion 3, inventory permission turned OFF in the database while the flow sits on Step 4; a refusal with NO newer cloud row)  [fix rounds 2+3 build]
+# file: csv/variant-B3-permission-off-two-new-plates.csv (240 bytes, in-page SHA-256 == shasum 12faac3f...3bbf)
+#   ,Engine 1,<RID>,Plate,,,hinged6,,,1     <- new
+#   ,Engine 1,<RID>,Plate,,,swivel6,,,1     <- new
+STAGING (per the recipe): members/<uid>.role = "admin" -> roles/admin/permissions.manageInventory true -> PATCHed to false with the owner token WHILE the flow sat on Step 4 ('2 ready', button 'Import 2 rows' enabled afterwards); GET confirmed {"manageInventory": false}. database.rules.json line 166/171: the inventory write rule requires roles/<member role>/permissions/manageInventory === true (no admin bypass) -- so the pushes are refused. Real pointer click on 'Import 2 rows'.
+heading (h2.fs-import-h): "Import complete"
+lines (each its own <p>, in order):
+  1. 2 rows imported.                                          class ""  rgb(240, 239, 236)
+  2. Saved on this device — 2 rows didn't reach the cloud.     class "fs-import-result-warn"  rgb(230, 190, 85)  (AMBER)
+NO reverted line ("this device now shows the cloud's value") and NO "Other rows were saved..." line (nothing landed). footer absent; body Done present.
+timing: result rendered t=40 ms after the click.
+DEVICE (IndexedDB raw + store mirror + Inventory screen) -- imported values KEPT:
+  hinged6 qty 1  id inv-26fa52f1-c812-4de6-a1fe-9f53b037f1b9  lastWriteAt 1791870049931
+  swivel6 qty 1  id inv-d466b220-b1ef-49b4-aa0d-4456beef4aa9  lastWriteAt 1791870049931
+  A poller on those two rows (15 ms, armed ~2.3 s before the click, running 8 s) logged them appearing at t=15 ms after the click and NEVER changing or disappearing; re-read several seconds later after clicking Done: still both present; Inventory screen lists '6" Hinged Base 1/1' (shot B3-USERVIEW).
+CLOUD (REST): UNCHANGED -- 6 rows before and after (rest/B3-before-inventory.json == rest/B3-after-inventory.json); no hinged6 / swivel6 row.
+diagnostics/sync (REST rest/B3-diagnostics-full.json): 5 entries = the 3 from variants B / B plural + 2 NEW at 1791870049967 and 1791870049969, event state-write-failed, paths orgs/<dept>/inventory/inv-26fa52f1-... and .../inv-d466b220-..., reason "Error: PERMISSION_DENIED: Permission denied".
+No page reload happened between the import and these captures (a reboot's first merge would have pushed the local rows up).
+RESTORED afterwards: PATCH roles/admin/permissions {"manageInventory": true}; GET back == the pre-test baseline (rest/roles-admin-permissions-baseline.json).

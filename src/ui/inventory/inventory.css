@@ -642,3 +642,16 @@
 .fs-import-foot > *:first-child:not(:only-child) { flex: 0 0 auto; }
 
 .fs-import-done { text-align: center; padding: var(--space-6) var(--space-3); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
+/* #514 — the result lines: one <p> each, tight, the gap before Done comes from the block. */
+.fs-import-result { display: flex; flex-direction: column; gap: var(--space-1); align-self: stretch; text-align: left; }
+/* While the import commits, the header Cancel is disabled and says why (#514 fix round 1). */
+.fs-import-cancel { display: inline-flex; align-items: center; gap: var(--space-2); }
+.fs-import-cancel-reason { font: var(--type-caption); color: var(--text-secondary); }
+.fs-import .fs-fullscreen-cancel:disabled { color: var(--text-tertiary); cursor: default; }
+.fs-import-result p { font: var(--type-body); color: var(--text-primary); margin: 0; line-height: 1.45; }
+/* The cloud line when rows didn't reach the cloud: amber (--status-waiting-text reads on
+   the card in all four themes). */
+.fs-import-result p.fs-import-result-warn { color: var(--status-waiting-text); }
+.fs-import-h--failed { color: var(--danger-text); }
+/* Sunlight: --danger-text is white (on-banner) — the standalone heading takes the solid red. */
+[data-theme='sunlight'] .fs-import-h--failed { color: var(--danger-bg); }

@@ -1,0 +1,9 @@
+# Variant E (forced device write failure). csv/variant-E-forced-device-write-failure.csv (ONE new blank-ID row: Engine 1 / Plate / contour / qty 1; 168 bytes, sha256 8de71049...ae54)
+# Fault injected at Step 4, before tapping Import:  const t = reg.currentDeptDb().inventory;  t.add = t.put = () => Promise.reject(new Error('QA: forced device write failure.'));
+#   (db.name == the dept bucket fieldshore-dept-c84e6901-…; same Dexie instance the store uses). Count BEFORE: Dexie count() 10, raw IDB getAll() 10.
+heading: "Import failed"    class "fs-import-h fs-import-h--failed"   computed color rgb(248,113,113) (red)
+body (.fs-import-result, one <p>):  "Nothing was saved. QA: forced device write failure."
+header button: text "Done", disabled=false, caption absent, aria-describedby null.   Body "Done" button: present, enabled.
+footer (.fs-import-foot): ABSENT -> no Import button anywhere, so nothing can be "stuck on Importing…".
+timing (recorder): click t=0; caption "Importing…" + Cancel DISABLED t=9 ms (during the commit); failure result t=17 ms, Cancel -> 'Done' enabled.
+Count AFTER: Dexie count() 10, raw IDB getAll() 10 -> UNCHANGED (nothing saved).

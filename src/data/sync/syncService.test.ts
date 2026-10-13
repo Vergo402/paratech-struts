@@ -1299,6 +1299,26 @@ describe('syncService — ordered upload, receipt stamping, unconditional merge 
     expect('model' in w).toBe(false);
     expect(w).toMatchObject({ id: 'inv-1', quantity: 2, lastWriteAt: 1 });
   });
+
+  // #514 — the import result reports whether the cloud got each row, so setState
+  // reports its outcome (and still never rejects).
+  it("setState resolves 'ok' when the cloud write lands", async () => {
+    await expect(sync.setState('inventory/inv-1', { id: 'inv-1', lastWriteAt: 1 })).resolves.toBe('ok');
+  });
+
+  it("setState resolves 'failed' (never rejects) and logs state-write-failed when the write is refused", async () => {
+    const s = mk({ set: async () => { throw new Error('PERMISSION_DENIED: Permission denied'); } });
+    await expect(s.setState('inventory/inv-1', { id: 'inv-1', lastWriteAt: 1 })).resolves.toBe('failed');
+    expect(logSpy).toHaveBeenCalledWith(
+      'state-write-failed',
+      expect.objectContaining({ path: 'orgs/dept-1/inventory/inv-1', reason: expect.stringContaining('PERMISSION_DENIED') }),
+    );
+  });
+
+  it("setState resolves 'skipped' for a guest (no cloud)", async () => {
+    dept = null;
+    await expect(sync.setState('inventory/inv-1', { id: 'inv-1', lastWriteAt: 1 })).resolves.toBe('skipped');
+  });
 });
 
 describe('isTerminalRejection (#471) — a rejection retrying can never fix', () => {

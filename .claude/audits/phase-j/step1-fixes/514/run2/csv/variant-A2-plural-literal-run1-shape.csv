@@ -1,0 +1,13 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,1
+inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,1
+inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 406,Gold,,,,3
+inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 406,Gold,,,,3
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 406,Gold,,,,4
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 610,Gold,,,,2
+,,,,,,,,,
+,,,,,,,,,
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,two
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,three
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,x
+,Engine 1,app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8,Strut,LS 203,Gold,,,,y

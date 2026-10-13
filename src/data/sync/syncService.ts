@@ -169,6 +169,9 @@ export interface ReconcileResult {
   stamped: string[];
 }
 
+/** What one setState push did (#514). */
+export type StateWriteOutcome = 'ok' | 'failed' | 'skipped';
+
 export interface SyncServiceApi {
   /** Queue a locally-committed event for upload. Returns immediately (L-4). */
   enqueue(event: FieldShoreEvent): void;
@@ -187,8 +190,11 @@ export interface SyncServiceApi {
   pendingResourceKeys(): Set<string>;
   /** Push a non-event STATE record (cloud-sync Increment 3) to orgs/{deptId}/{relPath}
    *  — an LWW overwrite (not the append-only event queue). Best-effort, guest-guarded,
-   *  strips undefined. Fire-and-forget: callers void the promise. */
-  setState(relPath: string, value: unknown): Promise<void>;
+   *  strips undefined. NEVER rejects: resolves the outcome (#514) — 'ok' landed,
+   *  'failed' refused (logged as state-write-failed), 'skipped' guest / no department.
+   *  Most callers void it; the import awaits it to report what reached the cloud. An
+   *  offline RTDB write buffers, so the promise stays pending until reconnect. */
+  setState(relPath: string, value: unknown): Promise<StateWriteOutcome>;
 }
 
 export function createSyncService(deps: {
@@ -606,12 +612,14 @@ export function createSyncService(deps: {
 
     async setState(relPath, value) {
       const dept = deps.deptId();
-      if (!dept) return; // guest / no department → nothing to sync
+      if (!dept) return 'skipped'; // guest / no department → nothing to sync
       const path = `orgs/${dept}/${relPath}`;
       try {
         await set(path, jsonClean(value)); // LWW overwrite; the cloud rule guards monotonic lastWriteAt
+        return 'ok';
       } catch (err) {
         log('state-write-failed', { path, reason: String(err) }); // best-effort (the listener re-pushes on next merge)
+        return 'failed';
       }
     },
   };

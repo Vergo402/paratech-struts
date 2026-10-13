@@ -114,7 +114,7 @@ describe('InventoryScreen', () => {
 describe('ImportExport', () => {
   it('opens the 4-step import flow from the Import button', async () => {
     const user = userEvent.setup();
-    const importRows = vi.fn().mockResolvedValue({ imported: 1, skipped: 1 });
+    const importRows = vi.fn().mockResolvedValue({ imported: 1, skipped: { strand: 1, retype: 0 }, cloud: { status: 'synced', failed: 0, reverted: 0 } });
     render(
       <ImportExport opActive={false} canManage canExport exportCsv={() => ''} templateCsv={() => ''} importRows={importRows} />,
     );

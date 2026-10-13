@@ -10,6 +10,7 @@ import { createChecklistTemplateStore, type ChecklistTemplateStoreApi } from './
 import { createRolesStore, type RolesStoreApi } from './rolesStore';
 import { seedIfEmpty, seedApparatusRoster } from './seed';
 import { syncService } from '../sync/syncService';
+import { syncStatusStore } from '../sync/syncStatus';
 import { inventoryPath, toCloudRow, tombstone } from '../sync/stateSync';
 import { createMonotonicClock } from '@core/clock';
 
@@ -57,10 +58,17 @@ function build(bucket: string): void {
   // best-effort LWW push (orgs/{deptId}/...). setState is guest-guarded + fire-and-
   // forget, so this never blocks a local write and no-ops for a guest. Keeping the
   // push HERE (not in the stores) preserves their sync-ignorance, like operationStore.
-  inventoryStore = createInventoryStore(deptDb, {
-    onRow: (item) => void syncService.setState(inventoryPath(item.id), toCloudRow(item)),
-    onDelete: (id, lastWriteAt) => void syncService.setState(inventoryPath(id), tombstone(id, lastWriteAt)),
-  });
+  // onRow RETURNS setState's outcome (it never rejects) so the import can report what
+  // reached the cloud (#514); the manual mutators ignore it. The online flag is the one
+  // the sync layer already keeps (connectivity → syncStatusStore).
+  inventoryStore = createInventoryStore(
+    deptDb,
+    {
+      onRow: (item) => syncService.setState(inventoryPath(item.id), toCloudRow(item)),
+      onDelete: (id, lastWriteAt) => void syncService.setState(inventoryPath(id), tombstone(id, lastWriteAt)),
+    },
+    { isOnline: () => syncStatusStore.store.getState().online },
+  );
   apparatusStore = createApparatusStore(deptDb, {
     onBlob: (env) => void syncService.setState('apparatus', env),
   });

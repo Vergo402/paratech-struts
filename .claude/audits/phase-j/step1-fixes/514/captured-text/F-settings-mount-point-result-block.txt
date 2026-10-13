@@ -1,0 +1,14 @@
+# Variant F = SECOND MOUNT POINT: Settings > Data management (/settings/data), reached by a full navigation (which also reloaded the app and discarded the variant-E fault patch).
+# csv/variant-F-settings-mount-point-full-accounting.csv (564 bytes, sha256 d25ebf75...e69e): S strand-skip, P(as Strut LS 304) retype-skip, blank LS 610 qty 2 (existing, un-poisoned row), 1 blank, "two" (flagged), "x" (skipped by me).
+# Post-reload IDB count = 10 (the failed variant-E contour row is absent: nothing was saved). Step 4: '3 ready · 1 to fix', Row 7 skipped, button 'Import 3 rows' (NOT stuck on Importing…).
+location.pathname at capture: /settings/data
+heading: "Import complete"
+lines (=== against the 7 expected strings: TRUE):
+  1. 1 row imported.
+  2. 1 skipped — would strand deployed stock.
+  3. 1 skipped — type doesn't match the item already on the rig.
+  4. 1 row not imported — still flagged to fix.
+  5. 1 row skipped by you.
+  6. 1 blank row ignored.
+  7. Saved on this device and in the cloud.
+styles identical to Variant A: every <p> text-align left, color rgb(240,239,236); block display flex; Done enabled; footer absent. timing: caption t=3 ms, result t=54 ms. IDB count 10 (LS 610 row updated in place).

@@ -1,0 +1,14 @@
+# Variant K (criterion 4, carried-skip, MINIMAL two-row shape of run 1's A2: one re-type id row + one blank sibling of the same identity)
+# file: csv/variant-K-carried-skip-minimal.csv (286 bytes, in-page SHA-256 == shasum 47c505ef...70b57)
+#   <P>,Engine 1,<RID>,Strut,LS 406,Gold,,,,3      <- P is the PLATE rigid6 row's id, used as a Strut => re-type skip
+#   ,Engine 1,<RID>,Strut,LS 406,Gold,,,,4         <- blank-ID sibling of the same identity (folds into the carrier)
+# Step 3: '2 will import' + op-active banner; Step 4: '2 ready', button 'Import 2 rows' (real pointer click).
+heading (h2.fs-import-h): "Import complete"
+lines (each its own <p>, in order; class "" = no warn; color rgb(240, 239, 236); text-align left):
+  1. No rows imported.
+  2. 2 skipped — type doesn't match the item already on the rig.
+  3. Saved on this device.
+NO "merged" line. footer absent; body Done present.
+timing recorder: result rendered t=15 ms after the click; idb P unchanged [2, 1791869433259].
+IndexedDB (raw) AFTER: 3 rows only -- LS 304 qty 2 (N1), rigid6 plate qty 2 (P, unchanged), LS 203 qty 2 (S, unchanged). NO LS 406 row.
+Cloud (REST) AFTER: identical to after-A (rest/K-after-inventory.json == rest/A-after-inventory.json): 3 rows, no LS 406 row; diagnostics node still null.

@@ -1,0 +1,10 @@
+# Variant B plural REPEAT at phone width (EXTRA: 2nd sample of the race-sensitive verdict + layout check of the new, longer lines)  [fix rounds 2+3 build]
+# viewport emulated 375x812 via resize_window (innerWidth 375). file: csv/variant-Bp2-phone-width-repeat-two-reverted-one-landed.csv (395 bytes, in-page SHA-256 == shasum eedb9191...eca9e)
+#   <N1>,...,Strut,LS 304,Gold,,,,7 | <N2>,...,Plate,,,rubber4,,,4 | ,...,Plate,,,rigid12,,,1 (new)   -- N1 and N2 were still future-stamped (9999999999999) in cloud and device from the earlier runs (verified by REST + IDB before the click)
+heading: "Import complete"; lines:
+  1. 3 rows imported.                                                                                 class ""
+  2. 2 rows didn't reach the cloud — this device now shows the cloud's values for them.               class "fs-import-result-warn"  rgb(230, 190, 85) (AMBER)
+  3. Other rows were saved on this device and in the cloud.                                           class ""
+Layout: document scrollWidth 375 == innerWidth 375 (no horizontal scroll); result block clientWidth 319 == scrollWidth 319; lines 2 and 3 wrap to 2 lines each (height 41 px at 20.3 px line height).
+RECORDER TIMELINE (t0 = click on 'Import 3 rows'): t=19 idb N1 [7,..] N2 [4,..] (committed) | t=31 mirror N2 reverted | t=34 idb N2 [1, 9999999999999] | t=79 mirror N1 reverted | t=93 idb N1 [2, 9999999999999] | t=98 result rendered | t=99 idb-at-result N1 [2,..] N2 [1,..]
+NUMBERS: N1 imported 7 -> device 2 -> cloud 2; N2 imported 4 -> device 1 -> cloud 1 (both @ 9999999999999). rigid12 qty 1 landed (device IDB + cloud REST).

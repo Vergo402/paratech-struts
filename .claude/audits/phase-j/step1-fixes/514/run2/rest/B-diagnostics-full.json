@@ -1,0 +1,10 @@
+{
+    "sync": {
+        "3759de46-71cc-4fd3-b04f-97df604bd9ea": {
+            "event": "state-write-failed",
+            "path": "orgs/4ed6f8b4-b168-423a-ace8-a5664a3811f1/inventory/inv-1c1a85b0-a185-4c61-bdd4-ab621ef88a85",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791869786390
+        }
+    }
+}

@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createDB, type FieldShoreDB } from './db';
-import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
+import { createInventoryStore, type InventoryStoreApi, type ImportResult } from './inventoryStore';
 import { createApparatusStore, type ApparatusStoreApi } from './apparatusStore';
 import type { CloudRow } from '../sync/stateSync';
 import type { InventoryItem } from '@core/schema';
@@ -21,6 +21,13 @@ const strut = (over: Partial<InventoryItem> & Pick<InventoryItem, 'id' | 'quanti
   apparatus: 'Rescue 2',
   apparatusId: 'app-rescue-2',
   ...over,
+});
+
+/** The import result with no cloud hook wired (#514): nothing pushed → 'local'. */
+const counts = (imported: number, skipped: Partial<ImportResult['skipped']> = {}): ImportResult => ({
+  imported,
+  skipped: { strand: 0, retype: 0, ...skipped },
+  cloud: { status: 'local', failed: 0, reverted: 0 },
 });
 
 describe('inventory store (direct-Dexie stock mutators)', () => {
@@ -117,7 +124,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       { id: '', apparatus: 'Engine 1', apparatusId: '', type: 'plate', plateId: 'rigid6', quantity: 5 },
     ];
     const res = await inv.upsertImport(rows, app);
-    expect(res).toEqual({ imported: 1, skipped: 1 });
+    expect(res).toEqual(counts(1, { strand: 1 }));
     expect(get('a')).toMatchObject({ quantity: 4, available: 1 }); // untouched
     expect(app.store.getState().roster.some((r) => r.name === 'Engine 1')).toBe(true);
     expect(inv.store.getState().items.find((i) => i.type === 'plate')).toMatchObject({ quantity: 5, available: 5 });
@@ -141,7 +148,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       [{ id: 'a', apparatus: 'Rescue 2', apparatusId: 'app-rescue-2', type: 'plate', plateId: 'rigid6', quantity: 5 }],
       app,
     );
-    expect(res).toEqual({ imported: 0, skipped: 1 });
+    expect(res).toEqual(counts(0, { retype: 1 }));
     expect(get('a')).toMatchObject({ type: 'strut', model: 'LS 203', quantity: 2 });
   });
 
@@ -168,7 +175,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await seed([strut({ id: 'a', quantity: 2 })]);
       await app.boot();
       const res = await inv.upsertImport([blankStrut(5)], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('a'))!.quantity).toBe(5);
     });
@@ -180,7 +187,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
         [{ id: '', ...R2, type: 'extension', system: 'LongShore', length: 24, quantity: 3 }],
         app,
       );
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('x'))!.quantity).toBe(3);
     });
@@ -189,7 +196,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await seed([strut({ id: 'p', type: 'plate', model: undefined, system: undefined, plateId: 'rigid6', quantity: 2 })]);
       await app.boot();
       const res = await inv.upsertImport([{ id: '', ...R2, type: 'plate', plateId: 'rigid6', quantity: 4 }], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('p'))!.quantity).toBe(4);
     });
@@ -198,7 +205,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await seed([strut({ id: 'a', quantity: 2 })]);
       await app.boot();
       const res = await inv.upsertImport([blankStrut(1, { apparatus: 'Engine 1', apparatusId: 'app-engine-1' })], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(2);
       expect((await db.inventory.get('a'))!.quantity).toBe(2); // untouched
     });
@@ -207,7 +214,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await seed([strut({ id: 'a', quantity: 4 })], { a: 3 });
       await app.boot();
       const res = await inv.upsertImport([blankStrut(2)], app);
-      expect(res).toEqual({ imported: 0, skipped: 1 });
+      expect(res).toEqual(counts(0, { strand: 1 }));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('a'))!.quantity).toBe(4);
     });
@@ -216,7 +223,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await app.boot();
       await inv.boot();
       const res = await inv.upsertImport([blankStrut(2), blankStrut(3)], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       const all = await db.inventory.toArray();
       expect(all).toHaveLength(1);
       expect(all[0]!.quantity).toBe(5);
@@ -227,7 +234,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await app.boot();
       const idRow: ParsedImportRow = { ...blankStrut(2), id: 'a' };
       const res = await inv.upsertImport([idRow, blankStrut(3)], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('a'))!.quantity).toBe(5);
     });
@@ -237,7 +244,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await app.boot();
       const idRow: ParsedImportRow = { ...blankStrut(2), id: 'a' };
       const res = await inv.upsertImport([blankStrut(3), idRow], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(await db.inventory.count()).toBe(1);
       expect((await db.inventory.get('a'))!.quantity).toBe(5);
     });
@@ -256,14 +263,14 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       await seed([strut({ id: 'a', quantity: 4 })]);
       await app.boot();
       const res = await inv.upsertImport([{ ...blankStrut(2), id: 'a' }], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect((await db.inventory.get('a'))!.quantity).toBe(2);
     });
 
     it('in-file aggregation uses the same per-type identity as stock matching (a stray field does not split rows)', async () => {
       await app.boot();
       const res = await inv.upsertImport([blankStrut(2), blankStrut(3, { length: 12 })], app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       const all = await db.inventory.toArray();
       expect(all).toHaveLength(1);
       expect(all[0]!.quantity).toBe(5);
@@ -276,7 +283,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
         { id: '', apparatus: 'Rescue 9', apparatusId: '', type: 'strut', model: 'LS 203', system: 'LongShore', quantity: 3 },
       ];
       const res = await inv.upsertImport(rows, app);
-      expect(res).toEqual({ imported: 1, skipped: 0 });
+      expect(res).toEqual(counts(1));
       expect(app.store.getState().roster.filter((r) => r.name === 'Rescue 9')).toHaveLength(1);
       const all = await db.inventory.toArray();
       expect(all).toHaveLength(1);
@@ -285,13 +292,13 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
 
     it('a held-guard skip on the merge path never pushes to the cloud', async () => {
       const pushed: InventoryItem[] = [];
-      const hooked = createInventoryStore(db, { onRow: (i) => pushed.push(i) });
+      const hooked = createInventoryStore(db, { onRow: (i) => { pushed.push(i); } });
       await db.inventory.add(strut({ id: 'a', quantity: 4 }));
       await hooked.boot();
       hooked.setHeld({ a: 3 });
       await app.boot();
       const res = await hooked.upsertImport([blankStrut(2)], app);
-      expect(res).toEqual({ imported: 0, skipped: 1 });
+      expect(res).toEqual(counts(0, { strand: 1 }));
       expect(pushed).toEqual([]);
     });
 
@@ -312,7 +319,7 @@ describe('inventory store (direct-Dexie stock mutators)', () => {
       const first = await strip();
       expect(first).toHaveLength(3);
       const res = await inv.upsertImport(file, app);
-      expect(res).toEqual({ imported: 3, skipped: 0 });
+      expect(res).toEqual(counts(3));
       expect(await strip()).toEqual(first);
     });
   });
@@ -391,7 +398,7 @@ describe('inventory store — LWW stamp + remote apply', () => {
     rows = [];
     deletes = [];
     inv = createInventoryStore(db, {
-      onRow: (item) => rows.push(item),
+      onRow: (item) => { rows.push(item); },
       onDelete: (id, lastWriteAt) => deletes.push({ id, lastWriteAt }),
     });
     await inv.boot();
@@ -499,5 +506,213 @@ describe('inventory store — LWW stamp + remote apply', () => {
     await inv.applyRemoteDelete('c');
     expect(rows).toHaveLength(0);
     expect(deletes).toHaveLength(0);
+  });
+});
+
+// #514 — the import result says what really happened: each store-side skip labelled by
+// the guard that caused it, and whether the imported rows reached the cloud.
+describe('upsertImport — skip accounting + cloud outcome (#514)', () => {
+  let db: FieldShoreDB;
+  let app: ApparatusStoreApi;
+  type Push = 'ok' | 'failed' | 'skipped';
+
+  beforeEach(async () => {
+    db = createDB(`test-inv-514-${newId()}`);
+    app = createApparatusStore(db);
+    await app.boot();
+  });
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await db.delete();
+  });
+
+  const row = (id: string, quantity: number, over: Partial<ParsedImportRow> = {}): ParsedImportRow => ({
+    id, apparatus: 'Rescue 2', apparatusId: 'app-rescue-2', type: 'strut', model: 'LS 203', system: 'LongShore', quantity, ...over,
+  });
+  const three = [row('a', 2), row('b', 3), row('c', 4)];
+  const never = () => new Promise<Push>(() => {}); // an RTDB write buffered offline / no ack
+
+  it('labels each store-side skip by its guard: strand vs re-type', async () => {
+    const inv = createInventoryStore(db);
+    await db.inventory.bulkAdd([strut({ id: 'a', quantity: 4 }), strut({ id: 'b', quantity: 1 })]);
+    await inv.boot();
+    inv.setHeld({ a: 3 });
+    const res = await inv.upsertImport(
+      [
+        row('a', 2), // below the 3 held → would strand deployed stock
+        row('b', 2, { type: 'plate', model: undefined, system: undefined, plateId: 'rigid6' }), // re-type
+        row('c', 1),
+      ],
+      app,
+    );
+    expect(res.imported).toBe(1);
+    expect(res.skipped).toEqual({ strand: 1, retype: 1 });
+  });
+
+  it("every push lands → cloud 'synced'", async () => {
+    const inv = createInventoryStore(db, { onRow: async (): Promise<Push> => 'ok' });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'synced', failed: 0, reverted: 0 });
+  });
+
+  it("refused pushes → cloud 'failed' with the count of rows that didn't reach the cloud", async () => {
+    const inv = createInventoryStore(db, { onRow: async (i): Promise<Push> => (i.id === 'a' ? 'ok' : 'failed') });
+    const res = await inv.upsertImport(three, app);
+    expect(res.imported).toBe(3);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 2, reverted: 0 });
+  });
+
+  // Fix round 2 — a push the cloud refuses because it holds a NEWER row (the stale-clock
+  // rule) is rolled back by the RTDB client, which re-raises the cloud row BEFORE it
+  // rejects the write; the state listener's LWW pull-down then overwrites Dexie. That row
+  // is no longer "saved on this device" — the device shows the cloud's value.
+  it("a refused push whose row the cloud's newer value overwrote → 'reverted', not 'failed'", async () => {
+    let inv!: InventoryStoreApi;
+    inv = createInventoryStore(db, {
+      onRow: (i) => {
+        if (i.id !== 'b') return Promise.resolve<Push>('ok');
+        // As the SDK does: the reverted snapshot is raised (the listener's pull-down write
+        // is ISSUED, not awaited) before the write promise rejects.
+        void inv.applyRemoteRow({ ...i, quantity: 9, lastWriteAt: 9_999_999_999_999 });
+        return Promise.resolve<Push>('failed');
+      },
+    });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 0, reverted: 1 });
+    expect((await db.inventory.get('b'))!.quantity).toBe(9); // the cloud's value, by design (LWW)
+  });
+
+  it("a refused push whose row nothing overwrote stays 'failed' (still saved on this device)", async () => {
+    const inv = createInventoryStore(db, { onRow: async (i): Promise<Push> => (i.id === 'b' ? 'failed' : 'ok') });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 1, reverted: 0 });
+    expect((await db.inventory.get('b'))!.quantity).toBe(3);
+  });
+
+  it('a removed row counts as reverted too (a newer cloud tombstone)', async () => {
+    let inv!: InventoryStoreApi;
+    inv = createInventoryStore(db, {
+      onRow: (i) => {
+        if (i.id === 'c') void inv.applyRemoteDelete('c');
+        return Promise.resolve<Push>(i.id === 'c' ? 'failed' : 'ok');
+      },
+    });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 0, reverted: 1 });
+  });
+
+  it('a skipped carrier counts the blank siblings it carried in the same skip (no phantom "merged")', async () => {
+    const inv = createInventoryStore(db);
+    await db.inventory.add(strut({ id: 'p', type: 'plate', model: undefined, system: undefined, plateId: 'rigid6', quantity: 1 }));
+    await inv.boot();
+    // the id row re-types the plate 'p' as a strut; the blank row has the same identity, so
+    // it folds into that carrier — and is dropped with it
+    const res = await inv.upsertImport([row('p', 2), row('', 3)], app);
+    expect(res).toEqual({ imported: 0, skipped: { strand: 0, retype: 2 }, cloud: { status: 'local', failed: 0, reverted: 0 } });
+  });
+
+  it('a held-guard skip of a blank-only aggregate counts every row of that aggregate', async () => {
+    const inv = createInventoryStore(db);
+    await db.inventory.add(strut({ id: 'a', quantity: 4 }));
+    await inv.boot();
+    inv.setHeld({ a: 3 });
+    const res = await inv.upsertImport([row('', 1), row('', 1)], app); // sums to 2 < 3 held
+    expect(res.skipped).toEqual({ strand: 2, retype: 0 });
+  });
+
+  it("a push still unsettled at the settle bound → cloud 'pending'", async () => {
+    const inv = createInventoryStore(
+      db,
+      { onRow: async (i): Promise<Push> => (i.id === 'a' ? 'ok' : never()) },
+      { isOnline: () => true, cloudSettleMs: 20 },
+    );
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'pending', failed: 0, reverted: 0 });
+  });
+
+  it("offline → cloud 'pending' without waiting out the settle bound", async () => {
+    const inv = createInventoryStore(db, { onRow: never }, { isOnline: () => false, cloudSettleMs: 60_000 });
+    const t0 = Date.now();
+    const res = await inv.upsertImport(three, app);
+    expect(Date.now() - t0).toBeLessThan(1_000);
+    expect(res.cloud).toEqual({ status: 'pending', failed: 0, reverted: 0 });
+    expect(res.imported).toBe(3);
+  });
+
+  it("no cloud for this bucket (every push 'skipped') → 'local', even offline", async () => {
+    const inv = createInventoryStore(db, { onRow: async (): Promise<Push> => 'skipped' }, { isOnline: () => false });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'local', failed: 0, reverted: 0 });
+  });
+
+  it("nothing imported, so nothing pushed → 'local' (never claims the cloud got nothing)", async () => {
+    const inv = createInventoryStore(db, { onRow: async (): Promise<Push> => 'ok' });
+    await db.inventory.add(strut({ id: 'a', quantity: 4 }));
+    await inv.boot();
+    inv.setHeld({ a: 3 });
+    const res = await inv.upsertImport([row('a', 1)], app);
+    expect(res).toEqual({ imported: 0, skipped: { strand: 1, retype: 0 }, cloud: { status: 'local', failed: 0, reverted: 0 } });
+  });
+
+  it('a push that throws synchronously counts as failed; the import still resolves with the rows saved', async () => {
+    const inv = createInventoryStore(db, {
+      onRow: (i) => {
+        if (i.id === 'b') throw new Error('boom');
+        return Promise.resolve<Push>('ok');
+      },
+    });
+    const res = await inv.upsertImport(three, app);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 1, reverted: 0 });
+    expect(await db.inventory.count()).toBe(3);
+  });
+
+  it('a failing post-commit step never rejects the import: the committed rows are reported, not "Nothing was saved"', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(app, 'boot').mockRejectedValue(new Error('roster read failed'));
+    const inv = createInventoryStore(db, { onRow: async (): Promise<Push> => 'ok' });
+    const res = await inv.upsertImport([row('', 2, { apparatus: 'Engine 9', apparatusId: '' })], app); // mints a rig → apparatus.boot()
+    expect(res.imported).toBe(1);
+    expect(res.cloud).toEqual({ status: 'synced', failed: 0, reverted: 0 });
+    expect(await db.inventory.count()).toBe(1);
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('a failed mirror reload pushes NOTHING (the mirror is stale) and counts every imported row as failed', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const pushed: InventoryItem[] = [];
+    const inv = createInventoryStore(db, {
+      onRow: async (i): Promise<Push> => {
+        pushed.push(i);
+        return 'ok';
+      },
+    });
+    await db.inventory.add(strut({ id: 'a', quantity: 2 })); // in the mirror at quantity 2
+    await inv.boot();
+    vi.spyOn(db.inventory, 'toArray').mockRejectedValue(new Error('read failed'));
+    const res = await inv.upsertImport([row('a', 5), row('n', 1)], app);
+    expect(res.imported).toBe(2);
+    expect(pushed).toEqual([]); // never the stale quantity-2 row
+    expect(res.cloud).toEqual({ status: 'failed', failed: 2, reverted: 0 });
+    expect((await db.inventory.get('a'))!.quantity).toBe(5); // durable all the same
+    expect(warn).toHaveBeenCalled();
+  });
+
+  it('a failed apparatus reload never pushes the stale roster (it would drop the new rig in the cloud)', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(app, 'boot').mockRejectedValue(new Error('roster read failed'));
+    const pushRoster = vi.spyOn(app, 'pushRoster');
+    const inv = createInventoryStore(db);
+    await inv.upsertImport([row('', 2, { apparatus: 'Engine 9', apparatusId: '' })], app);
+    expect(pushRoster).not.toHaveBeenCalled();
+  });
+
+  it('a mirror reload that fails after commit counts the unpushable rows as not reaching the cloud', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const inv = createInventoryStore(db, { onRow: async (): Promise<Push> => 'ok' });
+    vi.spyOn(db.inventory, 'toArray').mockRejectedValue(new Error('read failed')); // boot() reads the table
+    const res = await inv.upsertImport(three, app);
+    expect(res.imported).toBe(3);
+    expect(res.cloud).toEqual({ status: 'failed', failed: 3, reverted: 0 });
+    expect(warn).toHaveBeenCalled();
   });
 });

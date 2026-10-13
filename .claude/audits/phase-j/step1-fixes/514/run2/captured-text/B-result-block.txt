@@ -1,0 +1,25 @@
+# Variant B (criterion 1, stale-clock rule rejection: one REVERTED row + one NEW row that lands)  [fix rounds 2+3 build]
+# file: csv/variant-B-stale-clock.csv (283 bytes, in-page SHA-256 == shasum cbd19947...e49d)
+#   <N1>,Engine 1,<RID>,Strut,LS 304,Gold,,,,5     <- N1 = inv-1c1a85b0-a185-4c61-bdd4-ab621ef88a85, cloud lastWriteAt PATCHed to 9999999999999 (owner token) before the import
+#   ,Engine 1,<RID>,Plate,,,rubber4,,,1            <- new plate row
+PRECONDITION (read right before the real click on 'Import 2 rows'): IDB N1 = [qty 2, lastWriteAt 9999999999999]; store mirror agrees (the device pulled the future-stamped cloud row down); Date.now() = 1791869783870 (< 9999999999999).
+heading (h2.fs-import-h): "Import complete"
+lines (each its own <p>, in order):
+  1. 2 rows imported.                                                                         class ""  color rgb(240, 239, 236)  (not warn)
+  2. 1 row didn't reach the cloud — this device now shows the cloud's value for it.           class "fs-import-result-warn"  color rgb(230, 190, 85)  (AMBER)
+  3. Other rows were saved on this device and in the cloud.                                   class ""  color rgb(240, 239, 236)  (not warn)
+NO line starts "Saved on this device —". footer absent; body Done present.
+RECORDER TIMELINE (capture-phase click on 'Import 2 rows' = t0; 15 ms IndexedDB poller on N1 + inventoryStore subscription + MutationObserver on the result block):
+  t=0    click
+  t=27   idb    N1 [5, 1791869786298]      <- the import committed (imported value 5, stamp = now)
+  t=28   mirror N1 [5, 1791869786298]
+  t=93   mirror N1 [2, 9999999999999]      <- RTDB rolled the refused write back; LWW pull-down put the cloud's row back
+  t=96   idb    N1 [2, 9999999999999]
+  t=102  result block rendered (the 3 lines above)
+  t=104  idb-at-result N1 [2, 9999999999999]
+  => the revert landed in IndexedDB (t=96) BEFORE the result rendered (t=102) and the verdict read it as 'reverted', not 'failed'.
+NUMBERS for the reverted row N1 (LS 304): imported 5 -> device (IndexedDB + store mirror + Inventory screen) 2 @ 9999999999999 -> cloud (REST) 2 @ 9999999999999.
+  Inventory screen after Done (B-USERVIEW shot): LS 304 = 2/2 (NOT 5); 4" Rubber Base 1/1; LS 203 0/2 'all 2 deployed'; 6" Rigid Base 2/2.
+NEW row rubber4: id inv-d4a42928-6a99-47ce-9a7b-85b8c065d2d7, qty 1 @ 1791869786298 -- on the device (IDB) AND in the cloud (REST rest/B-after-inventory.json). The landed row persisted.
+CLOUD (REST) after: N1 LS 304 qty 2 @ 9999999999999 (unchanged by the import), rubber4 qty 1 landed, S/P unchanged.
+diagnostics/sync (REST rest/B-diagnostics-full.json): 1 entry, event state-write-failed, path orgs/<dept>/inventory/<N1>, reason "Error: PERMISSION_DENIED: Permission denied".

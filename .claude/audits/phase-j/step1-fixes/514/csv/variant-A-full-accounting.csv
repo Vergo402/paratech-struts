@@ -1,0 +1,7 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+inv-f0bd2e08-1441-412a-b723-dd1586500b89,Engine 1,app-1bc72ee0-13e4-4903-993d-338446a4c517,Strut,LS 203,Gold,,,,1
+inv-b11878ba-6b09-4885-9330-2ac46a074e74,Engine 1,app-1bc72ee0-13e4-4903-993d-338446a4c517,Strut,LS 406,Gold,,,,3
+,Engine 1,app-1bc72ee0-13e4-4903-993d-338446a4c517,Strut,LS 304,Gold,,,,2
+,,,,,,,,,
+,Engine 1,app-1bc72ee0-13e4-4903-993d-338446a4c517,Strut,LS 203,Gold,,,,two
+,Engine 1,app-1bc72ee0-13e4-4903-993d-338446a4c517,Strut,LS 203,Gold,,,,x

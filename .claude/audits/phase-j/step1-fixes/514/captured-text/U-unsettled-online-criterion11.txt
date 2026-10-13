@@ -1,0 +1,9 @@
+# "Unsettled-online" run (criterion 11 + the 4 s window). csv/variant-U-unsettled-online-new-swivel6.csv (ONE new row: Engine 1 / Plate / swivel6 / qty 1; 168 bytes, sha256 c8b13bcf...dbdcf)
+# PREMISE CHECK (separate evals): before: syncStatusStore.online=true, .info/connected=true, navigator.onLine=true.
+#   after fb.goOffline(fb.rtdb) ALONE (no 'offline' event; +1.2 s): syncStatusStore.online=TRUE (still), .info/connected=FALSE, navigator.onLine=true  -> the app believes it is online but the SDK buffers: the unsettled case.
+# Drive (one browser_batch, no model latency): real click on 'Import 1 row' -> screenshot -> key Escape -> DOM read -> wait -> screenshot/DOM -> wait 3 s -> screenshot/DOM.
+t=~0.06 s  screenshot U-01: header shows the caption "Importing…" immediately left of a greyed, DISABLED "Cancel"; footer Import button greyed with "Importing…" beside it.
+t=66 ms    DOM after Escape: dialog still open (dialogOpenAfterEscape=true), Step 4 of 4, Cancel {text:'Cancel', disabled:true, aria-describedby:'fs-import-cancel-reason'}, caption "Importing…", footer buttons Back(enabled) + 'Import 1 row'(disabled), result NOT shown.
+t=1131 ms  DOM: dialogOpen true, Cancel disabled, caption "Importing…", result not shown (screenshot U-02).
+t=4170 ms  result shown (screenshot U-03). Recorder (MutationObserver): click t=0; caption+disabled Cancel t=7 ms; result (caption gone, Cancel->'Done' enabled, footer gone) t=4028 ms  == the 4000 ms CLOUD_SETTLE_MS bound + ~28 ms.
+result block: heading "Import complete"; lines: ["1 row imported.", "Saved on this device — will sync to the cloud when you reconnect."]  (no warn class; both text-align left)

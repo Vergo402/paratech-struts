@@ -1,0 +1,12 @@
+# Variant G = phone width (viewport emulated 375x812, Android UA, 5 touch points), Settings > Data management. csv/variant-G-mobile-phone-width-all-lines-plus-amber.csv (679 bytes, sha256 50e27b3f...de7f)
+# rows: S strand-skip, P(as Strut LS 304) retype-skip, N1 (LS 304, id inv-95e758d2-…, STILL stamped 9999999999999 in the cloud from variant B -> its push is rejected), blank LS 610 qty 3 (existing row), 1 blank, "two" (flagged), "x" (skipped by me). Step 4 button 'Import 4 rows'.
+heading: "Import complete"
+lines:
+  1. 2 rows imported.
+  2. 1 skipped — would strand deployed stock.
+  3. 1 skipped — type doesn't match the item already on the rig.        (wraps to 2 lines, h=41px)
+  4. 1 row not imported — still flagged to fix.
+  5. 1 row skipped by you.
+  6. 1 blank row ignored.
+  7. Saved on this device — 1 row didn't reach the cloud.               (class fs-import-result-warn, rgb(230,190,85) amber, wraps to 2 lines)
+block width 319 px; documentElement.scrollWidth 375 == innerWidth 375 -> NO horizontal scroll; lines text-align left; heading + Done centered.

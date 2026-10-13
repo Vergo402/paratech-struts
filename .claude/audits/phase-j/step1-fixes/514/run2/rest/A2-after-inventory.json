@@ -1,0 +1,59 @@
+{
+    "inv-1c1a85b0-a185-4c61-bdd4-ab621ef88a85": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-1c1a85b0-a185-4c61-bdd4-ab621ef88a85",
+        "lastWriteAt": 9999999999999,
+        "model": "LS 304",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-1f35d2e8-4a3c-4f0b-a2a4-a936c71b62ee": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-1f35d2e8-4a3c-4f0b-a2a4-a936c71b62ee",
+        "lastWriteAt": 1791869862420,
+        "plateId": "angle3x4",
+        "quantity": 1,
+        "type": "plate"
+    },
+    "inv-6a5717d7-ea87-49b5-8cb6-d5ff9483df05": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-6a5717d7-ea87-49b5-8cb6-d5ff9483df05",
+        "lastWriteAt": 1791869972388,
+        "model": "LS 610",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33",
+        "lastWriteAt": 1791869433259,
+        "plateId": "rigid6",
+        "quantity": 2,
+        "type": "plate"
+    },
+    "inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612",
+        "lastWriteAt": 1791869426204,
+        "model": "LS 203",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-d4a42928-6a99-47ce-9a7b-85b8c065d2d7": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8",
+        "id": "inv-d4a42928-6a99-47ce-9a7b-85b8c065d2d7",
+        "lastWriteAt": 9999999999999,
+        "plateId": "rubber4",
+        "quantity": 1,
+        "type": "plate"
+    }
+}

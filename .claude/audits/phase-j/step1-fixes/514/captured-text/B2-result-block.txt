@@ -1,0 +1,18 @@
+# Variant B2 (stale-clock, PLURAL). csv/variant-B2-stale-clock-plural.csv: N1 (LS 304 id inv-95e758d2-…, 2 -> 6), N2 (LS 406 id inv-d6633a17-…, 4 -> 7), new Plate angle3x4 qty 1. 399 bytes, sha256 c63cd105...7e4c
+# Setup: N2's cloud lastWriteAt PATCHed to 9999999999999 (device pulled it down); N1 was already stamped 9999999999999 from B. Pre-import IDB: N1 {q2, w9999999999999}, N2 {q4, w9999999999999}.
+# Step 4 button 'Import 3 rows'.
+heading: "Import complete"
+lines:
+  1. 3 rows imported.
+  2. Saved on this device — 2 rows didn't reach the cloud.      [class fs-import-result-warn, color rgb(230,190,85) amber]
+timing: click t=0; caption t=3 ms; result t=71 ms.
+OBSERVER TIMELINE (15 ms IndexedDB poller + inventoryStore.subscribe; ms after the click; w = lastWriteAt):
+  t=15  idb    N1 {q6, w1791867756957}  N2 {q7, w1791867756957}        <- the IMPORT'S values are committed on the device
+  t=16  mirror N1 {q6}                  N2 {q7}
+  t=24  mirror                          N2 {q4, w9999999999999}        <- N2 REVERTED to the cloud's value (rejected optimistic write rolled back, listener re-delivers the newer cloud row, LWW pull-down applies it)
+  t=32  idb                             N2 {q4, w9999999999999}
+  t=58  mirror N1 {q2, w9999999999999}                                  <- N1 REVERTED
+  t=64  idb    N1 {q2, w9999999999999}
+  t=71  RESULT BLOCK shown: "3 rows imported. / Saved on this device — 2 rows didn't reach the cloud."
+FINAL IDB: N1 {q2, w9999999999999}, N2 {q4, w9999999999999}, angle3x4 plate {q1, w1791867756957} (landed on device AND cloud). rows=10.
+=> By the time the result is shown, the two rejected rows no longer hold the imported quantities (6 / 7) on THIS device either; "Saved on this device" is true only for the instant of the Dexie commit (and for the accepted row).

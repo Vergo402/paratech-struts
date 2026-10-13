@@ -1,0 +1,22 @@
+{
+    "sync": {
+        "13d00d54-6c2d-42ea-81f9-6cdaa32631f8": {
+            "event": "state-write-failed",
+            "path": "orgs/c84e6901-2681-4a30-8729-50e958e625bb/inventory/inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791867660887
+        },
+        "47d141a1-547e-455b-8e4d-8590db3657bd": {
+            "event": "state-write-failed",
+            "path": "orgs/c84e6901-2681-4a30-8729-50e958e625bb/inventory/inv-d6633a17-8c74-46a3-b2fc-4d0a0a04e1cb",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791867757022
+        },
+        "98b1afd0-0eb9-40e6-b8a6-b529452d0d94": {
+            "event": "state-write-failed",
+            "path": "orgs/c84e6901-2681-4a30-8729-50e958e625bb/inventory/inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc",
+            "reason": "Error: PERMISSION_DENIED: Permission denied",
+            "ts": 1791867757014
+        }
+    }
+}

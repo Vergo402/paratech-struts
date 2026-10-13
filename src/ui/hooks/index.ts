@@ -6,7 +6,7 @@ export { useShorePoints } from './useShorePoints';
 export { useInventory } from './useInventory';
 export { useApparatus, type ApparatusApi } from './useApparatus';
 export { useCustomTitles, type CustomTitlesApi } from './useCustomTitles';
-export { useInventoryActions, type InventoryActionsApi, type ImportOutcome } from './useInventoryActions';
+export { useInventoryActions, type InventoryActionsApi, type ImportOutcome, type ImportResult } from './useInventoryActions';
 // Pure CSV parse/validate helpers for the 4-step import flow — re-exported through
 // the hooks seam so ui/* never imports @data directly (invariant 3).
 export {

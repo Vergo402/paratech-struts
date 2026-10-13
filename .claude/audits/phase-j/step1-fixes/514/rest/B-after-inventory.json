@@ -1,0 +1,88 @@
+{
+    "inv-2fb3e616-bdfb-4a5a-aafe-1541a7555ce1": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-2fb3e616-bdfb-4a5a-aafe-1541a7555ce1",
+        "lastWriteAt": 1791867534129,
+        "plateId": "swivel6",
+        "quantity": 1,
+        "type": "plate"
+    },
+    "inv-3a3f0eb8-caad-4d0f-973e-917a0609f01c": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-3a3f0eb8-caad-4d0f-973e-917a0609f01c",
+        "lastWriteAt": 1791867438587,
+        "model": "LS 1016",
+        "quantity": 3,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-8ab814cf-7f40-4359-873e-69e193dcc6f2": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-8ab814cf-7f40-4359-873e-69e193dcc6f2",
+        "lastWriteAt": 1791867595701,
+        "plateId": "hinged6",
+        "quantity": 1,
+        "type": "plate"
+    },
+    "inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-95e758d2-a98b-4c43-a8c1-f755b7b596fc",
+        "lastWriteAt": 9999999999999,
+        "model": "LS 304",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-ae73aba4-1fec-4878-bbcc-2771b2c43337": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-ae73aba4-1fec-4878-bbcc-2771b2c43337",
+        "lastWriteAt": 1791867660827,
+        "plateId": "rubber4",
+        "quantity": 1,
+        "type": "plate"
+    },
+    "inv-b11878ba-6b09-4885-9330-2ac46a074e74": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-b11878ba-6b09-4885-9330-2ac46a074e74",
+        "lastWriteAt": 1791867018627,
+        "plateId": "rigid6",
+        "quantity": 2,
+        "type": "plate"
+    },
+    "inv-d6633a17-8c74-46a3-b2fc-4d0a0a04e1cb": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-d6633a17-8c74-46a3-b2fc-4d0a0a04e1cb",
+        "lastWriteAt": 1791867438587,
+        "model": "LS 406",
+        "quantity": 4,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-f0bd2e08-1441-412a-b723-dd1586500b89": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-f0bd2e08-1441-412a-b723-dd1586500b89",
+        "lastWriteAt": 1791867006019,
+        "model": "LS 203",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    },
+    "inv-f286bb5e-eac7-452c-a712-cb016a22325b": {
+        "apparatus": "Engine 1",
+        "apparatusId": "app-1bc72ee0-13e4-4903-993d-338446a4c517",
+        "id": "inv-f286bb5e-eac7-452c-a712-cb016a22325b",
+        "lastWriteAt": 1791867358932,
+        "model": "LS 610",
+        "quantity": 2,
+        "system": "LongShore",
+        "type": "strut"
+    }
+}

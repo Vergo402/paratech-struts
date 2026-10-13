@@ -1,0 +1,9 @@
+# Variant C (OFFLINE). csv/variant-C-offline-new-hinged6.csv (ONE new row: Engine 1 / Plate / hinged6 / qty 1; 168 bytes, sha256 27846b35...ada1)
+# Offline set at Step 4: fb.goOffline(fb.rtdb); window.dispatchEvent(new Event('offline')).  Separate eval (+0.8 s): syncStatusStore.online=FALSE, .info/connected=false, navigator.onLine=true.
+# Real click on 'Import 1 row'. Recorder: click t=0; caption 'Importing…' + Cancel disabled t=8 ms; RESULT t=24 ms (NO 4 s wait).
+heading: "Import complete"
+lines (each its own <p>):
+  1. 1 row imported.
+  2. Saved on this device — will sync to the cloud when you reconnect.
+(no warn class; text-align left; Cancel became 'Done' enabled; footer gone)
+(shot C-00 is a screenshot frame captured immediately after the click that still shows the in-flight 'Importing…' state -- the pane's screenshot lags the DOM by a frame; shot C-RESULT is the settled result.)

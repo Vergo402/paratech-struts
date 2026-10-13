@@ -1,0 +1,7 @@
+# ids read from the app store (inventoryStore.store.getState().rows), NOT via an Export download (a download needs Alex's permission)
+DEPT=4ed6f8b4-b168-423a-ace8-a5664a3811f1
+UID(member, admin role id "admin")=V9Yqlnq6a9vqIcHZJhHXNr2lcqhU
+RIG=Engine 1
+RID=app-a67f6b29-cf33-4c99-ab4f-2de8dc366ba8
+S=inv-ba0c3256-3af7-4d9c-8b75-a70239ff2612   (strut LS 203, quantity 2, held 2 by the Double-T shore point #1 posts 1/2 + 2/2)
+P=inv-ad6ccb0c-d50b-472a-a968-c92c8732ac33   (plate rigid6, quantity 2, held 0)

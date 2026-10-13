@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Sheet } from '@ui/primitives';
-import type { ParsedImportRow } from '@ui/hooks';
+import type { ParsedImportRow, ImportResult } from '@ui/hooks';
 import { download } from '@ui/util/download';
 import { ImportFlow } from './ImportFlow';
 
@@ -20,7 +20,7 @@ export interface ImportExportProps {
   canExport: boolean;
   exportCsv: () => string;
   templateCsv: () => string;
-  importRows: (rows: ParsedImportRow[]) => Promise<{ imported: number; skipped: number }>;
+  importRows: (rows: ParsedImportRow[]) => Promise<ImportResult>;
   /** 'trigger' = one quiet icon button opening the rows in a sheet (Inventory header);
    *  'rows' = the rows inline (Data management page). */
   variant?: 'trigger' | 'rows';

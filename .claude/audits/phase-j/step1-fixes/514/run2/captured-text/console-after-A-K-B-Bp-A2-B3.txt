@@ -1,0 +1,23 @@
+# Console of tab-1 (read with read_console_messages) after variants A, K, B, B plural, A2 literal and B3. NOTE: tab-1 is a shared browser-pane tab, so its buffer still carries RUN-1 residue
+# (everything for dept c84e6901-..., the 400, the 404 and the first 3 AbortErrors); the run-2 boundary is marked below. Pattern/level filters were used for the lists.
+ERROR-LEVEL (onlyErrors) -- the SAME 6 entries before the first import (baseline mark, 01:33) and after B3 (01:41):
+  [error] Failed to load resource: the server responded with a status of 400 (Bad Request)          <- run-1 residue (pre-existing baseline)
+  [error] Uncaught (in promise) AbortError: Transition was skipped                                    <- run-1 residue
+  [error] Uncaught (in promise) AbortError: Transition was skipped                                    <- run-1 residue
+  [error] Uncaught (in promise) AbortError: Transition was skipped                                    <- run-1 residue
+  [error] Failed to load resource: the server responded with a status of 404 (Not Found)             <- run-1 residue (run 1's own wrong-path probe)
+  [error] Uncaught (in promise) AbortError: Transition was skipped                                    <- run-2 (view-transition noise from a full navigation; present BEFORE any import)
+  => NO new error-level entry during any import / flow of this run.
+"FIREBASE" filter (all levels): 9 entries = 4 run-1 residue (dept c84e6901-...) + 5 RUN-2 entries, all level warn, all "set at /orgs/4ed6f8b4-.../inventory/<id> failed: permission_denied":
+  05:36:26.388Z  inv-1c1a85b0-... (N1)       variant B
+  05:37:42.513Z  inv-1c1a85b0-... (N1)       variant B plural
+  05:37:42.518Z  inv-d4a42928-... (N2)       variant B plural
+  05:40:49.965Z  inv-26fa52f1-... (hinged6)  variant B3
+  05:40:49.969Z  inv-d466b220-... (swivel6)  variant B3
+  => exactly the 5 expected permission_denied WARNs (B 1 + B plural 2 + B3 2); none for A, K or A2.
+Filter "FieldShore:" (the store's own 'import saved, but ... failed' warnings): No console logs.   Filter "nhandled": No console logs.
+
+# ---- FINAL READ (01:44, after the extra Bp2 phone-width repeat and the post-restore reload; before teardown) ----
+ERROR-LEVEL: still the SAME 6 entries as the baseline mark (400, 3x AbortError, 404 = run-1 residue; 1 AbortError = run-2 full-navigation view-transition noise present before any import). No new error-level entry from any import, the phone-width run, or the reload.
+"4ed6f8b4" filter: 7 entries, all level warn, all "@firebase/database: FIREBASE WARNING: set at /orgs/4ed6f8b4-.../inventory/<id> failed: permission_denied":
+  5 from the criteria runs (B x1, B plural x2, B3 x2) + 2 from the extra Bp2 repeat (N1, N2 at 05:43:18Z). None for A, K, A2, and NONE from the post-restore reload (the B3 rows pushed up cleanly).
