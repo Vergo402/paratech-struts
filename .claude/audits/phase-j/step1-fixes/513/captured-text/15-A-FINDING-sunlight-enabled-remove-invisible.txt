@@ -1,0 +1,9 @@
+# FINDING (Sunlight theme, ENABLED state): the "Remove <rig>" label is white on white = invisible.
+Where: Inventory, Engine 2 after the strut was returned (strip 2 on hand / 0 deployed / 1 models, row LS 304 2/2), theme Sunlight (Settings > Appearance > Theme > Sunlight), desktop 1024x768.
+DOM: <button type="button" class="fs-button fs-button--tertiary fs-button--destructive fs-button--op">Remove Engine 2</button>  147x56, disabled=false
+Computed: color rgb(255,255,255); own background transparent; effective background rgb(255,255,255); contrast 1:1; border 0; outline none; box-shadow none; opacity 1.
+Token: --danger-text = #FFFFFF in Sunlight (it is the white ink for the filled primary-destructive banner).
+Cause (read from src/ui/primitives/primitives.css:182): `.fs-button--destructive.fs-button--tertiary { color: var(--danger-text); }` has no Sunlight override, so the tertiary variant (text only, no fill) inherits white ink on the white page.
+Scope: NOT specific to #513 - the same primitive/variant is used by "End Operation" on the Operations board, which also has no visible label in Sunlight (compare screenshot 20: the bottom row shows only "Begin Briefing"; dark theme shows a red "End Operation"). But #513's new control is invisible to a user in Sunlight (the theme built for direct sun) whenever it is enabled; the disabled state is black-on-white (legible).
+Suggested fix area: src/ui/primitives/primitives.css:182 - add a [data-theme='sunlight'] override for .fs-button--destructive.fs-button--tertiary (a dark-red/solid danger ink or the outlined treatment), then re-verify End Operation too.
+Evidence: 22-A-FINDING-SUNLIGHT-enabled-Remove-Engine-2-label-is-white-on-white-INVISIBLE.png

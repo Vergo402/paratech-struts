@@ -1,0 +1,29 @@
+{
+  "run": "2026-10-13 04:24 to 04:33 local, branch v4-redesign, emulator harness (fieldshore-emulators + fieldshore-v4-emu :5200), tab http://localhost:5200, 1024x768 pane",
+  "method": "javascript_tool on the live page. Effective background = start at the button itself, walk up compositing alpha layers to the first opaque layer (flagging any background-image and any ancestor opacity < 1). Text colour composited over that background. Contrast = WCAG 2.x relative-luminance ratio. Measured before any hover or press on the button. Theme chosen via Settings > Appearance radio (explicit Sunlight / Light / Dark), data-theme and CSS vars read back in a separate eval each time.",
+  "source_files_mtime_start_and_end": {
+    "src/app/tokens.css": "2026-10-13 04:18:31",
+    "src/ui/primitives/primitives.css": "2026-10-13 04:19:21",
+    "start_end_identical": true
+  },
+  "criteria": {
+    "1_inventory_Remove_Engine_1": {
+      "sunlight": { "theme": "sunlight", "--danger-ink": "#991B1B", "--danger-text": "#FFFFFF", "computed_color": "rgb(153, 27, 27)", "ink_hex": "#991B1B", "effective_bg": "rgb(255, 255, 255)", "effective_bg_hex": "#FFFFFF", "contrast": 8.31, "classes": "fs-button fs-button--tertiary fs-button--destructive fs-button--op", "disabled": false, "rect_px": [144, 56], "opacity_product": 1, "bg_image": "none", "border_width": "0px", "screenshot": "01-SUNLIGHT-inventory-Remove-Engine-1-enabled-991B1B-on-FFFFFF-8.31-to-1.png", "pre_fix_baseline_from_earlier_report": "rgb(255,255,255) on rgb(255,255,255), 1:1" },
+      "light": { "theme": "light", "--danger-ink": "#B91C1C", "--danger-text": "#B91C1C", "computed_color": "rgb(185, 28, 28)", "effective_bg": "rgb(247, 246, 243)", "effective_bg_hex": "#F7F6F3", "contrast": 5.99, "rect_px": [142, 56], "screenshot": "04-LIGHT-inventory-Remove-Engine-1-B91C1C-on-F7F6F3-5.99-to-1.png", "earlier_report": "rgb(185,28,28) on rgb(247,246,243), 5.99:1" },
+      "dark": { "theme": "dark", "--danger-ink": "#F87171", "--danger-text": "#F87171", "computed_color": "rgb(248, 113, 113)", "effective_bg": "rgb(16, 18, 20)", "effective_bg_hex": "#101214", "contrast": 6.79, "rect_px": [142, 56], "screenshot": "07-DARK-inventory-Remove-Engine-1-F87171-on-101214-6.79-to-1.png", "earlier_report": "rgb(248,113,113) (background not recorded)" }
+    },
+    "2_operations_End_Operation": {
+      "sunlight": { "computed_color": "rgb(153, 27, 27)", "ink_hex": "#991B1B", "effective_bg": "rgb(255, 255, 255)", "contrast": 8.31, "classes": "fs-button fs-button--tertiary fs-button--destructive fs-button--op", "rect_px": [127, 56], "screenshot": "02-SUNLIGHT-operations-End-Operation-enabled-991B1B-on-FFFFFF-8.31-to-1.png", "pre_fix_baseline_from_earlier_report": "rgb(255,255,255) on rgb(255,255,255), 127x56" },
+      "light": { "computed_color": "rgb(185, 28, 28)", "effective_bg": "rgb(247, 246, 243)", "contrast": 5.99, "rect_px": [125, 56], "screenshot": "05-LIGHT-operations-End-Operation-B91C1C-on-F7F6F3-5.99-to-1.png", "note": "equals token --danger-ink #B91C1C; no earlier End Operation measurement exists for Light" },
+      "dark": { "computed_color": "rgb(248, 113, 113)", "effective_bg": "rgb(16, 18, 20)", "contrast": 6.79, "rect_px": [125, 56], "screenshot": "08-DARK-operations-End-Operation-F87171-on-101214-6.79-to-1.png", "note": "equals token --danger-ink #F87171; no earlier End Operation measurement exists for Dark" }
+    },
+    "3_destructive_secondary_Delete_on_expanded_Pending_shore_point_card": {
+      "classes": "fs-button fs-button--secondary fs-button--destructive fs-button--op (ShorePointCard.tsx:462, inside .fs-spc-actions)",
+      "sunlight": { "computed_color": "rgb(153, 27, 27)", "effective_bg": "rgb(255, 255, 255)", "contrast": 8.31, "border_raw": "color(srgb 0.6 0.105882 0.105882 / 0.55)", "border_width": "2px", "border_composited": "#C78282", "border_contrast_vs_bg": 3.04, "rect_px": [80, 56], "screenshot": "03-SUNLIGHT-operations-pending-card-Delete-destructive-secondary-991B1B-on-FFFFFF-8.31-to-1-border-3.04.png" },
+      "light": { "computed_color": "rgb(185, 28, 28)", "effective_bg": "rgb(255, 255, 255)", "contrast": 6.47, "border_raw": "color(srgb 0.72549 0.109804 0.109804 / 0.55)", "border_width": "1px", "border_composited": "#D88282", "border_contrast_vs_bg": 2.82, "rect_px": [77, 56], "screenshot": "06-LIGHT-operations-pending-card-Delete-secondary-B91C1C-on-FFFFFF-6.47-to-1.png" },
+      "dark": { "computed_color": "rgb(248, 113, 113)", "effective_bg": "rgb(37, 41, 48)", "effective_bg_hex": "#252930", "contrast": 5.28, "border_raw": "color(srgb 0.972549 0.443137 0.443137 / 0.55)", "border_width": "1px", "border_composited": "#995154", "border_contrast_vs_bg": 2.54, "rect_px": [77, 56], "screenshot": "09-DARK-operations-pending-card-Delete-secondary-F87171-on-252930-5.28-to-1.png" }
+    }
+  },
+  "console": "only 'Uncaught (in promise) AbortError: Transition was skipped' (View Transitions, once per full page load; also seen and ruled unrelated in the earlier #513/#464/#469 runs). No sync-layer, React or Firebase errors.",
+  "not_covered": "Hover/pressed states (tertiary :active swaps to --text-primary); the broadcast token block (--danger-ink #FB8C8C) is not selectable in Appearance (System/Light/Dark/Sunlight only); other destructive tertiary/secondary buttons that share the same CSS rule but were not opened: RoleEditorSheet 'Delete role', MemberEditSheet 'Revoke'."
+}

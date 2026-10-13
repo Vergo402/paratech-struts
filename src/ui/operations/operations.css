@@ -1617,7 +1617,7 @@ button.fs-spc-head {
 .fs-modal-error {
   margin: 0 0 var(--space-2);
   font: var(--type-caption);
-  color: var(--danger-text);
+  color: var(--danger-ink);
 }
 
 /* One-step mode, nothing to deploy: a pending-tinted notice that the card will

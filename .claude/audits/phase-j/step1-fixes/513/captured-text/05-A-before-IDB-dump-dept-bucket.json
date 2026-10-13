@@ -1,0 +1,11 @@
+{
+  "note": "A (localhost:5200) IndexedDB fieldshore-dept-f16450d4-b92a-4c00-8623-b0ebee5d2a84, taken at ~03:55 BEFORE any Remove was confirmed. stores: events 0, inventory 4, meta 1, quarantine 0.",
+  "apparatusIds": {"Engine 1": "app-07bd9109-72bb-479e-808f-cc481e4ec015", "Engine 2": "app-647698b0-c369-43a4-9903-3369d1d3bd5b", "Engine 3": "app-ef7d216e-3582-41e4-b0f8-2f126e68235e"},
+  "inventory": [
+    {"id":"inv-54455300-d37e-4aed-ae81-70487f3e7496","type":"plate","plateId":"rigid6","apparatus":"Engine 1","apparatusId":"app-07bd9109-72bb-479e-808f-cc481e4ec015","quantity":6},
+    {"id":"inv-b04f7fae-99aa-4c7d-aca5-83015d240230","type":"strut","model":"LS 304","apparatus":"Engine 1","apparatusId":"app-07bd9109-72bb-479e-808f-cc481e4ec015","quantity":4},
+    {"id":"inv-dec78f84-7aca-479c-a2f2-4a74ccf07d5d","type":"strut","model":"LS 203","apparatus":"Engine 1","apparatusId":"app-07bd9109-72bb-479e-808f-cc481e4ec015","quantity":2},
+    {"id":"inv-ffc217d9-2e7d-4a8c-a6ee-35d22e7d3f7b","type":"strut","model":"LS 304","apparatus":"Engine 2","apparatusId":"app-647698b0-c369-43a4-9903-3369d1d3bd5b","quantity":2}
+  ],
+  "meta.fieldshore_apparatus_roster": {"value":[{"id":"app-07bd9109-72bb-479e-808f-cc481e4ec015","name":"Engine 1","type":"Engine"},{"id":"app-647698b0-c369-43a4-9903-3369d1d3bd5b","name":"Engine 2","type":"Engine"},{"id":"app-ef7d216e-3582-41e4-b0f8-2f126e68235e","name":"Engine 3","type":"Engine"}],"lastWriteAt":1791877779102}
+}

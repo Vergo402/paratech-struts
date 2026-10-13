@@ -8,6 +8,7 @@ import { EquipmentRow } from './EquipmentRow';
 import { AddEquipmentSheet } from './AddEquipmentSheet';
 import { AddApparatusModal } from './AddApparatusModal';
 import { ImportExport } from './ImportExport';
+import { RemoveRigButton } from './RemoveRigButton';
 
 // The Inventory screen — apparatus-scoped stock, phone-first, composed per craft.md:
 // context row (dept · rig count) with the ONE gold primary action, a department-wide
@@ -176,32 +177,16 @@ export function InventoryScreen() {
       </div>
 
       {rigItems.length === 0 ? (
-        <>
-          <EmptyState
-            variant="first-run"
-            headline={`No equipment on ${activeRig?.name ?? 'this rig'}`}
-            reason={
-              canManage
-                ? 'Add the struts, extensions, or plates this apparatus carries.'
-                : 'This apparatus has no equipment stocked yet.'
-            }
-            action={canManage ? { label: 'Add equipment', onPress: () => setAddEquipOpen(true) } : undefined}
-          />
-          {canManage && (
-            <div className="fs-inv-remove">
-              <Button
-                variant="tertiary"
-                destructive
-                onPress={() => {
-                  void removeApparatus(activeId!);
-                  setSelected(null);
-                }}
-              >
-                Remove {activeRig?.name}
-              </Button>
-            </div>
-          )}
-        </>
+        <EmptyState
+          variant="first-run"
+          headline={`No equipment on ${activeRig?.name ?? 'this rig'}`}
+          reason={
+            canManage
+              ? 'Add the struts, extensions, or plates this apparatus carries.'
+              : 'This apparatus has no equipment stocked yet.'
+          }
+          action={canManage ? { label: 'Add equipment', onPress: () => setAddEquipOpen(true) } : undefined}
+        />
       ) : (
         <div className="fs-inv-list">
           {KIND_GROUPS.map((g) => {
@@ -231,6 +216,15 @@ export function InventoryScreen() {
             );
           })}
         </div>
+      )}
+      {canManage && (
+        <RemoveRigButton
+          rigId={activeId!}
+          rigName={activeRig?.name ?? ''}
+          items={rigItems}
+          onRemove={removeApparatus}
+          onRemoved={() => setSelected(null)}
+        />
       )}
 
       <AddEquipmentSheet

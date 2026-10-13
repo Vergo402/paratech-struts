@@ -1,0 +1,9 @@
+# A (localhost:5200, Admin) /inventory, Engine 1 tab, before any Remove action (get_page_text of <main>)
+QA Dept 513
+3 apparatus
+Add equipment
+14 on hand | 0 deployed | 4 models
+Tabs: Engine 1 (12 items) | Engine 2 (2 items) | Engine 3 (0 items) | +
+STRUTS (2 models): LS 203 26"-36" 2/2 ; LS 304 36"-50" 4/4
+BASE PLATES (1 type): 6" Rigid Base 6/6
+Remove Engine 1

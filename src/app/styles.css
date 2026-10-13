@@ -651,7 +651,7 @@ button.fs-set-row { cursor: pointer; }
 button.fs-set-row:disabled { cursor: default; }
 button.fs-set-row:disabled .fs-set-row-label,
 button.fs-set-row:disabled .fs-set-row-desc { color: var(--text-tertiary); }
-.fs-set-row--danger .fs-set-row-label { color: var(--danger-text); }
+.fs-set-row--danger .fs-set-row-label { color: var(--danger-ink); }
 .fs-set-row--accent .fs-set-row-label { color: var(--accent); }
 .fs-set-row-check { color: var(--accent); }
 .fs-set-row-trail { flex: none; font: var(--type-caption); color: var(--text-secondary); }

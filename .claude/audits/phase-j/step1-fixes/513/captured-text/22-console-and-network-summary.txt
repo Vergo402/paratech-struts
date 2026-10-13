@@ -1,0 +1,10 @@
+# CRITERION 8 - console / network (both devices, whole run)
+Console (read_console_messages, tab-5 = A and tab-6 = B, all levels):
+  [debug] [vite] connecting... / connected.            (HMR websocket; benign)
+  [debug] [vite] hot updated: .../src/ui/inventory/RemoveRigButton.tsx   (the coordinator's round-1/2/3 fixes landing; 4 on B, several on A)
+  [info]  Download the React DevTools ...               (dev banner)
+  [error] Uncaught (in promise) AbortError: Transition was skipped      x6 on A, x1 on B - one per full page load / location.assign (View Transitions API; also reported by the #469 and #464 QA runs as unrelated)
+Nothing from the sync layer: no PERMISSION_DENIED, no rejected write, no Firebase/IDB error, no React error/warning, no "Couldn't remove" thrown to console (the race rejection is handled inside the dialog).
+UI never showed a sync-failure/unsynced banner on either device.
+Writes proven by owner REST reads instead of the (write-only websocket) network log: inventory tombstones, apparatus roster, event log (rest/*.json).
+Network buffer: the pane keeps only the latest page load (the last 200 of 500 retained requests were all 200 OK / 204; Auth emulator lookups 200). Earlier requests were already dropped (6911 dropped) so a full-run network audit is not possible; relied on REST + UI state.

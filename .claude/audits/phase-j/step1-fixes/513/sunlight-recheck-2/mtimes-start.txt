@@ -1,0 +1,7 @@
+# #513 Sunlight re-check 2 (error/alert text via --danger-ink) -- mtimes at start (04:47:35)
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/primitives/primitives.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/admin/admin.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/operations.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/inventory/inventory.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/app/styles.css
+04:18:31  /Users/alex/Developer/paratech-struts/fieldshore/src/app/tokens.css

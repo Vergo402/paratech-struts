@@ -1,0 +1,8 @@
+{
+  "criterion": "3: .fs-gate.fs-gate--over-capacity (WarningGate use='over-capacity', RecommendationCard.tsx) in Quick Find result sheet",
+  "how_reached": "Signed in as A on /quickfind: 3 ft 6 in (42\") + estimated load 150000 lb -> Find Struts -> 'LS 203 + 12\" extension' card, badge 'Over capacity', gate 'Load exceeds rated capacity at the 4:1 safety factor - this strut cannot be deployed for this opening.' (the sheet also shows the .fs-gate--disclaimer variant, which has border-left:none and secondary text and is NOT what the sweep targeted). Light/Dark by dataset.theme flip with the sheet still open (1 s settle).",
+  "kind": "NON-TEXT marks (3:1 is the WCAG 1.4.11 bar; Sunlight contract is 7:1): border-left 3px and the warning glyph svg (stroke = currentColor = --danger-ink). Caveat text uses --text-primary (unchanged by the sweep).",
+  "sunlight": {"borderLeft": "rgb(153, 27, 27) 3px solid = #991B1B", "glyph": "rgb(153, 27, 27) = #991B1B", "effectiveBg": "#FFFFFF (div.fs-card ... is-gated)", "ratio_nonText": 8.31, "caveatText": {"hex": "#000000", "ratio": 21}, "overCapacityBadge": {"fg": "#FFFFFF", "bg": "#B91C1C", "ratio": 6.47, "note": "on-banner pair (--danger-text on --danger-bg), not part of this sweep"}},
+  "light":    {"borderLeft": "#B91C1C", "glyph": "#B91C1C", "effectiveBg": "#FFFFFF", "ratio_nonText": 6.47, "caveatText": {"hex": "#1A1A1A", "ratio": 17.4}, "overCapacityBadge": {"fg": "#B91C1C", "bg": "#FEF2F2", "ratio": 5.91}},
+  "dark":     {"borderLeft": "#F87171", "glyph": "#F87171", "effectiveBg": "#252930", "ratio_nonText": 5.28, "caveatText": {"hex": "#F0EFEC", "ratio": 12.7}, "overCapacityBadge": {"fg": "#F87171", "bg": "#2A1416", "ratio": 6.27}}
+}

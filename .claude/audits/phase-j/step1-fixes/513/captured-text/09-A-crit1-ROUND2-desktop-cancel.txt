@@ -1,0 +1,4 @@
+# CRITERION 1 re-check on the ROUND-2 build (RemoveRigButton.tsx mtime 03:56:32), desktop 1024x768, fresh page load
+Dialog identical to round 1: title "Remove Engine 1?", body "3 items (12 units) stocked on Engine 1 will be removed from inventory. This cannot be undone.", Cancel + Remove Engine 1, focus on Cancel.
+Cancel path MutationObserver log: [(no dialog)] -> [open text] -> [(no dialog)] ; anyNonsenseText=false (the round-1 flash "0 items (0 units) stocked on will be removed" does NOT occur).
+After Cancel: main.innerText identical to pre-open snapshot (mainUnchanged=true); strip "14 on hand 0 deployed 4 models"; focus back on the "Remove Engine 1" button.

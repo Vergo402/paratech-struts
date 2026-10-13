@@ -1,0 +1,4 @@
+# CRITERION 7 / 3 - disabled state at phone width 375x812 (mobile preset: UA Pixel 8, 5 touch points), dark theme, build mtime 04:00:52
+Engine 2 with 1 unit deployed: strip "1 on hand 1 deployed 1 models".
+Button : "Remove Engine 2" disabled, 145x56 at (115,408).
+Sub-line: "Return deployed equipment first." single line (height 16, line-height 16.2), 179x16 at (98,468), right edge 277 (< 375), horizontally centred under the button, ABOVE the bottom nav, elementFromPoint at its centre = the sub-line span itself (nothing covers it). No horizontal scroll (scrollWidth 375 = innerWidth).

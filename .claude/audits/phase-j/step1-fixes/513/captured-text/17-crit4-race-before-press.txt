@@ -1,0 +1,5 @@
+# CRITERION 4 - race, final build (RemoveRigButton.tsx mtime 04:00:52), desktop. A = Admin owner (localhost:5200), B = Default member (127.0.0.1:5200), both in dept QA Dept 513, op "QA Op 513", shore point #1 Pending.
+1. A on Inventory > Engine 2 (LS 304 x2, nothing deployed; strip 2 on hand / 0 deployed / 1 models): opened "Remove Engine 2?" - body "1 item (2 units) stocked on Engine 2 will be removed from inventory. This cannot be undone." (singular forms), focus on Cancel. Underlying button enabled, no sub-line. LEFT OPEN (not pressed).
+2. B (Default role) on Operations: point #1 Pending -> Assign Equipment -> LongShore LS 304 "Equipment located on: Engine 2" -> Deploy. B's card moved to the Assigned lane.
+3. Back on A (dialog still open, no reload) - A ingested B's deploy:
+   strip behind the modal: "1 on hand 1 deployed 1 models"; row "LS 304 36"-50" 1 deployed - 1 /2"; underlying "Remove Engine 2" button disabled=true with sub-line "Return deployed equipment first."; the dialog text is unchanged (frozen on the rig it opened for) and its destructive button is still enabled.

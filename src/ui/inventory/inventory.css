@@ -369,8 +369,18 @@
 
 .fs-inv-remove {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   margin-top: var(--space-3);
+  text-align: center;
+}
+
+/* Remove-rig confirm: a store rejection shown inside the modal (same idiom as
+   operations.css / admin.css — repeated so this chunk stands alone). */
+.fs-modal-error {
+  margin: 0 0 var(--space-2);
+  font: var(--type-caption);
+  color: var(--danger-ink);
 }
 
 /* ---- data rows (ImportExport) — one grouped card, rows hairline-separated

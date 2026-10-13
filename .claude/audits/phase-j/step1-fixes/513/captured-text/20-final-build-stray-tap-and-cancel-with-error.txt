@@ -1,0 +1,7 @@
+# FINAL BUILD (RemoveRigButton.tsx mtime 04:00:52) - extra adversarial checks on the round-3 line `if (!open || !target) return;` in confirm()
+## Cancel with the alert showing (race error present, then Cancel)
+MutationObserver log: open text -> (open + alert text) -> [closed] same text WITHOUT the alert line (error cleared on close) -> (no dialog). No nonsense text ("0 items", "undefined", "stocked on will") at any point.
+## Stray tap on the fading destructive button
+Script (one eval): open the Remove Engine 2 dialog; click Cancel; 70 ms later click the destructive "Remove Engine 2" button.
+Observed at the stray click: dialog data-state = "closed" (fading), the destructive button was STILL in the DOM (destructiveStillInDomAt70ms=true), so the tap really did land on the fading button.
+Outcome (read in a separate eval after 2 s): rig NOT removed - tabs [Engine 2 · 2 items], strip "2 on hand 0 deployed 1 models", no "No apparatus yet" state; owner REST: inv-ffc217d9 = live qty 2, roster = ["Engine 2"]; the 3 Engine 1 ids remain tombstones from crit 2. => the gate on `open` works.

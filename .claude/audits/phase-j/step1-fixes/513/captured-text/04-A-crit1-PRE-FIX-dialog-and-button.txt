@@ -1,0 +1,11 @@
+# CRITERION 1 - captured on the PRE-FIX build (RemoveRigButton.tsx mtime 03:37:35; dialog opened 03:52:48, before the coordinator's "freeze the rig at open" fix landed). Re-run on the fixed build: see 1*-POST-FIX files.
+## Remove button (A, Engine 1 tab, desktop 1024x768)
+<button type="button" class="fs-button fs-button--tertiary fs-button--destructive fs-button--op">Remove Engine 1</button>
+rect x=551 y=534 w=142 h=56 ; color rgb(248,113,113) ; background transparent ; border none ; font 14px/500 ; text-align center
+NOT inside .fs-inv-list and NOT inside a .fs-inv-card ; 24px below the last card ; horizontally centred under the list (btn centre x=622 = list centre x=622)
+strip before: "14 on hand 0 deployed 4 models" ; 3 lines (LS 203 2/2, LS 304 4/4, 6" Rigid Base 6/6)
+## Dialog (role=dialog, aria-modal=true)
+Title: Remove Engine 1?
+Body : 3 items (12 units) stocked on Engine 1 will be removed from inventory. This cannot be undone.
+Buttons: [Cancel] class "fs-button fs-button--secondary fs-button--op" 120x56 ; [Remove Engine 1] class "fs-button fs-button--primary fs-button--destructive fs-button--op" 144x56, text rgb(248,113,113), bg rgb(42,20,22), border 1px red@30%
+document.activeElement = <button class="fs-button fs-button--secondary fs-button--op"><span data-modal-cancel="true">Cancel</span></button> (inside dialog; document.hasFocus() = true)

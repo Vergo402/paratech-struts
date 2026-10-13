@@ -1,0 +1,5 @@
+# Observation (minor, final build 04:00:52): stale error after the blocking condition clears
+After the race alert (A's dialog open, alert showing), B pressed Back > "Return & Step Back" on its shore point (EquipmentReturned). A, without touching its dialog:
+  strip behind the modal = "2 on hand 0 deployed 1 models"; row "LS 304 2/2"; underlying "Remove Engine 2" button ENABLED again, no sub-line;
+  dialog text still = "... This cannot be undone. | Couldn't remove — equipment from this rig is still deployed. | Cancel | Remove Engine 2"  (the alert is stale until the user presses again or closes the dialog; pressing the destructive button again clears it by re-running the removal).
+Not a failure of the criterion; recorded for the orchestrator.

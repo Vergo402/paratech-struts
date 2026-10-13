@@ -1,0 +1,11 @@
+# EXTRA (advisor-requested) - LIGHT theme capture (the accepted mockup is light-themed), final build (RemoveRigButton.tsx mtime 04:00:52)
+Setup: after the last-rig removal, re-added Engine 1 (Add apparatus) and re-imported engine-stock.csv (same sha256 84ce60fa...; "4 rows imported"): Engine 1 = LS 203 x2, LS 304 x4, 6" Rigid Base x6 (3 items / 12 units, same state as the mockup), Engine 2 = LS 304 x2.
+Button (enabled, Light): class fs-button--tertiary fs-button--destructive fs-button--op, 142x56, label rgb(185,28,28) on rgb(247,246,243) => contrast 5.99:1, centred under the last card (outside the card, no divider). => the white-on-white invisible label is SUNLIGHT-ONLY (Light is fine).
+Dialog (Light): title "Remove Engine 1?", body "3 items (12 units) stocked on Engine 1 will be removed from inventory. This cannot be undone.", focus on Cancel.
+  Cancel          : class fs-button--secondary, text rgb(92,92,92), transparent fill, 1px grey border (55%)
+  Remove Engine 1 : class fs-button--primary fs-button--destructive, text rgb(185,28,28), fill rgb(254,242,242) (pale pink), 1px red border (30%) => the "outlined pink" look of the mockup's destructive button.
+  Footer divider  : 1px solid rgba(0,0,0,0.08) above the buttons (the mockup panel has no divider line); close (x) 44x44 top-right (the mockup panel has no x).
+
+# SUNLIGHT dialog (captured now; the earlier Sunlight shots were the disabled state and the step-back dialog)
+Page button behind the scrim: label rgb(255,255,255) on rgb(255,255,255) (invisible), see 22-.
+Dialog: same title/body/focus-on-Cancel. Cancel = black text, 2px black(55%) border, 120x56. "Remove Engine 1" = primary+destructive, SOLID fill rgb(185,28,28) with white text, 2px white(30%) border, 148x56 (readable, ~6:1). So the destructive confirm itself is legible in Sunlight; only the page-level tertiary trigger is not.

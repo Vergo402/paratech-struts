@@ -1,0 +1,7 @@
+# mtimes at end (04:55:16)
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/primitives/primitives.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/admin/admin.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/operations/operations.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/ui/inventory/inventory.css
+04:37:57  /Users/alex/Developer/paratech-struts/fieldshore/src/app/styles.css
+04:18:31  /Users/alex/Developer/paratech-struts/fieldshore/src/app/tokens.css

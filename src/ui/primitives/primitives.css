@@ -105,7 +105,7 @@
   background: currentcolor;
 }
 .fs-badge--dot-accent .fs-badge-dot { background: var(--accent); }
-.fs-badge--dot-danger .fs-badge-dot { background: var(--danger-text); }
+.fs-badge--dot-danger .fs-badge-dot { background: var(--danger-ink); }
 /* warning = a low/approaching-limit signal (orange, the runner status hue). Unlike
    the info tones it colors the TEXT too — a warning outranks a neutral readout. In
    sunlight --status-runner-text is white (on-banner), so the standalone dot + text
@@ -176,10 +176,12 @@
   background: color-mix(in srgb, var(--danger-bg) 85%, var(--danger-text));
 }
 .fs-button--destructive.fs-button--secondary {
-  border-color: color-mix(in srgb, var(--danger-text) 55%, transparent);
-  color: var(--danger-text);
+  border-color: color-mix(in srgb, var(--danger-ink) 55%, transparent);
+  color: var(--danger-ink);
 }
-.fs-button--destructive.fs-button--tertiary { color: var(--danger-text); }
+/* secondary/tertiary are TEXT on the page surface, so they take --danger-ink (--danger-text is the
+   ink on the FILLED primary — white in Sunlight, which vanished on a white page). */
+.fs-button--destructive.fs-button--tertiary { color: var(--danger-ink); }
 /* Disabled = an authored AT-REST state (#433, craft.md §5), not faded-out gold:
    a half-opacity primary read as a muddy half-slab — neither actionable nor
    resting. Solid card fill + secondary ink + hairline inset stroke reads
@@ -292,7 +294,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  border-left: 3px solid var(--danger-text);
+  border-left: 3px solid var(--danger-ink);
   padding: var(--space-2) 0 var(--space-2) var(--space-3);
   font-variant-numeric: tabular-nums;
 }
@@ -305,7 +307,7 @@
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
   flex: none;
-  color: var(--danger-text);
+  color: var(--danger-ink);
   margin-top: 2px;
   stroke-width: var(--icon-stroke-default);
 }
@@ -345,7 +347,7 @@ p.fs-gate--disclaimer {
   width: 22px;
   height: 22px;
   flex: none;
-  border: 2px solid var(--danger-text);
+  border: 2px solid var(--danger-ink);
   border-radius: 4px;
   color: var(--danger-text);
   font-weight: 700;
@@ -472,10 +474,10 @@ p.fs-gate--disclaimer {
 .fs-field-input:focus { border-color: var(--accent); outline: none; }
 .fs-field-input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
 .fs-field-input--invalid,
-.fs-field-input--invalid:focus { border-color: var(--danger-text); }
+.fs-field-input--invalid:focus { border-color: var(--danger-ink); }
 .fs-field-input:disabled { opacity: 0.5; }
 .fs-field-msg { font: var(--type-caption); color: var(--text-secondary); }
-.fs-field-msg--error { color: var(--danger-text); }
+.fs-field-msg--error { color: var(--danger-ink); }
 /* secure-text reveal: toggle sits over the input's trailing edge */
 .fs-field-inputwrap { position: relative; display: flex; }
 .fs-field-inputwrap .fs-field-input { padding-right: 72px; }

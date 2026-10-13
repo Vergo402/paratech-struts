@@ -1,0 +1,12 @@
+# CRITERION 2 - Confirm on the ROUND-2 build (RemoveRigButton.tsx mtime 03:56:32), desktop 1024x768, A = Admin owner
+Pre-confirm main text: QA Dept 513 | 3 apparatus | Add equipment | 14 on hand | 0 deployed | 4 models | Engine 1 (12 items) | Engine 2 (2 items) | Engine 3 (0 items) | STRUTS: LS 203 2/2, LS 304 4/4 | BASE PLATES: 6" Rigid Base 6/6 | Remove Engine 1
+Action: Remove Engine 1 -> dialog -> destructive "Remove Engine 1".
+Post-confirm UI: dialog gone; header "2 apparatus"; tabs [Engine 2 · 2 items (SELECTED)] [Engine 3 · 0 items]; strip "2 on hand 0 deployed 1 models" (was 14/0/4); Engine 2 shows STRUTS 1 model: LS 304 2/2; button now "Remove Engine 2"; focus on that button. Selection moved to the first remaining rig (Engine 2).
+Flash check (MutationObserver on dialog text): [(no dialog)] -> [open text "Remove Engine 1? | 3 items (12 units) stocked on Engine 1 will be removed from inventory. This cannot be undone. | Cancel | Remove Engine 1"] -> [(no dialog)]; anyNonsenseText=false => round-1 exit flash does NOT occur on the Confirm path either.
+IndexedDB (fieldshore-dept-f16450d4-..., table inventory): 1 row (inv-ffc217d9 Engine 2 LS 304 x2); rowsForEngine1ApparatusId (app-07bd9109-...) = 0; none of the 3 Engine 1 line ids present; meta roster = [Engine 2, Engine 3] (lastWriteAt 1791878335485); events 0, quarantine 0.
+Cloud (owner REST, rest/06-*): orgs/<dept>/inventory: inv-54455300-... , inv-b04f7fae-... , inv-dec78f84-... each = {"deleted": true, "id": "<id>", "lastWriteAt": 1791878335518} (tombstones, NOT absent); Engine 2 row inv-ffc217d9-... intact (qty 2, lastWriteAt unchanged 1791877835870).
+orgs/<dept>/apparatus: value = [Engine 2, Engine 3] (Engine 1 gone), lastWriteAt 1791878335485.
+
+# Persistence + peer view
+A after a full page reload (navType=navigate): tabs [Engine 2 · 2 items (SELECTED)] [Engine 3 · 0 items]; strip "2 on hand 0 deployed 1 models"; "2 apparatus"; Engine 1 stays gone.
+B (127.0.0.1:5200, Default member, NO reload, page uptime 467 s) live-updated: tabs [Engine 2 · 2 items] [Engine 3 · 0 items (selected)]; strip "2 on hand 0 deployed 1 models"; "2 apparatus".

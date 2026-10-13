@@ -1,0 +1,5 @@
+# CRITERION 5 - empty rig (Engine 3, 0 items), A = Admin, round-2 build (mtime 03:56:32)
+Before: tab "Engine 3 · 0 items" selected; empty state "No equipment on Engine 3 / Add the struts, extensions, or plates this apparatus carries." + [Add equipment]; below it the Remove button <button class="fs-button fs-button--tertiary fs-button--destructive fs-button--op">Remove Engine 3</button> 145x56, enabled (same control as the stocked case).
+Action: one click on "Remove Engine 3".
+After (2 s later): NO dialog ever opened (MutationObserver log = only "(no dialog)"; dialogEverOpened=false); tabs [Engine 2 · 2 items (SELECTED)]; header "1 apparatus"; strip "2 on hand 0 deployed 1 models" (unchanged: nothing was stocked on Engine 3); Engine 2 shown with LS 304 2/2 and "Remove Engine 2".
+Cloud roster after (owner REST, rest/07-*): see file (Engine 3 gone).

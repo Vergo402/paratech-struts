@@ -54,7 +54,8 @@ describe('apparatus store (meta-JSON roster)', () => {
     await inv.boot();
     // ADR-041: held comes from the folded event log (operationStore pushes it in).
     inv.setHeld({ i1: 2 });
-    await expect(app.removeApparatus('app-1', inv)).rejects.toThrow();
+    // RemoveRigButton keys its "still deployed" copy off this exact text (/deployed equipment/).
+    await expect(app.removeApparatus('app-1', inv)).rejects.toThrow(/has deployed equipment \(L-8 abort\)/);
     expect(app.store.getState().roster).toHaveLength(1);
     expect(await db.inventory.get('i1')).toBeDefined();
   });

@@ -80,7 +80,7 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
   align-items: center;
   gap: 4px;
   font: var(--type-caption);
-  color: var(--danger-text);
+  color: var(--danger-ink);
 }
 
 /* ---- role badges (3 tones; the role NAME carries the meaning — color is decorative, P9) ---- */
@@ -213,7 +213,7 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 
 /* ---- sheets (assign role / role editor) ---- */
 .fs-um-sheet-help { font: var(--type-caption); color: var(--text-tertiary); margin-bottom: var(--space-3); }
-.fs-um-sheet-error { font: var(--type-caption); color: var(--danger-text); margin: var(--space-2) 0; }
+.fs-um-sheet-error { font: var(--type-caption); color: var(--danger-ink); margin: var(--space-2) 0; }
 .fs-um-sheet-foot { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
 
 /* assign-role: a pick list, the current role checked */
@@ -350,7 +350,7 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .fs-al-badge--info { color: var(--status-process-text); background: var(--status-process-bg); }
 .fs-al-badge--good { color: var(--status-secured-text); background: var(--status-secured-bg); }
 .fs-al-badge--warn { color: var(--status-strutset-text); background: var(--status-strutset-bg); }
-.fs-al-badge--danger { color: var(--danger-text); background: color-mix(in srgb, var(--danger-text) 16%, transparent); }
+.fs-al-badge--danger { color: var(--danger-ink); background: color-mix(in srgb, var(--danger-ink) 16%, transparent); }
 .fs-al-badge--accent { color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .fs-al-badge--neutral { color: var(--text-secondary); border: var(--stroke-width) solid var(--surface-stroke); }
 
@@ -360,7 +360,7 @@ button.fs-um-row:focus-visible { outline: 2px solid var(--accent); outline-offse
 .fs-modal-error {
   margin: var(--space-1) 0 var(--space-2);
   font: var(--type-caption);
-  color: var(--danger-text);
+  color: var(--danger-ink);
 }
 
 /* #423 — the invite-code lifecycle section under the Members list */

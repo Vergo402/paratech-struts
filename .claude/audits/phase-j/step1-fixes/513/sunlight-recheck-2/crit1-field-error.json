@@ -1,0 +1,7 @@
+{
+  "criterion": "1 + 4(field): .fs-field-msg--error on /auth (signed out), text = \"That email and password don't match.\" (wrong-password sign-in against a non-existent test account on the Auth emulator; Auth traffic observed going to http://127.0.0.1:9099, not googleapis)",
+  "method": "Sunlight: localStorage.fieldshore_theme='sunlight' + reload (the key the Settings picker writes; the app's own ThemeProvider/pre-paint script applied it, data-theme=sunlight confirmed). Light/Dark: document.documentElement.dataset.theme flipped with the error still rendered (1 s settle, then read).",
+  "sunlight": {"color": "rgb(153, 27, 27)", "hex": "#991B1B", "effectiveBg": "#FFFFFF (div.flex.flex-col.gap-6.p-5, inline var(--surface-bg))", "opacityProduct": 1, "ratio": 8.31, "font": "12px/400", "tokens": {"dangerInk": "#991B1B", "dangerText": "#FFFFFF", "dangerBg": "#B91C1C"}},
+  "light":    {"color": "rgb(185, 28, 28)", "hex": "#B91C1C", "effectiveBg": "#F7F6F3", "opacityProduct": 1, "ratio": 5.99, "tokens": {"dangerInk": "#B91C1C", "dangerText": "#B91C1C"}},
+  "dark":     {"color": "rgb(248, 113, 113)", "hex": "#F87171", "effectiveBg": "#101214", "opacityProduct": 1, "ratio": 6.79, "tokens": {"dangerInk": "#F87171", "dangerText": "#F87171"}}
+}

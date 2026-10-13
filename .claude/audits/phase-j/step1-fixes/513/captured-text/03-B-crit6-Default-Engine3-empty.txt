@@ -1,0 +1,2 @@
+# B (127.0.0.1:5200, Default-role member) /inventory, Engine 3 selected (EMPTY rig)
+JS probe: {"selectedTab":["Engine 3 · 0 items"],"text":"QA Dept 513\n3 apparatus\n14\non hand\n0\ndeployed\n4\nmodels\nEngine 1\n12 items\nEngine 2\n2 items\nEngine 3\n0 items\n\nNo equipment on Engine 3\n\nThis apparatus has no equipment stocked yet.","buttonsInMain":["Engine 112 items","Engine 22 items","Engine 30 items"],"anyRemoveButtonAnywhere":false}

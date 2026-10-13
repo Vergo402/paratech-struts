@@ -1,0 +1,4 @@
+# B (http://127.0.0.1:5200, Default-role member qa513b, joined with invite code) /inventory, Engine 1 selected (stocked, 12 units)
+get_page_text of <main>: QA Dept 513 / 3 apparatus / 14 on hand / 0 deployed / 4 models / tabs Engine 1 (12 items) Engine 2 (2 items) Engine 3 (0 items) / STRUTS 2 models LS 203 2/2, LS 304 4/4 / BASE PLATES 1 type 6" Rigid Base 6/6   (lines loaded from the cloud => B is synced, not merely not-yet-loaded)
+JS probe: {"origin":"http://127.0.0.1:5200","selectedTab":["Engine 1 · 12 items"],"buttonsInMain":["Engine 112 items","Engine 22 items","Engine 30 items"],"mainHasRemoveText":false,"anyRemoveButtonAnywhere":false,"addEquipmentPresent":false,"addApparatusPresent":false}
+Join sheet text: "Joined QA Dept 513 / Your role: Default / You can read everything and run field work. Your Admin can change your role anytime."

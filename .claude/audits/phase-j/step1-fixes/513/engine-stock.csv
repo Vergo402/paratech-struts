@@ -1,0 +1,5 @@
+ID,Apparatus,Apparatus ID,Type,Model,System,Plate ID,Plate Name,Extension Length (in),Quantity
+,Engine 1,,Strut,LS 304,,,,,4
+,Engine 1,,Strut,LS 203,,,,,2
+,Engine 1,,Plate,,,rigid6,,,6
+,Engine 2,,Strut,LS 304,,,,,2

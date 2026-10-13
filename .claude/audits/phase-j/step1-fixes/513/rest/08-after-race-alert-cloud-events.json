@@ -1,0 +1,83 @@
+{
+  "807469fc-9b64-4c8e-8078-52c2110fd10f" : {
+    "account" : {
+      "id" : "3vW5YiZC1hWuBGffGIXVeGxWcoBg",
+      "label" : "QA Driver 513"
+    },
+    "at" : 1791878447749,
+    "by" : "5ca876ca-358c-41b4-bb33-bb387c4f8472",
+    "id" : "807469fc-9b64-4c8e-8078-52c2110fd10f",
+    "inlineDeploy" : false,
+    "multiBuilding" : false,
+    "name" : "QA Op 513",
+    "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+    "receivedAt" : 1791878447857,
+    "type" : "OperationCreated"
+  },
+  "9493b4d4-e0ff-477b-b34e-943aeb1f29a0" : {
+    "at" : 1791878493500,
+    "by" : "5ca876ca-358c-41b4-bb33-bb387c4f8472",
+    "deployedBom" : [ {
+      "inventoryId" : "inv-ffc217d9-2e7d-4a8c-a6ee-35d22e7d3f7b",
+      "model" : "LS 304",
+      "role" : "strut",
+      "source" : "Engine 2",
+      "system" : "LongShore"
+    } ],
+    "id" : "9493b4d4-e0ff-477b-b34e-943aeb1f29a0",
+    "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+    "receivedAt" : 1791878493625,
+    "spId" : "6b45fb44-1753-45d8-8873-7ff15c7b5451",
+    "type" : "EquipmentDeployed"
+  },
+  "9ff458ee-a816-4d00-b7cb-0d085f39342f" : {
+    "at" : 1791878475672,
+    "batchId" : "e547ad0f-3a5f-47ef-aa9d-83789cae42e0",
+    "by" : "5ca876ca-358c-41b4-bb33-bb387c4f8472",
+    "id" : "9ff458ee-a816-4d00-b7cb-0d085f39342f",
+    "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+    "receivedAt" : 1791878475834,
+    "shorePoint" : {
+      "deductions" : {
+        "bottomPlate" : "none",
+        "footerWood" : "none",
+        "headerWood" : "none",
+        "topPlate" : "none"
+      },
+      "division" : "1",
+      "id" : "6b45fb44-1753-45d8-8873-7ff15c7b5451",
+      "label" : "Window 513",
+      "measurementEighths" : 336,
+      "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+      "seq" : 1,
+      "shoreType" : "t-shore",
+      "status" : "pending"
+    },
+    "type" : "ShorePointAdded"
+  },
+  "e1b18fdb-a5ea-4566-b93a-d783420c8320" : {
+    "at" : 1791878784280,
+    "by" : "4c2c6c4a-79c4-4aae-b340-1bb8bdb7c8b6",
+    "deployedBom" : [ {
+      "inventoryId" : "inv-ffc217d9-2e7d-4a8c-a6ee-35d22e7d3f7b",
+      "model" : "LS 304",
+      "role" : "strut",
+      "source" : "Engine 2",
+      "system" : "LongShore"
+    } ],
+    "id" : "e1b18fdb-a5ea-4566-b93a-d783420c8320",
+    "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+    "receivedAt" : 1791878784367,
+    "spId" : "6b45fb44-1753-45d8-8873-7ff15c7b5451",
+    "type" : "EquipmentDeployed"
+  },
+  "ea0f191d-db20-4165-95e6-5d49ae3b2c2c" : {
+    "at" : 1791878638744,
+    "by" : "5ca876ca-358c-41b4-bb33-bb387c4f8472",
+    "id" : "ea0f191d-db20-4165-95e6-5d49ae3b2c2c",
+    "opId" : "6513ae1b-d716-4ea3-ab62-917370d329af",
+    "receivedAt" : 1791878638822,
+    "spId" : "6b45fb44-1753-45d8-8873-7ff15c7b5451",
+    "type" : "EquipmentReturned"
+  }
+}

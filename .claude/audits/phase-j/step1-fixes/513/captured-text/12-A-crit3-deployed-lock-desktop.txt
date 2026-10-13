@@ -1,0 +1,5 @@
+# CRITERION 3 - deployed lock, desktop 1024x768, A = Admin. Build = RemoveRigButton.tsx mtime 04:00:52 (round 3: confirm() additionally gated on `open`; no text/layout change)
+Setup: only Engine 2 holds stock (LS 304 x2). Op "QA Op 513" started (Utilize Pending Card ON); shore point #1 "Window 513" T-Shore 42" ; Assign Equipment -> LongShore LS 304, "Equipment located on: Engine 2" -> Deploy (card moved to Assigned lane).
+Inventory > Engine 2: strip "1 on hand 1 deployed 1 models"; row "LS 304 36"-50" - 1 deployed - 1 /2".
+Button : <button type="button" class="fs-button fs-button--tertiary fs-button--destructive fs-button--op" disabled="">Remove Engine 2</button>  145x56 at (549,355), text colour rgb(155,154,151) (disabled grey), opacity 1
+Sub-line: <span class="fs-button-reason">Return deployed equipment first.</span> sibling inside div.fs-inv-remove, rect 179x16 at (532,415) = directly BELOW the button (button bottom 411), 12px, colour rgb(155,154,151) (--text-secondary), opacity product up the tree = 1, no overflow-clipping ancestors, not inside the button, visible=true.

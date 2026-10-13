@@ -1,0 +1,5 @@
+# CRITERION 7 - Sunlight theme (Settings > Appearance > Theme > Sunlight; was "Dark" before), phone 375x812, Engine 2 with 1 unit deployed, build mtime 04:00:52
+data-theme=sunlight, body background rgb(255,255,255)
+Sub-line "Return deployed equipment first.": 12px/400, colour rgb(0,0,0) on rgb(255,255,255) => contrast 21:1 (computed by WCAG relative luminance in-page). 179x16 at (98,473), single line, unclipped.
+Disabled button "Remove Engine 2": 147x56 at (114,413), text rgb(0,0,0) on white (21:1), light-grey outline, opacity 1. NOTE: in Sunlight the disabled label is black (full contrast), so the disabled look rests on the grey outline + the sub-line; the sub-line is what states the reason and is fully legible.
+Dark-theme comparison (earlier): sub-line and disabled label were rgb(155,154,151) on the dark surface.

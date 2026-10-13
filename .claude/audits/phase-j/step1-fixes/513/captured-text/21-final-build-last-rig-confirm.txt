@@ -1,0 +1,7 @@
+# FINAL BUILD (RemoveRigButton.tsx mtime 04:00:52) - confirm path on the LAST rig (Engine 2: 1 item / 2 units), A, desktop
+Pre: "QA Dept 513 | 1 apparatus | 2 on hand | 0 deployed | 1 models | Engine 2 (2 items) | LS 304 2/2 | Remove Engine 2"
+Action: Remove Engine 2 -> dialog -> destructive "Remove Engine 2".
+Post UI: dialog closed; empty state "No apparatus yet | Add an apparatus to start stocking struts, extensions, and plates. | [Add apparatus]"; no Remove button anywhere.
+Flash check (MutationObserver): [(no dialog)] -> [open text "Remove Engine 2? | 1 item (2 units) stocked on Engine 2 will be removed from inventory. This cannot be undone. | Cancel | Remove Engine 2"] -> [(no dialog)]; anyNonsenseText=false.
+IndexedDB: inventory rows 0; roster [] (lastWriteAt 1791878944154); events 6 (op log kept), quarantine 0.
+Cloud (owner REST rest/09-*): all 4 inventory ids = {"deleted": true, ...} (Engine 2 line tombstoned lastWriteAt 1791878944184; the 3 Engine 1 ids still tombstoned from crit 2); orgs/<dept>/apparatus = {"lastWriteAt": 1791878944154} with NO "value" key (RTDB drops an empty array - known gotcha).

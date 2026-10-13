@@ -1,0 +1,7 @@
+# CRITERION 4 - result of pressing the destructive "Remove Engine 2" on A after B's deploy was ingested (final build 04:00:52)
+Dialog stays open and now reads: "Remove Engine 2? | 1 item (2 units) stocked on Engine 2 will be removed from inventory. This cannot be undone. | Couldn't remove — equipment from this rig is still deployed. | Cancel | Remove Engine 2"
+Alert element: <p role="alert" class="fs-modal-error"> text exactly "Couldn't remove — equipment from this rig is still deployed.", colour rgb(248,113,113), 12px, 414x16 at (305,373), between the body text and the buttons.
+The rig stayed: tabs [Engine 2 · 2 items]; "1 apparatus"; strip "1 on hand 1 deployed 1 models".
+Cloud (owner REST, rest/08-*): orgs/<dept>/inventory/inv-ffc217d9-... still LIVE (qty 2, lastWriteAt unchanged 1791877835870, not a tombstone); orgs/<dept>/apparatus still lists Engine 2 (lastWriteAt unchanged 1791878403821).
+Cloud event log (rest/08-after-race-alert-cloud-events.json, ordered by receivedAt): OperationCreated(A 5ca876ca) / ShorePointAdded(A) / EquipmentDeployed(A 5ca876ca, sp 6b45fb44) / EquipmentReturned(A) / EquipmentDeployed(B 4c2c6c4a, receivedAt 1791878784367) => the blocking deploy came from the SECOND device.
+Observation (not asserted as a defect): after the click, document.activeElement read BODY (focus not on the pressed button / alert) in this synthetic-click harness; the SKILL notes focus is unreliable headless.
