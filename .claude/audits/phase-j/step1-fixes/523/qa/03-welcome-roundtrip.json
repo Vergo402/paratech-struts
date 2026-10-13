@@ -1,0 +1,32 @@
+{
+  "criterion": "3 - About row opens /welcome.html in the SAME tab; welcome CTA returns to the app, still signed in",
+  "tabsBeforeRowClick": [
+    "seed http://localhost:9000", "tab-1 http://127.0.0.1:5200", "tab-8 https://fieldshore-database--beta-2rs8x80s.web.app",
+    "tab-11 file:///.../src/app/index.html", "tab-12 http://localhost:5198 (other agent's check, untouched)", "tab-13 http://localhost:5200 (mine, active)"
+  ],
+  "tabsAfterRowClick": "identical six tabs, same ids and origins; tab-13 title now 'FieldShore - Rescue shoring, tracked end to end' at http://localhost:5200/welcome.html; no new tab",
+  "rowClick": "real left_click on the row label (Settings > About > See what FieldShore does) at the in-app route /settings/about",
+  "afterRowClick": {
+    "tab": "tab-13 (same tab)", "path": "/welcome.html", "title": "FieldShore — Rescue shoring, tracked end to end",
+    "rendered": "yes: hero 'STRUCTURAL COLLAPSE · SHORE POINT #1 / 54 inch of void. This is where every shore starts.', gold 'Open FieldShore' button, 'Open app' link (screenshot 05)",
+    "ctaLinks": "2 x <a class=cta href=/> Open FieldShore, no target attribute",
+    "resourceTiming": "19 resources, 0 with status >= 400",
+    "consoleErrorsOnThisPage": "1 x Uncaught (in promise) AbortError: Transition was skipped (known)"
+  },
+  "flagTest": {
+    "fieldshore_entered_before": "1 (set earlier by the app on the /auth deep link)",
+    "action": "localStorage.removeItem('fieldshore_entered') on /welcome.html, then real click on the hero 'Open FieldShore' CTA (href=/)",
+    "meaning": "if the CTA handler did not set the flag the root gate would redirect '/' straight back to /welcome.html (not installed, flag absent)",
+    "result": "landed on http://localhost:5200/quickfind in the same tab; fieldshore_entered === '1'"
+  },
+  "tabsAfterCta": "identical six tabs; tab-13 http://localhost:5200/quickfind",
+  "stillSignedIn": {
+    "via": "bottom-nav Settings tap (client-side), identity card text",
+    "text": "QC | QA Welcome Check | Welcome Link QA Fire Dept · Admin",
+    "departmentNameVisible": true, "signInPromptShown": false
+  },
+  "rowStillPresentAfterRoundTrip": "yes: Settings > About (client-side click) shows sections ['App updates','Welcome page'], row attrs href=/welcome.html class=fs-set-row, no target",
+  "result": "PASS",
+  "screenshots": ["05-welcome-page-after-row-click-same-tab.png", "06-quickfind-after-open-fieldshore-cta-same-tab.png", "07-settings-still-signed-in-department-visible.png"],
+  "caveat": "Welcome is a rAF/scroll page and the pane was intermittently hidden; the frame still painted (screenshot 05). A rAF-tick probe hung while the pane was hidden (probe design, not an app fault) and was replaced by a synchronous resource check."
+}

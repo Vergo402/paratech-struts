@@ -93,6 +93,17 @@ export function AboutPage() {
           </SettingsNote>
         )}
       </SettingsGroup>
+
+      {/* Way back to the public welcome page (2026-10-13): an installed app skips it on
+          launch, so About is where someone who installed first can still reach it. */}
+      <SettingsGroup label="Welcome page">
+        <SettingsRow
+          label="See what FieldShore does"
+          description="The public welcome page — the tour an installed app skips"
+          href="/welcome.html"
+          trailing="external"
+        />
+      </SettingsGroup>
     </div>
   );
 }

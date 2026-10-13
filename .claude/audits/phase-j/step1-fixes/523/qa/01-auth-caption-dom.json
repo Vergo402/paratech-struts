@@ -1,0 +1,16 @@
+{
+  "criterion": "1 - signed out, /auth caption links to /welcome.html",
+  "page": "http://localhost:5200/auth (fresh origin: SW, caches, IndexedDB, localStorage, sessionStorage all empty before load)",
+  "viewport": "400x860 emulated (mobile), app theme attribute = dark",
+  "fieldshore_entered": "1 (deep link /auth set the flag, no redirect)",
+  "captionText": "New here? See what FieldShore does",
+  "anchorCount": 1,
+  "anchorTag": "A (plain anchor, not a router Link)",
+  "outerHTML": "<a href=\"/welcome.html\" style=\"color: var(--accent); text-decoration: underline; text-underline-offset: 2px;\">See what FieldShore does</a>",
+  "hrefAttribute": "/welcome.html",
+  "hrefResolved": "http://localhost:5200/welcome.html",
+  "hasTargetAttribute": false,
+  "target": null,
+  "rel": null,
+  "captionRect": {"x": 0, "y": 708, "w": 400, "h": 16}
+}

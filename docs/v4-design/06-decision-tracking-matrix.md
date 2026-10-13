@@ -261,7 +261,7 @@ The 218 accepted rows are the "yes, ship it" pile — skim by status, no need to
 | 10-implementation | J-18 | Use Inter Variable as v4.0 default typeface. | rejected | Visual-language B-1 wins on substance: Geist as v4.0 default per open Q1. Inter is the fallback if Geist hits a variable-axis or subsetting issue during Phase H. |
 | 10-implementation | J-19 | Do not adopt Turborepo or monorepo tooling in v4.0; single package. | accepted | Resolves conflict 2.1. ADR-005 records. |
 | 10-implementation | J-20 | Do not adopt Storybook. | accepted | Source is the doc; primitives are documented in 03-primitives/. |
-| 10-implementation | J-21 | Do not build a Next.js or Astro marketing site; Vite multi-page covers it. | accepted | Resolves architecture A-15 in favor of Vite. |
+| 10-implementation | J-21 | Do not build a Next.js or Astro marketing site; Vite multi-page covers it. | accepted | Resolves architecture A-15 in favor of Vite. **Amended 2026-07-13 (Alex, #442):** a first visit to the bare root redirects to `/welcome.html`. **Amended 2026-10-13 (Alex, #523):** an installed (standalone) launch skips that redirect and counts as entered. |
 | 10-implementation | J-22 | Maintain three-location version bump (index.html, src/app/version.ts, sw.js CACHE_NAME). | accepted | Phase H wiring. |
 | 10-implementation | J-23 | Cap production dependency tree at ~15 packages; each addition is an ADR. | accepted | Dependency hygiene. |
 | 10-implementation | J-24 | Plan cutover as single PR to main; archive v3 to v3-legacy branch for 6 months. | accepted | Same as architecture A-21 + A-28. |

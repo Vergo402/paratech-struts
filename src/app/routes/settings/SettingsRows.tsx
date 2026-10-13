@@ -48,6 +48,7 @@ export interface SettingsRowProps {
   /** Exactly one of onPress / to / href (or none for a static row with trailing content). */
   onPress?: () => void;
   to?: string;
+  /** A same-origin path (e.g. /welcome.html) opens in this window; any other URL opens in a new tab. */
   href?: string;
   /** 'chevron' (default for interactive rows) · 'external' · 'check' · custom node · null for none. */
   trailing?: 'chevron' | 'external' | 'check' | ReactNode | null;
@@ -85,6 +86,12 @@ function Trailing({ trailing }: { trailing: SettingsRowProps['trailing'] }) {
   return <span className="fs-set-row-trail">{trailing}</span>;
 }
 
+/** A path on this origin such as "/welcome.html". A leading "//" is a protocol-relative URL to
+ *  another host, and browsers read "/\" the same way, so neither counts as a path. */
+function isSameOriginPath(href: string): boolean {
+  return href.startsWith('/') && !href.startsWith('//') && !href.startsWith('/\\');
+}
+
 export function SettingsRow({
   label,
   description,
@@ -116,9 +123,18 @@ export function SettingsRow({
   );
 
   if (href) {
+    // A page on this origin (e.g. /welcome.html, its own HTML entry rather than a router
+    // route) navigates in this window: _blank would throw an installed app out to the
+    // system browser. Only a link that leaves the app opens a new, detached tab.
+    const external = !isSameOriginPath(href);
     return (
       <li>
-        <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+        <a
+          href={href}
+          target={external ? '_blank' : undefined}
+          rel={external ? 'noopener noreferrer' : undefined}
+          className={cls}
+        >
           {body}
         </a>
       </li>

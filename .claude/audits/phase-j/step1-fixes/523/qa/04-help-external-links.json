@@ -1,0 +1,21 @@
+{
+  "criterion": "4 - Help & reference https:// rows still open in a NEW tab",
+  "page": "http://localhost:5200/settings/help (signed in)",
+  "httpsAnchors": [
+    {
+      "text": "USACE Shoring Operations Guide PDF, opens in the browser (via archive)",
+      "href": "https://web.archive.org/web/2*/https://www.usace.army.mil/Portals/2/docs/Emergency%20Ops/US%26R/Shoring_Operations_Guide_2009.pdf",
+      "target": "_blank",
+      "rel": "noopener noreferrer"
+    },
+    {
+      "text": "FEMA US&R Response System Program overview",
+      "href": "https://www.fema.gov/emergency-managers/national-preparedness/frameworks/national-urban-search-rescue-response-system",
+      "target": "_blank",
+      "rel": "noopener noreferrer"
+    }
+  ],
+  "allHttpsOpenNewTab": true,
+  "sameOriginAnchorsOnPage": ["/settings", "/quickfind", "/operations", "/inventory", "/command", "/settings (all without target/rel; router links)"],
+  "note": "Not clicked (per brief). Both rows show the same outward-arrow glyph as the new Welcome row, though the Welcome row opens in this window."
+}

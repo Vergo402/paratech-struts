@@ -1,0 +1,3 @@
+smoke EXIT:0 wall:49s
+build EXIT:0 wall:11s
+rules EXIT:0 wall:8s

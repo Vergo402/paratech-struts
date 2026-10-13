@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -38,6 +38,14 @@ describe('AboutPage (50-settings §6)', () => {
     expect(getRegistration).toHaveBeenCalled();
     expect(await screen.findByText("You're up to date")).toBeInTheDocument();
     expect(update).toHaveBeenCalled();
+  });
+
+  it('has a way back to the public welcome page, opened in this window so an installed app stays in its shell', () => {
+    render(<AboutPage />);
+    const group = within(screen.getByRole('region', { name: 'Welcome page' }));
+    const link = group.getByRole('link', { name: /See what FieldShore does/ });
+    expect(link).toHaveAttribute('href', '/welcome.html');
+    expect(link).not.toHaveAttribute('target');
   });
 
   it('the nav entry shows for everyone', () => {

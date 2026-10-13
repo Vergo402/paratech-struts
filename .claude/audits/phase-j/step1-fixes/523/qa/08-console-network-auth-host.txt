@@ -1,0 +1,23 @@
+CONSOLE (tab-13, the tab used for criteria 2-4 and the whole welcome round trip; fresh buffer, all levels read at the end):
+  - debug: [vite] connecting... / connected.   info: React DevTools hint
+  - error x1: "Uncaught (in promise) AbortError: Transition was skipped"  (the known view-transition AbortError)
+  - no other errors, no warnings.
+
+CONSOLE (tab-5, used for criterion 1 and the sign-up; closed afterwards):
+  - read BEFORE sign-up, after the /auth load and again after a reload of /auth: 15 x the same AbortError + 1 x
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)".
+  - The identical 16-entry list came back after the reload, so it is history in that stale tab's buffer (the tab pre-dated
+    this run); a resource-timing sweep of the /auth load found 0 of 250 resources with status >= 400.
+  - GAP: tab-5's console was NOT re-read after the sign-up submit (tab was closed when the pane had to be re-opened).
+    The three auth calls all returned 200 and the UI advanced to /create-department with no inline error.
+
+AUTH HOST PROOF (the account was created on the local emulator, not a Google host):
+  src/data/auth/firebase.ts: connectAuthEmulator(firebaseAuth, 'http://127.0.0.1:9099') when VITE_USE_EMULATORS === 'true' (.env.emulators)
+  GET  http://127.0.0.1:9099/emulator/auth/iframe?... -> 200 OK   (before submit)
+  POST http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signUp -> 200 OK
+  POST http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:lookup -> 200 OK
+  POST http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:update -> 200 OK
+  Credentials: display name "QA Welcome Check", email qa523.welcome@fieldshore.test (throwaway); the password was generated
+  in-page, never printed, and exists only in the in-memory emulator, which is stopped at teardown.
+
+PAGE-LOAD SWEEPS: /auth 0/250 failed resources; /welcome.html 0/19 failed resources.

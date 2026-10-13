@@ -1,0 +1,39 @@
+{
+  "criterion": "2 - signed in, Settings > About shows the Welcome page group",
+  "page": "http://localhost:5200/settings/about (signed in via Auth emulator at 127.0.0.1:9099; department 'Welcome Link QA Fire Dept' just created)",
+  "viewport": "400x860 emulated, app theme dark (default)",
+  "groupOrderTopToBottom": ["App updates", "Welcome page"],
+  "groupLabels": "H2.fs-set-section-label: 11px, uppercase, letter-spacing 0.88px, weight 500, colour rgb(155,154,151), padding-left 4px",
+  "welcomeGroupRows": 1,
+  "rowTagName": "A (plain anchor)",
+  "rowOpeningTag": "<a href=\"/welcome.html\" class=\"fs-set-row\">",
+  "attributesPresent": ["href", "class"],
+  "hrefAttribute": "/welcome.html",
+  "hrefResolved": "http://localhost:5200/welcome.html",
+  "hasTargetAttribute": false,
+  "hasRelAttribute": false,
+  "rowLabel": "See what FieldShore does",
+  "rowDescription": "The public welcome page — the tour an installed app skips",
+  "trailing": "<svg class=\"fs-set-row-chev\" aria-hidden=\"true\"> path d=\"M7 17L17 7M9 7h8v8\" (outward arrow, 20px wide); the App updates row above keeps the chevron",
+  "wrapperClass": "flex flex-col gap-6",
+  "wrapperComputedGap": "24px",
+  "gapAppUpdatesGroupBottomToWelcomeGroupTop_px": 24,
+  "rects_px": {
+    "appUpdatesSection": {"top": 205.8, "bottom": 299.8, "h": 94, "w": 384},
+    "welcomeSection": {"top": 323.8, "bottom": 404.1, "h": 80.3, "w": 384},
+    "welcomeRow": {"top": 347.1, "bottom": 403.1, "h": 56, "w": 382},
+    "labelToRowOffset_in_each_group": 23.3
+  },
+  "mockupCompare": {
+    "mockup": ".claude/audits/phase-j/step1-fixes/523/00-mockup-about-welcome-row.png (light palette, 400px pane)",
+    "sameOrder": true,
+    "sameStrings": true,
+    "sameTrailingGlyphs": "chevron on Check for updates, outward arrow on the new row",
+    "divergences": [
+      "group gap 24px in the app (shared Settings wrapper gap-6) vs about 16px in the mockup (+8px)",
+      "app default theme is dark; the mockup is drawn in a light palette (palette only)",
+      "label letter-spacing 0.08em / 4px left inset vs mockup 0.06em / 0 inset (trivial)",
+      "mockup's 2px blue border on the new row is its callout highlight, not a design spec; not built (correct)"
+    ]
+  }
+}
