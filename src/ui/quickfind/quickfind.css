@@ -175,6 +175,11 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Add Shore Point's required header + footer wood is still unpicked (Alex
+   2026-10-17) — the amber "waiting" text the cut chips already use. */
+.fs-ledger-toggle-state--needed {
+  color: var(--status-waiting-text);
+}
 .fs-ledger-chevron {
   flex-shrink: 0;
   color: var(--text-secondary);

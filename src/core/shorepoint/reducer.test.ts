@@ -6,6 +6,7 @@ import {
   effectiveLengthFrom,
   deductionTotalInches,
   cutLengthInches,
+  cutLumber,
   deployedCapacityFlag,
   unknownPlateIds,
   strutLoadShareDeployed,
@@ -68,27 +69,28 @@ describe('L-2 — effective length deducts once and floors to ⅛″', () => {
   });
 });
 
-describe('cutLengthInches — wood cut length, shore-type-fixed lumber + wedge (#361)', () => {
-  it('T-Shore & Double-T cut to 4×4 header+footer − 1.5″ wedge', () => {
+describe('cutLengthInches — wood cut length, header + footer + wedge (#361; picked wood since 2026-10-17)', () => {
+  it('no wood picked: T-Shore & Double-T fall back to 4×4 header+footer − 1.5″ wedge', () => {
     // 40 − 2×3.5 − 1.5 = 31.5
     expect(cutLengthInches(sp({ shoreType: 't-shore' }))).toBe(31.5);
     expect(cutLengthInches(sp({ shoreType: 'double-t' }))).toBe(31.5);
   });
 
-  it('3-Post cuts to 6×6 header+footer − 1.5″ wedge', () => {
+  it('no wood picked: 3-Post falls back to 6×6 header+footer − 1.5″ wedge', () => {
     // 40 − 2×5.5 − 1.5 = 27.5
     expect(cutLengthInches(sp({ shoreType: '3-post' }))).toBe(27.5);
   });
 
-  it('uses the SHORE-TYPE lumber, NOT the operator strut deduction (the v3 correction)', () => {
-    // A T-Shore sized with a 6×6 strut deduction still CUTS to 4×4 (31.5), not 6×6.
+  it('uses the PICKED header + footer wood, and still no plates (Alex 2026-10-17)', () => {
+    // A T-Shore built on 6×6 cuts for 6×6: 40 − 2×5.5 − 1.5 = 27.5 (the old fixed
+    // shore-type rule said 31.5 here).
     const point = sp({
       shoreType: 't-shore',
       deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'threadedconn', bottomPlate: 'swivel6' },
     });
-    expect(cutLengthInches(point)).toBe(31.5);
-    // …and that is NOT the strut effective length, which DOES use the operator deduction.
-    expect(effectiveLengthInches(point)).not.toBe(31.5);
+    expect(cutLengthInches(point)).toBe(27.5);
+    // …and that is NOT the strut effective length, which also deducts the plates.
+    expect(effectiveLengthInches(point)).not.toBe(27.5);
   });
 
   // SME-3 (Phase J gate #260). The 3-Post cut deduction is 12.5″ (2 × 6×6 + 1½″
@@ -119,6 +121,37 @@ describe('cutLengthInches — wood cut length, shore-type-fixed lumber + wedge (
       // 12 − 2×3.5 − 1.5 = 3.5 — positive, so the clamp is inert here by construction.
       expect(cutLengthInches(sp({ shoreType: 't-shore', measurementEighths: 96 }))).toBe(3.5);
     });
+  });
+});
+
+describe('cut wood follows the header + footer picked at creation (Alex 2026-10-17)', () => {
+  const at54 = (shoreType: ShorePoint['shoreType'], headerWood: 'none' | '4x4' | '6x6', footerWood: 'none' | '4x4' | '6x6') =>
+    sp({ shoreType, measurementEighths: 54 * 8, deductions: { ...NO_DEDUCTIONS, headerWood, footerWood } });
+
+  it('6×6 picked on a T-Shore cuts for 6×6, not the old fixed 4×4', () => {
+    // 54 − 2×5.5 − 1.5 = 41.5 (was 45.5 under the fixed-by-shore-type rule)
+    expect(cutLengthInches(at54('t-shore', '6x6', '6x6'))).toBe(41.5);
+  });
+
+  it('4×4 picked on a 3-Post cuts for 4×4', () => {
+    // 54 − 2×3.5 − 1.5 = 45.5
+    expect(cutLengthInches(at54('3-post', '4x4', '4x4'))).toBe(45.5);
+  });
+
+  it('header and footer each count on their own', () => {
+    // 54 − 5.5 − 3.5 − 1.5 = 43.5
+    expect(cutLengthInches(at54('double-t', '6x6', '4x4'))).toBe(43.5);
+  });
+
+  it('a legacy point with no wood falls back to the shore-type standard, flagged per side', () => {
+    expect(cutLumber(at54('t-shore', 'none', 'none'))).toEqual({
+      header: '4x4',
+      footer: '4x4',
+      headerStandard: true,
+      footerStandard: true,
+    });
+    expect(cutLumber(at54('3-post', '6x6', 'none'))).toMatchObject({ footer: '6x6', headerStandard: false, footerStandard: true });
+    expect(cutLengthInches(at54('t-shore', 'none', 'none'))).toBe(45.5);
   });
 });
 

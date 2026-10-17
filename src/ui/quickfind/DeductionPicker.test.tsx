@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach } from 'vitest';
 import { useState } from 'react';
 import { NO_DEDUCTIONS, type Deductions } from '@core/schema';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import { DeductionPicker } from './DeductionPicker';
+import { setNativeControls } from '@ui/primitives';
 
 function Harness({
   measurementEighths = 56 * 8,
@@ -182,5 +184,21 @@ describe('DeductionPicker — in-stock-first plates (#409)', () => {
   it('in-stock or None selections do not warn', () => {
     render(<StockHarness initial={{ ...NO_DEDUCTIONS, topPlate: 'multi' }} stockLabel="Rescue 1" />);
     expect(screen.queryByText(/confirm before deploying/)).toBeNull();
+  });
+});
+
+// Alex 2026-10-17: Add Shore Point requires header + footer wood. Under Native controls
+// the wood is an OS <select>, which can't show "nothing picked" without an option, so
+// it gets a disabled "Pick wood" placeholder instead of the None the calculator keeps.
+describe('DeductionPicker — requireWood under Native controls', () => {
+  afterEach(() => setNativeControls(false));
+
+  it('shows a disabled "Pick wood" placeholder and no None', () => {
+    setNativeControls(true);
+    render(<DeductionPicker measurementEighths={54 * 8} value={NO_DEDUCTIONS} onChange={() => {}} requireWood />);
+    const header = screen.getByRole('combobox', { name: 'Header wood — required' }) as HTMLSelectElement;
+    expect(header.value).toBe('none');
+    expect(within(header).getByRole('option', { name: 'Pick wood' })).toBeDisabled();
+    expect(within(header).queryByRole('option', { name: 'None' })).toBeNull();
   });
 });

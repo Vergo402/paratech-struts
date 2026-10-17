@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, plateHeight, woodHeight } from '@core/load';
 import { effectiveLengthFrom } from '@core/shorepoint';
 import type { Deductions } from '@core/schema';
-import { MeasurementValue } from '@ui/primitives';
+import { MeasurementValue, useNativeControls } from '@ui/primitives';
 import { InlineSegmented, PlateThumb, VisualGridPicker } from '@ui/picker';
 
 /**
@@ -43,6 +43,13 @@ export interface DeductionPickerProps {
    * shore point has an assigned resource, absent → "in inventory".
    */
   stockLabel?: string;
+  /**
+   * Add Shore Point (Alex 2026-10-17): header + footer wood are REQUIRED, because the
+   * cut length follows them to the saw. None is not offered (a native select gets a
+   * disabled "Pick wood" placeholder instead), the panel stays open while either is
+   * unpicked, and the toggle subtitle asks for the pick. Quick Find leaves it off.
+   */
+  requireWood?: boolean;
 }
 
 function DeductionAmount({ heightInches }: { heightInches: number }) {
@@ -55,6 +62,8 @@ function DeductionAmount({ heightInches }: { heightInches: number }) {
 }
 
 const WOOD_OPTIONS = WOOD_SIZES.map((w) => ({ value: w.id, label: w.id === 'none' ? 'None' : w.id.replace('x', '×') }));
+const REQUIRED_WOOD_OPTIONS = WOOD_OPTIONS.filter((o) => o.value !== 'none');
+const NATIVE_REQUIRED_WOOD_OPTIONS = [{ value: 'none' as const, label: 'Pick wood', disabled: true }, ...REQUIRED_WOOD_OPTIONS];
 
 const PLATE_OPTIONS = BASE_PLATES.map((p) => ({
   id: p.id,
@@ -95,6 +104,7 @@ export function DeductionPicker({
   collapsible = false,
   availablePlateIds,
   stockLabel,
+  requireWood = false,
 }: DeductionPickerProps) {
   const effectiveInches = effectiveLengthFrom(measurementEighths, value);
   const effectiveEighths = Math.round(effectiveInches * 8); // exact — already ⅛″-floored
@@ -103,14 +113,31 @@ export function DeductionPicker({
   const impossible = measurementEighths > 0 && effectiveInches <= 0;
 
   const [expanded, setExpanded] = useState(false);
-  // impossible force-opens: you can't fix a wood/plate you can't see (Principle 7).
-  const isOpen = !collapsible || expanded || impossible;
+  const native = useNativeControls();
+  const woodMissing = requireWood && (value.headerWood === 'none' || value.footerWood === 'none');
+  // Sticky: once the missing wood forced the panel open it STAYS open after the pick —
+  // snapping shut under the operator's finger would hide the plates they set next.
+  // (Adjust-state-during-render, the RecommendationCard riskKey pattern.)
+  if (woodMissing && !expanded) setExpanded(true);
+  // impossible / a missing required wood force-open: you can't fix a wood/plate you
+  // can't see (Principle 7).
+  const isOpen = !collapsible || expanded || impossible || woodMissing;
   const hasDeductions =
     value.headerWood !== 'none' || value.topPlate !== 'none' || value.bottomPlate !== 'none' || value.footerWood !== 'none';
   // The toggle's own subtitle carries the state (folded in from the old separate
   // summary) — and, when empty + collapsed, an explicit "tap to add" so the bordered
   // row reads as a control, not a heading (SIM-IV follow-up, Alex 2026-07-02).
-  const toggleState = hasDeductions ? appliedSummary(value) : isOpen ? 'None' : 'None — tap to add';
+  const toggleState = woodMissing
+    ? 'Pick header and footer wood'
+    : hasDeductions
+      ? appliedSummary(value)
+      : isOpen
+        ? 'None'
+        : 'None — tap to add';
+  const woodOptions = !requireWood ? WOOD_OPTIONS : native ? NATIVE_REQUIRED_WOOD_OPTIONS : REQUIRED_WOOD_OPTIONS;
+  const woodTrailing = (v: Deductions['headerWood']) => (
+    <span className="fs-ledger-value">{requireWood && v === 'none' ? '—' : <DeductionAmount heightInches={woodHeight(v)} />}</span>
+  );
 
   const set = <K extends keyof Deductions>(key: K, v: Deductions[K]) =>
     onChange({ ...value, [key]: v });
@@ -132,7 +159,9 @@ export function DeductionPicker({
         >
           <span className="fs-ledger-toggle-text">
             <span className="fs-ledger-toggle-label">Deductions</span>
-            <span className="fs-ledger-toggle-state">{toggleState}</span>
+            <span className={`fs-ledger-toggle-state${woodMissing ? ' fs-ledger-toggle-state--needed' : ''}`}>
+              {toggleState}
+            </span>
           </span>
           <LedgerChevron />
         </button>
@@ -144,15 +173,11 @@ export function DeductionPicker({
             <MeasurementValue eighths={measurementEighths} className="fs-ledger-value" />
           </div>
           <InlineSegmented
-            label="Header wood"
-            options={WOOD_OPTIONS}
+            label={requireWood ? 'Header wood — required' : 'Header wood'}
+            options={woodOptions}
             value={value.headerWood}
             onChange={(v) => set('headerWood', v)}
-            trailing={
-              <span className="fs-ledger-value">
-                <DeductionAmount heightInches={woodHeight(value.headerWood)} />
-              </span>
-            }
+            trailing={woodTrailing(value.headerWood)}
           />
           <VisualGridPicker
             label="Top plate"
@@ -181,15 +206,11 @@ export function DeductionPicker({
             }
           />
           <InlineSegmented
-            label="Footer wood"
-            options={WOOD_OPTIONS}
+            label={requireWood ? 'Footer wood — required' : 'Footer wood'}
+            options={woodOptions}
             value={value.footerWood}
             onChange={(v) => set('footerWood', v)}
-            trailing={
-              <span className="fs-ledger-value">
-                <DeductionAmount heightInches={woodHeight(value.footerWood)} />
-              </span>
-            }
+            trailing={woodTrailing(value.footerWood)}
           />
         </>
       )}

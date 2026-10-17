@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
-import { CUT_LUMBER, cutLengthInches, cutTooSmall } from '@core/shorepoint';
+import { cutLengthInches, cutLumber, cutTooSmall } from '@core/shorepoint';
 import { Badge, Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
 import { usePeerCuts } from '@ui/hooks';
@@ -89,6 +89,18 @@ function cutSubtitle(sp: ShorePoint): string {
     }`,
   ];
   return loc.join(' · ');
+}
+
+/** The wood half of the hero math line — "6×6 header + footer", or "6×6 header − 4×4
+ *  footer" when they differ; a side that fell back to the shore-type standard (legacy
+ *  point, no wood picked) is labeled so. */
+function cutWoodPhrase(sp: ShorePoint): string {
+  const c = cutLumber(sp);
+  const w = (id: string) => id.replace('x', '×');
+  const std = (fallback: boolean) => (fallback ? ' (standard, none picked)' : '');
+  return c.header === c.footer && c.headerStandard === c.footerStandard
+    ? `${w(c.header)} header + footer${std(c.headerStandard)}`
+    : `${w(c.header)} header${std(c.headerStandard)} − ${w(c.footer)} footer${std(c.footerStandard)}`;
 }
 
 /** Cut length in eighths — × 8 lands on an exact eighth (cutLengthInches already
@@ -227,12 +239,11 @@ export function CuttingStation({
         <MeasurementValue eighths={cutEighths(sp)} />
       </p>
       <p className="fs-cutstation-hero-label">Cut length</p>
-      {/* The math, spelled out (accepted mockup): opening − shore-type lumber −
-          wedge. The lumber is CUT_LUMBER doctrine (#361), never the operator's
-          strut deductions. */}
+      {/* The math, spelled out (accepted mockups): opening − the header + footer wood
+          picked at creation − wedge (Alex 2026-10-17). A legacy point saved with no
+          wood falls back to the shore-type standard and says so. */}
       <p className="fs-cutstation-hero-math">
-        Opening <MeasurementValue eighths={sp.measurementEighths} /> −{' '}
-        {CUT_LUMBER[sp.shoreType].replace('x', '×')} header + footer − 1½″ wedge
+        Opening <MeasurementValue eighths={sp.measurementEighths} /> − {cutWoodPhrase(sp)} − 1½″ wedge
       </p>
       {/* SME-1: the board's deployed-count verdict, in the card's existing chip idiom
           (fs-spc-flag / role="status"), directly under the promoted cut length. FIRST
@@ -255,7 +266,7 @@ export function CuttingStation({
       {cutTooSmall(sp) && (
         <span className="fs-spc-flag-row">
           <span className="fs-spc-flag fs-spc-flag--over-capacity" role="status">
-            ⚠ Opening too small for standard {CUT_LUMBER[sp.shoreType].replace('x', '×')} wood — verify measurement
+            ⚠ Opening too small for this header and footer wood — verify measurement
           </span>
         </span>
       )}

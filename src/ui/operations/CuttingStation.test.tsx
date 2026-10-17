@@ -258,7 +258,7 @@ describe('CuttingStation', () => {
   // saw operator can't act on. Real reducer math throughout; nothing stubbed.
   describe('SME-3 — opening too small for the shore-type wood', () => {
     const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
-    const TOO_SMALL = /Opening too small for standard 6×6 wood — verify measurement/;
+    const TOO_SMALL = /Opening too small for this header and footer wood — verify measurement/;
 
     function renderQueue(sp: ShorePoint) {
       render(
@@ -306,5 +306,38 @@ describe('CuttingStation', () => {
       renderQueue(makeSP('e'));
       expect(hero().querySelectorAll('.fs-spc-flag-row')).toHaveLength(0);
     });
+  });
+});
+
+// Alex 2026-10-17 (accepted mockups): the cut follows the header + footer wood picked
+// at creation. Real reducer math — the manual's own Stairwell B point (T-Shore, 54″).
+describe('CuttingStation — the cut follows the picked wood', () => {
+  const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+  const num = () => hero().querySelector('.fs-cutstation-hero-num');
+  const math = () => hero().querySelector('.fs-cutstation-hero-math');
+  const wood = (headerWood: 'none' | '4x4' | '6x6', footerWood: 'none' | '4x4' | '6x6') =>
+    makeSP('w', { measurementEighths: 54 * 8, deductions: { headerWood, footerWood, topPlate: 'none', bottomPlate: 'none' } });
+  const renderQueue = (sp: ShorePoint) =>
+    render(
+      <CuttingStation queue={[sp]} sent={[]} onMarkCutDone={noop} onClearCutDone={noop} onSendToRunner={noop} onStepBack={noop} />,
+    );
+
+  it('6×6 picked → cuts for 6×6, with no warning chip', () => {
+    renderQueue(wood('6x6', '6x6'));
+    expect(num()).toHaveTextContent('41 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 6×6 header + footer − 1½″ wedge');
+    expect(hero().querySelector('.fs-spc-flag-row')).toBeNull();
+  });
+
+  it('a mixed pick names each side', () => {
+    renderQueue(wood('6x6', '4x4'));
+    expect(num()).toHaveTextContent('43 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 6×6 header − 4×4 footer − 1½″ wedge');
+  });
+
+  it('a legacy point with no wood falls back to the standard and says so', () => {
+    renderQueue(wood('none', 'none'));
+    expect(num()).toHaveTextContent('45 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 4×4 header + footer (standard, none picked) − 1½″ wedge');
   });
 });

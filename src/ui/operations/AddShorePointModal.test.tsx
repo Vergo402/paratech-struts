@@ -59,7 +59,7 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
     division: '1',
     shoreType: 't-shore',
     measurementEighths: 388,
-    deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'none', bottomPlate: 'none' },
+    deductions: { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' },
     status: 'pending',
     ...over,
   };
@@ -67,11 +67,19 @@ function makeSP(over: Partial<ShorePoint> = {}): ShorePoint {
 
 const submitButton = () => screen.getByRole('button', { name: 'Add Shore Point' });
 
-/** Drive the measurement to N ft by typing into the Feet field (#248 re-drive). */
+/** Drive the measurement to N ft by typing into the Feet field (#248 re-drive), then
+ *  pick 4×4 for any header / footer wood still unpicked — both are required since
+ *  2026-10-17, so a valid form needs them. */
 async function setMeasurementFeet(user: ReturnType<typeof userEvent.setup>, feet: number) {
   const ft = screen.getByRole('textbox', { name: 'Feet' });
   await user.clear(ft);
   await user.type(ft, String(feet));
+  for (const name of ['Header wood — required', 'Footer wood — required']) {
+    const group = screen.queryByRole('radiogroup', { name });
+    if (group && !within(group).queryByRole('radio', { checked: true })) {
+      await user.click(within(group).getByRole('radio', { name: '4×4' }));
+    }
+  }
 }
 
 describe('AddShorePointModal — create', () => {
@@ -235,24 +243,26 @@ describe('AddShorePointModal — create', () => {
   // (Replaces a single test that pinned the old leaky behavior — it asserted the
   // 6×6 SURVIVED the switch to T-Shore, which is the deviation itself.)
   describe('SME-2 — 3-Post wood auto-fill is symmetric and never clobbers a choice', () => {
-    /** #349: the deduction pickers start collapsed in the modal — open to reach them. */
+    /** The pickers are reachable without a tap: the required, still-unpicked wood
+     *  forces the Deductions panel open (2026-10-17), and it stays open. */
     async function openForm() {
       const user = userEvent.setup();
       render(<AddShorePointModal open onClose={() => {}} />);
-      await user.click(screen.getByRole('button', { name: /Deductions/ }));
       return {
         user,
         shoreType: () => screen.getByRole('radiogroup', { name: 'Shore type' }),
-        header: () => screen.getByRole('radiogroup', { name: 'Header wood' }),
-        footer: () => screen.getByRole('radiogroup', { name: 'Footer wood' }),
+        header: () => screen.getByRole('radiogroup', { name: 'Header wood — required' }),
+        footer: () => screen.getByRole('radiogroup', { name: 'Footer wood — required' }),
       };
     }
     const checked = (group: HTMLElement, name: string) =>
       within(group).getByRole('radio', { name }).getAttribute('aria-checked');
+    // Wood is required (2026-10-17): no None option — "unpicked" is no radio checked.
+    const unpicked = (group: HTMLElement) => within(group).queryByRole('radio', { checked: true }) === null;
 
-    it('3-Post seeds 6×6/6×6, and leaving 3-Post RETRACTS it back to None', async () => {
+    it('3-Post seeds 6×6/6×6, and leaving 3-Post RETRACTS it back to unpicked', async () => {
       const f = await openForm();
-      expect(checked(f.header(), 'None')).toBe('true');
+      expect(unpicked(f.header())).toBe(true);
 
       await f.user.click(within(f.shoreType()).getByRole('radio', { name: '3-Post' }));
       expect(checked(f.header(), '6×6')).toBe('true');
@@ -260,8 +270,8 @@ describe('AddShorePointModal — create', () => {
 
       // The fix: a T-Shore must not inherit a 6×6 the operator never chose for it.
       await f.user.click(within(f.shoreType()).getByRole('radio', { name: 'T-Shore' }));
-      expect(checked(f.header(), 'None')).toBe('true');
-      expect(checked(f.footer(), 'None')).toBe('true');
+      expect(unpicked(f.header())).toBe(true);
+      expect(unpicked(f.footer())).toBe(true);
     });
 
     it('an operator wood pick made on 3-Post SURVIVES the switch away — never clobbered', async () => {
@@ -290,6 +300,29 @@ describe('AddShorePointModal — create', () => {
       expect(checked(f.header(), '6×6')).toBe('true');
       expect(checked(f.footer(), '6×6')).toBe('true');
     });
+  });
+
+  // Alex 2026-10-17: the cut length follows the wood picked here, so header + footer
+  // wood are required — no None, the panel opens itself, Add stays off until picked.
+  it('requires header + footer wood: no None option, panel open, Add off with the reason', async () => {
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    const ft = screen.getByRole('textbox', { name: 'Feet' });
+    await user.type(ft, '4');
+    const header = screen.getByRole('radiogroup', { name: 'Header wood — required' });
+    const footer = screen.getByRole('radiogroup', { name: 'Footer wood — required' });
+    expect(within(header).queryByRole('radio', { name: 'None' })).toBeNull();
+    expect(screen.getByText('Pick header and footer wood', { selector: '.fs-ledger-toggle-state' })).toBeInTheDocument();
+    expect(submitButton()).toBeDisabled();
+    expect(screen.getByText('Pick header and footer wood', { selector: '.fs-button-reason' })).toBeInTheDocument();
+
+    await user.click(within(header).getByRole('radio', { name: '6×6' }));
+    expect(submitButton()).toBeDisabled(); // footer still unpicked
+    await user.click(within(footer).getByRole('radio', { name: '6×6' }));
+    expect(submitButton()).toBeEnabled();
+    // The forced-open panel stays open after the pick — the plates are still reachable.
+    expect(screen.getByRole('radiogroup', { name: 'Header wood — required' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Deductions/ })).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('Building shows only on a multi-building op, and is required there', async () => {
@@ -796,8 +829,8 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
     render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
     await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
     await setMeasurementFeet(user, 5);
-    // Pick the 6" Rigid Base as the top plate through the form's own controls.
-    await user.click(screen.getByRole('button', { name: /Deductions/ }));
+    // Pick the 6" Rigid Base as the top plate through the form's own controls. The
+    // Deductions panel is already open: required wood forces it open and it stays open.
     await user.click(screen.getByRole('button', { name: /Top plate/ }));
     // The grid's options sit under a CSS-animated overlay jsdom reports as
     // pointer-events: none — fire the click directly rather than fake a pointer.
