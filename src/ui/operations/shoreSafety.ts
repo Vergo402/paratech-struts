@@ -1,5 +1,6 @@
 import type { ShorePoint } from '@core/schema';
 import {
+  bestRatedCapacity,
   deployedStrutOf,
   findForShorePoint,
   strutLoadShare,
@@ -67,33 +68,44 @@ export function shoreSafety(sp: ShorePoint, deployedCount?: number): ShoreSafety
       msg: 'No matching strut — no strut in the catalog spans this opening at these deductions. Re-measure and re-check this shore.',
     };
   }
-  const exceeds = combos.find((c) => c.exceedsCapacity);
-  if (exceeds) return { kind: 'warn', msg: exceeds.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
+  // This strut's SHARE of the load — split across the struts actually standing when the
+  // caller knows the count (H1/#415); planned groupTotal is the last-resort fallback only.
+  const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
+  const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
+  const grouped = (sp.groupTotal ?? 1) > 1;
   const match = combos.find(
     (c) => c.strut.model === strut.model && sameExtensions(c.extensions, exts),
   );
-  if (!match) return { kind: 'unknown', msg: 'Capacity not re-verifiable for the deployed assembly.' };
-  if (match.unrated) return { kind: 'warn', msg: match.unratedReason ?? 'Unrated zone — capacity is not published at this length.' };
-  if (match.exceedsCapacity) return { kind: 'warn', msg: match.exceedsCapacityReason ?? 'Over capacity at the estimated load.' };
-  // Per-strut over-capacity: this point deploys exactly ONE strut, but the engine
-  // returns combos needing 2–4 struts unflagged (recommendedQty is advisory). Compare
-  // this strut's SHARE of the load to its rated capacity, or a multi-strut load reads
-  // as a false SAFE (#408). Only checkable when a load was recorded.
-  if (load != null) {
-    // Split across the struts actually standing when the caller knows the count
-    // (H1/#415); planned groupTotal is the last-resort fallback only.
-    const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
-    if (share > match.capacity) {
-      const shareTxt = `${Math.ceil(share).toLocaleString()} lbs`;
-      const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;
+  if (!match) {
+    // Model-independent (#531, in step with deployedCapacityFlag): a share above the
+    // strongest strut that fits this opening is over capacity whichever model stands, so
+    // an unmatched assembly still warns. (A matched one gets its own rating below — any
+    // share over the strongest is over its rating too, so the verdict is the same.)
+    const best = bestRatedCapacity(combos);
+    if (load != null && best > 0 && share > best) {
+      const bestTxt = `${Math.floor(best).toLocaleString()} lbs`;
       return {
         kind: 'warn',
-        msg:
-          (sp.groupTotal ?? 1) > 1
-            ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds its ${capTxt} rating at this length.`
-            : `Over capacity — estimated load ${shareTxt} exceeds this strut's ${capTxt} rating at this length.`,
+        msg: grouped
+          ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds the ${bestTxt} rating of the strongest strut that fits this opening.`
+          : `Over capacity — estimated load ${shareTxt} exceeds the ${bestTxt} rating of the strongest strut that fits this opening.`,
       };
     }
+    return { kind: 'unknown', msg: 'Capacity not re-verifiable for the deployed assembly.' };
+  }
+  if (match.unrated) return { kind: 'warn', msg: match.unratedReason ?? 'Unrated zone — capacity is not published at this length.' };
+  // Per-strut over-capacity: this point deploys exactly ONE strut, but the engine
+  // returns combos needing 2+ struts unflagged (recommendedQty is advisory). Compare
+  // this strut's SHARE of the load to its rated capacity, or a multi-strut load reads
+  // as a false SAFE (#408). Only checkable when a load was recorded.
+  if (load != null && share > match.capacity) {
+    const capTxt = `${Math.floor(match.capacity).toLocaleString()} lbs`;
+    return {
+      kind: 'warn',
+      msg: grouped
+        ? `Over capacity — this strut's share of the load (${shareTxt}) exceeds its ${capTxt} rating at this length.`
+        : `Over capacity — estimated load ${shareTxt} exceeds this strut's ${capTxt} rating at this length.`,
+    };
   }
   // Fully-extended zero-margin (load-independent): the card shows this caution but the
   // deployed-shore verdict dropped it (2026-07-02 audit). Surface it — a strut at

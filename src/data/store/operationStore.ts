@@ -184,7 +184,6 @@ export function localCommitGuard(
       // as deployed and the red capacity flag shows at read time.)
       const verdict = deployVerdict(sp, event.deployedBom);
       if (verdict.noFit) return 'no strut fits this opening at this length';
-      if (verdict.exceedsCapacity) return 'deploy exceeds 4-strut capacity for this load';
       if (verdict.unrated && !event.unratedAcknowledged) {
         return 'unrated-zone deploy requires a recorded team acknowledgment';
       }

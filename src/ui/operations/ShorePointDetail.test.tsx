@@ -233,13 +233,17 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
     expect(screen.getByText('Beyond published length.')).toBeInTheDocument();
   });
 
-  it('flags over capacity', () => {
-    mockFind.mockReturnValue([combo({ exceedsCapacity: true, exceedsCapacityReason: 'Load exceeds 4 struts.' })]);
-    render(<ShorePointDetail sp={makeSp()} />);
-    expect(screen.getByText('Load exceeds 4 struts.')).toBeInTheDocument();
+  // #531 — no 4-strut sentinel: a share above the strongest strut that fits is over capacity
+  // whichever model stands (here the deployed LS 406 is not among the fits at all).
+  it('flags over capacity even when the deployed model is not among the catalog fits', () => {
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], capacity: 22000 })]);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 100_000 })} />);
+    expect(
+      screen.getByText(/Over capacity — estimated load 100,000 lbs exceeds the 22,000 lbs rating of the strongest strut that fits this opening/),
+    ).toBeInTheDocument();
   });
 
-  // The 2026-07-01 false-SAFE bug: the engine returns 2–4-strut combos unflagged
+  // The 2026-07-01 false-SAFE bug: the engine returns 2+-strut combos unflagged
   // (recommendedQty is advisory), but a shore point deploys exactly ONE strut.
   it('flags a single strut whose load exceeds its rated capacity (never a false pass)', () => {
     mockFind.mockReturnValue([combo({ capacity: 22000 })]);
@@ -249,6 +253,17 @@ describe('ShorePointDetail — safety (re-verified, never a false pass)', () => 
       screen.getByText(/Over capacity — estimated load 34,000 lbs exceeds this strut's 22,000 lbs rating/),
     ).toBeInTheDocument();
     expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('a deployed strut weaker than the strongest fit is judged against ITS OWN rating', () => {
+    mockFind.mockReturnValue([
+      combo({ capacity: 12000 }), // the deployed LS 406
+      combo({ strut: { model: 'LS 1016' } as StrutCombination['strut'], capacity: 22000 }),
+    ]);
+    render(<ShorePointDetail sp={makeSp({ estimatedLoad: 15_000 })} />);
+    expect(
+      screen.getByText(/Over capacity — estimated load 15,000 lbs exceeds this strut's 12,000 lbs rating/),
+    ).toBeInTheDocument();
   });
 
   it('splits the load across a linked group before judging (Double-T shares evenly)', () => {

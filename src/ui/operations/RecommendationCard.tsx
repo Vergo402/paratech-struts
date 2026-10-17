@@ -15,9 +15,10 @@ import { SYSTEM_LABELS } from '../inventory/systemLabels';
  * QUIET rated-capacity footer demoted below the action (synthesis §3.4 — the
  * number is computed by the engine but never leads the card). Safety
  * disclosures ride the card as warning gates and never auto-dismiss: unrated
- * gates Deploy behind an explicit acknowledgment; over-capacity closes the
- * deploy path outright (#40 distinct danger treatment); the liability
- * disclaimer is permanent and always the card's last word.
+ * gates Deploy behind an explicit acknowledgment; a load that needs more struts
+ * than the shore has (any count, 5+ included — #531) shows the ×N tell and gates a
+ * short deploy behind the team acknowledgment (#40 distinct danger treatment); the
+ * liability disclaimer is permanent and always the card's last word.
  *
  * Deliberately a DIFFERENT component from ShorePointCard (Principle 12 —
  * collapsing them is the predicted tear, card.md anti-patterns). The centered
@@ -51,7 +52,7 @@ export interface RecommendationCardProps {
   /** 'calculator' (#433, Quick Find): the COMPACT card — stripe + model-with-
    *  extension headline + connectors + quiet capacity; NO deduction ledger (the
    *  shared math lives once in the sheet's stat strip). Safety tells (unrated /
-   *  over-capacity / ×N struts-needed / disclaimer) render unchanged. Default
+   *  ×N struts-needed / disclaimer) render unchanged. Default
    *  'deploy' keeps the full Operations card. */
   variant?: 'deploy' | 'calculator';
 }
@@ -157,7 +158,6 @@ export function RecommendationCard({
     combo.effectiveLength,
     combo.capacity,
     combo.unrated,
-    combo.exceedsCapacity,
     estimatedLoad,
     currentStruts,
     // Value-keyed, not identity-keyed: the parent rebuilds this object each render.
@@ -173,19 +173,18 @@ export function RecommendationCard({
     setAcknowledged(false);
   }
 
-  // Per-strut over-capacity (accepted mockup 2026-07-01): the engine returns 2–4-
-  // strut combos unflagged (recommendedQty is advisory), but this card deploys ONE
-  // strut per point — so judge the load against the struts the shore actually has.
-  // Mutually exclusive with unrated (capacity 0) and exceeds-4 (no real combo).
+  // Per-strut over-capacity (accepted mockup 2026-07-01): the engine returns multi-
+  // strut combos unflagged (recommendedQty is advisory, uncapped — #531), but this
+  // card deploys ONE strut per point — so judge the load against the struts the shore
+  // actually has. Mutually exclusive with unrated (capacity 0).
   const struts = currentStruts ?? 1;
-  const needed =
-    combo.unrated || combo.exceedsCapacity ? struts : strutsNeededFor(estimatedLoad ?? 0, combo.capacity);
+  const needed = combo.unrated ? struts : strutsNeededFor(estimatedLoad ?? 0, combo.capacity);
   const shortDeploy = needed > struts;
   const targetType = SHORE_TYPE_FOR_STRUTS[needed];
   const canAutoFix = shortDeploy && !!onAddStruts && !!onDeploy && !!targetType;
   const perStrutAfter = shortDeploy ? Math.ceil((estimatedLoad ?? 0) / needed) : 0;
 
-  const gated = !!combo.unrated || !!combo.exceedsCapacity || shortDeploy;
+  const gated = !!combo.unrated || shortDeploy;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
   // Identity keys off the SYSTEM: LockStroke struts are grey-colored but carry
   // their own cyan word + stripe (sysKeyOf in struts.ts — every lk-* is color:'grey').
@@ -213,12 +212,11 @@ export function RecommendationCard({
   // Rated capacity is the QUIET footer (synthesis §3.4): the engine's per-strut
   // rating at the effective length (conservative-floor row, the caller's 4:1 SP
   // index). Shown only on a clean card — a gated card has no honest number to
-  // print (0 for unrated; the per-strut best is meaningless once load exceeds
-  // 4-strut capacity).
+  // print (0 for unrated; a short-deploy card moves it into the ×N tile).
   const capLb = Math.floor(combo.capacity);
   // A short-deploy card in DEPLOY mode moves the honest numbers into the ×N tile
   // (mockup A); the Quick Find variant keeps the quiet footer (mockup B).
-  const showCapacity = capLb > 0 && !combo.unrated && !combo.exceedsCapacity && !(shortDeploy && onDeploy);
+  const showCapacity = capLb > 0 && !combo.unrated && !(shortDeploy && onDeploy);
 
   // Full strut identity in the button's accessible name (workflow #221 §Accessibility).
   const fx = eighthsToParts(effectiveEighths);
@@ -226,7 +224,6 @@ export function RecommendationCard({
     fx.n > 0 ? ` and ${fx.n}/${fx.d}` : ''
   } inches${source ? `, from ${source}` : ''}`;
 
-  const deployBlocked = !!combo.exceedsCapacity;
   const needsAck = !!combo.unrated && !acknowledged;
 
   // Safety tells shared by both variants verbatim — the calculator card compacts
@@ -267,12 +264,6 @@ export function RecommendationCard({
       {combo.unratedReason && <p className="fs-rec-gate-detail">{combo.unratedReason}</p>}
     </>
   );
-  const overCapacityGate = combo.exceedsCapacity && (
-    <>
-      <WarningGate use="over-capacity" />
-      {combo.exceedsCapacityReason && <p className="fs-rec-gate-detail">{combo.exceedsCapacityReason}</p>}
-    </>
-  );
 
   if (variant === 'calculator') {
     // #433 (accepted mockup qf_result_card_final): stripe · "LS 203 + 24″
@@ -301,7 +292,6 @@ export function RecommendationCard({
         {boundaryCaution}
         {needTell}
         {unratedGate}
-        {overCapacityGate}
         <WarningGate use="disclaimer" />
       </Card>
     );
@@ -409,7 +399,6 @@ export function RecommendationCard({
       {boundaryCaution}
 
       {unratedGate}
-      {overCapacityGate}
 
       {shortDeploy && onDeploy && (
         /* Short-deploy block (accepted mockup A): the FIX is the primary action —
@@ -456,8 +445,8 @@ export function RecommendationCard({
         <Button
           variant="primary"
           fullWidth
-          disabled={deployBlocked || needsAck || !!deployDisabled}
-          disabledReason={needsAck && !deployBlocked && !deployDisabled ? 'Acknowledge the unrated zone first' : undefined}
+          disabled={needsAck || !!deployDisabled}
+          disabledReason={needsAck && !deployDisabled ? 'Acknowledge the unrated zone first' : undefined}
           onPress={() => onDeploy(combo)}
         >
           Deploy

@@ -78,7 +78,7 @@ The rule per kind of copy, each with a real before/after from v3 so the change i
 
 **Warnings and disclaimers.** Specific enough that a crew can cross-check the printed manual (Principle 7 — *visible safety*; precision per [ADR-012](../11-decisions/ADR-012-measurement-precision-eighth-inch.md)):
 - Unrated zone: **"LongShore above 16 ft (192″) is not rated by Paratech — rescue engineering consultation required."** Not a generic "out of range."
-- Over capacity: **"Load exceeds rated capacity at the 4:1 safety factor — this strut cannot be deployed for this opening."**
+- Short of struts: **"Deploying short of the required struts needs a recorded team acknowledgment."** The ×N tell beside it says how many struts the load needs — for 4+, **"This load needs {N} struts — plan additional shore sets, or consult rescue engineering."** Never blame the 4:1 factor for a strut count: it sets each strut's rating, not a cap on struts (#531).
 - The disclaimer rides every result card and never softens: **"Planning aid, not an engineering certification."** Tidy 1/8″ fractions read as more authoritative than they are, so this line is non-negotiable.
 - Measurement footnotes state the conservative-floor math: **"Capacity is from the 6 ft (72″) datasheet row — conservative floor applied; your opening of 84″ falls between Paratech table rows."**
 

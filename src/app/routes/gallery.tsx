@@ -55,8 +55,10 @@ const REC_STANDARD = findStrutCombinations(56, 0, 2, REC_INVENTORY, null, {
 })[0];
 // 200″ is past LongShore's 192″ chart — physically reachable, unrated (#247 state 5).
 const REC_UNRATED = findStrutCombinations(200, 0, 2, null, null, null)[0];
-// 180″ at 4:1 caps at 4,500 lb — a 60,000 lb load needs >4 struts: the NEW-3 sentinel (#40).
-const REC_OVER_CAPACITY = findStrutCombinations(180, 60000, 2, null, null, null)[0];
+// 180″ at 4:1 caps at 4,500 lb — a 60,000 lb load needs 14 struts: an ordinary 5+ result
+// (#531), shown with the ×N tell and the short-deploy gate (the card needs `estimatedLoad`).
+const REC_FIVE_PLUS_LOAD = 60000;
+const REC_FIVE_PLUS = findStrutCombinations(180, REC_FIVE_PLUS_LOAD, 2, null, null, null)[0];
 // Gold + extension — 130″ opening, the first combo that needs an extension (LS
 // 610 + 24″ in the catalog), so the extension block renders alongside the footer.
 const REC_GOLD_EXT = findStrutCombinations(130, 5000, 2, null, ['LongShore'], null).find(
@@ -347,17 +349,6 @@ export function GalleryScreen() {
 
       <Section title="Warning gate — ack unlocks Deploy, disclosure stays">
         <GateDemo />
-        <Card>
-          <div className="flex flex-col gap-3">
-            <span style={{ font: 'var(--type-body-medium)' }}>
-              AT 25-36 ×5 — load exceeds the 4-strut capacity
-            </span>
-            <WarningGate use="over-capacity" />
-            <Button variant="primary" disabled disabledReason="Choose a different strut, quantity, or opening" onPress={() => {}}>
-              Deploy
-            </Button>
-          </div>
-        </Card>
       </Section>
 
       <Section title="Toggle · Segmented · Text field">
@@ -544,7 +535,7 @@ export function GalleryScreen() {
         />
       </Section>
 
-      <Section title="Recommendation card (S6 — #221): standard · unrated ack · over-capacity #40">
+      <Section title="Recommendation card (S6 — #221): standard · unrated ack · 5+ struts #531">
         {REC_STANDARD && (
           <RecommendationCard
             combo={REC_STANDARD}
@@ -561,8 +552,13 @@ export function GalleryScreen() {
             onDeploy={() => setCommits((c) => c + 1)}
           />
         )}
-        {REC_OVER_CAPACITY && (
-          <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />
+        {REC_FIVE_PLUS && (
+          <RecommendationCard
+            combo={REC_FIVE_PLUS}
+            deductions={NO_DEDUCTIONS}
+            estimatedLoad={REC_FIVE_PLUS_LOAD}
+            onDeploy={() => {}}
+          />
         )}
       </Section>
 
@@ -666,8 +662,13 @@ export function GalleryScreen() {
         {REC_UNRATED && (
           <RecommendationCard combo={REC_UNRATED} deductions={NO_DEDUCTIONS} source="Engine 1" onDeploy={() => setCommits((c) => c + 1)} />
         )}
-        {REC_OVER_CAPACITY && (
-          <RecommendationCard combo={REC_OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={() => {}} />
+        {REC_FIVE_PLUS && (
+          <RecommendationCard
+            combo={REC_FIVE_PLUS}
+            deductions={NO_DEDUCTIONS}
+            estimatedLoad={REC_FIVE_PLUS_LOAD}
+            onDeploy={() => {}}
+          />
         )}
       </Section>
 

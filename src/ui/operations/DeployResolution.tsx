@@ -221,7 +221,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
   // the event; the store rejects an over-capacity deploy without it.
   const m = fit.match;
   const overCapacity =
-    sp.estimatedLoad != null && !!m && !m.unrated && !m.exceedsCapacity && m.capacity > 0 && strutLoadShare(sp) > m.capacity;
+    sp.estimatedLoad != null && !!m && !m.unrated && m.capacity > 0 && strutLoadShare(sp) > m.capacity;
 
   // The LongShore unrated zone against the AMENDED deductions (#448) — same shape
   // as over-capacity: a drop can push the assembly past the rated span the card
@@ -414,7 +414,7 @@ export function DeployResolution({ sp, combo, onBack, onConfirm, submitting }: D
             {!stillReaches ? (
               <>
                 Without this plate, {combo.strut.model} no longer reaches{' '}
-                <MeasurementValue eighths={sp.measurementEighths} /> at this load.
+                <MeasurementValue eighths={sp.measurementEighths} />.
               </>
             ) : dropCrossedUnrated ? (
               <>

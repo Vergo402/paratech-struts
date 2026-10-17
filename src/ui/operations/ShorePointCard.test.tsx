@@ -87,7 +87,7 @@ describe('ShorePointCard', () => {
     // full unique string to disambiguate (the title split is covered below).
     const { rerender } = render(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
     expect(
-      screen.getByText('Nothing fits this opening at this load'),
+      screen.getByText('Nothing fits this opening'),
     ).toBeInTheDocument();
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-inventory' })} />);
     // A no-inventory wait now NAMES the strut(s) that fit (issue: "doesn't tell you
@@ -247,7 +247,7 @@ describe('ShorePointCard', () => {
     rerender(<ShorePointCard shorePoint={makeSP({ pendingReason: 'no-match' })} />);
     expect(screen.getByText('No matching strut')).toBeInTheDocument();
     expect(
-      screen.getByText('Nothing fits this opening at this load'),
+      screen.getByText('Nothing fits this opening'),
     ).toBeInTheDocument();
     // The Assign action survives the callout (the "No equipment assigned" line was
     // dropped in the card compaction).

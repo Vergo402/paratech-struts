@@ -78,10 +78,8 @@ export function findForShorePoint(sp: ShorePoint, inventory?: StockRow[] | null)
  * off-UI — a peer device, a replay, or a future second entry point. The engine
  * stays the sole owner of the math (L-1/L-2); this only reads the flags it computes.
  *
- * `exceedsCapacity` is a per-point property (no ≤4-strut combo handles the load at
- * this length), so its presence means NO deploy here is safe. `unrated` is binary
- * per point+system — when the effective length is beyond LongShore's 16-ft chart,
- * EVERY LongShore combo is unrated — so matching the deployed strut's MODEL is
+ * `unrated` is binary per point+system — when the effective length is beyond LongShore's
+ * 16-ft chart, EVERY LongShore combo is unrated — so matching the deployed strut's MODEL is
  * enough; the exact extension chosen never changes the verdict. Catalog mode (no
  * inventory) is the most permissive on load, so a verdict here is the conservative
  * one stock can only worsen.
@@ -89,25 +87,32 @@ export function findForShorePoint(sp: ShorePoint, inventory?: StockRow[] | null)
 export function deployVerdict(
   sp: ShorePoint,
   bom: DeployedComponent[],
-): { exceedsCapacity: boolean; unrated: boolean; overCapacity: boolean; noFit: boolean } {
+): { unrated: boolean; overCapacity: boolean; noFit: boolean } {
   const combos = findForShorePoint(sp, null);
   // No catalog strut spans this opening at all (out of every strut's geometric
   // range) — a geometrically-impossible deploy. In-app the card shows the "nothing
   // fits" empty state instead of a Deploy, so an empty-combo deploy only arrives
   // off-UI (peer/replay/malformed); the store must reject it rather than all-clear
-  // on the absence of a flag (2026-07-02 audit #1). exceedsCapacity combos ARE
-  // returned (a load problem, not a geometry one), so this is purely non-fit.
-  if (combos.length === 0) return { exceedsCapacity: false, unrated: false, overCapacity: false, noFit: true };
-  if (combos.some((c) => c.exceedsCapacity)) return { exceedsCapacity: true, unrated: false, overCapacity: false, noFit: false };
+  // on the absence of a flag (2026-07-02 audit #1).
+  if (combos.length === 0) return { unrated: false, overCapacity: false, noFit: true };
   const model = bom.find((c) => c.role === 'strut')?.model;
   // Per-strut over-capacity (the 2026-07-01 family): this point deploys ONE strut,
-  // so its SHARE of the load must fit the matched combo's per-strut capacity.
-  // Capacity depends on system + length only — extensions never change it — so a
-  // model match is sufficient. No match → not judgeable here (the UI's
-  // "not re-verifiable" path); never a false block.
+  // so its SHARE of the load must fit that strut's per-strut capacity. Capacity
+  // depends on system + length only — extensions never change it — so a model match
+  // is sufficient. A model the catalog doesn't list at this opening (stale/unknown)
+  // is judged against the STRONGEST strut that fits (#531): if even that one can't
+  // carry the share, no strut here can, whichever was deployed — so the verdict
+  // never depends on the model matching.
   const match = combos.find((c) => c.strut.model === model);
-  const overCapacity = !!match && !match.unrated && strutLoadShare(sp) > match.capacity;
-  return { exceedsCapacity: false, unrated: combos.some((c) => c.unrated && c.strut.model === model), overCapacity, noFit: false };
+  const cap = match ? (match.unrated ? 0 : match.capacity) : bestRatedCapacity(combos);
+  const overCapacity = cap > 0 && strutLoadShare(sp) > cap;
+  return { unrated: combos.some((c) => c.unrated && c.strut.model === model), overCapacity, noFit: false };
+}
+
+/** The highest per-strut rating among the catalog fits — the most any strut that spans this
+ *  opening can carry. 0 when none is rated (LongShore unrated zone only). */
+export function bestRatedCapacity(combos: StrutCombination[]): number {
+  return Math.max(0, ...combos.filter((c) => !c.unrated).map((c) => c.capacity));
 }
 
 /**
@@ -116,7 +121,7 @@ export function deployVerdict(
  * is the USACE design basis for symmetric shores). 0 when no estimate was recorded.
  * Every deployed point is exactly ONE strut, so a safety verdict must compare THIS
  * number to the matched combo's per-strut capacity — the engine's recommendedQty
- * (2–4 struts) never blocks a combo, so a single-strut deploy under a multi-strut
+ * (2+ struts) never blocks a combo, so a single-strut deploy under a multi-strut
  * load passes silently without this check (the v4 false-SAFE bug, 2026-07-01).
  */
 export function strutLoadShare(sp: ShorePoint): number {
@@ -151,8 +156,7 @@ export function strutLoadShareDeployed(sp: ShorePoint, deployedCount: number): n
  * Struts a load needs at a given per-strut capacity — the same ceil(load/capacity)
  * the engine uses for recommendedQty, exposed so the card/store can compare it to
  * the struts a shore actually HAS. 1 when either number is absent (no basis to
- * demand more). Values above 4 never reach a real combo — the engine rejects
- * those into its exceeds-4-strut sentinel first.
+ * demand more). No upper bound: 5+ struts is an ordinary answer (#531).
  */
 export function strutsNeededFor(loadLbs: number, capacity: number): number {
   if (loadLbs <= 0 || capacity <= 0) return 1;
@@ -189,8 +193,9 @@ function sameExtLengths(a: number[], b: number[]): boolean {
  * multiset, exactly like the drawer.
  *
  * 'no-fit' (ADR-041): no catalog strut spans the opening at all — only reachable by a
- * deploy committed off the in-app gate (peer / replay); it, and a point whose load
- * exceeds every ≤4-strut combo ('over-capacity'), are flagged before model matching.
+ * deploy committed off the in-app gate (peer / replay); it, and a point whose per-strut
+ * share exceeds the strongest strut that fits ('over-capacity', #531), are flagged
+ * before model matching.
  *
  * PRECEDENCE (#484): no-fit / unrated / over-capacity win over unknown-connector. Those are
  * concrete "this shore may be unsafe" verdicts the crew must act on; unknown-connector
@@ -213,19 +218,20 @@ export function deployedCapacityFlag(sp: ShorePoint, deployedCount?: number): De
   // missing-data tell).
   //  - no-fit: no catalog strut spans this opening at all — a geometrically impossible
   //    deploy (in-app the card shows "nothing fits" instead of a Deploy).
-  //  - exceedsCapacity: no ≤4-strut combo carries the recorded load at this length.
+  //  - over-capacity: this strut's share of the recorded load exceeds the strongest strut
+  //    that fits this opening (#531) — true whichever model was deployed.
   if (combos.length === 0) return 'no-fit';
-  if (combos.some((c) => c.exceedsCapacity)) return 'over-capacity';
+  // Divide by the struts actually standing when the caller knows the count (H1/#415);
+  // fall back to planned groupTotal only when it doesn't (last resort — a partial
+  // deploy would then still read SAFE, the bug this closes).
+  const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
+  const best = bestRatedCapacity(combos);
+  if (sp.estimatedLoad != null && best > 0 && share > best) return 'over-capacity';
   const match = combos.find(
     (c) => c.strut.model === strut.model && sameExtLengths(c.extensions, exts),
   );
   if (!match) return unknownConnector;
   if (match.unrated) return 'unrated';
-  if (match.exceedsCapacity) return 'over-capacity';
-  // Divide by the struts actually standing when the caller knows the count (H1/#415);
-  // fall back to planned groupTotal only when it doesn't (last resort — a partial
-  // deploy would then still read SAFE, the bug this closes).
-  const share = deployedCount != null ? strutLoadShareDeployed(sp, deployedCount) : strutLoadShare(sp);
   if (sp.estimatedLoad != null && share > match.capacity) return 'over-capacity';
   return unknownConnector;
 }

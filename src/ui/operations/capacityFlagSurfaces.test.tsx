@@ -242,8 +242,12 @@ describe('LS 812 removal (#256) — the Quick View verdict degrades to not-re-ve
   it('the drawer says "not re-verifiable"; the card chip stays silent (it has no third state)', () => {
     // A rig that deployed an LS 812 before the 2026-07-28 catalog removal. The engine
     // can no longer match the assembly, so the DRAWER verdict degrades to an explicit
-    // unverified state — neither a false SAFE nor a blank.
+    // unverified state — neither a false SAFE nor a blank. The load is kept WITHIN the
+    // strongest rating (15,000 ≤ 22,000 per standing strut) so only the unmatched model is
+    // in question; a share beyond the strongest fit is over-capacity whatever the model
+    // (#531 — see the "model the catalog no longer matches" case below).
     const stale = leg('x', {
+      estimatedLoad: 15_000,
       deployedBom: [{ role: 'strut', model: 'LS 812', system: 'LongShore', source: 'Eng 1', inventoryId: 'i9' }],
     });
     const verdict = shoreSafety(stale, 1);
@@ -354,7 +358,7 @@ describe('ADR-041 / D4 — an unverified peer deploy flags identically on the ca
     expect(shoreSafety(p, 1).kind).toBe('warn');
   });
 
-  it('load beyond every ≤4-strut combo, on a model the catalog no longer matches → card over-capacity + drawer warn', () => {
+  it('a strut share beyond the strongest fit, on a model the catalog no longer matches → card over-capacity + drawer warn', () => {
     const p = leg('ex', { measurementEighths: 468, estimatedLoad: 10_000_000, deployedBom: bom('LS 812') });
     expect(deployedCapacityFlag(p, 1)).toBe('over-capacity');
     expect(shoreSafety(p, 1).kind).toBe('warn');

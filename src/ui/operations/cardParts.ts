@@ -26,11 +26,7 @@ export const SHORE_TYPE_LABELS: Record<ShoreTypeId, string> = {
 // framings, so they live here rather than folding into that map.
 export const NO_MATCH_EMPTY = {
   headline: 'No matching struts',
-  reason: 'Nothing fits this opening at this load — adjust deductions or re-measure',
-} as const;
-export const OVER_CAPACITY_EMPTY = {
-  headline: 'Over capacity',
-  reason: 'A strut fits, but the estimated load exceeds the 4-strut limit — escalate to engineering',
+  reason: 'Nothing fits this opening — adjust deductions or re-measure',
 } as const;
 
 /** PRIMARY line — the strut's location (the focus): Building · Division · Side · Unit. */

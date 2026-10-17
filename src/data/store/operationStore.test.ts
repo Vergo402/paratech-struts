@@ -315,6 +315,33 @@ describe('operationStore', () => {
       expect(getSp('sp-short')!.status).toBe('process');
     });
 
+    // #531 — a load needing 5+ struts is no longer refused outright: it is an ordinary
+    // short deploy, gated by the same recorded team acknowledgment as any other.
+    it('5+ struts: a single-strut deploy under a 5-strut load is rejected without the ack…', async () => {
+      await ops.commit(spAdded(makeSp('sp-five', { measurementEighths: 468, estimatedLoad: 100_000 })));
+      const res = await ops.commit(deployEvt('sp-five', ls406Bom()));
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringContaining('acknowledgment') });
+      expect(getSp('sp-five')!.status).toBe('pending');
+    });
+
+    it('5+ struts: …and accepted once the over-capacity acknowledgment is recorded', async () => {
+      await ops.commit(spAdded(makeSp('sp-five', { measurementEighths: 468, estimatedLoad: 100_000 })));
+      const res = await ops.commit(deployEvt('sp-five', ls406Bom(), { overCapacityAcknowledged: true }));
+      expect(res.ok).toBe(true);
+      expect(getSp('sp-five')!.status).toBe('process');
+    });
+
+    it('5+ struts: a model the catalog does not list is judged against the strongest fit — still needs the ack', async () => {
+      await ops.commit(spAdded(makeSp('sp-unlisted', { measurementEighths: 468, estimatedLoad: 100_000 })));
+      const bom: DeployedComponent[] = [{ role: 'strut', model: 'LS 812', system: 'LongShore', source: 'untracked' }];
+      const rejected = await ops.commit(deployEvt('sp-unlisted', bom));
+      expect(rejected.ok).toBe(false);
+      expect(rejected).toMatchObject({ reason: expect.stringContaining('acknowledgment') });
+      const accepted = await ops.commit(deployEvt('sp-unlisted', bom, { overCapacityAcknowledged: true }));
+      expect(accepted.ok).toBe(true);
+    });
+
     it('rejects a geometrically-impossible deploy — no strut spans the opening (audit #1)', async () => {
       await ops.commit(spAdded(makeSp('sp-nofit', { measurementEighths: 24000 })));
       const res = await ops.commit(deployEvt('sp-nofit', ls406Bom()));

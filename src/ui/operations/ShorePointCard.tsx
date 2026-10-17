@@ -26,9 +26,8 @@ export function shorePointDrawerTitle(sp: Pick<ShorePoint, 'seq' | 'label' | 'sh
 // Descriptions carry the consequence / next step ONLY — the title above the
 // callout states the condition once (#432, mess-map #15: no title echo).
 const PENDING_REASON_COPY = {
-  'no-match': 'Nothing fits this opening at this load',
+  'no-match': 'Nothing fits this opening',
   'no-inventory': 'No apparatus stock to pull from',
-  'over-capacity': 'Estimated load exceeds the 4-strut limit — escalate to engineering',
 } as const;
 
 // Waiting-callout headline per reason (handoff §1.1). The description below it
@@ -36,7 +35,6 @@ const PENDING_REASON_COPY = {
 const PENDING_REASON_TITLE: Record<keyof typeof PENDING_REASON_COPY, string> = {
   'no-inventory': 'Waiting for inventory',
   'no-match': 'No matching strut',
-  'over-capacity': 'Over capacity',
 };
 
 // Name the strut(s) a no-inventory point is waiting on — answers "what equipment?"

@@ -269,7 +269,7 @@ describe('DeployResolution (#330 Phase 3b)', () => {
     // (10,000 rated vs 34,000 / 1 strut) — so the drop crosses into over-capacity
     // the card never saw. The panel must show its own ack, not the reach one.
     mockFindForShorePoint.mockReturnValue([
-      { strut: { model: 'LS 406' }, extensions: [], unrated: false, exceedsCapacity: false, capacity: 10000 } as unknown as StrutCombination,
+      { strut: { model: 'LS 406' }, extensions: [], unrated: false, capacity: 10000 } as unknown as StrutCombination,
     ]);
     render(<DeployResolution sp={makeSP({ estimatedLoad: 34000 })} combo={COMBO} onBack={vi.fn()} onConfirm={onConfirm} submitting={false} />);
 

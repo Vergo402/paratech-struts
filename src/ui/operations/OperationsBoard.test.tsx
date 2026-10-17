@@ -334,7 +334,7 @@ describe('OperationsBoard', () => {
     sp.measurementEighths = 16 * 8; // the 12-15 / 19-25 catalog gap
     mockShorePoints.mockReturnValue([sp]);
     render(<OperationsBoard />);
-    expect(screen.getByText('Nothing fits this opening at this load')).toBeInTheDocument();
+    expect(screen.getByText('Nothing fits this opening')).toBeInTheDocument();
   });
 
   it('Assign Equipment opens the sheet with the SP context and the off-book offer', async () => {

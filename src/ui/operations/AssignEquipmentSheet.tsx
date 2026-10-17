@@ -12,7 +12,7 @@ import { useCommit, useCommitMany, useDeviceUid, useInventory, useRecommendation
 import { RecommendationCard, comboModel } from './RecommendationCard';
 import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
-import { NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardParts';
+import { NO_MATCH_EMPTY } from './cardParts';
 import { sameValue } from './sameValue';
 
 /**
@@ -179,7 +179,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
   // over-capacity). The card gated Deploy behind the team acknowledgment, so a
   // deploy that fires with this true carries the recorded ack on its event.
   function isShortDeploy(combo: StrutCombination): boolean {
-    return !!sp && !combo.unrated && !combo.exceedsCapacity && combo.capacity > 0 && strutLoadShare(sp) > combo.capacity;
+    return !!sp && !combo.unrated && combo.capacity > 0 && strutLoadShare(sp) > combo.capacity;
   }
 
   function handleDeploy(combo: StrutCombination) {
@@ -327,9 +327,9 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
 
   // No stock fits, but the catalog does: offer the fitting struts to deploy NOT from
   // stock (decision: only when no in-stock option). Each routes to Review sources to
-  // resolve the strut (add to a truck ∥ off-book). Capacity sentinels stay excluded.
+  // resolve the strut (add to a truck ∥ off-book).
   const offBookCombos = useMemo(
-    () => (sp && reason === 'no-inventory' ? findForShorePoint(sp, null).filter((c) => !c.exceedsCapacity) : []),
+    () => (sp && reason === 'no-inventory' ? findForShorePoint(sp, null) : []),
     [sp, reason],
   );
 
@@ -429,13 +429,6 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
             ))}
           </div>
         </>
-      )}
-      {sp && recommendations.length === 0 && reason === 'over-capacity' && (
-        <EmptyState
-          variant="upstream-blocked"
-          headline={OVER_CAPACITY_EMPTY.headline}
-          reason={OVER_CAPACITY_EMPTY.reason}
-        />
       )}
     </Modal>
   );

@@ -130,7 +130,7 @@ Generic glyph set from a common public safety / general purpose library. Truck f
 - **During incident operational tooling, not between incident administration.** The space the competitor abandons after the status tap. Shore points, deductions, role board, cutting queue, hazard log. FieldShore's table.
 - **Four surface consistency from day one.** Phone for team officer, tablet for CP, laptop for deep data, TV for passive broadcast. Same primitives, same vocabulary, same picker doctrine, deliberate adaptations per surface.
 - **Doctrine fluency.** NIMS / ICS / USACE / Paratech vocabulary as the literal UI strings (Principle 1). Competitor uses generic "roster" / "apparatus" / "groups." FieldShore says "Division 1 / Shoring Group / T-Shore / Sole Plate" because that is what the firefighter calls them.
-- **Safety math visible (Principle 7).** Load capacity, deductions, qty>4 sentinels, unrated zone warnings. Competitor surfaces no safety math because it isn't in their domain. We win in a domain they declined to enter.
+- **Safety math visible (Principle 7).** Load capacity, deductions, ×N struts-needed tells, unrated zone warnings. Competitor surfaces no safety math because it isn't in their domain. We win in a domain they declined to enter.
 - **Calm visual language (Principle 3).** No flashing red, no anxious alarms, confident typography. Their palette is functional; ours is composed.
 - **Doubt free escapes instead of confirm modals (Principle 6).** Undo toast windows in place of "Are you sure?".
 - **One picker doctrine.** Four variants, chosen by rule (see `03-primitives/picker.md`). Competitor has at least four distinct picker patterns for the same conceptual action across surfaces. Exactly the v3 FieldShore problem v4 is solving.

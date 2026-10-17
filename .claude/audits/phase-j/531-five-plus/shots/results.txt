@@ -1,0 +1,25 @@
+FLOW1 PASS title="5 struts fit" firstCard.model="LS 203" tile="×23" sentencePresent=true needWord=true cannotBeDeployedOnScreen=false cards=["LS 203 ×23","AT 25-36 ×25","LK 25-36 ×25","AT 19-25 + 6″ extension ×25","LK 19-25 + 6″ extension ×25"]
+FLOW1 firstCardText="LS 203 Over capacity Rated 22,000 lb at this length ×23 struts needed for this load One strut is rated 22,000 lb at 30″. This load needs 23 struts — plan additional shore sets, or consult rescue engineering. Planning aid, not an engineering certification."
+FLOW2 PASS title="5 struts fit" LS203=×5 AT25-36=×5 cards=["LS 203 ×5","AT 25-36 ×5","LK 25-36 ×5","AT 19-25 + 6″ extension ×5","LK 19-25 + 6″ extension ×5"] cannotBeDeployed=false
+OPS started operation "531 five-plus verification"
+OPS shore-type segments: ["T-Shore","Double-T","3-Post"]
+OPS selected shore type: ["T-Shore"] (default T-Shore expected)
+FLOW3 assign-sheet cards (2): ["LongShore · LS 203 E | ×23","Acme thread · AT 25- | ×25"]
+FLOW3 PASS (before ack) LS203.tile="×23" gatePresent=true ackLabelPresent=true ack.aria-checked=false "Deploy 1 of 23 anyway".disabled=true cannotBeDeployed=false
+FLOW3b PASS (after ack) ack.aria-checked=true "Deploy 1 of 23 anyway".disabled=false
+FLOW4 after Deploy click: visible buttons = ["SafetyUnassigned","Board","Cutting","Pendingskipped — one-step deploy0","Assigned1","#1Div 1T-Shore›","Capture location","›","‹","Strut Set0","Cutting0","Runner0","Secured0","Returned0","Begin Briefing","End Operation"]
+FLOW4 chooser: no missing-piece chooser appeared
+FLOW4 assign sheet still open after confirm: false
+FLOW4 PASS board shows "Over capacity" text=true flagElements=[] cannotBeDeployed=false
+FLOW4b PASS drawer contains expected warning=true
+FLOW4b drawer "Over capacity" sentences: ["Over capacity — estimated load 500,000 lbs exceeds this strut's 22,000 lbs rating at this length."]
+FLOW4b drawerText="#1 · T-Shore Div 1 Equipment Assigned REQUIRED STRUT LENGTH 30″ CHECKOver capacity — estimated load 500,000 lbs exceeds this strut's 22,000 lbs rating at this length. MEASUREMENT & LOAD Required strut length 30″ Estimated load 500,000 lbs BILL OF MATERIALS STRUT LS 203 Rescue 2 All tracked pieces on Rescue 2 TIMELINE Created Oct 17, 8:01 AM · this device Equipment deployed Oct 17, 8:01 AM · this device Planning aid, not an engineering certification."
+FLOW5 PASS h2="Recommendation card (S6 — #221): standard · unrated ack · 5+ struts #531" needTiles=["×14"] gate/ack present=true errorsDuringGallery=6
+FLOW6 failed requests by host: {"identitytoolkit.googleapis.com":6,"securetoken.googleapis.com":2,"s-gke-usc1-nssi4-36.firebaseio.com":1,"fieldshore-database-default-rtdb.firebaseio.com":27}
+FLOW6 console errors total=36 vite-ws-noise=0 blocked-network(aborted Firebase/Google hosts)=36 other=0
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://securetoken.googleapis.com/v1/token?key=AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://securetoken.googleapis.com/v1/token?key=AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://s-gke-usc1-nssi4-36.firebaseio.com/.lp?start=t&ser=53928849&cb=1&v=5&ls=tNsvH641CzdmxZ9W2PAHlXE0ldKJWPgN&p=1:431864655354:web:896017d8810d1d78bcc843&ns=fieldshore-database-default-rtdb
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=AIzaSyBBPyUXWDxDi9PWrRNEqYSg3R4bywqglRo
+FLOW6 blocked-sample: [console.error] Failed to load resource: net::ERR_FAILED @ https://fieldshore-database-default-rtdb.firebaseio.com/.lp?start=t&ser=4913229&cb=1&v=5&p=1:431864655354:web:896017d8810d1d78bcc843

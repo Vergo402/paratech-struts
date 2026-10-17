@@ -99,12 +99,42 @@ describe('shoreSafety — per-point verdicts for an unverified peer deploy (ADR-
     expect(v.msg).toMatch(/No matching strut/);
   });
 
-  it('warn when the load exceeds every ≤4-strut combo — even when the deployed model does not match', () => {
-    mockFind.mockReturnValue([
-      combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], exceedsCapacity: true, exceedsCapacityReason: 'Load exceeds 4-strut capacity.' }),
-    ]);
+  // #531 — the sentinel is gone; the model-independent guarantee is a per-strut share above the
+  // strongest strut that fits. Same verdict as deployedCapacityFlag's pre-match branch.
+  it('warn when one strut’s share exceeds the strongest strut that fits — even when the deployed model does not match', () => {
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], capacity: 22_000 })]);
     const v = shoreSafety(makeSp({ estimatedLoad: 10_000_000 }));
     expect(v.kind).toBe('warn');
-    expect(v.msg).toBe('Load exceeds 4-strut capacity.');
+    expect(v.msg).toBe(
+      'Over capacity — estimated load 10,000,000 lbs exceeds the 22,000 lbs rating of the strongest strut that fits this opening.',
+    );
+  });
+
+  it('grouped: the model-independent warn speaks of this strut’s SHARE (5+ struts, 3-Post)', () => {
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], capacity: 22_000 })]);
+    const v = shoreSafety(makeSp({ estimatedLoad: 100_000, groupTotal: 3 }));
+    expect(v.kind).toBe('warn');
+    expect(v.msg).toBe(
+      "Over capacity — this strut's share of the load (33,334 lbs) exceeds the 22,000 lbs rating of the strongest strut that fits this opening.",
+    );
+  });
+
+  it('judged against the STRONGEST fit, not the deployed one: a weaker matched strut falls through to its own check', () => {
+    mockFind.mockReturnValue([
+      combo({ capacity: 12_000 }), // the deployed LS 406
+      combo({ strut: { model: 'LS 1016' } as StrutCombination['strut'], capacity: 22_000 }),
+    ]);
+    // 15,000 lb: within the strongest (22,000) so no model-independent warn…
+    const v = shoreSafety(makeSp({ estimatedLoad: 15_000 }));
+    // …but over the deployed strut's own 12,000 rating.
+    expect(v.kind).toBe('warn');
+    expect(v.msg).toBe("Over capacity — estimated load 15,000 lbs exceeds this strut's 12,000 lbs rating at this length.");
+  });
+
+  it('no model-independent warn without a recorded load, or when every fit is unrated', () => {
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], capacity: 22_000 })]);
+    expect(shoreSafety(makeSp({})).kind).toBe('unknown'); // no load → not re-verifiable, never a pass
+    mockFind.mockReturnValue([combo({ strut: { model: 'OTHER' } as StrutCombination['strut'], capacity: 0, unrated: true })]);
+    expect(shoreSafety(makeSp({ estimatedLoad: 10_000_000 })).kind).toBe('unknown');
   });
 });

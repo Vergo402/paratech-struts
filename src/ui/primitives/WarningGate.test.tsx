@@ -12,11 +12,9 @@ describe('WarningGate', () => {
       ),
     ).toBeInTheDocument();
 
-    render(<WarningGate use="over-capacity" />);
+    render(<WarningGate use="over-capacity-short" acknowledged={false} onAcknowledge={() => {}} />);
     expect(
-      screen.getByText(
-        'Load exceeds rated capacity at the 4:1 safety factor — this strut cannot be deployed for this opening.',
-      ),
+      screen.getByText('Deploying short of the required struts needs a recorded team acknowledgment.'),
     ).toBeInTheDocument();
 
     render(<WarningGate use="disclaimer" />);
@@ -41,8 +39,18 @@ describe('WarningGate', () => {
     expect(screen.getByText(GATE_COPY.unrated)).toBeInTheDocument();
   });
 
-  it('over-capacity: no acknowledgment control — the deploy path stays closed', () => {
-    render(<WarningGate use="over-capacity" />);
+  it('over-capacity-short: acknowledgment fires the callback and the disclosure persists', async () => {
+    const user = userEvent.setup();
+    const onAcknowledge = vi.fn();
+    render(<WarningGate use="over-capacity-short" acknowledged={false} onAcknowledge={onAcknowledge} />);
+    const ack = screen.getByRole('checkbox', { name: /team acknowledges the over-capacity deploy/i });
+    await user.click(ack);
+    expect(onAcknowledge).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(GATE_COPY['over-capacity-short'])).toBeInTheDocument();
+  });
+
+  it('disclaimer: no acknowledgment control — it is a permanent footnote', () => {
+    render(<WarningGate use="disclaimer" />);
     expect(screen.queryByRole('checkbox')).toBeNull();
   });
 });

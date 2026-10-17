@@ -72,11 +72,21 @@ describe('pendingReasonFor — live reason for a Pending point (#221)', () => {
     expect(pendingReasonFor(sp({ measurementEighths: 16 * 8 }), [])).toBe('no-match');
   });
 
-  it('over-capacity when the opening fits but the estimated load exceeds the 4-strut cap', () => {
-    // 132″ reaches on an LS 1016, but 60,000 lb needs > 4 struts → every combo
-    // comes back as an exceedsCapacity sentinel: a load problem, not a geometry miss.
+  // #531 — a heavy load never changes the reason: it just needs more struts of a model that
+  // fits. There is no load-driven pending reason any more.
+  it('a 5+ strut load does not change the reason — stocked fit is still deployable (undefined)', () => {
+    // 132″ reaches on an LS 1016; 60,000 lb needs more than 4 struts, which is an ordinary result.
     const inv = [strut('inv-ls1016', 'LS 1016', 'LongShore', 4)];
-    expect(pendingReasonFor(sp({ measurementEighths: 132 * 8, estimatedLoad: 60000 }), inv)).toBe('over-capacity');
+    expect(pendingReasonFor(sp({ measurementEighths: 132 * 8, estimatedLoad: 60000 }), inv)).toBeUndefined();
+    expect(pendingReasonFor(sp({ estimatedLoad: 500_000 }), [strut('inv-ls203', 'LS 203', 'LongShore', 1)])).toBeUndefined();
+  });
+
+  it('a 5+ strut load with no stock is no-inventory (the catalog still fits), never a load reason', () => {
+    expect(pendingReasonFor(sp({ measurementEighths: 132 * 8, estimatedLoad: 60000 }), [])).toBe('no-inventory');
+  });
+
+  it('a 5+ strut load does not turn a geometry miss into anything else (still no-match)', () => {
+    expect(pendingReasonFor(sp({ measurementEighths: 16 * 8, estimatedLoad: 500_000 }), [])).toBe('no-match');
   });
 });
 
@@ -86,6 +96,11 @@ describe('pendingNeedModels — what equipment a no-inventory wait needs (issue 
     expect(models.length).toBeGreaterThan(0);
     expect(new Set(models).size).toBe(models.length); // no duplicate models
     expect(models.every((m) => typeof m === 'string' && m.length > 0)).toBe(true);
+  });
+
+  it('a 5+ strut load still names the models that fit (the load never removes a fit)', () => {
+    const light = pendingNeedModels(sp({ measurementEighths: 30 * 8 }));
+    expect(pendingNeedModels(sp({ measurementEighths: 30 * 8, estimatedLoad: 500_000 })).sort()).toEqual([...light].sort());
   });
 
   it('empty when nothing in the catalog fits (a no-match point)', () => {

@@ -94,7 +94,7 @@ describe('seed inventory', () => {
 
     it('30″ → real recommendations', () => {
       const combos = findStrutCombinations(30, 0, SF_4TO1, items);
-      expect(combos.some((c) => !c.unrated && !c.exceedsCapacity)).toBe(true);
+      expect(combos.some((c) => !c.unrated)).toBe(true);
     });
 
     it('16″ → no match (nothing seeded reaches down to 16″)', () => {

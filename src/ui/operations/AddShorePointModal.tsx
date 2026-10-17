@@ -27,7 +27,7 @@ import { DivisionPicker } from './DivisionPicker';
 import { BuildingPicker } from './BuildingPicker';
 import { SidePicker } from './SidePicker';
 import { RecommendationCard, comboModel } from './RecommendationCard';
-import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY, OVER_CAPACITY_EMPTY } from './cardParts';
+import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY } from './cardParts';
 
 // Options for the shore-type form control, derived from the shared label map (one
 // source of truth; #435 dedup) in the canonical SHORE_TYPES catalog order. Full
@@ -808,13 +808,6 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                 variant="upstream-blocked"
                 headline="No apparatus stock available"
                 reason="A strut that fits exists, but none is available on scene"
-              />
-            )}
-            {found && recommendations.length === 0 && noResultsReason === 'over-capacity' && (
-              <EmptyState
-                variant="upstream-blocked"
-                headline={OVER_CAPACITY_EMPTY.headline}
-                reason={OVER_CAPACITY_EMPTY.reason}
               />
             )}
             {deployError && (

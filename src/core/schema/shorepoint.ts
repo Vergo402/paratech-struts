@@ -99,7 +99,7 @@ export type DeployedComponent = z.infer<typeof DeployedComponent>;
 export const DeployedBom = z.array(DeployedComponent).min(1);
 export type DeployedBom = z.infer<typeof DeployedBom>;
 
-export const PendingReason = z.enum(['no-match', 'no-inventory', 'over-capacity']);
+export const PendingReason = z.enum(['no-match', 'no-inventory']);
 export type PendingReason = z.infer<typeof PendingReason>;
 
 export const ShorePoint = z.object({

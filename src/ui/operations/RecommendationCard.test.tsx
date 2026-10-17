@@ -35,8 +35,10 @@ const STANDARD = findStrutCombinations(56, 0, 2, INVENTORY, null, { header: 3.5,
 const LOCKSTROKE = findStrutCombinations(45, 0, 2, null, ['LockStroke'], null)[0]!;
 // 200″ — past the 192″ LongShore chart: deployable-with-acknowledgment.
 const UNRATED = findStrutCombinations(200, 0, 2, null, null, null)[0]!;
-// 180″ caps at 4,500 lb (4:1); 60,000 lb needs >4 struts — the NEW-3 sentinel.
-const OVER_CAPACITY = findStrutCombinations(180, 60000, 2, null, null, null)[0]!;
+// #531 — 30″ @ 500,000 lb: the LS 203 (22,000 lb at 4:1) needs 23 struts. No ceiling and no
+// sentinel: the engine returns an ordinary combo and the card renders it like a ×4.
+const FIVE_PLUS_LOAD = 500_000;
+const FIVE_PLUS = findStrutCombinations(30, FIVE_PLUS_LOAD, 2, null, null, null)[0]!;
 
 const WITH_EXT: StrutCombination = {
   ...STANDARD,
@@ -54,7 +56,9 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(LOCKSTROKE.strut.system).toBe('LockStroke');
     expect(LOCKSTROKE.strut.color).toBe('grey');
     expect(UNRATED.unrated).toBe(true);
-    expect(OVER_CAPACITY.exceedsCapacity).toBe(true);
+    expect(FIVE_PLUS.strut.model).toBe('LS 203');
+    expect(FIVE_PLUS.capacity).toBe(22000);
+    expect(FIVE_PLUS.recommendedQty).toBe(23);
   });
 
   it('anatomy: centered identity (system word · model), apparatus in the header, fit badge, disclaimer', () => {
@@ -277,23 +281,58 @@ describe('RecommendationCard (card.md §RecommendationCard)', () => {
     expect(onDeploy).toHaveBeenCalledWith(UNRATED);
   });
 
-  it('over-capacity (#40): gate explains, no acknowledgment exists, Deploy is closed outright', () => {
-    const onDeploy = vi.fn();
+  it('5+ struts (#531): renders like ×4 — ×23 tell, no shore type named, no sentinel gate', () => {
     const { container } = render(
-      <RecommendationCard combo={OVER_CAPACITY} deductions={NO_DEDUCTIONS} onDeploy={onDeploy} />,
+      <RecommendationCard
+        combo={FIVE_PLUS}
+        deductions={NO_DEDUCTIONS}
+        source="Eng 1"
+        onDeploy={vi.fn()}
+        onAddStruts={vi.fn()}
+        estimatedLoad={FIVE_PLUS_LOAD}
+        currentStruts={1}
+      />,
     );
     expect(container.querySelector('.fs-rec.is-gated')).toBeTruthy();
-    // "Over capacity" wins the fit badge (over unrated) and rides the danger variant;
-    // the quiet capacity footer is suppressed even though the per-strut number is > 0.
-    const fit = container.querySelector('.fs-rec-fit')!;
-    expect(fit.textContent).toBe('Over capacity');
-    expect(fit.classList.contains('fs-rec-fit--no')).toBe(true);
-    expect(OVER_CAPACITY.capacity).toBeGreaterThan(0); // the number exists — but it's meaningless here
-    expect(container.querySelector('.fs-rec-cap')).toBeNull();
-    expect(screen.getByText(/Load exceeds rated capacity at the 4:1 safety factor/)).toBeInTheDocument();
-    expect(screen.getByText(/exceeds 4-strut capacity/)).toBeInTheDocument(); // engine detail line
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Deploy/ })).toBeDisabled();
+    expect(container.querySelector('.fs-rec-fit')!.textContent).toBe('Over capacity');
+    expect(container.querySelector('.fs-rec-need-tile')!.textContent).toBe('×23');
+    expect(screen.getByText('struts needed for this load')).toBeInTheDocument();
+    expect(screen.getByText(/One strut is rated 22,000 lb/)).toBeInTheDocument();
+    // Beyond a 3-Post there is no standard shore type to name — the shoring plan is the officer's call.
+    expect(
+      screen.getByText(/This load needs 23 struts — plan additional shore sets, or consult rescue engineering\./),
+    ).toBeInTheDocument();
+    expect(container.querySelector('.fs-rec-need-tile')!.closest('.fs-rec-need')!.textContent).not.toMatch(
+      /T-Shore|Double-T|3-Post/,
+    );
+    // No one-tap "Add N more struts" (no shore type carries 23), and the retired engine
+    // sentinel gate is gone — the only gate is the short-deploy acknowledgment.
+    expect(screen.queryByRole('button', { name: /more strut/ })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Load exceeds rated capacity at the 4:1 safety factor/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/exceeds 4-strut capacity/)).not.toBeInTheDocument();
+  });
+
+  it('5+ struts (#531): Deploy-anyway stays locked behind the team acknowledgment, then fires', async () => {
+    const user = userEvent.setup();
+    const onDeploy = vi.fn();
+    render(
+      <RecommendationCard
+        combo={FIVE_PLUS}
+        deductions={NO_DEDUCTIONS}
+        source="Eng 1"
+        onDeploy={onDeploy}
+        estimatedLoad={FIVE_PLUS_LOAD}
+        currentStruts={1}
+      />,
+    );
+    const anyway = screen.getByRole('button', { name: /Deploy 1 of 23 anyway/ });
+    expect(anyway).toBeDisabled();
+    expect(screen.getByText('Acknowledge the over-capacity deploy first')).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ }));
+    expect(anyway).toBeEnabled();
+    await user.click(anyway);
+    expect(onDeploy).toHaveBeenCalledWith(FIVE_PLUS);
+    expect(screen.queryByRole('button', { name: /^Deploy LS 203/ })).not.toBeInTheDocument();
   });
 
   it('fully-extended boundary renders the zero-margin caution', () => {
@@ -324,7 +363,6 @@ describe('RecommendationCard — short deploy (×N struts needed)', () => {
     expect(SHORT.capacity).toBe(22000);
     expect(SHORT.recommendedQty).toBe(2);
     expect(SHORT.unrated ?? false).toBe(false);
-    expect(SHORT.exceedsCapacity ?? false).toBe(false);
   });
 
   it('deploy mode: ×2 tile, Add-1-more-strut primary, gated Deploy-anyway (mockup A)', async () => {
@@ -362,6 +400,22 @@ describe('RecommendationCard — short deploy (×N struts needed)', () => {
     expect(onDeploy).toHaveBeenCalledWith(SHORT);
     // No plain Deploy button — the short-deploy block replaces it.
     expect(screen.queryByRole('button', { name: /^Deploy LS 406/ })).not.toBeInTheDocument();
+  });
+
+  // #531 — N = 4 and N = 5+ share one rendering: the same tell sentence with N filled in.
+  it.each([
+    [88_000, 4],
+    [110_000, 5],
+    [500_000, 23],
+  ])('load %i lb → ×%i: the same "plan additional shore sets" tell, no shore type named', (load, n) => {
+    const { container } = render(
+      <RecommendationCard combo={SHORT} deductions={NO_DEDUCTIONS} onDeploy={vi.fn()} estimatedLoad={load} currentStruts={1} />,
+    );
+    expect(container.querySelector('.fs-rec-need-tile')!.textContent).toBe(`×${n}`);
+    expect(
+      screen.getByText(new RegExp(`This load needs ${n} struts — plan additional shore sets, or consult rescue engineering\\.`)),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: new RegExp(`Deploy 1 of ${n} anyway`) })).toBeDisabled();
   });
 
   it('display-only (Quick Find, mockup B): tile + badge, no gate, keeps the capacity footer', () => {

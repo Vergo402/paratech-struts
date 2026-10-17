@@ -1,8 +1,8 @@
 /**
  * WarningGate — the persistent safety disclosure (warning-gate.md, matrix
- * K-11). One primitive, three uses: unrated zone (deployable WITH explicit
- * acknowledgment), over capacity (deploy path closed — the gate explains why),
- * and the standing liability disclaimer. It rides the result for as long as
+ * K-11). One primitive, three uses: unrated zone and deploying short of the
+ * struts the load needs (both deployable WITH explicit acknowledgment), and the
+ * standing liability disclaimer. It rides the result for as long as
  * the result is on screen: no timer, no dismiss, no disclosure-collapse.
  * Danger is an accent and a word, never an alarm (Principle 3). The
  * acknowledgment unlocks the ACTION and keeps the DISCLOSURE — engaging it
@@ -14,8 +14,6 @@
 export const GATE_COPY = {
   unrated:
     'LongShore above 16 ft (192″) is not rated by Paratech — rescue engineering consultation required.',
-  'over-capacity':
-    'Load exceeds rated capacity at the 4:1 safety factor — this strut cannot be deployed for this opening.',
   'over-capacity-short': 'Deploying short of the required struts needs a recorded team acknowledgment.',
   disclaimer: 'Planning aid, not an engineering certification.',
 } as const;
@@ -35,7 +33,6 @@ export type WarningGateProps =
       acknowledged: boolean;
       onAcknowledge: () => void;
     }
-  | { use: 'over-capacity' }
   | { use: 'disclaimer' };
 
 function WarningGlyph() {
@@ -68,20 +65,18 @@ export function WarningGate(props: WarningGateProps) {
         <WarningGlyph />
         <p className="fs-gate-caveat">{GATE_COPY[props.use]}</p>
       </div>
-      {(props.use === 'unrated' || props.use === 'over-capacity-short') && (
-        <button
-          type="button"
-          className="fs-gate-ack"
-          role="checkbox"
-          aria-checked={props.acknowledged}
-          onClick={props.onAcknowledge}
-        >
-          <span className="fs-gate-ack-box" aria-hidden="true">
-            {props.acknowledged ? '✓' : ''}
-          </span>
-          {ACK_LABEL[props.use]}
-        </button>
-      )}
+      <button
+        type="button"
+        className="fs-gate-ack"
+        role="checkbox"
+        aria-checked={props.acknowledged}
+        onClick={props.onAcknowledge}
+      >
+        <span className="fs-gate-ack-box" aria-hidden="true">
+          {props.acknowledged ? '✓' : ''}
+        </span>
+        {ACK_LABEL[props.use]}
+      </button>
     </div>
   );
 }

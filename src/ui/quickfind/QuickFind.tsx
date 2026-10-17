@@ -89,7 +89,7 @@ export function QuickFind() {
   const emptyReason =
     combos.length > 0
       ? 'Nothing in the selected systems fits this opening — clear the filter or pick another system'
-      : 'Nothing fits this opening at this load — adjust the deductions or re-measure';
+      : 'Nothing fits this opening — adjust the deductions or re-measure';
 
   // Deductions toggle subtitle (#433, accepted mockup): the applied selections +
   // the total they take off the opening — readable without reopening the panel.

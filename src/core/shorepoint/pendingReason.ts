@@ -8,13 +8,13 @@ import { findForShorePoint } from './reducer';
  * so the reason appears/clears on its own as inventory changes.
  *
  *   undefined        — deployable recommendations exist (unrated counts: it
- *                      is deployable-with-acknowledgment; the over-capacity
- *                      sentinel does NOT — its deploy path is closed)
+ *                      is deployable-with-acknowledgment)
  *   'no-inventory'   — a strut that fits exists in the Paratech catalog, but
  *                      none is available on scene (stock problem)
- *   'over-capacity'  — a strut fits geometrically, but every option exceeds the
- *                      4-strut capacity cap at this load (escalate, not a miss)
  *   'no-match'       — nothing fits this opening geometrically at all
+ *
+ * The load never changes the answer (#531): a heavy load just needs more struts
+ * of a model that fits, so there is no load-driven reason.
  *
  * Deliberate broadening of the v3 semantics: v3 (app.js deployPendingShorePoint)
  * stamped 'no-inventory' only when the operation inventory was literally empty
@@ -25,13 +25,9 @@ import { findForShorePoint } from './reducer';
  */
 export function pendingReasonFor(sp: ShorePoint, inventory: StockRow[]): PendingReason | undefined {
   const stocked = findForShorePoint(sp, inventory);
-  if (stocked.some((c) => !c.exceedsCapacity)) return undefined;
-  const catalog = findForShorePoint(sp, null);
-  if (catalog.some((c) => !c.exceedsCapacity)) return 'no-inventory';
-  // A geometric fit exists but every option is over the 4-strut capacity cap →
-  // the load is too high (needs more capacity / engineering), NOT a geometry
-  // miss. Only an empty catalog is a true no-match (audit W3).
-  return catalog.length > 0 ? 'over-capacity' : 'no-match';
+  if (stocked.length > 0) return undefined;
+  // Only an empty catalog is a true no-match (audit W3).
+  return findForShorePoint(sp, null).length > 0 ? 'no-inventory' : 'no-match';
 }
 
 /**
@@ -44,7 +40,7 @@ export function pendingNeedModels(sp: ShorePoint): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const c of findForShorePoint(sp, null)) {
-    if (c.exceedsCapacity || !c.strut.model) continue;
+    if (!c.strut.model) continue;
     if (!seen.has(c.strut.model)) {
       seen.add(c.strut.model);
       out.push(c.strut.model);

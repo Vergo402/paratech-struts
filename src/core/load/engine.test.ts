@@ -96,6 +96,47 @@ describe('findStrutCombinations — selection, deductions, warnings', () => {
     expect(res[0]!.unrated).toBe(true);
   });
 
+  // #531 — no ceiling: struts share the load equally and the 4:1 factor is already inside
+  // the rating, so recommendedQty = ceil(load / capacity) at ANY load. Nothing caps a shore at 4.
+  describe('#531 — 5+ struts is an ordinary result (no 4-strut ceiling)', () => {
+    const modelsOf = (rs: ReturnType<typeof findStrutCombinations>) =>
+      rs.map((r) => `${r.strut.model}${r.extensions.length ? ' + ' + r.extensions.join('+') : ''}`);
+
+    it('30″ at load 0 → the five catalog fits', () => {
+      const res = findStrutCombinations(30, 0, 2);
+      expect(res).toHaveLength(5);
+      expect(res.every((r) => r.recommendedQty === 1)).toBe(true);
+      const byModel = new Map(res.map((r) => [`${r.strut.model}|${r.extensions.join('+')}`, r.capacity]));
+      expect(byModel.get('LS 203|')).toBe(22000);
+      expect(byModel.get('AT 25-36|')).toBe(20000);
+      expect(byModel.get('LK 25-36|')).toBe(20000);
+      expect(byModel.get('AT 19-25|6')).toBe(20000);
+      expect(byModel.get('LK 19-25|6')).toBe(20000);
+    });
+
+    it('30″ at 100,000 lb → LS 203 and AT 25-36 each come back needing 5 struts', () => {
+      const res = findStrutCombinations(30, 100_000, 2);
+      expect(res.find((r) => r.strut.model === 'LS 203')!.recommendedQty).toBe(5);
+      expect(res.find((r) => r.strut.model === 'AT 25-36')!.recommendedQty).toBe(5);
+    });
+
+    it('30″ at 500,000 lb → the SAME five fits as load 0, LS 203 first at 23 struts', () => {
+      const heavy = findStrutCombinations(30, 500_000, 2);
+      const none = findStrutCombinations(30, 0, 2);
+      expect(heavy).toHaveLength(5);
+      expect([...modelsOf(heavy)].sort()).toEqual([...modelsOf(none)].sort());
+      expect(heavy[0]!.strut.model).toBe('LS 203');
+      expect(heavy[0]!.recommendedQty).toBe(23);
+      expect(heavy.slice(1).every((r) => r.recommendedQty === 25)).toBe(true);
+    });
+
+    it('the LongShore unrated zone (>192″) is untouched: still unrated, qty 1, at any load', () => {
+      const res = findStrutCombinations(200, 500_000, 2, null, null, null);
+      expect(res.length).toBeGreaterThan(0);
+      expect(res.every((r) => r.unrated === true && r.recommendedQty === 1 && r.capacity === 0)).toBe(true);
+    });
+  });
+
   it('returns no combinations for a measurement nothing can reach', () => {
     const res = findStrutCombinations(400, 0, 2, null, null, null);
     expect(res).toEqual([]);

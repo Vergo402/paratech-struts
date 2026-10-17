@@ -3,10 +3,11 @@ import { ACME_LOAD_TABLE, LONGSHORE_LOAD_TABLE, type LoadRow } from './tables';
 import { STRUTS, EXTENSIONS, LOCKSTROKE_EXTENSIONS, type Strut } from './struts';
 
 // L-1 / L-2 — the selection algorithm, ported VERBATIM from v3 app.js (lines
-// 147-379). The math and every warning branch (unrated zone, >4-strut capacity,
-// fully-extended boundary) are unchanged; the only edits are TypeScript types
-// and the index guards that `noUncheckedIndexedAccess` requires. tables.test.ts +
-// engine.test.ts pin the output against v3. DO NOT "clean up" this code.
+// 147-379). The math and the warning branches (unrated zone, fully-extended
+// boundary) are unchanged; the only edits are TypeScript types and the index guards
+// that `noUncheckedIndexedAccess` requires, plus #531: v3's 4-strut ceiling (and its
+// NEW-3 "exceeds capacity" sentinel) is gone — a heavy load just needs more struts.
+// tables.test.ts + engine.test.ts pin the output against v3. DO NOT "clean up" this code.
 
 /** Numeric deduction heights handed to the engine (header/footer wood + plates). */
 export interface EngineDeductions {
@@ -43,21 +44,11 @@ export interface StrutCombination {
   unrated?: boolean;
   unratedReason?: string;
   boundaryWarning?: 'fully-extended' | null;
-  exceedsCapacity?: boolean;
-  exceedsCapacityReason?: string;
   // ADR-033 Phase 0 — the stock record the deploy path would source for each
   // extension instance (one entry per element of `extensions`). Lets the deploy
   // path commit the BOM without re-deriving the pooling done below. Present only
   // when inventory was passed AND the combo uses extensions; absent in catalog mode.
   extensionSources?: { length: number; inventoryId: string }[];
-}
-
-interface ExceedsCombo {
-  strut: StrutCandidate;
-  extensions: number[];
-  capacity: number;
-  maxFourStrutCapacity: number;
-  neededQty: number;
 }
 
 function getLoadTable(system: System): readonly LoadRow[] {
@@ -150,14 +141,6 @@ export function findStrutCombinations(
   // v3 used a `useInventory` boolean; here `inv` (narrowed truthy) drives the same
   // branches and also satisfies strict-null narrowing in the extension check below.
   const inv = inventory ?? null;
-  // NEW-3 (v3.5.2): track the highest single-strut capacity across combos that were rejected
-  // SOLELY because recommendedQty > 4. If the full search returns no valid results AND at
-  // least one combo failed for that reason, emit an informational warning so the rescuer
-  // knows the load exceeds 4-strut capacity (rather than seeing "no combinations" with no
-  // explanation — they could think the configuration is geometrically impossible when it's
-  // actually a load-magnitude issue).
-  let bestExceedsCapacityCombo: ExceedsCombo | null = null;
-
   let strutCandidates: StrutCandidate[] = inv
     ? inv
         .filter((i) => i.type === 'strut' && i.available > 0)
@@ -240,23 +223,13 @@ export function findStrutCombinations(
       // Skip if capacity is zero for any other reason (truly out of range)
       if (capacity <= 0 && !isUnratedZone) continue;
 
+      // #531: struts share the load equally and the 4:1 factor is already inside the rated
+      // capacity, so the count is simply ceil(load / capacity) — no ceiling. A 5+ load is
+      // an ordinary result (the card shows it as a "×N struts needed" tell); the per-strut
+      // share check (one strut's share vs its rating) lives downstream in the reducer.
       let recommendedQty = 1;
       if (!isUnratedZone && estimatedLoad > 0 && capacity < estimatedLoad) {
         recommendedQty = Math.ceil(estimatedLoad / capacity);
-        if (recommendedQty > 4) {
-          // NEW-3: capture the strongest combo we had to reject due to >4-strut requirement.
-          // Used to build an informational warning if NO valid combos exist for this search.
-          if (!bestExceedsCapacityCombo || capacity > bestExceedsCapacityCombo.capacity) {
-            bestExceedsCapacityCombo = {
-              strut,
-              extensions: [e1, e2].filter((e) => e > 0),
-              capacity,
-              maxFourStrutCapacity: capacity * 4,
-              neededQty: recommendedQty,
-            };
-          }
-          continue;
-        }
       }
 
       const capacityAll = isUnratedZone
@@ -321,37 +294,10 @@ export function findStrutCombinations(
     }
   }
 
-  // NEW-3 (v3.5.2): if the search found no valid combos AND at least one combo was rejected
-  // because it would need more than 4 struts to handle the load, surface that as an explicit
-  // informational warning. Without this, the rescuer sees "no combinations found" with no
-  // distinction between "no strut fits this length" and "load exceeds 4-strut capacity" —
-  // they may re-enter smaller load numbers to "make it work", building false confidence.
-  if (results.length === 0 && bestExceedsCapacityCombo) {
-    const c = bestExceedsCapacityCombo;
-    results.push({
-      strut: c.strut,
-      extensions: c.extensions,
-      extTotal: c.extensions.reduce((a, b) => a + b, 0),
-      adjCollapsed: c.strut.collapsed,
-      adjExtended: c.strut.extended,
-      capacity: c.capacity,
-      capacityAll: [0, 0, 0],
-      margin: 0,
-      componentCount: 1 + c.extensions.length,
-      recommendedQty: 0,
-      totalCapacity: c.maxFourStrutCapacity,
-      deductions: deductions || null,
-      effectiveLength: searchLength,
-      openingLength: requiredLength,
-      exceedsCapacity: true,
-      exceedsCapacityReason: `Load (${estimatedLoad.toLocaleString()} lb) exceeds 4-strut capacity at ${requiredLength}". Best available: ${c.strut.model} at ${c.capacity.toLocaleString()} lb per strut (4× = ${c.maxFourStrutCapacity.toLocaleString()} lb maximum). This load would require ${c.neededQty} struts. Verify the load calculation or consult rescue engineering before proceeding — this app does not recommend deployments beyond 4 struts per opening.`,
-    });
-  }
-
   results.sort((a, b) => {
-    // Warnings (unrated + exceeds-capacity) always sort to the top — they're not deployable options
-    const aWarn = a.unrated || a.exceedsCapacity ? 1 : 0;
-    const bWarn = b.unrated || b.exceedsCapacity ? 1 : 0;
+    // Warnings (unrated) always sort to the top — they're not deployable options
+    const aWarn = a.unrated ? 1 : 0;
+    const bWarn = b.unrated ? 1 : 0;
     if (aWarn !== bWarn) return bWarn - aWarn;
     if (a.recommendedQty !== b.recommendedQty) return a.recommendedQty - b.recommendedQty;
     if (a.componentCount !== b.componentCount) return a.componentCount - b.componentCount;
@@ -363,12 +309,12 @@ export function findStrutCombinations(
   });
 
   // Only show extension combos for a strut model if that strut can't reach on its own.
-  // Warnings (unrated / exceeds-capacity) are always kept — they're not redundant combos.
+  // Warnings (unrated) are always kept — they're not redundant combos.
   const strutOnlyModels = new Set(
-    results.filter((r) => !r.unrated && !r.exceedsCapacity && r.extensions.length === 0).map((r) => r.strut.model),
+    results.filter((r) => !r.unrated && r.extensions.length === 0).map((r) => r.strut.model),
   );
   const filtered = results.filter(
-    (r) => r.unrated || r.exceedsCapacity || r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model),
+    (r) => r.unrated || r.extensions.length === 0 || !strutOnlyModels.has(r.strut.model),
   );
 
   return filtered;

@@ -10,6 +10,10 @@ import {
   unknownPlateIds,
   strutLoadShareDeployed,
   deployedStrutCount,
+  deployVerdict,
+  bestRatedCapacity,
+  strutsNeededFor,
+  findForShorePoint,
 } from './reducer';
 import { deployedStrutOf } from './bom';
 import { canTransition } from './status';
@@ -762,11 +766,26 @@ describe('deployedCapacityFlag — per-point verdicts for an unverified peer dep
     expect(deployedCapacityFlag(point)).toBe('no-fit');
   });
 
-  it('flags over-capacity when the load exceeds every ≤4-strut combo — regardless of the deployed model', () => {
+  it('flags over-capacity when one strut’s share exceeds the strongest strut that fits — regardless of the deployed model', () => {
     const huge = 10_000_000;
     expect(deployedCapacityFlag(sp({ status: 'process', measurementEighths: 468, estimatedLoad: huge, deployedBom: strutBom('LS 406') }))).toBe('over-capacity');
     // Even a model the catalog no longer lists (no model match) — the verdict is per point.
     expect(deployedCapacityFlag(sp({ status: 'process', measurementEighths: 468, estimatedLoad: huge, deployedBom: strutBom('LS 812') }))).toBe('over-capacity');
+  });
+
+  // #531 — a load needing 5+ struts is no longer a sentinel; the per-strut share is what's judged.
+  it('5+ struts: a single-strut T-Shore under a 5-strut load reads over-capacity', () => {
+    // 58.5″, 100,000 lb on ONE LS 406 (rated 22,000): the load needs 5 struts, this shore has 1.
+    const point = sp({ status: 'process', measurementEighths: 468, estimatedLoad: 100_000, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('over-capacity');
+    // …and the same with a model the catalog doesn't list (the verdict is per point).
+    expect(deployedCapacityFlag({ ...point, deployedBom: strutBom('LS 812') })).toBe('over-capacity');
+  });
+
+  it('5+ struts: a 3-Post still carrying more than the strongest rating per strut reads over-capacity', () => {
+    // 100,000 lb / 3 = 33,333 lb per strut > 22,000.
+    const point = sp({ status: 'process', measurementEighths: 468, estimatedLoad: 100_000, groupTotal: 3, deployedBom: strutBom('LS 406') });
+    expect(deployedCapacityFlag(point)).toBe('over-capacity');
   });
 
   it('no-fit outranks unknown-connector (#484 precedence)', () => {
@@ -785,5 +804,62 @@ describe('deployedCapacityFlag — per-point verdicts for an unverified peer dep
     const next = shorePointReducer(point, { type: 'EquipmentDeployed', ...meta, spId: 'sp1', deployedBom: bom } as FieldShoreEvent);
     expect(next.status).toBe('process');
     expect(deployedCapacityFlag(next)).toBe('no-fit');
+  });
+});
+
+// #531 — the engine has no 4-strut ceiling and no sentinel; the store's local deploy guard
+// reads this verdict, and its over-capacity check must NOT depend on the deployed model
+// matching (the sentinel was the one verdict that didn't).
+describe('deployVerdict + bestRatedCapacity — model-independent over-capacity (#531)', () => {
+  const bomOf = (model: string): DeployedBom => [{ role: 'strut', model, system: 'LongShore', source: 'Eng 1', inventoryId: 'i1' }];
+  const at = (over: Partial<ShorePoint>) => sp({ measurementEighths: 468, ...over }); // 58.5″
+
+  it('bestRatedCapacity is the strongest rated fit; 0 when nothing is rated or nothing fits', () => {
+    const combos = findForShorePoint(at({}), null);
+    expect(bestRatedCapacity(combos)).toBe(Math.max(...combos.map((c) => c.capacity)));
+    expect(bestRatedCapacity(combos)).toBeGreaterThanOrEqual(22000);
+    expect(bestRatedCapacity([])).toBe(0);
+    // LongShore beyond 192″ — every fit is unrated, so there is no rating to compare against.
+    expect(bestRatedCapacity(findForShorePoint(sp({ measurementEighths: 200 * 8 }), null))).toBe(0);
+  });
+
+  it('noFit when nothing spans the opening', () => {
+    expect(deployVerdict(sp({ measurementEighths: 6 * 8 }), bomOf('LS 406'))).toEqual({
+      unrated: false,
+      overCapacity: false,
+      noFit: true,
+    });
+  });
+
+  it('returns exactly { unrated, overCapacity, noFit } — a 5+ load is judged per strut, like any other', () => {
+    expect(Object.keys(deployVerdict(at({ estimatedLoad: 100_000 }), bomOf('LS 406'))).sort()).toEqual([
+      'noFit',
+      'overCapacity',
+      'unrated',
+    ]);
+  });
+
+  it('matched model: judged against its own rating', () => {
+    expect(deployVerdict(at({ estimatedLoad: 5_000 }), bomOf('LS 406')).overCapacity).toBe(false);
+    expect(deployVerdict(at({ estimatedLoad: 34_000 }), bomOf('LS 406')).overCapacity).toBe(true);
+    // 5-strut load on a single strut: share = the whole load.
+    expect(deployVerdict(at({ estimatedLoad: 100_000 }), bomOf('LS 406')).overCapacity).toBe(true);
+    // …but the same load shared by a 3-strut group within rating is fine.
+    expect(deployVerdict(at({ estimatedLoad: 60_000, groupTotal: 3 }), bomOf('LS 406')).overCapacity).toBe(false);
+  });
+
+  it('a model the catalog does not list: over the strongest fit → overCapacity; within it → not', () => {
+    expect(deployVerdict(at({ estimatedLoad: 10_000_000 }), bomOf('LS 812')).overCapacity).toBe(true);
+    expect(deployVerdict(at({ estimatedLoad: 5_000 }), bomOf('LS 812')).overCapacity).toBe(false);
+  });
+
+  it('LongShore unrated zone: unrated, never overCapacity (no rating to exceed)', () => {
+    const v = deployVerdict(sp({ measurementEighths: 195 * 8, estimatedLoad: 10_000_000 }), bomOf('LS 1016'));
+    expect(v.unrated).toBe(true);
+    expect(v.overCapacity).toBe(false);
+  });
+
+  it('strutsNeededFor has no ceiling', () => {
+    expect(strutsNeededFor(500_000, 22_000)).toBe(23);
   });
 });
