@@ -259,36 +259,57 @@ export function effectiveLengthInches(sp: ShorePoint): number {
   return effectiveLengthFrom(sp.measurementEighths, sp.deductions);
 }
 
-// Cut lumber is fixed by SHORE TYPE, not the operator's strut deduction (confirmed
-// Alex 2026-06-21, #361): a T-Shore or Double-T always sits on 4×4 header+footer, a
-// 3-Post on 6×6. Header and footer are the same size.
+// The cut wood FOLLOWS the header + footer picked when the shore was created (Alex
+// 2026-10-17, superseding #361's fixed-by-shore-type rule): 4×4 picked → 4×4 to the
+// saw, 6×6 → 6×6, header and footer each on their own. Add Shore Point now requires
+// both picks; CUT_LUMBER survives only as the labeled fallback for a point saved
+// before that rule with 'none' (Alex: "standard wood, labeled").
 export const CUT_LUMBER: Record<ShoreTypeId, WoodSizeId> = {
   't-shore': '4x4',
   'double-t': '4x4',
   '3-post': '6x6',
 };
 
-/**
- * Wood CUT length (inches), floored to ⅛″ — the length to cut the shore wood to.
- * A DISTINCT number from the strut effective length: it deducts the shore-type
- * standard header + footer (NOT the operator's strut selection) plus a flat
- * loading-wedge allowance, and NO plates (the cut wood replaces the strut+plates).
- * Cut short — the wedge takes up the slack; long is the hazard (#361).
- *
- * FLOORED AT 0 (SME-3, 2026-07-28). A 3-Post's fixed cut deduction is 12.5″
- * (2 × 6×6 + 1½″ wedge), which exceeds the smallest strut's 12″ collapsed length, so
- * a near-minimum opening could drive this negative and render a signed length on the
- * cutting-station hero — a number a saw operator has no defined action for. The
- * clamp keeps the value physical; the hero warns on `<= 0` (a 0″ cut is just as
- * meaningless as a negative one), so the clamp never silently hides the condition.
- */
-export function cutLengthInches(sp: ShorePoint): number {
-  const lumber = woodHeight(CUT_LUMBER[sp.shoreType]);
-  return Math.max(0, Math.floor((sp.measurementEighths / 8 - 2 * lumber - WEDGE_DEDUCTION) * 8) / 8);
+/** The header + footer wood the cut length uses, and whether each side fell back to
+ *  the shore-type standard because nothing was picked. */
+export function cutLumber(sp: ShorePoint): {
+  header: WoodSizeId;
+  footer: WoodSizeId;
+  headerStandard: boolean;
+  footerStandard: boolean;
+} {
+  const std = CUT_LUMBER[sp.shoreType];
+  const { headerWood, footerWood } = sp.deductions;
+  return {
+    header: headerWood === 'none' ? std : headerWood,
+    footer: footerWood === 'none' ? std : footerWood,
+    headerStandard: headerWood === 'none',
+    footerStandard: footerWood === 'none',
+  };
 }
 
 /**
- * The opening leaves NO cuttable length after the shore-type header + footer + wedge
+ * Wood CUT length (inches), floored to ⅛″ — the length to cut the shore wood to.
+ * A DISTINCT number from the strut effective length: it deducts the picked header +
+ * footer wood (cutLumber) plus a flat loading-wedge allowance, and NO plates (the cut
+ * wood replaces the strut+plates). Cut short — the wedge takes up the slack; long is
+ * the hazard (#361).
+ *
+ * FLOORED AT 0 (SME-3, 2026-07-28). A 6×6 header + footer + 1½″ wedge is 12.5″, which
+ * exceeds the smallest strut's 12″ collapsed length, so a near-minimum opening could
+ * drive this negative and render a signed length on the cutting-station hero — a
+ * number a saw operator has no defined action for. The clamp keeps the value
+ * physical; the hero warns on `<= 0` (a 0″ cut is just as meaningless as a negative
+ * one), so the clamp never silently hides the condition.
+ */
+export function cutLengthInches(sp: ShorePoint): number {
+  const { header, footer } = cutLumber(sp);
+  const wood = woodHeight(header) + woodHeight(footer);
+  return Math.max(0, Math.floor((sp.measurementEighths / 8 - wood - WEDGE_DEDUCTION) * 8) / 8);
+}
+
+/**
+ * The opening leaves NO cuttable length after the header + footer wood + wedge
  * (SME-3). Every surface that promotes a cut length must warn on this instead of
  * printing a bare 0″ the saw operator has no defined action for.
  *
@@ -299,18 +320,6 @@ export function cutLengthInches(sp: ShorePoint): number {
  */
 export function cutTooSmall(sp: ShorePoint): boolean {
   return cutLengthInches(sp) <= 0;
-}
-
-/**
- * The header or footer wood picked under Deductions is a different SIZE from the
- * shore-type CUT_LUMBER the cut length assumes (Alex 2026-10-17). Returns that picked
- * size (header checked first), or null when every picked wood matches. 'none' never
- * warns — no strut wood picked says nothing about the shore's cut wood.
- */
-export function cutWoodMismatch(sp: ShorePoint): WoodSizeId | null {
-  const std = CUT_LUMBER[sp.shoreType];
-  const { headerWood, footerWood } = sp.deductions;
-  return [headerWood, footerWood].find((w) => w !== 'none' && w !== std) ?? null;
 }
 
 /**

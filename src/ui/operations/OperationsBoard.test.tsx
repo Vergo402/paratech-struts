@@ -305,6 +305,10 @@ describe('OperationsBoard', () => {
     const feet = screen.getByRole('textbox', { name: 'Feet' });
     await user.clear(feet);
     await user.type(feet, '4');
+    // Header + footer wood are required since 2026-10-17 (the cut follows them).
+    for (const name of ['Header wood — required', 'Footer wood — required']) {
+      await user.click(within(screen.getByRole('radiogroup', { name })).getByRole('radio', { name: '4×4' }));
+    }
     const qty = screen.getByRole('textbox', { name: 'Number of Shore Sets' });
     await user.clear(qty);
     await user.type(qty, '3');

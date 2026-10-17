@@ -258,7 +258,7 @@ describe('CuttingStation', () => {
   // saw operator can't act on. Real reducer math throughout; nothing stubbed.
   describe('SME-3 — opening too small for the shore-type wood', () => {
     const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
-    const TOO_SMALL = /Opening too small for standard 6×6 wood — verify measurement/;
+    const TOO_SMALL = /Opening too small for this header and footer wood — verify measurement/;
 
     function renderQueue(sp: ShorePoint) {
       render(
@@ -309,11 +309,12 @@ describe('CuttingStation', () => {
   });
 });
 
-// Alex 2026-10-17 (accepted mockup): the cut assumes the shore-type CUT_LUMBER, so the
-// hero says so when the wood picked under Deductions is a different size. Real reducer
-// math — the manual's own Stairwell B point (T-Shore, 54″, 6×6 picked).
-describe('CuttingStation — picked wood differs from the cut lumber', () => {
+// Alex 2026-10-17 (accepted mockups): the cut follows the header + footer wood picked
+// at creation. Real reducer math — the manual's own Stairwell B point (T-Shore, 54″).
+describe('CuttingStation — the cut follows the picked wood', () => {
   const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+  const num = () => hero().querySelector('.fs-cutstation-hero-num');
+  const math = () => hero().querySelector('.fs-cutstation-hero-math');
   const wood = (headerWood: 'none' | '4x4' | '6x6', footerWood: 'none' | '4x4' | '6x6') =>
     makeSP('w', { measurementEighths: 54 * 8, deductions: { headerWood, footerWood, topPlate: 'none', bottomPlate: 'none' } });
   const renderQueue = (sp: ShorePoint) =>
@@ -321,14 +322,22 @@ describe('CuttingStation — picked wood differs from the cut lumber', () => {
       <CuttingStation queue={[sp]} sent={[]} onMarkCutDone={noop} onClearCutDone={noop} onSendToRunner={noop} onStepBack={noop} />,
     );
 
-  it('warns when 6×6 was picked on a T-Shore, and the cut number stays the 4×4 cut', () => {
+  it('6×6 picked → cuts for 6×6, with no warning chip', () => {
     renderQueue(wood('6x6', '6x6'));
-    expect(within(hero()).getByRole('status')).toHaveTextContent('⚠ You picked 6×6 under Deductions — this cut is for 4×4');
-    expect(hero().querySelector('.fs-cutstation-hero-num')).toHaveTextContent('45 1/2″');
+    expect(num()).toHaveTextContent('41 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 6×6 header + footer − 1½″ wedge');
+    expect(hero().querySelector('.fs-spc-flag-row')).toBeNull();
   });
 
-  it('stays quiet when the picked wood matches the shore type', () => {
-    renderQueue(wood('4x4', '4x4'));
-    expect(within(hero()).queryByText(/You picked/)).toBeNull();
+  it('a mixed pick names each side', () => {
+    renderQueue(wood('6x6', '4x4'));
+    expect(num()).toHaveTextContent('43 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 6×6 header − 4×4 footer − 1½″ wedge');
+  });
+
+  it('a legacy point with no wood falls back to the standard and says so', () => {
+    renderQueue(wood('none', 'none'));
+    expect(num()).toHaveTextContent('45 1/2″');
+    expect(math()).toHaveTextContent('Opening 54″ − 4×4 header + footer (standard, none picked) − 1½″ wedge');
   });
 });

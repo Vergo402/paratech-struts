@@ -258,15 +258,17 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const disabledReason =
     measurementEighths <= 0
       ? 'Enter the opening measurement'
-      : effective <= 0
-        ? 'Deductions consume the whole opening'
-        : !loadValid
-          ? 'Load must be between 0 and 500,000 lbs'
-          : !editing && !qtyValid
-            ? 'Number of Shore Sets must be a whole number of 1 or more'
-            : buildingRequired && building.trim() === ''
-              ? 'Enter the building'
-              : null;
+      : deductions.headerWood === 'none' || deductions.footerWood === 'none'
+        ? 'Pick header and footer wood'
+        : effective <= 0
+          ? 'Deductions consume the whole opening'
+          : !loadValid
+            ? 'Load must be between 0 and 500,000 lbs'
+            : !editing && !qtyValid
+              ? 'Number of Shore Sets must be a whole number of 1 or more'
+              : buildingRequired && building.trim() === ''
+                ? 'Enter the building'
+                : null;
   const canSubmit = disabledReason === null;
 
   // Group picker source: the distinct apparatus already on scene (40-inventory).
@@ -738,6 +740,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
           value={deductions}
           onChange={setDeductions}
           collapsible
+          requireWood
           availablePlateIds={availablePlateIds}
           stockLabel={assignedResource || undefined}
         />
