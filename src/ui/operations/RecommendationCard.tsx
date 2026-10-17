@@ -305,7 +305,7 @@ export function RecommendationCard({
       <div className="fs-rec-header">
         <div className="fs-rec-headcol">
           <p className="fs-rec-identity">
-            <b>{word}</b> · {model}
+            <b>{word}</b> · <span className="fs-rec-model">{model}</span>
           </p>
           {specs.length > 0 && (
             <p className="fs-rec-connectors">

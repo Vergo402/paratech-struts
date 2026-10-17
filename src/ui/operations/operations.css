@@ -1196,9 +1196,9 @@ button.fs-spc-head {
 }
 
 /* Centered identity header — the deliberate visual split from the left-aligned
-   ShorePointCard (S12 §3.1). The identity column centers across the card; the
-   fit badge floats top-right, OUTSIDE the centering flow, so it never shoves
-   the identity off-center. */
+   ShorePointCard (S12 §3.1). The identity column centers across the card. A
+   clean card carries no badge (#248); a gated card switches to the left-aligned
+   badge row below. */
 .fs-rec-header {
   position: relative;
   display: flex;
@@ -1212,10 +1212,36 @@ button.fs-spc-head {
   text-align: center;
   max-width: 100%; /* full width — a clean recommendation carries no badge (#248) */
 }
-/* Only a gated card shows the absolutely-positioned danger badge; reserve its
-   room so the centered identity never collides with it. */
+/* Gated card (Over capacity / Unrated): left-aligned like the Quick Find card —
+   the identity and the danger badge share the first row, and every line under
+   the identity spans the full width. A centered column can't clear a floating
+   badge at phone width (it clipped "LS 203" and the rig name), so the badge
+   joins the flow here. `display: contents` lifts the column's lines into the
+   header grid without touching the markup. */
+.fs-rec.is-gated .fs-rec-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-2);
+  align-items: start;
+}
 .fs-rec.is-gated .fs-rec-headcol {
-  max-width: calc(100% - 64px);
+  display: contents;
+  text-align: left;
+}
+.fs-rec.is-gated .fs-rec-headcol > * {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.fs-rec.is-gated .fs-rec-identity {
+  grid-column: 1;
+}
+.fs-rec.is-gated .fs-rec-connectors {
+  justify-content: flex-start;
+}
+.fs-rec.is-gated .fs-rec-header > .fs-rec-fit {
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .fs-rec-identity {
@@ -1226,6 +1252,13 @@ button.fs-spc-head {
 .fs-rec-identity b {
   color: var(--rec-color);
   font-weight: 700;
+}
+/* The model ("LS 203", "LS 1016 + 12″") wraps as one unit: beside a gated badge
+   it drops to the next line whole instead of splitting "LS" from "203".
+   inline-block, not nowrap, so an over-long multi-extension label still wraps
+   inside itself rather than running under the badge. */
+.fs-rec-model {
+  display: inline-block;
 }
 
 .fs-rec-loc {
