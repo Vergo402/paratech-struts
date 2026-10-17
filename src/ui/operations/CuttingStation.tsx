@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { ShorePoint } from '@core/schema';
 import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
-import { CUT_LUMBER, cutLengthInches, cutTooSmall } from '@core/shorepoint';
+import { CUT_LUMBER, cutLengthInches, cutTooSmall, cutWoodMismatch } from '@core/shorepoint';
 import { Badge, Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
 import { usePeerCuts } from '@ui/hooks';
@@ -218,6 +218,7 @@ export function CuttingStation({
     // the saw, so the surface that leg is worked on must carry the same verdict the
     // board card does — and here, with the deployed context spelled out.
     const heroFlag = capacityFlagOf?.(sp) ?? null;
+    const pickedWood = cutWoodMismatch(sp);
     return (
     <div className="fs-cutstation-hero" data-sp-id={sp.id} data-saw={sawId ?? undefined}>
       <span className="fs-cutstation-hero-badge">
@@ -256,6 +257,17 @@ export function CuttingStation({
         <span className="fs-spc-flag-row">
           <span className="fs-spc-flag fs-spc-flag--over-capacity" role="status">
             ⚠ Opening too small for standard {CUT_LUMBER[sp.shoreType].replace('x', '×')} wood — verify measurement
+          </span>
+        </span>
+      )}
+      {/* The picked strut wood is a different size from the CUT_LUMBER this number
+          assumes (Alex 2026-10-17, accepted mockup). Amber like the compact too-small
+          chip: the number is right for standard wood, the crew may be cutting other. */}
+      {pickedWood && (
+        <span className="fs-spc-flag-row">
+          <span className="fs-spc-flag fs-spc-flag--warning" role="status">
+            ⚠ You picked {pickedWood.replace('x', '×')} under Deductions — this cut is for{' '}
+            {CUT_LUMBER[sp.shoreType].replace('x', '×')}
           </span>
         </span>
       )}

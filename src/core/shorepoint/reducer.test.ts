@@ -6,6 +6,7 @@ import {
   effectiveLengthFrom,
   deductionTotalInches,
   cutLengthInches,
+  cutWoodMismatch,
   deployedCapacityFlag,
   unknownPlateIds,
   strutLoadShareDeployed,
@@ -115,6 +116,30 @@ describe('cutLengthInches — wood cut length, shore-type-fixed lumber + wedge (
       // 12 − 2×3.5 − 1.5 = 3.5 — positive, so the clamp is inert here by construction.
       expect(cutLengthInches(sp({ shoreType: 't-shore', measurementEighths: 96 }))).toBe(3.5);
     });
+  });
+});
+
+describe('cutWoodMismatch — picked strut wood vs the shore-type cut lumber (Alex 2026-10-17)', () => {
+  const wood = (shoreType: ShorePoint['shoreType'], headerWood: 'none' | '4x4' | '6x6', footerWood: 'none' | '4x4' | '6x6') =>
+    cutWoodMismatch(sp({ shoreType, deductions: { ...NO_DEDUCTIONS, headerWood, footerWood } }));
+
+  it('flags 6×6 picked on a T-Shore / Double-T (the cut assumes 4×4)', () => {
+    expect(wood('t-shore', '6x6', '6x6')).toBe('6x6');
+    expect(wood('double-t', '6x6', 'none')).toBe('6x6');
+  });
+
+  it('flags 4×4 picked on a 3-Post (the cut assumes 6×6)', () => {
+    expect(wood('3-post', '4x4', '4x4')).toBe('4x4');
+  });
+
+  it('checks the footer on its own — a matching header does not hide it', () => {
+    expect(wood('t-shore', '4x4', '6x6')).toBe('6x6');
+  });
+
+  it('is null when the picked wood matches, or none was picked', () => {
+    expect(wood('t-shore', '4x4', '4x4')).toBeNull();
+    expect(wood('3-post', '6x6', '6x6')).toBeNull();
+    expect(wood('t-shore', 'none', 'none')).toBeNull();
   });
 });
 

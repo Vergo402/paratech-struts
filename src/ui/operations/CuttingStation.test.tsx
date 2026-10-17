@@ -308,3 +308,27 @@ describe('CuttingStation', () => {
     });
   });
 });
+
+// Alex 2026-10-17 (accepted mockup): the cut assumes the shore-type CUT_LUMBER, so the
+// hero says so when the wood picked under Deductions is a different size. Real reducer
+// math — the manual's own Stairwell B point (T-Shore, 54″, 6×6 picked).
+describe('CuttingStation — picked wood differs from the cut lumber', () => {
+  const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+  const wood = (headerWood: 'none' | '4x4' | '6x6', footerWood: 'none' | '4x4' | '6x6') =>
+    makeSP('w', { measurementEighths: 54 * 8, deductions: { headerWood, footerWood, topPlate: 'none', bottomPlate: 'none' } });
+  const renderQueue = (sp: ShorePoint) =>
+    render(
+      <CuttingStation queue={[sp]} sent={[]} onMarkCutDone={noop} onClearCutDone={noop} onSendToRunner={noop} onStepBack={noop} />,
+    );
+
+  it('warns when 6×6 was picked on a T-Shore, and the cut number stays the 4×4 cut', () => {
+    renderQueue(wood('6x6', '6x6'));
+    expect(within(hero()).getByRole('status')).toHaveTextContent('⚠ You picked 6×6 under Deductions — this cut is for 4×4');
+    expect(hero().querySelector('.fs-cutstation-hero-num')).toHaveTextContent('45 1/2″');
+  });
+
+  it('stays quiet when the picked wood matches the shore type', () => {
+    renderQueue(wood('4x4', '4x4'));
+    expect(within(hero()).queryByText(/You picked/)).toBeNull();
+  });
+});

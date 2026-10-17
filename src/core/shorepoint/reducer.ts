@@ -302,6 +302,18 @@ export function cutTooSmall(sp: ShorePoint): boolean {
 }
 
 /**
+ * The header or footer wood picked under Deductions is a different SIZE from the
+ * shore-type CUT_LUMBER the cut length assumes (Alex 2026-10-17). Returns that picked
+ * size (header checked first), or null when every picked wood matches. 'none' never
+ * warns — no strut wood picked says nothing about the shore's cut wood.
+ */
+export function cutWoodMismatch(sp: ShorePoint): WoodSizeId | null {
+  const std = CUT_LUMBER[sp.shoreType];
+  const { headerWood, footerWood } = sp.deductions;
+  return [headerWood, footerWood].find((w) => w !== 'none' && w !== std) ?? null;
+}
+
+/**
  * Structural equality for the patchable field values — primitives plus the flat
  * `deductions` / `coords` objects. A patch arrives as a freshly parsed object on every
  * fold (re-projection, peer ingest), so reference comparison would call an identical
