@@ -115,6 +115,19 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
     expect(screen.queryByText('Equipment from: Rescue 2')).not.toBeInTheDocument();
   });
 
+  // Bug 9 — one location string across every surface: the canonical cardLocation order
+  // (building · division · side · area). This sheet used to build division · building · area
+  // and drop the side, so the same point read differently here than on its card/row/tile.
+  it('location line uses the canonical cardLocation order (building · division · side · area) on the header AND the card', () => {
+    mockRecommendations.mockReturnValue([COMBO]);
+    mockInventory.mockReturnValue([INV_ITEM]);
+    const sp = makeSP({ building: 'North tower', division: '2', side: 'B', area: 'NW corner' });
+    render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+    const expected = 'North tower · Div 2 · B side · NW corner';
+    expect(document.querySelector('.fs-assign-context')!.textContent).toMatch(new RegExp(`^${expected} · T-Shore`));
+    expect(document.querySelector('.fs-rec-loc')!.textContent).toBe(expected);
+  });
+
   it('Deploy commits EquipmentDeployed with the composed identity and reports back', async () => {
     const user = userEvent.setup();
     const onDeployed = vi.fn();
@@ -356,6 +369,46 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
         [],
         '2× LS 406',
       );
+    });
+
+    // Bug 3 — the rebuild hard-deletes the originals, so any identity field the rebuilt
+    // literal forgets is GONE. coords + w3w were forgotten: the GPS fix and the
+    // what3words callout vanished, and the board can't backfill w3w without coords.
+    it('Add-N-struts carries the captured location (coords + w3w) onto every rebuilt member', async () => {
+      const user = userEvent.setup();
+      const sp = shortSp({ coords: { lat: 41.0123, lng: -73.8321 }, w3w: 'filled.count.soap' });
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+
+      await user.click(screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ }));
+
+      const batch = mockCommitMany.mock.calls[0]![0] as Array<Record<string, unknown>>;
+      const added = batch.filter((e) => e.type === 'ShorePointAdded').map((e) => e.shorePoint as ShorePoint);
+      expect(added).toHaveLength(2);
+      for (const p of added) {
+        expect(p.coords).toEqual({ lat: 41.0123, lng: -73.8321 });
+        expect(p.w3w).toBe('filled.count.soap');
+      }
+    });
+
+    it('Add-N-struts on a point with NO captured location writes no coords/w3w keys (RTDB rejects undefined)', async () => {
+      const user = userEvent.setup();
+      const sp = shortSp();
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([INV_ITEM]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+
+      await user.click(screen.getByRole('button', { name: /Add 1 more strut — deploy as Double-T/ }));
+
+      const batch = mockCommitMany.mock.calls[0]![0] as Array<Record<string, unknown>>;
+      for (const e of batch.filter((e) => e.type === 'ShorePointAdded')) {
+        const p = e.shorePoint as ShorePoint;
+        expect(p).not.toHaveProperty('coords');
+        expect(p).not.toHaveProperty('w3w');
+      }
     });
 
     // #451 — stock runs out mid-rebuild. The old code announced the whole set as
