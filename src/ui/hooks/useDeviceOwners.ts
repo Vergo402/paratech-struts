@@ -17,6 +17,7 @@ export function useDeviceOwners(): ResolveDeviceOwner {
     queryFn: () => departmentService.readDeviceOwners(),
     enabled: deptId != null,
     staleTime: 5 * 60_000,
+    networkMode: 'online', // a real RTDB read — paused offline, fetched on reconnect (the app default is 'always')
   });
   return (deviceUid: string) => data?.[deviceUid] ?? null;
 }
