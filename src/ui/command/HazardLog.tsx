@@ -72,17 +72,19 @@ export function HazardLog() {
     const header = ['Type', 'Location', 'Severity', 'Status', 'Reported', 'Reported by', 'Mitigated', 'Mitigated by'];
     const body = sorted.map((h) => [
       TYPE_LABEL[h.type],
-      // formulaSafe guard (CWE-1236, #257 J257-S2): location is PEER-controlled free
-      // text — a value like `=HYPERLINK(...)` would execute when the export opens in
-      // Excel/Sheets. reportedBy/mitigatedBy are device uids (not peer free text), so
-      // they don't need the guard.
+      // formulaSafe guard (CWE-1236, #257 J257-S2): location, reportedBy and
+      // mitigatedBy are all PEER-controlled free text — a value like `=HYPERLINK(...)`
+      // would execute when the export opens in Excel/Sheets. The two `*By` fields look
+      // like device uids but are not guaranteed to be: `by` is not bound to auth.uid
+      // (ADR-042), and any active member can write these fields as an arbitrary string.
+      // Same pattern as the Audit Log export (core/audit/csv.ts: `actor ?? by`).
       formulaSafe(h.location),
       severityWord(h.severity),
       h.mitigatedAt != null ? 'Mitigated' : 'Open',
       new Date(h.reportedAt).toLocaleString(),
-      h.reportedBy,
+      formulaSafe(h.reportedBy),
       h.mitigatedAt != null ? new Date(h.mitigatedAt).toLocaleString() : '',
-      h.mitigatedBy ?? '',
+      formulaSafe(h.mitigatedBy ?? ''),
     ]);
     const csv = [header, ...body].map((r) => r.map(csvCell).join(',')).join('\r\n');
     const name = (operation?.name ?? 'operation').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
