@@ -2,6 +2,8 @@ import { initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getDatabase } from 'firebase-admin/database';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions/v2';
+import { runAccountUpdate } from './accountUpdate';
 import {
   ADMIN_ROLE_ID,
   requireManageUsers,
@@ -157,7 +159,9 @@ interface AdminUpdateRequest {
  * Field-driven privileged update of an EXISTING member's account: email change,
  * reset-password-to-starter, Auth-profile displayName sync. Password/email
  * changes also revoke the target's refresh tokens, so a lost/stale device drops
- * off the account within the ID-token hour.
+ * off the account within the ID-token hour. A failed cloud step throws
+ * 'aborted' with a truthful message and never leaves Auth on a starter password
+ * without mustChangePassword (see accountUpdate.ts).
  */
 export const adminUpdateAccount = onCall(async (request) => {
   const d = (request.data ?? {}) as Partial<AdminUpdateRequest>;
@@ -186,24 +190,35 @@ export const adminUpdateAccount = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'A name is 80 characters max.');
   }
 
+  // The write order and rollbacks live in accountUpdate.ts (tested there): the
+  // mustChangePassword flag is raised BEFORE the password changes, a failed email
+  // mirror rolls Auth back, and refresh tokens are revoked whenever a credential
+  // change landed — so a failure never leaves a starter password un-flagged.
   const auth = getAuth();
-  try {
-    await auth.updateUser(targetUid, {
-      ...(email ? { email } : {}),
-      ...(newPassword ? { password: newPassword } : {}),
-      ...(displayName ? { displayName } : {}),
-    });
-  } catch (err) {
-    throw mapAuthError(err);
-  }
-
-  const db = getDatabase();
-  const mirror: Record<string, unknown> = {};
-  if (email) mirror[`orgs/${deptId}/members/${targetUid}/email`] = email;
-  if (newPassword) mirror[`orgs/${deptId}/members/${targetUid}/mustChangePassword`] = true;
-  if (Object.keys(mirror).length) await db.ref().update(mirror);
-
-  if (email || newPassword) await auth.revokeRefreshTokens(targetUid).catch(() => {});
+  const memberRef = getDatabase().ref(`orgs/${deptId}/members/${targetUid}`);
+  await runAccountUpdate(
+    { email, newPassword, displayName },
+    {
+      readAuthEmail: async () => (await auth.getUser(targetUid)).email,
+      readMustChangePassword: async () => (await memberRef.child('mustChangePassword').get()).val(),
+      writeMemberFields: (fields) => memberRef.update(fields),
+      updateAuth: async (patch) => {
+        await auth.updateUser(targetUid, patch);
+      },
+      revokeRefreshTokens: () => auth.revokeRefreshTokens(targetUid),
+      mapAuthError,
+      // 'aborted', not 'internal': departmentService.callableError shows
+      // 'internal' as "Couldn't reach the server" but passes this message through.
+      saveFailed: (message) => new HttpsError('aborted', message),
+      warn: (step, err) =>
+        logger.warn(`adminUpdateAccount: ${step} failed`, {
+          deptId,
+          targetUid,
+          code: (err as { code?: unknown } | null)?.code,
+          error: err instanceof Error ? err.message : String(err),
+        }),
+    },
+  );
 
   return { ok: true };
 });
