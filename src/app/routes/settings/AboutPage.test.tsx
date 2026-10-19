@@ -40,6 +40,48 @@ describe('AboutPage (50-settings §6)', () => {
     expect(update).toHaveBeenCalled();
   });
 
+  it('a failed check (update() rejects, e.g. offline) says so — it never claims "up to date"', async () => {
+    const update = vi.fn().mockRejectedValue(new TypeError('Failed to update a ServiceWorker: network error'));
+    getRegistration.mockResolvedValue({ update, installing: null, waiting: null });
+    const user = userEvent.setup();
+    render(<AboutPage />);
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
+    expect(await screen.findByText("Couldn't check for updates — try again when online.")).toBeInTheDocument();
+    expect(screen.queryByText("You're up to date")).not.toBeInTheDocument();
+    // The row is usable again for the retry.
+    expect(screen.getByRole('button', { name: /Check for updates/ })).toBeEnabled();
+  });
+
+  it('a failed registration lookup (getRegistration() rejects) reports the same failure', async () => {
+    getRegistration.mockRejectedValue(new Error('SecurityError'));
+    const user = userEvent.setup();
+    render(<AboutPage />);
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
+    expect(await screen.findByText("Couldn't check for updates — try again when online.")).toBeInTheDocument();
+    expect(screen.queryByText("You're up to date")).not.toBeInTheDocument();
+  });
+
+  it('a retry after a failure can still report up to date', async () => {
+    const update = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(undefined);
+    getRegistration.mockResolvedValue({ update, installing: null, waiting: null });
+    const user = userEvent.setup();
+    render(<AboutPage />);
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
+    expect(await screen.findByText(/Couldn't check for updates/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
+    expect(await screen.findByText("You're up to date")).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't check for updates/)).not.toBeInTheDocument();
+  });
+
+  it('no registration (dev, or SW not installed yet) is the "unavailable" note, not a failure', async () => {
+    getRegistration.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<AboutPage />);
+    await user.click(screen.getByRole('button', { name: /Check for updates/ }));
+    expect(await screen.findByText('Updates apply automatically in the installed app.')).toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't check for updates/)).not.toBeInTheDocument();
+  });
+
   it('has a way back to the public welcome page, opened in this window so an installed app stays in its shell', () => {
     render(<AboutPage />);
     const group = within(screen.getByRole('region', { name: 'Welcome page' }));

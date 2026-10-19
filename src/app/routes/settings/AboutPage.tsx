@@ -6,9 +6,11 @@ import { SettingsGroup, SettingsRow, SettingsNote, SettingsPageTitle } from './S
 // that drives the service worker directly via the standard navigator.serviceWorker
 // API (the PWA SW auto-registers in production; vite-plugin-pwa registerType:'autoUpdate'
 // skip-waits, so a found update activates and the page reloads). No virtual:pwa-register
-// dependency needed. In dev there's no SW, so the check reports "up to date" gracefully.
+// dependency needed. In dev no SW is registered, so getRegistration() resolves undefined and
+// the check lands on 'unavailable'. A check that throws (offline, a failed update() fetch)
+// lands on 'failed' — never 'uptodate': we only say "up to date" when update() succeeded.
 
-type CheckState = 'idle' | 'checking' | 'uptodate' | 'updating' | 'unavailable';
+type CheckState = 'idle' | 'checking' | 'uptodate' | 'updating' | 'unavailable' | 'failed';
 
 export function AboutPage() {
   const [state, setState] = useState<CheckState>('idle');
@@ -38,7 +40,7 @@ export function AboutPage() {
       // activate it → controllerchange → reload). Otherwise we're current.
       setState(reg.installing || reg.waiting ? 'updating' : 'uptodate');
     } catch {
-      setState('uptodate');
+      setState('failed');
     }
   };
 
@@ -48,6 +50,7 @@ export function AboutPage() {
     uptodate: { text: "You're up to date", tone: 'var(--color-status-secured, var(--text-secondary))' },
     updating: { text: 'Update found — reloading…', tone: 'var(--accent)' },
     unavailable: { text: 'Updates apply automatically in the installed app.', tone: 'var(--text-tertiary)' },
+    failed: { text: "Couldn't check for updates — try again when online.", tone: 'var(--text-secondary)' },
   };
   const s = status[state];
 
