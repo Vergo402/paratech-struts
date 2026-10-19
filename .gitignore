@@ -7,6 +7,10 @@
 .claude/launch.json
 .claude/scheduled_tasks.lock
 
+# Audit evidence: screenshots, raw JSON, local paths, real emails.
+# Local only; the repo is public. Files tracked before 2026-10-19 stay tracked.
+.claude/audits/
+
 # Review queue (pending manual delete)
 _review-to-delete/
 
