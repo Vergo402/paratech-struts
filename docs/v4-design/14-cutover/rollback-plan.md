@@ -12,7 +12,7 @@ Every script finds the rollback bundle `$B` through a fixed symlink, `~/Document
 
 ---
 
-## 1. Starting state (verified 2026-10-16 and 2026-10-17)
+## 1. Starting state (verified 2026-10-16 and 2026-10-17; functions row re-verified 2026-10-20)
 
 | Surface | Before cutover | After cutover (Step 5) | Rollback end state |
 |---|---|---|---|
@@ -20,7 +20,7 @@ Every script finds the rollback bundle `$B` through a fixed symlink, `~/Document
 | Live hosting `fieldshore-database.web.app` | Disabled since 2026-10-09 (404). Older live versions are July v4 builds | First v4.0 build live, as a clone of the CI-built beta version (P9) | **The kill switch, left live** until the next attempt (§3.3) |
 | Beta channel | `fieldshore-database--beta-2rs8x80s.web.app`, version `d46681f4373783e3`, CI run `38420545115` at `903a68e` (2026-10-13). **Expires 2026-11-12** | Unchanged | Unchanged, **but not a stable fallback** (see the facts below) |
 | RTDB rules (`fieldshore-database-default-rtdb`) | Live == `database.rules.json` at `3005e74` == HEAD `903a68e` | Rules from the merge commit, deployed after the phone check | The T-0 snapshot (R1 restore), or a lockdown set for T5 (§3.2) |
-| Cloud Functions (us-central1, v2, nodejs22) | `provisionAccount`, `adminUpdateAccount`, `deleteOwnAccount`. All three carry `firebase-functions-hash` `39b237dc…`. Source generations are `1791546331554127`, `1791546390247873` and `1791546390095845`, uploaded 2026-10-09 between 11:45 and 11:46Z, just after `54a4a0c` | None deployed, if gate FUNCTIONS-UNCHANGED passes | Checked against the T-0 hash-and-generation baseline (§3.6) |
+| Cloud Functions (us-central1, v2, nodejs22) | `provisionAccount`, `adminUpdateAccount`, `deleteOwnAccount`. `firebase-functions` 7.4. All three carry `firebase-functions-hash` `1ff9b314…`. Source generations are `1792465496214594`, `1792465598322544` and `1792465597116754`, uploaded 2026-10-20 between 03:04 and 03:07Z by `firebase deploy --only functions` from a clean `fieldshore/` checkout at `427b67c` (the PR #534 merge; `functions/` there == `22cad22`). This replaced the 2026-10-09 deploy of `54a4a0c` | None deployed, if gate FUNCTIONS-UNCHANGED passes | Checked against the T-0 hash-and-generation baseline (§3.6) |
 | Data | v3 in `paratech-c3ab4`. v4 in `fieldshore-database` (fresh-start re-import, #264) | No data step | Verify only. Restores are path-scoped (§3.7) |
 
 **Facts that shape the plan:**
@@ -64,13 +64,13 @@ Order: **R0 decide → R1 rules → drain gate → R2 hosting → R3 git → R3b
 | P1 | Remove the root `index.html` localStorage block on `v4-redesign` with one commit that sets the file to `origin/main:index.html` | Orchestrator. The push triggers a beta CI redeploy, which also extends beta (P6) | In a clean `v4-redesign` worktree: `git show origin/main:index.html > index.html`, then commit and push | SERVED-SAME in P4 |
 | P2 | Fallback tag on the main tip | Fable | `kit/scripts/t0-tag.sh` | Peeled tag on `origin` == `origin/main` (checked by the script) |
 | P3 | Captures into a fresh bundle `$B`, plus the symlink. The bundle holds: the refs; `firebase projects:list` and `gh auth status` (authority gates); the live rules; the RTDB export; the `paratech-c3ab4` export; `functions:list --json`; `hosting:channel:list --json --config kit/killswitch/firebase.json`; the Pages build; the last beta run | Fable (reads only) | `kit/scripts/t0-capture.sh` | `extract.py` stops unless the beta version, URL and expiry are all present, the functions baseline has a hash and a generation per function, and the live rules have a `rules` key |
-| P4 | Git gates | Fable | `kit/scripts/t0-gates.sh` | All must print OK: MERGE-CLEAN, SERVED-SAME, FUNCTIONS-UNCHANGED (a FLAG instead sends you to P10), TAG |
+| P4 | Git gates | Fable | `kit/scripts/t0-gates.sh` | All must print OK: MERGE-CLEAN, SERVED-SAME, FUNCTIONS-UNCHANGED (since `427b67c`, the last functions deploy; a FLAG instead sends you to P10), TAG |
 | P5 | Kill-switch preview channel, holding the exact bytes R2a will clone | Alex's go | `cd kit/killswitch && firebase hosting:channel:deploy killswitch --expires 30d --project fieldshore-database --config ./firebase.json`. Then refresh `$B/channels.json` (same command as P3) and run `python3 kit/scripts/extract.py "$B"` | `$B/killswitch-version.txt` is non-empty, and `curl -s <channel URL>/sw.js \| grep -c registration.unregister` returns 1 |
 | P6 | Extend beta and record its URL | Fable | Any push to `v4-redesign` (P1 does it), or `gh run rerun <databaseId from $B/beta-run.json> --repo Vergo402/paratech-struts` | A fresh channel list shows `expireTime` at least 30 days out |
 | P7 | Add `https://fieldshore-database.web.app/*` to the Maps key's referrer allowlist | Alex (Google Cloud console) | none | Address autocomplete works on the live origin at Gate 4 |
 | P8 | Do the forward merge as a PR, not a direct push (recommendation for the runbook) | Fable | `gh pr create --repo Vergo402/paratech-struts --base main --head v4-redesign --title "v4.0 cutover (#267)" --body "<gates passed>"`, then `gh pr merge <n> --repo Vergo402/paratech-struts --merge` | R3 gains a phone route (GitHub's Revert button) |
 | P9 | Go live by cloning the CI-built beta version (recommendation for the runbook). Order per ADR-041: client first, rules last | Fable, on Alex's go | (1) Client: `firebase hosting:clone fieldshore-database@$(cat "$B/beta-version.txt") fieldshore-database:live`. (2) Wait for the Gate 4 phone check to pass on the live client. (3) Only then deploy rules: `git -C "$REPO" show <M>:database.rules.json > "$B/cutover-rules.json" && kit/scripts/r1-rules.sh "$B/cutover-rules.json"` | The live bundle is byte-identical to what beta tested and carries the CI secrets. A local build of the merge commit lacks the gitignored `.env.local` (Maps and what3words keys) |
-| P10 | Only if P4 flagged functions | Fable | Deploy functions by name from a clean checkout **before** hosting: `git -C "$REPO" worktree add --detach /tmp/fn origin/v4-redesign && npm --prefix /tmp/fn/functions ci && firebase deploy --only functions:provisionAccount,functions:adminUpdateAccount,functions:deleteOwnAccount --project fieldshore-database --config /tmp/fn/firebase.json` | R5 becomes an active step |
+| P10 | Only if P4 flagged functions. If functions are instead deployed before T-0 (as on 2026-10-20), move the baseline (`FN` in `t0-gates.sh`, and §1) to the deployed commit, proven by the `functions:list` generations | Fable | Deploy functions by name from a clean checkout **before** hosting: `git -C "$REPO" worktree add --detach /tmp/fn origin/v4-redesign && npm --prefix /tmp/fn/functions ci && firebase deploy --only functions:provisionAccount,functions:adminUpdateAccount,functions:deleteOwnAccount --project fieldshore-database --config /tmp/fn/firebase.json` | R5 becomes an active step |
 | T+0 | Right after the merge lands | Fable | `kit/scripts/t1-record-merge.sh` | M^1 == tag and M's tree == `v4-redesign`. M is saved to `$B/M.txt` |
 
 **Optional, recommended now (Alex's call): make the kill switch the live release before the cutover** with `firebase hosting:clone fieldshore-database:killswitch fieldshore-database:live`. It does two things:
@@ -212,9 +212,9 @@ Keep `v3-legacy-final`. To retire it later: `git push origin :refs/tags/v3-legac
 
 ### 3.6 R5: Cloud Functions
 
-**If T-0 gate FUNCTIONS-UNCHANGED passed,** the cutover deploys no functions, and R5 is `kit/scripts/r5-functions-verify.sh`. It compares `functions:list --json` with the T-0 baseline on hash **and** source generation; drill 29 returned FUNCTIONS-SAME. The table output can't show a code change.
+**If T-0 gate FUNCTIONS-UNCHANGED passed,** the cutover deploys no functions, and R5 is `kit/scripts/r5-functions-verify.sh`. It compares `functions:list --json` with the T-0 baseline on hash **and** source generation; drill 29 returned FUNCTIONS-SAME against the 2026-10-17 baseline. Only a fresh P3 bundle is valid: `cutover-current` still points at the 2026-10-17 rehearsal bundle, which holds the old `39b237dc` baseline, so R5 run against it would STOP. The table output can't show a code change.
 
-**If P10 ran,** R5 is active: redeploy by name from a clean checkout of the T-0 `origin/v4-redesign` commit (recorded in `$B/refs.txt`). **Never roll functions back below what the beta client calls.**
+**If P10 ran,** R5 is active: redeploy by name from a clean checkout of the T-0 `origin/v4-redesign` commit (recorded in `$B/refs.txt`). **Never roll functions back below what the beta client calls** (today `427b67c`: beta at `c13c7b0` ships 2f0625e's ChangePasswordGate, which needs its server half).
 
 **Ban a bare `firebase deploy`.** It deploys functions from the working tree, including another session's uncommitted `functions/` edits.
 
@@ -399,7 +399,7 @@ Gap 4 is closed: `hosting:clone` (in both channel and version form) and a folder
    - Commit the kit to `docs/v4-design/14-cutover/rollback/` and the evidence folder under `.claude/audits/phase-j/265-rollback/`.
    - Update runbook Step 5 with P7, P8, P9, T+0, and the `ls-remote` tag check.
    - The earlier scratchpad drills (`rb265/`, `rv265/`) are superseded by this run and can be archived alongside it.
-3. Byte-level proof that the deployed functions equal `54a4a0c`: download a source zip or check the Cloud console. The hash and generation timing are strong evidence, but they are not byte-level.
+3. Byte-level proof that the deployed functions equal `functions/` at `427b67c` (== `22cad22`): download a source zip or check the Cloud console. The deploy log (clean tree at `427b67c`, `npm ci` with firebase-functions 7.4.0, no outdated-SDK warning) and uploads 53 s to 2.6 min after the merge are strong evidence, but they are not byte-level. Not blocking while beta-only.
 4. Follow-up candidates:
    - v4 calls `navigator.storage.persist()`, so stranded data survives storage pressure (v4.0.x).
    - #520's re-send path would let R6 relax its events ban.
