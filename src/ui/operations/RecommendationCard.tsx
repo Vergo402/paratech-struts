@@ -30,7 +30,7 @@ export interface RecommendationCardProps {
   deductions: Deductions;
   /** Apparatus the strut comes from. Operation mode only — Quick Find omits it. */
   source?: string;
-  /** Shore-point identity/location (division · building · area). Operation mode only — optional. */
+  /** Shore-point identity/location, pre-formatted by cardParts' cardLocation (building · division · side · area). Operation mode only — optional. */
   location?: string;
   /** Operation mode: Deploy commits. Absent = Quick Find display-only card. */
   onDeploy?: (combo: StrutCombination) => void | Promise<void>;

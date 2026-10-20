@@ -6,7 +6,7 @@ import { SHORE_TYPES, parseLoad } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
 import { getGpsFix } from './locationCapture';
-import { compareBuildingValues, divisionLabel, nextSeqBase, parseDivisionNumber } from '@core/operation';
+import { compareBuildingValues, nextSeqBase, parseDivisionNumber } from '@core/operation';
 import { assembleBom, effectiveLengthFrom, isUntracked, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -27,7 +27,7 @@ import { DivisionPicker } from './DivisionPicker';
 import { BuildingPicker } from './BuildingPicker';
 import { SidePicker } from './SidePicker';
 import { RecommendationCard, comboModel } from './RecommendationCard';
-import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY } from './cardParts';
+import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY, cardLocation } from './cardParts';
 
 // Options for the shore-type form control, derived from the shared label map (one
 // source of truth; #435 dedup) in the canonical SHORE_TYPES catalog order. Full
@@ -310,9 +310,13 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   const noResultsReason =
     inlineMode && found && draftSp && recommendations.length === 0 ? pendingReasonFor(draftSp, inventory) : undefined;
 
+  // The not-yet-saved point's location, formatted by the SAME cardLocation every saved
+  // card/row/tile uses (building · division · side · area). `side` is layered on here
+  // rather than put on draftSp: it is display-only, so the recommendation input above
+  // stays exactly what the engine needs.
   const draftLocation = useMemo(
-    () => [divisionLabel(String(division)), building.trim() || undefined, area.trim() || undefined].filter(Boolean).join(' · '),
-    [division, building, area],
+    () => (draftSp ? cardLocation({ ...draftSp, ...(side ? { side } : {}) }) : undefined),
+    [draftSp, side],
   );
 
   // The struts of ONE physical shore (KB-7: T-Shore=1, Double-T=2, 3-Post=3,

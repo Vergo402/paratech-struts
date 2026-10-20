@@ -7,9 +7,11 @@ manual: title block, section/subsection headings, paragraphs with inline
 LITERAL numbers/bullets so Word never auto-renumbers across the TOC and the
 step lists), pipe tables, and fenced code blocks (the ICS org-chart tree).
 
-It also re-embeds the section screenshots from docs/manual-assets/ (captured
-from the live v3.21 app) at the end of each mapped section. Missing images are
-skipped gracefully so the script still runs if a shot wasn't captured.
+It also re-embeds the section screenshots from docs/manual-assets/ (v4-NN-*.png,
+captured from the live v4 app; see .claude/audits/phase-j/263-manual/shot-list.json)
+at the end of each mapped section. The build is strict: it counts the pictures
+it really inserts and exits 1 if any IMAGE_MAP entry never matches a heading, a
+screenshot file is missing, or the inserted count differs from the IMAGE_MAP total.
 
 Keeps the .docx content 100% in sync with the markdown source. Run on every
 MINOR/MAJOR release after editing docs/USER-MANUAL.md:
@@ -19,6 +21,7 @@ MINOR/MAJOR release after editing docs/USER-MANUAL.md:
 """
 import os
 import re
+import sys
 from docx import Document
 from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -49,43 +52,71 @@ MOBILE_W = Inches(2.9)   # phone-portrait shots — narrow + tall
 DESKTOP_W = Inches(6.0)  # wide split-view shots
 
 IMAGE_MAP = {
-    "Connecting Your Department": [
-        ("01-login.png", "The Department ID login screen.", "mobile"),
+    "The Welcome Page": [
+        ("v4-01-welcome.png", "The welcome page: a short scroll-through of what FieldShore does.", "mobile"),
     ],
-    "Using FieldShore on Desktop": [
-        ("13-desktop-command.png", "Desktop view — Command tab split layout.", "desktop"),
-        ("14-desktop-operations.png", "Desktop view — Operations tab with drilldown sidebar.", "desktop"),
+    "Creating Your Account and Signing In": [
+        ("v4-02-sign-in.png", "The sign-in screen on the Create Account tab.", "mobile"),
     ],
-    "How to Use": [
-        ("02-quickfind.png", "Quick Find — entering a measurement and load.", "mobile"),
+    "Creating a Department": [
+        ("v4-03-create-department.png", "The invite code and QR code after you create a department.", "mobile"),
     ],
-    "Results": [
-        ("03-quickfind-results.png", "Quick Find results, ranked by safety factor.", "mobile"),
+    "Joining a Department": [
+        ("v4-04-join-department.png", "The Join department screen with an invite code typed in.", "mobile"),
+    ],
+    "Phone and Desktop Layouts": [
+        ("v4-22-desktop-command.png", "Desktop view: the rail on the left, Command situation and Org Chart side by side.", "desktop"),
+    ],
+    "Finding a Strut": [
+        ("v4-05-quickfind.png", "Quick Find with an opening typed in.", "mobile"),
+    ],
+    "Reading the Results": [
+        ("v4-06-quickfind-results.png", "The results sheet: the math, the system filter and the strut cards.", "mobile"),
     ],
     "Starting an Operation": [
-        ("04-start-operation.png", "The Start New Operation form.", "mobile"),
-        ("05-operations-tab.png", "The Operations tab with an active operation.", "mobile"),
+        ("v4-07-start-operation.png", "The Start Operation form.", "mobile"),
+    ],
+    "The Operations Board": [
+        ("v4-08-operations-board.png", "The Operations board with an active operation.", "mobile"),
     ],
     "Adding a Shore Point": [
-        ("06-add-shore-point.png", "The Add Shore Point form.", "mobile"),
+        ("v4-09-add-shore-point.png", "The Add Shore Point form.", "mobile"),
     ],
-    "Shore Point Lifecycle": [
-        ("07-shore-card.png", "A shore point card with its status badge and actions.", "mobile"),
+    "Assigning Equipment": [
+        ("v4-10-assign-equipment.png", "The Assign Equipment sheet lists struts that fit and are on your rigs.", "mobile"),
     ],
-    "What's on the Command Tab": [
-        ("08-command-tab.png", "The Command tab — dashboard tiles and sections.", "mobile"),
+    "Moving a Shore Point Through Its Steps": [
+        ("v4-11-shore-card-slide.png", "A shore point card at Strut Set with its two slide bars.", "mobile"),
     ],
-    "Default Roles": [
-        ("09-org-chart.png", "The ICS Organization chart (default hierarchy).", "mobile"),
+    "The Cutting Station": [
+        ("v4-12-cutting-station.png", "The Cutting Station with the cut length as a big number.", "mobile"),
     ],
-    "6. Cut Table": [
-        ("10-cut-table.png", "The Cut Table view.", "mobile"),
+    "Ending an Operation": [
+        ("v4-13-end-operation.png", "The End Operation confirm lists equipment still out.", "mobile"),
     ],
-    "7. Inventory": [
-        ("11-inventory.png", "The Inventory tab — apparatus and Quick Add grid.", "mobile"),
+    "The Command Screen": [
+        ("v4-14-command.png", "The Command screen on a phone.", "mobile"),
     ],
-    "8. Settings": [
-        ("12-settings.png", "The Settings tab.", "mobile"),
+    "The Org Chart": [
+        ("v4-15-org-chart.png", "The ICS org chart with the default positions.", "mobile"),
+    ],
+    "Hazard Log": [
+        ("v4-16-hazard-log.png", "The Hazard Log with open and mitigated hazards.", "mobile"),
+    ],
+    "The Inventory Screen": [
+        ("v4-17-inventory.png", "The Inventory screen for one rig.", "mobile"),
+    ],
+    "Pick Your File and Map Your Columns": [
+        ("v4-18-import-map-columns.png", "Step 2 of the import: match each file column to a FieldShore field.", "mobile"),
+    ],
+    "Settings Pages": [
+        ("v4-19-settings.png", "The Settings list with the theme picker.", "mobile"),
+    ],
+    "Users and Roles": [
+        ("v4-20-user-manager.png", "The User manager Members view.", "mobile"),
+    ],
+    "The Sync Banner": [
+        ("v4-21-sync-banner-offline.png", "The sync bar while offline.", "mobile"),
     ],
 }
 
@@ -112,7 +143,9 @@ def add_inline(paragraph, text):
 
 
 def add_images(doc, entries):
-    """Embed a section's screenshots + captions, skipping any missing files."""
+    """Embed a section's screenshots + captions. Returns how many pictures were
+    really inserted (a missing file is skipped here, then caught by the count)."""
+    inserted = 0
     for filename, caption, kind in entries:
         path = os.path.join(ASSETS, filename)
         if not os.path.exists(path):
@@ -122,6 +155,7 @@ def add_images(doc, entries):
         p.paragraph_format.space_before = Pt(6)
         run = p.add_run()
         run.add_picture(path, width=(DESKTOP_W if kind == 'desktop' else MOBILE_W))
+        inserted += 1
         cap = doc.add_paragraph()
         cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
         cap.paragraph_format.space_after = Pt(10)
@@ -129,6 +163,7 @@ def add_images(doc, entries):
         r.italic = True
         r.font.size = Pt(9)
         r.font.color.rgb = GREY
+    return inserted
 
 
 def main():
@@ -144,7 +179,8 @@ def main():
             last_updated = ln.split('**Last updated:**')[1].strip().rstrip('\\').strip()
         elif ln.startswith('**App:**'):
             m = re.search(r'\(([^)]+)\)', ln)
-            app_url = m.group(1) if m else ''
+            # A link gives its URL; plain text (no link yet) is shown as written.
+            app_url = m.group(1) if m else ln.split('**App:**')[1].strip()
 
     doc = Document()
     doc.styles['Normal'].font.name = 'Calibri'
@@ -179,14 +215,18 @@ def main():
         i += 1
 
     pending_images = []  # flushed when the next heading arrives or at EOF
+    inserted = 0         # pictures really added to the document
+    matched = set()      # IMAGE_MAP keys that found their heading
 
     def is_table_row(s):
         return s.strip().startswith('|') and s.strip().endswith('|')
 
     def emit_heading(level, text):
-        nonlocal pending_images
-        add_images(doc, pending_images)          # close out previous section
+        nonlocal pending_images, inserted
+        inserted += add_images(doc, pending_images)  # close out previous section
         add_inline(doc.add_heading(level=level), text)
+        if text.strip() in IMAGE_MAP:
+            matched.add(text.strip())
         pending_images = IMAGE_MAP.get(text.strip(), [])
 
     while i < n:
@@ -285,7 +325,7 @@ def main():
         add_inline(doc.add_paragraph(), stripped)
         i += 1
 
-    add_images(doc, pending_images)  # flush final section's images
+    inserted += add_images(doc, pending_images)  # flush final section's images
 
     for lvl, color, size in ((1, NAVY, 16), (2, ACCENT, 13), (3, GREY, 11.5)):
         style = doc.styles[f'Heading {lvl}']
@@ -294,12 +334,14 @@ def main():
 
     doc.save(OUT)
 
-    embedded = sum(
-        1 for entries in IMAGE_MAP.values()
-        for fn, _, _ in entries if os.path.exists(os.path.join(ASSETS, fn))
-    )
     total = sum(len(v) for v in IMAGE_MAP.values())
-    print(f'Wrote {OUT} (Version {version}, {last_updated}) — {embedded}/{total} screenshots embedded')
+    print(f'Wrote {OUT} (Version {version}, {last_updated}) — {inserted}/{total} screenshots embedded')
+    unmatched = sorted(set(IMAGE_MAP) - matched)
+    for key in unmatched:
+        print(f'ERROR: IMAGE_MAP heading never matched: {key!r}')
+    if unmatched or inserted != total:
+        print(f'ERROR: {inserted}/{total} screenshots inserted, {len(unmatched)} unmatched heading(s)')
+        sys.exit(1)
 
 
 if __name__ == '__main__':

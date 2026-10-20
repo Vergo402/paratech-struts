@@ -153,4 +153,45 @@ describe('HazardLog', () => {
     expect(csv).toContain(`'=HYPERLINK`); // apostrophe-prefixed → inert text
     expect(csv).not.toMatch(/(^|,)"?=HYPERLINK/m); // never a bare leading =
   });
+
+  // reportedBy / mitigatedBy look like device uids but are not: `by` is not bound to auth.uid
+  // (ADR-042), so any active member can write them as arbitrary strings.
+  it.each(['=', '+', '-', '@'])(
+    'export: formula-guards reportedBy / mitigatedBy that start with %s',
+    async (trigger) => {
+      const user = userEvent.setup();
+      mockHazards.mockReturnValue({
+        h1: {
+          id: 'h1', type: 'structural', location: 'Div 2', severity: 'high',
+          reportedBy: `${trigger}rep`, reportedAt: 2000,
+          mitigatedBy: `${trigger}mit`, mitigatedAt: 3000,
+        },
+      });
+      render(<HazardLog />);
+      await user.click(screen.getByRole('button', { name: 'Export ICS-208' }));
+
+      const csv = vi.mocked(download).mock.calls[0]![1];
+      expect(csv).toContain(`,'${trigger}rep,`); // Reported by cell: apostrophe-prefixed
+      expect(csv.endsWith(`,'${trigger}mit`)).toBe(true); // Mitigated by cell (last column)
+      expect(csv).not.toMatch(/(^|,)[=+\-@]/m); // no cell anywhere starts with a trigger
+    },
+  );
+
+  it('export: leaves an ordinary reportedBy / mitigatedBy uid untouched', async () => {
+    const user = userEvent.setup();
+    mockHazards.mockReturnValue({
+      h1: {
+        id: 'h1', type: 'fall', location: 'Roof', severity: 'low',
+        reportedBy: 'u2', reportedAt: 1000, mitigatedBy: 'u3', mitigatedAt: 3000,
+      },
+    });
+    render(<HazardLog />);
+    await user.click(screen.getByRole('button', { name: 'Export ICS-208' }));
+
+    const csv = vi.mocked(download).mock.calls[0]![1];
+    expect(csv).toContain(',u2,');
+    expect(csv.endsWith(',u3')).toBe(true);
+    expect(csv).not.toContain("'u2");
+    expect(csv).not.toContain("'u3");
+  });
 });

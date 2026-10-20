@@ -31,10 +31,22 @@ vi.mock('@ui/hooks', () => ({
 // Inline mode renders RecommendationCards in the form — mock to a bare Deploy
 // button so the test drives the deploy path without fabricating a full combo.
 vi.mock('./RecommendationCard', () => ({
-  RecommendationCard: ({ combo, onDeploy }: { combo: { strut: { model: string } }; onDeploy: (c: unknown) => void }) => (
-    <button type="button" onClick={() => onDeploy(combo)}>
-      Deploy {combo.strut.model}
-    </button>
+  RecommendationCard: ({
+    combo,
+    onDeploy,
+    location,
+  }: {
+    combo: { strut: { model: string } };
+    onDeploy: (c: unknown) => void;
+    location?: string;
+  }) => (
+    <>
+      <button type="button" onClick={() => onDeploy(combo)}>
+        Deploy {combo.strut.model}
+      </button>
+      {/* Surfaces the `location` prop so the draft's location string is assertable. */}
+      <span data-testid="rec-location">{location}</span>
+    </>
   ),
   comboModel: (combo: { strut: { model: string } }) => combo.strut.model,
 }));
@@ -530,6 +542,22 @@ describe('AddShorePointModal — one-step inline deploy', () => {
     render(<AddShorePointModal open onClose={() => {}} />);
     expect(screen.getByText('Assigned')).toBeInTheDocument();
     expect(screen.queryByText('Group')).toBeNull();
+  });
+
+  // Bug 9 — the draft's location string must match the canonical cardLocation order
+  // (building · division · side · area) every card/row/tile uses; it used to read
+  // division · building · area and drop the side.
+  it('the recommendation card location is the canonical cardLocation order, side included', async () => {
+    mockOperation.mockReturnValue({ ...INLINE_OP, multiBuilding: true, divisions: [1, 2] });
+    // Building / division / side / area all carry over from the newest point.
+    mockShorePoints.mockReturnValue([
+      makeSP({ id: 'b', division: '2', building: 'North tower', side: 'B', area: 'NW corner' }),
+    ]);
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await setMeasurementFeet(user, 4);
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    expect(screen.getByTestId('rec-location')).toHaveTextContent(/^North tower · Div 2 · B side · NW corner$/);
   });
 
   it('Find reveals recommendations; Deploy creates the point AND deploys the strut', async () => {

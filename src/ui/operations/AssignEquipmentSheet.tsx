@@ -4,7 +4,6 @@ import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
-import { divisionLabel } from '@core/operation';
 import { bomSourceStatus, findForShorePoint, pendingReasonFor, strutLoadShare } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
@@ -12,7 +11,7 @@ import { useCommit, useCommitMany, useDeviceUid, useInventory, useRecommendation
 import { RecommendationCard, comboModel } from './RecommendationCard';
 import { DeployResolution } from './DeployResolution';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
-import { NO_MATCH_EMPTY } from './cardParts';
+import { NO_MATCH_EMPTY, cardLocation } from './cardParts';
 import { sameValue } from './sameValue';
 
 /**
@@ -247,6 +246,12 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
       ...(sp.label ? { label: sp.label } : {}),
       ...(sp.assignedResource ? { assignedResource: sp.assignedResource } : {}),
       ...(sp.estimatedLoad != null ? { estimatedLoad: sp.estimatedLoad } : {}),
+      // The rebuild hard-deletes the originals, so the captured location (#441) must ride
+      // onto every new member or the GPS fix + what3words callout are lost for good (the
+      // board can't backfill w3w without coords). Same shape the edit path's
+      // buildShoreStruts writes; conditional spreads — RTDB rejects `undefined`.
+      ...(sp.coords ? { coords: sp.coords } : {}),
+      ...(sp.w3w ? { w3w: sp.w3w } : {}),
       status: 'pending',
     }));
     const restructure = await commitMany(restructureBatch(members, rebuilt, sp.opId, uid, at));
@@ -333,9 +338,10 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
     [sp, reason],
   );
 
-  // The shore point's identity line (division · building · area) — reused for
-  // the sheet header AND passed to each RecommendationCard's `location` (S12 §3.1).
-  const spLocation = sp ? [divisionLabel(sp.division), sp.building, sp.area].filter(Boolean).join(' · ') : undefined;
+  // The shore point's identity line — the canonical cardLocation (building · division ·
+  // side · area), the same string every card, row and tile shows. Reused for the
+  // sheet header AND passed to each RecommendationCard's `location` (S12 §3.1).
+  const spLocation = sp ? cardLocation(sp) : undefined;
 
   const context = sp ? (
     <p className="fs-assign-context">

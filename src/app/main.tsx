@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
@@ -10,6 +10,7 @@ import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
 import { ErrorBoundary } from './ErrorBoundary';
 import { router } from './router';
+import { createQueryClient } from './queryClient';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/inter'; // numeral/value font (--font-mono role); ADR-028
 import './styles.css';
@@ -20,8 +21,8 @@ import './styles.css';
 // L-4 contract lets screens read hydrated in-memory state synchronously.
 // QueryClient is wired per the constitution; the slice's hooks are
 // zustand-backed — TanStack Query takes over when real async sync states
-// arrive with the Firebase session.
-const queryClient = new QueryClient();
+// arrive with the Firebase session. Config (offline-first networkMode) lives in ./queryClient.
+const queryClient = createQueryClient();
 
 function App() {
   const [booted, setBooted] = useState(false);

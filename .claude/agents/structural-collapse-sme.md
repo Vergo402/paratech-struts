@@ -18,7 +18,7 @@ You read every code change through the doctrine lens. Load tables must match the
 - `findStrutCombinations()` algorithm correctness
 
 ## Hard rules
-- **Conservative-floor interpolation only.** Never linear-interpolate between rows. Always use the shorter (higher-capacity) datasheet row.
+- **Conservative-floor interpolation only.** Never linear-interpolate between rows. Always use the longer (lower-capacity) datasheet row: the row at or just above the length, as `src/core/load/engine.ts` does (pinned by `engine.test.ts`).
 - **Liability disclaimer required** on capacity outputs (planning aid, not engineering certification).
 - **No silent rejection** for over-capacity loads — surface explicit warnings.
 - **Safety-affecting defaults require operator-explicit choice** (e.g., T-Shore lumber size: 4x4 vs 6x6).

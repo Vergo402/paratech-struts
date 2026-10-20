@@ -23,7 +23,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    // functions/src: the Cloud Functions' pure, import-free modules (e.g. the
+    // adminUpdateAccount write order). CI installs only the root package, so
+    // tests there must not import firebase-admin / firebase-functions.
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'functions/src/**/*.test.ts'],
     setupFiles: ['./vitest.setup.ts'],
     // jsdom only exposes localStorage on an http(s) origin — without this,
     // window.localStorage is undefined in every `@vitest-environment jsdom` file.

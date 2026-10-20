@@ -17,6 +17,7 @@ export function useRoster(excludeSelf = false): { id: string; displayName: strin
     queryFn: () => departmentService.readRoster(),
     enabled: deptId != null,
     staleTime: 60_000,
+    networkMode: 'online', // a real RTDB read — paused offline, fetched on reconnect (the app default is 'always')
   });
   const roster = data ?? [];
   return excludeSelf && myId ? roster.filter((m) => m.id !== myId) : roster;

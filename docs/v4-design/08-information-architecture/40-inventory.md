@@ -68,64 +68,94 @@ The at-a-glance **available-stock** panel ([`sheet`](../03-primitives/sheet.md),
 
 ## Excel import / export
 
+> **Shipped as CSV.** This section keeps its "Excel" name because the rest of the spec set points at it; the file format that ships is **CSV**, for import and export both. xlsx input, xlsx export and the xlsx template's Reference sheet are **deferred** ([File formats](#file-formats)). Everything below is checked against the `v4-redesign` build at `903a68e`: `src/data/inventory/excel.ts` (parse / validate / serialize), `src/ui/inventory/ImportFlow.tsx` (the flow), `src/ui/inventory/ImportExport.tsx` (the controls) and `upsertImport` in `src/data/store/inventoryStore.ts` (the write).
+
 This is a **pre-incident cache-loading tool** — not an asset tracker, not an operational snapshot. The file answers one question: *which apparatus carries how many of which item?* The app owns everything else (available count, deployed state, collapsed/extended dimensions).
 
 ### What the ID represents — stock record, not asset serial
 
-FieldShore tracks inventory as a **quantity-based cache**: one record per apparatus × item-type pairing, with a Quantity field saying how many physical pieces that record covers. "Engine 270 carries 4 LongShore S54-96 struts" is one record. Individual strut barcodes or per-piece serial numbers are out of scope — this is accessible inventory, not equipment management.
+FieldShore tracks inventory as a **quantity-based cache**: one record per apparatus × item-type pairing, with a Quantity field saying how many physical pieces that record covers. "Engine 270 carries 4 LongShore LS 203 struts" is one record. Individual strut barcodes or per-piece serial numbers are out of scope — this is accessible inventory, not equipment management.
 
-The `ID` column is a FieldShore-generated stock-record identifier, never visible in normal use. It exists only to survive **round-trips**: export → edit quantities → re-import without creating duplicates or orphaning deployed references.
+The `ID` column is a FieldShore-generated stock-record identifier, never visible in normal use. It exists only to survive **round-trips**: export → edit quantities → re-import without creating duplicates or orphaning deployed references. Re-importing an unchanged file sets the same quantities and doubles nothing.
 
 ### The column contract (10 columns)
 
-`Collapsed (in)` and `Extended (in)` are intrinsic to the Paratech model — the app resolves them from `STRUTS[]` when a Model is validated; the operator does not enter them. `Available` is runtime state managed by the app (deploys decrement it, returns restore it); it has no place in the file.
+`Collapsed (in)` and `Extended (in)` are intrinsic to the Paratech model — the app resolves them from `STRUTS[]` when a Model is validated; the operator does not enter them. `Available` is runtime state the app derives (`quantity − held`, [ADR-041](../11-decisions/ADR-041-canonical-event-order-and-derived-inventory.md)); it has no place in the file and import never reads or sets it.
 
 | Column | Strut | Extension | Plate | Notes |
 |---|---|---|---|---|
-| `ID` | ✓ | ✓ | ✓ | FieldShore stock-record ID. **Blank on first upload** — app assigns on import. Preserved automatically on round-trip exports. |
-| `Apparatus` | ✓ | ✓ | ✓ | Human-readable apparatus name (e.g., "Engine 270"). |
-| `Apparatus ID` | ✓ | ✓ | ✓ | FieldShore apparatus ID. Blank on first upload → a new apparatus is created on import. |
-| `Type` | `Strut` | `Extension` | `Plate` | **All three types now.** v3 silently dropped plates from the export — the broken round-trip this fixes. |
-| `Model` | ✓ | — | — | Paratech model name. Validated against `STRUTS[]` on import; app resolves collapsed/extended from model automatically. |
-| `System` | ✓ | — | — | `Gold` / `Grey` / `LockStroke`. Validated on import. |
-| `Plate ID` | — | — | ✓ | **The round-trip fix.** Export now writes this; import reads it back. Key for the plate — `Plate Name` is the display label. |
-| `Plate Name` | — | — | ✓ | Human-readable display label. Read-only on import — `Plate ID` is the key; name is resolved from `BASE_PLATES[]`. |
-| `Extension Length (in)` | — | ✓ | — | Positive integer. The only descriptor an extension needs. |
-| `Quantity` | ✓ | ✓ | ✓ | How many this apparatus carries. The only number the operator sets. |
+| `ID` | ✓ | ✓ | ✓ | FieldShore stock-record ID. **Blank on first upload** — the app mints one on import. Kept on every export, so a re-import updates the same record. |
+| `Apparatus` | ✓ | ✓ | ✓ | **Required.** Human-readable apparatus name (e.g., "Engine 270"). Matched by exact name when `Apparatus ID` is blank. |
+| `Apparatus ID` | ✓ | ✓ | ✓ | FieldShore apparatus ID. **Blank is normal on first upload:** the rig is found by its `Apparatus` name among the existing apparatus and stock, and only a name found nowhere creates a new apparatus (type **Other**), written in the same transaction as the items. |
+| `Type` | `Strut` | `Extension` | `Plate` | **Required**, read without regard to case. **All three types round-trip** — v3 silently dropped plates from the export. Anything else is flagged. |
+| `Model` | ✓ | — | — | Paratech model name; must match a catalog model (`STRUTS[]`) exactly. An unknown model is **flagged and not imported**. |
+| `System` | — | ✓ | — | `Gold` / `Grey` / `LockStroke` (import also accepts `LongShore`, `AcmeThread`, `Gray`). **Extension rows need it** — an extension has no model to read it from — and an unrecognised value is flagged. **Strut rows: not read**; the system comes from the catalog entry for `Model`. Export writes it wherever a record carries one. |
+| `Plate ID` | — | — | ✓ | **The round-trip fix.** Key for the plate; must match a catalog plate (`BASE_PLATES[]`). An unknown Plate ID is **flagged and not imported**. |
+| `Plate Name` | — | — | ✓ | Display label, written on export from the catalog. **Ignored on import** — `Plate ID` is the key. |
+| `Extension Length (in)` | — | ✓ | — | Positive whole number; flagged otherwise. |
+| `Quantity` | ✓ | ✓ | ✓ | **Required.** How many this apparatus carries. The only number the operator sets. A positive whole number, plain digits only — `0`, `0x12`, `1e2` and `+3` are flagged rather than coerced into a wrong count. |
 
-**Blank = not carried.** If an apparatus doesn't stock a particular item, that row simply doesn't exist for it. No zero-quantity rows, no "confirm it's absent" step — absence is the signal.
+**Blank = not carried.** If an apparatus doesn't stock a particular item, that row simply doesn't exist for it. No zero-quantity rows, no "confirm it's absent" step — absence is the signal. Export omits zero-quantity records; import flags a Quantity of 0 rather than reading it as a removal. An import only adds and updates: stock the file does not mention is left as it is.
 
-**Per-apparatus organization.** Rows are sorted by Apparatus (alphabetical), then by Type (Strut → Extension → Plate), then by system / length within each type. The Apparatus column carries the grouping — no special section-header rows (self-describing rows, like the CheckIt pattern). The xlsx export may insert a blank separator row between apparatus blocks for readability; csv omits separators.
+**Per-apparatus organization.** Rows are sorted by Apparatus (alphabetical), then by Type (Strut → Extension → Plate), then by system / length within each type (plates by name). The Apparatus column carries the grouping — no section-header or separator rows (self-describing rows, like the CheckIt pattern).
+
+### Export
+
+**Export inventory** writes the cache as `fieldshore-inventory.csv` — the ten columns above, sorted as described, in RFC-4180 form (quotes protect commas, newlines and the plate names' inch mark) with CRLF line endings. An `Apparatus` or `Model` cell that opens with a spreadsheet formula character (`=`, `+`, `-`, `@`, tab, carriage return) is written with a leading apostrophe so Excel and Sheets read it as text; import strips exactly that apostrophe and nothing else, so an export → import → export cycle is byte-faithful. The download is immediate; there is no export progress.
 
 ### The downloadable template
 
-The template ships with **column headers + 3–4 clearly labeled example rows** ("EXAMPLE — delete before importing") to show the format, not to pre-populate fake inventory. The xlsx template adds a **Reference sheet** listing all valid Paratech Model names (by system) and all known Plate IDs, so the operator knows the exact values to enter without guessing. The csv template ships headers + example rows only.
+**Download template** writes `fieldshore-inventory-template.csv`: the ten column headers plus **three clearly labeled example rows**, one per type (Strut, Extension, Plate), each carrying `EXAMPLE — delete before importing` in the Apparatus column. The rows show the format; they do not pre-populate fake inventory. Import drops rows carrying **exactly** that marker and nothing looser — a rig legitimately named "EXAMPLE Co" still imports — and counts them with the blank rows it ignored. The template is a CSV: it has no Reference sheet ([File formats](#file-formats)).
 
-### Validated import flow (Flatfile-style — 4 steps in a [`sheet`](../03-primitives/sheet.md))
+### Where the controls live
 
-A step-indicator at the top of the import sheet tracks progress. Phone: each step is full-screen-height. Laptop: step 3 shows the column-map and row-validation table side by side.
+The Inventory header carries one quiet data button ("Import and export inventory") that raises an *Inventory data* sheet with three rows — **Export inventory**, **Download template**, **Import inventory**. **Settings → Data Management** shows the same three rows inline — one implementation, two doors ([`50-settings.md`](50-settings.md)). **Import** needs the *Manage inventory & apparatus* toggle; **Export** and **Template** need *Export / delete department data* ([ADR-017](../11-decisions/ADR-017-custom-department-roles.md)). A member with neither sees no data controls.
 
-**Step 1 — File pick.** xlsx or csv accepted. An instant 5-row preview confirms "yes, that's my file" before the operator proceeds.
+### Validated import flow (Flatfile-style — 4 steps, full-screen)
 
-**Step 2 — Column mapping.** The app auto-detects standard column names and shows a one-screen map ("Your column X → FieldShore field Y"). Mismatches are highlighted; the operator fixes them before proceeding. Extra columns → "Ignore." A file exported from FieldShore auto-maps with zero mismatches.
+Bespoke on the design-system primitives, no library, fully offline ([ADR-038](../11-decisions/ADR-038-bespoke-column-mapping.md)). The flow is one **full-screen dialog** (the picker's full-screen container, not a [`sheet`](../03-primitives/sheet.md)), single-column at every width — there is no laptop side-by-side layout. A step indicator at the top reads "Step N of 4" over a four-segment bar. **Cancel** (top right; **Done** once a result shows) dismisses with nothing written, and is disabled while the write runs.
 
-**Step 3 — Row validation** (runs instantly, local):
-- `Type` is one of `Strut` / `Extension` / `Plate`.
-- `Model` is in the known strut list — warning (not block) for unknown values (future strut models).
-- `Plate ID` is in the known plate list — warning for unknown values.
-- `Extension Length` is a positive number (Extension rows).
-- `Quantity` is a positive integer.
-- `Apparatus` is non-empty; if `Apparatus ID` is blank, a new apparatus will be created (surfaced as an info note).
-- Cross-apparatus ID collision: an import row's ID matches an existing item on a *different* apparatus → flagged.
-- Active-operation guard: if an operation is in progress, a banner warns that deployed items won't be affected by the import.
+**Step 1 — File pick.** **CSV only** — the file picker is filtered to `.csv`. After a pick the dialog shows the file name, its column and row counts and a **First 5 rows** preview confirming "yes, that's my file"; **Change** re-picks. Continue stays disabled until a file is chosen. A file that cannot be read raises a blocking-alert [`modal`](../03-primitives/modal.md), "Couldn't read that file", with the reason — an unterminated quote (nothing is read) or no data rows (it needs a header row plus at least one item) — never a bare `alert()`.
 
-**Step 4 — Error review + commit gate.** A summary card reads "N rows will import · M warnings · K rows skipped." The operator can: scroll to a flagged row and edit inline, skip individual rows, or cancel entirely. "Import N rows" is the final confirm → [`loading-state`](../03-primitives/loading-state.md) determinate progress bar during the write.
+**Step 2 — Column mapping.** Every column in the file is listed with ✓ matched, ! no match or — ignored, and a picker over the ten FieldShore fields plus "Ignore this column". The app pre-fills by **case-insensitive header-name match**; a file exported from FieldShore auto-maps with zero mismatches. A field maps to exactly one column — choosing it frees whichever column held it. **Type, Apparatus and Quantity must each be mapped** to continue; that is the only gate. Other unmatched columns are highlighted but treated as ignored. Under Native Controls the picker is an OS `<select>`.
 
-**Orphan-detection** is the final pre-write check: if rows being replaced or removed reference IDs currently used by deployed shore points in an active operation → [`modal`](../03-primitives/modal.md) confirm before proceeding. This is an edge case (the tool is for pre-incident loading), but the guard remains.
+**Step 3 — Row validation** ("Check the rows"; runs instantly, on-device). Two chips — **N will import** and **N to fix** — then each flagged row as "Row N: reason", where N is the file line with the header as line 1, as a spreadsheet shows it. Checked in this order:
+- The row has the same number of fields as the header — otherwise it is flagged and can only be skipped (usually a mis-pasted multi-line value).
+- `Type` is `Strut` / `Extension` / `Plate`.
+- `Apparatus` is non-empty. (A row whose Apparatus is exactly the template marker, and a wholly blank line, is dropped without a flag.)
+- `Quantity` is a positive whole number.
+- Strut rows: `Model` is in the catalog. Extension rows: `Extension Length` is a positive whole number and `System` is recognised. Plate rows: `Plate ID` is in the catalog.
+
+Unknown values are **flagged, not warned**: a `Model` or `Plate ID` outside the catalog is a row to fix and is never imported as entered. If an operation is in progress, a banner reads that deployed items are not changed by the import and that any row that would strand deployed gear is skipped. Import is allowed during an operation, never blocked.
+
+**Step 4 — Review and import** (the error review + commit gate). Chips read **N ready** and **N to fix**; a "N rows ready to import" line expands to list them (apparatus · item · ×quantity). Each flagged row gets a fix card — its reason, a one-field editor chosen by the failing field, and **Skip this row instead**:
+- `Quantity`, `Extension Length` — numeric text field.
+- `Apparatus` — text field.
+- `Model`, `Plate ID` — a searchable list of the catalog's models or plates.
+- `System`, `Type` — a short picker.
+
+Editing re-validates that one row and moves it to ready the moment it passes. A skipped row collapses to one line with **Undo**. A wrong-width row has no editor (skip only); a row whose failing field has no mapped column says to go Back and map one, or skip. Going Back to Step 2 and continuing re-validates from the file and discards Step 4 fixes and skips. **Import N rows** is the single commit — nothing is saved before it — and is disabled at zero ready rows. A flagged row that is neither fixed nor skipped is **left out** and reported.
+
+### What the write does — and the orphan guard
+
+**Import N rows** runs as one local transaction: all of it lands or none of it does ("Import failed — Nothing was saved."). While it runs the header reads "Importing…", Cancel and the Import button are disabled and Escape does not close the dialog; no determinate progress bar ships. Then the rows push to the cloud. The rules:
+
+- **A row with an ID** updates that record and sets its quantity to the file's number. A same-kind row sets the quantity under the rig the row names; no separate cross-apparatus ID-collision flag ships. Reusing an ID for a different kind of item (a Strut ID now describing a Plate) is **skipped** — returns resolve by ID, so a re-typed record would restore the wrong item.
+- **A row with a blank ID** merges into identical stock on the same rig (same type and model, length and system, or plate) or adds a new record. Within one file, blank rows of one identity **sum** (2 + 3 = 5); the total then **sets** the existing quantity, so re-importing the same file never doubles stock.
+- **Orphan guard — orphan rows are skipped.** A row whose quantity would fall below the units currently held by deployed shore points is **skipped**: not written, and not put to a confirm modal. The result reports it as "N skipped — would strand deployed stock." Held units are never touched, which is why import can run during an operation. (The orphan-confirm [`modal`](../03-primitives/modal.md) this spec once drew is not built.)
+
+**Result.** The dialog ends on "Import complete" with one line per outcome, so every row in the file is accounted for: rows imported; rows merged with an identical row; rows skipped as would-strand; rows skipped as a type mismatch; rows still flagged and not imported; rows the operator skipped; blank (and template) rows ignored. A cloud line closes it — saved on this device and in the cloud, saved on this device and will sync on reconnect, saved on this device with nothing to sync, or an amber line naming how many rows did not reach the cloud. A failed write shows "Import failed" and "Nothing was saved."
 
 ### File formats
 
-Both **xlsx** and **csv** are accepted on import and produced on export. xlsx gets the optional blank apparatus-separator rows and the Reference sheet; csv is a flat, separator-free file. Parse failure in either format surfaces via a blocking-alert [`modal`](../03-primitives/modal.md) with the reason — never a bare `alert()`.
+**CSV only**, for import and export: UTF-8 text in RFC-4180 form. A spreadsheet is imported by saving it as CSV first. A read failure surfaces via a blocking-alert [`modal`](../03-primitives/modal.md) with the reason — never a bare `alert()`.
+
+**Deferred — not built for v4.0:**
+- **xlsx input** — the Step 1 "xlsx or csv" pick.
+- **xlsx export**, including the optional blank apparatus-separator rows.
+- The **Reference sheet** in the xlsx template — every valid Model (by system) and Plate ID, so the operator need not guess.
+
+[ADR-038](../11-decisions/ADR-038-bespoke-column-mapping.md) scopes its decision to the mapping UI and records the file format as a deferred scope note ("CSV only (xlsx deferred)"): xlsx parsing needs a spreadsheet library (SheetJS), a separate tooling question. The Reference sheet exists only inside an xlsx workbook, so it waits with it. Whether and when to add the library is not yet a numbered open question. Until then the Step 4 fix pickers list the valid Models and Plate IDs.
 
 ## Per-row sync lives in Accountability, not here
 

@@ -169,93 +169,137 @@ stateDiagram-v2
 
 ### Path C — Bulk import (the whole department, by file)
 
-The faster path for a real cache. A **4-step validated import** ([Flatfile-style](../08-information-architecture/40-inventory.md#validated-import-flow-flatfile-style--4-steps-in-a-sheet)) in one [`sheet`](../03-primitives/sheet.md) with a **step-indicator** at the top.
+The faster path for a real cache. A **4-step validated import** ([Flatfile-style](../08-information-architecture/40-inventory.md#validated-import-flow-flatfile-style--4-steps-full-screen)) in one **full-screen dialog** — not a [`sheet`](../03-primitives/sheet.md) — with a **step-indicator** at the top ("Step N of 4" over a four-segment bar). **CSV only**: xlsx input and the Reference-sheet template are deferred ([`40-inventory.md`](../08-information-architecture/40-inventory.md#file-formats); [ADR-038](../11-decisions/ADR-038-bespoke-column-mapping.md)). An unknown Model or Plate ID is **flagged and not imported**; a row that would strand deployed stock is **skipped**, with no confirm modal.
 
 #### Step C1 — file pick + preview
 
 ```
 ┌─────────────────────────────┐
-│  Import inventory     1 / 4 ✕│  ← step indicator
+│  Import inventory     Cancel │
 ├─────────────────────────────┤
-│  Drop or choose a file       │
-│  [  Choose .xlsx / .csv  ]   │
+│                 Step 1 of 4  │  ← step indicator
+│  ▰▱▱▱                        │
+├─────────────────────────────┤
+│  Pick your file              │
+│  fieldshore-inventory.csv    │
+│  10 columns · 142 rows Change│
 │                             │
-│  Preview (first 5 rows)      │
+│  First 5 rows                │
 │  ┌─────────────────────────┐ │
 │  │ Apparatus │ Type │ Model │ │
-│  │ Eng 270   │Strut │S54-96 │ │
+│  │ Eng 270   │Strut │LS 203 │ │
 │  └─────────────────────────┘ │
 ├─────────────────────────────┤
-│              Next →          │
+│           Continue           │
 └─────────────────────────────┘
    ⇩ → ColumnMap
 ```
 
-- **Commits via:** picking an xlsx or csv; an instant 5-row preview confirms "that's my file" before proceeding. A downloadable **template** (headers + labeled example rows, + an xlsx Reference sheet of valid Models/Plate IDs) is offered here ([`40-inventory.md`](../08-information-architecture/40-inventory.md) §The downloadable template).
-- **Reverses via:** ✕ / **Back** — dismiss, nothing written.
-- **Error:** a parse failure surfaces as a **blocking-alert [`modal`](../03-primitives/modal.md)** with the reason — never a bare `alert()`.
+- **Commits via:** picking a CSV (the picker is filtered to `.csv`). Before a pick the body reads "Choose a CSV file exported from FieldShore, or your own spreadsheet saved as CSV" over one **＋ Choose CSV file** button; after it, the file name, its column and row counts and an instant 5-row preview confirm "that's my file". **Change** re-picks; **Continue** stays disabled until a file is chosen.
+- **The template** is not offered in this dialog. **Download template** (headers + three labeled `EXAMPLE — delete before importing` rows, one per type, as a CSV) sits beside Export and Import in the Inventory data sheet and in Settings → Data Management ([`40-inventory.md`](../08-information-architecture/40-inventory.md#the-downloadable-template)).
+- **Reverses via:** **Cancel** — dismiss, nothing written.
+- **Error:** a file that cannot be read — an unterminated quote, or no data rows — surfaces as a **blocking-alert [`modal`](../03-primitives/modal.md)**, "Couldn't read that file", with the reason — never a bare `alert()`.
 
 #### Step C2 — column mapping
 
 ```
 ┌─────────────────────────────┐
-│  Import inventory     2 / 4 ✕│
+│  Import inventory     Cancel │
 ├─────────────────────────────┤
-│  Your column  →  FieldShore  │
-│  "Rig"        →  Apparatus ✓ │
-│  "Item Type"  →  Type      ✓ │
-│  "Qty"        →  Quantity  ✓ │
-│  "Notes"      →  Ignore      │
-│  ⚠ "Mdl"      →  Model    ▾  │  ← highlighted mismatch to fix
+│                 Step 2 of 4  │
+│  ▰▰▱▱                        │
 ├─────────────────────────────┤
-│  ‹ Back              Next →  │
+│  Map your columns            │
+│  Type, Apparatus, and        │
+│  Quantity must each be mapped│
+│  ✓ Apparatus → Apparatus  ▾  │
+│  ✓ Type      → Type       ▾  │
+│  ✓ Model     → Model      ▾  │
+│  — Notes     → Ignore     ▾  │
+│  ! Qty  no match — pick a    │
+│         field   [ Choose… ▾ ]│  ← unmatched; Continue stays off
+├─────────────────────────────┤
+│  Back              Continue  │
 └─────────────────────────────┘
    ⇩ → RowValidation
 ```
 
-- **Commits via:** the app auto-detects standard headers; a file exported from FieldShore **auto-maps with zero mismatches**. Mismatches are highlighted; the operator remaps via a [`picker`](../03-primitives/picker.md). Extra columns → **Ignore**.
-- **Reverses via:** **Back** to C1; remapping is free until **Next**.
+- **Commits via:** the app pre-fills each column by a **case-insensitive header-name match**; a file exported from FieldShore **auto-maps with zero mismatches**. A column with no match shows "!" and "no match — pick a field"; the operator picks one of the ten FieldShore fields or **Ignore this column** through a [`picker`](../03-primitives/picker.md). A field maps to exactly one column. **Continue** unlocks once **Type, Apparatus and Quantity** are each mapped — the only gate; any other unmatched column is treated as ignored.
+- **Reverses via:** **Back** to C1; remapping is free until **Continue**.
 
 #### Step C3 — row validation (local, instant)
 
 ```
 ┌─────────────────────────────┐
-│  Import inventory     3 / 4 ✕│
+│  Import inventory     Cancel │
 ├─────────────────────────────┤
-│  142 rows · 3 warnings       │
-│  ⚠ Row 88: Model "S99-x"     │
-│     unknown — will import as  │
-│     entered (warning)         │
-│  ⚠ Row 91: new apparatus     │
-│     "Squad 7" will be created │
+│                 Step 3 of 4  │
+│  ▰▰▰▱                        │
 ├─────────────────────────────┤
-│  ‹ Back              Next →  │
+│  Check the rows              │
+│  [139 will import] [3 to fix]│
+│  ⚠ Row 88: unknown strut     │
+│     Model "LS 999" — skipped │
+│  ⚠ Row 91: invalid Quantity  │
+│     "0" — skipped            │
+│  ℹ An operation is active —  │
+│     deployed items are not   │
+│     changed by this import…  │
+├─────────────────────────────┤
+│  Back              Continue  │
 └─────────────────────────────┘
    ⇩ → ErrorReview
 ```
 
-- **Commits via:** validation runs instantly and locally ([`40-inventory.md`](../08-information-architecture/40-inventory.md) §Step 3): `Type` ∈ {Strut, Extension, Plate}; unknown `Model`/`Plate ID` → **warning, not block** (future models); `Extension Length`/`Quantity` positive; blank `Apparatus ID` → new apparatus (info note); cross-apparatus ID collisions flagged; an **active-operation banner** warns that deployed items won't be touched.
+- **Commits via:** validation runs instantly and locally ([`40-inventory.md`](../08-information-architecture/40-inventory.md#validated-import-flow-flatfile-style--4-steps-full-screen) §Step 3): the row is as wide as the header; `Type` ∈ {Strut, Extension, Plate}; `Apparatus` non-empty; `Quantity` a positive whole number; then, by type, a catalog `Model` (struts), a positive whole `Extension Length` and a recognised `System` (extensions), or a catalog `Plate ID` (plates). An unknown `Model` or `Plate ID` is **flagged, not warned, and never imported as entered**. Each flagged row reads "Row N: reason" (N = file line, header = 1). Blank lines and template example rows are dropped without a flag. If an operation is active, a banner says deployed items are not changed and any row that would strand deployed gear is skipped — import is never blocked.
 - **Reverses via:** **Back**; no write yet.
 
-#### Step C4 — error review + commit gate (+ orphan guard, loader)
+#### Step C4 — error review + commit gate (+ orphan guard, result)
 
 ```
 ┌─────────────────────────────┐
-│  Import inventory     4 / 4 ✕│
+│  Import inventory     Cancel │
 ├─────────────────────────────┤
-│  139 import · 3 warnings ·   │
-│  0 skipped                   │
-│  [ scroll to a flagged row ] │
-│  [ skip individual rows    ] │
+│                 Step 4 of 4  │
+│  ▰▰▰▰                        │
 ├─────────────────────────────┤
-│   ▓  Import 139 rows  ▓      │
+│  Review and import           │
+│  [139 ready]  [3 to fix]     │
+│  ✓ 139 rows ready   Review ▾ │
+│                             │
+│  Row 88 · Engine 270 · Strut │
+│  unknown strut Model         │
+│  "LS 999" — skipped          │
+│  [ Choose model…         ▾ ] │  ← one-field fix
+│  ⊖ Skip this row instead     │
+│                             │
+│  ⊖ Row 91 · Squad 7 Strut Undo│
+├─────────────────────────────┤
+│  Back        Import 139 rows │
 └─────────────────────────────┘
-   ⇩ orphan check → Writing → StockLoaded
+   ⇩ Writing → StockLoaded
 ```
 
-- **Commits via:** **Import N rows** is the final confirm → an **orphan-detection** pre-write check; if replaced/removed rows reference IDs used by **deployed** shore points in an active op, a [`modal`](../03-primitives/modal.md) confirms the consequence before proceeding ([`40-inventory.md`](../08-information-architecture/40-inventory.md) §Orphan-detection). The write then shows a **determinate [`loading-state`](../03-primitives/loading-state.md) progress bar** — one of the few legitimate loaders (local-first reads are instant; a bulk write is a genuine wait).
-- **Reverses via:** **Cancel** at any point before the write dismisses the sheet with nothing written. Once written, rows are normal stock — adjustable by the ± stepper, removable at 0.
-- **App response:** apparatus and item rows appear/merge by `ID`; `Available` is set by the app (deploys decrement it later), never read from the file.
+After the write the dialog ends on a result:
+
+```
+│  Import complete             │
+│  138 rows imported.          │
+│  1 skipped — would strand    │
+│  deployed stock.             │
+│  2 rows not imported — still │
+│  flagged to fix.             │
+│  1 row skipped by you.       │
+│  Saved on this device and in │
+│  the cloud.                  │
+│            Done              │
+```
+
+- **Commits via:** each flagged row gets a fix card — the reason, a one-field editor for the failing field (numeric text for `Quantity` / `Extension Length`, text for `Apparatus`, a searchable catalog list for `Model` / `Plate ID`, a short picker for `System` / `Type`) and **Skip this row instead**. A fixed row re-validates and joins **ready**; a skipped row collapses to one line with **Undo**. **Import N rows** is the final confirm — nothing is saved before it, and it is disabled at zero ready rows. A flagged row left neither fixed nor skipped is **not imported** and is counted in the result.
+- **The orphan guard is a skip, not a modal.** The write is one local transaction. A row whose quantity would fall below the units **held** by deployed shore points is **skipped** and reported ("N skipped — would strand deployed stock."); a row that reuses an existing ID for a different kind of item is skipped too ("type doesn't match the item already on the rig"). Import is allowed during an operation, and held units are never touched ([`40-inventory.md`](../08-information-architecture/40-inventory.md#what-the-write-does--and-the-orphan-guard)).
+- **Loader:** while the write runs the header reads "Importing…" and Cancel and the Import button are disabled; there is no determinate progress bar.
+- **Reverses via:** **Cancel** at any point before **Import N rows** dismisses the dialog with nothing written; **Back** returns to C3 (or C2, which re-validates from the file and discards C4 fixes and skips). Once written, rows are normal stock — adjustable by the ± stepper, removable at 0. If the write fails, the dialog says "Import failed — Nothing was saved."
+- **App response:** a row with an `ID` updates that record; a blank-`ID` row merges into identical stock on the rig or adds a new record (blank rows of one identity sum within the file, then set the stock, so a re-import never doubles it); a name with no existing apparatus creates one (type **Other**) in the same write, and it appears as a new scope tab. `Available` is never read from the file — the app derives it (`quantity − held`, [ADR-041](../11-decisions/ADR-041-canonical-event-order-and-derived-inventory.md)). The result lists every row's fate, then a cloud line (saved on this device and in the cloud / will sync on reconnect / saved on this device with nothing to sync / how many rows did not reach the cloud).
 
 ## Cross-surface story
 
