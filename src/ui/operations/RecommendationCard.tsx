@@ -38,8 +38,12 @@ export interface RecommendationCardProps {
    *  + extensions): complete / cross-truck / missing. Shown as a chip so the
    *  officer picks with eyes open (ADR-033 decisions 5–6). Absent in Quick Find. */
   stock?: BomSourceStatus;
-  /** Sheet-level single-flight lock while a deploy is in flight. */
+  /** Sheet-level single-flight lock while a deploy is in flight — or the form's own
+   *  submit lock (wood unpicked, load out of range, bad shore count). */
   deployDisabled?: boolean;
+  /** Why the sheet locked Deploy. Shown under EVERY card action (Deploy, the ×N
+   *  "anyway", Add-N-struts) so a card button never silently outranks the form. */
+  deployDisabledReason?: string;
   /** The shore's planning load (lbs). With it the card judges whether ONE strut's
    *  share fits the rating — the ×N struts-needed tell (accepted mockup 2026-07-01). */
   estimatedLoad?: number;
@@ -139,6 +143,7 @@ export function RecommendationCard({
   onDeploy,
   stock,
   deployDisabled,
+  deployDisabledReason,
   estimatedLoad,
   currentStruts,
   onAddStruts,
@@ -411,6 +416,7 @@ export function RecommendationCard({
                 variant="primary"
                 fullWidth
                 disabled={!!deployDisabled}
+                disabledReason={deployDisabledReason}
                 onPress={() => onAddStruts!(combo, targetType!, needed)}
               >
                 Add {needed - struts} more strut{needed - struts > 1 ? 's' : ''} — deploy as{' '}
@@ -432,7 +438,7 @@ export function RecommendationCard({
             variant="secondary"
             fullWidth
             disabled={!acknowledged || !!deployDisabled}
-            disabledReason={!acknowledged && !deployDisabled ? 'Acknowledge the over-capacity deploy first' : undefined}
+            disabledReason={deployDisabledReason ?? (!acknowledged ? 'Acknowledge the over-capacity deploy first' : undefined)}
             onPress={() => onDeploy(combo)}
           >
             Deploy {struts} of {needed} anyway
@@ -446,7 +452,7 @@ export function RecommendationCard({
           variant="primary"
           fullWidth
           disabled={needsAck || !!deployDisabled}
-          disabledReason={needsAck && !deployDisabled ? 'Acknowledge the unrated zone first' : undefined}
+          disabledReason={deployDisabledReason ?? (needsAck ? 'Acknowledge the unrated zone first' : undefined)}
           onPress={() => onDeploy(combo)}
         >
           Deploy

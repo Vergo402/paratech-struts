@@ -384,7 +384,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // `typeOverride` is the Add-N-struts one-tap fix — build at the shore type the
   // load needs instead of the form's selection (accepted mockup 2026-07-01).
   async function handleDeploy(combo: StrutCombination, typeOverride?: ShoreTypeId) {
-    if (!operation || deploying) return;
+    // The card buttons carry the form's lock (deployDisabled + reason), but the
+    // handler re-checks too: `found` outlives the inputs it was pressed on, so a
+    // post-Find edit (wood cleared by a type switch, an over-limit load, a blank
+    // count) must never save through a card (2026-10-17 merge review, High).
+    if (!operation || deploying || !canSubmit) return;
     const type = typeOverride ?? shoreType;
     const inventoryId = combo.strut.inventoryId;
     const item = inventoryId ? inventory.find((i) => i.id === inventoryId) : undefined;
@@ -397,6 +401,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     const uid = await getUid();
     const at = Date.now();
     const points = buildPoints(type);
+    if (points.length === 0) {
+      setDeploying(false);
+      return; // nothing to build (a bad count) — never reach points[0] below
+    }
     // Per-strut over-capacity at the BUILT type: deploying short of the struts the
     // load needs. The card gated Deploy behind the team ack, so firing IS the ack.
     const shortDeploy =
@@ -790,10 +798,12 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                     }
                     location={draftLocation}
                     onDeploy={handleDeploy}
-                    deployDisabled={deploying}
+                    deployDisabled={deploying || !canSubmit}
+                    deployDisabledReason={disabledReason ?? undefined}
                     estimatedLoad={loadNum > 0 ? loadNum : undefined}
                     currentStruts={strutsPerShore}
                     onAddStruts={(c, targetType) => {
+                      if (!canSubmit) return;
                       // One tap: build at the shore type the load needs. The form
                       // control follows so the officer sees what was built.
                       setShoreType(targetType);
