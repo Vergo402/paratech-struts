@@ -1,0 +1,17 @@
+#383 [v4.1] [Design] Exploration backlog
+#495 [Backlog] After-action email send mechanism — deferred past v4.0 (ADR-018 amended)
+#496 [Backlog] Broadcast wall-board (C-13) surface — deferred past v4.0 (spec amended)
+#493 [Backlog] Mutual aid / multi-agency join — deferred past v4.0 (ADR-022 amended)
+#525 [v4.1] [Design] Per-line Remove on inventory rows (Option 2 of #513)
+#494 [Backlog] Assembled ICS-201/208/PAR export — deferred past v4.0 (audit-log spec amended)
+#512 [v4.1] Security hardening — tamper-proof rules, upload quarantine, invite expiry, App Check (ADR-042)
+#341 [v4.1] [Phase J] Cosmetic / design polish punch-list
+#387 [v4.1] [Phase J] Desktop — redesign the Operations / Cutting Station selector
+#509 [v4.1] [Phase J] Any department member can reuse another device's batchId and void that batch's fold everywhere
+#386 [v4.1] [Phase J] Desktop — bottom tab bar → side selector (left nav rail)
+#388 [v4.1] [Phase J] Formalize the dashed empty-shell idiom (.fs-ops-detail-shell)
+#504 [v4.1] [Phase J] LWW edits can be overwritten by a reconnecting phone with no tell — add a from-premise to OperationEdited / PositionRenamed / checklist / CuttingClaimed
+#438 [v4.1] One-tap PAR shortcut on the Command chrome (OQ#39 deferral)
+#138 Phase J — Cutover (v4 to main)
+#103 Feature: Header/footer beams in inventory + deduct from cut lengths
+#123 Feature: Department → Apparatus → Equipment/Individuals breadcrumb hierarchy on Command
