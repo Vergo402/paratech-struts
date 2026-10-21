@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AssignEquipmentSheet } from './AssignEquipmentSheet';
 import type { StockRow, ShorePoint } from '@core/schema';
-import type { StrutCombination } from '@core/load';
+import { findStrutCombinations, type StrutCombination } from '@core/load';
 
 const mockInventory = vi.fn((): StockRow[] => []);
 const mockRecommendations = vi.fn((): StrutCombination[] => []);
@@ -634,6 +634,72 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       await user.click(add);
       expect(mockCommitMany).not.toHaveBeenCalled();
       expect(screen.getByRole('button', { name: /Deploy 1 of 3 anyway/ })).toBeInTheDocument();
+    });
+
+    // Same-rig lock (#537 extras, 2026-10-21): handleAddStruts deploys a member only when
+    // every piece is on the strut's own rig (bomSourceStatus 'complete'), so the sheet's
+    // 6×6 re-check must judge that rig alone. A refit whose extension sits only on ANOTHER
+    // rig would otherwise hard-delete the Pending T-Shore and land three Pending legs.
+    const LS304_R2: StockRow = { ...INV_ITEM, id: 'inv-304', model: 'LS 304', quantity: 3, available: 3 };
+    const X24_R2: StockRow = {
+      id: 'inv-x24', type: 'extension', system: 'LongShore', length: 24,
+      apparatus: 'Rescue 2', apparatusId: 'app-r2', quantity: 3, held: 0, available: 3,
+    };
+    // 'none' wood, 62″: LS 304 + 24″ (the only extension on Rescue 2). On 6×6: 51″ needs + 12″.
+    const renderRefit = (inv: StockRow[]) => {
+      const combo = findStrutCombinations(62, 0, 2, inv, null, { header: 0, sole: 0 }).find(
+        (c) => c.strut.model === 'LS 304' && c.extensions.join() === '24',
+      )!;
+      // A load that needs exactly three of this strut → the 3-Post one-tap.
+      const sp = threePostSp({ measurementEighths: 62 * 8, estimatedLoad: Math.floor(combo.capacity * 2.5) });
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([combo]);
+      mockInventory.mockReturnValue(inv);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+      return screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    };
+
+    it('a 6×6 refit needing a 12″ no rig has locks, naming the strut’s rig — nothing is restructured', async () => {
+      const user = userEvent.setup();
+      const add = renderRefit([LS304_R2, X24_R2]);
+      expect(add).toBeDisabled();
+      expect(add.nextElementSibling!.textContent).toBe('LS 304 on 6×6 needs a 12″ extension not on Rescue 2.');
+      await user.click(add);
+      expect(mockCommitMany).not.toHaveBeenCalled();
+      expect(mockCommit).not.toHaveBeenCalled();
+    });
+
+    it('a 12″ on ANOTHER rig still locks the sheet tap: it deploys only from the strut’s own rig', async () => {
+      const user = userEvent.setup();
+      const x12E4: StockRow = { ...X24_R2, id: 'inv-x12', length: 12, apparatus: 'Engine 4', apparatusId: 'app-e4' };
+      const add = renderRefit([LS304_R2, X24_R2, x12E4]);
+      expect(add).toBeDisabled();
+      expect(add.nextElementSibling!.textContent).toBe('LS 304 on 6×6 needs a 12″ extension not on Rescue 2.');
+      await user.click(add);
+      // The Pending T-Shore is NOT hard-deleted and rebuilt into three Pending legs.
+      expect(mockCommitMany).not.toHaveBeenCalled();
+      expect(mockCommit).not.toHaveBeenCalled();
+    });
+
+    it('the 12″ on the strut’s own rig → the tap stays live and all three deploy', async () => {
+      const user = userEvent.setup();
+      const onPartial = vi.fn();
+      const x12R2: StockRow = { ...X24_R2, id: 'inv-x12', length: 12 };
+      const inv = [LS304_R2, X24_R2, x12R2];
+      const combo = findStrutCombinations(62, 0, 2, inv, null, { header: 0, sole: 0 }).find(
+        (c) => c.strut.model === 'LS 304' && c.extensions.join() === '24',
+      )!;
+      const sp = threePostSp({ measurementEighths: 62 * 8, estimatedLoad: Math.floor(combo.capacity * 2.5) });
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([combo]);
+      mockInventory.mockReturnValue(inv);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
+      const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+      expect(add).toBeEnabled();
+      await user.click(add);
+      const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+      expect(deploys).toHaveLength(3);
+      expect(onPartial).toHaveBeenCalledWith(expect.any(Array), [], '3× LS 304 + 12″');
     });
   });
 });

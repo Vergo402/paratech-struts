@@ -342,3 +342,25 @@ describe('ShorePointDetail — hazard badge (#501)', () => {
     expect(container.querySelector('.fs-spc-hazard')).toBeNull();
   });
 });
+
+// #537 extras (2026-10-21): the Quick View drawer is a read surface — it offers no status
+// control, so it is not a path to Wood Shore Secured for a re-cut-flagged runner leg.
+describe('ShorePointDetail — no advance path for a re-cut-flagged runner leg', () => {
+  it('renders no slide and no Secured action', () => {
+    const { container } = render(
+      <ShorePointDetail
+        sp={makeSp({
+          status: 'runner',
+          deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
+          measurementEighths: 54 * 8,
+          cuttingStartedAt: 100,
+          cuttingDone: true,
+          cutRecord: { eighths: 45.5 * 8, headerWood: '4x4', footerWood: '4x4' },
+        })}
+      />,
+    );
+    expect(container.querySelector('.fs-slide')).toBeNull();
+    expect(screen.queryByText(/Slide to set Wood Shore Secured/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Secured/ })).toBeNull();
+  });
+});

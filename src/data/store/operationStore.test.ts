@@ -5,7 +5,7 @@ import { createInventoryStore, type InventoryStoreApi } from './inventoryStore';
 import { createOperationStore, type OperationStoreApi } from './operationStore';
 import { projectOperation, sortCanonical } from '@core/operation';
 import { createMonotonicClock } from '@core/clock';
-import { deployedCapacityFlag, deployedStrutOf } from '@core/shorepoint';
+import { cutRecordOf, deployedCapacityFlag, deployedStrutOf, needsRecut } from '@core/shorepoint';
 import { newId } from '@core/id';
 import {
   NO_DEDUCTIONS,
@@ -742,6 +742,59 @@ describe('operationStore', () => {
   // 2026-07-02 audit #6 / ADR-041: deleting a point that still holds equipment would
   // strand it. Locally the store refuses with a clear reason; a PEER delete is appended
   // and the fold no-ops it (identically on every device).
+  // #537 extras (2026-10-21): the re-cut flag holds runner → Wood Shore Secured at the
+  // LOCAL pre-flight, so every in-app path (the runner card, the board's advance
+  // handler, anything added later) is held by one rule judged on the folded point. A
+  // PEER event is never refused here (ADR-041 — the fold decides its effect).
+  describe('re-cut flag holds runner → secured', () => {
+    const edit = (spId: string, patch: Partial<ShorePoint>): FieldShoreEvent => ({
+      type: 'ShorePointEdited', ...base(), spId, patch,
+    });
+    const ok = async (e: FieldShoreEvent) => expect((await ops.commit(e)).ok).toBe(true);
+    /** Leg 1 of a grouped T-Shore cut, sent to the runner, then a wood edit (sizing stays
+     *  editable past Pending only on a grouped shore) moved its cut length. */
+    const flaggedAtRunner = async () => {
+      for (const i of [1, 2]) await ok(spAdded(makeSp(`sp-g${i}`, { groupId: 'g', groupIndex: i, groupTotal: 2 })));
+      await ok(deploy('sp-g1', 'inv-1'));
+      await ok(statusChanged('sp-g1', 'process', 'strutset'));
+      await ok(statusChanged('sp-g1', 'strutset', 'cutting'));
+      await ok(edit('sp-g1', { cuttingDone: true, cutRecord: cutRecordOf(getSp('sp-g1')!) }));
+      await ok(statusChanged('sp-g1', 'cutting', 'runner'));
+      // A grouped mate's wood edit fans to every leg past Pending; a peer's lands unprompted.
+      await ok(edit('sp-g1', { deductions: { ...NO_DEDUCTIONS, headerWood: '6x6', footerWood: '6x6' } }));
+      expect(getSp('sp-g1')).toMatchObject({ status: 'runner', cuttingDone: true });
+      expect(needsRecut(getSp('sp-g1')!)).toBe(true);
+    };
+
+    it('a LOCAL runner → secured on a flagged leg is refused — nothing logged, still with the runner', async () => {
+      await flaggedAtRunner();
+      const before = await db.events.count();
+      const res = await ops.commit(statusChanged('sp-g1', 'runner', 'secured'));
+      expect(res).toMatchObject({ ok: false, reason: expect.stringContaining('re-cut') });
+      expect(await db.events.count()).toBe(before);
+      expect(getSp('sp-g1')!.status).toBe('runner');
+    });
+
+    it('the step-back still commits, and once Re-cut Done is marked the leg secures', async () => {
+      await flaggedAtRunner();
+      await ok(statusChanged('sp-g1', 'runner', 'cutting'));
+      expect(needsRecut(getSp('sp-g1')!)).toBe(true); // Cut Done + record survive the step-back
+      await ok(edit('sp-g1', { cuttingDone: true, cutRecord: cutRecordOf(getSp('sp-g1')!) }));
+      await ok(statusChanged('sp-g1', 'cutting', 'runner'));
+      await ok(statusChanged('sp-g1', 'runner', 'secured'));
+      expect(getSp('sp-g1')!.status).toBe('secured');
+    });
+
+    it('a PEER runner → secured still folds (ADR-041: a pre-flight never refuses a peer event)', async () => {
+      await flaggedAtRunner();
+      await ack();
+      const e = peer(statusChanged('sp-g1', 'runner', 'secured'), 1000);
+      const res = await ops.ingestRemote([e]);
+      expect(res.outcomes.get(e.id)).toBe('applied');
+      expect(getSp('sp-g1')!.status).toBe('secured');
+    });
+  });
+
   describe('ShorePointDeleted on a holder', () => {
     it('allows deleting a Pending point (no BOM, no stock consequence)', async () => {
       const before = await db.events.count();

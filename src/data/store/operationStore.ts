@@ -1,7 +1,7 @@
 import Dexie, { type BulkError } from 'dexie';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { FieldShoreEvent, type DeployedComponentRole, type InventoryItem, type StockRow } from '@core/schema';
-import { deployVerdict } from '@core/shorepoint';
+import { deployVerdict, needsRecut } from '@core/shorepoint';
 import { roleHistory } from '@core/org';
 import { newId } from '@core/id';
 import { createMonotonicClock, type MonotonicClock } from '@core/clock';
@@ -249,6 +249,20 @@ export function localCommitGuard(
       // create or reopen while one is active would otherwise fold as a silent no-effect
       // — the active-op race rule; a PEER's racing create/reopen does exactly that).
       return state.operation ? 'an operation is already active' : null;
+    case 'ShorePointStatusChanged': {
+      // Re-cut flag (#536 review M3): the piece in the runner's hands was cut to a length
+      // that has since changed, so Wood Shore Secured waits for the re-cut — the same rule
+      // the runner card shows by withholding its Secured slide. Held HERE so every local
+      // path (card slide, the board's advance handler, anything added later) is judged on
+      // the folded point, not a render snapshot. runner → secured is an individual edge
+      // (outside GROUP_ZONE), so only the trigger can move — a flagged mate never rides
+      // along. A PEER event is never refused (the fold decides it — ADR-041).
+      if (event.from !== 'runner' || event.to !== 'secured') return null;
+      const sp = state.shorePoints.find((s) => s.id === event.spId);
+      return sp && sp.status === 'runner' && needsRecut(sp)
+        ? 'cut length changed after Cut Done — re-cut before Wood Shore Secured'
+        : null;
+    }
     case 'ShorePointDeleted': {
       // The fold already no-ops a delete of a point still holding equipment (ADR-041);
       // refusing here gives the local user a clear reason instead of a silent no-op. A

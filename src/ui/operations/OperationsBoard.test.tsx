@@ -688,6 +688,31 @@ describe('OperationsBoard', () => {
     );
   });
 
+  it('Runner, re-cut flagged (#537 extras): no Secured slide, the note points back, the step-back still commits', async () => {
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      {
+        ...makeSP('sp-1', 'runner'),
+        // Cut at 51½″ on 4×4; a mate's wood edit has since moved this leg to 6×6 (47½″).
+        measurementEighths: 60 * 8,
+        deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
+        cuttingStartedAt: 10,
+        cuttingDone: true,
+        cutRecord: { eighths: 51.5 * 8, headerWood: '4x4', footerWood: '4x4' },
+        deployedBom: [{ role: 'strut', ...deployed() }],
+      },
+    ]);
+    render(<OperationsBoard />);
+    expect(screen.getByText('⚠ Re-cut: cut length changed after Cut Done')).toBeInTheDocument();
+    expect(screen.getByText('Re-cut before securing. Slide back to the Cutting Station.')).toBeInTheDocument();
+    expect(screen.queryByText('Slide to set Wood Shore Secured')).not.toBeInTheDocument();
+    await slideToCommit('Slide back to Cutting Station');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ShorePointStatusChanged', spId: 'sp-1', from: 'runner', to: 'cutting' }),
+    );
+    expect(mockCommit).not.toHaveBeenCalledWith(expect.objectContaining({ to: 'secured' }));
+  });
+
   it('Runner: the step-back slide commits runner → cutting (re-enters the cut queue)', async () => {
     mockOperation.mockReturnValue(ACTIVE_OP);
     mockShorePoints.mockReturnValue([{ ...makeSP('sp-1', 'runner'), deployedBom: [{ role: 'strut', ...deployed() }] }]);

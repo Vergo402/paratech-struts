@@ -253,4 +253,24 @@ describe('GroupedShorePoint', () => {
     await user.click(frontCard.getByRole('button', { name: 'Assign equipment' }));
     expect(onAssign).toHaveBeenCalledWith(pendingMembers[0]);
   });
+
+  // #537 extras: a grouped shore renders each leg through the same ShorePointCard, so a
+  // flagged leg's Secured slide is withheld inside the stack too — a mate's stays.
+  it('a re-cut-flagged runner leg in the stack has no Secured slide; its unflagged mate keeps one', () => {
+    const W6 = { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' } as const;
+    const runner = (id: string, i: number, cutEighths: number): ShorePoint => ({
+      ...member(id, i, 'runner'),
+      measurementEighths: 54 * 8,
+      deductions: W6,
+      cuttingStartedAt: 100,
+      cuttingDone: true,
+      // 54″ on 6×6 cuts 41½″: sp-1 was cut at 45½″ (4×4) → flagged; sp-2 matches.
+      cutRecord: { eighths: cutEighths, headerWood: '4x4', footerWood: '4x4' },
+    });
+    render(<GroupedShorePoint members={[runner('sp-1', 1, 45.5 * 8), runner('sp-2', 2, 41.5 * 8)]} defaultExpanded onAdvance={vi.fn()} />);
+    const card = (id: string) => document.querySelector(`[data-sp-id="${id}"]`) as HTMLElement;
+    expect(within(card('sp-1')).queryByText('Slide to set Wood Shore Secured')).toBeNull();
+    expect(within(card('sp-1')).getByText('Re-cut before securing. Slide back to the Cutting Station.')).toBeInTheDocument();
+    expect(within(card('sp-2')).getByText('Slide to set Wood Shore Secured')).toBeInTheDocument();
+  });
 });
