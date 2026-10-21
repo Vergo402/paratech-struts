@@ -811,6 +811,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                     deployDisabledReason={disabledReason ?? undefined}
                     estimatedLoad={loadNum > 0 ? loadNum : undefined}
                     currentStruts={strutsPerShore}
+                    inventory={inventory}
                     onAddStruts={(c, targetType) => {
                       if (!canSubmit) return;
                       // One tap: build at the shore type the load needs, on the wood

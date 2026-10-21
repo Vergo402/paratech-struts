@@ -629,7 +629,7 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
       expect(add).toBeDisabled();
       expect(add.nextElementSibling).toHaveTextContent(
-        "LS 406 won't fit a 3-Post on 6×6 (47″, minimum 48″). Pick wood and press Find again.",
+        "LS 406 won't fit a 3-Post on 6×6 (47″, minimum 48″).",
       );
       await user.click(add);
       expect(mockCommitMany).not.toHaveBeenCalled();

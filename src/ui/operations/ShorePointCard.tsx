@@ -546,11 +546,13 @@ export function ShorePointCard({
           inventory status slides (ADR-010). */}
       {interactive && !removed && !cuttingStation && sp.status === 'runner' && (
         <div className="fs-spc-slides">
-          <Slider
-            label="Slide to set Wood Shore Secured"
-            tone="secured"
-            onCommit={() => onAdvance?.(sp)}
-          />
+          {/* A flagged re-cut withholds Secured: the cut piece is the wrong length
+              (review fix 2026-10-21); the step-back returns it to the saw. */}
+          {needsRecut(sp) ? (
+            <p className="fs-spc-caption">Re-cut before securing. Slide back to the Cutting Station.</p>
+          ) : (
+            <Slider label="Slide to set Wood Shore Secured" tone="secured" onCommit={() => onAdvance?.(sp)} />
+          )}
           <Slider
             label="Slide back to Cutting Station"
             direction="stepback"

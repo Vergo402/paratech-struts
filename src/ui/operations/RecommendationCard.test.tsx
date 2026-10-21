@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { RecommendationCard, comboModel, type RecommendationCardProps } from './RecommendationCard';
 import { findStrutCombinations, type StrutCombination } from '@core/load';
+import { recheckThreePost } from '@core/shorepoint';
 import { NO_DEDUCTIONS, type Deductions, type StockRow } from '@core/schema';
 
 // Real-engine fixtures — the card is pinned against what the engine actually
@@ -607,7 +608,7 @@ describe('RecommendationCard — one-tap 3-Post re-checks the strut on 6×6', ()
     const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
     expect(add).toBeDisabled();
     expect(add.nextElementSibling).toHaveTextContent(
-      "LS 304 won't fit a 3-Post on 6×6 (35″, minimum 36″). Pick wood and press Find again.",
+      "LS 304 won't fit a 3-Post on 6×6 (35″, minimum 36″).",
     );
     expect(container.querySelector('.fs-rec-add-note')).toBeNull();
     await user.click(add);
@@ -638,6 +639,61 @@ describe('RecommendationCard — one-tap 3-Post re-checks the strut on 6×6', ()
     );
     await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
     expect(onAddStruts).toHaveBeenCalledWith(onSix, '3-post', 3);
+  });
+
+  const ext = (id: string, length: number): StockRow => ({
+    id,
+    type: 'extension',
+    system: 'LongShore',
+    length,
+    apparatus: 'Rescue 2',
+    apparatusId: 'app-r2',
+    quantity: 4,
+    held: 0,
+    available: 4,
+  });
+
+  it('inventory without the 6×6 refit’s extension → locked with the on-scene reason', () => {
+    const inv: StockRow[] = [...R2, ext('inv-e24', 24)];
+    // 69″ − 7 = 62″ → LS 304 + 24″; on 6×6 it is 58″ → needs a 12″ nobody carries.
+    const combo = findStrutCombinations(69, 50000, 2, inv, null, { header: 3.5, sole: 3.5 }).find(
+      (c) => c.strut.model === 'LS 304' && c.extensions.join('+') === '24',
+    )!;
+    renderCard(combo, { inventory: inv });
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add).toBeDisabled();
+    expect(add.nextElementSibling).toHaveTextContent('LS 304 on 6×6 needs a 12″ extension no rig on scene has.');
+  });
+
+  describe('zero-margin caution under the one-tap', () => {
+    // The 6×6 refit lands exactly on the assembly's maximum reach: search the opening in ⅛″ steps.
+    const inv: StockRow[] = [...R2, ext('inv-e12', 12)];
+    let boundary: StrutCombination | undefined;
+    for (let e = 36 * 8; e < 90 * 8 && !boundary; e++) {
+      const c = findStrutCombinations(e / 8, 50000, 2, inv, null, { header: 3.5, sole: 3.5 }).find(
+        (x) => x.strut.model === 'LS 304' && x.boundaryWarning !== 'fully-extended',
+      );
+      if (!c) continue;
+      const r = recheckThreePost(c, FOUR, 50000, 3, inv);
+      if (r.fits && r.woodChanged && r.combo.boundaryWarning === 'fully-extended') boundary = c;
+    }
+
+    it('fixture exists', () => expect(boundary).toBeDefined());
+
+    it('renders when the 6×6 length is the strut’s maximum reach', () => {
+      const { container } = renderCard(boundary!, { inventory: inv });
+      const r = recheckThreePost(boundary!, FOUR, 50000, 3, inv);
+      const caution = container.querySelector('.fs-rec-caution')!;
+      expect(caution.textContent).toContain('Fully extended — zero margin.');
+      expect(caution.textContent).toContain(
+        `On 6×6 the strut is at its maximum reach (${r.fits ? r.combo.adjExtended : ''}″).`,
+      );
+    });
+
+    it('does not render on a non-boundary fit', () => {
+      const { container } = renderCard(FITS, { inventory: inv });
+      expect(container.querySelector('.fs-rec-caution')).toBeNull();
+    });
   });
 
   it('a Double-T conversion never names 6×6 and keeps the wood', () => {

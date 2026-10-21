@@ -1,5 +1,5 @@
 import { THREE_POST_WOOD, type StrutCombination } from '../load';
-import type { Deductions, ShorePoint, ShoreTypeId } from '../schema';
+import type { Deductions, ShorePoint, ShoreTypeId, StockRow } from '../schema';
 import { cutLengthInches, effectiveLengthFrom, findForShorePoint, strutLoadShare } from './reducer';
 
 // The "Add N more struts — deploy as 3-Post" one-tap (Alex 2026-10-20). A 3-Post is
@@ -50,6 +50,13 @@ export type ThreePostRecheck =
       perStrut: number;
       /** The strut's rated capacity at the 6×6 length (lb, 4:1). 0 = not rated there. */
       capacity: number;
+    }
+  | {
+      fits: false;
+      reason: 'extension-missing';
+      strutLength: number;
+      /** The extension set the 6×6 refit needs, which no rig on scene stocks. */
+      extensions: number[];
     };
 
 /** Multiset compare of two extension-length lists (order-independent). */
@@ -71,12 +78,17 @@ function sameExtensions(a: readonly number[], b: readonly number[]): boolean {
  * (a shorter length can only need fewer / shorter extensions). Capacity uses the
  * store's own share rule (strutLoadShare over the 3-Post's members) against the
  * engine's rating at the exact 6×6 length.
+ *
+ * `inventory` (optional): when the 6×6 refit needs a DIFFERENT extension set, it is
+ * re-checked against stock — a set no rig on scene can supply locks the tap instead of
+ * leaving a Pending member (review fix 2026-10-21). Absent → catalog-only, as before.
  */
 export function recheckThreePost(
   combo: StrutCombination,
   deductions: Deductions,
   estimatedLoad: number,
   struts: number,
+  inventory?: StockRow[] | null,
 ): ThreePostRecheck {
   const six = conversionDeductions('3-post', deductions);
   const woodChanged = six.headerWood !== deductions.headerWood || six.footerWood !== deductions.footerWood;
@@ -102,7 +114,16 @@ export function recheckThreePost(
 
   const forModel = findForShorePoint(draft, null).filter((c) => c.strut.model === combo.strut.model);
   const sameSet = forModel.find((c) => sameExtensions(c.extensions, combo.extensions));
-  const match = sameSet ?? forModel[0];
+  let match = sameSet ?? forModel[0];
+  // A changed extension set must also be on scene (stock mode, same strut model).
+  let onScene: StrutCombination | undefined;
+  if (match && !sameSet && inventory) {
+    onScene = findForShorePoint(draft, inventory).find((c) => c.strut.model === combo.strut.model);
+    if (onScene) match = onScene;
+    else if (match.extensions.length > 0) {
+      return { fits: false, reason: 'extension-missing', strutLength, extensions: match.extensions };
+    }
+  }
 
   if (!match) {
     // Below the bare strut's collapsed length — no extension can help (they only add).
@@ -132,13 +153,13 @@ export function recheckThreePost(
 
   // The deploy paths source from `combo.strut.inventoryId` (a catalog-mode combo has
   // none), so the card's stock-bound candidate rides on. Extension sources stay only
-  // when the set is unchanged; a changed set re-resolves against live stock in
+  // when the set is unchanged (or the stock-mode combo resolved its own); a changed set re-resolves against live stock in
   // assembleBom (and a piece no rig stocks keeps that member Pending — never a
   // silently off-book extension).
   const refit: StrutCombination = {
     ...match,
     strut: combo.strut,
-    extensionSources: sameSet ? combo.extensionSources : undefined,
+    extensionSources: onScene ? onScene.extensionSources : sameSet ? combo.extensionSources : undefined,
   };
   return { fits: true, combo: refit, deductions: six, strutLength, cutLength, woodChanged };
 }

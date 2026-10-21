@@ -774,6 +774,24 @@ describe('W3wChip — the radio-callout location row (#441)', () => {
       expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
     });
 
+    it('a flagged runner card withholds Secured, says why, and keeps the step-back (review fix 2026-10-21)', () => {
+      render(<ShorePointCard shorePoint={cutLeg({ status: 'runner' })} onAdvance={vi.fn()} onStepBack={vi.fn()} />);
+      expect(screen.getByText('Re-cut before securing. Slide back to the Cutting Station.')).toHaveClass(
+        'fs-spc-caption',
+      );
+      expect(screen.queryByText('Slide to set Wood Shore Secured')).toBeNull();
+      expect(screen.getByText('Slide back to Cutting Station')).toBeInTheDocument();
+    });
+
+    it('an unflagged runner card still offers Secured', () => {
+      const clean = { ...W6, headerWood: '4x4', footerWood: '4x4' } as const;
+      render(
+        <ShorePointCard shorePoint={cutLeg({ status: 'runner', deductions: clean })} onAdvance={vi.fn()} onStepBack={vi.fn()} />,
+      );
+      expect(screen.getByText('Slide to set Wood Shore Secured')).toBeInTheDocument();
+      expect(screen.queryByText(/Re-cut before securing/)).toBeNull();
+    });
+
     it('the station card swaps Send to Runner for Re-cut Done while flagged', async () => {
       const onMarkCutDone = vi.fn();
       const sp = cutLeg();

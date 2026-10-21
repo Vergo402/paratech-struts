@@ -147,9 +147,9 @@ describe('AddShorePointModal — one-tap 3-Post builds on 6×6 (real card)', () 
     }
   });
 
-  it('a 6×6 refit that needs an extension no rig stocks leaves the members Pending — never off-book', async () => {
+  it('a 6×6 refit that needs an extension no rig stocks locks the tap — never a Pending or off-book member', async () => {
     // 69″ − 4×4 = 62″ → LS 304 + 24″ (60–74), the 24″ on Rescue 2. On 6×6: 58″ → the
-    // re-check re-derives LS 304 + 12″ (48–62), and no rig stocks a 12″ extension.
+    // re-check re-derives LS 304 + 12″ (48–62), and no rig stocks a 12″ extension → locked.
     mockInv = [...INV, { id: 'inv-x24', type: 'extension', system: 'LongShore', length: 24, apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 4, held: 0, available: 4 }];
     mockRecs = [
       findStrutCombinations(69, 0, 2, mockInv, null, { header: 3.5, sole: 3.5 }).find(
@@ -167,17 +167,10 @@ describe('AddShorePointModal — one-tap 3-Post builds on 6×6 (real card)', () 
     await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
     await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '50000');
     const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
-    // The helper names the assembly that will actually deploy.
-    expect(add.parentElement!.querySelector('.fs-rec-add-note')).toHaveTextContent(
-      'Switches header and footer to 6×6: strut 58″, cut 56 1/2″. Deploys all 3 LS 304 + 12″ from Rescue 2',
-    );
+    expect(add).toBeDisabled();
+    expect(add.nextElementSibling).toHaveTextContent('LS 304 on 6×6 needs a 12″ extension no rig on scene has.');
     await user.click(add);
-
-    await waitFor(() => expect(onDeployed).toHaveBeenCalled());
-    const [deployed, pending, model] = onDeployed.mock.calls[0]!;
-    expect(deployed).toEqual([]);
-    expect(pending).toHaveLength(3);
-    expect(model).toBe('LS 304 + 12″');
+    expect(onDeployed).not.toHaveBeenCalled();
     expect(mockCommit.mock.calls.filter((c) => c[0].type === 'EquipmentDeployed')).toHaveLength(0);
   });
 });

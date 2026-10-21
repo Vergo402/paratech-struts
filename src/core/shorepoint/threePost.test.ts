@@ -140,3 +140,33 @@ describe('recheckThreePost', () => {
     expect(r).toEqual({ fits: false, reason: 'capacity', strutLength: 37, perStrut: 30000, capacity: 22000 });
   });
 });
+
+describe('recheckThreePost — the 6×6 extension set must be on scene (review fix 2026-10-21)', () => {
+  // 69″ − 7 = 62″: LS 304 + 24″. On 6×6: 58″ → needs the 12″ extension instead.
+  const combo = () => comboAt(69, 50000, 'LS 304', [24]);
+
+  it('no 12″ extension on scene → locked, extension-missing with the set it needs', () => {
+    const noTwelve = [strutRow('LS 304', 'LongShore'), extRow(24)];
+    expect(recheckThreePost(combo(), FOUR, 50000, 3, noTwelve)).toEqual({
+      fits: false,
+      reason: 'extension-missing',
+      strutLength: 58,
+      extensions: [12],
+    });
+  });
+
+  it('the 12″ extension stocked → fits, extension sources resolved from stock', () => {
+    const r = recheckThreePost(combo(), FOUR, 50000, 3, INV);
+    expect(r.fits).toBe(true);
+    if (!r.fits) return;
+    expect(r.combo.extensions).toEqual([12]);
+    expect(r.combo.extensionSources).toEqual([{ length: 12, inventoryId: 'inv-ext-12' }]);
+    expect(r.combo.strut.inventoryId).toBe('inv-LS 304');
+  });
+
+  it('no inventory argument → today’s catalog-only behaviour', () => {
+    const r = recheckThreePost(combo(), FOUR, 50000, 3);
+    expect(r.fits).toBe(true);
+    if (r.fits) expect(r.combo.extensionSources).toBeUndefined();
+  });
+});

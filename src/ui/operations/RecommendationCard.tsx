@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, isKnownPlateId, sysKeyOf, type StrutCombination } from '@core/load';
-import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
+import type { Deductions, ShoreTypeId, StockRow, WoodSizeId } from '@core/schema';
 import {
   SHORE_TYPE_FOR_STRUTS,
   deductionTotalInches,
@@ -77,6 +77,8 @@ export interface RecommendationCardProps {
    *  ×N struts-needed / disclaimer) render unchanged. Default
    *  'deploy' keeps the full Operations card. */
   variant?: 'deploy' | 'calculator';
+  /** Live stock: lets the one-tap 3-Post confirm the 6×6 refit's extensions are on scene. */
+  inventory?: StockRow[];
 }
 
 
@@ -94,14 +96,18 @@ function threePostLockReason(
   strutModel: string,
 ): string {
   const at = measurementText(Math.round(check.strutLength * 8));
-  const tail = 'Pick wood and press Find again.';
+  if (check.reason === 'extension-missing') {
+    const list = check.extensions.map((e) => `${e}″`).join(' + ');
+    const what = check.extensions.length === 1 ? `a ${list} extension` : `${list} extensions`;
+    return `${strutModel} on 6×6 needs ${what} no rig on scene has.`;
+  }
   if (check.reason === 'capacity') {
-    return `${strutModel} won't carry this load as a 3-Post on 6×6 (${check.perStrut.toLocaleString('en-US')} lbs per strut, rated ${check.capacity.toLocaleString('en-US')} lb at ${at}). ${tail}`;
+    return `${strutModel} won't carry this load as a 3-Post on 6×6 (${check.perStrut.toLocaleString('en-US')} lbs per strut, rated ${check.capacity.toLocaleString('en-US')} lb at ${at}).`;
   }
   const name = check.ofAssembly ? model : strutModel;
   const limit = measurementText(Math.round(check.limit * 8));
   const bound = check.reason === 'too-short' ? `minimum ${limit}` : `maximum ${limit}`;
-  return `${name} won't fit a 3-Post on 6×6 (${at}, ${bound}). ${tail}`;
+  return `${name} won't fit a 3-Post on 6×6 (${at}, ${bound}).`;
 }
 
 /** The selected top/bottom connector NAMES (as catalogued), top first; empty when
@@ -184,6 +190,7 @@ export function RecommendationCard({
   currentStruts,
   onAddStruts,
   variant = 'deploy',
+  inventory,
 }: RecommendationCardProps) {
   // #456 — the acknowledgment is given for ONE risk picture. The sheet keys these
   // cards only on the strut/extension identity, so a peer edit of the load,
@@ -228,7 +235,9 @@ export function RecommendationCard({
   // card was sized at — re-check THIS strut at the 6×6 length before offering the tap,
   // and deploy the combo that was checked (Alex 2026-10-20). Double-T keeps the wood.
   const threePost =
-    canAutoFix && targetType === '3-post' ? recheckThreePost(combo, deductions, estimatedLoad ?? 0, needed) : null;
+    canAutoFix && targetType === '3-post'
+      ? recheckThreePost(combo, deductions, estimatedLoad ?? 0, needed, inventory)
+      : null;
 
   const gated = !!combo.unrated || shortDeploy;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
@@ -484,6 +493,13 @@ export function RecommendationCard({
                     {source ? ` from ${source}` : ''}
                   </p>
                 )
+              )}
+            {threePost?.fits && threePost.woodChanged && threePost.combo.boundaryWarning === 'fully-extended' && (
+                /* The 6×6 refit can land exactly on the strut's reach (review fix 2026-10-21). */
+                <p className="fs-rec-caution">
+                  <strong>Fully extended — zero margin.</strong> On 6×6 the strut is at its maximum reach (
+                  {threePost.combo.adjExtended}″).
+                </p>
               )}
             </>
           )}

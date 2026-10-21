@@ -405,6 +405,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
                 estimatedLoad={sp.estimatedLoad}
                 currentStruts={sp.groupTotal ?? 1}
                 onAddStruts={allPending ? handleAddStruts : undefined}
+                inventory={inventory}
               />
             );
           })}
