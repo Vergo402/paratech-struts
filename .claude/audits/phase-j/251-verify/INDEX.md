@@ -22,7 +22,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 5 | `10-starting-an-operation.md` | #219 | **PASS** — 27 PASS · 1 SPEC-DRIFT · 3 FAIL (10-31 filed; 10-03/10-25 → Q3) · 2 NOT-BUILT (10-17b multi-building default + tablet address → small-features list) | `10/REPORT.md` | #528 |
 | 6 | `11-adding-a-shore-point.md` | #220 | **PASS** — 28 PASS · 4 SPEC-DRIFT · 1 FAIL (11-33 duplicate #N on concurrent add, filed) | `11/REPORT.md` | #529 |
 | 7 | `12-deploying-a-strut.md` | #221 | **PASS** — 30 PASS · 3 SPEC-DRIFT · 1 FAIL (12-09 system Back, filed) · extra F1 (cross-rig 3-Post one-tap, filed) · 12-02 copy filed · 12-22 would-fit link NOT-BUILT (→ small-features) · probe recorded (2026-10-21, HEAD fb8204a) | `12/REPORT.md` | #539 #540 #541 |
-| 8 | `13-cutting.md` | #222 | brief drafted | — | — |
+| 8 | `13-cutting.md` | #222 | **PASS** — 33 PASS · 1 SPEC-DRIFT · 2 NOT-BUILT (13-34 Cutting-role gate, 13-35 actual-cut input → decisions list) · 13-10 copy-only FAIL → spec-correction (R4) · re-cut flag 13-36..38 verified (2026-10-21, HEAD 64bb0b3) | `13/REPORT.md` | (none) |
 | 9 | `14-runner.md` | #223 | brief drafted | — | — |
 | 10 | `15-secured-returned.md` | #224 | brief drafted | — | — |
 | 11 | `16-end-of-operation.md` | #238 | brief drafted | — | — |
@@ -57,6 +57,15 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 12-03: card copy drops "at this load" (#432 mess-map #15); 12-12: truck source lives in Details, not the card face (card.md:62); 12-20: over-capacity is deployable after acknowledgment via "Deploy N of M anyway" (accepted mockup 2026-07-01) — rewrite spec 12 Step 2-W.
 - 12-22: the spec's "would-fit → Quick Find" link does not exist (NOT-BUILT) — decide: drop from spec or small-features list.
 - Probe (spec 12, 2026-10-21): editing a Pending 3-Post (6×6) to T-Shore clears the wood and blocks Save with "Pick header and footer wood" — consistent with the wood-required doctrine (2026-10-17); record in spec 11/12 as intended.
+
+- 13-10: the too-small chip reads "Opening too small for this header and footer wood — verify measurement" (spec said "standard 6×6 wood"; wood is now picked, so the build wording is right) — rewrite spec 13 Step 2 / SME-3. Also the brief's "5′0⅞″ → 51½″" example is arithmetic-wrong (52⅜″).
+- 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
+
+## Decisions for Alex (NOT-BUILT, not filed)
+
+- 13-34 Cutting-role gate ("Cutting role required to advance…"): no role gate exists on the station slides; ADR-017 keeps the fireground ICS-position-gated, so decide: build for v4.0.x, or drop from spec 13 (any member may cut).
+- 13-35 Optional actual-cut entry with expected↔actual diff badge: not built anywhere. Decide: small-features list (v4.1) or drop.
+- 12-22 "would-fit → Quick Find" link on the no-match empty state: not built. Drop or small-features list.
 
 ## Accessibility batch (one issue at the end, not per spec)
 
