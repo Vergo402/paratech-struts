@@ -82,3 +82,7 @@ Spec § refers to the spec's section headings. Tags: Testable / Superseded / Def
 - **TanStack tab routing.** If tapping the Command tab does not route, use `location.assign('/command')`.
 - **Counts on collapsed phases.** Auto-collapse only applies to a fully complete phase. Opening one manually is allowed and stays open.
 - **Offline.** The spec has no offline story for this flow; 22-28 is the only offline criterion. Do not expect a visible offline indicator in the drawer.
+
+## Orchestrator addendum (2026-10-21, HEAD 2e8bd28)
+- Positions follow the ACCOUNT, not the device (552faca; `useIsIC`): the IC gate is judged by the signed-in account. A criterion that assumes device-bound IC → SPEC-DRIFT citing that commit.
+- Wood is required at Add Shore Point (2026-10-17). Incident-level mutual aid Deferred (#493). Broadcast surfaces Deferred (#496).
