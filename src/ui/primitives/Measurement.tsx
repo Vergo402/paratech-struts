@@ -80,14 +80,19 @@ export function InchesValue({ inches, className }: { inches: number; className?:
   return <span className={`fs-meas${className ? ` ${className}` : ''}`}>{decimalInchesText(inches)}</span>;
 }
 
-/** Read-only measurement — Inter value font, tabular figures, diagonal ⅛″ fraction. */
-export function MeasurementValue({ eighths, form = 'inches', className }: MeasurementValueProps) {
+/** The measurement as plain text ("35 1/2″", "7′ 9 5/8″") — the ONE formatter, for
+ *  string-only slots (a Button's disabledReason) as well as MeasurementValue. Inside an
+ *  `.fs-meas` span the font composes the diagonal fraction; elsewhere it reads "1/2". */
+export function measurementText(eighths: number, form: 'inches' | 'feet-inches' = 'inches'): string {
   const p = eighthsToParts(eighths);
   const sign = p.negative ? '−' : '';
   const frac = fractionText(p.n, p.d);
-  const text =
-    form === 'feet-inches' && p.feet > 0
-      ? `${sign}${p.feet}′ ${p.inches}${frac}″`
-      : `${sign}${p.totalInches}${frac}″`;
-  return <span className={`fs-meas${className ? ` ${className}` : ''}`}>{text}</span>;
+  return form === 'feet-inches' && p.feet > 0
+    ? `${sign}${p.feet}′ ${p.inches}${frac}″`
+    : `${sign}${p.totalInches}${frac}″`;
+}
+
+/** Read-only measurement — Inter value font, tabular figures, diagonal ⅛″ fraction. */
+export function MeasurementValue({ eighths, form = 'inches', className }: MeasurementValueProps) {
+  return <span className={`fs-meas${className ? ` ${className}` : ''}`}>{measurementText(eighths, form)}</span>;
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import type { ShorePoint } from '@core/schema';
+import type { ShorePoint, WoodSizeId } from '@core/schema';
 import { divisionLabel, sideLabel, assignSaws, rosterOf } from '@core/operation';
-import { cutLengthInches, cutLumber, cutTooSmall } from '@core/shorepoint';
+import { cutLengthEighths, cutLumber, cutRecordOf, cutTooSmall, needsRecut } from '@core/shorepoint';
 import { Badge, Button, EmptyState, MeasurementValue } from '@ui/primitives';
 import { useIsDesktop } from '@ui/primitives/useMediaQuery';
 import { usePeerCuts } from '@ui/hooks';
@@ -103,10 +103,31 @@ function cutWoodPhrase(sp: ShorePoint): string {
     : `${w(c.header)} header${std(c.headerStandard)} − ${w(c.footer)} footer${std(c.footerStandard)}`;
 }
 
-/** Cut length in eighths — × 8 lands on an exact eighth (cutLengthInches already
- *  floors to ⅛″); round only defends float noise. No double-floor. */
-function cutEighths(sp: ShorePoint): number {
-  return Math.round(cutLengthInches(sp) * 8);
+/** Cut length in eighths — the shared core helper (the same integer the re-cut flag
+ *  compares), so the hero number and the flag can never disagree. */
+const cutEighths = cutLengthEighths;
+
+/** The wood a cut was computed on, in the re-cut chip's short form (accepted mockup):
+ *  "4×4" when header = footer, else "4×4 / 6×6" (header / footer). */
+function woodPairText(header: WoodSizeId, footer: WoodSizeId): string {
+  const w = (id: string) => id.replace('x', '×');
+  return header === footer ? w(header) : `${w(header)} / ${w(footer)}`;
+}
+
+/** The hero's re-cut chip sentence (accepted mockup "3 · Cut piece flagged"): what was
+ *  cut, on what wood, vs. what the cut is now. Call only when needsRecut(sp). The
+ *  lengths are MeasurementValue spans, like the math line, so the fraction renders as
+ *  the same diagonal glyph as the hero number. */
+function RecutText({ sp }: { sp: ShorePoint }) {
+  const was = sp.cutRecord!;
+  const now = cutRecordOf(sp);
+  return (
+    <>
+      ⚠ Cut length changed after Cut Done: was <MeasurementValue eighths={was.eighths} /> on{' '}
+      {woodPairText(was.headerWood, was.footerWood)}, now <MeasurementValue eighths={now.eighths} /> on{' '}
+      {woodPairText(now.headerWood, now.footerWood)}. Re-cut.
+    </>
+  );
 }
 
 /**
@@ -230,6 +251,8 @@ export function CuttingStation({
     // the saw, so the surface that leg is worked on must carry the same verdict the
     // board card does — and here, with the deployed context spelled out.
     const heroFlag = capacityFlagOf?.(sp) ?? null;
+    // Re-cut (2026-10-20): cut done, but the cut length has moved since — derived.
+    const recut = needsRecut(sp);
     return (
     <div className="fs-cutstation-hero" data-sp-id={sp.id} data-saw={sawId ?? undefined}>
       <span className="fs-cutstation-hero-badge">
@@ -270,8 +293,27 @@ export function CuttingStation({
           </span>
         </span>
       )}
+      {/* Re-cut flag (accepted mockup "3 · Cut piece flagged"): the piece was cut to
+          the recorded length and the cut has moved since. Amber warning chip (the
+          card's --warning idiom, not the red too-small above): the shore isn't unsafe,
+          the cut PIECE is the wrong length. The primary slide below becomes Re-cut
+          Done (CuttingControls), which re-records the new length and clears this. */}
+      {recut && (
+        <span className="fs-spc-flag-row">
+          <span className="fs-spc-flag fs-spc-flag--warning" role="status">
+            {/* ONE inline wrapper: .fs-spc-flag is inline-flex, so bare text runs +
+                MeasurementValue spans would each become a flex item (side-by-side
+                columns, edge spaces trimmed). Wrapped, the sentence flows and wraps. */}
+            <span>
+              <RecutText sp={sp} />
+            </span>
+          </span>
+        </span>
+      )}
       <p className="fs-cutstation-hero-where">{cutSubtitle(sp)}</p>
-      {sp.cuttingDone && <p className="fs-cutstation-hero-cutdone">✓ Cut done</p>}
+      {/* Hidden while re-cut is flagged (accepted mockup): "✓ Cut done" beside "Re-cut"
+          would tell the saw two things at once. The board card keeps it. */}
+      {sp.cuttingDone && !recut && <p className="fs-cutstation-hero-cutdone">✓ Cut done</p>}
       <div className="fs-cutstation-hero-slide">
         <CuttingControls
           sp={sp}

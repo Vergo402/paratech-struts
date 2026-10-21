@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import type { BuildingSide, Deductions, DeployedComponent, ShorePoint, ShorePointPatch, ShoreTypeId } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS } from '@core/schema';
-import { SHORE_TYPES, parseLoad } from '@core/load';
+import { SHORE_TYPES, THREE_POST_WOOD, parseLoad } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
 import { getGpsFix } from './locationCapture';
 import { compareBuildingValues, nextSeqBase, parseDivisionNumber } from '@core/operation';
-import { assembleBom, effectiveLengthFrom, isUntracked, pendingReasonFor } from '@core/shorepoint';
+import { assembleBom, conversionDeductions, effectiveLengthFrom, isUntracked, pendingReasonFor } from '@core/shorepoint';
 import { Button, EmptyState, Modal, TextField } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { BottomSheetPicker, InlineSegmented } from '@ui/picker';
@@ -34,19 +34,16 @@ import { SHORE_TYPE_LABELS, NO_MATCH_EMPTY, cardLocation } from './cardParts';
 // names (`Vertical T-Shore`, …) stay in that catalog (core/load/plates.ts).
 const SHORE_TYPE_OPTIONS = SHORE_TYPES.map((t) => ({ value: t.id, label: SHORE_TYPE_LABELS[t.id] }));
 
-// v3.9.1 lesson: ONLY 3-Post auto-fills its wood (6×6 per USACE/FEMA spec).
-// T-Shore / Double-T can be built 4×4 or 6×6 by load and span — the operator must
-// choose explicitly. Symmetric by design (SME-2, 2026-07-28): switching AWAY from
-// 3-Post retracts this auto-fill, but only while BOTH woods still read exactly as
-// seeded — anything else is an operator choice and is never clobbered. The test is
-// value-equality, not touched-ness: an operator who changes 6×6 → 4×4 → 6×6 lands
-// back on the seed and the retraction fires. Accepted — nothing in the form records
-// intent, and the retracted state (None/None) is the explicit-choice default the
-// v3.9.1 doctrine wants for a T-Shore anyway.
-const THREE_POST_WOOD: Pick<Deductions, 'headerWood' | 'footerWood'> = {
-  headerWood: '6x6',
-  footerWood: '6x6',
-};
+// v3.9.1 lesson: ONLY 3-Post auto-fills its wood (THREE_POST_WOOD, 6×6 — one shared
+// source in core/load/plates.ts, also used by the Add-N-struts one-tap below and by
+// the Assign Equipment sheet). T-Shore / Double-T can be built 4×4 or 6×6 by load and
+// span — the operator must choose explicitly. Symmetric by design (SME-2, 2026-07-28):
+// switching AWAY from 3-Post retracts this auto-fill, but only while BOTH woods still
+// read exactly as seeded — anything else is an operator choice and is never clobbered.
+// The test is value-equality, not touched-ness: an operator who changes 6×6 → 4×4 →
+// 6×6 lands back on the seed and the retraction fires. Accepted — nothing in the form
+// records intent, and the retracted state (None/None) is the explicit-choice default
+// the v3.9.1 doctrine wants for a T-Shore anyway.
 
 /** Total-cards sanity threshold (shores × struts/shore) — warn, never block (#220 OQ2). */
 const QTY_WARN_THRESHOLD = 10;
@@ -170,7 +167,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     const prev = shoreType; // the closure value IS the type we're leaving
     setShoreType(next);
     if (next === '3-post') {
-      setDeductions((d) => ({ ...d, ...THREE_POST_WOOD }));
+      setDeductions((d) => conversionDeductions('3-post', d));
       return;
     }
     // Leaving 3-Post: retract the auto-fill so 6×6 can't ride into a T-Shore /
@@ -322,8 +319,14 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // The struts of ONE physical shore (KB-7: T-Shore=1, Double-T=2, 3-Post=3,
   // sharing a groupId), carrying the given created-order number. Shared by the add
   // flow (one call per shore) and the edit-time type-change rebuild (handleSaveEdit).
-  // `type` overrides the form's selection for the Add-N-struts one-tap fix.
-  function buildShoreStruts(seq: number | undefined, type: ShoreTypeId = shoreType): ShorePoint[] {
+  // `type` + `deds` override the form's selections for the Add-N-struts one-tap fix
+  // (a 3-Post builds on THREE_POST_WOOD — passed in, because the form's setDeductions
+  // has not landed in this closure yet).
+  function buildShoreStruts(
+    seq: number | undefined,
+    type: ShoreTypeId = shoreType,
+    deds: Deductions = deductions,
+  ): ShorePoint[] {
     const perShore = strutsPerShoreOf(type);
     const groupId = perShore > 1 ? newId() : undefined;
     return Array.from({ length: perShore }, (_, strut) => ({
@@ -337,7 +340,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       shoreType: type,
       ...(groupId ? { groupId, groupIndex: strut + 1, groupTotal: perShore } : {}),
       measurementEighths,
-      deductions,
+      deductions: deds,
       ...(label.trim() ? { label: label.trim() } : {}),
       ...(assignedResource ? { assignedResource } : {}),
       ...(loadNum > 0 ? { estimatedLoad: loadNum } : {}),
@@ -354,11 +357,11 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // share one groupId per physical shore. Shared by Save-as-Pending and Deploy.
   // Stable per-op number: max(existing)+1 per PHYSICAL shore (max, not count, so a
   // deleted number is never reused).
-  function buildPoints(type: ShoreTypeId = shoreType): ShorePoint[] {
+  function buildPoints(type: ShoreTypeId = shoreType, deds: Deductions = deductions): ShorePoint[] {
     const baseSeq = nextSeqBase(shorePoints);
     const points: ShorePoint[] = [];
     for (let shore = 0; shore < qtyNum; shore++) {
-      points.push(...buildShoreStruts(baseSeq + shore + 1, type));
+      points.push(...buildShoreStruts(baseSeq + shore + 1, type, deds));
     }
     return points;
   }
@@ -382,8 +385,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
 
   // One-step deploy: create the point(s), then put the chosen combo on each.
   // `typeOverride` is the Add-N-struts one-tap fix — build at the shore type the
-  // load needs instead of the form's selection (accepted mockup 2026-07-01).
-  async function handleDeploy(combo: StrutCombination, typeOverride?: ShoreTypeId) {
+  // load needs instead of the form's selection (accepted mockup 2026-07-01) — and
+  // `deductionsOverride` the wood that type is built on (a 3-Post: THREE_POST_WOOD,
+  // which the card re-checked the strut at — accepted mockup 2026-10-20).
+  async function handleDeploy(combo: StrutCombination, typeOverride?: ShoreTypeId, deductionsOverride?: Deductions) {
     // The card buttons carry the form's lock (deployDisabled + reason), but the
     // handler re-checks too: `found` outlives the inputs it was pressed on, so a
     // post-Find edit (wood cleared by a type switch, an over-limit load, a blank
@@ -400,7 +405,7 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
     setDeployError(null);
     const uid = await getUid();
     const at = Date.now();
-    const points = buildPoints(type);
+    const points = buildPoints(type, deductionsOverride ?? deductions);
     if (points.length === 0) {
       setDeploying(false);
       return; // nothing to build (a bad count) — never reach points[0] below
@@ -439,18 +444,22 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       }
     };
     // How off-book the FIRST member's assembly already is (a plate no rig on scene
-    // stocks — the operator saw that on the card and deployed anyway). Anything
+    // stocks — the operator picked it in the form and deployed anyway). Anything
     // beyond this count is a piece the working copy just ran out of, and letting
     // that ride would deploy a silently untracked component — exactly what ADR-033
     // forbids. Such a member stays Pending instead, same as before this fix, when
     // the store's decrement transaction was what aborted it. Deductions are uniform
     // across `points` (one form state), so one baseline covers every member.
+    // Only PLATES count toward the baseline: a recommended strut and its extensions
+    // are on scene by construction (inventory-mode engine), but the 3-Post one-tap can
+    // hand over an extension set re-derived at 6×6 that no rig stocks — that member
+    // stays Pending rather than deploying an extension nobody was shown as off-book.
     const baselineOffBook = assembleBom(
       combo,
       points[0]!.deductions,
       { apparatus: item.apparatus, inventoryId },
       inventory,
-    ).filter(isUntracked).length;
+    ).filter((c) => isUntracked(c) && (c.role === 'top-plate' || c.role === 'bottom-plate')).length;
 
     const deployed: ShorePoint[] = [];
     const pending: ShorePoint[] = [];
@@ -802,12 +811,18 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                     deployDisabledReason={disabledReason ?? undefined}
                     estimatedLoad={loadNum > 0 ? loadNum : undefined}
                     currentStruts={strutsPerShore}
+                    inventory={inventory}
                     onAddStruts={(c, targetType) => {
                       if (!canSubmit) return;
-                      // One tap: build at the shore type the load needs. The form
-                      // control follows so the officer sees what was built.
+                      // One tap: build at the shore type the load needs, on the wood
+                      // that type takes (a 3-Post: THREE_POST_WOOD — the card re-checked
+                      // `c` there). Both go in explicitly: these setters land after
+                      // handleDeploy's closure has built the points. The form controls
+                      // follow so the officer sees what was built.
+                      const wood = conversionDeductions(targetType, deductions);
                       setShoreType(targetType);
-                      void handleDeploy(c, targetType);
+                      setDeductions(wood);
+                      void handleDeploy(c, targetType, wood);
                     }}
                   />
                 ))}

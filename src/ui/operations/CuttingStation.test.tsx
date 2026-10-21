@@ -6,6 +6,7 @@ import { slideToCommit } from '@ui/primitives/Slider.testkit';
 import { peerCutStore } from '@data/sync';
 import { CuttingStation } from './CuttingStation';
 import type { ShorePoint, ShorePointStatus } from '@core/schema';
+import { cutRecordOf, shorePointReducer } from '@core/shorepoint';
 
 function makeSP(id: string, over: Partial<ShorePoint> = {}): ShorePoint {
   return {
@@ -339,5 +340,87 @@ describe('CuttingStation — the cut follows the picked wood', () => {
     renderQueue(wood('none', 'none'));
     expect(num()).toHaveTextContent('45 1/2″');
     expect(math()).toHaveTextContent('Opening 54″ − 4×4 header + footer (standard, none picked) − 1½″ wedge');
+  });
+});
+
+// Re-cut flag (Alex 2026-10-20, accepted mockup "3 · Cut piece flagged"): the piece was
+// cut at 45½″ on 4×4, then a mate's wood edit moved this leg to 6×6 (41½″). Real reducer
+// math + the real Mark Cut Done fold, so "re-cut clears it" is the actual round trip.
+describe('CuttingStation — re-cut flag', () => {
+  const W4 = { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' } as const;
+  const W6 = { ...W4, headerWood: '6x6', footerWood: '6x6' } as const;
+  const R4 = { eighths: 45.5 * 8, headerWood: '4x4', footerWood: '4x4' } as const;
+  const hero = () => screen.getByText('Cut length').closest('.fs-cutstation-hero') as HTMLElement;
+  const chip = () => hero().querySelector('.fs-spc-flag--warning');
+  const station = (sp: ShorePoint, handlers: Partial<Record<'onMarkCutDone' | 'onSendToRunner' | 'onClearCutDone' | 'onStepBack', (sp: ShorePoint) => void>> = {}) => (
+    <CuttingStation
+      queue={[sp]}
+      sent={[]}
+      onMarkCutDone={handlers.onMarkCutDone ?? noop}
+      onClearCutDone={handlers.onClearCutDone ?? noop}
+      onSendToRunner={handlers.onSendToRunner ?? noop}
+      onStepBack={handlers.onStepBack ?? noop}
+    />
+  );
+  // The board's Mark Cut Done commit, folded through the real reducer.
+  const markCutDone = (sp: ShorePoint): ShorePoint =>
+    shorePointReducer(sp, {
+      type: 'ShorePointEdited', id: 'e', opId: 'op-1', at: 1, by: 't', spId: sp.id,
+      patch: { cuttingDone: true, cutRecord: cutRecordOf(sp) },
+    });
+  const flagged = () =>
+    makeSP('r', { measurementEighths: 54 * 8, deductions: W6, cuttingDone: true, cutRecord: R4 });
+
+  it('shows the amber chip with what was cut vs. now, and Re-cut Done takes the primary slide', () => {
+    render(station(flagged()));
+    expect(chip()).toHaveAttribute('role', 'status');
+    expect(chip()?.closest('.fs-spc-flag-row')).not.toBeNull();
+    expect(chip()).toHaveTextContent(
+      '⚠ Cut length changed after Cut Done: was 45 1/2″ on 4×4, now 41 1/2″ on 6×6. Re-cut.',
+    );
+    expect(screen.getByText('Slide to mark Re-cut Done')).toBeInTheDocument();
+    expect(screen.queryByText('Slide to send to Runner')).not.toBeInTheDocument(); // withheld until re-cut
+    expect(screen.getByText('Slide back — clear Cut Done')).toBeInTheDocument();
+    expect(screen.queryByText('✓ Cut done')).not.toBeInTheDocument(); // the mockup drops it while flagged
+  });
+
+  it('a mixed pick reads header / footer in the chip', () => {
+    render(station(makeSP('m', { measurementEighths: 54 * 8, deductions: { ...W4, headerWood: '6x6' }, cuttingDone: true, cutRecord: R4 })));
+    expect(chip()).toHaveTextContent('was 45 1/2″ on 4×4, now 43 1/2″ on 6×6 / 4×4. Re-cut.');
+  });
+
+  it('sliding Re-cut Done re-records the new length and the chip clears (cuttingDone stays true)', async () => {
+    let sp = flagged();
+    const onMarkCutDone = vi.fn((p: ShorePoint) => {
+      sp = markCutDone(p);
+    });
+    const { rerender } = render(station(sp, { onMarkCutDone }));
+    await slideToCommit('Slide to mark Re-cut Done');
+    expect(onMarkCutDone).toHaveBeenCalledTimes(1);
+    expect(sp.cuttingDone).toBe(true);
+    expect(sp.cutRecord).toEqual({ eighths: 41.5 * 8, headerWood: '6x6', footerWood: '6x6' });
+    rerender(station(sp, { onMarkCutDone }));
+    expect(chip()).toBeNull();
+    expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
+    expect(screen.getByText('Slide to send to Runner')).toBeInTheDocument();
+  });
+
+  it('clearing Cut Done clears it too', () => {
+    const cleared = shorePointReducer(flagged(), {
+      type: 'ShorePointEdited', id: 'e', opId: 'op-1', at: 1, by: 't', spId: 'r', patch: { cuttingDone: false },
+    });
+    render(station(cleared));
+    expect(chip()).toBeNull();
+    expect(screen.getByText('Slide back to Strut Set')).toBeInTheDocument();
+  });
+
+  it('no record (cut before this shipped) or an unchanged length → no chip', () => {
+    const { unmount } = render(station(makeSP('o', { measurementEighths: 54 * 8, deductions: W6, cuttingDone: true })));
+    expect(chip()).toBeNull();
+    expect(screen.getByText('Slide to send to Runner')).toBeInTheDocument();
+    unmount();
+    render(station(markCutDone(makeSP('u', { measurementEighths: 54 * 8, deductions: W4 }))));
+    expect(chip()).toBeNull();
+    expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
   });
 });

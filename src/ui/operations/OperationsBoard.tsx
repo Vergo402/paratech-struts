@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { PendingReason, ShorePoint, ShorePointStatus } from '@core/schema';
-import { STATUS_ORDER, STATUS_LABELS, pendingReasonFor, deployedStrutOf, deployedCapacityFlag, deployedStrutCount } from '@core/shorepoint';
+import {
+  STATUS_ORDER,
+  STATUS_LABELS,
+  pendingReasonFor,
+  deployedStrutOf,
+  deployedCapacityFlag,
+  deployedStrutCount,
+  cutRecordOf,
+  needsRecut,
+} from '@core/shorepoint';
 import {
   compareAreaValues,
   compareBuildingValues,
@@ -740,8 +749,12 @@ export function OperationsBoard() {
 
   // Mark Cut Done / clear (#222) — toggles the internal cuttingDone flag on the
   // `cutting` state via a ShorePointEdited patch (no lane change, no inventory).
+  // Marking also records WHAT was cut (cutRecordOf: the cut length + wood on THIS
+  // screen's point, i.e. what the cutter saw — re-cut flag, 2026-10-20). Re-cut Done
+  // is the same commit on an already cut-done point: it re-records the new length.
   const commitCutDone = useCallback(
     async (sp: ShorePoint, done: boolean) => {
+      const recut = done && needsRecut(sp);
       const result = await commit({
         type: 'ShorePointEdited',
         id: newId(),
@@ -749,10 +762,16 @@ export function OperationsBoard() {
         at: Date.now(),
         by: await getUid(),
         spId: sp.id,
-        patch: { cuttingDone: done },
+        patch: done ? { cuttingDone: true, cutRecord: cutRecordOf(sp) } : { cuttingDone: false },
       });
       if (!result.ok) return;
-      setPoliteAnnouncement(done ? 'Cut done marked. Slide to send to runner.' : 'Cut done cleared.');
+      setPoliteAnnouncement(
+        recut
+          ? 'Re-cut done marked. Slide to send to runner.'
+          : done
+            ? 'Cut done marked. Slide to send to runner.'
+            : 'Cut done cleared.',
+      );
     },
     [commit, getUid],
   );

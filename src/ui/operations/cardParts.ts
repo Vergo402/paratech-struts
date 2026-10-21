@@ -1,6 +1,6 @@
 import type { ShorePoint, ShorePointStatus, ShoreTypeId } from '@core/schema';
 import { divisionLabel, sideLabel } from '@core/operation';
-import { cutLengthInches, STATUS_ORDER } from '@core/shorepoint';
+import { cutLengthEighths, STATUS_ORDER } from '@core/shorepoint';
 
 /**
  * Shared shore-point card content (Alex 2026-07-03) — one anatomy across the
@@ -100,7 +100,7 @@ export function isCutPhase(sp: Pick<ShorePoint, 'status'>): boolean {
  * (audit #416 D3). × 8 lands on an exact eighth; round() only defends float noise.
  */
 export function cardValueEighths(sp: ShorePoint, phaseStatus: ShorePointStatus): number {
-  return isCutPhase({ status: phaseStatus }) ? Math.round(cutLengthInches(sp) * 8) : sp.measurementEighths;
+  return isCutPhase({ status: phaseStatus }) ? cutLengthEighths(sp) : sp.measurementEighths;
 }
 
 /** The micro-label naming which number the value shelf shows — two states only
