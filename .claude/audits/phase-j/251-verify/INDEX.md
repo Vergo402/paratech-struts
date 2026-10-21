@@ -25,7 +25,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 8 | `13-cutting.md` | #222 | **PASS** — 33 PASS · 1 SPEC-DRIFT · 2 NOT-BUILT (13-34 Cutting-role gate, 13-35 actual-cut input → decisions list) · 13-10 copy-only FAIL → spec-correction (R4) · re-cut flag 13-36..38 verified (2026-10-21, HEAD 64bb0b3) | `13/REPORT.md` | (none) |
 | 9 | `14-runner.md` | #223 | **PASS** — 28 PASS · 1 SPEC-DRIFT (14-22 no Runner role gate, ADR-017) · 1 NOT-BUILT (14-27 card accessible name → a11y batch) · 0 FAIL · 14-19 Deferred (#496) · re-cut 14-31/32 verified (2026-10-21, HEAD 183e111) | `14/REPORT.md` | (none) |
 | 10 | `15-secured-returned.md` | #224 | **PASS** — 28 PASS · 1 SPEC-DRIFT (15-23 no position gate, ADR-017) · 0 FAIL · 15-24 Deferred (#493) · race/offline/re-cut-on-Secured verified (2026-10-21, HEAD 132001f) | `15/REPORT.md` | (none) |
-| 11 | `16-end-of-operation.md` | #238 | brief drafted | — | — |
+| 11 | `16-end-of-operation.md` | #238 | **PASS** — 17 PASS · 11 SPEC-DRIFT (ADR-017/036/041) · 2 FAIL (16-08 focus + 16-11 copy → #542) · 2 NOT-BUILT (16-16 summary line → spec batch; 16-30 end announcement → a11y batch) · 16-33 Deferred (#495) (2026-10-21, HEAD 5a6f4e5) | `16/REPORT.md` | #542 #543 |
 | 12 | `20-role-assignment-command-transfer.md` | #225 | brief drafted | — | — |
 | 13 | `21-hazard-log.md` | #226 | brief drafted | — | — |
 | 14 | `22-ic-command-checklist.md` | #227 | brief drafted | — | — |
@@ -62,6 +62,8 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
 ## Decisions for Alex (NOT-BUILT, not filed)
+
+- 16-16 The End Operation modal has no "N shore points · N personnel" summary line. Drop from spec or small-features list.
 
 - **Fireground position gate (13-34 Cutting, 14-22 Runner, 15-23 Secured/Return):** no gate of any kind exists on the slides or Remove & Return. ADR-017 line 40 says a department ROLE never gates a fireground action, but line 39 says ICS POSITIONS do — the build implements neither. Decide: (a) v4.0 ships ungated (rewrite the three spec rows + amend ADR-017 line 39), or (b) build the ICS-position gate as a v4.0.x item. ("Cutting role required to advance…"): no role gate exists on the station slides; ADR-017 keeps the fireground ICS-position-gated, so decide: build for v4.0.x, or drop from spec 13 (any member may cut).
 - 13-35 Optional actual-cut entry with expected↔actual diff badge: not built anywhere. Decide: small-features list (v4.1) or drop.

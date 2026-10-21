@@ -85,3 +85,8 @@ All on the emulator harness (see `HARNESS.md`). Phone viewport 390x844 unless no
 
 ## Orchestrator note (2026-10-13)
 The after-action email **send** is Deferred past v4.0 by #495 ("After-action email send mechanism — deferred past v4.0 (ADR-018 amended)"). Only the department toggle saving its preference is in scope; do not record the missing send as NOT-BUILT.
+
+## Orchestrator addendum (2026-10-21, HEAD 5a6f4e5)
+- Wood is required at Add Shore Point (2026-10-17): pick header and footer wood for every point you add.
+- The spec-15 pass (15-16) already saw the "N shore points still hold equipment — Rescue 2 (N)" alert with Returned points excluded and Secured included; re-drive it here as 16-11 (do not reuse that evidence).
+- #499 / ADR-041: `available = quantity − held` is derived; read inventory rows via their aria-label "N of M available" for 16-15 and 16-26.
