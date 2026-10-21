@@ -3,7 +3,7 @@
 **Status:** Revised after the devops-resilience review (all 22 findings have a disposition in §7). Local dry run complete (§5). · **Date:** 2026-10-17 · **Author:** migration-specialist (for Fable) · **Reviewers:** devops-resilience, Alex (go/no-go)
 **Covers:** runbook Step 5 (#267 merge + cutover) and the Rollback node (`.claude/plans/v4-completion-runbook.md`). **Constraints:** ADR-009; ADR-041 (rules require `receivedAt == now`, and rules deploy only after the client build); ADR-042 (a rejected upload halts the queue and retries forever).
 **Deployment context:** beta only, no fielded users. No cutover or rollback step writes to `paratech-c3ab4`, the v3 data project, but **only after T-0 gate SERVED-SAME passes** (§3.0). Without that gate, the merge ships a localStorage block that can make an old v3 device write a stale operation back into `paratech-c3ab4` (§1).
-**Kit:** `.claude/audits/phase-j/265-rollback/kit/`, to be committed by the orchestrator to `docs/v4-design/14-cutover/rollback/`. Paths below write it as `kit/`. It holds three folders:
+**Kit:** `.claude/audits/phase-j/265-rollback/kit/` in the main checkout. It is not in git: `.claude/audits/` is gitignored since 4f57c15. **Backup copy:** `~/Documents/FieldShore-backups/rollback-kit/` (kit plus the evidence `REPORT.md`, copied 2026-10-19). Every script locates the kit from its own path, so it runs from either copy. Paths below write it as `kit/`. It holds three folders:
 - `killswitch/`
 - `rules/` (the lockdown generator plus the L1 and L2 sets)
 - `scripts/`: one script per step, each with `set -euo pipefail`. Running a script with `DRY_RUN=1` prints every live command instead of running it.
