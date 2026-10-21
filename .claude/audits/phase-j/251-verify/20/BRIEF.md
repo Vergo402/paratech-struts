@@ -97,3 +97,8 @@ Labels below are what the build shows today (checked in source); where they diff
 
 ## Orchestrator note (2026-10-13)
 Incident-level mutual aid (guest participation, guest claim on account creation, assisting out-of-department IC) is **Deferred past v4.0 by #493** — ADR-022 was amended 2026-08-17 to ship no code in v4.0 (see `32/BRIEF.md`). Any criterion that depends on it (06-33; the assisting out-of-department IC path in this brief) is Deferred, not NOT-BUILT — skip it and list it under Deferred in the report.
+
+## Orchestrator addendum (2026-10-21, HEAD aafe8d2)
+- Wood is required at Add Shore Point (2026-10-17): pick header and footer wood for every point.
+- Positions follow the ACCOUNT, not the device (shipped 2026-07-11, `552faca`; `account` OrgResourceRef, `useIsIC`): a role declared on device B's account shows on any device that account signs into. If a criterion assumes device-bound roles, record SPEC-DRIFT citing that commit.
+- No gate exists on fireground slides (specs 13–15 recorded SPEC-DRIFT per ADR-017); End Operation is gated by `manageOperations`, not the IC position (ADR-017 #3 / #380).

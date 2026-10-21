@@ -26,7 +26,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 9 | `14-runner.md` | #223 | **PASS** — 28 PASS · 1 SPEC-DRIFT (14-22 no Runner role gate, ADR-017) · 1 NOT-BUILT (14-27 card accessible name → a11y batch) · 0 FAIL · 14-19 Deferred (#496) · re-cut 14-31/32 verified (2026-10-21, HEAD 183e111) | `14/REPORT.md` | (none) |
 | 10 | `15-secured-returned.md` | #224 | **PASS** — 28 PASS · 1 SPEC-DRIFT (15-23 no position gate, ADR-017) · 0 FAIL · 15-24 Deferred (#493) · race/offline/re-cut-on-Secured verified (2026-10-21, HEAD 132001f) | `15/REPORT.md` | (none) |
 | 11 | `16-end-of-operation.md` | #238 | **PASS** — 17 PASS · 11 SPEC-DRIFT (ADR-017/036/041) · 2 FAIL (16-08 focus + 16-11 copy → #542) · 2 NOT-BUILT (16-16 summary line → spec batch; 16-30 end announcement → a11y batch) · 16-33 Deferred (#495) (2026-10-21, HEAD 5a6f4e5) | `16/REPORT.md` | #542 #543 |
-| 12 | `20-role-assignment-command-transfer.md` | #225 | brief drafted | — | — |
+| 12 | `20-role-assignment-command-transfer.md` | #225 | **PASS** — 34 PASS · 0 SPEC-DRIFT · 4 FAIL (20-27 false Accept on initiator → #544; 20-18 tablet org chart → #545; 20-40 + 20-38 → #546) · 1 NOT-BUILT (20-08 role announcement → a11y batch) · mutual-aid Deferred (#493) (2026-10-21, HEAD aafe8d2) | `20/REPORT.md` | #544 #545 #546 |
 | 13 | `21-hazard-log.md` | #226 | brief drafted | — | — |
 | 14 | `22-ic-command-checklist.md` | #227 | brief drafted | — | — |
 | 15 | `23-task-level-checklist.md` | #228 | brief drafted | — | — |
