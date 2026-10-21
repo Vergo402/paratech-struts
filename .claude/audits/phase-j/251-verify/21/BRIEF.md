@@ -84,3 +84,7 @@ Build labels are used where they differ from the spec; QA judges the behavior un
 - **Sheet scrim-close and TanStack `<Link>` taps may not work with synthetic events** (HARNESS); use Esc, reload or `location.assign('/command')`.
 - **Add Hazard disabled until Location has non-space text;** the button text becomes "Adding…" briefly. A stale frame right after commit is worth a screenshot probe but is not by itself a FAIL.
 - **Chip tap navigates to `/command` but does not open the Hazard Log** (Phone: you still tap the "Hazards" row). Do not call that a missing link without checking the spec: it only says reachable in one tap from SitStat.
+
+## Orchestrator addendum (2026-10-21, HEAD 3f69446)
+- Wood is required at Add Shore Point (2026-10-17): pick header and footer wood for any point you add.
+- Positions follow the account, not the device (552faca). Incident-level mutual aid is Deferred (#493). No fireground position gate exists (specs 13–15, ADR-017) — if a hazard-log criterion assumes a role gate, record SPEC-DRIFT citing ADR-017 line 40.

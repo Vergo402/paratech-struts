@@ -1,0 +1,37 @@
+Type,Location,Severity,Status,Reported,Reported by,Mitigated,Mitigated by
+Structural instability,D2,HIGH,Open,"10/21/2026, 2:12:26 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Structural instability,Roof edge,HIGH,Open,"10/21/2026, 2:00:44 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,B 2,MED,Open,"10/21/2026, 2:06:59 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,2nd floor,MED,Open,"10/21/2026, 2:06:52 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,stairwell,MED,Open,"10/21/2026, 2:06:46 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,Side D 2,MED,Open,"10/21/2026, 2:06:39 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,Div 1 and Div 2,MED,Open,"10/21/2026, 2:06:32 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,12 inch gap,MED,Open,"10/21/2026, 2:06:25 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,NE corner,MED,Open,"10/21/2026, 2:06:19 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Atmospheric,Void space north,MED,Open,"10/21/2026, 2:01:40 PM",f1c71453-6324-4bc1-a5d8-7901e7d3ee65,,
+Utility,Basement panel,MED,Open,"10/21/2026, 2:00:36 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Other,'=1+1,LOW,Open,"10/21/2026, 2:15:38 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Fall,Stairwell,LOW,Open,"10/21/2026, 2:00:40 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,,
+Structural instability,Division 2,HIGH,Mitigated,"10/21/2026, 2:11:43 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:11:59 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Elevator shaft open,HIGH,Mitigated,"10/21/2026, 2:02:58 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:07:25 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Structural instability,"NE corner, Div 2",HIGH,Mitigated,"10/21/2026, 2:00:11 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:06:12 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Structural instability,Div. 2,MED,Mitigated,"10/21/2026, 2:12:23 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:12:47 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Structural instability,Div 2,MED,Mitigated,"10/21/2026, 2:11:40 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:12:04 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,div 3,MED,Mitigated,"10/21/2026, 2:11:13 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:11:19 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,"Div 1, Div 1 rear",MED,Mitigated,"10/21/2026, 2:11:02 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:11:08 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Basement 1,MED,Mitigated,"10/21/2026, 2:10:51 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:10:57 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,B1,MED,Mitigated,"10/21/2026, 2:10:40 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:10:46 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Div. 2,MED,Mitigated,"10/21/2026, 2:10:29 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:10:35 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,D2,MED,Mitigated,"10/21/2026, 2:10:10 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:10:21 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Division 2,MED,Mitigated,"10/21/2026, 2:09:59 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:10:05 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Div 2,MED,Mitigated,"10/21/2026, 2:09:48 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:09:54 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,2,MED,Mitigated,"10/21/2026, 2:09:37 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:09:43 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,div 3,MED,Mitigated,"10/21/2026, 2:08:46 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:08:53 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,"Div 1, Div 1 rear",MED,Mitigated,"10/21/2026, 2:08:36 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:08:41 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Basement 1,MED,Mitigated,"10/21/2026, 2:08:24 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:08:30 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,B1,MED,Mitigated,"10/21/2026, 2:08:14 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:08:19 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Div. 2,MED,Mitigated,"10/21/2026, 2:08:03 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:08:08 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,D2,MED,Mitigated,"10/21/2026, 2:07:52 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:07:57 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Division 2,MED,Mitigated,"10/21/2026, 2:07:41 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:07:46 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,Div 2,MED,Mitigated,"10/21/2026, 2:07:30 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:07:36 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
+Other,2,MED,Mitigated,"10/21/2026, 2:07:19 PM",af6122bf-b074-465a-8c2f-56b6e6adbada,"10/21/2026, 2:09:28 PM",af6122bf-b074-465a-8c2f-56b6e6adbada
