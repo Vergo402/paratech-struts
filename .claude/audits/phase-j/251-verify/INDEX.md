@@ -21,7 +21,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 4 | `08-joining-by-invite-code.md` | #232 | **PASS (online path)** — 21 PASS · 1 SPEC-DRIFT · 3 FAIL (08-22/23 offline join hangs = existing #521, evidence added; 08-02 → spec batch) · 3 NOT-BUILT (08-14 → Q2; 08-26/27 → a11y batch) | `08/REPORT.md` | #521 (existing) |
 | 5 | `10-starting-an-operation.md` | #219 | **PASS** — 27 PASS · 1 SPEC-DRIFT · 3 FAIL (10-31 filed; 10-03/10-25 → Q3) · 2 NOT-BUILT (10-17b multi-building default + tablet address → small-features list) | `10/REPORT.md` | #528 |
 | 6 | `11-adding-a-shore-point.md` | #220 | **PASS** — 28 PASS · 4 SPEC-DRIFT · 1 FAIL (11-33 duplicate #N on concurrent add, filed) | `11/REPORT.md` | #529 |
-| 7 | `12-deploying-a-strut.md` | #221 | **PAUSED** (Alex, 2026-10-13) — qa run stopped at start; re-run from scratch | — | — |
+| 7 | `12-deploying-a-strut.md` | #221 | **PASS** — 30 PASS · 3 SPEC-DRIFT · 1 FAIL (12-09 system Back, filed) · extra F1 (cross-rig 3-Post one-tap, filed) · 12-02 copy filed · 12-22 would-fit link NOT-BUILT (→ small-features) · probe recorded (2026-10-21, HEAD fb8204a) | `12/REPORT.md` | #539 #540 #541 |
 | 8 | `13-cutting.md` | #222 | brief drafted | — | — |
 | 9 | `14-runner.md` | #223 | brief drafted | — | — |
 | 10 | `15-secured-returned.md` | #224 | brief drafted | — | — |
@@ -53,6 +53,10 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 08-02: same dead Settings branch — "Join existing department" (`DepartmentPage.tsx:69`) never renders.
 - 07: Settings → Department "not part of a department yet" branch is unreachable (RequireDepartment wraps all Settings, `router.tsx:101-110`) — spec + dead branch in `DepartmentPage.tsx`; no "Claim department" banner (#264 fresh-start).
 - 32 + IA 52: still say "Ships v4.0"; ADR-022 amended 2026-08-17, deferred to #493.
+
+- 12-03: card copy drops "at this load" (#432 mess-map #15); 12-12: truck source lives in Details, not the card face (card.md:62); 12-20: over-capacity is deployable after acknowledgment via "Deploy N of M anyway" (accepted mockup 2026-07-01) — rewrite spec 12 Step 2-W.
+- 12-22: the spec's "would-fit → Quick Find" link does not exist (NOT-BUILT) — decide: drop from spec or small-features list.
+- Probe (spec 12, 2026-10-21): editing a Pending 3-Post (6×6) to T-Shore clears the wood and blocks Save with "Pick header and footer wood" — consistent with the wood-required doctrine (2026-10-17); record in spec 11/12 as intended.
 
 ## Accessibility batch (one issue at the end, not per spec)
 
