@@ -4,7 +4,7 @@ import { UNTRACKED_SOURCE } from '@core/schema';
 import type { StrutCombination } from '@core/load';
 import { newId } from '@core/id';
 import { restructureBatch } from './restructure';
-import { bomSourceStatus, findForShorePoint, pendingReasonFor, strutLoadShare } from '@core/shorepoint';
+import { bomSourceStatus, conversionDeductions, findForShorePoint, pendingReasonFor, strutLoadShare } from '@core/shorepoint';
 import { EmptyState, MeasurementValue, Modal } from '@ui/primitives';
 import { commitHaptic } from '@ui/primitives/haptics';
 import { useCommit, useCommitMany, useDeviceUid, useInventory, useRecommendations, useShorePoints } from '@ui/hooks';
@@ -214,7 +214,9 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
   // shore at the strut count its load needs (the edit path's hard-remove + re-add
   // pattern, KEEPING the shore's number), then deploy the chosen combo to every
   // member. An exhausted-stock / unclean-source member stays Pending — honest
-  // partial, never a silent success (the modal batch's W1 rule).
+  // partial, never a silent success (the modal batch's W1 rule). A 3-Post is rebuilt
+  // on THREE_POST_WOOD (conversionDeductions) — the wood RecommendationCard re-checked
+  // `combo` at (accepted mockup 2026-10-20); every member's BOM sources against it.
   async function handleAddStruts(combo: StrutCombination, targetType: ShoreTypeId, targetTotal: number) {
     if (!sp || inFlight.current) return;
     const inventoryId = combo.strut.inventoryId;
@@ -229,6 +231,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
     const uid = await getUid();
     const at = Date.now();
     const gid = newId();
+    const deductions = conversionDeductions(targetType, sp.deductions);
     const rebuilt: ShorePoint[] = Array.from({ length: targetTotal }, (_, i) => ({
       id: newId(),
       opId: sp.opId,
@@ -242,7 +245,7 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
       groupIndex: i + 1,
       groupTotal: targetTotal,
       measurementEighths: sp.measurementEighths,
-      deductions: sp.deductions,
+      deductions,
       ...(sp.label ? { label: sp.label } : {}),
       ...(sp.assignedResource ? { assignedResource: sp.assignedResource } : {}),
       ...(sp.estimatedLoad != null ? { estimatedLoad: sp.estimatedLoad } : {}),

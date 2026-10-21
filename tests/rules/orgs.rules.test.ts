@@ -362,6 +362,33 @@ describe('event log — server-stamped canonical order (ADR-041, #499)', () => {
     expect(await readAdmin(evPath('c1'))).toBeNull();
   });
 
+  // Re-cut flag (2026-10-20): Mark Cut Done now carries an optional `cutRecord` on its
+  // ShorePointEdited patch. Its neighbours (cuttingDone, deductions) have no per-field
+  // rule — the envelope is the cloud gate and the client FieldShoreEvent.safeParse is the
+  // strict one (EVENT_ENVELOPE_VALIDATE) — so the record takes the SAME strictness: the
+  // rules must ACCEPT the new shape (else the new client's upload queue wedges against the
+  // deployed rules), and it gets no bypass of the envelope. Malformed-record rejection is
+  // the client schema's job (core/shorepoint/recut.test.ts).
+  describe('re-cut record on the Mark Cut Done patch', () => {
+    const cutDone = (id: string, receivedAt?: unknown) => ({
+      ...event(id, receivedAt),
+      type: 'ShorePointEdited',
+      spId: 'sp-1',
+      patch: { cuttingDone: true, cutRecord: { eighths: 364, headerWood: '4x4', footerWood: '4x4' } },
+    });
+
+    it('a ShorePointEdited carrying a well-formed cutRecord is accepted and stored intact', async () => {
+      await assertSucceeds(db('member1').ref(evPath('cr1')).set(cutDone('cr1', SV)));
+      const stored = (await readAdmin(evPath('cr1'))) as { patch: unknown };
+      expect(stored.patch).toEqual({ cuttingDone: true, cutRecord: { eighths: 364, headerWood: '4x4', footerWood: '4x4' } });
+    });
+
+    it('the record gets no envelope bypass — unstamped, it is still rejected', async () => {
+      await assertFails(db('member1').ref(evPath('cr2')).set(cutDone('cr2')));
+      await assertFails(db('outsider').ref(evPath('cr3')).set(cutDone('cr3', SV)));
+    });
+  });
+
   it('a non-member, a revoked member, or an anonymous caller cannot create an event', async () => {
     await assertFails(db('outsider').ref(evPath('n1')).set(event('n1', SV)));
     await assertFails(db('revoked').ref(evPath('n2')).set(event('n2', SV)));

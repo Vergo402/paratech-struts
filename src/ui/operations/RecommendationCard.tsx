@@ -1,8 +1,24 @@
 import { useState } from 'react';
 import { BASE_PLATES, WOOD_SIZES, isKnownPlateId, sysKeyOf, type StrutCombination } from '@core/load';
 import type { Deductions, ShoreTypeId, WoodSizeId } from '@core/schema';
-import { SHORE_TYPE_FOR_STRUTS, deductionTotalInches, strutsNeededFor, type BomSourceStatus } from '@core/shorepoint';
-import { Button, Card, InchesValue, MeasurementValue, WarningGate, eighthsToParts, isEighthsExact } from '@ui/primitives';
+import {
+  SHORE_TYPE_FOR_STRUTS,
+  deductionTotalInches,
+  recheckThreePost,
+  strutsNeededFor,
+  type BomSourceStatus,
+  type ThreePostRecheck,
+} from '@core/shorepoint';
+import {
+  Button,
+  Card,
+  InchesValue,
+  MeasurementValue,
+  WarningGate,
+  eighthsToParts,
+  isEighthsExact,
+  measurementText,
+} from '@ui/primitives';
 import { SHORE_TYPE_LABELS } from './ShorePointCard';
 import { SYSTEM_LABELS } from '../inventory/systemLabels';
 
@@ -51,7 +67,9 @@ export interface RecommendationCardProps {
   currentStruts?: number;
   /** The one-tap fix: convert the shore to the type that carries the needed strut
    *  count and deploy every member (the "Add N more struts" primary). Absent →
-   *  the card offers only the acknowledged short deploy. */
+   *  the card offers only the acknowledged short deploy. To a 3-Post the card first
+   *  re-checks the strut on 6×6 (THREE_POST_WOOD) and hands over the combo it checked
+   *  — the caller builds the points on that wood (conversionDeductions). */
   onAddStruts?: (combo: StrutCombination, targetType: ShoreTypeId, targetTotal: number) => void;
   /** 'calculator' (#433, Quick Find): the COMPACT card — stripe + model-with-
    *  extension headline + connectors + quiet capacity; NO deduction ledger (the
@@ -66,6 +84,24 @@ export interface RecommendationCardProps {
 export function comboModel(combo: StrutCombination): string {
   if (combo.extensions.length === 0) return combo.strut.model;
   return `${combo.strut.model} + ${combo.extensions.map((e) => `${e}″`).join(' + ')}`;
+}
+
+/** Why the one-tap 3-Post is locked after the 6×6 re-check (accepted mockup
+ *  2026-10-20, "1 · One-tap 3-Post"). `model` is the card's assembly identity. */
+function threePostLockReason(
+  check: Extract<ThreePostRecheck, { fits: false }>,
+  model: string,
+  strutModel: string,
+): string {
+  const at = measurementText(Math.round(check.strutLength * 8));
+  const tail = 'Pick wood and press Find again.';
+  if (check.reason === 'capacity') {
+    return `${strutModel} won't carry this load as a 3-Post on 6×6 (${check.perStrut.toLocaleString('en-US')} lbs per strut, rated ${check.capacity.toLocaleString('en-US')} lb at ${at}). ${tail}`;
+  }
+  const name = check.ofAssembly ? model : strutModel;
+  const limit = measurementText(Math.round(check.limit * 8));
+  const bound = check.reason === 'too-short' ? `minimum ${limit}` : `maximum ${limit}`;
+  return `${name} won't fit a 3-Post on 6×6 (${at}, ${bound}). ${tail}`;
 }
 
 /** The selected top/bottom connector NAMES (as catalogued), top first; empty when
@@ -188,6 +224,11 @@ export function RecommendationCard({
   const targetType = SHORE_TYPE_FOR_STRUTS[needed];
   const canAutoFix = shortDeploy && !!onAddStruts && !!onDeploy && !!targetType;
   const perStrutAfter = shortDeploy ? Math.ceil((estimatedLoad ?? 0) / needed) : 0;
+  // A 3-Post is built on 6×6 (THREE_POST_WOOD), which deducts more than the wood this
+  // card was sized at — re-check THIS strut at the 6×6 length before offering the tap,
+  // and deploy the combo that was checked (Alex 2026-10-20). Double-T keeps the wood.
+  const threePost =
+    canAutoFix && targetType === '3-post' ? recheckThreePost(combo, deductions, estimatedLoad ?? 0, needed) : null;
 
   const gated = !!combo.unrated || shortDeploy;
   const color = combo.strut.color; // 'gold' | 'grey' — physical field-ID, not lifecycle status
@@ -415,18 +456,35 @@ export function RecommendationCard({
               <Button
                 variant="primary"
                 fullWidth
-                disabled={!!deployDisabled}
-                disabledReason={deployDisabledReason}
-                onPress={() => onAddStruts!(combo, targetType!, needed)}
+                disabled={!!deployDisabled || threePost?.fits === false}
+                // The form's lock outranks the 6×6 re-check: it names the input to fix first.
+                disabledReason={
+                  deployDisabledReason ??
+                  (threePost?.fits === false ? threePostLockReason(threePost, model, combo.strut.model) : undefined)
+                }
+                onPress={() => onAddStruts!(threePost?.fits ? threePost.combo : combo, targetType!, needed)}
               >
                 Add {needed - struts} more strut{needed - struts > 1 ? 's' : ''} — deploy as{' '}
                 {SHORE_TYPE_LABELS[targetType!]}
+                {threePost && ' on 6×6'}
               </Button>
-              <p className="fs-rec-add-note">
-                Converts this shore to a {SHORE_TYPE_LABELS[targetType!]} and deploys{' '}
-                {needed === 2 ? 'both' : `all ${needed}`} {model}
-                {source ? ` from ${source}` : ''}
-              </p>
+              {threePost?.fits && threePost.woodChanged ? (
+                <p className="fs-rec-add-note">
+                  Switches header and footer to 6×6: strut{' '}
+                  <MeasurementValue eighths={Math.round(threePost.strutLength * 8)} />, cut{' '}
+                  <MeasurementValue eighths={Math.round(threePost.cutLength * 8)} />. Deploys all {needed}{' '}
+                  {comboModel(threePost.combo)}
+                  {source ? ` from ${source}` : ''}
+                </p>
+              ) : (
+                threePost?.fits !== false && (
+                  <p className="fs-rec-add-note">
+                    Converts this shore to a {SHORE_TYPE_LABELS[targetType!]} and deploys{' '}
+                    {needed === 2 ? 'both' : `all ${needed}`} {model}
+                    {source ? ` from ${source}` : ''}
+                  </p>
+                )
+              )}
             </>
           )}
           <WarningGate

@@ -1,4 +1,5 @@
 import type {
+  CutRecord,
   Deductions,
   DeployedComponent,
   ShorePoint,
@@ -328,6 +329,35 @@ export function cutTooSmall(sp: ShorePoint): boolean {
   return cutLengthInches(sp) <= 0;
 }
 
+/** The cut length in exact eighths — `cutLengthInches` already floors to ⅛″, so × 8
+ *  lands on an integer; round only defends float noise. The ONE integer every cut
+ *  surface prints and the re-cut flag compares, so the two can never disagree. */
+export function cutLengthEighths(sp: ShorePoint): number {
+  return Math.round(cutLengthInches(sp) * 8);
+}
+
+/** What Mark Cut Done (and Re-cut Done) records: the cut length the cutter is looking
+ *  at + the resolved header/footer wood it was computed on (cutLumber, so a legacy
+ *  'none' records the standard it fell back to). Built at commit time from the point
+ *  on screen, never in the reducer — folding it there could record a length from an
+ *  edit that landed before the commit in canonical order. */
+export function cutRecordOf(sp: ShorePoint): CutRecord {
+  const { header, footer } = cutLumber(sp);
+  return { eighths: cutLengthEighths(sp), headerWood: header, footerWood: footer };
+}
+
+/**
+ * The derived re-cut flag (Alex 2026-10-20) — the piece was marked Cut Done, and the
+ * cut length has moved since (a grouped mate's wood/measurement edit fans to every
+ * leg past Pending, and remote/replayed edits land with no prompt). The edit still
+ * goes through; the cut piece carries this flag until someone records the new length
+ * (Re-cut Done) or clears Cut Done / steps back to Strut Set. NEVER stored: a point
+ * with no record (cut before this shipped, or by an older build) never flags.
+ */
+export function needsRecut(sp: ShorePoint): boolean {
+  return sp.cuttingDone === true && sp.cutRecord != null && cutLengthEighths(sp) !== sp.cutRecord.eighths;
+}
+
 /**
  * Structural equality for the patchable field values — primitives plus the flat
  * `deductions` / `coords` objects. A patch arrives as a freshly parsed object on every
@@ -385,15 +415,29 @@ function applyPatch(sp: ShorePoint, patch: ShorePointPatch): ShorePoint {
   clearable('assignedResource');
   // Mark Cut Done (#222) — a cutting-state toggle, not a Pending-locked field, so
   // it too applies before the early return. false clears the flag entirely.
+  // The cut record (re-cut flag, 2026-10-20) rides ONLY a cuttingDone:true patch and
+  // is applied even when the flag is already set — that is Re-cut Done re-recording
+  // the new length. A record arriving without cuttingDone:true is ignored; an older
+  // build's cuttingDone:true (no record) leaves any record as-is. false clears both.
   if (patch.cuttingDone !== undefined) {
     if (patch.cuttingDone) {
       if (next.cuttingDone !== true) {
         next.cuttingDone = true;
         changed = true;
       }
-    } else if ('cuttingDone' in next) {
-      delete next.cuttingDone;
-      changed = true;
+      if (patch.cutRecord !== undefined && !sameValue(next.cutRecord, patch.cutRecord)) {
+        next.cutRecord = patch.cutRecord;
+        changed = true;
+      }
+    } else {
+      if ('cuttingDone' in next) {
+        delete next.cuttingDone;
+        changed = true;
+      }
+      if ('cutRecord' in next) {
+        delete next.cutRecord;
+        changed = true;
+      }
     }
   }
   // Location capture (#441) — physical-spot metadata, not a sizing field: applies
@@ -445,6 +489,7 @@ export function applyCuttingFields(
     const next = { ...sp };
     delete next.cuttingStartedAt;
     delete next.cuttingDone;
+    delete next.cutRecord; // the record lives and dies with cuttingDone (re-cut flag)
     delete next.sawId; // the saw releases the claim — the point left the queue (#354)
     return next;
   }

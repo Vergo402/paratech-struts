@@ -102,6 +102,24 @@ export type DeployedBom = z.infer<typeof DeployedBom>;
 export const PendingReason = z.enum(['no-match', 'no-inventory']);
 export type PendingReason = z.infer<typeof PendingReason>;
 
+// What the saw actually cut (re-cut flag, Alex 2026-10-20). Recorded by the board's
+// Mark Cut Done (and Re-cut Done) commit from the numbers the cutter was looking at:
+// the cut length in exact eighths + the header/footer wood that length was computed
+// on — the RESOLVED cutLumber() pick, so a legacy 'none' records the shore-type
+// standard it fell back to. The cut length still follows a later wood/measurement
+// edit (grouped shores accept sizing past Pending, and remote/replayed edits land),
+// so the re-cut flag is DERIVED, never stored: cuttingDone && cutRecord && the
+// current cut length ≠ cutRecord.eighths (core/shorepoint needsRecut). FLAT on
+// purpose — applyPatch's sameValue compares one level deep (ADR-041 no-effect).
+// Optional end-to-end: a point cut before this shipped (or by an older build, whose
+// Zod parse strips the key) has no record and never flags.
+export const CutRecord = z.object({
+  eighths: Eighths,
+  headerWood: WoodSizeId,
+  footerWood: WoodSizeId,
+});
+export type CutRecord = z.infer<typeof CutRecord>;
+
 export const ShorePoint = z.object({
   id: z.string(),
   opId: z.string(),
@@ -147,6 +165,10 @@ export const ShorePoint = z.object({
   // except cuttingDone which the cutter toggles via a ShorePointEdited patch.
   cuttingStartedAt: z.number().int().nonnegative().optional(),
   cuttingDone: z.boolean().optional(),
+  // The cut as recorded at Mark Cut Done (CutRecord above). Present only alongside
+  // cuttingDone: set by the cuttingDone:true patch, cleared with the flag (the
+  // clear-cut-done patch, or stepping cutting → strutset). Absent = never flags.
+  cutRecord: CutRecord.optional(),
   // Multi-saw claim (#354). The id of the saw (roster id 'A'/'B'/…) currently
   // working this cut. Set by CuttingClaimed when a free saw pulls the point off
   // the shared queue; PERSISTED on the point so an out-of-order finish never
@@ -191,6 +213,10 @@ export const ShorePointPatch = z
     // The cutter's "Mark Cut Done" toggle (#222) — applies on the `cutting` state,
     // not gated by the Pending field-lock. true = saw ran; false = clear it.
     cuttingDone: z.boolean(),
+    // What was cut (CutRecord) — rides ONLY with cuttingDone:true (Mark Cut Done /
+    // Re-cut Done); the reducer ignores it on any other patch. No null form: it
+    // clears with cuttingDone:false.
+    cutRecord: CutRecord,
     // Location capture (#441) — like label/assignedResource, applies in any status
     // (a fix can resolve after deploy). null clears both together on a re-capture.
     coords: z.object({ lat: z.number(), lng: z.number() }).nullable(),

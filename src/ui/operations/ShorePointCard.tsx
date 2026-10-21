@@ -5,6 +5,7 @@ import {
   bomModelLabel,
   cutTooSmall,
   deployedStrutOf,
+  needsRecut,
   pendingNeedModels,
 } from '@core/shorepoint';
 import { Badge, Button, Card, MeasurementValue, Slider } from '@ui/primitives';
@@ -352,6 +353,21 @@ export function ShorePointCard({
     </span>
   );
 
+  // Re-cut flag (Alex 2026-10-20, accepted mockup "3 · Cut piece flagged"): the piece
+  // was marked Cut Done and its cut length has moved since (a grouped mate's sizing
+  // edit, or a remote/replayed one). The edit went through; this chip says the piece
+  // already cut is now the wrong length. Derived (needsRecut), never stored — a point
+  // with no cut record never flags. Same amber warning idiom + gate as the too-small
+  // chip, so it only ever explains a CUT length the shelf is printing; "✓ Cut done"
+  // below stays (the saw did run — it ran to the old number).
+  const recutChip = isCutPhase(sp) && needsRecut(sp) && (
+    <span className="fs-spc-flag-row">
+      <span className="fs-spc-flag fs-spc-flag--warning" role="status">
+        ⚠ Re-cut: cut length changed after Cut Done
+      </span>
+    </span>
+  );
+
   return (
     <Card
       className={`fs-spc ${statusClasses(sp)}${removed ? ' is-removed' : ''}${active ? ' is-active' : ''}`}
@@ -406,6 +422,8 @@ export function ShorePointCard({
       {valueShelf}
 
       {tooSmallChip}
+
+      {recutChip}
 
       {/* #441 — radio-callout location row. Capture is only offered while the
           shore is still being worked — a terminal returned card stays action-free
@@ -600,11 +618,26 @@ export function CuttingControls({
   onSendToRunner?: (sp: ShorePoint) => void | Promise<void>;
   onStepBack?: (sp: ShorePoint) => void | Promise<void>;
 }) {
+  // Re-cut (2026-10-20): a cut-done piece whose cut length moved since takes the
+  // primary slot — "Re-cut Done" re-records the new length through the SAME Mark Cut
+  // Done commit (cuttingDone stays true, the record updates, the flag clears). Send to
+  // Runner is withheld until then: the piece on the saw is the wrong length. The
+  // step-back (clear Cut Done) stays, and clearing it drops the record too.
+  const recut = needsRecut(sp);
   return (
     <div className="fs-spc-slides">
       {sp.cuttingDone ? (
         <>
-          <Slider label="Slide to send to Runner" tone="runner" onCommit={() => onSendToRunner?.(sp)} />
+          {recut ? (
+            <Slider
+              key="recut"
+              label="Slide to mark Re-cut Done"
+              tone="cutting"
+              onCommit={() => onMarkCutDone?.(sp)}
+            />
+          ) : (
+            <Slider key="runner" label="Slide to send to Runner" tone="runner" onCommit={() => onSendToRunner?.(sp)} />
+          )}
           <Slider
             label="Slide back — clear Cut Done"
             direction="stepback"

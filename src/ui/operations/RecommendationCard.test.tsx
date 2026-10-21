@@ -2,7 +2,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { RecommendationCard, comboModel } from './RecommendationCard';
+import { RecommendationCard, comboModel, type RecommendationCardProps } from './RecommendationCard';
 import { findStrutCombinations, type StrutCombination } from '@core/load';
 import { NO_DEDUCTIONS, type Deductions, type StockRow } from '@core/schema';
 
@@ -537,5 +537,115 @@ describe('RecommendationCard — acknowledgment resets when the risk changes (#4
       />,
     );
     expect(screen.getByRole('button', { name: /^Deploy/ })).toBeEnabled();
+  });
+});
+
+/**
+ * One-tap 3-Post on 6×6 (accepted mockup 2026-10-20, "1 · One-tap 3-Post"). A 3-Post
+ * is built on 6×6, which deducts 4″ more than 4×4 — the card re-checks the strut at
+ * the 6×6 length before offering the tap, names the wood on the button, and hands
+ * over the combo it checked. Real engine: T-Shore, 4×4/4×4, 50,000 lb → LS 304 rated
+ * 22,000 lb → ×3 → 3-Post.
+ */
+describe('RecommendationCard — one-tap 3-Post re-checks the strut on 6×6', () => {
+  const R2: StockRow[] = [{ ...INVENTORY[0]!, quantity: 6, available: 6 }];
+  const FOUR: Deductions = { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' };
+  const SIX: Deductions = { ...FOUR, headerWood: '6x6', footerWood: '6x6' };
+  const ls304At = (opening: number, wood: number) =>
+    findStrutCombinations(opening, 50000, 2, R2, null, { header: wood, sole: wood }).find(
+      (c) => c.strut.model === 'LS 304' && c.extensions.length === 0,
+    )!;
+  const FITS = ls304At(48, 3.5); // 41″ on 4×4 → 37″ on 6×6
+  const LOCKED = ls304At(46, 3.5); // 39″ on 4×4 → 35″ on 6×6, under the 36″ minimum
+  const renderCard = (combo: StrutCombination, over: Partial<RecommendationCardProps> = {}) => {
+    const onAddStruts = vi.fn();
+    const onDeploy = vi.fn();
+    const view = render(
+      <RecommendationCard
+        combo={combo}
+        deductions={FOUR}
+        source="Rescue 2"
+        onDeploy={onDeploy}
+        onAddStruts={onAddStruts}
+        estimatedLoad={50000}
+        currentStruts={1}
+        {...over}
+      />,
+    );
+    return { ...view, onAddStruts, onDeploy };
+  };
+
+  it('engine fixtures are the states they claim to be', () => {
+    expect(FITS.effectiveLength).toBe(41);
+    expect(FITS.capacity).toBe(22000);
+    expect(LOCKED.effectiveLength).toBe(39);
+    expect(LOCKED.capacity).toBe(22000);
+  });
+
+  it('48″ — fits: the button names 6×6, the helper states strut + cut, the tap hands over the 6×6 combo', async () => {
+    const user = userEvent.setup();
+    const { container, onAddStruts } = renderCard(FITS);
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add).toBeEnabled();
+    expect(container.querySelector('.fs-rec-add-note')!.textContent).toBe(
+      'Switches header and footer to 6×6: strut 37″, cut 35 1/2″. Deploys all 3 LS 304 from Rescue 2',
+    );
+    await user.click(add);
+    expect(onAddStruts).toHaveBeenCalledTimes(1);
+    const [combo, type, total] = onAddStruts.mock.calls[0]!;
+    expect(type).toBe('3-post');
+    expect(total).toBe(3);
+    // The checked combo: the 6×6 geometry, still bound to the card's stock row.
+    expect(combo).toMatchObject({ effectiveLength: 37, extensions: [] });
+    expect(combo.strut).toBe(FITS.strut);
+    expect(combo.strut.inventoryId).toBe('inv-1');
+  });
+
+  it('46″ — locked: disabled with the 6×6 reason, no helper; Deploy-anyway stays as it is', async () => {
+    const user = userEvent.setup();
+    const { container, onAddStruts, onDeploy } = renderCard(LOCKED);
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add).toBeDisabled();
+    expect(add.nextElementSibling).toHaveTextContent(
+      "LS 304 won't fit a 3-Post on 6×6 (35″, minimum 36″). Pick wood and press Find again.",
+    );
+    expect(container.querySelector('.fs-rec-add-note')).toBeNull();
+    await user.click(add);
+    expect(onAddStruts).not.toHaveBeenCalled();
+    // The acknowledged short deploy is unchanged.
+    const anyway = screen.getByRole('button', { name: /Deploy 1 of 3 anyway/ });
+    expect(anyway).toBeDisabled();
+    await user.click(screen.getByRole('checkbox', { name: /Team acknowledges the over-capacity deploy/ }));
+    expect(anyway).toBeEnabled();
+    await user.click(anyway);
+    expect(onDeploy).toHaveBeenCalledWith(LOCKED);
+  });
+
+  it("the form's lock reason wins over the 6×6 reason", () => {
+    renderCard(LOCKED, { deployDisabled: true, deployDisabledReason: 'Pick header and footer wood' });
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add).toBeDisabled();
+    expect(add.nextElementSibling).toHaveTextContent('Pick header and footer wood');
+    expect(screen.queryByText(/won't fit a 3-Post on 6×6/)).not.toBeInTheDocument();
+  });
+
+  it('already on 6×6/6×6: "on 6×6" label, today’s helper, the card’s own combo', async () => {
+    const user = userEvent.setup();
+    const onSix = ls304At(48, 5.5); // 37″ — the same geometry the 3-Post builds at
+    const { container, onAddStruts } = renderCard(onSix, { deductions: SIX });
+    expect(container.querySelector('.fs-rec-add-note')!.textContent).toBe(
+      'Converts this shore to a 3-Post and deploys all 3 LS 304 from Rescue 2',
+    );
+    await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
+    expect(onAddStruts).toHaveBeenCalledWith(onSix, '3-post', 3);
+  });
+
+  it('a Double-T conversion never names 6×6 and keeps the wood', () => {
+    // 34,000 lb on LS 304 @ 41″ (22,000 lb) → ×2 → Double-T.
+    const { container } = renderCard(FITS, { estimatedLoad: 34000 });
+    expect(screen.getByRole('button', { name: 'Add 1 more strut — deploy as Double-T' })).toBeEnabled();
+    expect(container.querySelector('.fs-rec-add-note')!.textContent).toBe(
+      'Converts this shore to a Double-T and deploys both LS 304 from Rescue 2',
+    );
   });
 });

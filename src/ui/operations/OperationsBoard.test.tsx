@@ -572,8 +572,44 @@ describe('OperationsBoard', () => {
     await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
     expect(document.querySelector('.fs-cutstation-count')).toHaveTextContent('1 cut in queue'); // #435: count numeral is its own span
     await slideToCommit('Slide to mark Cut Done');
+    // Re-cut flag (2026-10-20): the mark also records WHAT was cut — the 60″ opening on
+    // the T-Shore standard 4×4 (no wood picked) cuts 60 − 3½ − 3½ − 1½ = 51½″.
     expect(mockCommit).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ShorePointEdited', spId: 'sp-1', patch: { cuttingDone: true } }),
+      expect.objectContaining({
+        type: 'ShorePointEdited',
+        spId: 'sp-1',
+        patch: { cuttingDone: true, cutRecord: { eighths: 51.5 * 8, headerWood: '4x4', footerWood: '4x4' } },
+      }),
+    );
+  });
+
+  it('Cutting Station: a re-cut-flagged piece offers Re-cut Done, which re-records the NEW length', async () => {
+    const user = userEvent.setup();
+    mockOperation.mockReturnValue(ACTIVE_OP);
+    mockShorePoints.mockReturnValue([
+      {
+        ...makeSP('sp-1', 'cutting'),
+        // Cut at 51½″ on 4×4; a mate's wood edit has since moved this leg to 6×6.
+        deductions: { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' },
+        cuttingStartedAt: 10,
+        cuttingDone: true,
+        cutRecord: { eighths: 51.5 * 8, headerWood: '4x4', footerWood: '4x4' },
+        deployedBom: [{ role: 'strut', ...deployed() }],
+      },
+    ]);
+    render(<OperationsBoard />);
+    await user.click(screen.getByRole('radio', { name: /Cutting Station/ }));
+    expect(screen.queryByText('Slide to send to Runner')).not.toBeInTheDocument(); // withheld until re-cut
+    await slideToCommit('Slide to mark Re-cut Done');
+    expect(mockCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'ShorePointEdited',
+        spId: 'sp-1',
+        patch: { cuttingDone: true, cutRecord: { eighths: 47.5 * 8, headerWood: '6x6', footerWood: '6x6' } },
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getAllByRole('status').some((n) => n.textContent === 'Re-cut done marked. Slide to send to runner.')).toBe(true),
     );
   });
 

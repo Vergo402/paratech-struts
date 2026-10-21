@@ -743,4 +743,44 @@ describe('W3wChip — the radio-callout location row (#441)', () => {
       expect(screen.queryByText(/Opening too small/)).toBeNull();
     });
   });
+
+  // Re-cut flag (Alex 2026-10-20, accepted mockup "3 · Cut piece flagged" — board card):
+  // cut at 45½″ on 4×4, then a mate's wood edit moved this leg to 6×6. Derived from the
+  // real reducer helpers (needsRecut), nothing stubbed.
+  describe('re-cut chip', () => {
+    const CHIP = '⚠ Re-cut: cut length changed after Cut Done';
+    const R4 = { eighths: 45.5 * 8, headerWood: '4x4', footerWood: '4x4' } as const;
+    const W6 = { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' } as const;
+    const cutLeg = (over: Partial<ShorePoint> = {}) =>
+      makeSP({ status: 'cutting', measurementEighths: 54 * 8, deductions: W6, cuttingDone: true, cutRecord: R4, ...over });
+
+    it('a cut-done card whose cut length changed shows the amber chip near the cut length; "✓ Cut done" stays', () => {
+      render(<ShorePointCard shorePoint={cutLeg()} />);
+      const chip = screen.getByText(CHIP);
+      expect(chip).toHaveAttribute('role', 'status');
+      expect(chip).toHaveClass('fs-spc-flag', 'fs-spc-flag--warning');
+      // Directly under the value shelf (the cut length the chip is about).
+      expect(chip.closest('.fs-spc-flag-row')?.previousElementSibling).toHaveClass('fs-spc-value');
+      expect(valueLineText()).toContain('41 1/2″');
+      expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
+    });
+
+    it('no chip when the length is unchanged, or the point has no record (cut before this shipped)', () => {
+      const { unmount } = render(<ShorePointCard shorePoint={cutLeg({ deductions: { ...W6, headerWood: '4x4', footerWood: '4x4' } })} />);
+      expect(screen.queryByText(CHIP)).toBeNull();
+      unmount();
+      render(<ShorePointCard shorePoint={cutLeg({ cutRecord: undefined })} />);
+      expect(screen.queryByText(CHIP)).toBeNull();
+      expect(screen.getByText('✓ Cut done')).toBeInTheDocument();
+    });
+
+    it('the station card swaps Send to Runner for Re-cut Done while flagged', async () => {
+      const onMarkCutDone = vi.fn();
+      const sp = cutLeg();
+      render(<ShorePointCard shorePoint={sp} cuttingStation onMarkCutDone={onMarkCutDone} />);
+      expect(screen.queryByText('Slide to send to Runner')).toBeNull();
+      await slideToCommit('Slide to mark Re-cut Done');
+      expect(onMarkCutDone).toHaveBeenCalledWith(sp);
+    });
+  });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { NO_DEDUCTIONS, type ShorePoint, type ShorePointStatus, type FieldShoreEvent } from '../schema';
-import { deployedStrutOf } from '../shorepoint';
+import { deployedStrutOf, needsRecut } from '../shorepoint';
 import { operationReducer, mapSame, EMPTY_OPERATION_STATE, type OperationState } from './reducer';
 import { projectOperation } from './projection';
 import { nextSeqBase } from './seq';
@@ -477,6 +477,41 @@ describe('cutting-queue bookkeeping (#222)', () => {
       type: 'ShorePointEdited', id: 'e2', opId: 'op1', at: 6, by: 't', spId: 'a', patch: { cuttingDone: false },
     });
     expect(cleared.shorePoints[0]!.cuttingDone).toBeUndefined();
+  });
+
+  // Re-cut flag (Alex 2026-10-20) — the LIVE path (operationReducer → groupAdvance →
+  // applyCuttingFields), end to end on a grouped shore.
+  it('re-cut: a Pending mate’s wood edit fanned to a cut leg flags it; Re-cut Done clears; step-back drops the record', () => {
+    const W6 = { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' } as const;
+    const R4 = { eighths: 45.5 * 8, headerWood: '4x4', footerWood: '4x4' } as const;
+    const R6 = { eighths: 41.5 * 8, headerWood: '6x6', footerWood: '6x6' } as const;
+    const W4 = { ...W6, headerWood: '4x4', footerWood: '4x4' } as const;
+    const edit = (spId: string, patch: Record<string, unknown>, id: string): FieldShoreEvent =>
+      ({ type: 'ShorePointEdited', id, opId: 'op1', at: 5, by: 't', spId, patch }) as FieldShoreEvent;
+    const leg = (id: string, over: Partial<ShorePoint>) =>
+      sp(id, { groupId: 'g', groupTotal: 2, measurementEighths: 54 * 8, deductions: W4, ...over });
+    let s = stateWith([
+      leg('a', { groupIndex: 1, status: 'cutting', cuttingStartedAt: 100 }),
+      leg('b', { groupIndex: 2, status: 'pending' }),
+    ]);
+    s = operationReducer(s, edit('a', { cuttingDone: true, cutRecord: R4 }, 'm1'));
+    expect(byId(s, 'a').cutRecord).toEqual(R4);
+    expect(needsRecut(byId(s, 'a'))).toBe(false);
+    // The Pending mate's re-pick to 6×6 fans the identical patch to every leg.
+    s = operationReducer(s, edit('a', { deductions: W6 }, 'w1'));
+    s = operationReducer(s, edit('b', { deductions: W6 }, 'w2'));
+    expect(byId(s, 'a').deductions).toEqual(W6); // the edit went through
+    expect(byId(s, 'a').cuttingDone).toBe(true);
+    expect(needsRecut(byId(s, 'a'))).toBe(true);
+    // Re-cut Done — the same Mark Cut Done commit, carrying the new length.
+    const recut = operationReducer(s, edit('a', { cuttingDone: true, cutRecord: R6 }, 'r1'));
+    expect(byId(recut, 'a').cuttingDone).toBe(true);
+    expect(needsRecut(byId(recut, 'a'))).toBe(false);
+    // Or: slide back to Strut Set — the record goes with cuttingDone.
+    const back = operationReducer(s, statusAt('a', 'cutting', 'strutset', 200));
+    expect(byId(back, 'a').status).toBe('strutset');
+    expect(byId(back, 'a').cutRecord).toBeUndefined();
+    expect(needsRecut(byId(back, 'a'))).toBe(false);
   });
 });
 

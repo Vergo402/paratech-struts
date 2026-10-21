@@ -1,4 +1,4 @@
-import type { WoodSizeId, ShoreTypeId } from '../schema';
+import type { Deductions, WoodSizeId, ShoreTypeId } from '../schema';
 
 // Connector plates, wood sizes, shore types. Ported VERBATIM from v3 app.js
 // (lines 93-131). Base-plate base64 thumbnails are dropped (the picker renders
@@ -70,8 +70,8 @@ export interface ShoreTypeDef {
   strutsPerShore: 1 | 2 | 3;
 }
 
-// 3-Post wood auto-fill lives in AddShorePointModal (THREE_POST_WOOD), the one
-// type that auto-fills — catalog defaultHeader/defaultFooter/desc fields removed
+// 3-Post is the one type whose wood auto-fills — THREE_POST_WOOD below, not a
+// per-type field here. Catalog defaultHeader/defaultFooter/desc fields were removed
 // as dead (audit W10): nothing read them, and per-type defaults here would re-fill
 // T-Shore/Double-T, the v3.9.1 regression.
 export const SHORE_TYPES: readonly ShoreTypeDef[] = [
@@ -79,6 +79,22 @@ export const SHORE_TYPES: readonly ShoreTypeDef[] = [
   { id: 'double-t', name: 'Double-T Vertical Shore', strutsPerShore: 2 },
   { id: '3-post', name: '3-Post Vertical Shore', strutsPerShore: 3 },
 ];
+
+/**
+ * 3-Post header + footer wood: 6×6 per USACE/FEMA spec (v3.9.1 lesson — ONLY 3-Post
+ * auto-fills its wood; T-Shore / Double-T are built 4×4 or 6×6 by load and span, so
+ * the operator picks). The ONE source for every path that makes a shore a 3-Post:
+ *  - the Add Shore Point type switch (seed on entry, symmetric retraction on exit);
+ *  - the "Add N more struts — deploy as 3-Post" one-tap, in Add Shore Point and the
+ *    Assign Equipment sheet (Alex 2026-10-20). The cut length follows the picked
+ *    wood (2026-10-17), so a 3-Post built at 4×4 cut and strutted 4″ long on 6×6.
+ *    RecommendationCard re-checks the strut at this wood before offering the tap
+ *    (core/shorepoint/threePost.ts), and the rebuilt points carry it.
+ */
+export const THREE_POST_WOOD: Readonly<Pick<Deductions, 'headerWood' | 'footerWood'>> = Object.freeze({
+  headerWood: '6x6',
+  footerWood: '6x6',
+});
 
 export const WEDGE_DEDUCTION = 1.5; // inches for loading wedges
 

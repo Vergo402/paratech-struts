@@ -550,4 +550,90 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       expect(screen.getByRole('button', { name: /Deploy 2 of 3 anyway/ })).toBeInTheDocument();
     });
   });
+
+  // One-tap 3-Post on 6×6 (accepted mockup 2026-10-20): the sheet rebuilds a 3-Post on
+  // THREE_POST_WOOD — the wood the card re-checked the strut at — not the point's own.
+  describe('Add-N-struts to a 3-Post rebuilds on 6×6', () => {
+    const R2_THREE: StockRow = { ...INV_ITEM, quantity: 3, available: 3 };
+    // 50,000 lb on one 22,000 lb LS 406 → ×3 → 3-Post. The point has 'none' wood.
+    const threePostSp = (over: Partial<ShorePoint> = {}) => makeSP({ estimatedLoad: 50000, seq: 9, ...over });
+
+    it('60″ → 49″ on 6×6 (LS 406 fits): rebuilds three 6×6 members and deploys all three', async () => {
+      const user = userEvent.setup();
+      const onPartial = vi.fn();
+      const sp = threePostSp();
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([R2_THREE]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
+
+      const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+      expect(add.parentElement!.querySelector('.fs-rec-add-note')).toHaveTextContent(
+        'Switches header and footer to 6×6: strut 49″, cut 47 1/2″. Deploys all 3 LS 406 from Rescue 2',
+      );
+      await user.click(add);
+
+      const batch = mockCommitMany.mock.calls[0]![0] as Array<Record<string, unknown>>;
+      const added = batch.filter((e) => e.type === 'ShorePointAdded').map((e) => e.shorePoint as ShorePoint);
+      expect(added).toHaveLength(3);
+      for (const p of added) {
+        expect(p).toMatchObject({ shoreType: '3-post', groupTotal: 3, seq: 9 });
+        expect(p.deductions).toEqual({ headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' });
+      }
+      const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+      expect(deploys).toHaveLength(3);
+      expect(deploys.map((e) => e.spId).sort()).toEqual(added.map((p) => p.id).sort());
+      expect(onPartial).toHaveBeenCalledWith(expect.any(Array), [], '3× LS 406');
+    });
+
+    it('plates ride the 6×6 rebuild, and each member sources them against those deductions', async () => {
+      const user = userEvent.setup();
+      const plate: StockRow = {
+        id: 'inv-p', type: 'plate', plateId: 'rigid6', apparatus: 'Rescue 2', apparatusId: 'app-r2',
+        quantity: 6, held: 0, available: 6,
+      };
+      // 62″ − (1.0 + 1.0) plates = 60″ on 'none' wood → 49″ on 6×6.
+      const sp = threePostSp({
+        measurementEighths: 62 * 8,
+        deductions: { headerWood: 'none', footerWood: 'none', topPlate: 'rigid6', bottomPlate: 'rigid6' },
+      });
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([{ ...COMBO, openingLength: 62 }]);
+      mockInventory.mockReturnValue([R2_THREE, plate]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+
+      await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
+      const batch = mockCommitMany.mock.calls[0]![0] as Array<Record<string, unknown>>;
+      const added = batch.filter((e) => e.type === 'ShorePointAdded').map((e) => e.shorePoint as ShorePoint);
+      for (const p of added) {
+        expect(p.deductions).toEqual({ headerWood: '6x6', footerWood: '6x6', topPlate: 'rigid6', bottomPlate: 'rigid6' });
+      }
+      const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+      expect(deploys).toHaveLength(3);
+      for (const e of deploys) {
+        expect(e.deployedBom.filter((c: { role: string }) => c.role.endsWith('plate'))).toEqual([
+          expect.objectContaining({ role: 'top-plate', plateId: 'rigid6', inventoryId: 'inv-p' }),
+          expect.objectContaining({ role: 'bottom-plate', plateId: 'rigid6', inventoryId: 'inv-p' }),
+        ]);
+      }
+    });
+
+    it('58″ → 47″ on 6×6 is under LS 406’s 48″ minimum: the tap is locked with the reason', async () => {
+      const user = userEvent.setup();
+      const sp = threePostSp({ measurementEighths: 58 * 8 });
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([{ ...COMBO, openingLength: 58, effectiveLength: 58 }]);
+      mockInventory.mockReturnValue([R2_THREE]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+
+      const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+      expect(add).toBeDisabled();
+      expect(add.nextElementSibling).toHaveTextContent(
+        "LS 406 won't fit a 3-Post on 6×6 (47″, minimum 48″). Pick wood and press Find again.",
+      );
+      await user.click(add);
+      expect(mockCommitMany).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: /Deploy 1 of 3 anyway/ })).toBeInTheDocument();
+    });
+  });
 });

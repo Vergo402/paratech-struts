@@ -3,11 +3,11 @@
 // form checks as Save as Pending. Uses the REAL RecommendationCard (the sibling
 // test file mocks it to a bare button, which is exactly how the bypass hid —
 // 2026-10-17 land-qf-rec merge review, High).
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { AddShorePointModal } from './AddShorePointModal';
-import type { Operation, StockRow } from '@core/schema';
+import type { Operation, ShorePoint, StockRow } from '@core/schema';
 import { findStrutCombinations } from '@core/load';
 
 const mockCommit = vi.fn().mockResolvedValue({ ok: true });
@@ -18,6 +18,9 @@ const INV: StockRow[] = [
 ];
 // 48″ opening − 4×4 header/footer (3.5 + 3.5) = 41″ → LS 304 (36–50) fits.
 const COMBO = findStrutCombinations(48, 0, 2, INV, null, { header: 3.5, sole: 3.5 })[0]!;
+// Swappable per test (read lazily by the hook mocks below); defaults = the fixtures above.
+let mockInv: StockRow[] = INV;
+let mockRecs = [COMBO];
 
 vi.mock('@ui/hooks', () => ({
   useOperation: () => OP,
@@ -25,8 +28,8 @@ vi.mock('@ui/hooks', () => ({
   useCommit: () => mockCommit,
   useCommitMany: () => mockCommitMany,
   useDeviceUid: () => () => Promise.resolve('device-test'),
-  useInventory: () => INV,
-  useRecommendations: (sp: unknown) => (sp ? [COMBO] : []),
+  useInventory: () => mockInv,
+  useRecommendations: (sp: unknown) => (sp ? mockRecs : []),
   w3wEnabled: () => false,
   convertToWords: () => Promise.resolve(''),
 }));
@@ -94,5 +97,87 @@ describe('AddShorePointModal — card Deploy honors the form checks (real card)'
     // Re-entering a count unlocks it — the lock is the form's, not a stuck in-flight flag.
     await user.type(screen.getByRole('textbox', { name: 'Number of Shore Sets' }), '1');
     expect(deployButton()).toBeEnabled();
+  });
+});
+
+// One-tap 3-Post on 6×6 (accepted mockup 2026-10-20). The cut length follows the picked
+// wood, so a 3-Post the one-tap built on the form's 4×4 cut and strutted 4″ long on 6×6.
+describe('AddShorePointModal — one-tap 3-Post builds on 6×6 (real card)', () => {
+  beforeEach(() => {
+    mockCommit.mockClear();
+    mockCommitMany.mockClear();
+    mockInv = INV;
+    mockRecs = [COMBO];
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  it('T-Shore 48″ on 4×4 @ 50,000 lb → "deploy as 3-Post on 6×6" commits three 6×6 points; the form follows', async () => {
+    const user = userEvent.setup();
+    await openAndFind(user);
+    await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '50000');
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add.parentElement!.querySelector('.fs-rec-add-note')).toHaveTextContent(
+      'Switches header and footer to 6×6: strut 37″, cut 35 1/2″. Deploys all 3 LS 304 from Rescue 2',
+    );
+    await user.click(add);
+
+    await waitFor(() => expect(mockCommit).toHaveBeenCalledTimes(3));
+    const added = (mockCommitMany.mock.calls[0]![0] as Array<{ type: string; shorePoint: ShorePoint }>)
+      .filter((e) => e.type === 'ShorePointAdded')
+      .map((e) => e.shorePoint);
+    expect(added).toHaveLength(3);
+    for (const p of added) {
+      expect(p.shoreType).toBe('3-post');
+      expect(p.groupTotal).toBe(3);
+      expect(p.deductions).toEqual({ headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' });
+    }
+    // Every member deployed the strut the card checked, with no short-deploy ack
+    // (16,667 lb each is within LS 304's 22,000 lb at 37″).
+    const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+    expect(deploys.map((e) => e.spId).sort()).toEqual(added.map((p) => p.id).sort());
+    for (const e of deploys) {
+      expect(e.deployedBom[0]).toMatchObject({ role: 'strut', model: 'LS 304', inventoryId: 'inv-1' });
+      expect(e.overCapacityAcknowledged).toBeUndefined();
+    }
+
+    // The form's controls follow so the officer sees what was built.
+    expect(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' })).toBeChecked();
+    for (const name of ['Header wood — required', 'Footer wood — required']) {
+      expect(within(screen.getByRole('radiogroup', { name })).getByRole('radio', { name: '6×6' })).toBeChecked();
+    }
+  });
+
+  it('a 6×6 refit that needs an extension no rig stocks leaves the members Pending — never off-book', async () => {
+    // 69″ − 4×4 = 62″ → LS 304 + 24″ (60–74), the 24″ on Rescue 2. On 6×6: 58″ → the
+    // re-check re-derives LS 304 + 12″ (48–62), and no rig stocks a 12″ extension.
+    mockInv = [...INV, { id: 'inv-x24', type: 'extension', system: 'LongShore', length: 24, apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 4, held: 0, available: 4 }];
+    mockRecs = [
+      findStrutCombinations(69, 0, 2, mockInv, null, { header: 3.5, sole: 3.5 }).find(
+        (c) => c.strut.model === 'LS 304' && c.extensions.join() === '24',
+      )!,
+    ];
+    const onDeployed = vi.fn();
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await user.type(screen.getByRole('textbox', { name: 'Feet' }), '5');
+    await user.type(screen.getByRole('textbox', { name: 'Inches' }), '9');
+    for (const name of ['Header wood — required', 'Footer wood — required']) {
+      await user.click(within(screen.getByRole('radiogroup', { name })).getByRole('radio', { name: '4×4' }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '50000');
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    // The helper names the assembly that will actually deploy.
+    expect(add.parentElement!.querySelector('.fs-rec-add-note')).toHaveTextContent(
+      'Switches header and footer to 6×6: strut 58″, cut 56 1/2″. Deploys all 3 LS 304 + 12″ from Rescue 2',
+    );
+    await user.click(add);
+
+    await waitFor(() => expect(onDeployed).toHaveBeenCalled());
+    const [deployed, pending, model] = onDeployed.mock.calls[0]!;
+    expect(deployed).toEqual([]);
+    expect(pending).toHaveLength(3);
+    expect(model).toBe('LS 304 + 12″');
+    expect(mockCommit.mock.calls.filter((c) => c[0].type === 'EquipmentDeployed')).toHaveLength(0);
   });
 });
