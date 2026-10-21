@@ -74,3 +74,7 @@ Shipped baseline sections/steps (`src/core/checklist/baseline.ts`): Assessment (
 - Hash/route taps: use `location.assign('/operations')` if a `<Link>` does not respond (HARNESS).
 - The 56pt row height is a spec claim; the measurement floor is 44px. Report the measured value either way.
 - After an attestation with no My Role, "Unassigned" is the existing fallback (not a bug); a name is not shown, only the role title (spec also says role, not name).
+
+## Orchestrator addendum (2026-10-21, HEAD af9321a)
+- Positions follow the ACCOUNT (552faca): any signature/"My role" caption is judged by the signed-in account. Wood is required at Add Shore Point (2026-10-17). No fireground position gate exists (ADR-017 line 40; specs 13–15, 21).
+- Known SideDrawer defects already filed from spec 22 (#549): focus lost to body on close when the opener tab unmounts; one Esc closes a docked drawer under a Sheet; 40 px edge tab. If the Task Level Checklist shows the same defects, record FAIL and cite #549 in Proof (no new issue needed); if it does NOT show them, say so — that is useful too.

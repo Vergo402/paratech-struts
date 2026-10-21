@@ -29,7 +29,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 12 | `20-role-assignment-command-transfer.md` | #225 | **PASS** — 34 PASS · 0 SPEC-DRIFT · 4 FAIL (20-27 false Accept on initiator → #544; 20-18 tablet org chart → #545; 20-40 + 20-38 → #546) · 1 NOT-BUILT (20-08 role announcement → a11y batch) · mutual-aid Deferred (#493) (2026-10-21, HEAD aafe8d2) | `20/REPORT.md` | #544 #545 #546 |
 | 13 | `21-hazard-log.md` | #226 | **PASS** — 28 PASS · 1 SPEC-DRIFT (21-18 chips not a header, #487/#490) · 1 FAIL (21-07 reporter names dead code → #547) · 1 NOT-BUILT (21-31 edit/delete → decisions) · ADR-042 §5 cap missing → #548 · export audit event NOT-BUILT → decisions · 4 Deferred (2026-10-21, HEAD 3f69446) | `21/REPORT.md` | #547 #548 |
 | 14 | `22-ic-command-checklist.md` | #227 | **PASS** — 28 PASS · 1 SPEC-DRIFT (22-05) · 3 FAIL (22-06 focus + 22-09 Esc + tab width → #549; 22-26 per-status counts → decisions) · 3 NOT-BUILT (22-07 swipe = deferred in code; 22-11 non-IC read view → decisions; 22-31 announcements → a11y batch) (2026-10-21, HEAD 2e8bd28) | `22/REPORT.md` | #549 |
-| 15 | `23-task-level-checklist.md` | #228 | brief drafted | — | — |
+| 15 | `23-task-level-checklist.md` | #228 | **PASS (mechanics) / FAIL (scoping)** — 20 PASS · 2 FAIL + 2 NOT-BUILT with one root cause (instance = device uid → #550, gate M13 must-fix) · 23-07 all sections open, 23-26 no provenance cue → decisions · 23-19 → a11y batch (2026-10-21, HEAD af9321a) | `23/REPORT.md` | #550 |
 | 16 | `24-tcrm-briefing.md` | #229 | brief drafted | — | — |
 | 17 | `25-customizing-checklists.md` | #230 | brief drafted | — | — |
 | 18 | `30-user-management.md` | #233 | brief drafted | — | — |
@@ -62,6 +62,10 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
 ## Decisions for Alex (NOT-BUILT, not filed)
+
+- **#550 scope:** key the Task Level Checklist by account only (minimum, matches 552faca), or by Group/task with a selector and a Section-Chief read view (gate M13 as written)? The issue is filed; this is the size of the fix.
+- 23-07 Task checklist opens with every section expanded (spec: one at a time; the IC checklist auto-collapses completed sections). Align or rewrite spec.
+- 23-26 The drawer shows no "Customized by <dept>" cue (Settings does). Add or drop.
 
 - 22-11 No read-only IC Checklist view for the Operations Section Chief / Group Supervisors (data syncs, no surface). Build for v4.0.x, or IC-only by design?
 - 22-26 The ICS-201 card shows "n set · total" only, not per-status counts (spec wireframe). Keep the condensed form (rewrite spec) or add the per-status row?
