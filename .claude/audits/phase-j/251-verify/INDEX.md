@@ -31,7 +31,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 14 | `22-ic-command-checklist.md` | #227 | **PASS** — 28 PASS · 1 SPEC-DRIFT (22-05) · 3 FAIL (22-06 focus + 22-09 Esc + tab width → #549; 22-26 per-status counts → decisions) · 3 NOT-BUILT (22-07 swipe = deferred in code; 22-11 non-IC read view → decisions; 22-31 announcements → a11y batch) (2026-10-21, HEAD 2e8bd28) | `22/REPORT.md` | #549 |
 | 15 | `23-task-level-checklist.md` | #228 | **PASS (mechanics) / FAIL (scoping)** — 20 PASS · 2 FAIL + 2 NOT-BUILT with one root cause (instance = device uid → #550, gate M13 must-fix) · 23-07 all sections open, 23-26 no provenance cue → decisions · 23-19 → a11y batch (2026-10-21, HEAD af9321a) | `23/REPORT.md` | #550 |
 | 16 | `24-tcrm-briefing.md` | #229 | **PASS** — 28 PASS · 1 SPEC-DRIFT (24-21 X keeps the session, R1) · 1 FAIL (24-23 concurrent Begin race → #551) · 3 NOT-BUILT (24-30 Add note, 24-31 per-Group sessions, 24-32 Safety/OSC indicator → decisions) · no RGS gate (ADR-017) (2026-10-21, HEAD cd55558) | `24/REPORT.md` | #551 |
-| 17 | `25-customizing-checklists.md` | #230 | brief drafted | — | — |
+| 17 | `25-customizing-checklists.md` | #230 | **PASS** — 22 PASS · 2 SPEC-DRIFT (25-07 inline field, 25-32 intro copy) · 3 FAIL (25-04 manageSettings gate → #552; 25-30 + 25-33 + 25-13 polish → #554) · 4 NOT-BUILT (25-29 audit rows → #553; 25-24 drawer provenance + 25-15 AT move buttons + 25-31 TCRM note → decisions) (2026-10-21, HEAD 5a8666e) | `25/REPORT.md` | #552 #553 #554 |
 | 18 | `30-user-management.md` | #233 | brief drafted | — | — |
 | 19 | `31-audit-log-review.md` | #236 | brief drafted | — | — |
 | 20 | `32-mutual-aid-invite-accept.md` | #235 | brief drafted | — | — |
@@ -68,7 +68,9 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 
 - **#550 scope:** key the Task Level Checklist by account only (minimum, matches 552faca), or by Group/task with a selector and a Section-Chief read view (gate M13 as written)? The issue is filed; this is the size of the fix.
 - 23-07 Task checklist opens with every section expanded (spec: one at a time; the IC checklist auto-collapses completed sections). Align or rewrite spec.
-- 23-26 The drawer shows no "Customized by <dept>" cue (Settings does). Add or drop.
+- 23-26 / 25-24 No "Customized by <dept>" cue on the IC, Task Level or briefing screens (only Settings shows it; the Settings intro copy promises crews see it). Add the marker to the three surfaces, or rewrite the intro copy and spec.
+- 25-15 No Move up/down/under buttons in the checklist editor (arrow keys on the grip are the only keyboard path). Build for AT, or accept arrows + fix the focus drop (#554).
+- 25-31 No "Content ships v4.1 · structure on" note on the TCRM card. Drop from spec.
 
 - 22-11 No read-only IC Checklist view for the Operations Section Chief / Group Supervisors (data syncs, no surface). Build for v4.0.x, or IC-only by design?
 - 22-26 The ICS-201 card shows "n set · total" only, not per-status counts (spec wireframe). Keep the condensed form (rewrite spec) or add the per-status row?

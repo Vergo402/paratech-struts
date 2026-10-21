@@ -75,3 +75,8 @@ Harness: see `HARNESS.md` (emulators + `npm run dev:emu`, :5200, device A `local
 - Sunlight theme: check badge contrast ("Customized by ...") since provenance is the safety guardrail.
 - Fork is by tree edit only: re-saving the same text still forks and flips the badge; this is not a bug.
 - Concurrent LWW (#504): do not run edits on A and B at the same time and call the loss a bug.
+
+## Orchestrator addendum (2026-10-21, HEAD 5a8666e)
+- Already observed today (specs 22/23/24, do not reuse as evidence): the Settings → Administration → Checklists editor exists for the IC Command Checklist, the Task Level Checklist and the briefing; badge "FieldShore baseline" ↔ "Customized by <dept>"; Reset to baseline has a confirm; live drawers update without losing attestations; the DRAWERS show no customized cue (only Settings does). Re-drive these here as the spec's own criteria.
+- Known filed: #549 (IC drawer focus/Esc), #550 (task checklist keyed per device), #551 (briefing Begin race). Cite instead of re-filing if you hit them.
+- Positions follow the account (552faca); Admin = department ROLE (ADR-017) and gates this editor; a non-Admin must not see it.
