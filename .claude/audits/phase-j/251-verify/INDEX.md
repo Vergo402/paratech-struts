@@ -30,7 +30,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 13 | `21-hazard-log.md` | #226 | **PASS** — 28 PASS · 1 SPEC-DRIFT (21-18 chips not a header, #487/#490) · 1 FAIL (21-07 reporter names dead code → #547) · 1 NOT-BUILT (21-31 edit/delete → decisions) · ADR-042 §5 cap missing → #548 · export audit event NOT-BUILT → decisions · 4 Deferred (2026-10-21, HEAD 3f69446) | `21/REPORT.md` | #547 #548 |
 | 14 | `22-ic-command-checklist.md` | #227 | **PASS** — 28 PASS · 1 SPEC-DRIFT (22-05) · 3 FAIL (22-06 focus + 22-09 Esc + tab width → #549; 22-26 per-status counts → decisions) · 3 NOT-BUILT (22-07 swipe = deferred in code; 22-11 non-IC read view → decisions; 22-31 announcements → a11y batch) (2026-10-21, HEAD 2e8bd28) | `22/REPORT.md` | #549 |
 | 15 | `23-task-level-checklist.md` | #228 | **PASS (mechanics) / FAIL (scoping)** — 20 PASS · 2 FAIL + 2 NOT-BUILT with one root cause (instance = device uid → #550, gate M13 must-fix) · 23-07 all sections open, 23-26 no provenance cue → decisions · 23-19 → a11y batch (2026-10-21, HEAD af9321a) | `23/REPORT.md` | #550 |
-| 16 | `24-tcrm-briefing.md` | #229 | brief drafted | — | — |
+| 16 | `24-tcrm-briefing.md` | #229 | **PASS** — 28 PASS · 1 SPEC-DRIFT (24-21 X keeps the session, R1) · 1 FAIL (24-23 concurrent Begin race → #551) · 3 NOT-BUILT (24-30 Add note, 24-31 per-Group sessions, 24-32 Safety/OSC indicator → decisions) · no RGS gate (ADR-017) (2026-10-21, HEAD cd55558) | `24/REPORT.md` | #551 |
 | 17 | `25-customizing-checklists.md` | #230 | brief drafted | — | — |
 | 18 | `30-user-management.md` | #233 | brief drafted | — | — |
 | 19 | `31-audit-log-review.md` | #236 | brief drafted | — | — |
@@ -58,10 +58,13 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 12-22: the spec's "would-fit → Quick Find" link does not exist (NOT-BUILT) — decide: drop from spec or small-features list.
 - Probe (spec 12, 2026-10-21): editing a Pending 3-Post (6×6) to T-Shore clears the wood and blocks Save with "Pick header and footer wood" — consistent with the wood-required doctrine (2026-10-17); record in spec 11/12 as intended.
 
+- 24-21: X on the briefing keeps the session open ("Open Briefing" resumes it, "Briefing started" stays logged) — rewrite spec 24 "no session recorded".
 - 13-10: the too-small chip reads "Opening too small for this header and footer wood — verify measurement" (spec said "standard 6×6 wood"; wood is now picked, so the build wording is right) — rewrite spec 13 Step 2 / SME-3. Also the brief's "5′0⅞″ → 51½″" example is arithmetic-wrong (52⅜″).
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
 ## Decisions for Alex (NOT-BUILT, not filed)
+
+- 24-30 Briefing has no "Add note" field; 24-31 one op-wide briefing session, not per Group; 24-32 no "briefing in progress" indicator for the Safety Officer / Operations Chief. Drop from spec or small-features list (v4.1)?
 
 - **#550 scope:** key the Task Level Checklist by account only (minimum, matches 552faca), or by Group/task with a selector and a Section-Chief read view (gate M13 as written)? The issue is filed; this is the size of the fix.
 - 23-07 Task checklist opens with every section expanded (spec: one at a time; the IC checklist auto-collapses completed sections). Align or rewrite spec.

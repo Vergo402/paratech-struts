@@ -82,3 +82,8 @@ Use the emulator harness per `HARNESS.md`, phone viewport 390x844 unless noted.
 - **R7 — Modal behavior**: form modals do not close on outside tap; only X, Esc, and End Briefing close. Not a bug.
 - **R8 — Sync delay** on the emulator harness: wait a few seconds before judging cross-device criteria; PWA service-worker staleness needs a hard refresh after rebuilds.
 - **R9 — Past operations**: `PastOperationView` shows no briefing record; don't expect one after End Operation.
+
+## Orchestrator addendum (2026-10-21, HEAD cd55558)
+- Positions follow the ACCOUNT (552faca): role signatures are judged by the signed-in account, "My role" sets the ICS position. No fireground position gate exists (ADR-017 line 40) — if a briefing criterion assumes a Rescue-Group-Supervisor-only gate, record SPEC-DRIFT citing ADR-017 only if nothing gates it; if a gate DOES exist for the briefing, record what you see.
+- Wood is required at Add Shore Point (2026-10-17). Mutual aid Deferred (#493); broadcast Deferred (#496); after-action email send Deferred (#495).
+- Known: spec 22/23 checklists are keyed per device (#550) and the task-level drawer has no Group label; if the briefing shares that scoping, cite #550 rather than filing again.
