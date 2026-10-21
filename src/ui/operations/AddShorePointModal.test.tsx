@@ -883,6 +883,38 @@ describe('AddShorePointModal — #452 per-member source resolution', () => {
     }
   });
 
+  it('an operator-picked plate no rig stocks still deploys every member, untracked (the plates-only baseline)', async () => {
+    // Struts for all three, NO base plate on scene. The picker warns but never blocks
+    // (#409 — mutual aid happens), and the officer deployed anyway, so the plate rides
+    // every member off-book. The baseline counts only PLATES (the 3-Post one-tap fix):
+    // narrowing it must never turn this ordinary off-book pick into Pending points.
+    const inv = [strutRow('inv-a', 'Rescue 2', 3)];
+    mockInventory.mockReturnValue(inv as never);
+    const withPlate = { headerWood: 'none', footerWood: 'none', topPlate: 'rigid6', bottomPlate: 'none' } as const;
+    mockRecommendations.mockReturnValue([realCombo(inv, withPlate)] as never);
+
+    const user = userEvent.setup();
+    const onDeployed = vi.fn();
+    render(<AddShorePointModal open onClose={() => {}} onDeployed={onDeployed} />);
+    await user.click(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: '3-Post' }));
+    await setMeasurementFeet(user, 5);
+    await user.click(screen.getByRole('button', { name: /Top plate/ }));
+    fireEvent.click(screen.getByRole('option', { name: /6" Rigid Base/ }));
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.click(screen.getByRole('button', { name: /Deploy/ }));
+
+    const [deployed, pending] = onDeployed.mock.calls[0]!;
+    expect(deployed).toHaveLength(3);
+    expect(pending).toHaveLength(0);
+    expect(deployEvents()).toHaveLength(3);
+    expect(strutClaims()).toEqual({ 'inv-a': 3 });
+    for (const e of deployEvents()) {
+      const plate = e.deployedBom.find((c) => c.role === 'top-plate');
+      expect(plate).toMatchObject({ role: 'top-plate', plateId: 'rigid6' });
+      expect(plate!.inventoryId).toBeUndefined(); // off-book, as the operator chose
+    }
+  });
+
   // #486 — the #452 fix re-resolved the STRUT per member, but extensions stayed
   // pinned to the engine's combo-time row. Member 2 then re-claimed member 1's
   // (already drained) extension row. That row still EXISTS, so the component isn't

@@ -174,3 +174,48 @@ describe('AddShorePointModal — one-tap 3-Post builds on 6×6 (real card)', () 
     expect(mockCommit.mock.calls.filter((c) => c[0].type === 'EquipmentDeployed')).toHaveLength(0);
   });
 });
+
+// L3 (#537 extras, 2026-10-21): the one-tap moved the form to 3-Post 6×6 BEFORE
+// handleDeploy's guards ran, so a stopped tap overwrote the officer's explicit T-Shore /
+// 4×4 — and a following Save as Pending wrote the flipped values. The form follows only
+// once the points exist.
+describe('AddShorePointModal — a failed one-tap leaves the form untouched (L3)', () => {
+  beforeEach(() => {
+    mockCommit.mockClear();
+    mockCommitMany.mockReset().mockResolvedValue({ ok: true });
+    mockInv = INV;
+    mockRecs = [COMBO];
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
+  const expectFormUnchanged = () => {
+    expect(within(screen.getByRole('radiogroup', { name: 'Shore type' })).getByRole('radio', { name: 'T-Shore' })).toBeChecked();
+    for (const name of ['Header wood — required', 'Footer wood — required']) {
+      expect(within(screen.getByRole('radiogroup', { name })).getByRole('radio', { name: '4×4' })).toBeChecked();
+    }
+  };
+
+  it('the strut left inventory (the "no longer in inventory" guard): error, nothing built, still T-Shore on 4×4', async () => {
+    // The card's stock row is gone from the live list (same model, another row stays).
+    mockRecs = [{ ...COMBO, strut: { ...COMBO.strut, inventoryId: 'inv-gone' } }];
+    const user = userEvent.setup();
+    await openAndFind(user);
+    await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '50000');
+    await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
+    expect(await screen.findByText('That strut is no longer in inventory — re-check stock.')).toBeInTheDocument();
+    expect(mockCommitMany).not.toHaveBeenCalled();
+    expect(mockCommit).not.toHaveBeenCalled();
+    expectFormUnchanged();
+  });
+
+  it('the shore points could not be created: error, still T-Shore on 4×4', async () => {
+    mockCommitMany.mockResolvedValue({ ok: false, reason: 'offline' });
+    const user = userEvent.setup();
+    await openAndFind(user);
+    await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '50000');
+    await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
+    expect(await screen.findByText('Could not create the shore point — try again.')).toBeInTheDocument();
+    expect(mockCommit).not.toHaveBeenCalled();
+    expectFormUnchanged();
+  });
+});

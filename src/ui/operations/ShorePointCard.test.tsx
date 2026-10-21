@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { getSlide, slideToCommit } from '@ui/primitives/Slider.testkit';
-import { deployedCapacityFlag } from '@core/shorepoint';
+import { applyCuttingFields, deployedCapacityFlag } from '@core/shorepoint';
 import { ShorePointCard } from './ShorePointCard';
 import type { ShorePoint } from '@core/schema';
 
@@ -790,6 +790,37 @@ describe('W3wChip — the radio-callout location row (#441)', () => {
       );
       expect(screen.getByText('Slide to set Wood Shore Secured')).toBeInTheDocument();
       expect(screen.queryByText(/Re-cut before securing/)).toBeNull();
+    });
+
+    // #537 extras (2026-10-21): the runner card's only slide while flagged is the step-back.
+    it('a flagged runner card: the step-back is the only slide and commits; Secured never fires', async () => {
+      const onAdvance = vi.fn();
+      const onStepBack = vi.fn();
+      const sp = cutLeg({ status: 'runner', cuttingStartedAt: 100 });
+      const { container } = render(<ShorePointCard shorePoint={sp} onAdvance={onAdvance} onStepBack={onStepBack} />);
+      expect(container.querySelectorAll('.fs-spc-slides .fs-slide')).toHaveLength(1);
+      await slideToCommit('Slide back to Cutting Station');
+      expect(onStepBack).toHaveBeenCalledWith(sp);
+      expect(onAdvance).not.toHaveBeenCalled();
+    });
+
+    it('stepped back to the station (the fold keeps Cut Done + record), the cutter gets Re-cut Done', async () => {
+      const onMarkCutDone = vi.fn();
+      // The live path's own transition helper (groupAdvance applies exactly this).
+      const back = applyCuttingFields({ ...cutLeg({ status: 'runner', cuttingStartedAt: 100, sawId: 'A' }), status: 'cutting' }, 'runner', 'cutting', 200);
+      render(<ShorePointCard shorePoint={back} cuttingStation onMarkCutDone={onMarkCutDone} />);
+      expect(screen.getByText(CHIP)).toBeInTheDocument();
+      expect(screen.queryByText('Slide to send to Runner')).toBeNull();
+      await slideToCommit('Slide to mark Re-cut Done');
+      expect(onMarkCutDone).toHaveBeenCalledWith(back);
+    });
+
+    it('the chip stays on Secured and Returned cards — history, no gate', () => {
+      const { unmount } = render(<ShorePointCard shorePoint={cutLeg({ status: 'secured' })} />);
+      expect(screen.getByText(CHIP)).toBeInTheDocument();
+      unmount();
+      render(<ShorePointCard shorePoint={cutLeg({ status: 'returned' })} />);
+      expect(screen.getByText(CHIP)).toBeInTheDocument();
     });
 
     it('the station card swaps Send to Runner for Re-cut Done while flagged', async () => {

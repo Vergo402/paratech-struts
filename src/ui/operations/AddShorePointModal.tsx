@@ -387,7 +387,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
   // `typeOverride` is the Add-N-struts one-tap fix — build at the shore type the
   // load needs instead of the form's selection (accepted mockup 2026-07-01) — and
   // `deductionsOverride` the wood that type is built on (a 3-Post: THREE_POST_WOOD,
-  // which the card re-checked the strut at — accepted mockup 2026-10-20).
+  // which the card re-checked the strut at — accepted mockup 2026-10-20). With an
+  // override the form controls follow, so the officer sees what was built — but only
+  // once the points exist: a one-tap stopped by a guard below, or a failed create,
+  // leaves the officer's own shore type and wood untouched (#536 review L3).
   async function handleDeploy(combo: StrutCombination, typeOverride?: ShoreTypeId, deductionsOverride?: Deductions) {
     // The card buttons carry the form's lock (deployDisabled + reason), but the
     // handler re-checks too: `found` outlives the inputs it was pressed on, so a
@@ -421,6 +424,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
       setDeployError('Could not create the shore point — try again.');
       setDeploying(false);
       return;
+    }
+    if (typeOverride) {
+      setShoreType(typeOverride);
+      if (deductionsOverride) setDeductions(deductionsOverride);
     }
     // commitMany can't carry inventory events — deploy each created point with a
     // single commit (its own pre-flight + decrement-abort-on-zero transaction).
@@ -816,13 +823,10 @@ export function AddShorePointModal({ open, onClose, shorePoint, onAdded, onDeplo
                       if (!canSubmit) return;
                       // One tap: build at the shore type the load needs, on the wood
                       // that type takes (a 3-Post: THREE_POST_WOOD — the card re-checked
-                      // `c` there). Both go in explicitly: these setters land after
-                      // handleDeploy's closure has built the points. The form controls
-                      // follow so the officer sees what was built.
-                      const wood = conversionDeductions(targetType, deductions);
-                      setShoreType(targetType);
-                      setDeductions(wood);
-                      void handleDeploy(c, targetType, wood);
+                      // `c` there). Both go in explicitly — the form's own state is never
+                      // what the points are built from — and handleDeploy moves the form
+                      // controls only after its guards pass and the points exist (L3).
+                      void handleDeploy(c, targetType, conversionDeductions(targetType, deductions));
                     }}
                   />
                 ))}

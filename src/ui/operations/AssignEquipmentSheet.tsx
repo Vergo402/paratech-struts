@@ -405,7 +405,13 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
                 estimatedLoad={sp.estimatedLoad}
                 currentStruts={sp.groupTotal ?? 1}
                 onAddStruts={allPending ? handleAddStruts : undefined}
-                inventory={inventory}
+                // handleAddStruts deploys a member only when every piece is on the
+                // strut's own rig (bomSourceStatus 'complete'), so the 6×6 re-check
+                // judges that rig alone — a refit piece on another rig locks the tap
+                // instead of restructuring the shore into Pending legs. (The Add Shore
+                // Point modal passes the whole scene: it deploys cross-truck, tracked.)
+                inventory={strutItem ? inventory.filter((i) => i.apparatus === strutItem.apparatus) : inventory}
+                inventoryRig={strutItem?.apparatus}
               />
             );
           })}

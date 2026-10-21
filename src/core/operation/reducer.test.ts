@@ -513,6 +513,41 @@ describe('cutting-queue bookkeeping (#222)', () => {
     expect(byId(back, 'a').cutRecord).toBeUndefined();
     expect(needsRecut(byId(back, 'a'))).toBe(false);
   });
+
+  // #537 extras (2026-10-21): a flagged leg already with the runner. Secured is withheld
+  // on its card; these pin the two fold-level facts that gate rests on.
+  describe('re-cut: a flagged leg at the runner', () => {
+    const W6 = { headerWood: '6x6', footerWood: '6x6', topPlate: 'none', bottomPlate: 'none' } as const;
+    const R4 = { eighths: 45.5 * 8, headerWood: '4x4', footerWood: '4x4' } as const;
+    // Cut at 45½″ on 4×4; a mate's wood edit has since moved this leg to 6×6 (41½″).
+    const flagged = (id: string, over: Partial<ShorePoint> = {}) =>
+      sp(id, {
+        groupId: 'g', groupTotal: 2, measurementEighths: 54 * 8, deductions: W6, status: 'runner',
+        cuttingStartedAt: 100, cuttingDone: true, cutRecord: R4, ...over,
+      });
+
+    it('stepping back runner → cutting keeps Cut Done + its record, so the station offers Re-cut Done', () => {
+      const s = stateWith([flagged('a', { groupIndex: 1, sawId: 'A' }), flagged('b', { groupIndex: 2 })]);
+      expect(needsRecut(byId(s, 'a'))).toBe(true);
+      const back = operationReducer(s, statusAt('a', 'runner', 'cutting', 200));
+      expect(byId(back, 'a')).toMatchObject({ status: 'cutting', cuttingDone: true, cutRecord: R4, cuttingStartedAt: 100 });
+      expect(byId(back, 'a').sawId).toBeUndefined(); // back in the shared queue, unclaimed (#475)
+      expect(needsRecut(byId(back, 'a'))).toBe(true);
+      expect(byId(back, 'b').status).toBe('runner'); // individual edge — the mate stays put
+    });
+
+    it('a mate’s runner → secured never carries a flagged leg with it (individual edge, out of the group zone)', () => {
+      const s = stateWith([
+        flagged('a', { groupIndex: 1 }),
+        flagged('b', { groupIndex: 2, cutRecord: { eighths: 41.5 * 8, headerWood: '6x6', footerWood: '6x6' } }),
+      ]);
+      expect(needsRecut(byId(s, 'a'))).toBe(true);
+      expect(needsRecut(byId(s, 'b'))).toBe(false);
+      const next = operationReducer(s, statusAt('b', 'runner', 'secured', 300));
+      expect(byId(next, 'b').status).toBe('secured');
+      expect(byId(next, 'a').status).toBe('runner');
+    });
+  });
 });
 
 describe('location coordinates — address autocomplete (Places)', () => {

@@ -371,6 +371,22 @@ describe('CuttingStation — re-cut flag', () => {
   const flagged = () =>
     makeSP('r', { measurementEighths: 54 * 8, deductions: W6, cuttingDone: true, cutRecord: R4 });
 
+  it('a flagged leg already sent to the runner shows in the read-only tail with no slide (#537 extras)', () => {
+    render(
+      <CuttingStation
+        queue={[]}
+        sent={[{ ...flagged(), status: 'runner', cuttingStartedAt: 100 }]}
+        onMarkCutDone={noop}
+        onClearCutDone={noop}
+        onSendToRunner={noop}
+        onStepBack={noop}
+      />,
+    );
+    const tail = screen.getByText('Sent to runner').closest('.fs-cutstation-sent') as HTMLElement;
+    expect(within(tail).queryByText(/Slide/)).not.toBeInTheDocument();
+    expect(tail.querySelector('.fs-slide')).toBeNull();
+  });
+
   it('shows the amber chip with what was cut vs. now, and Re-cut Done takes the primary slide', () => {
     render(station(flagged()));
     expect(chip()).toHaveAttribute('role', 'status');

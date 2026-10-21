@@ -79,6 +79,9 @@ export interface RecommendationCardProps {
   variant?: 'deploy' | 'calculator';
   /** Live stock: lets the one-tap 3-Post confirm the 6×6 refit's extensions are on scene. */
   inventory?: StockRow[];
+  /** Set when `inventory` is limited to ONE rig (Assign Equipment deploys a member only
+   *  from the strut's own rig): the extension lock then names that rig, not the scene. */
+  inventoryRig?: string;
 }
 
 
@@ -94,12 +97,13 @@ function threePostLockReason(
   check: Extract<ThreePostRecheck, { fits: false }>,
   model: string,
   strutModel: string,
+  rig?: string,
 ): string {
   const at = measurementText(Math.round(check.strutLength * 8));
   if (check.reason === 'extension-missing') {
     const list = check.extensions.map((e) => `${e}″`).join(' + ');
     const what = check.extensions.length === 1 ? `a ${list} extension` : `${list} extensions`;
-    return `${strutModel} on 6×6 needs ${what} no rig on scene has.`;
+    return `${strutModel} on 6×6 needs ${what} ${rig ? `not on ${rig}` : 'no rig on scene has'}.`;
   }
   if (check.reason === 'capacity') {
     return `${strutModel} won't carry this load as a 3-Post on 6×6 (${check.perStrut.toLocaleString('en-US')} lbs per strut, rated ${check.capacity.toLocaleString('en-US')} lb at ${at}).`;
@@ -191,6 +195,7 @@ export function RecommendationCard({
   onAddStruts,
   variant = 'deploy',
   inventory,
+  inventoryRig,
 }: RecommendationCardProps) {
   // #456 — the acknowledgment is given for ONE risk picture. The sheet keys these
   // cards only on the strut/extension identity, so a peer edit of the load,
@@ -469,7 +474,7 @@ export function RecommendationCard({
                 // The form's lock outranks the 6×6 re-check: it names the input to fix first.
                 disabledReason={
                   deployDisabledReason ??
-                  (threePost?.fits === false ? threePostLockReason(threePost, model, combo.strut.model) : undefined)
+                  (threePost?.fits === false ? threePostLockReason(threePost, model, combo.strut.model, inventoryRig) : undefined)
                 }
                 onPress={() => onAddStruts!(threePost?.fits ? threePost.combo : combo, targetType!, needed)}
               >
