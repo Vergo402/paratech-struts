@@ -23,7 +23,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 6 | `11-adding-a-shore-point.md` | #220 | **PASS** — 28 PASS · 4 SPEC-DRIFT · 1 FAIL (11-33 duplicate #N on concurrent add, filed) | `11/REPORT.md` | #529 |
 | 7 | `12-deploying-a-strut.md` | #221 | **PASS** — 30 PASS · 3 SPEC-DRIFT · 1 FAIL (12-09 system Back, filed) · extra F1 (cross-rig 3-Post one-tap, filed) · 12-02 copy filed · 12-22 would-fit link NOT-BUILT (→ small-features) · probe recorded (2026-10-21, HEAD fb8204a) | `12/REPORT.md` | #539 #540 #541 |
 | 8 | `13-cutting.md` | #222 | **PASS** — 33 PASS · 1 SPEC-DRIFT · 2 NOT-BUILT (13-34 Cutting-role gate, 13-35 actual-cut input → decisions list) · 13-10 copy-only FAIL → spec-correction (R4) · re-cut flag 13-36..38 verified (2026-10-21, HEAD 64bb0b3) | `13/REPORT.md` | (none) |
-| 9 | `14-runner.md` | #223 | brief drafted | — | — |
+| 9 | `14-runner.md` | #223 | **PASS** — 28 PASS · 1 SPEC-DRIFT (14-22 no Runner role gate, ADR-017) · 1 NOT-BUILT (14-27 card accessible name → a11y batch) · 0 FAIL · 14-19 Deferred (#496) · re-cut 14-31/32 verified (2026-10-21, HEAD 183e111) | `14/REPORT.md` | (none) |
 | 10 | `15-secured-returned.md` | #224 | brief drafted | — | — |
 | 11 | `16-end-of-operation.md` | #238 | brief drafted | — | — |
 | 12 | `20-role-assignment-command-transfer.md` | #225 | brief drafted | — | — |
@@ -63,7 +63,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 
 ## Decisions for Alex (NOT-BUILT, not filed)
 
-- 13-34 Cutting-role gate ("Cutting role required to advance…"): no role gate exists on the station slides; ADR-017 keeps the fireground ICS-position-gated, so decide: build for v4.0.x, or drop from spec 13 (any member may cut).
+- 13-34 Cutting-role gate (and 14-22 Runner-role gate, recorded SPEC-DRIFT citing ADR-017 line 40 "A department role never gates a fireground action") ("Cutting role required to advance…"): no role gate exists on the station slides; ADR-017 keeps the fireground ICS-position-gated, so decide: build for v4.0.x, or drop from spec 13 (any member may cut).
 - 13-35 Optional actual-cut entry with expected↔actual diff badge: not built anywhere. Decide: small-features list (v4.1) or drop.
 - 12-22 "would-fit → Quick Find" link on the no-match empty state: not built. Drop or small-features list.
 
