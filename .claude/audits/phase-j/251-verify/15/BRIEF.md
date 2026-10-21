@@ -72,3 +72,10 @@
 - **Two origins = two devices.** Sync is cloud receipt-ordered (ADR-041): the device that reached the cloud first wins; a loser sees a quiet "Synced - N of your changes had no effect" line, never a modal. That is expected in 15-20 and 15-25.
 - **Router quirks:** `<Link>` taps may not route under synthetic clicks (use `location.assign`); lane/card headers are plain buttons.
 - **Role gate (15-23):** with the creator signed in as Admin, back-office permission is not the same as an ICS position. Check My Role (Command tab) before concluding.
+
+## Orchestrator addendum (2026-10-21, HEAD 132001f) — overrides the rows above where they differ
+
+- Wood is required at Add Shore Point (2026-10-17): pick 4×4/4×4 for T-Shores, 6×6/6×6 for a 3-Post.
+- 15-23 role gate: ADR-017 line 40 ("A department role never gates a fireground action") — if no gate exists, record SPEC-DRIFT citing ADR-017, as spec 14 did for 14-22.
+- 15-24 external (visiting-department) equipment copy: Deferred (mutual-aid plumbing, spec 32 / #493) — not driven.
+- Re-cut flag (PR #537/#538): a Secured or Returned card whose cut length changed after Cut Done shows the chip "⚠ Re-cut: cut length changed after Cut Done" but no slide changes (Alex's ruling: the warning shows everywhere; clearing it means stepping back to Cutting). Add Testable **15-30**: flag a Secured 3-Post leg the way spec 14 did (legs 2/3 to Pending, Edit wood, "Update all legs"); the Secured card shows the chip, still offers "Remove & Return Equipment" and "Slide back to Runner"; stepping back lands on a Runner card with the Secured slide withheld (14-31).
