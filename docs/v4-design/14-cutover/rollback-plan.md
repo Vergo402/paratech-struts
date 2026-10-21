@@ -61,7 +61,7 @@ Order: **R0 decide → R1 rules → drain gate → R2 hosting → R3 git → R3b
 
 | # | Action | Who | Command | Gate |
 |---|---|---|---|---|
-| P1 | Remove the root `index.html` localStorage block on `v4-redesign` with one commit that sets the file to `origin/main:index.html` | Orchestrator. The push triggers a beta CI redeploy, which also extends beta (P6) | In a clean `v4-redesign` worktree: `git show origin/main:index.html > index.html`, then commit and push | SERVED-SAME in P4 |
+| P1 | Remove the root `index.html` localStorage block on `v4-redesign` with one commit that sets the file to `origin/main:index.html` | Orchestrator. The push triggers a beta CI redeploy, which also extends beta (P6) | In a clean `v4-redesign` worktree: `git show origin/main:index.html > index.html`, then commit and push | SERVED-SAME in P4. **Done 2026-10-17:** `20fafb4` ([#530](https://github.com/Vergo402/paratech-struts/issues/530)); SERVED-SAME OK against origin |
 | P2 | Fallback tag on the main tip | Fable | `kit/scripts/t0-tag.sh` | Peeled tag on `origin` == `origin/main` (checked by the script) |
 | P3 | Captures into a fresh bundle `$B`, plus the symlink. The bundle holds: the refs; `firebase projects:list` and `gh auth status` (authority gates); the live rules; the RTDB export; the `paratech-c3ab4` export; `functions:list --json`; `hosting:channel:list --json --config kit/killswitch/firebase.json`; the Pages build; the last beta run | Fable (reads only) | `kit/scripts/t0-capture.sh` | `extract.py` stops unless the beta version, URL and expiry are all present, the functions baseline has a hash and a generation per function, and the live rules have a `rules` key |
 | P4 | Git gates | Fable | `kit/scripts/t0-gates.sh` | All must print OK: MERGE-CLEAN, SERVED-SAME, FUNCTIONS-UNCHANGED (since `427b67c`, the last functions deploy; a FLAG instead sends you to P10), TAG |
@@ -395,7 +395,6 @@ Gap 4 is closed: `hosting:clone` (in both channel and version form) and a folder
 
 1. Alex's acceptance of this revision, and his approvals for §6. P5 (L6) and the iPhone rehearsal (L10) should run before the cutover.
 2. Orchestrator tasks:
-   - Commit P1.
    - Commit the kit to `docs/v4-design/14-cutover/rollback/` and the evidence folder under `.claude/audits/phase-j/265-rollback/`.
    - Update runbook Step 5 with P7, P8, P9, T+0, and the `ls-remote` tag check.
    - The earlier scratchpad drills (`rb265/`, `rv265/`) are superseded by this run and can be archived alongside it.
