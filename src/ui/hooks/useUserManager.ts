@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { departmentService } from '@data/dept';
+import { useDepartment } from './useDepartment';
 import type { Member } from '@core/schema';
 
 // The User Manager seam (#381) — the members cold-read (admin screen only, not an
@@ -51,9 +52,14 @@ export function useUserManager(enabled = true): UserManagerApi {
     }
   }, [enabled]);
 
+  // #555 — the members cold-read is also re-run when the VIEWER's own role changes
+  // (memberListener → session.role): an admin promoting/demoting someone whose
+  // /users is already open re-gates live, but the own-row badge and `viewerIsAdmin`
+  // read the members snapshot, so without this they stayed stale until a reload.
+  const { role: ownRole } = useDepartment();
   useEffect(() => {
     void refresh();
-  }, [refresh]);
+  }, [refresh, ownRole]);
 
   return {
     members,

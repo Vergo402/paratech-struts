@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { bootData } from '@data/store';
 import { authSessionSync } from '@data/auth';
-import { eventListenerSync, stateListenerSync, rolesListenerSync, connectivity } from '@data/sync';
+import { eventListenerSync, stateListenerSync, rolesListenerSync, memberListenerSync, connectivity } from '@data/sync';
 import { departmentService } from '@data/dept';
 import { ThemeProvider } from './theme';
 import { Splash } from './Splash';
@@ -53,6 +53,8 @@ function App() {
         // #381: the department ROLE definitions (a one-way pull) — feeds usePermissions so an
         // edited Default / custom role re-gates the app. Same start/teardown lifecycle.
         rolesListenerSync.start();
+        // #555: the member's OWN role assignment, live — an admin reassigning them re-gates the app.
+        memberListenerSync.start();
         connectivity.start();
         // Cloud-sync Increment 4: surface a join that was queued offline (banner reflects
         // it across the reload). authSession auto-completes it on an authenticated boot
