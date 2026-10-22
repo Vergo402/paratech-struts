@@ -33,7 +33,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 16 | `24-tcrm-briefing.md` | #229 | **PASS** — 28 PASS · 1 SPEC-DRIFT (24-21 X keeps the session, R1) · 1 FAIL (24-23 concurrent Begin race → #551) · 3 NOT-BUILT (24-30 Add note, 24-31 per-Group sessions, 24-32 Safety/OSC indicator → decisions) · no RGS gate (ADR-017) (2026-10-21, HEAD cd55558) | `24/REPORT.md` | #551 |
 | 17 | `25-customizing-checklists.md` | #230 | **PASS** — 22 PASS · 2 SPEC-DRIFT (25-07 inline field, 25-32 intro copy) · 3 FAIL (25-04 manageSettings gate → #552; 25-30 + 25-33 + 25-13 polish → #554) · 4 NOT-BUILT (25-29 audit rows → #553; 25-24 drawer provenance + 25-15 AT move buttons + 25-31 TCRM note → decisions) (2026-10-21, HEAD 5a8666e) | `25/REPORT.md` | #552 #553 #554 |
 | 18 | `30-user-management.md` | #233 | **PASS** — 26 PASS · 1 SPEC-DRIFT (30-23 Reactivate) · 3 FAIL (30-17 role reassignment not live → #555; 30-25 offline revoke → #556; 30-30 + audit copy → #557) · 1 NOT-BUILT (30-03 side-by-side faces → decisions) · provisioning (#439) and last-Admin lockout verified (2026-10-21, HEAD 5cb1bbd) | `30/REPORT.md` | #555 #556 #557 |
-| 19 | `31-audit-log-review.md` | #236 | brief drafted | — | — |
+| 19 | `31-audit-log-review.md` | #236 | **PASS** — 27 PASS · 1 SPEC-DRIFT (31-14 no diff) · 4 FAIL (31-10 actor names → #558; 31-27 not live + 31-18 filter + 31-32 targets → #559) · 3 NOT-BUILT (31-20 date filter, 31-26 role-at-time → decisions; 31-33 → a11y batch) · ex-IC keeps IC role after transfer → #560 (2026-10-21, HEAD 7c80e2b) | `31/REPORT.md` | #558 #559 #560 |
 | 20 | `32-mutual-aid-invite-accept.md` | #235 | brief drafted | — | — |
 
 `00-workflow-foundation.md`, `_TEMPLATE.md` and the two `_PHASE-G-GATE-*` files are method docs, not workflows — not verified here.
@@ -59,10 +59,14 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - Probe (spec 12, 2026-10-21): editing a Pending 3-Post (6×6) to T-Shore clears the wood and blocks Save with "Pick header and footer wood" — consistent with the wood-required doctrine (2026-10-17); record in spec 11/12 as intended.
 
 - 24-21: X on the briefing keeps the session open ("Open Briefing" resumes it, "Briefing started" stays logged) — rewrite spec 24 "no session recorded".
+- 31-14: detail is a description line, not a Before/Now diff (events store no before/after) — rewrite spec 31; raw lowercase ids in detail/CSV ("structural · high", "t-shore · Div 1") are copy/minor.
 - 13-10: the too-small chip reads "Opening too small for this header and footer wood — verify measurement" (spec said "standard 6×6 wood"; wood is now picked, so the build wording is right) — rewrite spec 13 Step 2 / SME-3. Also the brief's "5′0⅞″ → 51½″" example is arithmetic-wrong (52⅜″).
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
 ## Decisions for Alex (NOT-BUILT, not filed)
+
+- 31-20 No date/time-range filter on the Audit log (free text only; the placeholder promises "time"). Build, or fix the placeholder and drop from spec.
+- 31-26 No role-at-time beside the actor (not persisted on events). Persist it, or drop from spec.
 
 - 30-03 User manager on tablet/laptop still shows one face (Members OR Roles) with the segmented control, not both side by side. Keep single-face (rewrite spec) or build the two-column layout?
 
