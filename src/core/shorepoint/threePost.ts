@@ -79,9 +79,10 @@ function sameExtensions(a: readonly number[], b: readonly number[]): boolean {
  * store's own share rule (strutLoadShare over the 3-Post's members) against the
  * engine's rating at the exact 6×6 length.
  *
- * `inventory` (optional): when the 6×6 refit needs a DIFFERENT extension set, it is
- * re-checked against stock — a set no rig on scene can supply locks the tap instead of
- * leaving a Pending member (review fix 2026-10-21). Absent → catalog-only, as before.
+ * `inventory` (optional): the extension set the 3-Post deploys — changed or not, and
+ * the already-6×6 case — is re-checked against stock: a set the rig(s) `inventory`
+ * covers can't supply locks the tap instead of leaving a Pending member (review fix
+ * 2026-10-21, #540). Absent → catalog-only, as before.
  */
 export function recheckThreePost(
   combo: StrutCombination,
@@ -109,14 +110,29 @@ export function recheckThreePost(
   const strutLength = effectiveLengthFrom(measurementEighths, six);
   const cutLength = cutLengthInches(draft);
 
+  // #540 — an UNCHANGED extension set must still be on the rig(s) `inventory` covers:
+  // the sheet passes the strut's own rig, and a piece sourced from another rig would
+  // otherwise one-tap a restructure that deploys nothing.
+  const stocked = (extensions: readonly number[]): boolean =>
+    !inventory ||
+    extensions.length === 0 ||
+    findForShorePoint(draft, inventory).some(
+      (c) => c.strut.model === combo.strut.model && sameExtensions(c.extensions, extensions),
+    );
+  const missing = (extensions: number[]): ThreePostRecheck => ({ fits: false, reason: 'extension-missing', strutLength, extensions });
+
   // Already 6×6/6×6: the card's combo was computed at this very geometry.
-  if (!woodChanged) return { fits: true, combo, deductions: six, strutLength, cutLength, woodChanged };
+  if (!woodChanged) {
+    if (!stocked(combo.extensions)) return missing(combo.extensions);
+    return { fits: true, combo, deductions: six, strutLength, cutLength, woodChanged };
+  }
 
   const forModel = findForShorePoint(draft, null).filter((c) => c.strut.model === combo.strut.model);
   const sameSet = forModel.find((c) => sameExtensions(c.extensions, combo.extensions));
   let match = sameSet ?? forModel[0];
   // A changed extension set must also be on scene (stock mode, same strut model).
   let onScene: StrutCombination | undefined;
+  if (sameSet && !stocked(sameSet.extensions)) return missing(sameSet.extensions);
   if (match && !sameSet && inventory) {
     onScene = findForShorePoint(draft, inventory).find((c) => c.strut.model === combo.strut.model);
     if (onScene) match = onScene;

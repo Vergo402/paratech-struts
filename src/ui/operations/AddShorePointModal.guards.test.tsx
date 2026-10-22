@@ -173,6 +173,32 @@ describe('AddShorePointModal — one-tap 3-Post builds on 6×6 (real card)', () 
     expect(onDeployed).not.toHaveBeenCalled();
     expect(mockCommit.mock.calls.filter((c) => c[0].type === 'EquipmentDeployed')).toHaveLength(0);
   });
+
+  it('#540 F1: unchanged set, strut on Truck 3 + the 12″ on Rescue 2 → whole-scene tap stays ENABLED', async () => {
+    // 130″ − 4×4 = 123″ → LS 610 + 12″; 6×6 → 119″, same set. The modal's inventory spans
+    // every rig, so the cross-truck deploy is legitimate (the sheet's rig-filtered one locks).
+    mockInv = [
+      { id: 'inv-610', type: 'strut', model: 'LS 610', system: 'LongShore', apparatus: 'Truck 3', apparatusId: 'a3', quantity: 3, held: 0, available: 3 },
+      { id: 'inv-x12', type: 'extension', system: 'LongShore', length: 12, apparatus: 'Rescue 2', apparatusId: 'a1', quantity: 2, held: 0, available: 2 },
+    ];
+    mockRecs = [
+      findStrutCombinations(130, 30000, 2, mockInv, null, { header: 3.5, sole: 3.5 }).find(
+        (c) => c.strut.model === 'LS 610' && c.extensions.join() === '12',
+      )!,
+    ];
+    const user = userEvent.setup();
+    render(<AddShorePointModal open onClose={() => {}} />);
+    await user.type(screen.getByRole('textbox', { name: 'Feet' }), '10');
+    await user.type(screen.getByRole('textbox', { name: 'Inches' }), '10');
+    for (const name of ['Header wood — required', 'Footer wood — required']) {
+      await user.click(within(screen.getByRole('radiogroup', { name })).getByRole('radio', { name: '4×4' }));
+    }
+    await user.click(screen.getByRole('button', { name: 'Find Available Struts' }));
+    await user.type(screen.getByRole('textbox', { name: /Estimated load/ }), '30000');
+    const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+    expect(add).toBeEnabled();
+    expect(add.parentElement!.querySelector('.fs-rec-add-note')).toHaveTextContent('Deploys all 3 LS 610 + 12″');
+  });
 });
 
 // L3 (#537 extras, 2026-10-21): the one-tap moved the form to 3-Post 6×6 BEFORE

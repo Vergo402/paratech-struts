@@ -170,3 +170,44 @@ describe('recheckThreePost — the 6×6 extension set must be on scene (review f
     if (r.fits) expect(r.combo.extensionSources).toBeUndefined();
   });
 });
+
+describe('recheckThreePost — the extension set must be on the rig(s) inventory covers (#540)', () => {
+  // F1: LS 610 ×3 on Truck 3, the 12″ LongShore extension on Rescue 2 only. T-Shore at
+  // 130″ → LS 610 + 12″ at 4×4 (123″) AND at 6×6 (119″): the set is UNCHANGED.
+  const at = (id: string, apparatus: string, apparatusId: string): Partial<StockRow> => ({ id, apparatus, apparatusId });
+  const ls610: StockRow = { ...strutRow('LS 610', 'LongShore'), ...at('inv-LS 610', 'Truck 3', 'app-t3'), quantity: 3, available: 3 };
+  const ext12: StockRow = { ...extRow(12), ...at('inv-ext-12', 'Rescue 2', 'app-r2'), quantity: 2, available: 2 };
+  const scene = [ls610, ext12];
+  const truck3Only = [ls610]; // the Assign Equipment sheet's rig-filtered inventory
+  const combo = (d = ENGINE_FOUR) => {
+    const c = findStrutCombinations(130, 30000, 2, scene, null, d).find(
+      (x) => x.strut.model === 'LS 610' && x.extensions.join('+') === '12',
+    );
+    if (!c) throw new Error('fixture: no LS 610 + 12″ at 130″');
+    return c;
+  };
+
+  it('rig-filtered inventory (no 12″ on Truck 3) → locked, extension-missing [12]', () => {
+    expect(combo().effectiveLength).toBe(123);
+    expect(recheckThreePost(combo(), FOUR, 30000, 3, truck3Only)).toEqual({
+      fits: false,
+      reason: 'extension-missing',
+      strutLength: 119,
+      extensions: [12],
+    });
+  });
+
+  it('whole-scene inventory (12″ on another rig) → fits with the same extension set', () => {
+    const r = recheckThreePost(combo(), FOUR, 30000, 3, scene);
+    expect(r.fits).toBe(true);
+    if (r.fits) expect(r.combo.extensions).toEqual([12]);
+  });
+
+  it('already-6×6 shore → the early-return path is locked too', () => {
+    const six = combo({ header: 5.5, sole: 5.5 });
+    expect(six.effectiveLength).toBe(119);
+    const r = recheckThreePost(six, SIX, 30000, 3, truck3Only);
+    expect(r).toMatchObject({ fits: false, reason: 'extension-missing', extensions: [12] });
+    expect(recheckThreePost(six, SIX, 30000, 3, scene).fits).toBe(true);
+  });
+});

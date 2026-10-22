@@ -232,6 +232,15 @@ export function AssignEquipmentSheet({ shorePoint: sp, onClose, onDeployed, onPa
     const at = Date.now();
     const gid = newId();
     const deductions = conversionDeductions(targetType, sp.deductions);
+    // #540 — pre-flight the first member BEFORE the restructure hard-deletes the shore:
+    // if this strut's own rig can't source the whole assembly, nothing would deploy.
+    const preflight = bomSourceStatus(combo, deductions, { apparatus: item.apparatus, inventoryId }, inventory);
+    if (preflight.status !== 'complete') {
+      setError(`Nothing would deploy from ${item.apparatus} (${preflight.detail}) — the shore was left as is.`);
+      inFlight.current = false;
+      setDeploying(false);
+      return;
+    }
     const rebuilt: ShorePoint[] = Array.from({ length: targetTotal }, (_, i) => ({
       id: newId(),
       opId: sp.opId,

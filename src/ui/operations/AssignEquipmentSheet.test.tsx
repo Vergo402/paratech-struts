@@ -11,6 +11,14 @@ const mockRecommendations = vi.fn((): StrutCombination[] => []);
 const mockCommit = vi.fn();
 const mockCommitMany = vi.fn();
 const mockShorePoints = vi.fn((): ShorePoint[] => []);
+// Default = the real engine; one test overrides it to exercise handleAddStruts' pre-flight.
+const mockBomStatus = vi.hoisted(() => vi.fn());
+
+vi.mock('@core/shorepoint', async (orig) => {
+  const real = await orig<typeof import('@core/shorepoint')>();
+  mockBomStatus.mockImplementation(real.bomSourceStatus);
+  return { ...real, bomSourceStatus: (...a: Parameters<typeof real.bomSourceStatus>) => mockBomStatus(...a) };
+});
 
 vi.mock('@ui/hooks', () => ({
   useInventory: () => mockInventory(),
@@ -679,6 +687,59 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
       // The Pending T-Shore is NOT hard-deleted and rebuilt into three Pending legs.
       expect(mockCommitMany).not.toHaveBeenCalled();
       expect(mockCommit).not.toHaveBeenCalled();
+    });
+
+    // #540 — F1: the extension set is UNCHANGED at 6×6 (LS 610 + 12″ at 130″, both woods),
+    // but the 12″ is on Rescue 2 while the strut sits on Truck 3. The sheet's rig-filtered
+    // inventory has no 12″, so the tap must lock — it used to stay live and restructure
+    // the shore into three Pending members with nothing deployed.
+    describe('unchanged extension set on another rig (#540)', () => {
+      const FOUR: ShorePoint['deductions'] = { headerWood: '4x4', footerWood: '4x4', topPlate: 'none', bottomPlate: 'none' };
+      const LS610_T3: StockRow = { ...INV_ITEM, id: 'inv-610', model: 'LS 610', apparatus: 'Truck 3', apparatusId: 'app-t3', quantity: 3, available: 3 };
+      const X12_R2: StockRow = { ...X24_R2, id: 'inv-x12', length: 12 };
+      const renderF1 = () => {
+        const inv = [LS610_T3, X12_R2];
+        const combo = findStrutCombinations(130, 30000, 2, inv, null, { header: 3.5, sole: 3.5 }).find(
+          (c) => c.strut.model === 'LS 610' && c.extensions.join() === '12',
+        )!;
+        const sp = threePostSp({ measurementEighths: 130 * 8, estimatedLoad: 30000, deductions: FOUR });
+        mockShorePoints.mockReturnValue([sp]);
+        mockRecommendations.mockReturnValue([combo]);
+        mockInventory.mockReturnValue(inv);
+        render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+        return screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+      };
+
+      it('LS 610 + 12″ with the 12″ only on Rescue 2 → locked, nothing restructured', async () => {
+        const user = userEvent.setup();
+        const add = renderF1();
+        expect(add).toBeDisabled();
+        expect(add.nextElementSibling!.textContent).toBe('LS 610 on 6×6 needs a 12″ extension not on Truck 3.');
+        await user.click(add);
+        expect(mockCommitMany).not.toHaveBeenCalled();
+        expect(mockCommit).not.toHaveBeenCalled();
+      });
+    });
+
+    // Belt and braces: if the card ever lets a refit through that the strut's rig cannot
+    // fully source, handleAddStruts stops BEFORE hard-deleting the shore.
+    it('pre-flights the first member’s sourcing: an incomplete BOM stops before any restructure', async () => {
+      const user = userEvent.setup();
+      const sp = threePostSp();
+      mockShorePoints.mockReturnValue([sp]);
+      mockRecommendations.mockReturnValue([COMBO]);
+      mockInventory.mockReturnValue([R2_THREE]);
+      render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={vi.fn()} />);
+      // The card's own checks see the real answer; only the handler's pre-flight (the
+      // 6×6 deductions) lies.
+      const real = mockBomStatus.getMockImplementation()!;
+      mockBomStatus.mockImplementation((...args) =>
+        args[1].headerWood === '6x6' ? { status: 'cross-truck', detail: '12″ extension from Rescue 2', bom: [] } : real(...args),
+      );
+      await user.click(screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' }));
+      expect(screen.getByText(/Nothing would deploy from Rescue 2 \(12″ extension from Rescue 2\) — the shore was left as is\./)).toBeInTheDocument();
+      expect(mockCommitMany).not.toHaveBeenCalled();
+      mockBomStatus.mockImplementation(real);
     });
 
     it('the 12″ on the strut’s own rig → the tap stays live and all three deploy', async () => {
