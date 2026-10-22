@@ -4,6 +4,8 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 
 **Exit test:** every row below has a recorded verdict of PASS (or SPEC-DRIFT accepted per the ruling below), then `gh issue close 251`.
 
+**Status 2026-10-21:** all 20 rows driven and recorded (rows 7–20 this day, HEAD fb8204a → c84ef28). Every workflow's main path passes; row 15 (Task Level Checklist) passes on mechanics and fails on scoping (#550). 27 findings filed as `[v4.0.x]` sub-issues of #251 (#521 existing, #526–#529, #539–#560). **#251 stays OPEN until Alex rules on the "Decisions for Alex" list below** (NOT-BUILT items that are either spec rewrites or v4.0.x builds); the a11y batch and the spec-correction batch are filed as one issue each after that ruling.
+
 ## Method (one pass per spec)
 
 1. **Criteria brief** (`<NN>/BRIEF.md`) — the June spec reconciled against the Phase G gate review §10 deferrals, ADR-023…042, `.claude/rules/v4-phase-status.md` and Phase J rulings. Each criterion tagged **Testable / Superseded (ADR-N or issue) / Deferred**. Only Testable criteria are driven. Drafted by a delegated agent, reviewed by the orchestrator before dispatch.
@@ -34,7 +36,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 17 | `25-customizing-checklists.md` | #230 | **PASS** — 22 PASS · 2 SPEC-DRIFT (25-07 inline field, 25-32 intro copy) · 3 FAIL (25-04 manageSettings gate → #552; 25-30 + 25-33 + 25-13 polish → #554) · 4 NOT-BUILT (25-29 audit rows → #553; 25-24 drawer provenance + 25-15 AT move buttons + 25-31 TCRM note → decisions) (2026-10-21, HEAD 5a8666e) | `25/REPORT.md` | #552 #553 #554 |
 | 18 | `30-user-management.md` | #233 | **PASS** — 26 PASS · 1 SPEC-DRIFT (30-23 Reactivate) · 3 FAIL (30-17 role reassignment not live → #555; 30-25 offline revoke → #556; 30-30 + audit copy → #557) · 1 NOT-BUILT (30-03 side-by-side faces → decisions) · provisioning (#439) and last-Admin lockout verified (2026-10-21, HEAD 5cb1bbd) | `30/REPORT.md` | #555 #556 #557 |
 | 19 | `31-audit-log-review.md` | #236 | **PASS** — 27 PASS · 1 SPEC-DRIFT (31-14 no diff) · 4 FAIL (31-10 actor names → #558; 31-27 not live + 31-18 filter + 31-32 targets → #559) · 3 NOT-BUILT (31-20 date filter, 31-26 role-at-time → decisions; 31-33 → a11y batch) · ex-IC keeps IC role after transfer → #560 (2026-10-21, HEAD 7c80e2b) | `31/REPORT.md` | #558 #559 #560 |
-| 20 | `32-mutual-aid-invite-accept.md` | #235 | brief drafted | — | — |
+| 20 | `32-mutual-aid-invite-accept.md` | #235 | **PASS (dept-level half)** — 12 PASS · 1 SPEC-DRIFT (32-05 guest wall, 34c0822) · 1 FAIL (32-11 offline join = existing #521, evidence added) · incident-level half Deferred (#493) · dept QR is a bare code, not a link (note) (2026-10-21, HEAD c84ef28) | `32/REPORT.md` | #521 (existing) |
 
 `00-workflow-foundation.md`, `_TEMPLATE.md` and the two `_PHASE-G-GATE-*` files are method docs, not workflows — not verified here.
 
@@ -52,7 +54,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 05: no "Done" on Add equipment (dismiss-only); form modals ignore backdrop taps (`Modal.tsx`); CSV-only import, no orphan modal, result block (#514) — see `05/BRIEF.md` §3.
 - 08-02: same dead Settings branch — "Join existing department" (`DepartmentPage.tsx:69`) never renders.
 - 07: Settings → Department "not part of a department yet" branch is unreachable (RequireDepartment wraps all Settings, `router.tsx:101-110`) — spec + dead branch in `DepartmentPage.tsx`; no "Claim department" banner (#264 fresh-start).
-- 32 + IA 52: still say "Ships v4.0"; ADR-022 amended 2026-08-17, deferred to #493.
+- 32 + IA 52: still say "Ships v4.0"; ADR-022 amended 2026-08-17, deferred to #493. 32-05: guests are walled from Operations/Inventory/Command/Settings (34c0822); Quick Find stays open — rewrite spec 32 Step 2-G. ADR-022 addendum says the join QR is a web link; the shipped dept QR is a bare code with no `?code=` route — align the addendum or the QR.
 
 - 12-03: card copy drops "at this load" (#432 mess-map #15); 12-12: truck source lives in Details, not the card face (card.md:62); 12-20: over-capacity is deployable after acknowledgment via "Deploy N of M anyway" (accepted mockup 2026-07-01) — rewrite spec 12 Step 2-W.
 - 12-22: the spec's "would-fit → Quick Find" link does not exist (NOT-BUILT) — decide: drop from spec or small-features list.
