@@ -209,6 +209,48 @@ describe('session store (guest ⇄ member, persisted)', () => {
     await session.setGuest();
     expect(await db.meta.get(MEMBERSHIPS_KEY)).toBeDefined();
   });
+
+  // #555 — a role reassignment arrives from the cloud while signed in.
+  it('setRole updates the live store and survives a hydrate round-trip (#555)', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'default', inviteCode: 'ABCD-2345' });
+    await session.setRole('admin');
+    expect(session.store.getState().role).toBe('admin');
+
+    const reopened = createDB(name);
+    const next = createSessionStore(reopened);
+    await next.boot(UID);
+    expect(next.store.getState().role).toBe('admin');
+    expect(next.store.getState().departmentId).toBe('dept-1');
+    reopened.close();
+  });
+
+  it('setRole updates the account-keyed memory (sign-out → sign-in restores the NEW role) (#555)', async () => {
+    await session.boot(UID);
+    await session.setMember(member);
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'default', inviteCode: 'ABCD-2345' });
+    await session.setRole('admin');
+    await session.setGuest();
+    await session.setMember(member);
+    expect(session.store.getState().role).toBe('admin');
+  });
+
+  it('setRole is a no-op for a guest, with no dept, or an unchanged role (#555)', async () => {
+    await session.boot(UID);
+    await session.setRole('admin');
+    expect(session.store.getState().role).toBeNull();
+    expect(await db.meta.get(SESSION_KEY)).toBeUndefined();
+
+    await session.setMember(member);
+    await session.setRole('admin'); // member but no department
+    expect(session.store.getState().role).toBeNull();
+
+    await session.setDepartment({ id: 'dept-1', name: 'Hamden Fire Rescue', role: 'admin', inviteCode: 'ABCD-2345' });
+    const before = await db.meta.get(SESSION_KEY);
+    await session.setRole('admin'); // unchanged
+    expect(await db.meta.get(SESSION_KEY)).toEqual(before);
+  });
 });
 
 // New-device recovery (#371 follow-up): the local account-keyed memory is empty on a

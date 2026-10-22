@@ -62,6 +62,10 @@ export interface SessionStoreApi {
   setGuest(): Promise<void>;
   /** Workflow 07 — attach the founded department + the member's role + invite code. */
   setDepartment(dept: { id: string; name: string; role: string; inviteCode: string }): Promise<void>;
+  /** #555 — the member's role ASSIGNMENT changed in the cloud (an admin reassigned them):
+   *  persist + remember it so it survives reload and a sign-out → sign-in. No-op for a
+   *  guest, no dept, or an unchanged role. */
+  setRole(role: string): Promise<void>;
   /** Seed the cloud reverse index (/userDepts/{uid}) from current state so a new
    *  device can recover this account's department. Idempotent fire-and-forget;
    *  called on every authenticated boot (authSession) AND on create/join. */
@@ -271,6 +275,21 @@ export function createSessionStore(db: FieldShoreDB = defaultDb): SessionStoreAp
       // Seed the cloud reverse index immediately on create/join, so a second device
       // can recover before this account's next authenticated boot.
       seedUserDeptIndex();
+    },
+
+    async setRole(role) {
+      const s = store.getState();
+      const identity = s.identity;
+      if (identity.kind !== 'member' || !s.departmentId || s.role === role) return;
+      await persist({ identity, ...deptOf(s), role });
+      // Update the account-keyed memory too, or a sign-out → sign-in would restore the stale role.
+      const map = await readMemberships();
+      const prev = map[identity.accountId];
+      if (prev) {
+        map[identity.accountId] = { ...prev, role };
+        await writeMemberships(map);
+      }
+      store.setState((cur) => ({ ...cur, role }), true);
     },
 
     seedUserDeptIndex,

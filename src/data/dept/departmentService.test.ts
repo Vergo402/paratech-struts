@@ -708,6 +708,28 @@ describe('departmentService — invite-code lifecycle (#423)', () => {
     // Validation-failing input while disconnected: the ctx guard must answer first.
     expect(await bareSvc.setMemberRank('uid-x', 'r'.repeat(100))).toEqual(notConnected);
   });
+
+  // #556 — RTDB queues offline writes forever; governance mutations refuse up front.
+  it('admin governance writes are refused while offline — nothing is queued (#556)', async () => {
+    let online = false;
+    const offSvc = createDepartmentService({ session: () => session, db, online: () => online });
+    updateMock.mockClear();
+    setMock.mockClear();
+    for (const res of [
+      await offSvc.revokeMember('uid-x'),
+      await offSvc.assignRole('uid-x', 'role-x'),
+      await offSvc.deleteRole('custom-role-1'),
+      await offSvc.regenerateInviteCode(),
+    ]) {
+      expect(res.ok).toBe(false);
+      expect(res).toMatchObject({ reason: expect.stringMatching(/offline/i) });
+    }
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(setMock).not.toHaveBeenCalled();
+    online = true; // positive control: the same service writes once back online
+    expect((await offSvc.assignRole('uid-x', 'role-x')).ok).toBe(true);
+    expect(updateMock).toHaveBeenCalled();
+  });
 });
 
 describe('departmentService — admin-provisioned personnel (#439)', () => {

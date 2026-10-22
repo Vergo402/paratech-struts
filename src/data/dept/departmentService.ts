@@ -220,11 +220,21 @@ export function createDepartmentService(deps: {
   db?: FieldShoreDB;
   /** Outbox timing overrides (tests only — production uses the defaults). */
   timeouts?: { outboxSet?: number; createWait?: number; read?: number };
+  /** Connectivity probe (tests inject; default = the sync status store's `online`). */
+  online?: () => boolean;
 }): DepartmentServiceApi {
   const db = deps.db ?? globalDb;
   const outboxSetMs = deps.timeouts?.outboxSet ?? OUTBOX_SET_TIMEOUT_MS;
   const createWaitMs = deps.timeouts?.createWait ?? CREATE_WAIT_MS;
   const readMs = deps.timeouts?.read ?? READ_TIMEOUT_MS;
+  // `!== false`: under Node's bare `navigator` (tests) onLine is undefined — only a real offline refuses.
+  const isOnline = deps.online ?? (() => syncStatusStore.store.getState().online !== false);
+  // #556: RTDB queues an offline write forever (the modal would hang, then the change
+  // lands on reconnect even after Cancel) — governance writes are refused up front instead.
+  const OFFLINE_REASON = "You're offline — this change needs a connection.";
+  function offlineReason(): string | null {
+    return isOnline() ? null : OFFLINE_REASON;
+  }
   let retrying = false; // one retry at a time — a rapid double 'online' must not race two joins
   let rerun = false; // a retry arrived while one was in flight → run once more after it (#466)
 
@@ -721,7 +731,7 @@ export function createDepartmentService(deps: {
     }
   }
 
-  // The uniform admin-mutation skeleton (#435 dedup): ctx guard → one cloud
+  // The uniform admin-mutation skeleton (#435 dedup): ctx guard → offline guard (#556) → one cloud
   // write → fire-and-forget audit entry. Pre-write validation stays at each
   // site (it owns its reasons) and sits BEHIND an inline ctx guard — a
   // disconnected admin must get 'Not connected', never a validation reason
@@ -734,6 +744,8 @@ export function createDepartmentService(deps: {
   ): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     try {
       await write(c);
     } catch (err) {
@@ -754,6 +766,8 @@ export function createDepartmentService(deps: {
   // Admin sets another member's rank (#321 inc3). manageUsers-gated by the rules; audited.
   async function setMemberRank(uid: string, rank: string): Promise<AdminMutationResult> {
     if (!adminCtx()) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     const trimmed = rank.trim();
     if (trimmed.length > 80) return { ok: false, reason: 'Rank is too long (max 80 characters).' };
     return adminWrite(
@@ -792,6 +806,8 @@ export function createDepartmentService(deps: {
   async function createRole(name: string, permissions: Permissions): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     const trimmed = name.trim();
     if (!trimmed) return { ok: false, reason: 'A role name is required.' };
     const roleId = newId();
@@ -813,6 +829,8 @@ export function createDepartmentService(deps: {
   ): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     if (roleId === ADMIN_ROLE_ID) return { ok: false, reason: 'The Admin role is fixed and cannot be edited.' };
     const changes: Record<string, unknown> = {};
     if (patch.name !== undefined) {
@@ -830,6 +848,8 @@ export function createDepartmentService(deps: {
   async function deleteRole(roleId: string): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     if (roleId === ADMIN_ROLE_ID || roleId === DEFAULT_ROLE_ID) {
       return { ok: false, reason: 'Built-in roles cannot be deleted.' };
     }
@@ -870,6 +890,8 @@ export function createDepartmentService(deps: {
   // Regenerate, which rotates rather than leaving the dept code-less.
   async function revokeInviteCode(): Promise<AdminMutationResult> {
     if (!adminCtx()) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     const code = deps.session().store.getState().inviteCode;
     if (!code) return { ok: false, reason: 'No invite code on record for this department.' };
     return adminWrite(
@@ -889,6 +911,8 @@ export function createDepartmentService(deps: {
   async function regenerateInviteCode(): Promise<AdminMutationResult & { code?: string }> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     const s = deps.session().store.getState();
     if (s.identity.kind !== 'member' || !s.departmentId || !s.departmentName || !s.role) {
       return { ok: false, reason: 'Not connected to a department.' };
@@ -961,6 +985,8 @@ export function createDepartmentService(deps: {
   ): Promise<AdminMutationResult & { uid?: string }> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     let uid: string;
     try {
       const res = await callFunction<
@@ -1015,6 +1041,8 @@ export function createDepartmentService(deps: {
   async function changeMemberEmail(uid: string, email: string): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     const addr = email.trim();
     if (!addr) return { ok: false, reason: 'Enter an email first.' };
     try {
@@ -1029,6 +1057,8 @@ export function createDepartmentService(deps: {
   async function resetMemberPassword(uid: string, starterPassword: string): Promise<AdminMutationResult> {
     const c = adminCtx();
     if (!c) return { ok: false, reason: 'Not connected to a department.' };
+    const off = offlineReason();
+    if (off) return { ok: false, reason: off };
     try {
       await callFunction('adminUpdateAccount', {
         deptId: c.deptId,
