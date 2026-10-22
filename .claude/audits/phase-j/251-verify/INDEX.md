@@ -4,7 +4,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 
 **Exit test:** every row below has a recorded verdict of PASS (or SPEC-DRIFT accepted per the ruling below), then `gh issue close 251`.
 
-**Status 2026-10-21:** all 20 rows driven and recorded (rows 7–20 this day, HEAD fb8204a → c84ef28). Every workflow's main path passes; row 15 (Task Level Checklist) passes on mechanics and fails on scoping (#550). 27 findings filed as `[v4.0.x]` sub-issues of #251 (#521 existing, #526–#529, #539–#560). **#251 stays OPEN until Alex rules on the "Decisions for Alex" list below** (NOT-BUILT items that are either spec rewrites or v4.0.x builds); the a11y batch and the spec-correction batch are filed as one issue each after that ruling.
+**Status 2026-10-21:** all 20 rows driven and recorded (rows 7–20 this day, HEAD fb8204a → c84ef28). Every workflow's main path passes; row 15 (Task Level Checklist) passes on mechanics and fails on scoping (#550). 27 findings filed as `[v4.0.x]` sub-issues of #251 (#521 existing, #526–#529, #539–#560). **Decisions ruled 2026-10-21 (R6–R9); a11y batch filed as #565, spec-correction pass as #566, v4.1 list as #564; #251 CLOSED 2026-10-21.**
 
 ## Method (one pass per spec)
 
@@ -47,9 +47,13 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - **R3 (Alex, 2026-10-13):** run straight through the ledger in order; stop only for decisions that are Alex's.
 
 - **R4 (orchestrator, 2026-10-13):** a FAIL that is only a spec-copy difference where the build meets the spec's intent goes to the spec-correction batch below, not to an issue (first case: 05-09, no "Done" on the Add equipment sheet — dismiss-only meets "no Save step"). A workflow's row reads **PASS** when no FAIL blocks its main path; minor FAILs are filed and listed.
+- **R6 (Alex, 2026-10-21):** v4.0 ships the fireground UNGATED — any signed-in member may cut, run, secure and return; specs 13/14/15 rows and ADR-017 line 39 are rewritten in the spec-correction pass (#566).
+- **R7 (Alex, 2026-10-21):** #550 is fixed account-only (checks follow the signed-in account); Group selector + Section-Chief read view → v4.1 (#564).
+- **R8 (Alex, 2026-10-21):** build the crew-visible "Customized by <dept>" marker (#562) and the read-only IC checklist view for the Ops Chief / Group Supervisors (#563) for v4.0.x.
+- **R9 (Alex, 2026-10-21):** the twelve small NOT-BUILT items go to the v4.1 small-features list (#564), not v4.0.
 - **R5 (orchestrator, 2026-10-13):** #251 findings go on board 2 as `[v4.0.x]` sub-issues of #251, Status Todo, Priority 12 (after the current P1–P11 order) until Alex re-ranks them.
 
-## Spec-correction batch (R1/R4 — fix the June docs later in one pass)
+## Spec-correction batch — filed as #566 (2026-10-21)
 
 - 05: no "Done" on Add equipment (dismiss-only); form modals ignore backdrop taps (`Modal.tsx`); CSV-only import, no orphan modal, result block (#514) — see `05/BRIEF.md` §3.
 - 08-02: same dead Settings branch — "Join existing department" (`DepartmentPage.tsx:69`) never renders.
@@ -65,34 +69,11 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 13-10: the too-small chip reads "Opening too small for this header and footer wood — verify measurement" (spec said "standard 6×6 wood"; wood is now picked, so the build wording is right) — rewrite spec 13 Step 2 / SME-3. Also the brief's "5′0⅞″ → 51½″" example is arithmetic-wrong (52⅜″).
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
-## Decisions for Alex (NOT-BUILT, not filed)
+## Decisions for Alex — RESOLVED 2026-10-21 (R6–R9)
 
-- 31-20 No date/time-range filter on the Audit log (free text only; the placeholder promises "time"). Build, or fix the placeholder and drop from spec.
-- 31-26 No role-at-time beside the actor (not persisted on events). Persist it, or drop from spec.
+Position gate → ungated (R6, spec pass #566). #550 → account only (R7). "Customized by" marker → #562; Ops-Chief read view → #563 (R8). Twelve small items → #564 (R9).
 
-- 30-03 User manager on tablet/laptop still shows one face (Members OR Roles) with the segmented control, not both side by side. Keep single-face (rewrite spec) or build the two-column layout?
-
-- 24-30 Briefing has no "Add note" field; 24-31 one op-wide briefing session, not per Group; 24-32 no "briefing in progress" indicator for the Safety Officer / Operations Chief. Drop from spec or small-features list (v4.1)?
-
-- **#550 scope:** key the Task Level Checklist by account only (minimum, matches 552faca), or by Group/task with a selector and a Section-Chief read view (gate M13 as written)? The issue is filed; this is the size of the fix.
-- 23-07 Task checklist opens with every section expanded (spec: one at a time; the IC checklist auto-collapses completed sections). Align or rewrite spec.
-- 23-26 / 25-24 No "Customized by <dept>" cue on the IC, Task Level or briefing screens (only Settings shows it; the Settings intro copy promises crews see it). Add the marker to the three surfaces, or rewrite the intro copy and spec.
-- 25-15 No Move up/down/under buttons in the checklist editor (arrow keys on the grip are the only keyboard path). Build for AT, or accept arrows + fix the focus drop (#554).
-- 25-31 No "Content ships v4.1 · structure on" note on the TCRM card. Drop from spec.
-
-- 22-11 No read-only IC Checklist view for the Operations Section Chief / Group Supervisors (data syncs, no surface). Build for v4.0.x, or IC-only by design?
-- 22-26 The ICS-201 card shows "n set · total" only, not per-status counts (spec wireframe). Keep the condensed form (rewrite spec) or add the per-status row?
-
-- 21-31 Hazards cannot be edited or deleted (only Mitigate / Reopen). Keep as append-only by design (ICS-208 register), or build Edit for typos?
-- 21-29 Export ICS-208 CSV records no audit-log event. Add one, or drop the spec line.
-
-- 16-16 The End Operation modal has no "N shore points · N personnel" summary line. Drop from spec or small-features list.
-
-- **Fireground position gate (13-34 Cutting, 14-22 Runner, 15-23 Secured/Return):** no gate of any kind exists on the slides or Remove & Return. ADR-017 line 40 says a department ROLE never gates a fireground action, but line 39 says ICS POSITIONS do — the build implements neither. Decide: (a) v4.0 ships ungated (rewrite the three spec rows + amend ADR-017 line 39), or (b) build the ICS-position gate as a v4.0.x item. ("Cutting role required to advance…"): no role gate exists on the station slides; ADR-017 keeps the fireground ICS-position-gated, so decide: build for v4.0.x, or drop from spec 13 (any member may cut).
-- 13-35 Optional actual-cut entry with expected↔actual diff badge: not built anywhere. Decide: small-features list (v4.1) or drop.
-- 12-22 "would-fit → Quick Find" link on the no-match empty state: not built. Drop or small-features list.
-
-## Accessibility batch (one issue at the end, not per spec)
+## Accessibility batch — filed as #565 (2026-10-21)
 
 - 07-07 Department name input has no `aria-invalid`/`aria-describedby`; error `<p>` not tied to the field.
 - 07-12 / 07-26 No spoken "Invite code copied." / "<Dept> is ready" announcement (no live region in the sheet).
