@@ -710,6 +710,29 @@ describe('AssignEquipmentSheet (#221 step 2)', () => {
         return screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
       };
 
+      it('the 12″ on BOTH rigs → the tap is live and all three deploy from Truck 3 (#540 drive F-A)', async () => {
+        const user = userEvent.setup();
+        const onPartial = vi.fn();
+        const X12_T3: StockRow = { ...X12_R2, id: 'inv-x12-t3', apparatus: 'Truck 3', apparatusId: 'app-t3' };
+        const inv = [LS610_T3, X12_R2, X12_T3]; // the scene-wide engine pins the Rescue 2 row first
+        const combo = findStrutCombinations(130, 30000, 2, inv, null, { header: 3.5, sole: 3.5 }).find(
+          (c) => c.strut.model === 'LS 610' && c.extensions.join() === '12',
+        )!;
+        expect(combo.extensionSources).toEqual([{ length: 12, inventoryId: 'inv-x12' }]);
+        const sp = threePostSp({ measurementEighths: 130 * 8, estimatedLoad: 30000, deductions: FOUR });
+        mockShorePoints.mockReturnValue([sp]);
+        mockRecommendations.mockReturnValue([combo]);
+        mockInventory.mockReturnValue(inv);
+        render(<AssignEquipmentSheet shorePoint={sp} onClose={vi.fn()} onDeployed={vi.fn()} onPartialDeployed={onPartial} />);
+        const add = screen.getByRole('button', { name: 'Add 2 more struts — deploy as 3-Post on 6×6' });
+        expect(add).toBeEnabled();
+        await user.click(add);
+        const deploys = mockCommit.mock.calls.map((c) => c[0]).filter((e) => e.type === 'EquipmentDeployed');
+        expect(deploys).toHaveLength(3);
+        for (const d of deploys) expect(d.deployedBom.every((c: { source: string }) => c.source === 'Truck 3')).toBe(true);
+        expect(onPartial).toHaveBeenCalledWith(expect.any(Array), [], '3× LS 610 + 12″');
+      });
+
       it('LS 610 + 12″ with the 12″ only on Rescue 2 → locked, nothing restructured', async () => {
         const user = userEvent.setup();
         const add = renderF1();

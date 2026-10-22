@@ -203,6 +203,20 @@ describe('recheckThreePost — the extension set must be on the rig(s) inventory
     if (r.fits) expect(r.combo.extensions).toEqual([12]);
   });
 
+  it('the 12″ on BOTH rigs: the card’s source (Rescue 2) is swapped for the rig’s own row', () => {
+    // Whole-scene recommendations pin the first 12″ row found (Rescue 2); the sheet's
+    // deploy pre-flight (bomSourceStatus) would then read it as cross-truck and refuse.
+    const ext12T3: StockRow = { ...extRow(12), ...at('inv-ext-12-t3', 'Truck 3', 'app-t3'), quantity: 3, available: 3 };
+    const c = combo();
+    expect(c.extensionSources).toEqual([{ length: 12, inventoryId: 'inv-ext-12' }]);
+    const r = recheckThreePost(c, FOUR, 30000, 3, [ls610, ext12T3]);
+    expect(r.fits).toBe(true);
+    if (r.fits) expect(r.combo.extensionSources).toEqual([{ length: 12, inventoryId: 'inv-ext-12-t3' }]);
+    const six = recheckThreePost(combo({ header: 5.5, sole: 5.5 }), SIX, 30000, 3, [ls610, ext12T3]);
+    if (six.fits) expect(six.combo.extensionSources).toEqual([{ length: 12, inventoryId: 'inv-ext-12-t3' }]);
+    expect(six.fits).toBe(true);
+  });
+
   it('already-6×6 shore → the early-return path is locked too', () => {
     const six = combo({ header: 5.5, sole: 5.5 });
     expect(six.effectiveLength).toBe(119);

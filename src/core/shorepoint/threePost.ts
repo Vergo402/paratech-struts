@@ -112,19 +112,23 @@ export function recheckThreePost(
 
   // #540 — an UNCHANGED extension set must still be on the rig(s) `inventory` covers:
   // the sheet passes the strut's own rig, and a piece sourced from another rig would
-  // otherwise one-tap a restructure that deploys nothing.
-  const stocked = (extensions: readonly number[]): boolean =>
-    !inventory ||
-    extensions.length === 0 ||
-    findForShorePoint(draft, inventory).some(
-      (c) => c.strut.model === combo.strut.model && sameExtensions(c.extensions, extensions),
-    );
+  // otherwise one-tap a restructure that deploys nothing. The stock-mode combo's
+  // extension sources ride on (null = catalog-only, nothing to re-source): the card's
+  // own sources may point at another rig even when this rig stocks the same piece.
+  const stocked = (extensions: readonly number[]): StrutCombination | null | undefined =>
+    !inventory || extensions.length === 0
+      ? null
+      : findForShorePoint(draft, inventory).find(
+          (c) => c.strut.model === combo.strut.model && sameExtensions(c.extensions, extensions),
+        );
   const missing = (extensions: number[]): ThreePostRecheck => ({ fits: false, reason: 'extension-missing', strutLength, extensions });
 
   // Already 6×6/6×6: the card's combo was computed at this very geometry.
   if (!woodChanged) {
-    if (!stocked(combo.extensions)) return missing(combo.extensions);
-    return { fits: true, combo, deductions: six, strutLength, cutLength, woodChanged };
+    const own = stocked(combo.extensions);
+    if (own === undefined) return missing(combo.extensions);
+    const refit = own ? { ...combo, extensionSources: own.extensionSources } : combo;
+    return { fits: true, combo: refit, deductions: six, strutLength, cutLength, woodChanged };
   }
 
   const forModel = findForShorePoint(draft, null).filter((c) => c.strut.model === combo.strut.model);
@@ -132,7 +136,8 @@ export function recheckThreePost(
   let match = sameSet ?? forModel[0];
   // A changed extension set must also be on scene (stock mode, same strut model).
   let onScene: StrutCombination | undefined;
-  if (sameSet && !stocked(sameSet.extensions)) return missing(sameSet.extensions);
+  const sameSetStocked = sameSet ? stocked(sameSet.extensions) : null;
+  if (sameSetStocked === undefined) return missing(sameSet!.extensions);
   if (match && !sameSet && inventory) {
     onScene = findForShorePoint(draft, inventory).find((c) => c.strut.model === combo.strut.model);
     if (onScene) match = onScene;
@@ -175,7 +180,13 @@ export function recheckThreePost(
   const refit: StrutCombination = {
     ...match,
     strut: combo.strut,
-    extensionSources: onScene ? onScene.extensionSources : sameSet ? combo.extensionSources : undefined,
+    extensionSources: onScene
+      ? onScene.extensionSources
+      : sameSetStocked
+        ? sameSetStocked.extensionSources
+        : sameSet
+          ? combo.extensionSources
+          : undefined,
   };
   return { fits: true, combo: refit, deductions: six, strutLength, cutLength, woodChanged };
 }
