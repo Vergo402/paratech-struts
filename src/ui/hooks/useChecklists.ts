@@ -9,10 +9,11 @@ import { useCommandSelf } from './useCommandSelf';
 import { useMyRole } from './useMyRoles';
 
 /** One checklist instance's attestations + the tap-toggle actions. `instanceId`
- *  scopes the instance: the operation id for the IC Command Checklist, a Group/task
- *  id for the Task Level Checklist. `fallbackRole` is the spelled-out title stamped
- *  when this device has no explicit My Role (e.g. the IC Command Checklist is
- *  IC-gated, so its caller passes "Incident Commander"). */
+ *  scopes the instance: the operation id for the IC Command Checklist, the officer's
+ *  account id (device uid for guests) for the Task Level Checklist (#550).
+ *  `fallbackRole` is the spelled-out title stamped when this device has no explicit
+ *  My Role (e.g. the IC Command Checklist is IC-gated, so its caller passes
+ *  "Incident Commander"). */
 export interface ChecklistApi {
   attestations: ChecklistInstance; // itemId -> { by, role, at }
   check(itemId: string): Promise<void>;
