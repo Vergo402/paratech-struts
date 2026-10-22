@@ -1,5 +1,6 @@
 import type { FieldShoreEvent } from '@core/schema';
 import { operationStore, type CommitResult } from '@data/store';
+export type { CommitResult };
 
 /**
  * The mutation doorway. Every screen dispatches events through this — never

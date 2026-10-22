@@ -1,0 +1,38 @@
+
+ RUN  v2.1.9 /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/cmd-transfer-integrity-5f0f22
+
+ ✓ src/ui/command/OrgTree.test.tsx (4 tests) 73ms
+ ✓ src/ui/command/IncidentChips.test.tsx (16 tests) 232ms
+ ✓ src/ui/command/SitStatRollup.test.tsx (5 tests) 364ms
+ ✓ src/core/org/orgReducer.test.ts (21 tests) 7ms
+ ✓ src/ui/command/EndOperationButton.test.tsx (4 tests) 817ms
+   ✓ EndOperationButton confirm (#499) > shows the held-equipment warning and an unchecked "back on the rigs" checkbox only when shores still hold gear 352ms
+ ✓ src/ui/command/TransferCommand.test.tsx (9 tests) 1104ms
+   ✓ TransferCommand — apparatus targets (#489) > typing a name still mints an INDIVIDUAL ref and clears a picked rig 314ms
+ ✓ src/ui/command/NodeSheet.test.tsx (1 test) 436ms
+   ✓ NodeSheet — role history (#499) > a change that lost a race reads muted as "<description> — no effect" 435ms
+ ✓ src/core/org/transfer.test.ts (17 tests) 7ms
+ ✓ src/ui/command/HazardLog.test.tsx (13 tests) 1379ms
+   ✓ HazardLog > add: commits a well-formed HazardLogged event 673ms
+ ✓ src/core/org/resource.test.ts (13 tests) 3ms
+ ✓ src/ui/command/CommandRail.test.tsx (28 tests) 1763ms
+ ✓ src/core/audit/describe.test.ts (11 tests) 46ms
+ ✓ src/core/org/account-identity.test.ts (17 tests) 10ms
+ ✓ src/ui/command/planDrop.test.ts (14 tests) 7ms
+ ✓ src/core/org/library.test.ts (10 tests) 5ms
+ ✓ src/core/audit/overridden.test.ts (7 tests) 5ms
+ ✓ src/core/org/reorder.test.ts (7 tests) 6ms
+ ✓ src/core/org/history.test.ts (4 tests) 2ms
+ ✓ src/core/org/defaultTree.test.ts (6 tests) 3ms
+ ✓ src/core/org/tree.test.ts (7 tests) 33ms
+ ✓ src/ui/command/useElapsed.test.ts (5 tests) 3ms
+ ✓ src/core/org/span.test.ts (4 tests) 38ms
+ ✓ src/ui/command/pinchZoom.test.ts (4 tests) 4ms
+ ✓ src/ui/command/edgeStep.test.ts (3 tests) 1ms
+
+ Test Files  24 passed (24)
+      Tests  230 passed (230)
+   Start at  07:27:38
+   Duration  8.77s (transform 3.37s, setup 4.01s, collect 12.77s, tests 6.35s, environment 9.07s, prepare 4.40s)
+
+VITEST EXIT:0

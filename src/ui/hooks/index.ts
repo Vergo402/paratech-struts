@@ -32,7 +32,7 @@ export {
 // what3words conversion (#441, shore point location capture) — same seam discipline.
 export { w3wEnabled, convertToWords } from '@data/w3w/w3w';
 export { useRecommendations } from './useRecommendations';
-export { useCommit, useCommitMany } from './useCommit';
+export { useCommit, useCommitMany, type CommitResult } from './useCommit';
 export { useDeviceUid } from './useDeviceUid';
 export { useDeviceUidValue } from './useDeviceUidValue';
 export { useSession, type SessionApi } from './useSession';
@@ -68,7 +68,7 @@ export { useShorePointHistory, type ShorePointHistory } from './useShorePointHis
 export { useEventLog, type EventLog } from './useEventLog';
 export { useAuditTrail, type AuditTrailApi } from './useAuditTrail';
 export { useAuditAccess, type AuditAccess } from './useAuditAccess';
-export { useOrg } from './useOrg';
+export { useOrg, useReadOrg } from './useOrg';
 export { useOrgShorePointCounts, type OrgShorePointCounts } from './useOrgShorePointCounts';
 export { useMyRole, useMyRoles } from './useMyRoles';
 export { useCommandSelf, useIsIC } from './useCommandSelf';

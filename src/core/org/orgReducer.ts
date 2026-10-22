@@ -132,9 +132,27 @@ export function orgReducer(state: OrgState, event: FieldShoreEvent): OrgState {
       // outgoing IC steps out of the slot); any pre-existing staff at index >0 stay,
       // de-duped against the incoming. Always exactly one IC of record.
       const rest = ic.assignedResources.slice(1).filter((r) => !sameResource(r, pending!.toResource));
+      // #560 — My Role follows the hat: the outgoing IC's declared IC role is dropped
+      // (else the "YOU · INCIDENT COMMANDER" chip + Audit Incident-view gate outlive the
+      // handover) and an account/device incoming gets it (mirrors seedOrgState).
+      // Individual/apparatus refs carry no identity → nothing to key. Same fold on every
+      // device (ADR-041); a new object only when something changed.
+      const outgoing = ic.assignedResources[0];
+      const incoming = pending!.toResource;
+      const keyed = (r: { ref: string; value: string } | undefined) =>
+        r && (r.ref === 'account' || r.ref === 'device') ? r.value : null;
+      const outKey = keyed(outgoing);
+      const inKey = keyed(incoming);
+      let myRoles = state.myRoles;
+      if (outKey != null && myRoles[outKey] === ic.id) {
+        myRoles = { ...myRoles };
+        delete myRoles[outKey];
+      }
+      if (inKey != null && myRoles[inKey] !== ic.id) myRoles = { ...myRoles, [inKey]: ic.id };
       return {
         ...state,
-        positions: { ...state.positions, [ic.id]: { ...ic, assignedResources: [pending!.toResource, ...rest] } },
+        positions: { ...state.positions, [ic.id]: { ...ic, assignedResources: [incoming, ...rest] } },
+        myRoles,
         commandTransfer: null,
       };
     }

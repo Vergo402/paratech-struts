@@ -1,0 +1,162 @@
+
+> fieldshore-v4@4.0.0-slice.1 test:rules
+> PATH=/opt/homebrew/opt/openjdk/bin:$PATH firebase emulators:exec --only database --project fieldshore-database "vitest run --config vitest.rules.config.ts"
+
+i  emulators: Starting emulators: database
+i  database: Database Emulator logging to database-debug.log
+i  Running script: vitest run --config vitest.rules.config.ts
+
+ RUN  v2.1.9 /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/cmd-transfer-integrity-5f0f22
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a custom manageUsers-holder (non-admin ROLE) cannot create a role — Admin-only since J257-S4 (dc6d322)
+[2026-10-22T11:26:25.008Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/logistics failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a Default member cannot create a role
+[2026-10-22T11:26:25.058Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/logistics failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a revoked admin-of-nothing / outsider / anonymous cannot create a role
+[2026-10-22T11:26:25.203Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/logistics failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a revoked admin-of-nothing / outsider / anonymous cannot create a role
+[2026-10-22T11:26:25.228Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/logistics failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a revoked admin-of-nothing / outsider / anonymous cannot create a role
+[2026-10-22T11:26:25.244Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/logistics failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > the Admin role is immutable — even to an admin
+[2026-10-22T11:26:25.372Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/admin failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > the built-ins can never be deleted (delete-protection lives in .write — remove() skips .validate)
+[2026-10-22T11:26:25.567Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/default failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > the built-ins can never be deleted (delete-protection lives in .write — remove() skips .validate)
+[2026-10-22T11:26:25.581Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/admin failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > custom-role management (#418) > a Default member cannot delete a custom role
+[2026-10-22T11:26:25.646Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/roles/custom-mgr failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > invite-code lifecycle (#423) > a plain member cannot revoke
+[2026-10-22T11:26:26.077Z]  @firebase/database: FIREBASE WARNING: set at /orgs/inviteCodes/AAAA-2222/active failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > invite-code lifecycle (#423) > a dead code cannot be re-armed (no active → true branch)
+[2026-10-22T11:26:26.140Z]  @firebase/database: FIREBASE WARNING: set at /orgs/inviteCodes/AAAA-2222/active failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > invite-code lifecycle (#423) > a revoke cannot re-point the code at another department (field freeze)
+[2026-10-22T11:26:26.250Z]  @firebase/database: FIREBASE WARNING: update at /orgs/inviteCodes/AAAA-2222 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > invite-code lifecycle (#423) > a code can never be deleted — dead codes stay, auditably
+[2026-10-22T11:26:26.369Z]  @firebase/database: FIREBASE WARNING: set at /orgs/inviteCodes/AAAA-2222 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > invite-code lifecycle (#423) > a plain member cannot publish a code for the dept
+[2026-10-22T11:26:26.491Z]  @firebase/database: FIREBASE WARNING: set at /orgs/inviteCodes/CCCC-4444 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > join + membership (#420 root cause, anti-lockout) > a join with a revoked code fails
+[2026-10-22T11:26:26.586Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/newbie failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > join + membership (#420 root cause, anti-lockout) > re-writing an EXISTING member row is PERMISSION_DENIED — the #420 "offline" misread is really this
+[2026-10-22T11:26:26.753Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/revoked failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > join + membership (#420 root cause, anti-lockout) > anti-lockout: another admin may demote an admin; an admin can never self-demote
+[2026-10-22T11:26:26.838Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/founder/role failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > join + membership (#420 root cause, anti-lockout) > promotion TO Admin requires an ADMIN actor — a manageUsers custom role cannot escalate (#257 fold)
+[2026-10-22T11:26:26.990Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/role failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > join + membership (#420 root cause, anti-lockout) > promotion TO Admin requires an ADMIN actor — a manageUsers custom role cannot escalate (#257 fold)
+[2026-10-22T11:26:27.041Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/manager/role failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > a member cannot RAISE mustChangePassword (false → true) — the clear is one-way
+[2026-10-22T11:26:27.355Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/mustChangePassword failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > a member cannot edit their own admin-owned profile fields (email/apparatusId/badge)
+[2026-10-22T11:26:27.612Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/email failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > a member cannot edit their own admin-owned profile fields (email/apparatusId/badge)
+[2026-10-22T11:26:27.625Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/apparatusId failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > a member cannot edit their own admin-owned profile fields (email/apparatusId/badge)
+[2026-10-22T11:26:27.639Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/badge failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > a stranger cannot self-create a provisioned-shape row (no code, not a manager)
+[2026-10-22T11:26:28.174Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/stranger failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > provisioned-member profile fields (#439) > unknown member fields are still rejected ($other freeze holds after the field additions)
+[2026-10-22T11:26:28.289Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/members/member1/favoriteColor failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > legacy-tree lockdown (#424) > /departments is dead — no read, no write, even signed in
+[2026-10-22T11:26:28.344Z]  @firebase/database: FIREBASE WARNING: set at /departments/junk failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > legacy-tree lockdown (#424) > /feedback accepts a valid write-once entry but is not client-readable
+[2026-10-22T11:26:28.812Z]  @firebase/database: FIREBASE WARNING: set at /feedback/fb1 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > legacy-tree lockdown (#424) > /feedback accepts a valid write-once entry but is not client-readable
+[2026-10-22T11:26:28.984Z]  @firebase/database: FIREBASE WARNING: set at /feedback/fb2 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > legacy-tree lockdown (#424) > /diagnostics/sync accepts a write-once entry but is not client-readable
+[2026-10-22T11:26:29.071Z]  @firebase/database: FIREBASE WARNING: set at /diagnostics/sync/d1 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > legacy-tree lockdown (#424) > the catch-all denies unknown top-level trees
+[2026-10-22T11:26:29.376Z]  @firebase/database: FIREBASE WARNING: set at /anything-else/x failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > department founding (CREATE_ONLY cascade) > a founder creates a dept with the full payload, once
+[2026-10-22T11:26:29.501Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept2 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a client-literal numeric receivedAt is rejected (only the server may stamp order)
+[2026-10-22T11:26:29.853Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e2 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a client-literal numeric receivedAt is rejected (only the server may stamp order)
+[2026-10-22T11:26:29.869Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e3 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a client-literal numeric receivedAt is rejected (only the server may stamp order)
+[2026-10-22T11:26:29.981Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e4 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > an event with no receivedAt is rejected (a pre-ADR-041 client cannot upload)
+[2026-10-22T11:26:30.066Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e5 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > an existing event cannot be overwritten — even with a fresh server stamp (create-only)
+[2026-10-22T11:26:30.133Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e6 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > an existing event cannot be overwritten — even with a fresh server stamp (create-only)
+[2026-10-22T11:26:30.168Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e6 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > an existing event cannot be overwritten — even with a fresh server stamp (create-only)
+[2026-10-22T11:26:30.187Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/e6 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a chunk update() rooted at /events with deep {opId}/{id} keys succeeds — the production flush shape
+[2026-10-22T11:26:30.415Z]  @firebase/database: FIREBASE WARNING: update at /orgs/dept1/events failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a batch with ONE unstamped event is rejected whole (atomic update)
+[2026-10-22T11:26:30.669Z]  @firebase/database: FIREBASE WARNING: update at /orgs/dept1/events/op-1 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > re-cut record on the Mark Cut Done patch > the record gets no envelope bypass — unstamped, it is still rejected
+[2026-10-22T11:26:31.053Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/cr2 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > re-cut record on the Mark Cut Done patch > the record gets no envelope bypass — unstamped, it is still rejected
+[2026-10-22T11:26:31.074Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/cr3 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a non-member, a revoked member, or an anonymous caller cannot create an event
+[2026-10-22T11:26:31.175Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/n1 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a non-member, a revoked member, or an anonymous caller cannot create an event
+[2026-10-22T11:26:31.238Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/n2 failed: permission_denied 
+
+stderr | tests/rules/orgs.rules.test.ts > event log — server-stamped canonical order (ADR-041, #499) > a non-member, a revoked member, or an anonymous caller cannot create an event
+[2026-10-22T11:26:31.316Z]  @firebase/database: FIREBASE WARNING: set at /orgs/dept1/events/op-1/n3 failed: permission_denied 
+
+ ✓ tests/rules/orgs.rules.test.ts (46 tests) 7806ms
+   ✓ custom-role management (#418) > an admin creates a custom role 1125ms
+   ✓ join + membership (#420 root cause, anti-lockout) > promotion TO Admin requires an ADMIN actor — a manageUsers custom role cannot escalate (#257 fold) 315ms
+   ✓ legacy-tree lockdown (#424) > /feedback accepts a valid write-once entry but is not client-readable 591ms
+   ✓ event log — server-stamped canonical order (ADR-041, #499) > a chunk update() rooted at /events with deep {opId}/{id} keys succeeds — the production flush shape 358ms
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  07:26:22
+   Duration  9.20s (transform 136ms, setup 0ms, collect 398ms, tests 7.81s, environment 0ms, prepare 192ms)
+
+✔  Script exited successfully (code 0)
+i  emulators: Shutting down emulators.
+i  database: Stopping Database Emulator
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator
+RULES EXIT:0
