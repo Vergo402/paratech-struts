@@ -1,0 +1,69 @@
+
+> fieldshore-v4@4.0.0-slice.1 build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+(node:75706) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+transforming...
+✓ 930 modules transformed.
+rendering chunks...
+[plugin vite:reporter] 
+(!) /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/auth/firebase.ts is dynamically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/syncService.ts but also statically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/auth/accountService.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/auth/authSession.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/functions/firebase.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/firebase.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/firebase.ts is dynamically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/subscribe.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/syncService.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/syncService.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/syncService.ts but also statically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/dept/departmentService.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/feedback/feedbackService.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/store/session.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/diagnostics.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/diagnostics.ts is dynamically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/store/registry.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/syncService.ts but also statically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/dept/departmentService.ts, dynamic import will not move module into another chunk.
+
+[plugin vite:reporter] 
+(!) /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/dept/departmentService.ts is dynamically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/auth/authSession.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/auth/authSession.ts, /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/sync/connectivity.ts but also statically imported by /Users/alex/Library/CloudStorage/OneDrive-Personal/Claude OS/Field Shore/fieldshore/task-checklist-account-74c30b/src/data/dept/index.ts, dynamic import will not move module into another chunk.
+
+computing gzip size...
+../../dist/registerSW.js                                                 0.13 kB
+../../dist/manifest.webmanifest                                          0.52 kB
+../../dist/index.html                                                    2.55 kB │ gzip:   1.19 kB
+../../dist/assets/geist-cyrillic-ext-wght-normal-DjL33-gN.woff2          7.42 kB
+../../dist/assets/public-sans-vietnamese-wght-normal-CtlIRbEm.woff2      7.72 kB
+../../dist/assets/geist-vietnamese-wght-normal-6IgcOCM7.woff2            8.00 kB
+../../dist/assets/inter-vietnamese-wght-normal-CBcvBZtf.woff2           10.25 kB
+../../dist/assets/inter-greek-ext-wght-normal-DlzME5K_.woff2            11.23 kB
+../../dist/assets/fraunces-vietnamese-wght-normal-CnvboYUG.woff2        11.57 kB
+../../dist/assets/geist-cyrillic-wght-normal-BEAKL7Jp.woff2             15.08 kB
+../../dist/assets/geist-latin-ext-wght-normal-DC-KSUi6.woff2            16.51 kB
+../../dist/assets/public-sans-latin-ext-wght-normal-MQgHevqp.woff2      18.47 kB
+../../dist/assets/inter-cyrillic-wght-normal-DqGufNeO.woff2             18.75 kB
+../../dist/assets/inter-greek-wght-normal-CkhJZR-_.woff2                19.00 kB
+../../dist/welcome.html                                                 21.68 kB │ gzip:   5.90 kB
+../../dist/assets/inter-cyrillic-ext-wght-normal-BOeWTOD4.woff2         25.96 kB
+../../dist/assets/public-sans-latin-wght-normal-DdeTHZLK.woff2          26.83 kB
+../../dist/assets/geist-latin-wght-normal-BgDaEnEv.woff2                29.40 kB
+../../dist/assets/fraunces-latin-ext-wght-normal-Ca2vKHc0.woff2         33.58 kB
+../../dist/assets/fraunces-latin-wght-normal-ukD16Tqj.woff2             36.62 kB
+../../dist/assets/inter-latin-wght-normal-Dx4kXJAl.woff2                48.26 kB
+../../dist/assets/inter-latin-ext-wght-normal-DO1Apj_S.woff2            85.07 kB
+../../dist/assets/welcome-BHO2JQlR.css                                  20.47 kB │ gzip:   5.11 kB
+../../dist/assets/main-D71HVyfq.css                                    191.07 kB │ gzip:  28.45 kB
+../../dist/assets/welcome-CfKtVWVe.js                                    1.31 kB │ gzip:   0.67 kB
+../../dist/assets/preload-helper-B8tWKQ1F.js                             1.85 kB │ gzip:   0.95 kB
+../../dist/assets/welcome-strut-CJabKgiM.js                              2.42 kB │ gzip:   1.22 kB
+../../dist/assets/welcome-truck-CY7J9XyH.js                              3.60 kB │ gzip:   1.74 kB
+../../dist/assets/welcome-cut-Bg-oYn8X.js                                4.72 kB │ gzip:   2.09 kB
+../../dist/assets/welcome-show-DoxBml_a.js                             143.24 kB │ gzip:  53.24 kB
+../../dist/assets/three.module-8GGnFegg.js                             515.41 kB │ gzip: 128.89 kB
+../../dist/assets/main-DqRRutg3.js                                   1,806.32 kB │ gzip: 523.91 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 13.13s
+
+PWA v0.21.2
+mode      generateSW
+precache  62 entries (3313.09 KiB)
+files generated
+  ../../dist/sw.js
+  ../../dist/workbox-abeb32eb.js
+EXIT:0
