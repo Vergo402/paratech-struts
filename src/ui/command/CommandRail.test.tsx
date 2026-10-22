@@ -16,6 +16,9 @@ let pendingResourceCount = 0;
 // (rendered against the same mocked @ui/hooks) read that same position.
 let orgPositions = seedOrgState('op1', 'dev-1').positions;
 
+// #544 — acceptTransfer reads the committed org after the emit; tests drive what it sees.
+let storePositions = seedOrgState('op1', 'dev-1').positions;
+// (#544) post-commit org read goes through useReadOrg below
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('./useOrgCommit', () => ({ useOrgCommit: () => mockEmit }));
 // Null out children that drag in their own hook graphs — not under test here.
@@ -26,6 +29,7 @@ vi.mock('@ui/hooks', () => ({
   useOperation: () => ({ id: 'op1', name: 'Test Op', location: '' }),
   useShorePoints: () => [],
   useOrg: () => orgPositions,
+  useReadOrg: () => () => storePositions,
   useHazards: () => [],
   useCommandTransfer: () => pending,
   useDeviceUidValue: () => 'dev-1',
@@ -47,6 +51,7 @@ beforeEach(() => {
   pending = null;
   pendingResourceCount = 0;
   orgPositions = seedOrgState('op1', 'dev-1').positions;
+  storePositions = orgPositions;
 });
 
 describe('CommandRail — hand-the-tablet accept (#401)', () => {
@@ -65,6 +70,28 @@ describe('CommandRail — hand-the-tablet accept (#401)', () => {
     render(<CommandRail />);
     await user.click(screen.getByRole('button', { name: 'BC Smith: Accept command' }));
     expect(mockEmit).toHaveBeenCalledWith({ type: 'CommandTransferAccepted', transferId: 't1' });
+  });
+
+  it('an ACCOUNT-ref target shows the initiator no Accept (#544 — canAccept refuses it)', () => {
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: { ref: 'account', value: 'acc-b', label: 'Dana' }, at: 1 };
+    render(<CommandRail />);
+    expect(screen.getByRole('button', { name: 'Cancel transfer' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Accept command/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Accepting on this device?')).not.toBeInTheDocument();
+  });
+
+  it('announces the transfer only when the fold actually moved command (#544)', async () => {
+    pending = { transferId: 't1', initiatedBy: 'dev-1', toResource: PERSON, at: 1 };
+    const user = userEvent.setup();
+    render(<CommandRail />);
+    // The fold no-oped: IC of record is still the founder → no false claim.
+    await user.click(screen.getByRole('button', { name: 'BC Smith: Accept command' }));
+    expect(screen.queryByText('Command transferred to BC Smith.')).not.toBeInTheDocument();
+    // The fold moved command: the IC is now the target → announce.
+    const icId = defaultPositionId('op1', 'ic');
+    storePositions = { ...orgPositions, [icId]: { ...orgPositions[icId]!, assignedResources: [PERSON] } };
+    await user.click(screen.getByRole('button', { name: 'BC Smith: Accept command' }));
+    expect(screen.getByText('Command transferred to BC Smith.')).toBeInTheDocument();
   });
 
   it('a device-ref target stays strict: no accept on the initiating device', () => {

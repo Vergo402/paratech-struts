@@ -1,6 +1,6 @@
 import { newId } from '@core/id';
 import type { FieldShoreEvent } from '@core/schema';
-import { useCommit, useDeviceUid, useOperation, useSession } from '@ui/hooks';
+import { useCommit, useDeviceUid, useOperation, useSession, type CommitResult } from '@ui/hooks';
 
 // The org/My-Role events the Command edit surfaces emit, minus the base fields the
 // store stamps. useOrgCommit fills id/opId/at/by so each call site just names the
@@ -34,7 +34,7 @@ export type OrgEventInput = WithoutBase<OrgEvent>;
 // both the durable append and the sync enqueue — we can't rely on Zod stripping it).
 const CARRIES_ACCOUNT = new Set(['MyRoleSet', 'CommandTransferInitiated', 'CommandTransferAccepted']);
 
-export function useOrgCommit(): (input: OrgEventInput) => Promise<unknown> {
+export function useOrgCommit(): (input: OrgEventInput) => Promise<CommitResult | undefined> {
   const op = useOperation();
   const commit = useCommit();
   const getUid = useDeviceUid();

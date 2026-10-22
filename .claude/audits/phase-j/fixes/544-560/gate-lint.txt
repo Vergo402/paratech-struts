@@ -1,0 +1,5 @@
+
+> fieldshore-v4@4.0.0-slice.1 lint
+> eslint .
+
+LINT EXIT:0

@@ -8,3 +8,10 @@ import { operationStore } from '@data/store';
 export function useOrg(): OrgPositions {
   return useStore(operationStore.store, (s) => s.positions);
 }
+
+/** A getter for the org tree AFTER an awaited commit (event handlers, not render) —
+ *  the render-time `useOrg` value is stale inside the closure. #544 reads it to
+ *  announce a transfer only once the fold actually moved command. */
+export function useReadOrg(): () => OrgPositions {
+  return () => operationStore.store.getState().positions;
+}

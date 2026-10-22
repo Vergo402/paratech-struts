@@ -170,3 +170,46 @@ describe('orgReducer — no-op folds return the identical state (ADR-041)', () =
     expect(orgReducer(s, { type: 'MyRoleSet', ...base(), by: DEV, positionId: null })).not.toBe(s);
   });
 });
+
+describe('CommandTransferAccepted — My Role follows the hat (#560)', () => {
+  const ic = id('ic');
+  const acct = (v: string) => ({ ref: 'account' as const, value: v, label: v });
+  // Seed an ACCOUNT founder (IC by account, My Role keyed by account id), then hand off.
+  const handOff = (to: ReturnType<typeof acct> | { ref: 'individual'; value: string; label: string } | { ref: 'device'; value: string; label: string }, s0 = seedOrgState(OP, DEV, { id: 'acc-a', label: 'A' })) => {
+    const init = orgReducer(s0, { type: 'CommandTransferInitiated', ...base(), by: DEV, account: { id: 'acc-a', label: 'A' }, toResource: to });
+    expect(init.commandTransfer).not.toBeNull();
+    const acceptor = to.ref === 'account' ? { account: { id: to.value, label: to.label } } : {};
+    return orgReducer(init, { type: 'CommandTransferAccepted', ...base(), by: to.ref === 'device' ? to.value : 'dev-x', ...acceptor, transferId: init.commandTransfer!.transferId });
+  };
+
+  it('account → account: clears the outgoing IC role and hands it to the incoming', () => {
+    const s = handOff(acct('acc-b'));
+    expect(s.myRoles['acc-a']).toBeUndefined();
+    expect(s.myRoles['acc-b']).toBe(ic);
+    expect(s.positions[ic]!.assignedResources[0]!.value).toBe('acc-b');
+  });
+
+  it('an outgoing whose declared role is NOT the IC node keeps it', () => {
+    const s0 = seedOrgState(OP, DEV, { id: 'acc-a', label: 'A' });
+    const safety = id('safety');
+    const s = handOff(acct('acc-b'), { ...s0, myRoles: { 'acc-a': safety } });
+    expect(s.myRoles['acc-a']).toBe(safety);
+    expect(s.myRoles['acc-b']).toBe(ic);
+  });
+
+  it('individual target: only the outgoing is cleared, no key is invented', () => {
+    const s = handOff({ ref: 'individual', value: 'BC Smith', label: 'BC Smith' });
+    expect(s.myRoles).toEqual({});
+  });
+
+  it('device-keyed guest outgoing is cleared; device incoming gets the role', () => {
+    const s = handOff({ ref: 'device', value: 'dev-2', label: 'Tablet 2' }, seedOrgState(OP, DEV));
+    expect(s.myRoles[DEV]).toBeUndefined();
+    expect(s.myRoles['dev-2']).toBe(ic);
+  });
+
+  it('a no-op accept (no pending) leaves the projection untouched', () => {
+    const s0 = seedOrgState(OP, DEV);
+    expect(orgReducer(s0, { type: 'CommandTransferAccepted', ...base(), by: 'x' })).toBe(s0);
+  });
+});
