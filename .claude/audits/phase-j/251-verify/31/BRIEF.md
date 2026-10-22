@@ -86,3 +86,8 @@ Routes and labels (verified in `src/`): Settings tab -> **Administration** row (
 - TanStack `<Link>` / Settings navigation may ignore synthetic clicks (HARNESS); use `location.assign('/audit-log')` or `/settings/administration`.
 - Governance entries are fire-and-forget: a just-made admin change may take a moment to appear; the Administrative view has a Retry action when the read fails.
 - Search the filter string against the displayed text, not the badge color. Timestamps use local time in `HH:MM` 12/24h per browser locale.
+
+## Orchestrator addendum (2026-10-21, HEAD 5cb1bbd)
+- Positions follow the ACCOUNT (552faca): IC/Operations Section Chief gating of the audit log is judged by the signed-in account (spec 24 saw a non-admin Safety Officer blocked with "Requires Incident Commander…" — ADR-017 line 39).
+- Known from today's passes (cite, do not re-file): audit rows for another device's events render the actor as "A device" and own events as "You" (specs 22/24); checklist TEMPLATE edits are not audited (#553); hazard CSV export is not audited (decisions list); the Audit log page did not update live while open in spec 22 (rows appeared after reload) — if you see that again, record it as a FAIL with repro (it has no issue yet).
+- Wood is required at Add Shore Point (2026-10-17). After-action email send Deferred (#495); broadcast Deferred (#496).

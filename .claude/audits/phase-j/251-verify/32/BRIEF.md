@@ -75,3 +75,8 @@ Routes verified in `src/app/router.tsx`: `/settings/department`, `/join-departme
 - R6. Sunlight/dark theme: the QR is intentionally white-card in all themes (comment in `QrImage.tsx`); not a theming bug.
 - R7. Settings -> Administration and `/users` are Admin-gated. Check the viewer's role before calling a missing control a defect.
 - R8. A second department can only be created via the direct `/create-department` address (phase-status note), so use that URL for 32-02.
+
+## Orchestrator addendum (2026-10-21, HEAD 5cb1bbd)
+- The scope ruling above stands: the incident-level half is Deferred (#493); drive only 32-01…32-14 as written.
+- 32-11 offline join: existing issue #521 ("invite lookup has no timeout — offline join hangs") already carries evidence from spec 08. Drive it once; if it still hangs, record FAIL citing #521 and add the HEAD you saw it on in Proof — do not file a new issue.
+- Spec 08's pass (08/REPORT.md) covers the join flow at 903a68e; do not reuse its evidence here.

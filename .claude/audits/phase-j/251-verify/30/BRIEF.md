@@ -83,3 +83,10 @@
 - Settings row is labelled "Users & roles" in Administration but the screen title is "User manager"; both are correct.
 - The Revoke modal text names the member in body copy, not the title; Cancel is the default-focused button via `data-modal-cancel`.
 - Sheet scrim-close may need reload (HARNESS). `/users` direct navigation via `location.assign`.
+
+## Orchestrator addendum (2026-10-21, HEAD 5cb1bbd)
+- **Functions emulator required for this spec.** The #439 provisioning flow ("+ Add member" → Create account, "Set your password" gate) calls Cloud Functions; in emulator mode the app connects to `127.0.0.1:5001` (`src/data/functions/firebase.ts:18`). `npm run emulators` starts only auth + database, so start the emulators for this pass with:
+  `PATH=/opt/homebrew/opt/openjdk/bin:$PATH npx firebase emulators:start --only auth,database,functions --project fieldshore-database`
+  (`functions/lib/` is already built; if the functions emulator fails to load, run `npm --prefix functions run build` first, read-only otherwise). Confirm port 5001 is listening before driving 30-1x. If provisioning still cannot run on the harness, give the closest verdict and say exactly why in Proof — do not mark NOT-BUILT.
+- Positions follow the account (552faca). Admin = department ROLE (ADR-017); the last-Admin anti-lockout is in force. A role change made on one device may not reach an already-signed-in device until a fresh sign-in (seen in spec 25; record what you see, cite 25/REPORT.md).
+- Known filed today: #552 (manageSettings role can edit checklists). If Users & roles shows the same class of gap (a custom role reaching Admin-only screens), cite #552 and file nothing new.

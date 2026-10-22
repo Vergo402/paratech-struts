@@ -32,7 +32,7 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 | 15 | `23-task-level-checklist.md` | #228 | **PASS (mechanics) / FAIL (scoping)** — 20 PASS · 2 FAIL + 2 NOT-BUILT with one root cause (instance = device uid → #550, gate M13 must-fix) · 23-07 all sections open, 23-26 no provenance cue → decisions · 23-19 → a11y batch (2026-10-21, HEAD af9321a) | `23/REPORT.md` | #550 |
 | 16 | `24-tcrm-briefing.md` | #229 | **PASS** — 28 PASS · 1 SPEC-DRIFT (24-21 X keeps the session, R1) · 1 FAIL (24-23 concurrent Begin race → #551) · 3 NOT-BUILT (24-30 Add note, 24-31 per-Group sessions, 24-32 Safety/OSC indicator → decisions) · no RGS gate (ADR-017) (2026-10-21, HEAD cd55558) | `24/REPORT.md` | #551 |
 | 17 | `25-customizing-checklists.md` | #230 | **PASS** — 22 PASS · 2 SPEC-DRIFT (25-07 inline field, 25-32 intro copy) · 3 FAIL (25-04 manageSettings gate → #552; 25-30 + 25-33 + 25-13 polish → #554) · 4 NOT-BUILT (25-29 audit rows → #553; 25-24 drawer provenance + 25-15 AT move buttons + 25-31 TCRM note → decisions) (2026-10-21, HEAD 5a8666e) | `25/REPORT.md` | #552 #553 #554 |
-| 18 | `30-user-management.md` | #233 | brief drafted | — | — |
+| 18 | `30-user-management.md` | #233 | **PASS** — 26 PASS · 1 SPEC-DRIFT (30-23 Reactivate) · 3 FAIL (30-17 role reassignment not live → #555; 30-25 offline revoke → #556; 30-30 + audit copy → #557) · 1 NOT-BUILT (30-03 side-by-side faces → decisions) · provisioning (#439) and last-Admin lockout verified (2026-10-21, HEAD 5cb1bbd) | `30/REPORT.md` | #555 #556 #557 |
 | 19 | `31-audit-log-review.md` | #236 | brief drafted | — | — |
 | 20 | `32-mutual-aid-invite-accept.md` | #235 | brief drafted | — | — |
 
@@ -63,6 +63,8 @@ Runbook node: Step 2 · P9 ([`v4-completion-runbook.md`](../../../plans/v4-compl
 - 13-36: the station hero shows the "was 47½″ on 6×6, now 51½″ on 4×4. Re-cut." sentence; the board card carries the "⚠ Re-cut: cut length changed after Cut Done" chip (accepted mockup 2026-10-20) — add both to spec 13 Step 3.
 
 ## Decisions for Alex (NOT-BUILT, not filed)
+
+- 30-03 User manager on tablet/laptop still shows one face (Members OR Roles) with the segmented control, not both side by side. Keep single-face (rewrite spec) or build the two-column layout?
 
 - 24-30 Briefing has no "Add note" field; 24-31 one op-wide briefing session, not per Group; 24-32 no "briefing in progress" indicator for the Safety Officer / Operations Chief. Drop from spec or small-features list (v4.1)?
 
