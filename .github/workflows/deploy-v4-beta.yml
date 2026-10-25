@@ -28,7 +28,3 @@ jobs:
           channelId: beta
           projectId: fieldshore-database
           expires: 30d
-          # firebase-tools 15.34.1 (2026-10-22) added a serviceusage.services.get check the
-          # CI service account lacks (needs roles/serviceusage.serviceUsageConsumer).
-          # Pinned to the last version that deployed; unpin once that role is granted.
-          firebaseToolsVersion: 15.34.0
