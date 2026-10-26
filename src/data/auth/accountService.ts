@@ -107,6 +107,10 @@ function mapFirebaseError(err: unknown): string {
     return "That email and password don't match.";
   }
   if (code === 'auth/email-already-in-use') return 'An account with that email already exists.';
+  // Project-level sign-up is closed (ADR-025 addendum 2026-10-26).
+  if (code === 'auth/admin-restricted-operation') {
+    return "No account for that email. Ask your department's User Manager for a login.";
+  }
   if (code === 'auth/invalid-email') return "That doesn't look like a valid email address.";
   if (code === 'auth/weak-password') return 'Password must be at least 6 characters.';
   if (code === 'auth/too-many-requests') return 'Too many attempts — try again in a moment.';
@@ -300,7 +304,7 @@ export function createAccountService(deps: { session: () => SessionStoreApi }): 
           } catch {
             /* best-effort — the next sign-in will re-hit this guard regardless */
           }
-          return { ok: false, reason: 'No account found for that email — create one first.' };
+          return { ok: false, reason: "No account for that email. Ask your department's User Manager for a login." };
         }
 
         try {

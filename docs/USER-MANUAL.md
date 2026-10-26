@@ -78,15 +78,9 @@ Open the app once while you have signal. That lets it save what it needs to work
 
 You do not need an account to use **Quick Find**. You need an account for Operations, Inventory, Command and Settings.
 
-To create an account:
+You cannot create your own account. Your department's **User Manager** creates it for you (see *Adding a member* under Settings) and gives you the email and a starting password. If you have no login, ask them.
 
-1. Tap **Sign in**.
-2. Tap **Create Account**.
-3. Type your **Display name**. This name goes on every action you take.
-4. Type your **Email** and a **Password**.
-5. Tap **Create Account**.
-
-The first time you reach the app after creating an account, a short intro appears. Tap **Next** through it, then tap **Get started**. A **Getting started** list follows. Tap **Done** to close it. **Skip** closes both the intro and the list. You can replay them from **Settings**, then **Help & reference**.
+The first time you reach the app after your account is created, a short intro appears. Tap **Next** through it, then tap **Get started**. A **Getting started** list follows. Tap **Done** to close it. **Skip** closes both the intro and the list. You can replay them from **Settings**, then **Help & reference**.
 
 On the **Getting started** list, the rows for Operations, Inventory and Command say **Coming soon**. Ignore that label. Those tabs already work.
 

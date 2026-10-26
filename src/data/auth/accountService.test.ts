@@ -242,7 +242,7 @@ describe('accountService (account seam — create / sign in / sign out)', () => 
     } as never);
     const res = await account.completeMagicLink('https://app/auth?oobCode=x');
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.reason).toMatch(/no account found/i);
+    if (!res.ok) expect(res.reason).toMatch(/no account for that email/i);
     expect(del).toHaveBeenCalledOnce();
     expect(session.store.getState().identity.kind).toBe('guest');
   });

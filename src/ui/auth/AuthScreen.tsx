@@ -1,50 +1,40 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { Button, Segmented, TextField } from '@ui/primitives';
-import { useSession, useDepartment, useOnboarding } from '@ui/hooks';
+import { Button, TextField } from '@ui/primitives';
+import { useSession, useDepartment } from '@ui/hooks';
 import { reloadIntoActiveBucket } from '@ui/dept/switchBucket';
 
 /**
- * AuthScreen — the pre-shell sign-in / create-account route (workflow 06,
- * 70-login-register.md). Guest-first: only ever reached forward, never a
- * cold-open wall (ADR-015); Continue as guest is always a first-class exit.
+ * AuthScreen — the pre-shell sign-in route (workflow 06, 70-login-register.md).
+ * Guest-first: only ever reached forward, never a cold-open wall (ADR-015);
+ * Continue as guest is always a first-class exit.
+ *
+ * Sign-in only. Self sign-up is CLOSED (ADR-025 addendum 2026-10-26): accounts
+ * are provisioned by a User Manager (#439) or the Firebase console, and the
+ * project-level `disabledUserSignup` switch rejects any client-side create —
+ * so no Create Account mode is offered here.
  *
  * Three views share the one screen:
- *  · form        — sign in / create account (+ the two email actions in Sign-In)
+ *  · form        — sign in (+ the two email actions)
  *  · sent        — a calm "check your email" confirmation after a link/reset send
  *  · completing  — "Signing you in…" while an opened magic-link finishes
  *
  * Magic-link + password reset ride Firebase's BUILT-IN email (accountService);
- * errors are inline + aria-live, never an alert() (Principle 3). Magic-link shows
- * ONLY in Sign-In mode — a new member must set a display name (the accountability
- * anchor) which the link flow can't capture (ADR-025).
+ * errors are inline + aria-live, never an alert() (Principle 3).
  */
 const HOME = '/operations';
 
-type Mode = 'signin' | 'create';
-
-const MODES = [
-  { value: 'signin', label: 'Sign In' },
-  { value: 'create', label: 'Create Account' },
-] as const;
-
 export function AuthScreen() {
   const navigate = useNavigate();
-  const { createAccount, signIn, sendMagicLink, isMagicLink, completeMagicLink, sendPasswordReset } =
-    useSession();
+  const { signIn, sendMagicLink, isMagicLink, completeMagicLink, sendPasswordReset } = useSession();
   const { currentDepartmentId } = useDepartment();
-  const { start: startOnboarding } = useOnboarding();
   const landedRef = useRef(false);
-  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState<{ kind: 'magic' | 'reset'; email: string } | null>(null);
   const [completing, setCompleting] = useState(false);
-
-  const isCreate = mode === 'create';
 
   // Magic-link landing — opened from the email link, this URL carries the sign-in
   // code. Detect + finish it once; success drops into the app (or dept setup),
@@ -84,22 +74,18 @@ export function AuthScreen() {
     else navigate({ to: '/create-department' });
   };
 
-  const canSubmit =
-    email.trim() !== '' && password !== '' && (!isCreate || displayName.trim() !== '');
+  const canSubmit = email.trim() !== '' && password !== '';
   const canEmailAction = email.trim() !== '' && !busy;
 
   async function submit() {
     setError(null);
     setBusy(true);
-    const result = isCreate
-      ? await createAccount({ email, password, displayName })
-      : await signIn({ email, password });
+    const result = await signIn({ email, password });
     setBusy(false);
     if (!result.ok) {
       setError(result.reason);
       return;
     }
-    if (isCreate) await startOnboarding();
     afterAuth();
   }
 
@@ -210,26 +196,6 @@ export function AuthScreen() {
 
   return shell(
     <>
-      <Segmented
-        options={MODES}
-        value={mode}
-        onChange={(next) => {
-          setMode(next);
-          setError(null);
-        }}
-        aria-label="Sign in or create account"
-      />
-
-      {isCreate && (
-        <TextField
-          label="Display name"
-          value={displayName}
-          onChange={setDisplayName}
-          placeholder="Capt. T. Marchetti"
-          helper="Shown on every action you take — your name on the record."
-          autoComplete="name"
-        />
-      )}
       <TextField
         label="Email"
         value={email}
@@ -243,7 +209,7 @@ export function AuthScreen() {
         value={password}
         onChange={setPassword}
         type="password"
-        autoComplete={isCreate ? 'new-password' : 'current-password'}
+        autoComplete="current-password"
       />
 
       {/* Live region present so a post-submit failure is announced (Principle 9). */}
@@ -255,44 +221,42 @@ export function AuthScreen() {
         variant="primary"
         fullWidth
         disabled={!canSubmit || busy}
-        disabledReason={
-          canSubmit
-            ? undefined
-            : isCreate
-              ? 'Enter a display name, email, and password'
-              : 'Enter your email and password'
-        }
+        disabledReason={canSubmit ? undefined : 'Enter your email and password'}
         onPress={submit}
       >
-        {busy ? (isCreate ? 'Creating…' : 'Signing in…') : isCreate ? 'Create Account' : 'Sign In'}
+        {busy ? 'Signing in…' : 'Sign In'}
       </Button>
 
-      {/* Sign-in-only: a new member needs a display name the link flow can't take. */}
-      {!isCreate && (
-        <>
-          <Button
-            variant="secondary"
-            fullWidth
-            disabled={!canEmailAction}
-            disabledReason={canEmailAction ? undefined : 'Enter your email first'}
-            onPress={emailMagicLink}
-          >
-            Email me a sign-in link
-          </Button>
-          <Button
-            variant="tertiary"
-            disabled={!canEmailAction}
-            disabledReason={canEmailAction ? undefined : 'Enter your email first'}
-            onPress={emailReset}
-          >
-            Forgot password?
-          </Button>
-        </>
-      )}
+      <Button
+        variant="secondary"
+        fullWidth
+        disabled={!canEmailAction}
+        disabledReason={canEmailAction ? undefined : 'Enter your email first'}
+        onPress={emailMagicLink}
+      >
+        Email me a sign-in link
+      </Button>
+      <Button
+        variant="tertiary"
+        disabled={!canEmailAction}
+        disabledReason={canEmailAction ? undefined : 'Enter your email first'}
+        onPress={emailReset}
+      >
+        Forgot password?
+      </Button>
 
       <Button variant="secondary" fullWidth onPress={() => navigate({ to: HOME })}>
         Continue as guest
       </Button>
+
+      {/* Sign-up is closed — the only way to a login is the department's User
+          Manager (#439). Said here, where a new member looks after Sign In fails. */}
+      <p
+        className="text-ink-tertiary"
+        style={{ font: 'var(--type-caption)', textAlign: 'center' }}
+      >
+        Need a login? Ask your department&rsquo;s User Manager.
+      </p>
 
       {/* Way back to the public welcome page for the not-yet-signed-in (2026-07-13).
           A plain <a> — welcome.html is its own entry, not a router route. */}

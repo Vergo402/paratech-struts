@@ -6,7 +6,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockUseSession = vi.fn();
 const mockUseDepartment = vi.fn();
 const mockSignIn = vi.fn();
-const mockCreateAccount = vi.fn();
 const mockNavigate = vi.fn();
 const mockSendMagicLink = vi.fn();
 const mockSendPasswordReset = vi.fn();
@@ -35,7 +34,6 @@ beforeEach(() => {
   mockNavigate.mockReset();
   mockReload.mockReset();
   mockSignIn.mockReset().mockResolvedValue(OK);
-  mockCreateAccount.mockReset().mockResolvedValue(OK);
   mockSendMagicLink.mockReset().mockResolvedValue({ ok: true });
   mockSendPasswordReset.mockReset().mockResolvedValue({ ok: true });
   mockIsMagicLink.mockReset().mockReturnValue(false); // not a magic-link landing by default
@@ -43,7 +41,6 @@ beforeEach(() => {
   mockUseSession.mockReturnValue({
     identity: { kind: 'guest' },
     signIn: mockSignIn,
-    createAccount: mockCreateAccount,
     signOut: vi.fn(),
     sendMagicLink: mockSendMagicLink,
     sendPasswordReset: mockSendPasswordReset,
@@ -60,20 +57,14 @@ beforeEach(() => {
   });
 });
 
-describe('AuthScreen (workflow 06 — sign in / create account)', () => {
-  it('opens in Sign In mode — no display name field, Sign In submit', () => {
+describe('AuthScreen (workflow 06 — sign in; sign-up closed, ADR-025 addendum 2026-10-26)', () => {
+  it('offers sign-in only — no Create Account mode, no display name field, and the User Manager hint', () => {
     render(<AuthScreen />);
-    expect(screen.getByRole('radio', { name: 'Sign In' })).toBeChecked();
+    expect(screen.queryByRole('radio', { name: 'Create Account' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Create Account' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Display name')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
-  });
-
-  it('switching to Create Account reveals the mandatory display name and relabels submit', async () => {
-    const user = userEvent.setup();
-    render(<AuthScreen />);
-    await user.click(screen.getByRole('radio', { name: 'Create Account' }));
-    expect(screen.getByLabelText('Display name')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Create Account' })).toBeInTheDocument();
+    expect(screen.getByText(/Ask your department.s User Manager/)).toBeInTheDocument();
   });
 
   it('submit is disabled until the required fields are filled', async () => {
@@ -111,21 +102,6 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     expect(mockReload).toHaveBeenCalled();
   });
 
-  it('Create Account passes the display name to the seam', async () => {
-    const user = userEvent.setup();
-    render(<AuthScreen />);
-    await user.click(screen.getByRole('radio', { name: 'Create Account' }));
-    await user.type(screen.getByLabelText('Display name'), 'Capt. Marchetti');
-    await user.type(screen.getByLabelText('Email'), 'cap@dept14.gov');
-    await user.type(screen.getByLabelText('Password'), 'hunter2');
-    await user.click(screen.getByRole('button', { name: 'Create Account' }));
-    expect(mockCreateAccount).toHaveBeenCalledWith({
-      email: 'cap@dept14.gov',
-      password: 'hunter2',
-      displayName: 'Capt. Marchetti',
-    });
-  });
-
   it('a rejected sign-in shows the reason inline and does not navigate', async () => {
     const user = userEvent.setup();
     mockSignIn.mockResolvedValue({ ok: false, reason: "That email and password don't match." });
@@ -143,7 +119,6 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     await user.click(screen.getByRole('button', { name: 'Continue as guest' }));
     expect(mockNavigate).toHaveBeenCalledWith({ to: '/operations' });
     expect(mockSignIn).not.toHaveBeenCalled();
-    expect(mockCreateAccount).not.toHaveBeenCalled();
   });
 
   it('the password reveal toggles masking', async () => {
@@ -165,14 +140,6 @@ describe('AuthScreen (workflow 06 — sign in / create account)', () => {
     await user.type(screen.getByLabelText('Email'), 'reyes@dept14.gov');
     expect(magic).toBeEnabled();
     expect(forgot).toBeEnabled();
-  });
-
-  it('the email actions are hidden in Create Account mode (display name needed first)', async () => {
-    const user = userEvent.setup();
-    render(<AuthScreen />);
-    await user.click(screen.getByRole('radio', { name: 'Create Account' }));
-    expect(screen.queryByRole('button', { name: 'Email me a sign-in link' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Forgot password?' })).not.toBeInTheDocument();
   });
 
   it('"Email me a sign-in link" sends the link and shows a check-your-email confirmation', async () => {

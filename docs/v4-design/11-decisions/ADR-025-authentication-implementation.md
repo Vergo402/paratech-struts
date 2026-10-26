@@ -110,3 +110,17 @@ The User Manager can now **create a member's login on the spot** (mockup accepte
 **Reset-to-starter** (`adminUpdateAccount` callable) is the 0300 forgot-my-password fix: back to the derived starter + the flag re-raised + **refresh tokens revoked** (stale devices drop off within the ID-token hour). Email changes ride the same callable with the same revocation; email-verification status resets on change — nothing gates on it today, noted for whenever something does.
 
 **CSV bulk add** (`personnelCsv.ts` + `PersonnelImportFlow`) provisions row-by-row **sequentially** (Auth throttles parallel creation); the results screen is the starter-password distribution sheet, shown once.
+
+## Addendum — self sign-up closed (2026-10-26, FS-03)
+
+**Decision.** Self-service account creation is **closed** at the project level: the Firebase Auth setting `client.permissions.disabledUserSignup = true` on `fieldshore-database` (set 2026-10-26 via the Identity Toolkit config API; reversible with the same call). The client's `createAccount` path and the `signInWithEmailLink` auto-create path now both fail server-side with `auth/admin-restricted-operation`, which `accountService` maps to "No account for that email. Ask your department's User Manager for a login." The sign-in screen no longer offers a Create Account mode and carries that same hint.
+
+**What this retires.** The "self-join" path of the #439 addendum above (create account → join with an invite code) is no longer reachable. **Accounts now come to exist exactly one way: admin-provisioned** — the User Manager's `provisionAccount` callable (Admin SDK) or the Firebase console's Add User, both unaffected by the switch. Invite codes still work for an already-provisioned account that has no department, and a second department is still created only via the direct `/create-department` address by a signed-in account.
+
+**Mutual aid is not affected.** The un-provisioned guest path is ADR-022's (per-device anonymous UID, QR-everywhere join) and never needed an account.
+
+**Why.** Trigger: the 2026-10-09 restart audit found the open switch let any visitor create an account and, through the "any signed-in account may create an org" rule, a department; the one such event (2026-10-04) was our own QA agent, but the surface was real. With no fielded users, closing it costs nothing operationally and removes the only unauthenticated write path into the live project. The ADR-042 hardening items (invite expiry, App Check) remain v4.1.
+
+**Bootstrapping a new department** (founder has no account yet): an existing Admin provisions the founder into any department, or the founder is added in the Firebase console; the founder then signs in and opens `/create-department`. Re-opening the switch is a last resort, never the routine.
+
+**Board:** FS-03 on the cross-project board (project 3); no v4 issue.
