@@ -2,21 +2,12 @@
 
 ## What This Is
 
-A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement, manage inventory across apparatus, and run shoring operations with ICS/NIMS command structure. Built for field use on mobile — works offline.
-
 **Live:** https://vergo402.github.io/paratech-struts/
 
 **Deployment status (2026-10-09): beta only — no users.** Alex is the sole tester; no department has onboarded. The v3 site above and its Firebase project `paratech-c3ab4` are reference/archive, not a fielded app: route every fix to v4 (`src/`, Firebase `fieldshore-database`), never patch v3 for "production" reasons. `hfd217` in the v3 database is Alex's own test department. Re-check this line before calling anything production-critical.
 
 ## Architecture
 
-- **3-file split** (refactored from single-file in v2.0.1):
-  - `index.html` — HTML shell, modals, forms
-  - `app.js` — All application logic, constants, Firebase integration
-  - `style.css` — All styles
-- **Service worker:** `sw.js` — offline caching with stale-while-revalidate
-- **Backend:** Firebase Realtime Database (compat SDK v9.23.0) — project `paratech-c3ab4`
-- **Hosting:** GitHub Pages (auto-deploys on push to `main`)
 - **No build step (v3 root app).** Edit files, push, done. **v4 under `src/` is a Vite/TS build — see "v4 Build & Architecture" below.**
 - **v3 app internals** (key files, tabs, `app.js` constants + functions, Firebase data structure, Known Patterns & Gotchas, local serve) live in `.claude/rules/v3-app.md`, a path-scoped rule that loads itself when you touch the v3 root files. Authoritative copy for v3 work: CLAUDE.md on `main` (the `fieldshore-main/` worktree).
 
@@ -25,29 +16,15 @@ A PWA for USAR/FEMA firefighters to select Paratech rescue struts by measurement
 This branch is a **dual-app repo** (`package.json`: "v3 ships from root; v4 lives under src/"):
 
 - **v3** — the root `index.html` / `app.js` / `style.css` / `sw.js` above. Still ships to GitHub Pages. No build step.
-- **v4** — a **Vite 6 + TypeScript + React 18** app rooted at `src/app/`, not yet deployed (Phase I). Stack: TanStack Router + Query, Dexie (IndexedDB), Zustand, Zod, Tailwind 4, Radix UI. Tests via Vitest + Testing Library. `vite-plugin-pwa` (Workbox) replaces the hand-written `sw.js` for v4 — the one invariant kept: Firebase realtime traffic is never cached.
-
-**Commands (from repo root):**
-
-| Command | Does |
-|---|---|
-| `npm run dev` | Vite dev server on **:5199**, `host: true` (reach from a phone at `http://<mac>.local:5199`) |
-| `npm test` / `npm run test:watch` | Vitest once / watch mode |
-| `npm run build` | `tsc --noEmit && vite build` → `dist/` (gitignored) |
-| `npm run typecheck` / `npm run lint` | Types only / ESLint |
+- **v4** — rooted at `src/app/`, not yet deployed (Phase I). Invariant kept from `sw.js`: Firebase realtime traffic is never cached.
 
 **Delegation:** agent routing (task type → agent → model tier → oversight) lives in `.claude/agents/DELEGATION.md` — consult it when planning any substantive task.
 
 **Layout & gotchas:**
-- `src/core` (pure logic: load tables, reducers, schema) · `src/data` (store + data/sync seam) · `src/ui` (components by feature) · `src/app` (shell + routes). Path aliases: `@core` `@data` `@ui` `@app`.
-- Tests are colocated `*.test.ts(x)`. Load-table catalogs are pinned by `src/core/load/struts.test.ts` + `plates.test.ts` — keep them green.
+- Keep the load-table catalog tests (`src/core/load/struts.test.ts` + `plates.test.ts`) green.
 - **Installing an npm dep (e.g. a font) needs a Vite dev-server restart** — HMR won't re-optimize. Preview MCP can't drive TanStack `<Link>` (use `location.assign`) or Sheet scrim-close (reload).
 
 ### Remote
-
-| Name | Repo | Purpose |
-|------|------|---------|
-| `origin` | `Vergo402/paratech-struts` | Single repo (SSH) |
 
 Uses SSH authentication. Branching workflow: `main` = production, feature branches for new work.
 
@@ -62,38 +39,19 @@ There are **two separate project boards**. Always use the one that matches the b
 | FieldShore Roadmap (v3) | `1` | https://github.com/users/Vergo402/projects/1 | v3 issues — bugs, features, releases on `main` |
 | v4 Redesign Roadmap | `2` | https://github.com/users/Vergo402/projects/2 | v4 issues — all work on `v4-redesign` branch |
 
-When starting work on any GitHub issue (whether via `/plan-release`, `/plan-v4`, or ad-hoc), set its Project Status to **In Progress** using the correct board:
+Set each issue's Status to **In Progress** when starting it. Status field ids, item-lookup/edit commands and closing-issue rules: see `.claude/skills/board-status/SKILL.md`.
 
-- **v3 board (project 1):** project-id `PVT_kwHODy7CN84BYNd6` · Status field-id `PVTSSF_lAHODy7CN84BYNd6zhTU44c` · options Todo `f75ad846` / In Progress `47fc9ee4` / Done `98236657`
-- **v4 board (project 2):** project-id `PVT_kwHODy7CN84BYV37` · Status field-id `PVTSSF_lAHODy7CN84BYV37zhTcaGE` · options Todo `f75ad846` / In Progress `47fc9ee4` / Done `98236657` · item-lookup + edit commands for both boards: `.claude/plans/board-commands.md`
+**Gotcha:** `Closes #N` in a commit only fires on merge to `main`, so v4 issues (`v4-redesign` branch) must be closed manually with `gh issue close` when the work is done.
 
 **New issues created mid-session** must be added to the correct board as sub-issues of the current parent issue — never left as standalone issues.
 
-### Closing issues
-
-- **v4 issues (`v4-redesign` branch):** Close manually with `gh issue close NUMBER --repo Vergo402/paratech-struts` as soon as the work is done. Do NOT rely on `Closes #N` in commit messages — that keyword only fires on merge to the default branch (`main`), and v4 merges to `main` only at the Phase J cutover (#267).
-- **v3 issues (`main` branch):** `Closes #N` in the commit message works correctly on merge to main. Manual close is also fine.
-
-The board Status updates to Done automatically when the issue closes.
-
 ## Versioning & Release Process
 
-Follow [semver](https://semver.org/): MAJOR.MINOR.PATCH
+**Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics).
 
-On every change:
-0. **Ensure the `v{VERSION}` Release option exists in the [FieldShore Roadmap Project](https://github.com/users/Vergo402/projects/1)** before any `/plan-release` scope-in or Project field-edit. Add via the web UI: project settings → fields → "Release" → "+ Add option". **Never** use `gh api graphql ... updateProjectV2Field` to add a single option — the mutation replaces the entire options list (set-and-replace semantics).
-1. Update version in **3 places:**
-   - `index.html` header label: `<div class="version-label">v{VERSION}</div>` 
-   - `app.js`: `const APP_VERSION = '{VERSION}'` (near the top of the file)
-   - `sw.js` cache name: `const CACHE_NAME = 'fieldshore-v{VERSION}';`
-2. Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to
-3. When ready, merge to `main` (which auto-deploys via GitHub Pages)
-4. Create GitHub release with notes
-5. **Update user manual** (see below)
+Work on a feature branch — do NOT push directly to `main` unless Alex explicitly says to.
 
-**PATCH** (x.x.+1): bug fixes, label changes, UI tweaks
-**MINOR** (x.+1.0): new features
-**MAJOR** (+1.0.0): breaking changes, major restructuring
+Release procedure (version bump on every change): see `.claude/skills/release/SKILL.md`.
 
 ### User Manual — Auto-Update Rule
 
@@ -141,9 +99,7 @@ Alex is a USAR/FEMA firefighter and a tech-savvy power user of decades — from 
 
 ## History & status
 
-### v3.5.2 → v3.22.3 — see `.claude/plans/CONSOLIDATED-STATUS.md`
-
-The per-release "What shipped" view from v3.5.2 onward lives in **`.claude/plans/CONSOLIDATED-STATUS.md`** to keep this file scannable. Covers: XSS hotfix, v3.10.x audit minor + safety hotfix, v3.11.x Hartsdale field feedback + rename + Surfside hotfixes + security/correctness patch, v3.12.0 Command tab + dual-write + hazard log, v3.13.0–v3.14.3 desktop view + viewport-fill, v3.15.0 numbered divisions + offline hardening, v3.16.x SmartArt org chart + desktop polish + transaction resync, v3.17.x pre-v4 bundle + FAB fixes, v3.18.x hfd217 field feedback + Quick View inventory filter + org-chart title fix, v3.19.x default ICS org-chart restructure, v3.20.0–v3.21.2 external-department equipment plumbing, v3.22.0 inventory integrity + measurement safety, v3.22.1–v3.22.3 strut/base-plate catalog fixes (LockStroke 36–57, Multi-Base plates, phantom LS 812 removed). The v3.11.2 multi-role audit report at `.claude/audits/v3.11.2/SUMMARY.md` is the canonical view of which audit findings closed in v3.11.3 vs deferred to v4.0. Per-release detail for v3.5.2 → v3.9.1 is in its Appendix A.
+### v3.5.2 → v3.22.3 — see `.claude/plans/CONSOLIDATED-STATUS.md` (v3.11.2 audit: `.claude/audits/v3.11.2/SUMMARY.md`)
 
 ### ⏳ Still pending — v4.0.0 (major restructure)
 
